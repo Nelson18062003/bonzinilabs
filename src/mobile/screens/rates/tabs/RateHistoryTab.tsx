@@ -35,7 +35,7 @@ export function RateHistoryTab() {
   if (!history || history.length === 0) {
     return (
       <div className={cn('rounded-lg p-8 text-center', SURFACE.card, SURFACE.shadow)}>
-        <div className={cn('text-[14px]', TEXT.muted)}>Aucun historique de taux</div>
+        <div className={cn('text-[16px]', TEXT.muted)}>Aucun historique de taux</div>
       </div>
     );
   }

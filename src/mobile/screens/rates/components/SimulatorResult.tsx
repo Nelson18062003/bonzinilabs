@@ -50,15 +50,15 @@ export function SimulatorResult({
 
   return (
     <div className={cn('rounded-lg p-5', SURFACE.card, SURFACE.shadow)}>
-      <div className={cn('mb-2 text-[14px] font-bold', TEXT.muted)}>
+      <div className={cn('mb-2 text-[16px] font-bold', TEXT.muted)}>
         Résultat de la simulation
       </div>
 
       {/* Badge saisie CNY — montré seulement si l'admin a saisi en CNY */}
       {inputCurrency === 'cny' && inputAmount != null && (
         <div className={cn('mb-2 flex items-center justify-between rounded-lg px-3 py-2', SURFACE.canvas)}>
-          <span className={cn('text-[14px] font-semibold', TEXT.muted)}>Saisie CNY</span>
-          <span className="text-[14px] font-bold text-[#E8B931]">
+          <span className={cn('text-[16px] font-semibold', TEXT.muted)}>Saisie CNY</span>
+          <span className="text-[16px] font-bold text-[#E8B931]">
             {inputAmount.toLocaleString('fr-FR')} CNY
           </span>
         </div>
@@ -67,7 +67,7 @@ export function SimulatorResult({
       {/* XAF envoyé */}
       <div className={cn('mb-2 flex items-center justify-between rounded-lg p-3', SURFACE.canvas)}>
         <div>
-          <div className={cn('text-[14px] font-medium', TEXT.muted)}>
+          <div className={cn('text-[16px] font-medium', TEXT.muted)}>
             {inputCurrency === 'cny' ? 'Équivalent XAF' : 'Vous envoyez'}
           </div>
           <div className={cn('text-[24px] font-bold tabular-nums', TEXT.strong)}>
@@ -82,7 +82,7 @@ export function SimulatorResult({
 
       {/* CNY reçu — focal, gros chiffre */}
       <div className="mb-4 rounded-lg bg-[#F5F5F5] p-4 dark:bg-[#383838]">
-        <div className={cn('text-[14px] font-medium', TEXT.muted)}>
+        <div className={cn('text-[16px] font-medium', TEXT.muted)}>
           Le client reçoit
         </div>
         <div className="mt-1 flex items-baseline gap-2">
@@ -95,25 +95,25 @@ export function SimulatorResult({
 
       {/* Détail du calcul */}
       <div className={cn('space-y-2 rounded-lg p-3.5', SURFACE.canvas)}>
-        <div className={cn('mb-0.5 text-[14px] font-semibold', TEXT.muted)}>
+        <div className={cn('mb-0.5 text-[16px] font-semibold', TEXT.muted)}>
           Détail du calcul
         </div>
-        <div className="flex items-center justify-between gap-2 text-[14px]">
+        <div className="flex items-center justify-between gap-2 text-[16px]">
           <span className={cn('flex items-center gap-1.5', TEXT.muted)}>
             <MethodLogo method={method?.key ?? 'cash'} size={20} />
             Taux base ({method?.label})
           </span>
           <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{baseRate.toLocaleString('fr-FR')} CNY</span>
         </div>
-        <div className="flex justify-between text-[14px]">
+        <div className="flex justify-between text-[16px]">
           <span className={TEXT.muted}>Ajust. pays ({country?.label})</span>
           <span className={cn('font-semibold tabular-nums', adjClass(countryAdj))}>{countryAdj}%</span>
         </div>
-        <div className="flex justify-between text-[14px]">
+        <div className="flex justify-between text-[16px]">
           <span className={TEXT.muted}>Ajust. tranche ({tier?.shortLabel})</span>
           <span className={cn('font-semibold tabular-nums', adjClass(tierAdj))}>{tierAdj}%</span>
         </div>
-        <div className="flex justify-between border-t border-black/[0.06] pt-2 text-[14px] dark:border-white/[0.08]">
+        <div className="flex justify-between border-t border-black/[0.06] pt-2 text-[16px] dark:border-white/[0.08]">
           <span className={cn('font-semibold', TEXT.strong)}>Taux final appliqué</span>
           <span className="font-bold tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">
             {finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} CNY
@@ -122,7 +122,7 @@ export function SimulatorResult({
       </div>
 
       {/* Formule */}
-      <div className={cn('mt-3 text-center text-[14px]', TEXT.muted)}>
+      <div className={cn('mt-3 text-center text-[16px]', TEXT.muted)}>
         {amountXAF.toLocaleString('fr-FR')} XAF × ({finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} / 1 000 000) ={' '}
         {amountCNY.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} CNY
       </div>

@@ -33,12 +33,12 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   if (!active || !payload) return null;
   return (
     <div className="rounded-lg p-3 shadow-lg" style={{ background: 'rgba(26,26,46,0.95)' }}>
-      <div className="mb-1.5 text-[14px] text-white/50">{label}</div>
+      <div className="mb-1.5 text-[16px] text-white/50">{label}</div>
       {payload.map((p, i) => (
         <div key={i} className="mb-0.5 flex items-center gap-1.5">
           <div className="h-2 w-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-[14px] text-white/70">{p.name}</span>
-          <span className="ml-auto pl-3 text-[14px] font-bold text-white">
+          <span className="text-[16px] text-white/70">{p.name}</span>
+          <span className="ml-auto pl-3 text-[16px] font-bold text-white">
             {p.value.toLocaleString('fr-FR')}
           </span>
         </div>
@@ -90,7 +90,7 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
       <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         <div className="mb-3 px-1">
           <div className={cn('text-[16px] font-bold', TEXT.strong)}>Tendance des taux</div>
-          <div className={cn('text-[14px]', TEXT.muted)}>CNY pour 1 000 000 XAF</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>CNY pour 1 000 000 XAF</div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -15, bottom: 5 }}>
@@ -145,7 +145,7 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
                 key={pm.key}
                 onClick={() => toggleLine(pm.key)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[14px] font-semibold transition',
+                  'flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-[16px] font-semibold transition',
                   on ? SURFACE.card : SURFACE.canvas,
                   on ? '' : 'opacity-60',
                 )}
@@ -170,13 +170,13 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
             key={s.label}
             className={cn('flex-1 rounded-lg p-3 text-center', SURFACE.card, SURFACE.shadow)}
           >
-            <div className={cn('mb-1 text-[14px] font-semibold uppercase', TEXT.muted)}>
+            <div className={cn('mb-1 text-[16px] font-semibold uppercase', TEXT.muted)}>
               {s.label}
             </div>
             <div className="text-[16px] font-bold tabular-nums" style={{ color: s.color }}>
               {s.value.toLocaleString('fr-FR')}
             </div>
-            <div className={cn('text-[14px]', TEXT.muted)}>CNY (Cash)</div>
+            <div className={cn('text-[16px]', TEXT.muted)}>CNY (Cash)</div>
           </div>
         ))}
       </div>
@@ -184,10 +184,10 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
       {/* Écart entre modes */}
       {lastPoint && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
-          <div className={cn('mb-1 text-[14px] font-bold', TEXT.strong)}>
+          <div className={cn('mb-1 text-[16px] font-bold', TEXT.strong)}>
             Écart entre modes
           </div>
-          <div className={cn('mb-3 text-[14px]', TEXT.muted)}>
+          <div className={cn('mb-3 text-[16px]', TEXT.muted)}>
             Différence vs Cash (référence)
           </div>
           {PAYMENT_METHODS.map((pm) => {
@@ -199,20 +199,20 @@ export function MultiCurveChart({ data }: MultiCurveChartProps) {
                 <div className="mb-1 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MethodLogo method={pm.key} size={24} />
-                    <span className={cn('text-[14px] font-medium', TEXT.muted)}>
+                    <span className={cn('text-[16px] font-medium', TEXT.muted)}>
                       {pm.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
+                    <span className={cn('text-[16px] font-bold tabular-nums', TEXT.strong)}>
                       {(lastPoint[pm.key as keyof typeof lastPoint] as number).toLocaleString('fr-FR')}
                     </span>
                     {pm.key !== 'cash' ? (
-                      <span className="rounded-lg bg-[#FDD3D0] px-2 py-0.5 text-[14px] font-semibold tabular-nums text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
+                      <span className="rounded-lg bg-[#FDD3D0] px-2 py-0.5 text-[16px] font-semibold tabular-nums text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                         {diff}
                       </span>
                     ) : (
-                      <span className="rounded-lg bg-[#CFF7D3] px-2 py-0.5 text-[14px] font-semibold text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]">
+                      <span className="rounded-lg bg-[#CFF7D3] px-2 py-0.5 text-[16px] font-semibold text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]">
                         REF
                       </span>
                     )}

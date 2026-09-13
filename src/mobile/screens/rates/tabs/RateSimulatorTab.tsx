@@ -159,7 +159,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 key={c}
                 onClick={() => handleCurrencySwitch(c)}
                 className={cn(
-                  'flex-1 rounded-lg py-2 text-[14px] font-bold transition-colors',
+                  'flex-1 rounded-lg py-2.5 text-[16px] font-bold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
                 )}
               >
@@ -171,7 +171,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
 
         {/* Montant — gros chiffre éditable + unité ambre */}
         <div className="mt-4">
-          <label htmlFor="sim-amount" className={cn('text-[14px] font-medium', TEXT.muted)}>
+          <label htmlFor="sim-amount" className={cn('text-[16px] font-medium', TEXT.muted)}>
             Montant
           </label>
           <div className="mt-1 flex items-baseline gap-2">
@@ -211,7 +211,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 )}
               >
                 <MethodLogo method={pm.key} size={38} />
-                <span className={cn('text-[14px] font-semibold', active ? TEXT.strong : TEXT.muted)}>
+                <span className={cn('text-[16px] font-semibold', active ? TEXT.strong : TEXT.muted)}>
                   {pm.label}
                 </span>
               </button>
@@ -228,7 +228,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 key={c.key}
                 onClick={() => setCountry(c.key)}
                 className={cn(
-                  'shrink-0 rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors',
+                  'shrink-0 rounded-lg px-3 py-2.5 text-[16px] font-semibold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : cn(SURFACE.canvas, TEXT.muted),
                 )}
               >
@@ -241,14 +241,14 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
         {/* Résultat — bloc lilas « Votre fournisseur reçoit ¥ » (maquette) */}
         {result ? (
           <div className="mt-4 rounded-lg bg-[#F5F5F5] p-4 dark:bg-[#383838]">
-            <div className={cn('text-[14px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
+            <div className={cn('text-[16px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
             <div className="mt-1 flex items-baseline gap-2">
               <span className="text-[24px] font-bold text-[#B3B3B3] dark:text-[#B3B3B3]">¥</span>
               <span className={cn('text-[32px] font-bold leading-none tabular-nums', TEXT.strong)}>
                 {result.amountCNY.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
               </span>
             </div>
-            <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
+            <div className={cn('mt-1.5 text-[16px]', TEXT.muted)}>
               via {methodLabel} · vous payez{' '}
               <span className="font-semibold tabular-nums">
                 {result.amountXAF.toLocaleString('fr-FR')} XAF
@@ -257,7 +257,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
           </div>
         ) : (
           <div className="mt-4 rounded-lg bg-[#F5F5F5]/60 p-5 text-center dark:bg-[#383838]/60">
-            <div className={cn('text-[14px]', TEXT.muted)}>{emptyMessage}</div>
+            <div className={cn('text-[16px]', TEXT.muted)}>{emptyMessage}</div>
           </div>
         )}
       </div>
@@ -269,7 +269,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
             type="button"
             onClick={() => setShowDetail((v) => !v)}
             aria-expanded={showDetail}
-            className={cn('flex w-full items-center justify-center gap-1 py-1.5 text-[14px] font-semibold', TEXT.muted)}
+            className={cn('flex w-full items-center justify-center gap-1 py-2.5 text-[16px] font-semibold', TEXT.muted)}
           >
             {showDetail ? 'Masquer le détail' : 'Voir le détail du calcul'}
             <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', !showDetail && '-rotate-90')} />

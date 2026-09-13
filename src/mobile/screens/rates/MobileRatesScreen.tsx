@@ -27,7 +27,7 @@ import { RateSimulatorTab } from './tabs/RateSimulatorTab';
 
 function Caption({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className={cn('mb-3 px-1 text-[14px] font-bold', TEXT.muted)}>
+    <h2 className={cn('mb-3 px-1 text-[16px] font-bold', TEXT.muted)}>
       {children}
     </h2>
   );
@@ -45,7 +45,7 @@ function Collapsible({ title, children, defaultOpen = false }: { title: string; 
         aria-expanded={open}
         className={cn('flex w-full items-center justify-between rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
       >
-        <span className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</span>
+        <span className={cn('text-[16px] font-bold', TEXT.strong)}>{title}</span>
         <ChevronDown className={cn('h-5 w-5 transition-transform', TEXT.muted, !open && '-rotate-90')} />
       </button>
       {open && <div className="mt-3">{children}</div>}
@@ -116,7 +116,7 @@ export function MobileRatesScreen() {
           {/* ── Flyer du jour — pilule en bas, fidèle à la maquette validée ── */}
           <button
             onClick={() => setFlyerOpen(true)}
-            className={cn('flex w-full items-center justify-center gap-1.5 py-[14px] text-[14px] font-semibold', SOFT_PILL)}
+            className={cn('flex w-full items-center justify-center gap-1.5 py-[14px] text-[16px] font-semibold', SOFT_PILL)}
           >
             Voir le flyer du jour <ChevronRight className="h-4 w-4" />
           </button>
