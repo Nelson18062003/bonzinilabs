@@ -328,3 +328,19 @@ phrase (le nom du client) ou le curseur de la 3D.
   dates, franchise), les tables cargo pour `query_database`, et un
   résolveur « cargo » qui accepte un numéro de conteneur, un B/L ou le nom
   du client. À faire après fusion : `/migrate` puis `/gen-types`.
+
+## Passe 14 — Cargo, encore plus loin
+
+- **La flotte dit ce qui presse** : « À faire cette semaine — 4 choses avant
+  les prochaines arrivées », repliée en tête de liste, une ligne par chose
+  (« Régler le fret au transitaire — PRC · arrive à Douala le 17 septembre,
+  dans 4 jours ») qui ouvre la bonne section du bon dossier. Au-delà de huit
+  boîtes, un champ de recherche (client, n° de boîte, B/L, navire).
+- **« Le trajet » raconte ce que l'armateur a dit** : les derniers jalons
+  réels en phrases (« Navire parti à GZ Oceangate Container Terminal, le
+  15 août. ») et ce qui est prévu.
+- **« Le client » prévient sur WhatsApp** : quand le dossier est rattaché à
+  un client avec un téléphone, un bouton ouvre WhatsApp avec le message déjà
+  écrit (« votre conteneur MIEU3611115 : arrive à Kribi le 11 octobre, dans
+  28 jours. Retard de 14 jours sur la date promise. »).
+- **Mola** propose « Où en sont mes conteneurs ? » parmi ses suggestions.

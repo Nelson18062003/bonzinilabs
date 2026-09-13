@@ -11,15 +11,21 @@
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { ALERT, ALERT_ORDER, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
-import { arrivalSentence, delaySentence, nextActionSentence, plural } from '@/lib/cargo/plain';
+import { arrivalSentence, delaySentence, nextActionSentence, plural, uncap } from '@/lib/cargo/plain';
+import { nextSteps } from '@/lib/cargo/todo';
 import { bestEta } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, type Tone } from '@/mobile/designKit';
+import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput, type Tone } from '@/mobile/designKit';
+
+/** Au-delà, les filtres ne suffisent plus : un champ de recherche apparaît. */
+const SEARCH_FROM = 8;
+/** La section qui règle chaque chose à faire (même table que le dossier). */
+const TODO_SECTION: Record<string, string> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
 
 const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
@@ -28,6 +34,8 @@ export function MobileCargoScreen() {
   const navigate = useNavigate();
   const { data, isLoading } = useCargoShipments();
   const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
+  const [query, setQuery] = useState('');
+  const [weekOpen, setWeekOpen] = useState(false);
 
   const all = useMemo(() => data ?? [], [data]);
   const tally = useMemo(() => alertTally(all), [all]);
@@ -38,14 +46,18 @@ export function MobileCargoScreen() {
     for (const s of all) n.set(s.client_label, (n.get(s.client_label) ?? 0) + 1);
     return n;
   }, [all]);
+  // Ce qui presse cette semaine, toutes boîtes confondues : les choses « à faire maintenant ».
+  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all]);
   const rows = useMemo(() => {
-    const list = filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter);
+    const q = query.trim().toUpperCase();
+    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter))
+      .filter((s) => !q || s.client_label.toUpperCase().includes(q) || s.container_number.includes(q) || (s.bl_number ?? '').toUpperCase().includes(q) || (s.vessel_name ?? '').toUpperCase().includes(q));
     return [...list].sort((a, b) => {
       const d = ALERT[alertLevel(b)].rank - ALERT[alertLevel(a)].rank;
       if (d !== 0) return d;
       return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
     });
-  }, [all, filter]);
+  }, [all, filter, query]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -83,6 +95,41 @@ export function MobileCargoScreen() {
         })}
       </div>
 
+      {all.length >= SEARCH_FROM && (
+        <div className="relative px-4 pt-3">
+          <SearchIcon className={cn('pointer-events-none absolute left-7 top-1/2 mt-1.5 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
+          <TextInput type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Client, n° de boîte, B/L ou navire" className="pl-10" />
+        </div>
+      )}
+
+      {/* Ce qui presse : une ligne par chose à faire maintenant, repliée par défaut. */}
+      {urgent.length > 0 && filter === 'all' && !query && (
+        <section className={cn('mx-4 mt-3 rounded-lg', SURFACE.card, SURFACE.shadow)}>
+          <button type="button" aria-expanded={weekOpen} onClick={() => setWeekOpen((v) => !v)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left">
+            <span className="min-w-0 flex-1">
+              <span className={cn('block', TYPE.lead, TEXT.strong)}>À faire cette semaine</span>
+              <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{plural(urgent.length, 'chose')} avant les prochaines arrivées</span>
+            </span>
+            <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, weekOpen && 'rotate-180')} />
+          </button>
+          {weekOpen && (
+            <ul className={cn('border-t px-4 pb-2', SURFACE.divider)}>
+              {urgent.map(({ s, t }) => (
+                <li key={`${s.id}-${t.id}`}>
+                  <button type="button" onClick={() => navigate(`/m/cargo/${s.id}${TODO_SECTION[t.id] ? `/${TODO_SECTION[t.id]}` : ''}`)} className="flex w-full items-start gap-3 py-3 text-left">
+                    <span className="min-w-0 flex-1">
+                      <span className={cn('block text-[16px] font-semibold leading-snug', TEXT.strong)}>{t.label}</span>
+                      <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{s.client_label} · {uncap(arrivalSentence(s))}</span>
+                    </span>
+                    <ChevronRight className={cn('mt-0.5 h-6 w-6 shrink-0', TEXT.muted)} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       <div className="space-y-3 px-4 pt-3">
         {isLoading && <ScreenLoader />}
         {rows.map((s) => {
@@ -113,11 +160,11 @@ export function MobileCargoScreen() {
 
         {!isLoading && rows.length === 0 && (
           <div className="flex flex-col items-center py-12 text-center">
-            <p className={cn(TYPE.lead, TEXT.strong)}>{filter === 'all' ? 'Aucun conteneur suivi' : 'Aucun conteneur dans cet état'}</p>
+            <p className={cn(TYPE.lead, TEXT.strong)}>{query ? 'Aucun conteneur ne correspond' : filter === 'all' ? 'Aucun conteneur suivi' : 'Aucun conteneur dans cet état'}</p>
             <p className={cn('mt-2 max-w-xs text-[16px]', TEXT.muted)}>
-              {filter === 'all' ? 'Un numéro de bill of lading ou de conteneur suffit pour commencer.' : 'Bonne nouvelle. Touche « Tous » pour revoir la flotte.'}
+              {query ? 'Essayez le nom du client, le numéro de boîte ou le bill of lading.' : filter === 'all' ? 'Un numéro de bill of lading ou de conteneur suffit pour commencer.' : 'Bonne nouvelle. Touche « Tous » pour revoir la flotte.'}
             </p>
-            {filter === 'all' && (
+            {filter === 'all' && !query && (
               <Button className="mt-4" onClick={() => navigate('/m/cargo/track')}>
                 <SearchIcon /> Chercher une référence
               </Button>

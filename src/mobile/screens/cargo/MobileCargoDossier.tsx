@@ -17,7 +17,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoDocuments, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
+import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { DossierActions } from '@/components/cargo/dossier';
 import { MobilePapiers } from './MobilePapiers';
 import { MobileDouane } from './MobileDouane';
@@ -33,7 +33,9 @@ import {
   arrivalSentence, contentSentence, customsSentence, delaySentence, departureSentence, journeySentence,
   moneySentence, papersSentence, todoSentence, whereSentence,
 } from '@/lib/cargo/plain';
-import { CARRIER_LABEL, fmtUsd, liveVesselUrl, statusMeta } from '@/lib/cargo/model';
+import { CARRIER_LABEL, fmtUsd, liveVesselUrl, statusMeta, timelineFromEvents } from '@/lib/cargo/model';
+import type { CargoEvent } from '@/lib/cargo/model';
+import { fmtDayLong } from '@/lib/cargo/plain';
 import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -135,13 +137,33 @@ function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPositi
   );
 }
 
-function Journey({ s, pos }: { s: CargoShipment; pos: CargoVesselPosition | null }) {
+function Journey({ s, pos, events }: { s: CargoShipment; pos: CargoVesselPosition | null; events: CargoEvent[] }) {
+  // Les jalons de l'armateur, les plus récents d'abord, en phrases : « Navire parti de Nansha le 15 août ».
+  const items = timelineFromEvents(events).filter((e) => e.classifier === 'ACT').reverse().slice(0, 4);
+  const planned = timelineFromEvents(events).filter((e) => e.classifier !== 'ACT');
   return (
     <div className="space-y-4">
       <Line>{departureSentence(s)}.</Line>
       <Line strong>{arrivalSentence(s)}.</Line>
       {delaySentence(s) && <Line tone="warn">{delaySentence(s)}.</Line>}
       <div className="admin-theme pt-1"><CargoJourney shipment={s} position={pos} /></div>
+      {items.length > 0 && (
+        <div className={cn('space-y-2 border-t pt-4', SURFACE.divider)}>
+          <p className={cn('text-[16px] font-semibold', TEXT.strong)}>Ce que l'armateur a dit</p>
+          <ul className="space-y-1">
+            {items.map((e) => (
+              <li key={e.id} className={cn('text-[16px] leading-relaxed', TEXT.body)}>
+                {e.label}{e.location ? ` à ${e.location}` : ''}, le {fmtDayLong(new Date(e.time))}.
+              </li>
+            ))}
+            {planned.length > 0 && (
+              <li className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
+                Prévu : {planned.map((e) => `${e.label.toLowerCase()}${e.location ? ` à ${e.location}` : ''} le ${fmtDayLong(new Date(e.time))}`).join(' ; ')}.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -188,6 +210,7 @@ export function MobileCargoDossier() {
   const { data: s, isLoading, error } = useCargoShipment(shipmentId ?? null);
   const { data: docs } = useCargoDocuments(shipmentId ?? null);
   const { data: positions } = useCargoVesselPositions();
+  const { data: events } = useCargoEvents(shipmentId ?? null);
   const pos = useMemo(() => (s ? groupVessels([s], positions ?? [])[0]?.position ?? null : null), [s, positions]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
@@ -199,7 +222,7 @@ export function MobileCargoDossier() {
   const sections: { key: SectionKey; title: string; summary: (s: CargoShipment) => string; body: (s: CargoShipment) => React.ReactNode }[] = s ? [
     { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} onGo={go} /> },
     { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} canManage={canManage} /> },
-    { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} /> },
+    { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} events={events ?? []} /> },
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
     { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
     { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },

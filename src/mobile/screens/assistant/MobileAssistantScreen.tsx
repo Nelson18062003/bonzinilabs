@@ -13,8 +13,8 @@ import { SURFACE } from '@/mobile/designKit';
 const SUGGESTIONS = [
   'Volume de la semaine ?',
   'Derniers dépôts en attente',
+  'Où en sont mes conteneurs ?',
   'Taux Alipay du jour',
-  'Paiements en cours',
 ];
 
 const MAX_FILES = 5;
