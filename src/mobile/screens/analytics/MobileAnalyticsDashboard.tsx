@@ -148,11 +148,11 @@ function CollapsibleSection({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-1 py-1 text-left"
+        className="flex min-h-[48px] w-full items-center gap-2 px-1 py-2 text-left"
       >
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-[14px] font-bold text-muted-foreground">{title}</h2>
-        <ChevronDown className={cn('ml-auto h-4 w-4 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+        <Icon className="h-5 w-5 text-muted-foreground" />
+        <h2 className={cn('text-[18px] font-semibold', TEXT.strong)}>{title}</h2>
+        <ChevronDown className={cn('ml-auto h-6 w-6 text-muted-foreground transition-transform', !open && '-rotate-90')} />
       </button>
       {open ? <div className="mt-3 flex flex-col gap-4">{children}</div> : null}
     </section>
@@ -262,22 +262,22 @@ function DashboardBody() {
       <div className={cn('flex min-h-screen flex-col gap-6 p-4 pb-24', SURFACE.canvas)}>
 
         {/* TOOLBAR ─────────────────────────────────────────── */}
-        <header className="flex items-center justify-between gap-3">
+        <header className="flex flex-col gap-3">
           <div>
-            <h1 className={cn('text-xl font-bold tracking-tight', TEXT.strong)}>Analytics</h1>
-            <p className={cn('text-[14px]', TEXT.muted)}>
-              Aperçu de l'activité sur la période sélectionnée — fuseau Africa/Douala.
+            <h1 className={cn('text-[22px] font-semibold tracking-tight', TEXT.strong)}>Tableau de bord</h1>
+            <p className={cn('text-[16px]', TEXT.muted)}>
+              L'activité sur la période choisie, à l'heure de Douala.
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
             <DateRangePicker />
             <button
               type="button"
               onClick={handleRefresh}
               aria-label="Rafraîchir"
-              className={cn('rounded-lg p-2.5', SURFACE.card, SURFACE.shadow, TEXT.strong)}
+              className={cn('flex h-11 w-11 items-center justify-center rounded-lg', SURFACE.card, SURFACE.shadow, TEXT.strong)}
             >
-              <RefreshCw className={refreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+              <RefreshCw className={refreshing ? 'h-5 w-5 animate-spin' : 'h-5 w-5'} />
             </button>
           </div>
         </header>
@@ -781,7 +781,7 @@ function DashboardBody() {
  */
 function ChartAxisCaption({ xLabel, yLabel }: { xLabel: string; yLabel: string }) {
   return (
-    <div className="mt-2 flex items-center justify-between gap-2 text-[14px] text-muted-foreground">
+    <div className="mt-2 flex items-center justify-between gap-2 text-[16px] text-muted-foreground">
       <span className="inline-flex items-center gap-1">
         <span className="font-semibold">X</span>
         <span>· {xLabel}</span>
@@ -805,7 +805,7 @@ function FlowTooltip({ active, payload, label }: {
     0,
   );
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[14px]">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[16px]">
       <p className="font-semibold mb-1">{label}</p>
       {payload.map((e) => (
         <p key={e.name} className="flex items-center gap-2">
@@ -846,9 +846,9 @@ function TopClientsList({ items }: { items: TopClientRow[] }) {
         const name = `${c.firstName} ${c.lastName}`.trim() || 'Client inconnu';
         return (
           <div key={c.userId} className="group">
-            <div className="flex items-center justify-between text-[14px] mb-1">
+            <div className="flex items-center justify-between text-[16px] mb-1">
               <span className="flex items-center gap-2">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[14px] font-semibold">
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[16px] font-semibold">
                   {i + 1}
                 </span>
                 <span className="font-medium truncate max-w-[180px]">{name}</span>
@@ -915,11 +915,11 @@ function AlertsSection({
               <div className="flex-1 min-w-0">
                 <div className={cn('flex items-center gap-2 text-sm font-bold', TEXT.strong)}>
                   {alert.title}
-                  <span className={cn('rounded-lg px-1.5 py-0.5 text-[14px] font-bold tabular-nums', TONE_PILL[tone])}>
+                  <span className={cn('rounded-lg px-1.5 py-0.5 text-[16px] font-bold tabular-nums', TONE_PILL[tone])}>
                     {alert.count}
                   </span>
                 </div>
-                <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>{alert.description}</p>
+                <p className={cn('mt-0.5 text-[16px]', TEXT.muted)}>{alert.description}</p>
               </div>
             </button>
           );
@@ -1045,7 +1045,7 @@ function CountryDistributionReport({
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold tabular-nums leading-none">{formatInteger(total)}</span>
-            <span className="text-[14px] text-muted-foreground mt-1">clients</span>
+            <span className="text-[16px] text-muted-foreground mt-1">clients</span>
           </div>
         </div>
 
@@ -1053,7 +1053,7 @@ function CountryDistributionReport({
           {displayed.map((row) => (
             <div
               key={row.key}
-              className={cn('flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-[14px]', SURFACE.canvas)}
+              className={cn('flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5 text-[16px]', SURFACE.canvas)}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span
@@ -1070,12 +1070,12 @@ function CountryDistributionReport({
             </div>
           ))}
           {hasOther ? (
-            <p className={cn('pt-1 text-[14px]', TEXT.muted)}>
+            <p className={cn('pt-1 text-[16px]', TEXT.muted)}>
               « Autres » regroupe les pays au-delà du top 5.
             </p>
           ) : null}
           {showQualityWarning ? (
-            <p className={cn('rounded-lg px-2 py-1.5 text-[14px] font-medium', TONE_PILL.pending)}>
+            <p className={cn('rounded-lg px-2 py-1.5 text-[16px] font-medium', TONE_PILL.pending)}>
               ⚠ {(unknownShare * 100).toFixed(0)}% des clients n'ont pas de pays renseigné — pense à rendre le champ obligatoire à l'inscription.
             </p>
           ) : null}
@@ -1095,7 +1095,7 @@ function CountryTooltip({
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[14px]">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[16px]">
       <p className="font-semibold mb-1 flex items-center gap-2">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color }} />
         {p.country}
@@ -1258,7 +1258,7 @@ function RateEvolutionReport({
             globalGranularity={globalGranularity}
             range={range}
           />
-          <div className={cn('inline-flex rounded-full p-0.5 text-[14px]', SURFACE.canvas)}>
+          <div className={cn('inline-flex rounded-full p-0.5 text-[16px]', SURFACE.canvas)}>
             <button
               type="button"
               onClick={() => setMode('absolute')}
@@ -1368,7 +1368,7 @@ function RateEvolutionReport({
           );
         })()}
 
-        <div className="flex items-center justify-between text-[14px] text-muted-foreground">
+        <div className="flex items-center justify-between text-[16px] text-muted-foreground">
           <span>Unité : {mode === 'absolute' ? 'CNY pour 1 000 000 XAF' : '% depuis le début de la période'}</span>
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {RATE_METHODS.map((m) => (
@@ -1399,10 +1399,10 @@ function RateInsightTile({
     <div className={cn('rounded-lg p-2.5', SURFACE.canvas)}>
       <div className="flex items-center gap-1.5">
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
-        <span className={cn('text-[14px]', TEXT.muted)}>{label}</span>
+        <span className={cn('text-[16px]', TEXT.muted)}>{label}</span>
       </div>
       <div className={cn('mt-1 text-base md:text-lg font-bold tabular-nums break-words', TEXT.strong)}>{value}</div>
-      <div className={cn('text-[14px] leading-snug line-clamp-2', TEXT.muted)}>{sub}</div>
+      <div className={cn('text-[16px] leading-snug line-clamp-2', TEXT.muted)}>{sub}</div>
     </div>
   );
 }
@@ -1423,7 +1423,7 @@ function RateTooltip({
   const spread = values.length >= 2 ? Math.max(...values) - Math.min(...values) : null;
 
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[14px] min-w-[180px]">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[16px] min-w-[180px]">
       <p className="font-semibold mb-1">{label}</p>
       {payload.map((e) => (
         <p key={e.name} className="flex items-center gap-2 tabular-nums">
@@ -1459,7 +1459,7 @@ function AdminProductivityList({ rows }: { rows: AdminProductivityRow[] }) {
         const widthPct = max === 0 ? 0 : (r.totalActions / max) * 100;
         return (
           <div key={r.adminId}>
-            <div className="flex items-center justify-between text-[14px] mb-1">
+            <div className="flex items-center justify-between text-[16px] mb-1">
               <span className="font-medium truncate max-w-[180px]">{r.name || 'Admin'}</span>
               <span className="tabular-nums text-muted-foreground">
                 <span className="font-semibold text-foreground">{formatInteger(r.totalActions)}</span> actions
@@ -1471,7 +1471,7 @@ function AdminProductivityList({ rows }: { rows: AdminProductivityRow[] }) {
                 style={{ width: `${widthPct}%`, background: 'hsl(258 100% 60%)' }}
               />
             </div>
-            <div className="mt-1 flex items-center gap-3 text-[14px] text-muted-foreground tabular-nums">
+            <div className="mt-1 flex items-center gap-3 text-[16px] text-muted-foreground tabular-nums">
               <span>✓ {formatInteger(r.depositsValidated)} dépôts validés</span>
               <span>✗ {formatInteger(r.depositsRejected)} rejetés</span>
               <span>▸ {formatInteger(r.paymentsProcessed)} paiements</span>
@@ -1552,7 +1552,7 @@ function VolumeReportCard({
       }
       footer={
         report && hasData ? (
-          <div className="grid grid-cols-2 gap-3 text-[14px] md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 text-[16px] md:grid-cols-3">
             <div>
               <div className="text-muted-foreground">Total</div>
               <div className="text-sm font-bold text-foreground tabular-nums break-words">
@@ -1648,7 +1648,7 @@ function VolumeTooltip({ active, payload, label, color }: {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[14px]">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[16px]">
       <p className="font-semibold mb-1">{label}</p>
       <p className="flex items-center gap-2 tabular-nums">
         <span className="h-2 w-2 rounded-full" style={{ background: color }} />
@@ -1718,7 +1718,7 @@ function GrowthTooltip({ active, payload, label }: {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[14px]">
+    <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg px-3 py-2 shadow-lg text-[16px]">
       <p className="font-semibold mb-1">{label}</p>
       <p className="flex items-center gap-1.5 tabular-nums">
         <span className="text-muted-foreground">Nouveaux clients</span>
@@ -1755,27 +1755,27 @@ function RegistrationSourceBlock({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className={cn('rounded-lg p-3', SURFACE.canvas)}>
-          <div className={cn('text-[14px]', TEXT.muted)}>Admin-créés</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>Admin-créés</div>
           <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.adminCreated)}</div>
-          <div className={cn('text-[14px]', TEXT.muted)}>{formatPercent(stats.adminCreatedPct)} du total</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>{formatPercent(stats.adminCreatedPct)} du total</div>
         </div>
         <div className={cn('rounded-lg p-3', SURFACE.canvas)}>
-          <div className={cn('text-[14px]', TEXT.muted)}>Self-registered</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>Self-registered</div>
           <div className={cn('mt-1 text-xl font-bold tabular-nums', TEXT.strong)}>{formatInteger(stats.selfRegistered)}</div>
-          <div className={cn('text-[14px]', TEXT.muted)}>{formatPercent(1 - stats.adminCreatedPct)} du total</div>
+          <div className={cn('text-[16px]', TEXT.muted)}>{formatPercent(1 - stats.adminCreatedPct)} du total</div>
         </div>
       </div>
 
       {utm.length > 0 ? (
         <div>
-          <div className={cn('mb-2 text-[14px] font-semibold', TEXT.muted)}>
+          <div className={cn('mb-2 text-[16px] font-semibold', TEXT.muted)}>
             Top sources UTM
           </div>
           <div className="space-y-1">
             {utm.map((row) => (
               <div
                 key={`${row.source}-${row.medium}-${row.campaign}`}
-                className={cn('flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-[14px]', SURFACE.canvas)}
+                className={cn('flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-[16px]', SURFACE.canvas)}
               >
                 <div className="min-w-0 flex-1 truncate">
                   <span className={cn('font-semibold', TEXT.strong)}>{row.source}</span>
@@ -1792,7 +1792,7 @@ function RegistrationSourceBlock({
           </div>
         </div>
       ) : (
-        <p className={cn('text-[14px]', TEXT.muted)}>Aucune source UTM sur la période.</p>
+        <p className={cn('text-[16px]', TEXT.muted)}>Aucune source UTM sur la période.</p>
       )}
     </div>
   );

@@ -240,3 +240,8 @@ Fixtures ajoutées pour le carnet (`mockBeneficiaries.ts`).
 - **Nouveau dépôt / nouveau paiement** : tout le texte des cinq étapes
   passe à 16 px et plus rien n'est tronqué (vérifié étape par étape avec un
   parcours Playwright : client, montant, moyen, type, récapitulatif).
+- **Tableau de bord** : l'en-tête s'empile (titre, phrase, puis la période
+  et Rafraîchir à 44 px), les cartes d'indicateurs ne coupent plus leur
+  titre, les boutons « i » font 40 px, les sections 48 px, Exporter et la
+  granularité 40 px. Les composants analytics restent partagés avec le
+  desktop (classes `max-lg:` uniquement).
