@@ -607,6 +607,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             clientCity={client.city}
             clientCountry={client.country}
             settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+            mode="admin"
             layout="split"
           />
         </CenterDialog>

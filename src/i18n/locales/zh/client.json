@@ -213,7 +213,10 @@
     "supplierName": "名称",
     "supplierPhone": "电话",
     "supplierAddress": "地址（中国）",
-    "supplierHint": "留空即可：供应商可手写填写。",
-    "supplierEmail": "邮箱"
+    "supplierHint": "可选：此处填写的内容会印在标签上。",
+    "supplierEmail": "邮箱",
+    "copyImage": "复制图片",
+    "downloadImage": "下载图片",
+    "imageCopied": "图片已复制 — 可粘贴到微信、WhatsApp 或邮件"
   }
 }

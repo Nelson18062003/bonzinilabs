@@ -221,7 +221,10 @@
     "supplierName": "Nom",
     "supplierPhone": "Téléphone",
     "supplierAddress": "Adresse (en Chine)",
-    "supplierHint": "Laissez vide : le fournisseur remplira ces lignes au stylo.",
-    "supplierEmail": "E-mail"
+    "supplierHint": "Facultatif : ce que vous saisissez s’imprime sur l’étiquette.",
+    "supplierEmail": "E-mail",
+    "copyImage": "Copier l’image",
+    "downloadImage": "Télécharger l’image",
+    "imageCopied": "Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail"
   }
 }
