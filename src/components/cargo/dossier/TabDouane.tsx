@@ -29,8 +29,8 @@ function StepRow({
       <div className="flex min-w-0 items-start gap-2.5">
         {done ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" /> : <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', TEXT.muted)} />}
         <div className="min-w-0">
-          <div className={cn('text-[13px] font-semibold', done ? TEXT.strong : TEXT.body)}>{label}</div>
-          <p className={cn('mt-0.5 text-[11.5px]', TEXT.muted)}>{hint}</p>
+          <div className={cn('text-[13px] max-lg:text-[14px] font-semibold', done ? TEXT.strong : TEXT.body)}>{label}</div>
+          <p className={cn('mt-0.5 text-[11.5px] max-lg:text-[14px]', TEXT.muted)}>{hint}</p>
         </div>
       </div>
       <div className="w-[170px] shrink-0">
@@ -45,7 +45,7 @@ function StepRow({
             }}
           />
         ) : (
-          <div className={cn('text-right text-[13px] font-semibold tabular-nums', TEXT.strong)}>{value ? fmtDayFull(new Date(value)) : '—'}</div>
+          <div className={cn('text-right text-[13px] max-lg:text-[14px] font-semibold tabular-nums', TEXT.strong)}>{value ? fmtDayFull(new Date(value)) : '—'}</div>
         )}
       </div>
     </div>
@@ -85,10 +85,10 @@ export function TabDouane({ shipment: s, canManage }: { shipment: CargoShipment;
           <div className={cn('flex items-start gap-2.5 rounded-[14px] px-4 py-3', overdue ? 'bg-destructive/10' : 'bg-amber-500/10')}>
             <AlertTriangle className={cn('mt-0.5 h-4 w-4 shrink-0', overdue ? 'text-destructive' : 'text-amber-700 dark:text-amber-400')} />
             <div>
-              <p className={cn('text-[13px] font-bold', overdue ? 'text-destructive' : 'text-amber-800 dark:text-amber-300')}>
+              <p className={cn('text-[13px] max-lg:text-[14px] font-bold', overdue ? 'text-destructive' : 'text-amber-800 dark:text-amber-300')}>
                 {overdue ? `Franchise dépassée de ${-daysLeft!} jour${-daysLeft! > 1 ? 's' : ''}` : `Franchise finie dans ${daysLeft} jour${daysLeft! > 1 ? 's' : ''}`}
               </p>
-              <p className={cn('mt-0.5 text-[12px]', TEXT.body)}>
+              <p className={cn('mt-0.5 text-[12px] max-lg:text-[14px]', TEXT.body)}>
                 {overdue ? 'Les surestaries et le stockage courent chaque jour. Sortir la boîte est prioritaire.' : 'Au-delà, les surestaries commencent à courir.'}
               </p>
             </div>
@@ -99,11 +99,11 @@ export function TabDouane({ shipment: s, canManage }: { shipment: CargoShipment;
           {canManage ? (
             <div className="space-y-3">
               <div>
-                <div className={cn('mb-1.5 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Numéro BESC</div>
+                <div className={cn('mb-1.5 text-[11px] max-lg:text-[14px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>Numéro BESC</div>
                 <TextField id="cargo-besc" size="sm" defaultValue={s.besc_number ?? ''} onBlur={(e) => { const v = e.target.value.trim(); if (v !== (s.besc_number ?? '')) patch({ besc_number: v || null }); }} placeholder="BESC-…" />
               </div>
               <div>
-                <div className={cn('mb-1.5 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Déclaration en douane</div>
+                <div className={cn('mb-1.5 text-[11px] max-lg:text-[14px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>Déclaration en douane</div>
                 <TextField id="cargo-decl" size="sm" defaultValue={s.customs_declaration_ref ?? ''} onBlur={(e) => { const v = e.target.value.trim(); if (v !== (s.customs_declaration_ref ?? '')) patch({ customs_declaration_ref: v || null }); }} placeholder="n° de déclaration" />
               </div>
             </div>
@@ -116,7 +116,7 @@ export function TabDouane({ shipment: s, canManage }: { shipment: CargoShipment;
         </Section>
 
         <Section title="Ce que le Cameroun exige">
-          <p className={cn('text-[12.5px] leading-relaxed', TEXT.body)}>
+          <p className={cn('text-[12.5px] max-lg:text-[14px] leading-relaxed', TEXT.body)}>
             Le <b>BESC</b> doit être ouvert avant l'arrivée : sans lui, la déclaration est refusée et une pénalité s'applique.
             La <b>franchise</b> accordée par l'armateur court à partir du déchargement ; passée cette date, surestaries
             (armateur) et stockage (port) se cumulent. Le <b>bon à enlever</b> n'est délivré qu'une fois la douane liquidée

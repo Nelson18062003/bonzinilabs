@@ -18,9 +18,9 @@ import { SURFACE, TEXT } from '@/desktop/designKit';
 export function SectionHead({ title, meta, action }: { title: ReactNode; meta?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
-      <span className={cn('text-[13px] font-bold', TEXT.strong)}>{title}</span>
+      <span className={cn('text-[13px] max-lg:text-[14px] font-bold', TEXT.strong)}>{title}</span>
       <span className="flex items-center gap-2">
-        {meta != null && <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>{meta}</span>}
+        {meta != null && <span className={cn('text-[12px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>{meta}</span>}
         {action}
       </span>
     </div>
@@ -56,8 +56,8 @@ export function Band({ title, meta, children, first }: { title?: ReactNode; meta
     <div className={cn('px-5 py-4', !first && 'border-t border-black/[0.06] dark:border-white/[0.06]')}>
       {title != null && (
         <div className="mb-2.5 flex items-baseline justify-between gap-3">
-          <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{title}</span>
-          {meta != null && <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>{meta}</span>}
+          <span className={cn('text-[11px] max-lg:text-[14px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>{title}</span>
+          {meta != null && <span className={cn('text-[12px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>{meta}</span>}
         </div>
       )}
       {children}
@@ -69,9 +69,9 @@ export function Band({ title, meta, children, first }: { title?: ReactNode; meta
 export function Fact({ label, value, hint, className }: { label: string; value: ReactNode; hint?: ReactNode; className?: string }) {
   return (
     <div className={cn('min-w-0', className)}>
-      <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>{label}</div>
-      <div className={cn('mt-1 text-[13px] font-semibold leading-snug tabular-nums', TEXT.strong)}>{value}</div>
-      {hint != null && <div className={cn('mt-0.5 text-[11.5px] font-normal', TEXT.muted)}>{hint}</div>}
+      <div className={cn('text-[11px] max-lg:text-[14px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>{label}</div>
+      <div className={cn('mt-1 text-[13px] max-lg:text-[14px] font-semibold leading-snug tabular-nums', TEXT.strong)}>{value}</div>
+      {hint != null && <div className={cn('mt-0.5 text-[11.5px] max-lg:text-[14px] font-normal', TEXT.muted)}>{hint}</div>}
     </div>
   );
 }
@@ -89,8 +89,8 @@ export function Facts({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="py-6 text-center">
-      <p className={cn('text-[13px] font-semibold', TEXT.strong)}>{title}</p>
-      {children != null && <p className={cn('mx-auto mt-1 max-w-sm text-[12.5px]', TEXT.muted)}>{children}</p>}
+      <p className={cn('text-[13px] max-lg:text-[14px] font-semibold', TEXT.strong)}>{title}</p>
+      {children != null && <p className={cn('mx-auto mt-1 max-w-sm text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{children}</p>}
     </div>
   );
 }

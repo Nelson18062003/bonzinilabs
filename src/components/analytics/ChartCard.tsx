@@ -69,7 +69,7 @@ export function ChartCard({
                   side="top"
                   align="start"
                   sideOffset={6}
-                  className="w-[280px] p-3 text-xs leading-relaxed"
+                  className="w-[280px] p-3 text-xs max-lg:text-[14px] leading-relaxed"
                 >
                   {description}
                 </PopoverContent>
@@ -77,7 +77,7 @@ export function ChartCard({
             ) : null}
           </div>
           {subtitle ? (
-            <p className={cn('mt-0.5 text-[11px] leading-snug', TEXT.muted)}>
+            <p className={cn('mt-0.5 text-[11px] max-lg:text-[14px] leading-snug', TEXT.muted)}>
               {subtitle}
             </p>
           ) : null}
@@ -87,7 +87,7 @@ export function ChartCard({
 
       <div className="p-4 pt-2">
         {error ? (
-          <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-xs', TONE_PILL.danger)}>
+          <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-xs max-lg:text-[14px]', TONE_PILL.danger)}>
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{typeof error === 'string' ? error : error.message}</span>
           </div>
@@ -108,7 +108,7 @@ export function ChartCard({
       </div>
 
       {footer && !error ? (
-        <div className={cn('px-4 py-3 text-xs', TEXT.muted)}>
+        <div className={cn('px-4 py-3 text-xs max-lg:text-[14px]', TEXT.muted)}>
           {footer}
         </div>
       ) : null}

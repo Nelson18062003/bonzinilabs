@@ -464,7 +464,7 @@ function DashboardBody() {
                   <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" {...xa} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
                     tickFormatter={formatAxisTick}
                     tickCount={5}
                     axisLine={false}
@@ -475,7 +475,7 @@ function DashboardBody() {
                       angle: -90,
                       position: 'insideLeft',
                       offset: 14,
-                      style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                      style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
                     }}
                   />
                   <Tooltip content={<FlowTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
@@ -543,7 +543,7 @@ function DashboardBody() {
                   <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis dataKey="label" {...xa} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
                     axisLine={false}
                     tickLine={false}
                     tickCount={5}
@@ -554,7 +554,7 @@ function DashboardBody() {
                       angle: -90,
                       position: 'insideLeft',
                       offset: 10,
-                      style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                      style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
                     }}
                   />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
@@ -1331,7 +1331,7 @@ function RateEvolutionReport({
             <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" {...xa} />
             <YAxis
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={false}
               tickLine={false}
               domain={yDomain}
@@ -1347,7 +1347,7 @@ function RateEvolutionReport({
                 angle: -90,
                 position: 'insideLeft',
                 offset: 6,
-                style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
               }}
             />
             <Tooltip content={<RateTooltip mode={mode} />} />
@@ -1611,7 +1611,7 @@ function VolumeReportCard({
               <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="label" {...xa} />
               <YAxis
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatAxisTick}
@@ -1622,7 +1622,7 @@ function VolumeReportCard({
                   angle: -90,
                   position: 'insideLeft',
                   offset: 14,
-                  style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+                  style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
                 }}
               />
               <Tooltip content={<VolumeTooltip color={color} />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
@@ -1683,7 +1683,7 @@ function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[
           <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
           <XAxis dataKey="label" {...xa} />
           <YAxis
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tick={{ fontSize: 14, fill: 'hsl(var(--muted-foreground))' }}
             axisLine={false}
             tickLine={false}
             tickCount={5}
@@ -1694,7 +1694,7 @@ function ClientGrowthChart({ points, granularity }: { points: ClientGrowthPoint[
               angle: -90,
               position: 'insideLeft',
               offset: 10,
-              style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' },
+              style: { fontSize: 14, fill: 'hsl(var(--muted-foreground))' },
             }}
           />
           <Tooltip content={<GrowthTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />

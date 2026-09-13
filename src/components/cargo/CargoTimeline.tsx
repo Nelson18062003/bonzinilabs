@@ -30,17 +30,17 @@ function Step({ item, state, last }: { item: TimelineItem; state: 'completed' | 
       </div>
       <div className="flex min-w-0 flex-1 items-baseline justify-between gap-3 pb-2.5 max-sm:flex-col max-sm:gap-0.5">
         <div className="min-w-0">
-          <p className={cn('text-[12.5px] font-semibold', state === 'pending' ? TEXT.muted : TEXT.strong)}>{item.label}</p>
-          {item.vessel && <p className={cn('truncate text-[11px]', TEXT.muted)}>{item.vessel}</p>}
+          <p className={cn('text-[12.5px] max-lg:text-[14px] font-semibold', state === 'pending' ? TEXT.muted : TEXT.strong)}>{item.label}</p>
+          {item.vessel && <p className={cn('truncate text-[11px] max-lg:text-[14px]', TEXT.muted)}>{item.vessel}</p>}
         </div>
-        <p className={cn('shrink-0 text-[11px] tabular-nums max-sm:shrink', TEXT.muted)}>{meta}</p>
+        <p className={cn('shrink-0 text-[11px] max-lg:text-[14px] tabular-nums max-sm:shrink', TEXT.muted)}>{meta}</p>
       </div>
     </div>
   );
 }
 
 export function CargoTimeline({ items, emptyLabel = 'Aucun jalon reçu pour l’instant.' }: { items: TimelineItem[]; emptyLabel?: string }) {
-  if (items.length === 0) return <p className={cn('text-[12.5px]', TEXT.muted)}>{emptyLabel}</p>;
+  if (items.length === 0) return <p className={cn('text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{emptyLabel}</p>;
   const sorted = [...items].sort((a, b) => a.time.localeCompare(b.time));
   const lastActual = [...sorted].reverse().find((i) => i.classifier === 'ACT');
   return (

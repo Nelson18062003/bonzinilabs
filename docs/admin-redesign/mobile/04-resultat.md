@@ -76,3 +76,18 @@ Volontairement conservés : les logos et couleurs **de marque** des méthodes
 (Alipay, WeChat, Orange, MTN, Wave, banque), les couleurs d'identité des
 devises en Trésorerie (XAF / USDT / CNY), et l'écran de connexion (composants
 partagés avec l'app client, dont la charte est verrouillée).
+
+## Passe 3 — les composants partagés avec le desktop
+
+Les sections du dossier Cargo (`src/components/cargo/**`) et les briques
+Analytics (`src/components/analytics/**`) servent aux deux apps. Plutôt que
+de les dupliquer, chaque taille sous 14 px reçoit un `max-lg:` qui la monte
+à l'échelle du kit sur mobile seulement (14 minimum, 16 pour les valeurs) ;
+les libellés en majuscules espacées redeviennent 14/600 sans majuscules
+sous `lg`. Les axes Recharts d'Analytics passent à 14. Le desktop est
+re-capturé à 1440 px : inchangé. Exception assumée : les cinq escales du
+parcours (`CargoJourney`) restent à 12 px, une rangée de cinq colonnes sur
+390 px ne tient pas 14.
+
+Après cette passe, les onglets Suivi, Documents, Douane et Coûts du dossier
+sont à **0 texte sous 14 px** ; Aperçu à 7 (les escales).

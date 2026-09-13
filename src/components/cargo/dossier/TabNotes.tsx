@@ -35,7 +35,7 @@ export function TabNotes({ shipment: s, canManage }: { shipment: CargoShipment; 
           <Fact label="Dernière synchro" value={s.last_synced_at ? fmtDayTime(new Date(s.last_synced_at)) : 'jamais'} />
         </Facts>
         {s.sync_error && (
-          <p className={cn('mt-3 border-t border-black/[0.06] pt-3 text-[12.5px] text-destructive dark:border-white/[0.06]')}>
+          <p className={cn('mt-3 border-t border-black/[0.06] pt-3 text-[12.5px] max-lg:text-[14px] text-destructive dark:border-white/[0.06]')}>
             Dernière erreur de synchronisation : {s.sync_error}
           </p>
         )}
