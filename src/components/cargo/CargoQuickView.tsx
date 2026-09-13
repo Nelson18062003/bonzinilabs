@@ -51,11 +51,11 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
             <button
               type="button"
               onClick={() => navigate(dossierPath(s.id))}
-              className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold', PRIMARY_PILL)}
+              className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] max-lg:text-[14px] font-bold', PRIMARY_PILL)}
             >
               Ouvrir le dossier complet <ArrowRight className="h-3.5 w-3.5" />
             </button>
-            <button type="button" onClick={onClose} className={cn('ml-auto h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Fermer</button>
+            <button type="button" onClick={onClose} className={cn('ml-auto h-9 px-4 text-[13px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>Fermer</button>
           </>
         ) : undefined
       }
@@ -67,7 +67,7 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
           <Band title="Où est-il ?" meta={vessel ? fmtDayTime(new Date(vessel.position.reported_at)) : undefined} first>
             <p className={cn('text-[17px] font-bold leading-snug', TEXT.strong)}>{whereIs(s, vessel?.position ?? null)}</p>
             {vessel && liveStatus && (
-              <p className={cn('mt-1 text-[12.5px]', TEXT.muted)}>
+              <p className={cn('mt-1 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>
                 {vessel.position.vessel_name} · {LIVE_STATUS_LABEL[liveStatus]}
                 {vessel.position.speed_kn != null && liveStatus !== 'stale' ? ` · ${vessel.position.speed_kn} nd` : ''}
               </p>
@@ -78,7 +78,7 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
             <p className={cn('text-[28px] font-extrabold leading-8 tracking-tight tabular-nums', TEXT.strong)}>
               {s.pod_name} · {fmtDay(eta.date)}
             </p>
-            <p className={cn('mt-1 text-[12.5px]', TEXT.body)}>
+            <p className={cn('mt-1 text-[12.5px] max-lg:text-[14px]', TEXT.body)}>
               {inDays != null && (inDays > 0 ? `dans ${inDays} jour${inDays > 1 ? 's' : ''}` : inDays === 0 ? "aujourd'hui" : `il y a ${-inDays} jour${inDays < -1 ? 's' : ''}`)}
               {eta.source === 'promised' && <span className={TEXT.muted}> · date du transitaire</span>}
               {slip > 0 && <span className="ml-1.5 font-semibold text-amber-700 dark:text-amber-400">+{slip} j vs promesse</span>}
@@ -88,7 +88,7 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
                 <div className="relative h-1.5 rounded-full bg-muted">
                   <div className="absolute inset-y-0 left-0 rounded-full bg-primary" style={{ width: `${progress.pct}%` }} />
                 </div>
-                <div className={cn('mt-1 flex justify-between text-[11.5px] tabular-nums', TEXT.muted)}>
+                <div className={cn('mt-1 flex justify-between text-[11.5px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>
                   <span>{s.pol_name ?? 'Départ'}</span>
                   <span>jour {progress.day} sur {progress.total}</span>
                 </div>
@@ -102,7 +102,7 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
 
           <Band title="À faire" meta={open.length > 0 ? `${open.length} restante${open.length > 1 ? 's' : ''}` : 'rien'}>
             {open.length === 0 ? (
-              <p className={cn('flex items-center gap-2 text-[13px] font-semibold text-emerald-700 dark:text-emerald-400')}>
+              <p className={cn('flex items-center gap-2 text-[13px] max-lg:text-[14px] font-semibold text-emerald-700 dark:text-emerald-400')}>
                 <CheckCircle2 className="h-4 w-4" /> Ce conteneur est prêt à être récupéré.
               </p>
             ) : (
@@ -111,13 +111,13 @@ export function CargoQuickView({ shipmentId, onClose }: { shipmentId: string | n
                   <li key={t.id} className="flex items-start gap-2.5">
                     <Circle className={cn('mt-0.5 h-4 w-4 shrink-0', t.level === 'now' ? 'text-destructive' : TEXT.muted)} />
                     <div className="min-w-0">
-                      <div className={cn('text-[13px]', t.level === 'now' ? cn('font-semibold', TEXT.strong) : TEXT.body)}>{t.label}</div>
-                      {t.detail && <div className={cn('text-[11.5px]', TEXT.muted)}>{t.detail}</div>}
+                      <div className={cn('text-[13px] max-lg:text-[14px]', t.level === 'now' ? cn('font-semibold', TEXT.strong) : TEXT.body)}>{t.label}</div>
+                      {t.detail && <div className={cn('text-[11.5px] max-lg:text-[14px]', TEXT.muted)}>{t.detail}</div>}
                     </div>
                   </li>
                 ))}
                 {open.length > 3 && (
-                  <li className={cn('pl-[26px] text-[12px]', TEXT.muted)}>
+                  <li className={cn('pl-[26px] text-[12px] max-lg:text-[14px]', TEXT.muted)}>
                     et {open.length - 3} autre{open.length - 3 > 1 ? 's' : ''} — voir le dossier complet
                   </li>
                 )}

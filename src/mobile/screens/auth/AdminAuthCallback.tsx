@@ -56,7 +56,7 @@ export function AdminAuthCallback() {
 
         {error ? (
           <div className="mt-8 max-w-sm text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
               <AlertCircle className="h-6 w-6" />
             </div>
             <h1 className={cn('mb-2 text-xl font-bold', TEXT.strong)}>
@@ -66,7 +66,7 @@ export function AdminAuthCallback() {
             <button
               type="button"
               onClick={() => navigate('/m/login', { replace: true })}
-              className="mt-8 h-12 w-full rounded-full bg-[#1C1B22] text-[15px] font-bold text-white transition active:scale-[0.99] dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+              className="mt-8 h-12 w-full rounded-full bg-[#2C2C2C] text-[16px] font-bold text-white transition active:scale-[0.99] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]"
             >
               {t('backToSignIn', { defaultValue: 'Revenir à la connexion' })}
             </button>

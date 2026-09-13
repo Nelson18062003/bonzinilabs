@@ -57,7 +57,7 @@ import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
-const VIOLET = '#8B5CF6';
+const VIOLET = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
 const FALLBACK_RATE = 11530;
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -102,10 +102,10 @@ const BENEF0: Benef = {
 
 // ── Micro-composants ───────────────────────────────────────────
 function Opt() {
-  return <span className={cn('text-[12px] font-medium', TEXT.muted)}> optionnel</span>;
+  return <span className={cn('text-[14px] font-medium', TEXT.muted)}> optionnel</span>;
 }
 function Req() {
-  return <span className="text-[#C0504D] dark:text-[#E79A9A]"> *</span>;
+  return <span className="text-[#900B09] dark:text-[#FDD3D0]"> *</span>;
 }
 
 // Case à cocher au langage kit (logique conservée par les parents).
@@ -124,7 +124,7 @@ function CheckRow({
     <button
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 rounded-2xl p-3.5 text-left transition active:scale-[0.99]',
+        'flex w-full items-center gap-3 rounded-lg p-3.5 text-left transition active:scale-[0.99]',
         SURFACE.card,
         SURFACE.shadow,
       )}
@@ -140,8 +140,8 @@ function CheckRow({
         {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
       </span>
       <div className="min-w-0">
-        <div className={cn('text-[13px] font-bold', TEXT.strong)}>{title}</div>
-        {desc != null && <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>{desc}</div>}
+        <div className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</div>
+        {desc != null && <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>{desc}</div>}
       </div>
     </button>
   );
@@ -464,9 +464,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       : benef.name || '';
 
     return (
-      <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
+      <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
         <Holder icon={Check} tone="success" size="lg" className="mb-4" />
-        <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>Paiement créé</div>
+        <div className={cn('text-[20px] font-bold', TEXT.strong)}>Paiement créé</div>
 
         {/* ¥ en premier */}
         <div className="mt-2">
@@ -475,7 +475,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
           {fmt(done.xaf)} XAF via {mode?.name}
         </div>
-        <div className={cn('mt-1 text-[12px]', TEXT.muted)}>
+        <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
           pour {clientName}
           {benefLabel ? ` → ${benefLabel}` : ''}
         </div>
@@ -486,7 +486,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           </SoftPill>
           <PrimaryPill
             onClick={() => navigate(`/m/payments/${done.paymentId}`)}
-            className="flex-[1.4] bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white"
+            className="flex-[1.4] bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
           >
             Voir la fiche
           </PrimaryPill>
@@ -499,7 +499,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // FORMULAIRE MULTI-ÉTAPES
   // ══════════════════════════════════════════════════════════════
   return (
-    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
+    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
       {/* ── Header + barre de progression ─────────────────── */}
       <div className={cn('shrink-0 px-5 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
         <div className="flex h-14 items-center gap-2">
@@ -510,8 +510,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <span className={cn('flex-1 text-[15px] font-bold', TEXT.strong)}>Nouveau paiement</span>
-          <span className="text-[12px] font-bold" style={{ color: VIOLET }}>{step}/5</span>
+          <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau paiement</span>
+          <span className="text-[14px] font-bold" style={{ color: VIOLET }}>{step}/5</span>
         </div>
         <div className="flex gap-1 pb-3">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -530,7 +530,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         {/* ══════ ÉTAPE 1 — QUEL CLIENT ? ══════ */}
         {step === 1 && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Quel client ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Quel client ?</div>
 
             <div className="relative mb-3">
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
@@ -563,28 +563,28 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     key={c.user_id}
                     onClick={() => setClient(c)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
                     style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
                   >
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[14px] font-bold"
                       style={{ background: `${VIOLET}14`, color: VIOLET }}
                     >
                       {ini}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{name}</div>
-                      <div className={cn('truncate text-[11px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      <div className={cn('truncate text-[14px]', TEXT.muted)}>{c.phone ?? '—'}</div>
                     </div>
                     {bal !== null ? (
-                      <span className={cn('shrink-0 text-[13px] font-extrabold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
+                      <span className={cn('shrink-0 text-[14px] font-bold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
                         {fmt(bal)} XAF
                       </span>
                     ) : (
-                      <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>—</span>
+                      <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>—</span>
                     )}
                   </button>
                 );
@@ -593,7 +593,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               {filtered.length === 0 && (
                 <div className="flex flex-col items-center py-10">
                   <Holder icon={User} size="lg" />
-                  <p className={cn('mt-3 text-[13px]', TEXT.muted)}>Aucun client trouvé</p>
+                  <p className={cn('mt-3 text-[14px]', TEXT.muted)}>Aucun client trouvé</p>
                 </div>
               )}
             </div>
@@ -603,7 +603,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         {/* ══════ ÉTAPE 2 — COMMENT PAYER ? ══════ */}
         {step === 2 && (
           <div>
-            <div className={cn('mb-3.5 text-[22px] font-extrabold', TEXT.strong)}>Comment payer ?</div>
+            <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Comment payer ?</div>
             <div className="space-y-2.5">
               {MODES.map((m) => {
                 const sel = mode?.id === m.id;
@@ -612,7 +612,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     key={m.id}
                     onClick={() => setMode(m)}
                     className={cn(
-                      'flex w-full items-center gap-3.5 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'flex w-full items-center gap-3.5 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
@@ -631,10 +631,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         {/* ══════ ÉTAPE 3 — COMBIEN ? ══════ */}
         {step === 3 && (
           <div>
-            <div className={cn('mb-1 text-[22px] font-extrabold', TEXT.strong)}>Combien ?</div>
-            <div className={cn('mb-4 text-[13px]', TEXT.muted)}>
+            <div className={cn('mb-1 text-[20px] font-bold', TEXT.strong)}>Combien ?</div>
+            <div className={cn('mb-4 text-[14px]', TEXT.muted)}>
               Solde de {client?.first_name} :{' '}
-              <strong className={cn('font-bold', clientBalance > 0 ? TEXT.strong : 'text-[#C0504D] dark:text-[#E79A9A]')}>
+              <strong className={cn('font-bold', clientBalance > 0 ? TEXT.strong : 'text-[#900B09] dark:text-[#FDD3D0]')}>
                 {fmt(clientBalance)} XAF
               </strong>
             </div>
@@ -648,7 +648,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     key={cur}
                     onClick={() => { setInputCurrency(cur); setRawAmount(''); }}
                     className={cn(
-                      'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                      'flex-1 rounded-lg py-2 text-[14px] font-semibold transition-colors',
                       active ? 'text-white' : TEXT.muted,
                     )}
                     style={active ? { background: VIOLET } : undefined}
@@ -661,12 +661,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
             {/* Bloc saisie + conversion */}
             <Card className="mb-3 p-5">
-              <div className={cn('mb-2 text-[11px] font-semibold', TEXT.muted)}>
+              <div className={cn('mb-2 text-[14px] font-semibold', TEXT.muted)}>
                 {inputCurrency === 'xaf' ? 'Montant débité du client' : 'Montant reçu par le fournisseur'}
               </div>
               <div className="flex items-baseline gap-1.5">
                 <input
-                  className={cn('w-full border-none bg-transparent text-[40px] font-black tracking-tight outline-none', TEXT.strong)}
+                  className={cn('w-full border-none bg-transparent text-[32px] font-bold tracking-tight outline-none', TEXT.strong)}
                   placeholder="0"
                   value={rawAmount}
                   onChange={(e) => setRawAmount(e.target.value.replace(/\D/g, ''))}
@@ -674,7 +674,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   inputMode="numeric"
                   autoFocus
                 />
-                <span className={cn('shrink-0 text-[18px] font-bold', TEXT.muted)}>
+                <span className={cn('shrink-0 text-[20px] font-bold', TEXT.muted)}>
                   {inputCurrency === 'xaf' ? 'XAF' : '¥'}
                 </span>
               </div>
@@ -682,10 +682,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               <div className="my-3.5 h-px bg-black/[0.06] dark:bg-white/[0.08]" />
 
               <div className="flex items-center justify-between">
-                <span className={cn('text-[12px]', TEXT.muted)}>
+                <span className={cn('text-[14px]', TEXT.muted)}>
                   {inputCurrency === 'xaf' ? 'Le fournisseur reçoit' : 'Le client paie'}
                 </span>
-                <span className="text-[18px] font-extrabold tabular-nums" style={{ color: VIOLET }}>
+                <span className="text-[20px] font-bold tabular-nums" style={{ color: VIOLET }}>
                   {inputCurrency === 'xaf' ? `¥${fmt(animatedConverted)}` : `${fmt(animatedConverted)} XAF`}
                 </span>
               </div>
@@ -693,11 +693,11 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
             {/* Alerte solde insuffisant */}
             {xaf > 0 && !hasEnoughBalance && (
-              <div className="mb-3 flex items-center gap-2.5 rounded-2xl bg-[#FBE7E7] p-3 dark:bg-[#3A2526]">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[#C0504D] dark:text-[#E79A9A]" />
+              <div className="mb-3 flex items-center gap-2.5 rounded-lg bg-[#FDD3D0] p-3 dark:bg-[#900B09]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[#900B09] dark:text-[#FDD3D0]" />
                 <div>
-                  <div className="text-[13px] font-bold text-[#C0504D] dark:text-[#E79A9A]">Solde insuffisant</div>
-                  <div className={cn('text-[11px]', TEXT.muted)}>
+                  <div className="text-[14px] font-bold text-[#900B09] dark:text-[#FDD3D0]">Solde insuffisant</div>
+                  <div className={cn('text-[14px]', TEXT.muted)}>
                     Solde disponible : {fmt(clientBalance)} XAF
                   </div>
                 </div>
@@ -716,7 +716,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     key={label}
                     onClick={() => setRawAmount(String(val))}
                     className={cn(
-                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95',
+                      'flex-1 rounded-lg py-2.5 text-[14px] font-bold transition active:scale-95',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
@@ -745,7 +745,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     onClick={() => allStr && setRawAmount(allStr)}
                     disabled={disabled}
                     className={cn(
-                      'flex-1 rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95 disabled:opacity-40',
+                      'flex-1 rounded-lg py-2.5 text-[14px] font-bold transition active:scale-95 disabled:opacity-40',
                       SURFACE.card,
                       SURFACE.shadow,
                     )}
@@ -761,9 +761,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             <Card className="p-3.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className={cn('text-[13px] font-bold', TEXT.strong)}>Taux personnalisé</div>
+                  <div className={cn('text-[14px] font-bold', TEXT.strong)}>Taux personnalisé</div>
                   {!useCustomRate && (
-                    <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
+                    <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
                       Taux du jour : 1M XAF = ¥{fmt(baseRate)}
                     </div>
                   )}
@@ -787,15 +787,15 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
               {useCustomRate && (
                 <div className="mt-2.5 flex items-center gap-2 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.08]">
-                  <span className={cn('shrink-0 text-[12px]', TEXT.muted)}>1M XAF =</span>
+                  <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>1M XAF =</span>
                   <input
-                    className={cn('h-11 flex-1 rounded-xl px-3 text-center text-[16px] font-extrabold outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+                    className={cn('h-11 flex-1 rounded-lg px-3 text-center text-[16px] font-bold outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
                     value={customRateStr}
                     onChange={(e) => setCustomRateStr(e.target.value.replace(/\D/g, ''))}
                     type="tel"
                     inputMode="numeric"
                   />
-                  <span className={cn('shrink-0 text-[12px]', TEXT.muted)}>¥</span>
+                  <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>¥</span>
                 </div>
               )}
             </Card>
@@ -815,12 +815,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
             {/* Alertes montant */}
             {amountOverCap && (
-              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+              <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[14px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement
               </div>
             )}
             {xaf > clientBalance && xaf > 0 && (
-              <div className="mt-2.5 rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+              <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[14px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 Solde insuffisant ({fmt(clientBalance)} XAF)
               </div>
             )}
@@ -830,8 +830,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         {/* ══════ ÉTAPE 4 — QUI REÇOIT ? ══════ */}
         {step === 4 && (
           <div className="pb-4">
-            <div className={cn('mb-1 text-[22px] font-extrabold', TEXT.strong)}>Qui reçoit ?</div>
-            <div className={cn('mb-4 text-[13px]', TEXT.muted)}>
+            <div className={cn('mb-1 text-[20px] font-bold', TEXT.strong)}>Qui reçoit ?</div>
+            <div className={cn('mb-4 text-[14px]', TEXT.muted)}>
               ¥{fmt(cny)} via {mode?.name}
             </div>
 
@@ -859,7 +859,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                         key={tab}
                         onClick={() => openBenefTab(tab)}
                         className={cn(
-                          'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
+                          'flex-1 rounded-lg py-2 text-[14px] font-semibold transition-colors',
                           active ? 'text-white' : TEXT.muted,
                         )}
                         style={active ? { background: VIOLET } : undefined}
@@ -876,12 +876,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     {!clientBeneficiaries || clientBeneficiaries.length === 0 ? (
                       <div className="flex flex-col items-center py-7 text-center">
                         <Holder icon={User} size="lg" />
-                        <div className={cn('mt-3 text-[13px]', TEXT.muted)}>
+                        <div className={cn('mt-3 text-[14px]', TEXT.muted)}>
                           Aucun bénéficiaire {mode?.name} enregistré pour ce client
                         </div>
                         <button
                           onClick={() => openBenefTab('new')}
-                          className="mt-2 text-[13px] font-bold"
+                          className="mt-2 text-[14px] font-bold"
                           style={{ color: VIOLET }}
                         >
                           + Créer un bénéficiaire
@@ -896,24 +896,24 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                               key={b.id}
                               onClick={() => setSelectedBenef(sel ? null : b)}
                               className={cn(
-                                'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                                'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                                 SURFACE.card,
                                 SURFACE.shadow,
                               )}
                               style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
                             >
                               <div
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[14px] font-extrabold"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[14px] font-bold"
                                 style={{ background: `${VIOLET}14`, color: VIOLET }}
                               >
                                 {(b.alias || b.name)[0]?.toUpperCase()}
                               </div>
                               <div className="min-w-0 flex-1">
                                 {/* alias-first : repère lisible en titre */}
-                                <div className={cn('truncate text-[15px] font-bold', TEXT.strong)}>
+                                <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                                   {b.alias || b.name}
                                 </div>
-                                <div className={cn('truncate text-[12px]', TEXT.muted)}>
+                                <div className={cn('truncate text-[14px]', TEXT.muted)}>
                                   {b.identifier || b.phone || b.bank_account || b.name || ''}
                                 </div>
                               </div>
@@ -943,7 +943,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                         })
                       }
                       className={cn(
-                        'flex-1 rounded-xl py-3 text-[13px] font-bold transition active:scale-95',
+                        'flex-1 rounded-lg py-3 text-[14px] font-bold transition active:scale-95',
                         SURFACE.card,
                         SURFACE.shadow,
                       )}
@@ -954,7 +954,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     <button
                       onClick={() => setBenef({ ...benef, isClient: false, name: '', phone: '' })}
                       className={cn(
-                        'flex-1 rounded-xl py-3 text-[13px] font-bold transition active:scale-95',
+                        'flex-1 rounded-lg py-3 text-[14px] font-bold transition active:scale-95',
                         SURFACE.card,
                         SURFACE.shadow,
                       )}
@@ -969,16 +969,16 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 {mode?.id === 'cash' && benef.isClient && client && (
                   <Card className="flex items-center gap-3">
                     <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[14px] font-bold"
                       style={{ background: `${VIOLET}14`, color: VIOLET }}
                     >
                       {getInitials(client.first_name ?? '', client.last_name ?? '')}
                     </div>
                     <div className="min-w-0">
-                      <div className={cn('text-[15px] font-bold', TEXT.strong)}>
+                      <div className={cn('text-[16px] font-bold', TEXT.strong)}>
                         {`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}
                       </div>
-                      <div className={cn('text-[12px]', TEXT.muted)}>{client.phone ?? '—'}</div>
+                      <div className={cn('text-[14px]', TEXT.muted)}>{client.phone ?? '—'}</div>
                     </div>
                   </Card>
                 )}
@@ -1012,7 +1012,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     {/* QR Code upload */}
                     <FormField label={<>QR Code {mode.name}<Opt /></>}>
                       {qrPreview ? (
-                        <div className="relative overflow-hidden rounded-2xl ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
+                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
                           <img
                             src={qrPreview}
                             alt="QR code"
@@ -1043,7 +1043,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     {/* Séparateur "et / ou" */}
                     <div className="flex items-center gap-2.5">
                       <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
-                      <span className={cn('text-[12px]', TEXT.muted)}>et / ou</span>
+                      <span className={cn('text-[14px]', TEXT.muted)}>et / ou</span>
                       <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
                     </div>
 
@@ -1115,12 +1115,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         {/* ══════ ÉTAPE 5 — TOUT EST BON ? ══════ */}
         {step === 5 && (
           <div className="space-y-2.5 pb-4">
-            <div className={cn('text-[22px] font-extrabold', TEXT.strong)}>Tout est bon ?</div>
+            <div className={cn('text-[20px] font-bold', TEXT.strong)}>Tout est bon ?</div>
 
             {/* Montant principal : ¥ en premier */}
             <Card className="py-5 text-center">
               <Amount value={`¥${fmt(cny)}`} size="xl" />
-              <div className={cn('mt-1 text-[15px]', TEXT.muted)}>{fmt(xaf)} XAF</div>
+              <div className={cn('mt-1 text-[16px]', TEXT.muted)}>{fmt(xaf)} XAF</div>
             </Card>
 
             {/* Tableau récap */}
@@ -1161,8 +1161,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 .filter((r): r is { l: string; v: string } => !!r && !!r.v)
                 .map((r, i) => (
                   <div key={i} className="flex items-start justify-between gap-3 py-[9px]">
-                    <span className={cn('shrink-0 text-[13px]', TEXT.muted)}>{r.l}</span>
-                    <span className={cn('max-w-[65%] text-right text-[13px] font-semibold', TEXT.strong)}>
+                    <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>{r.l}</span>
+                    <span className={cn('max-w-[65%] text-right text-[14px] font-semibold', TEXT.strong)}>
                       {r.v}
                     </span>
                   </div>
@@ -1171,7 +1171,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
             {/* Alerte solde insuffisant (récap) */}
             {xaf > clientBalance && (
-              <div className="rounded-xl bg-[#FBE7E7] px-3.5 py-2.5 text-center text-[12px] font-semibold text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]">
+              <div className="rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[14px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 Solde insuffisant ({fmt(clientBalance)} XAF disponibles)
               </div>
             )}
@@ -1195,7 +1195,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           loading={createPayment.isPending}
           className={cn(
             step === 1 ? 'flex-1' : 'flex-[1.4]',
-            canNext && !createPayment.isPending && 'bg-[#8B5CF6] text-white dark:bg-[#8B5CF6] dark:text-white',
+            canNext && !createPayment.isPending && 'bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white',
           )}
         >
           {step === 5 ? 'Confirmer le paiement' : 'Suivant'}

@@ -74,7 +74,7 @@ export function MobileOperationsHistory() {
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center text-muted-foreground text-[13px] py-8">
+          <div className="text-center text-muted-foreground text-[14px] py-8">
             Aucune opération sur cette période.
           </div>
         ) : (

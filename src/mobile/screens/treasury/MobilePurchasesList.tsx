@@ -174,7 +174,7 @@ export function MobilePurchasesList() {
             {activeFilterCount > 0 && (
               <button
                 onClick={resetFilters}
-                className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-red-600 dark:text-red-400"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#C00F0C] dark:text-[#EC221F]"
               >
                 <X className="h-3.5 w-3.5" />
                 Réinitialiser les filtres
@@ -185,8 +185,8 @@ export function MobilePurchasesList() {
 
         {/* Summary */}
         <div className={cn(SOFT_CARD, 'flex items-baseline justify-between gap-2 p-4')}>
-          <span className="text-[12px] text-muted-foreground">Total · {live.length} achat{live.length > 1 ? 's' : ''}</span>
-          <span className="text-right text-[13px] font-bold tabular-nums text-foreground">
+          <span className="text-[14px] text-muted-foreground">Total · {live.length} achat{live.length > 1 ? 's' : ''}</span>
+          <span className="text-right text-[14px] font-bold tabular-nums text-foreground">
             {fmt(totalUsdt, 2)} <span className="font-normal text-muted-foreground">USDT</span>
             <span className="mx-1 font-normal text-muted-foreground">·</span>
             {fmt(totalXaf, 0)} <span className="font-normal text-muted-foreground">XAF</span>
@@ -198,7 +198,7 @@ export function MobilePurchasesList() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : purchases.length === 0 ? (
-          <div className="py-8 text-center text-[13px] text-muted-foreground">Aucun achat avec ces critères.</div>
+          <div className="py-8 text-center text-[14px] text-muted-foreground">Aucun achat avec ces critères.</div>
         ) : (
           <div className="space-y-2.5">
             {purchases.map((op) => (

@@ -54,7 +54,7 @@ function Gauge({ label, value, hint, danger }: { label: string; value: number; h
           }}
         />
       </div>
-      <div className={cn('text-[12px]', TEXT.muted)}>{hint}</div>
+      <div className={cn('text-[12px] max-lg:text-[16px]', TEXT.muted)}>{hint}</div>
     </div>
   );
 }
@@ -108,13 +108,14 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-lg:contents">
         <Section
+          className="max-lg:order-2"
           title="Dans la boîte"
           meta={`${spec.label} · ${num(spec.length / 100, 2)} × ${num(spec.width / 100, 2)} × ${num(spec.height / 100, 2)} m utiles`}
           action={
             canManage ? (
-              <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-7 items-center gap-1 whitespace-nowrap px-2.5 text-[11.5px] font-semibold', SOFT_PILL)}>
+              <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-7 max-lg:h-10 items-center gap-1 whitespace-nowrap px-2.5 text-[11.5px] max-lg:text-[16px] font-semibold', SOFT_PILL)}>
                 <Plus className="h-3 w-3" /> Ajouter
               </button>
             ) : undefined
@@ -139,8 +140,28 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         </Section>
 
         {list.length > 0 && (
-          <Section title="Les lots" meta={`${list.length} lot${list.length > 1 ? 's' : ''} · ${counted} colis`} bodyClassName="p-0">
-            <table className="w-full">
+          <Section className="max-lg:order-3" title="Les lots" meta={`${list.length} lot${list.length > 1 ? 's' : ''} · ${counted} colis`} bodyClassName="p-0">
+            {/* Sur un téléphone, six colonnes ne tiennent pas : une ligne empilée par lot. */}
+            <ul className="divide-y divide-black/[0.06] px-4 dark:divide-white/[0.06] lg:hidden">
+              {list.map((p, i) => (
+                <li key={p.id} className="flex items-center gap-3 py-3">
+                  <i aria-hidden className="inline-block h-3 w-3 shrink-0 rounded-[3px]" style={{ background: lotColor(i, dark) }} />
+                  <div className="min-w-0 flex-1">
+                    <div className={cn('truncate text-[14px] max-lg:text-[16px] font-semibold', TEXT.strong)}>{p.label}</div>
+                    <div className={cn('text-[14px] max-lg:text-[16px] tabular-nums', TEXT.muted)}>
+                      {KIND_LABEL[p.kind] ?? p.kind} · {p.qty} × {num(Number(p.length_cm), 0)}×{num(Number(p.width_cm), 0)}×{num(Number(p.height_cm), 0)} cm
+                      {p.weight_kg != null && ` · ${num(Number(p.weight_kg), 1)} kg`}
+                    </div>
+                  </div>
+                  {canManage && (
+                    <button type="button" className={cn('inline-flex h-9 w-9 max-lg:h-11 max-lg:w-11 shrink-0 items-center justify-center', SOFT_PILL)} onClick={() => remove.mutate({ id: p.id, shipmentId: s.id })} aria-label={`Retirer ${p.label}`}>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <table className="w-full max-lg:hidden">
               <thead>
                 <tr>
                   <Th>Lot</Th>
@@ -169,7 +190,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
                         <span className="font-semibold">{p.label}</span>
                       </span>
                       {i >= MAX_DISTINCT_LOTS && (
-                        <span className={cn('ml-2 text-[11px]', TEXT.muted)}>teinte partagée</span>
+                        <span className={cn('ml-2 text-[11px] max-lg:text-[16px]', TEXT.muted)}>teinte partagée</span>
                       )}
                     </Td>
                     <Td className={TEXT.muted}>{KIND_LABEL[p.kind] ?? p.kind}</Td>
@@ -182,11 +203,11 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
                       <Td className="text-right">
                         <button
                           type="button"
-                          className={cn('inline-flex h-7 w-7 items-center justify-center', SOFT_PILL)}
+                          className={cn('inline-flex h-7 w-7 max-lg:h-10 max-lg:w-10 items-center justify-center', SOFT_PILL)}
                           onClick={() => remove.mutate({ id: p.id, shipmentId: s.id })}
                           aria-label={`Retirer ${p.label}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5 max-lg:h-5 max-lg:w-5" />
                         </button>
                       </Td>
                     )}
@@ -198,10 +219,10 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         )}
       </div>
 
-      <div className="flex flex-col gap-4">
-        <Section title="Le remplissage" bodyClassName="flex flex-col gap-4 p-5">
+      <div className="flex flex-col gap-4 max-lg:contents">
+        <Section className="max-lg:order-1" title="Le remplissage" bodyClassName="flex flex-col gap-4 p-5">
           {list.length === 0 ? (
-            <div className={cn('text-[13px]', TEXT.muted)}>Rien à mesurer tant qu'aucun colis n'est saisi.</div>
+            <div className={cn('text-[13px] max-lg:text-[16px]', TEXT.muted)}>Rien à mesurer tant qu'aucun colis n'est saisi.</div>
           ) : (
             <>
               <Gauge
@@ -232,15 +253,15 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         </Section>
 
         {(plan.leftOut.length > 0 || mismatch) && (
-          <Section title="Ce qui ne colle pas" bodyClassName="flex flex-col gap-3 p-5">
+          <Section className="max-lg:order-4" title="Ce qui ne colle pas" bodyClassName="flex flex-col gap-3 p-5">
             {plan.leftOut.map((o, i) => (
-              <div key={i} className="text-[13px]">
+              <div key={i} className="text-[13px] max-lg:text-[16px]">
                 <b className="text-[#d03b3b]">{o.qty} × {o.label}</b>{' '}
                 <span className={TEXT.muted}>ne tiennent pas : {o.why}.</span>
               </div>
             ))}
             {mismatch && (
-              <div className="text-[13px]">
+              <div className="text-[13px] max-lg:text-[16px]">
                 <b className="text-[#d03b3b]">{counted} colis saisis</b>{' '}
                 <span className={TEXT.muted}>
                   contre {declared} annoncés sur le dossier. L'un des deux est faux — et c'est le
@@ -251,12 +272,12 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
           </Section>
         )}
 
-        <Section title="À quoi ça sert" bodyClassName="p-5">
-          <p className={cn('text-[13px] leading-relaxed', TEXT.body)}>
+        <Section className="max-lg:order-5" title="À quoi ça sert" bodyClassName="p-5">
+          <p className={cn('text-[13px] max-lg:text-[16px] leading-relaxed', TEXT.body)}>
             Le plan range les lots dans l'ordre de saisie, rangée par rangée puis étage par étage —
             comme un entrepôt empote à la main. Les colis non gerbables finissent toujours au-dessus.
           </p>
-          <p className={cn('mt-3 text-[13px] leading-relaxed', TEXT.muted)}>
+          <p className={cn('mt-3 text-[13px] max-lg:text-[16px] leading-relaxed', TEXT.muted)}>
             Ce n'est pas un plan d'arrimage : le centre de gravité, la répartition des masses et le
             calage restent l'affaire de l'entrepôt. C'est une représentation du remplissage, faite
             pour repérer une erreur de cubage et la place perdue.
@@ -272,8 +293,8 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         width={540}
         footer={
           <>
-            <button type="button" onClick={() => setOpen(false)} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-            <button type="button" onClick={submit} disabled={!canSubmit || add.isPending} className={cn('h-9 px-4 text-[13px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
+            <button type="button" onClick={() => setOpen(false)} className={cn('h-9 max-lg:h-10 px-4 text-[13px] max-lg:text-[16px] font-semibold', SOFT_PILL)}>Annuler</button>
+            <button type="button" onClick={submit} disabled={!canSubmit || add.isPending} className={cn('h-9 max-lg:h-10 px-4 text-[13px] max-lg:text-[16px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
               {add.isPending ? 'Ajout…' : 'Ajouter'}
             </button>
           </>
@@ -291,7 +312,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
                 <button
                   key={k.key}
                   type="button"
-                  className={cn('inline-flex h-7 items-center px-2.5 text-[11.5px] font-semibold', k.key === kind ? PRIMARY_PILL : SOFT_PILL)}
+                  className={cn('inline-flex h-7 max-lg:h-10 items-center px-2.5 text-[11.5px] max-lg:text-[16px] font-semibold', k.key === kind ? PRIMARY_PILL : SOFT_PILL)}
                   onClick={() => setKind(k.key)}
                 >
                   {k.label}
@@ -306,7 +327,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
             <div><SecLabel>Haut. cm</SecLabel><NumberField id="pkg-h" size="sm" className="mt-2" value={H} onValueChange={setH} allowDecimal min={1} /></div>
           </div>
           <div><SecLabel>Poids d’un colis (kg)</SecLabel><NumberField id="pkg-kg" size="sm" className="mt-2" value={kg} onValueChange={setKg} allowDecimal min={0} /></div>
-          <p className={cn('text-[12px]', TEXT.muted)}>
+          <p className={cn('text-[12px] max-lg:text-[16px]', TEXT.muted)}>
             Centimètres et kilogrammes, comme sur la packing list chinoise — aucune conversion à
             faire, donc aucune erreur de conversion.
           </p>

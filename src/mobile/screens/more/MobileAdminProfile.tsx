@@ -85,7 +85,7 @@ export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = 
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
       {desktop ? (
         <header className="mb-6">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>Mon profil</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>Mon profil</h2>
           <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Photo, nom et informations de connexion</p>
         </header>
       ) : (
@@ -114,7 +114,7 @@ export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = 
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="mt-3 text-[13px] font-semibold text-[#6B5BD2] disabled:opacity-50 dark:text-[#A99BF0]"
+            className="mt-3 text-[14px] font-semibold text-[#1E1E1E] disabled:opacity-50 dark:text-[#F5F5F5]"
           >
             {uploading ? 'Téléchargement…' : 'Changer la photo'}
           </button>

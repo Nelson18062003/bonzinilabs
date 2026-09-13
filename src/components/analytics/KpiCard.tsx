@@ -72,7 +72,7 @@ export function KpiCard({
         <div className="flex min-w-0 flex-1 flex-col space-y-1">
           {/* min-h reserves 2 lines so values align vertically across cards */}
           <div className="flex min-h-[2.25rem] items-start gap-1.5 md:min-h-[2.5rem]">
-            <p className={cn('text-xs md:text-sm leading-snug line-clamp-2 break-words', TEXT.muted)}>
+            <p className={cn('text-xs max-lg:text-[14px] md:text-sm leading-snug line-clamp-2 break-words', TEXT.muted)}>
               {label}
             </p>
             {description ? (
@@ -90,7 +90,7 @@ export function KpiCard({
                   side="top"
                   align="start"
                   sideOffset={6}
-                  className="w-[260px] p-3 text-xs leading-relaxed"
+                  className="w-[260px] p-3 text-xs max-lg:text-[14px] leading-relaxed"
                 >
                   {description}
                 </PopoverContent>
@@ -112,7 +112,7 @@ export function KpiCard({
           <div className="flex items-center gap-2 flex-wrap">
             {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
             {secondary ? (
-              <p className={cn('text-[11px] md:text-xs tabular-nums leading-snug', TEXT.muted)}>
+              <p className={cn('text-[11px] max-lg:text-[14px] md:text-xs max-lg:text-[14px] tabular-nums leading-snug', TEXT.muted)}>
                 {secondary}
               </p>
             ) : null}

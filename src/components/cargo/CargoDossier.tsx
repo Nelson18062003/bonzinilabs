@@ -52,7 +52,7 @@ export function CargoDossier({
         </div>
       </div>
 
-      <p className={cn('mt-4 text-[12.5px]', TEXT.muted)}>{current.purpose}</p>
+      <p className={cn('mt-4 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{current.purpose}</p>
 
       <div className="mt-3 pb-10">
         {tab === 'apercu' && <TabApercu shipment={s} />}

@@ -27,22 +27,24 @@ import {
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { formatRelativeDate } from '@/lib/formatters';
-import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
+import { whenSentence } from '@/lib/plainTime';
+
+/** Une phrase commence par une majuscule. */
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+import { getDepositSlaLevel } from '@/lib/depositTimeline';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Search, SlidersHorizontal, Paperclip, Plus, X } from 'lucide-react';
+import { FileText, Search, SlidersHorizontal, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
   TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  type Tone,
+  TOGGLE_ON,
+  TOGGLE_OFF,
+  Chip,
   depositStatusTone,
   StatusPill,
   TextInput,
   Holder,
-  Amount,
   Card,
 } from '@/mobile/designKit';
 
@@ -55,11 +57,11 @@ function MIcon({ family, size = 38 }: { family: string; size?: number }) {
   if (!f) return null;
   return (
     <div
-      className="flex shrink-0 items-center justify-center font-black"
+      className="flex shrink-0 items-center justify-center font-bold"
       style={{
         width: size,
         height: size,
-        borderRadius: Math.round(size * 0.3),
+        borderRadius: 8,
         background: f.bg,
         fontSize: Math.round(size * 0.38),
         color: f.dark ? '#1a1028' : '#fff',
@@ -70,31 +72,10 @@ function MIcon({ family, size = 38 }: { family: string; size?: number }) {
   );
 }
 
-// ── Point SLA ────────────────────────────────────────────────
-function SlaDot({ level }: { level: SlaLevel }) {
-  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
-  return (
-    <span
-      className="inline-block shrink-0 rounded-full"
-      style={{
-        width: 6,
-        height: 6,
-        background: color,
-        animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
-      }}
-    />
-  );
-}
 
-// KPI rapides → tone unifié (la couleur porte le statut).
-const KPI_TILES: { label: string; key: FilterKey; tone: Tone; figure: string; ring: string }[] = [
-  { label: 'À traiter', key: 'to_process', tone: 'info', figure: 'text-[#5B4CC4] dark:text-[#B5AAF0]', ring: 'ring-[#C9C2F0] dark:ring-[#4A4660]' },
-  { label: 'À corriger', key: 'pending_correction', tone: 'pending', figure: 'text-[#9A6B12] dark:text-[#E7C083]', ring: 'ring-[#E7C083]' },
-  { label: 'Validés', key: 'validated', tone: 'success', figure: 'text-[#2E7D52] dark:text-[#7FCBA0]', ring: 'ring-[#7FCBA0]' },
-];
 
 // ── Composant principal ──────────────────────────────────────
-export function MobileDepositsScreenV2() {
+export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolean } = {}) {
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [familyFilter, setFamilyFilter] = useState('all');
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>('all');
@@ -189,11 +170,6 @@ export function MobileDepositsScreenV2() {
     return { toProcess: 0, correction: 0, validated: 0, rejected: 0, total: 0 };
   }, [stats]);
 
-  const kpiValue: Record<FilterKey, number> = {
-    to_process: counts.toProcess,
-    pending_correction: counts.correction,
-    validated: counts.validated,
-  } as Record<FilterKey, number>;
 
   const hasActiveFilters = familyFilter !== 'all' || periodPreset !== 'all';
 
@@ -202,6 +178,7 @@ export function MobileDepositsScreenV2() {
       <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
       {/* ── Header ─────────────────────────────────────────── */}
+      {!embedded && (
       <header
         className={cn(
           'sticky top-0 z-40 flex shrink-0 items-center justify-between px-5 pt-[env(safe-area-inset-top)]',
@@ -209,53 +186,28 @@ export function MobileDepositsScreenV2() {
         )}
       >
         <div className="flex h-14 w-full items-center justify-between">
-          <h1 className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôts</h1>
+          <h1 className={cn('text-[20px] font-bold', TEXT.strong)}>Dépôts</h1>
           <button
             onClick={() => navigate('/m/deposits/new')}
             aria-label="Nouveau dépôt"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10B981] text-white transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2C2C2C] text-white transition active:scale-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.6} />
           </button>
         </div>
       </header>
+      )}
 
       <PullToRefresh
         onRefresh={refetch}
         className="flex-1 space-y-3 overflow-y-auto px-5 pb-28 pt-1"
       >
-        {/* ── KPIs compacts (tap = filtre statut) ───────────── */}
-        <div className="flex gap-2.5">
-          {KPI_TILES.map((k) => {
-            const active = statusFilter === k.key;
-            return (
-              <button
-                key={k.key}
-                onClick={() => setStatusFilter(active ? 'all' : k.key)}
-                className={cn(
-                  'flex-1 rounded-[18px] py-3 text-center transition active:scale-[0.98]',
-                  SURFACE.card,
-                  SURFACE.shadow,
-                  active && cn('ring-2', k.ring),
-                )}
-              >
-                <div className={cn('text-[22px] font-extrabold leading-none tabular-nums', k.figure)}>
-                  {kpiValue[k.key] ?? 0}
-                </div>
-                <div className={cn('mt-1.5 text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  {k.label}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
         {/* ── Recherche + bouton filtres ─────────────────────── */}
         <div className="flex gap-2.5">
           <div className="relative flex-1">
             <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
             <TextInput
-              placeholder="Nom, téléphone ou référence..."
+              placeholder="Nom ou téléphone"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10"
@@ -274,15 +226,15 @@ export function MobileDepositsScreenV2() {
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Filtres avancés"
             className={cn(
-              'relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition active:scale-95',
+              'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
               SURFACE.card,
               SURFACE.shadow,
-              (showFilters || hasActiveFilters) && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
+              (showFilters || hasActiveFilters) && 'border-[#2C2C2C] dark:border-[#E3E3E3]',
             )}
           >
-            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? 'text-[#6B5BD2] dark:text-[#A99BF0]' : TEXT.muted)} />
+            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? TEXT.strong : TEXT.muted)} />
             {hasActiveFilters && (
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#6B5BD2] dark:bg-[#A99BF0]" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#2C2C2C] dark:bg-[#E3E3E3]" />
             )}
           </button>
         </div>
@@ -292,7 +244,7 @@ export function MobileDepositsScreenV2() {
           <Card className="space-y-3">
             {/* Filtre méthode par famille */}
             <div>
-              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</div>
+              <div className={cn('mb-2 text-[14px] font-semibold', TEXT.strong)}>Méthode</div>
               <div className="flex flex-wrap gap-2">
                 {[
                   { k: 'all', l: 'Toutes' },
@@ -306,8 +258,8 @@ export function MobileDepositsScreenV2() {
                     key={m.k}
                     onClick={() => setFamilyFilter(m.k)}
                     className={cn(
-                      'rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
-                      familyFilter === m.k ? PRIMARY_PILL : SOFT_PILL,
+                      'inline-flex h-8 shrink-0 items-center whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+                      familyFilter === m.k ? TOGGLE_ON : TOGGLE_OFF,
                     )}
                   >
                     {m.l}
@@ -318,7 +270,7 @@ export function MobileDepositsScreenV2() {
 
             {/* Filtre période */}
             <div>
-              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Période</div>
+              <div className={cn('mb-2 text-[14px] font-semibold', TEXT.strong)}>Période</div>
               <div className="flex flex-wrap gap-2">
                 {[
                   { k: 'all' as PeriodPreset, l: 'Toutes' },
@@ -332,8 +284,8 @@ export function MobileDepositsScreenV2() {
                     key={p.k}
                     onClick={() => setPeriodPreset(p.k)}
                     className={cn(
-                      'rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
-                      periodPreset === p.k ? PRIMARY_PILL : SOFT_PILL,
+                      'inline-flex h-8 shrink-0 items-center whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+                      periodPreset === p.k ? TOGGLE_ON : TOGGLE_OFF,
                     )}
                   >
                     {p.l}
@@ -346,7 +298,7 @@ export function MobileDepositsScreenV2() {
               <BzDateRangeField
                 value={{ from: customDateFrom, to: customDateTo }}
                 onChange={(r) => { setCustomDateFrom(r.from); setCustomDateTo(r.to); }}
-                accent="#10B981"
+                accent="#2C2C2C"
                 defaultOpen
               />
             )}
@@ -364,26 +316,7 @@ export function MobileDepositsScreenV2() {
           ].map((ch) => {
             const active = statusFilter === ch.k;
             return (
-              <button
-                key={ch.k}
-                onClick={() => setStatusFilter(ch.k)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                  active ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {ch.l}
-                {ch.c != null && ch.c > 0 && (
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
-                      active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
-                    )}
-                  >
-                    {ch.c}
-                  </span>
-                )}
-              </button>
+              <Chip key={ch.k} label={ch.l} count={ch.c} active={active} onClick={() => setStatusFilter(ch.k)} />
             );
           })}
         </div>
@@ -408,37 +341,21 @@ export function MobileDepositsScreenV2() {
                   key={deposit.id}
                   onClick={() => navigate(`/m/deposits/${deposit.id}`)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    'flex w-full items-center gap-3 rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]',
                     SURFACE.card,
                     SURFACE.shadow,
                   )}
                 >
                   <MIcon family={family} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
-                        {clientName}
-                      </span>
-                      {proofCount > 0 && (
-                        <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                          <Paperclip className="h-3 w-3" />
-                          {proofCount}
-                        </span>
-                      )}
-                    </div>
-                    <div className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
-                      {deposit.reference} · {methodShort}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <Amount value={fmtAmount(deposit.amount_xaf)} unit="XAF" size="md" />
-                    <div className="mt-1 flex items-center justify-end gap-1.5">
-                      {slaLevel && <SlaDot level={slaLevel} />}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <span className={cn('break-words text-[20px] font-semibold leading-tight', TEXT.strong)}>{clientName}</span>
                       <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
                     </div>
-                    <div className={cn('mt-1 text-[10px]', TEXT.muted)}>
-                      {formatRelativeDate(deposit.created_at)}
-                    </div>
+                    <p className={cn('text-[16px] leading-snug', TEXT.strong)}><b className="tabular-nums">{fmtAmount(deposit.amount_xaf)} XAF</b> par {methodShort}</p>
+                    <p className={cn('text-[16px] leading-snug', slaLevel === 'overdue' ? 'font-semibold text-[#C00F0C] dark:text-[#EC221F]' : slaLevel === 'aging' ? 'font-semibold text-[#975102] dark:text-[#E8B931]' : TEXT.muted)}>
+                      {cap(whenSentence(deposit.created_at))}{proofCount > 0 ? ` · ${proofCount} ${proofCount > 1 ? 'preuves' : 'preuve'}` : ''}
+                    </p>
                   </div>
                 </button>
               );
@@ -456,8 +373,8 @@ export function MobileDepositsScreenV2() {
         ) : (
           <div className="flex flex-col items-center justify-center py-14 text-center">
             <Holder icon={FileText} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>Aucun dépôt trouvé</p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+            <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>Aucun dépôt trouvé</p>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
               {statusFilter !== 'all' || hasActiveFilters
                 ? 'Essayez de modifier vos filtres'
                 : 'Les dépôts apparaîtront ici'}

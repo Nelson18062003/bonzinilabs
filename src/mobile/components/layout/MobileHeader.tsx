@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { IconButton, SURFACE, TEXT, TYPE } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
 
 interface MobileHeaderProps {
@@ -13,72 +14,41 @@ interface MobileHeaderProps {
   /** Élément optionnel affiché juste avant le titre (ex. avatar / mascotte). */
   leading?: ReactNode;
   className?: string;
+  /** `true` : titre à gauche (écran d'onglet). `false` : centré (écran de détail). */
+  alignStart?: boolean;
 }
 
+/**
+ * En-tête d'écran : 56 px, blanc, filet bas #D9D9D9. Retour = Icon Button
+ * Subtle de 44 px. Titre Body Strong 16/600, sous-titre 14 sourd.
+ */
 export function MobileHeader({
-  title,
-  subtitle,
-  showBack = false,
-  backTo,
-  onBack,
-  rightElement,
-  leading,
-  className
+  title, subtitle, showBack = false, backTo, onBack, rightElement, leading, className, alignStart,
 }: MobileHeaderProps) {
   const navigate = useNavigate();
-
   const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else if (backTo) {
-      navigate(backTo);
-    } else {
-      navigate(-1);
-    }
+    if (onBack) onBack();
+    else if (backTo) navigate(backTo);
+    else navigate(-1);
   };
-
-  const titleBlock = (
-    <>
-      <h1 className="text-base font-semibold truncate">{title}</h1>
-      {subtitle && (
-        <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-      )}
-    </>
-  );
+  const start = alignStart ?? !showBack;
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-40",
-        "bg-background/95 backdrop-blur-xl border-b border-border",
-        "pt-[env(safe-area-inset-top)]",
-        className
-      )}
-    >
-      <div className="flex items-center justify-between h-14 px-4">
-        {/* Left side - Back button or spacer */}
-        <div className="w-10 flex items-center justify-start">
-          {showBack && (
-            <button
-              onClick={handleBack}
-              className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full active:bg-muted transition-colors"
-              aria-label="Retour"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-          )}
-        </div>
-
-        {/* Center - Title (+ leading element if provided) */}
-        <div className={cn('flex-1 flex justify-center min-w-0', leading ? 'flex-row items-center gap-2' : 'flex-col items-center')}>
+    <header className={cn('sticky top-0 z-40 border-b pt-[env(safe-area-inset-top)]', SURFACE.canvas, SURFACE.divider, className)}>
+      <div className="flex h-14 items-center gap-2 px-2">
+        {showBack ? (
+          <IconButton icon={ChevronLeft} variant="subtle" onClick={handleBack} ariaLabel="Retour" />
+        ) : (
+          <div className={cn('w-2', start && 'w-2')} />
+        )}
+        <div className={cn('flex min-w-0 flex-1 items-center gap-2', start ? 'justify-start' : 'justify-center')}>
           {leading}
-          {leading ? <div className="flex flex-col items-center min-w-0">{titleBlock}</div> : titleBlock}
+          <div className={cn('min-w-0', start ? 'text-left' : 'text-center')}>
+            <h1 className={cn('truncate', TYPE.bodyStrong, TEXT.strong)}>{title}</h1>
+            {subtitle && <p className={cn('truncate', TYPE.small, TEXT.muted)}>{subtitle}</p>}
+          </div>
         </div>
-
-        {/* Right side - Actions or spacer */}
-        <div className="w-10 flex items-center justify-end">
-          {rightElement}
-        </div>
+        <div className="flex shrink-0 items-center gap-1 pr-1">{rightElement ?? (showBack && !start ? <div className="w-11" /> : null)}</div>
       </div>
     </header>
   );

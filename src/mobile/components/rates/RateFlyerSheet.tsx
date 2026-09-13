@@ -40,7 +40,7 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className={cn('text-[12px]', TEXT.muted)}>À partager sur WhatsApp avec vos clients</div>
+        <div className={cn('text-[14px]', TEXT.muted)}>À partager sur WhatsApp avec vos clients</div>
         <div className="flex gap-1.5">
           {([['dark', 'Sombre'], ['light', 'Clair']] as const).map(([th, label]) => {
             const active = (th === 'dark') === flyerDark;
@@ -49,8 +49,8 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
                 key={th}
                 onClick={() => setFlyerDark(th === 'dark')}
                 className={cn(
-                  'rounded-full px-3 py-1.5 text-[11px] font-bold transition-colors',
-                  active ? 'bg-[#8B5CF6] text-white' : cn('bg-[#EDEAFA] dark:bg-[#2A2738]', TEXT.muted),
+                  'rounded-lg px-3 py-1.5 text-[14px] font-bold transition-colors',
+                  active ? 'bg-[#2C2C2C] text-white' : cn('bg-[#F5F5F5] dark:bg-[#383838]', TEXT.muted),
                 )}
               >
                 {label}
@@ -63,7 +63,7 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
       {/* Aperçu responsive — mis à l'échelle du conteneur réel */}
       <div ref={previewRef}>
         {scale > 0 && (
-          <div className="overflow-hidden rounded-2xl" style={{ height: Math.round(FLYER_H * scale) }}>
+          <div className="overflow-hidden rounded-lg" style={{ height: Math.round(FLYER_H * scale) }}>
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: FLYER_W, pointerEvents: 'none' }}>
               <div ref={flyerNodeRef} style={{ width: FLYER_W, height: FLYER_H }}>
                 <RateFlyer alipay={rates.alipay} wechat={rates.wechat} bank={rates.bank} cash={rates.cash} theme={flyerDark ? 'dark' : 'light'} />
@@ -86,7 +86,7 @@ export function RateFlyerSheet({ rates }: { rates: FlyerRates }) {
             finally { setExportingPNG(false); }
           }}
           disabled={exportingPNG}
-          className="flex flex-[1.6] items-center justify-center gap-2 rounded-full bg-[#1C1B22] py-3.5 text-[14px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+          className="flex flex-[1.6] items-center justify-center gap-2 rounded-lg bg-[#2C2C2C] py-3.5 text-[14px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60 dark:bg-[#E3E3E3] dark:text-[#1E1E1E]"
         >
           {exportingPNG ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-[15px] w-[15px]" />}
           Télécharger le flyer

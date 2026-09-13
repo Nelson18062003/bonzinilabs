@@ -203,45 +203,45 @@ export function MobileDepositsScreen() {
           <button
             onClick={() => setStatusFilter(statusFilter === 'to_process' ? 'all' : 'to_process')}
             className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-blue-500/20 bg-blue-500/5',
-              statusFilter === 'to_process' && 'active ring-blue-500',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-[#D9D9D9] bg-[#2C2C2C]/5',
+              statusFilter === 'to_process' && 'active ring-[#2C2C2C]',
             )}
           >
             <div className="flex items-center gap-1.5 mb-2">
-              <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-xs text-blue-600/70 dark:text-blue-400/70 font-medium">À traiter</span>
+              <Clock className="w-4 h-4 text-[#1E1E1E] dark:text-[#F5F5F5]" />
+              <span className="text-[14px] text-[#1E1E1E]/70 dark:text-[#F5F5F5]/70 font-medium">À traiter</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{counts.toProcess}</p>
+            <p className="text-2xl font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">{counts.toProcess}</p>
           </button>
 
           {/* À corriger */}
           <button
             onClick={() => setStatusFilter(statusFilter === 'pending_correction' ? 'all' : 'pending_correction')}
             className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-orange-500/20 bg-orange-500/5',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-[#E8B931] bg-[#E8B931]/5',
               statusFilter === 'pending_correction' && 'active ring-orange-500',
             )}
           >
             <div className="flex items-center gap-1.5 mb-2">
-              <AlertCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-              <span className="text-xs text-orange-600/70 dark:text-orange-400/70 font-medium">À corriger</span>
+              <AlertCircle className="w-4 h-4 text-[#975102] dark:text-[#E8B931]" />
+              <span className="text-[14px] text-[#975102]/70 dark:text-[#E8B931]/70 font-medium">À corriger</span>
             </div>
-            <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{counts.correction}</p>
+            <p className="text-2xl font-bold text-[#975102] dark:text-[#E8B931]">{counts.correction}</p>
           </button>
 
           {/* Validés */}
           <button
             onClick={() => setStatusFilter(statusFilter === 'validated' ? 'all' : 'validated')}
             className={cn(
-              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-green-500/20 bg-green-500/5',
+              'deposit-stat-card min-w-[110px] sm:min-w-[130px] flex-shrink-0 border-[#14AE5C] bg-[#14AE5C]/5',
               statusFilter === 'validated' && 'active ring-green-500',
             )}
           >
             <div className="flex items-center gap-1.5 mb-2">
-              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <span className="text-xs text-green-600/70 dark:text-green-400/70 font-medium">Validés</span>
+              <CheckCircle className="w-4 h-4 text-[#009951] dark:text-[#14AE5C]" />
+              <span className="text-[14px] text-[#009951]/70 dark:text-[#14AE5C]/70 font-medium">Validés</span>
             </div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{counts.validated}</p>
+            <p className="text-2xl font-bold text-[#009951] dark:text-[#14AE5C]">{counts.validated}</p>
           </button>
 
           {/* Aujourd'hui */}
@@ -249,10 +249,10 @@ export function MobileDepositsScreen() {
             <div className="deposit-stat-card min-w-[110px] sm:min-w-[140px] flex-shrink-0 border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5">
               <div className="flex items-center gap-1.5 mb-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-xs text-primary/70 font-medium">Aujourd'hui</span>
+                <span className="text-[14px] text-primary/70 font-medium">Aujourd'hui</span>
               </div>
               <p className="text-2xl font-bold text-primary">{stats.today_validated}</p>
-              <p className="text-[10px] text-primary/60 mt-0.5">{formatCurrency(stats.today_amount)}</p>
+              <p className="text-[14px] text-primary/60 mt-0.5">{formatCurrency(stats.today_amount)}</p>
             </div>
           )}
         </div>
@@ -266,7 +266,7 @@ export function MobileDepositsScreen() {
               placeholder={t('searchNamePhoneRef', { defaultValue: 'Nom, téléphone ou référence...' })}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-10 pl-10 pr-4 rounded-lg bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {searchQuery && (
               <button
@@ -280,7 +280,7 @@ export function MobileDepositsScreen() {
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              'h-10 px-3 rounded-xl flex items-center gap-1.5 text-sm font-medium transition-colors',
+              'h-10 px-3 rounded-lg flex items-center gap-1.5 text-sm font-medium transition-colors',
               showFilters || activeFilterCount > 0
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground',
@@ -288,7 +288,7 @@ export function MobileDepositsScreen() {
           >
             <SlidersHorizontal className="w-4 h-4" />
             {activeFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary-foreground/20 text-[10px] flex items-center justify-center font-bold">
+              <span className="w-5 h-5 rounded-full bg-primary-foreground/20 text-[14px] flex items-center justify-center font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -297,13 +297,13 @@ export function MobileDepositsScreen() {
 
         {/* ── Advanced filters panel ──────────────────────────── */}
         {showFilters && (
-          <div className="bg-card rounded-2xl border border-border p-4 space-y-4">
+          <div className="bg-card rounded-lg border border-border p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Filtres avancés</h3>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAdvancedFilters}
-                  className="text-xs text-primary font-medium"
+                  className="text-[14px] text-primary font-medium"
                 >
                   Réinitialiser
                 </button>
@@ -312,14 +312,14 @@ export function MobileDepositsScreen() {
 
             {/* Method filter */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Méthode</label>
+              <label className="text-[14px] text-muted-foreground font-medium mb-1.5 block">Méthode</label>
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                 {METHOD_FILTERS.map((m) => (
                   <button
                     key={m.key}
                     onClick={() => setMethodFilter(m.key)}
                     className={cn(
-                      'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                      'px-3 py-1.5 rounded-lg text-[14px] font-medium whitespace-nowrap transition-colors',
                       methodFilter === m.key
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground',
@@ -333,14 +333,14 @@ export function MobileDepositsScreen() {
 
             {/* Sort */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Tri</label>
+              <label className="text-[14px] text-muted-foreground font-medium mb-1.5 block">Tri</label>
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
                     onClick={() => setSortKey(opt.key)}
                     className={cn(
-                      'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                      'px-3 py-1.5 rounded-lg text-[14px] font-medium whitespace-nowrap transition-colors',
                       sortKey === opt.key
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground',
@@ -354,7 +354,7 @@ export function MobileDepositsScreen() {
 
             {/* Date range */}
             <div>
-              <label className="text-xs text-muted-foreground font-medium mb-1.5 block">
+              <label className="text-[14px] text-muted-foreground font-medium mb-1.5 block">
                 <Calendar className="w-3 h-3 inline mr-1" />
                 Période
               </label>
@@ -363,14 +363,14 @@ export function MobileDepositsScreen() {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-[14px] focus:outline-none focus:ring-2 focus:ring-primary"
                 />
-                <span className="text-xs text-muted-foreground">→</span>
+                <span className="text-[14px] text-muted-foreground">→</span>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="flex-1 h-9 px-3 rounded-lg bg-muted border-0 text-[14px] focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 {(dateFrom || dateTo) && (
                   <button
@@ -405,7 +405,7 @@ export function MobileDepositsScreen() {
                 key={filter.key}
                 onClick={() => setStatusFilter(filter.key)}
                 className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5',
+                  'px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors flex items-center gap-1.5',
                   statusFilter === filter.key
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground',
@@ -415,7 +415,7 @@ export function MobileDepositsScreen() {
                 {count !== null && count > 0 && (
                   <span
                     className={cn(
-                      'text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center',
+                      'text-[14px] px-1.5 py-0.5 rounded-lg min-w-[20px] text-center',
                       statusFilter === filter.key
                         ? 'bg-primary-foreground/20'
                         : 'bg-background',
@@ -456,15 +456,15 @@ export function MobileDepositsScreen() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{clientName}</p>
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                        <p className="text-[14px] text-muted-foreground truncate mt-0.5">
                           {deposit.reference}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          <span className="text-[14px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                             {DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method}
                           </span>
                           {proofCount > 0 && (
-                            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <span className="flex items-center gap-0.5 text-[14px] text-muted-foreground">
                               <Paperclip className="w-2.5 h-2.5" />
                               {proofCount}
                             </span>
@@ -478,7 +478,7 @@ export function MobileDepositsScreen() {
                       <p className="font-bold text-sm tabular-nums">{formatXAF(deposit.amount_xaf)}</p>
                       <span
                         className={cn(
-                          'inline-block px-2 py-0.5 rounded-full text-[10px] font-medium',
+                          'inline-block px-2 py-0.5 rounded-lg text-[14px] font-medium',
                           DEPOSIT_STATUS_COLORS[deposit.status] || 'bg-gray-100 text-gray-700',
                         )}
                       >
@@ -486,7 +486,7 @@ export function MobileDepositsScreen() {
                       </span>
                       <div className="flex items-center gap-1.5">
                         {slaLevel && <SlaDot level={slaLevel} />}
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[14px] text-muted-foreground">
                           {formatRelativeDate(deposit.created_at)}
                         </span>
                       </div>

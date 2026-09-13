@@ -36,7 +36,7 @@ export function BreakdownBar({
 
   if (items.length === 0 || (totalAmount === 0 && totalCount === 0)) {
     return (
-      <div className="text-xs text-muted-foreground">Aucune donnée sur la période.</div>
+      <div className="text-xs max-lg:text-[14px] text-muted-foreground">Aucune donnée sur la période.</div>
     );
   }
 
@@ -50,7 +50,7 @@ export function BreakdownBar({
 
         return (
           <div key={item.key}>
-            <div className="flex items-center justify-between text-xs mb-1">
+            <div className="flex items-center justify-between text-xs max-lg:text-[14px] mb-1">
               <span className="flex items-center gap-1.5 font-medium">
                 <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
                 {item.label}
@@ -63,7 +63,7 @@ export function BreakdownBar({
                 style={{ width: `${mainPct}%`, background: color }}
               />
             </div>
-            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground tabular-nums">
+            <div className="mt-1 flex items-center justify-between text-[14px] max-lg:text-[14px] text-muted-foreground tabular-nums">
               <span>{formatInteger(item.count)} opérations ({pctCount.toFixed(1)}%)</span>
               <span>{formatCurrency(item.amount, currency, { compact: true })}</span>
             </div>

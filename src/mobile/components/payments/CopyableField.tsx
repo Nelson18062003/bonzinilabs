@@ -28,7 +28,7 @@ export function CopyableField({ label, value, copyLabel }: CopyableFieldProps) {
       >
         <span>{value}</span>
         {copied ? (
-          <Check className="w-3.5 h-3.5 text-green-500" />
+          <Check className="w-3.5 h-3.5 text-[#009951]" />
         ) : (
           <Copy className="w-3.5 h-3.5 text-muted-foreground" />
         )}

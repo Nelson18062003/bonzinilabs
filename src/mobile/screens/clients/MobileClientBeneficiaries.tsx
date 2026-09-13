@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { Plus, Search, User, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { cn } from '@/lib/utils';
 import { useClient } from '@/hooks/useClientManagement';
@@ -34,18 +34,7 @@ import {
   isBeneficiaryFormValid,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  Card,
-  Holder,
-  TextInput,
-  PrimaryPill,
-  SoftPill,
-  BottomSheet,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, Button, Chip, IconButton, Line, TextInput, PrimaryPill, SoftPill, BottomSheet } from '@/mobile/designKit';
 
 type View = { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; beneficiary: Beneficiary };
 
@@ -159,115 +148,94 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
   }
 
   // ── List view ────────────────────────────────────────────────
+  const total = beneficiaries?.length ?? 0;
+  const what = (b: Beneficiary) => {
+    const id = b.identifier || b.bank_account || b.phone || b.email;
+    const via = modeLabel(b.payment_method);
+    if (b.payment_method === 'bank_transfer') return `Par ${via}${b.bank_name ? ` à ${b.bank_name}` : ''}${b.bank_account ? `, compte ${b.bank_account}` : ''}.`;
+    return `Par ${via}${id ? `, ${id}` : ''}.`;
+  };
+
   return (
     <div className={desktop ? '' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
       {desktop ? (
         <header className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('beneficiaries.title')}</h2>
-            {clientName && <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{clientName}</p>}
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('beneficiaries.title')}</h2>
+            {clientName && <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{clientName}</p>}
           </div>
-          <button onClick={() => setView({ kind: 'add' })} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
-            <Plus className="h-4 w-4" /> {t('beneficiaries.add')}
-          </button>
+          <Button onClick={() => setView({ kind: 'add' })}>
+            <Plus /> {t('beneficiaries.add')}
+          </Button>
         </header>
       ) : (
         <MobileHeader
           title={t('beneficiaries.title')}
-          subtitle={clientName || undefined}
           showBack
           backTo={`/m/clients/${clientId}`}
-          rightElement={
-            <button
-              onClick={() => setView({ kind: 'add' })}
-              aria-label={t('beneficiaries.add')}
-              className={cn('flex h-10 w-10 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          }
+          rightElement={<IconButton icon={Plus} variant="primary" ariaLabel={t('beneficiaries.add')} onClick={() => setView({ kind: 'add' })} />}
         />
       )}
 
-      <div className={desktop ? 'space-y-3' : 'flex-1 space-y-3 px-4 py-5'}>
+      <div className={desktop ? 'space-y-4' : 'flex flex-1 flex-col gap-4 px-5 pb-8 pt-4'}>
+        {clientName && (
+          <Line>
+            Les fournisseurs que <b className={TEXT.strong}>{clientName}</b> paie
+            {total > 0 ? <> : <b className={cn('tabular-nums', TEXT.strong)}>{total}</b> {total > 1 ? 'bénéficiaires' : 'bénéficiaire'}.</> : '.'}
+          </Line>
+        )}
+
         <div className="relative">
-          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          <TextInput
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('beneficiaries.search')}
-            className="pl-10"
-          />
+          <Search className={cn('pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
+          <TextInput type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nom, surnom ou numéro" className="pl-10" />
         </div>
 
-        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <FilterChip active={modeFilter === 'all'} onClick={() => setModeFilter('all')}>
-            {t('beneficiaries.allModes')}
-          </FilterChip>
+        <div className={cn('scrollbar-hide flex gap-2 overflow-x-auto pb-1', !desktop && '-mx-5 px-5')}>
+          <Chip label="Tous" active={modeFilter === 'all'} onClick={() => setModeFilter('all')} />
           {BENEFICIARY_MODE_ORDER.map((m) => (
-            <FilterChip
-              key={m}
-              active={modeFilter === m}
-              color={modeColor(m)}
-              onClick={() => setModeFilter(m)}
-            >
-              {modeLabel(m)}
-            </FilterChip>
+            <Chip key={m} label={modeLabel(m)} active={modeFilter === m} onClick={() => setModeFilter(m)} />
           ))}
         </div>
 
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className={cn('h-16 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+              <div key={i} className={cn('h-20 animate-pulse rounded-lg', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center">
-            <Holder icon={User} size="lg" className="mx-auto" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.strong)}>{t('beneficiaries.noBeneficiary')}</p>
-            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
-            <PrimaryPill onClick={() => setView({ kind: 'add' })} className="mt-4">
-              {t('beneficiaries.add')}
-            </PrimaryPill>
+          <div className="space-y-3">
+            <Line>{total === 0 ? "Aucun bénéficiaire enregistré pour l'instant." : 'Aucun bénéficiaire ne correspond.'}</Line>
+            {total === 0 && <Line className={TEXT.muted}>Enregistrez ses fournisseurs une fois : plus rien à ressaisir à chaque paiement.</Line>}
+            {total === 0 && (
+              <Button className="w-full" onClick={() => setView({ kind: 'add' })}>
+                <Plus />
+                {t('beneficiaries.add')}
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="space-y-2">
+          <ul className={cn('divide-y', SURFACE.divider)}>
             {filtered.map((b) => (
-              <Card key={b.id} className="flex items-center gap-3 p-3">
+              <li key={b.id} className="flex items-start gap-3 py-4">
                 <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[18px] font-semibold text-white"
                   style={{ backgroundColor: modeColor(b.payment_method) }}
                 >
                   {(b.alias || b.name || '?')[0]?.toUpperCase()}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{b.alias || b.name}</p>
-                  <p className={cn('truncate text-[12px]', TEXT.muted)}>
-                    {b.identifier || b.bank_account || b.phone || b.name || ''}
-                  </p>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className={cn('break-words text-[18px] font-semibold leading-tight', TEXT.strong)}>{b.alias || b.name}</p>
+                  {b.alias && b.name && b.alias !== b.name && <Line className={TEXT.muted}>{b.name}</Line>}
+                  <Line className="break-words">{what(b)}</Line>
                 </div>
-                <span
-                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
-                  style={{ backgroundColor: `${modeColor(b.payment_method)}1a`, color: modeColor(b.payment_method) }}
-                >
-                  {modeLabel(b.payment_method)}
-                </span>
-                <Holder
-                  icon={Pencil}
-                  size="sm"
-                  onClick={() => setView({ kind: 'edit', beneficiary: b })}
-                />
-                <Holder
-                  icon={Trash2}
-                  tone="danger"
-                  size="sm"
-                  onClick={() => setConfirmArchive(b)}
-                />
-              </Card>
+                <div className="flex shrink-0 flex-col gap-2">
+                  <IconButton icon={Pencil} ariaLabel={t('beneficiaries.edit')} onClick={() => setView({ kind: 'edit', beneficiary: b })} />
+                  <IconButton icon={Trash2} variant="subtle" ariaLabel={t('beneficiaries.actions.confirmArchive')} onClick={() => setConfirmArchive(b)} className="text-[#900B09] dark:text-[#FCB3AD]" />
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
 
@@ -277,7 +245,9 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
         onClose={() => setConfirmArchive(null)}
         title={t('beneficiaries.actions.confirmArchiveTitle')}
       >
-        <p className={cn('text-[14px]', TEXT.muted)}>{t('beneficiaries.actions.confirmArchiveBody')}</p>
+        <Line>
+          <b className={TEXT.strong}>{confirmArchive?.alias || confirmArchive?.name}</b> ne sera plus proposé pour les prochains paiements. {t('beneficiaries.snapshotNotice')}
+        </Line>
         <div className="mt-5 flex gap-2">
           <SoftPill onClick={() => setConfirmArchive(null)} className="flex-1">
             {t('beneficiaries.actions.cancel')}
@@ -297,32 +267,6 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
         </div>
       </BottomSheet>
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  color,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  color?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-        active ? PRIMARY_PILL : SOFT_PILL,
-      )}
-      // Active mode chip keeps its brand accent (color carries the mode meaning).
-      style={active && color ? { backgroundColor: color, color: '#fff' } : undefined}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -357,7 +301,7 @@ function BeneficiaryEditor({
     <div className={desktop ? '' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>{isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}</h2>
         </header>
       ) : (
         <MobileHeader
@@ -368,7 +312,7 @@ function BeneficiaryEditor({
       )}
       <div className={desktop ? 'space-y-3' : 'flex-1 overflow-y-auto px-4 py-5'}>
         {isEdit && (
-          <p className={cn('mb-3 rounded-2xl p-3 text-[12px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
+          <p className={cn('mb-3 rounded-lg p-3 text-[16px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
             {t('beneficiaries.snapshotNotice')}
           </p>
         )}

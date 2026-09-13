@@ -60,7 +60,7 @@ export function PaymentMethodLogo({ method, size = 48, className }: PaymentMetho
     case 'cash':
       return (
         <div
-          className={cn('flex shrink-0 items-center justify-center font-black text-white', className)}
+          className={cn('flex shrink-0 items-center justify-center font-bold text-white', className)}
           style={{ ...containerStyle, background: PAYMENT_METHOD.cash.color, fontSize: size * 0.5 }}
         >
           ¥

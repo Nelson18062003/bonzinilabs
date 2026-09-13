@@ -19,7 +19,7 @@ export function DossierTabsBar({ value, onChange }: { value: DossierTab; onChang
             key={t.key}
             value={t.key}
             className={cn(
-              '-mb-px shrink-0 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2.5 pt-0 text-[14px] font-medium text-muted-foreground shadow-none transition-colors',
+              '-mb-px shrink-0 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2.5 pt-0 text-[14px] max-lg:text-[16px] font-medium text-muted-foreground shadow-none transition-colors',
               'hover:text-foreground',
               'data-[state=active]:border-foreground data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none',
             )}

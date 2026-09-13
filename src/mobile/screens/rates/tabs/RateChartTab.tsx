@@ -33,8 +33,8 @@ export function RateChartTab() {
               key={p.key}
               onClick={() => setPeriod(p.key)}
               className={cn(
-                'flex-1 rounded-full py-2 text-[13px] font-semibold transition-colors',
-                active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
+                'flex-1 rounded-lg py-2 text-[14px] font-semibold transition-colors',
+                active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
               )}
             >
               {p.label}
@@ -45,7 +45,7 @@ export function RateChartTab() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
         </div>
       ) : isError ? (
         <ScreenError
@@ -55,7 +55,7 @@ export function RateChartTab() {
       ) : chartData && chartData.length > 0 ? (
         <MultiCurveChart data={chartData} />
       ) : (
-        <div className={cn('rounded-2xl p-8 text-center', SURFACE.card, SURFACE.shadow)}>
+        <div className={cn('rounded-lg p-8 text-center', SURFACE.card, SURFACE.shadow)}>
           <div className={cn('text-[14px]', TEXT.muted)}>Aucune donnée pour cette période</div>
         </div>
       )}

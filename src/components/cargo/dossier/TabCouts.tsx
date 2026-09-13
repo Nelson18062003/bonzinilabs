@@ -55,7 +55,7 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
         meta={costs?.length ? `${costs.length} ligne${costs.length > 1 ? 's' : ''}` : undefined}
         bodyClassName="p-0"
         action={canManage ? (
-          <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-7 items-center gap-1 px-2.5 text-[11.5px] font-semibold', SOFT_PILL)}>
+          <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-7 items-center gap-1 px-2.5 text-[11.5px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>
             <Plus className="h-3 w-3" /> Ajouter
           </button>
         ) : undefined}
@@ -82,19 +82,19 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
               {costs.map((c) => (
                 <tr key={c.id}>
                   <Td first>
-                    <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{COST_KIND_LABEL[c.kind] ?? c.kind}</div>
+                    <div className={cn('text-[13px] max-lg:text-[14px] font-semibold', TEXT.strong)}>{COST_KIND_LABEL[c.kind] ?? c.kind}</div>
                     {(c.label || c.invoice_ref) && (
-                      <div className={cn('text-[11.5px]', TEXT.muted)}>{[c.label, c.invoice_ref && `facture ${c.invoice_ref}`].filter(Boolean).join(' · ')}</div>
+                      <div className={cn('text-[11.5px] max-lg:text-[14px]', TEXT.muted)}>{[c.label, c.invoice_ref && `facture ${c.invoice_ref}`].filter(Boolean).join(' · ')}</div>
                     )}
                   </Td>
-                  <Td><span className={cn('text-[12.5px] tabular-nums', TEXT.body)}>{c.incurred_on ? fmtDay(new Date(c.incurred_on + 'T12:00:00')) : '—'}</span></Td>
-                  <Td align="right"><span className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>{fmtMoney(Number(c.amount), c.currency)}</span></Td>
+                  <Td><span className={cn('text-[12.5px] max-lg:text-[14px] tabular-nums', TEXT.body)}>{c.incurred_on ? fmtDay(new Date(c.incurred_on + 'T12:00:00')) : '—'}</span></Td>
+                  <Td align="right"><span className={cn('text-[13px] max-lg:text-[14px] font-semibold tabular-nums', TEXT.strong)}>{fmtMoney(Number(c.amount), c.currency)}</span></Td>
                   <Td>
                     <button
                       type="button"
                       disabled={!canManage}
                       onClick={() => update.mutate({ id: c.id, shipmentId: s.id, patch: { paid: !c.paid } })}
-                      className={cn('rounded-md px-2 py-0.5 text-[11.5px] font-bold', c.paid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive', canManage && 'hover:opacity-80')}
+                      className={cn('rounded-md px-2 py-0.5 text-[11.5px] max-lg:text-[14px] font-bold', c.paid ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-destructive/10 text-destructive', canManage && 'hover:opacity-80')}
                     >
                       {c.paid ? 'Payé' : 'À payer'}
                     </button>
@@ -139,7 +139,7 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
               value={<span className={s.freight_paid ? 'text-emerald-700 dark:text-emerald-400' : 'text-destructive'}>{s.freight_paid ? 'Réglé' : 'À régler'}</span>}
             />
           </Facts>
-          <p className={cn('mt-3 border-t border-black/[0.06] pt-3 text-[12px] dark:border-white/[0.06]', TEXT.muted)}>
+          <p className={cn('mt-3 border-t border-black/[0.06] pt-3 text-[12px] max-lg:text-[14px] dark:border-white/[0.06]', TEXT.muted)}>
             Le devis du transitaire ne couvre que le fret. Les surestaries, le stockage et la douane s'y ajoutent après
             l'arrivée : c'est l'écart entre cette ligne et le total ci-dessus.
           </p>
@@ -154,8 +154,8 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
         title="Ajouter un coût"
         footer={
           <>
-            <button type="button" onClick={() => setOpen(false)} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-            <button type="button" onClick={submit} disabled={amount == null || amount <= 0 || add.isPending} className={cn('h-9 px-4 text-[13px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
+            <button type="button" onClick={() => setOpen(false)} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>Annuler</button>
+            <button type="button" onClick={submit} disabled={amount == null || amount <= 0 || add.isPending} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-bold disabled:opacity-60', PRIMARY_PILL)}>
               {add.isPending ? 'Ajout…' : 'Ajouter'}
             </button>
           </>
@@ -166,7 +166,7 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
             <SecLabel className="mb-1.5">Poste</SecLabel>
             <div className="flex flex-wrap gap-1">
               {COST_KINDS.map((k) => (
-                <button key={k} type="button" onClick={() => setKind(k)} className={cn('h-8 rounded-md px-2.5 text-[12px] font-semibold', k === kind ? PRIMARY_PILL : SOFT_PILL)}>
+                <button key={k} type="button" onClick={() => setKind(k)} className={cn('h-8 rounded-md px-2.5 text-[12px] max-lg:text-[14px] font-semibold', k === kind ? PRIMARY_PILL : SOFT_PILL)}>
                   {COST_KIND_LABEL[k]}
                 </button>
               ))}
@@ -181,7 +181,7 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
               <SecLabel className="mb-1.5">Devise</SecLabel>
               <div className="flex gap-1">
                 {CURRENCIES.map((c) => (
-                  <button key={c} type="button" onClick={() => setCurrency(c)} className={cn('h-8 rounded-md px-2.5 text-[12px] font-semibold', c === currency ? PRIMARY_PILL : SOFT_PILL)}>{c}</button>
+                  <button key={c} type="button" onClick={() => setCurrency(c)} className={cn('h-8 rounded-md px-2.5 text-[12px] max-lg:text-[14px] font-semibold', c === currency ? PRIMARY_PILL : SOFT_PILL)}>{c}</button>
                 ))}
               </div>
             </div>

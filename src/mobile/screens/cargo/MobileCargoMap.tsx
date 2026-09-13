@@ -1,4 +1,11 @@
-/** Mobile admin — la carte des navires, puis la liste synchronisée. */
+/**
+ * Mobile admin — la carte des navires, plein écran.
+ *
+ * Plus de carte-dans-une-carte sous un en-tête : la carte prend tout ce qui
+ * reste sous la barre, la légende vit dedans, et le tap sur un navire ouvre
+ * une feuille basse avec ses conteneurs. La liste synchronisée du desktop
+ * n'a pas sa place sur 390 px : c'est la feuille qui la remplace.
+ */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -7,9 +14,12 @@ import { useCargoShipments, useCargoVesselPositions } from '@/hooks/useCargo';
 import { CargoMap } from '@/components/cargo/CargoMap';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
-import { bestEta, fmtDay, positionAge } from '@/lib/cargo/model';
+import { ALERT, alertLevel, type AlertLevel } from '@/lib/cargo/palette';
+import { agoSentence, arrivalSentence } from '@/lib/cargo/plain';
 import { cn } from '@/lib/utils';
-import { TEXT, Card } from '@/mobile/designKit';
+import { TEXT, BottomSheet, ListRow, StatusPill, type Tone } from '@/mobile/designKit';
+
+const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export function MobileCargoMap() {
   const { hasPermission } = useAdminAuth();
@@ -19,46 +29,56 @@ export function MobileCargoMap() {
   const [selected, setSelected] = useState<string | null>(null);
   const rows = useMemo(() => (shipments ?? []).filter((s) => s.status !== 'DELIVERED'), [shipments]);
   const vessels = useMemo(() => groupVessels(rows, positions ?? []), [rows, positions]);
+  const vessel = useMemo(() => vessels.find((v) => v.position.vessel_imo === selected) ?? null, [vessels, selected]);
+
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
+
   return (
-    <div className="min-h-screen pb-24">
-      <MobileHeader title="Carte" subtitle={`${vessels.length} navire${vessels.length > 1 ? 's' : ''} · ${rows.length} conteneurs`} showBack backTo="/m/cargo" />
-      <div className="space-y-3 px-4 pt-3">
-        <Card className="isolate overflow-hidden p-0">
-          <CargoMap
-            shipments={rows}
-            positions={positions ?? []}
-            layers={{ routes: true, ports: true, labels: false }}
-            selectedVesselImo={selected}
-            onSelectVessel={setSelected}
-            onOpenShipment={(id) => navigate(`/m/cargo/${id}`)}
-            fitNonce={1}
-            className="h-[420px]"
-          />
-        </Card>
-        {vessels.map((v) => {
-          const st = vesselLiveStatus(v.position);
-          return (
-            <Card key={v.position.vessel_imo} className="p-3.5">
-              <button type="button" onClick={() => setSelected(v.position.vessel_imo)} className="flex w-full items-center gap-2.5 text-left">
-                <i className={`cargo-dot is-${st}`} />
-                <span className="min-w-0 flex-1">
-                  <span className={cn('block text-[14px] font-bold', TEXT.strong)}>{v.position.vessel_name ?? v.position.vessel_imo}</span>
-                  <span className={cn('block text-[12px]', TEXT.muted)}>{LIVE_STATUS_LABEL[st]} · {positionAge(v.position)}</span>
-                </span>
-              </button>
-              <div className="mt-2 divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-                {v.shipments.map((s) => (
-                  <button key={s.id} type="button" onClick={() => navigate(`/m/cargo/${s.id}`)} className="flex w-full items-center justify-between py-2 text-left text-[13px]">
-                    <span className={TEXT.strong}>{s.client_label} · <span className="font-mono">{s.container_number}</span></span>
-                    <span className={TEXT.muted}>{s.pod_name} · {fmtDay(bestEta(s).date)}</span>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          );
-        })}
+    <div className="admin-theme flex h-[100dvh] flex-col bg-white dark:bg-[#1E1E1E]">
+      <MobileHeader
+        title="Carte"
+        subtitle={`${vessels.length} navire${vessels.length > 1 ? 's' : ''} · ${rows.length} conteneur${rows.length > 1 ? 's' : ''}`}
+        showBack
+        backTo="/m/cargo"
+      />
+      <div className="relative min-h-0 flex-1">
+        <CargoMap
+          shipments={rows}
+          positions={positions ?? []}
+          layers={{ routes: true, ports: true, labels: false }}
+          selectedVesselImo={selected}
+          onSelectVessel={setSelected}
+          onOpenShipment={(id) => navigate(`/m/cargo/${id}`)}
+          fitNonce={1}
+          className="absolute inset-0 h-full"
+        />
       </div>
+
+      <BottomSheet open={!!vessel} onClose={() => setSelected(null)} title={vessel?.position.vessel_name ?? vessel?.position.vessel_imo}>
+        {vessel && (
+          <div>
+            <p className={cn('-mt-2 mb-3 text-[16px] leading-relaxed', TEXT.muted)}>
+              {LIVE_STATUS_LABEL[vesselLiveStatus(vessel.position)]}, position relevée {agoSentence(vessel.position.reported_at)}
+              {vessel.position.speed_kn != null && `, ${vessel.position.speed_kn} nœuds`}.
+            </p>
+            <div className="-mx-2">
+              {vessel.shipments.map((s) => {
+                const level = alertLevel(s);
+                return (
+                  <ListRow
+                    key={s.id}
+                    className="px-2"
+                    title={s.client_label}
+                    subtitle={arrivalSentence(s)}
+                    trailing={<StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />}
+                    onClick={() => navigate(`/m/cargo/${s.id}`)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }

@@ -438,5 +438,8 @@
   "actionCannotBeUndone": "This action cannot be undone.",
   "processing": "Processing…",
   "debit": "Debit",
-  "home": "Home"
+  "home": "Home",
+  "assistant": "Mola",
+  "cargo": "Cargo",
+  "navOperations": "Operations"
 }

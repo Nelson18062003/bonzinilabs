@@ -44,14 +44,14 @@ function CurrencyCard({ label, amount, unit, accountCount, tone, warning }: {
   return (
     <div className={cn(SOFT_CARD, 'p-3.5')}>
       <div className="mb-2.5 flex items-center gap-1.5">
-        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-red-500' : TONE_DOT[tone])} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wider', warning ? 'text-red-600 dark:text-red-400' : TONE_TEXT[tone])}>{label}</span>
-        {warning && <AlertTriangle className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
+        <span className={cn('h-2 w-2 shrink-0 rounded-full', warning ? 'bg-[#EC221F]' : TONE_DOT[tone])} />
+        <span className={cn('text-[14px] font-bold', warning ? 'text-[#C00F0C] dark:text-[#EC221F]' : TONE_TEXT[tone])}>{label}</span>
+        {warning && <AlertTriangle className="ml-auto h-3.5 w-3.5 text-[#C00F0C] dark:text-[#EC221F]" />}
       </div>
-      <div className={cn('text-[18px] font-extrabold leading-none tracking-tight tabular-nums', warning ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+      <div className={cn('text-[20px] font-bold leading-none tracking-tight tabular-nums', warning ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-foreground')}>
         {display}
       </div>
-      <div className="mt-1.5 text-[10px] text-muted-foreground">
+      <div className="mt-1.5 text-[14px] text-muted-foreground">
         {unit} · {accountCount} compte{accountCount > 1 ? 's' : ''}
       </div>
     </div>
@@ -92,9 +92,9 @@ export function MobileTreasuryHome() {
             <CurrencyCard label="CNY" amount={totals.CNY?.total ?? 0} unit="CNY" accountCount={totals.CNY?.count ?? 0} tone="orange" />
           </div>
           {stockNegative && (
-            <div className="mt-2.5 flex items-center gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-              <span className="text-[12px] font-medium text-red-600 dark:text-red-300">
+            <div className="mt-2.5 flex items-center gap-2 rounded-lg bg-[#EC221F]/10 px-3.5 py-2.5">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-[#C00F0C] dark:text-[#EC221F]" />
+              <span className="text-[14px] font-medium text-[#C00F0C] dark:text-[#EC221F]">
                 Stock USDT négatif : {formatNumber(stockUsdt)} — enregistrez un achat manquant.
               </span>
             </div>
@@ -105,8 +105,8 @@ export function MobileTreasuryHome() {
         <section className={cn(SOFT_CARD, 'flex items-center gap-3.5 p-4')}>
           <IconChip icon={TrendingUp} tone="amber" size="lg" />
           <div className="min-w-0">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">WAC USDT courant</div>
-            <div className="text-2xl font-extrabold leading-tight tracking-tight tabular-nums text-foreground">
+            <div className="text-[14px] font-bold text-muted-foreground">WAC USDT courant</div>
+            <div className="text-2xl font-bold leading-tight tracking-tight tabular-nums text-foreground">
               {formatNumber(wac, 4)} <span className="text-sm font-semibold text-muted-foreground">XAF/USDT</span>
             </div>
           </div>

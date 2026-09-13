@@ -111,10 +111,10 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
         <button
           type="button"
           onClick={() => setMonthPickerOpen((o) => !o)}
-          className={cn('rounded-full px-3.5 py-1.5 text-[13px] font-bold transition active:scale-95', TEXT.strong)}
+          className={cn('rounded-lg px-3.5 py-1.5 text-[14px] font-bold transition active:scale-95', TEXT.strong)}
         >
           {MONTH_LABELS[view.month]} {view.year}
-          <span className={cn('ml-1 text-[10px]', TEXT.muted)}>▾</span>
+          <span className={cn('ml-1 text-[14px]', TEXT.muted)}>▾</span>
         </button>
         <button type="button" aria-label="Mois suivant" onClick={() => shiftMonth(1)} disabled={nextDisabled} className={navBtnCls}>
           <ChevronRight className="h-4 w-4" />
@@ -128,7 +128,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
             <button type="button" aria-label="Année précédente" onClick={() => setView((v) => ({ ...v, year: v.year - 1 }))} className={navBtnCls}>
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className={cn('min-w-[64px] text-center text-[15px] font-extrabold tabular-nums', TEXT.strong)}>{view.year}</span>
+            <span className={cn('min-w-[64px] text-center text-[16px] font-bold tabular-nums', TEXT.strong)}>{view.year}</span>
             <button
               type="button"
               aria-label="Année suivante"
@@ -150,7 +150,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
                   disabled={disabled}
                   onClick={() => { setView((v) => ({ ...v, month: m })); setMonthPickerOpen(false); }}
                   className={cn(
-                    'rounded-xl py-2.5 text-[12px] font-bold transition active:scale-95 disabled:opacity-30',
+                    'rounded-lg py-2.5 text-[14px] font-bold transition active:scale-95 disabled:opacity-30',
                     isCurrent ? 'text-white' : cn(SURFACE.canvas, TEXT.strong),
                   )}
                   style={isCurrent ? { background: accent } : undefined}
@@ -166,7 +166,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
         <div className="mt-1.5">
           <div className="grid grid-cols-7">
             {DAY_LABELS.map((d) => (
-              <div key={d} className={cn('py-1 text-center text-[11px] font-semibold', TEXT.muted)}>
+              <div key={d} className={cn('py-1 text-center text-[14px] font-semibold', TEXT.muted)}>
                 {d}
               </div>
             ))}
@@ -184,7 +184,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
                   disabled={disabled}
                   onClick={() => commitDay(day)}
                   className={cn(
-                    'mx-auto flex h-9 w-9 items-center justify-center rounded-xl text-[13px] font-semibold transition active:scale-95',
+                    'mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-[14px] font-semibold transition active:scale-95',
                     isSelected ? 'text-white' : TEXT.strong,
                     !isSelected && !inMonth && 'opacity-35',
                     disabled && 'opacity-20',
@@ -208,7 +208,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
         <Clock className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
         <input
           aria-label="Heure"
-          className={cn('h-10 w-14 rounded-xl text-center text-[15px] font-extrabold tabular-nums outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+          className={cn('h-10 w-14 rounded-lg text-center text-[16px] font-bold tabular-nums outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
           value={selected ? pad(selected.getHours()) : '--'}
           onFocus={(e) => e.target.select()}
           onChange={(e) => {
@@ -218,10 +218,10 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
           type="tel"
           inputMode="numeric"
         />
-        <span className={cn('text-[15px] font-extrabold', TEXT.muted)}>:</span>
+        <span className={cn('text-[16px] font-bold', TEXT.muted)}>:</span>
         <input
           aria-label="Minutes"
-          className={cn('h-10 w-14 rounded-xl text-center text-[15px] font-extrabold tabular-nums outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+          className={cn('h-10 w-14 rounded-lg text-center text-[16px] font-bold tabular-nums outline-none', SURFACE.canvas, TEXT.strong, 'focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
           value={selected ? pad(selected.getMinutes()) : '--'}
           onFocus={(e) => e.target.select()}
           onChange={(e) => {
@@ -234,7 +234,7 @@ export function BzDateTimePicker({ value, onChange, accent, disableFuture = true
         <button
           type="button"
           onClick={() => { onChange(toValue(new Date())); setView({ year: now.getFullYear(), month: now.getMonth() }); setMonthPickerOpen(false); }}
-          className={cn('ml-auto rounded-full px-3.5 py-2 text-[12px] font-bold transition active:scale-95', SURFACE.holder)}
+          className={cn('ml-auto rounded-lg px-3.5 py-2 text-[14px] font-bold transition active:scale-95', SURFACE.holder)}
         >
           Maintenant
         </button>
@@ -269,7 +269,7 @@ export function BzDateTimeField({ value, onChange, accent, disableFuture = true,
   const [open, setOpen] = useState(false);
   const label = formatValueLabel(value);
   return (
-    <div className={cn('rounded-2xl', SURFACE.canvas)}>
+    <div className={cn('rounded-lg', SURFACE.canvas)}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -283,7 +283,7 @@ export function BzDateTimeField({ value, onChange, accent, disableFuture = true,
       </button>
       {open && (
         <div className="px-3 pb-3">
-          <div className={cn('rounded-2xl p-3', SURFACE.card)}>
+          <div className={cn('rounded-lg p-3', SURFACE.card)}>
             <BzDateTimePicker value={value} onChange={onChange} accent={accent} disableFuture={disableFuture} />
           </div>
         </div>

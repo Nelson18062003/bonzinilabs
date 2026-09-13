@@ -29,13 +29,13 @@ function WaveTile({ size, radius }: { size: number; radius?: number }) {
 function MtnTile({ size, radius }: { size: number; radius?: number }) {
   return (
     <div style={{ ...tile(size, radius), background: '#FFCC00' }} className="flex shrink-0 items-center justify-center">
-      <span className="font-black tracking-tighter text-[#004F9F]" style={{ fontSize: Math.round(size * 0.34), lineHeight: 1 }}>MTN</span>
+      <span className="font-bold tracking-tighter text-[#004F9F]" style={{ fontSize: Math.round(size * 0.34), lineHeight: 1 }}>MTN</span>
     </div>
   );
 }
 function AgencyTile({ size, radius }: { size: number; radius?: number }) {
   return (
-    <div style={tile(size, radius)} className="flex shrink-0 items-center justify-center bg-[#1C1B22]">
+    <div style={tile(size, radius)} className="flex shrink-0 items-center justify-center bg-[#2C2C2C]">
       <Store style={{ width: size * 0.5, height: size * 0.5 }} className="text-white" strokeWidth={1.9} />
     </div>
   );
@@ -70,7 +70,7 @@ export function DepositBankLogo({
   if (!b.src) {
     return (
       <div style={{ ...tile(size, radius), background: b.bg }} className="flex shrink-0 items-center justify-center">
-        <span className="font-black tracking-tight text-white" style={{ fontSize: Math.round(size * 0.3), lineHeight: 1 }}>{b.mono}</span>
+        <span className="font-bold tracking-tight text-white" style={{ fontSize: Math.round(size * 0.3), lineHeight: 1 }}>{b.mono}</span>
       </div>
     );
   }

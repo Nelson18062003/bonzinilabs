@@ -6,14 +6,14 @@ import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib
 import { Search, Plus, User, ArrowUpDown, Check } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { formatCurrency, formatXAF } from '@/lib/formatters';
+import { formatXAF } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
   TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
+  Chip,
+  IconButton,
   clientStatusTone,
   Avatar,
   StatusPill,
@@ -71,8 +71,8 @@ export function MobileClientsScreen() {
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? '';
 
   return (
-    <div className="flex min-h-full flex-col pb-20">
-      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} />
+    <div className="flex min-h-full flex-col">
+      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} />} />
 
       <PullToRefresh
         onRefresh={refetch}
@@ -92,27 +92,9 @@ export function MobileClientsScreen() {
 
         {/* Status Filter Chips + tri */}
         <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <button
-            onClick={() => setSortSheetOpen(true)}
-            className={cn(
-              'flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-              sortKey !== 'created-desc' ? PRIMARY_PILL : SOFT_PILL,
-            )}
-          >
-            <ArrowUpDown className="h-3.5 w-3.5" />
-            {sortLabel}
-          </button>
+          <Chip icon={ArrowUpDown} label={sortLabel} active={sortKey !== 'created-desc'} onClick={() => setSortSheetOpen(true)} />
           {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setStatusFilter(filter.value)}
-              className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
-              )}
-            >
-              {filter.label}
-            </button>
+            <Chip key={filter.value} label={filter.label} active={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)} />
           ))}
         </div>
 
@@ -132,18 +114,16 @@ export function MobileClientsScreen() {
                   key={client.id}
                   onClick={() => navigate(`/m/clients/${client.id}`)}
                   className={cn(
-                    'w-full rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    'w-full rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]',
                     SURFACE.card,
                     SURFACE.shadow,
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar name={name} />
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
+                  <div className="flex items-start gap-3">
+                    <Avatar name={name} size="lg" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <p className={cn('break-words text-[20px] font-semibold leading-tight', TEXT.strong)}>
                           {client.firstName} {client.lastName}
                         </p>
                         <StatusPill
@@ -153,24 +133,9 @@ export function MobileClientsScreen() {
                             client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
                         />
                       </div>
-                      {client.phone && (
-                        <p className={cn('truncate text-[13px]', TEXT.muted)}>{client.phone}</p>
-                      )}
+                      <p className={cn('text-[16px] leading-snug', TEXT.strong)}>Solde : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
+                      {client.phone && <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{client.phone}</p>}
                     </div>
-
-                    {/* Balance */}
-                    <div className="shrink-0 text-right">
-                      <p className={cn('text-[15px] font-bold tabular-nums', TEXT.strong)}>
-                        {formatXAF(client.walletBalance || 0)}
-                      </p>
-                      <p className={cn('text-[10px]', TEXT.muted)}>XAF</p>
-                    </div>
-                  </div>
-
-                  {/* Stats Row */}
-                  <div className={cn('mt-3 flex items-center gap-4 text-[12px]', TEXT.muted)}>
-                    <span>{t('deposits', { defaultValue: 'Dépôts' })}: {formatCurrency(client.totalDeposits || 0)}</span>
-                    <span>{t('payments', { defaultValue: 'Paiements' })}: {formatCurrency(client.totalPayments || 0)}</span>
                   </div>
                 </button>
               );
@@ -179,7 +144,7 @@ export function MobileClientsScreen() {
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Holder icon={User} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+            <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>
               {searchQuery ? t('noClientFound', { defaultValue: 'Aucun client trouvé' }) : t('noClientsYet', { defaultValue: 'Aucun client pour le moment' })}
             </p>
             <PrimaryPill onClick={() => navigate('/m/clients/new')} className="mt-4">
@@ -195,7 +160,7 @@ export function MobileClientsScreen() {
         onClose={() => setSortSheetOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <ArrowUpDown className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            <ArrowUpDown className="h-5 w-5" />
             {t('sortBy', { defaultValue: 'Trier par' })}
           </span>
         }
@@ -209,27 +174,17 @@ export function MobileClientsScreen() {
                 setSortSheetOpen(false);
               }}
               className={cn(
-                'flex w-full items-center justify-between rounded-2xl px-3.5 py-3 text-left text-[15px] font-semibold transition',
-                sortKey === opt.value ? cn('bg-[#EDEAFA]/70 dark:bg-white/[0.06]', TEXT.strong) : TEXT.strong,
+                'flex min-h-[48px] w-full items-center justify-between rounded-lg px-3 py-3 text-left text-[16px] font-medium transition-colors',
+                sortKey === opt.value ? cn('bg-[#F5F5F5] dark:bg-[#383838]', TEXT.strong) : TEXT.strong,
               )}
             >
               {opt.label}
-              {sortKey === opt.value && <Check className="h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+              {sortKey === opt.value && <Check className="h-5 w-5" />}
             </button>
           ))}
         </div>
       </BottomSheet>
 
-      {/* FAB - Create Client */}
-      <button
-        onClick={() => navigate('/m/clients/new')}
-        className={cn(
-          'fixed bottom-20 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95',
-          PRIMARY_PILL,
-        )}
-      >
-        <Plus className="h-6 w-6" />
-      </button>
     </div>
   );
 }

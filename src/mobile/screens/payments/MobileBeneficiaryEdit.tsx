@@ -109,7 +109,7 @@ export function MobileBeneficiaryEdit({ desktop = false }: { desktop?: boolean }
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-screen bg-background'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">Modifier bénéficiaire</h2>
+          <h2 className="text-[24px] font-bold tracking-tight text-foreground">Modifier bénéficiaire</h2>
         </header>
       ) : (
         <MobileHeader
@@ -152,7 +152,7 @@ export function MobileBeneficiaryEdit({ desktop = false }: { desktop?: boolean }
                   type="button"
                   onClick={() => navigate(-1)}
                   disabled={isBusy}
-                  className="flex-1 h-12 rounded-xl border border-border font-medium text-sm disabled:opacity-50"
+                  className="flex-1 h-12 rounded-lg border border-border font-medium text-sm disabled:opacity-50"
                 >
                   Annuler
                 </button>
@@ -160,7 +160,7 @@ export function MobileBeneficiaryEdit({ desktop = false }: { desktop?: boolean }
                   type="button"
                   onClick={submit}
                   disabled={isBusy}
-                  className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 h-12 rounded-lg bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isBusy ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

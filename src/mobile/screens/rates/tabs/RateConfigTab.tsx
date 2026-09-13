@@ -39,7 +39,7 @@ export function RateConfigTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
       </div>
     );
   }
@@ -93,8 +93,8 @@ export function RateConfigTab() {
     <div
       key={adj.id}
       className={cn(
-        'flex items-center justify-between rounded-xl px-3 py-2.5',
-        adj.is_reference ? 'bg-[#DEEFE5] dark:bg-[#1E3A2C]' : SURFACE.canvas,
+        'flex items-center justify-between rounded-lg px-3 py-2.5',
+        adj.is_reference ? 'bg-[#CFF7D3] dark:bg-[#02542D]' : SURFACE.canvas,
       )}
     >
       <div className="flex items-center gap-2">
@@ -103,13 +103,13 @@ export function RateConfigTab() {
             {meta.shortLabel || meta.label}
           </span>
           {meta.shortLabel && (
-            <div className={cn('text-[11px]', TEXT.muted)}>{meta.label}</div>
+            <div className={cn('text-[14px]', TEXT.muted)}>{meta.label}</div>
           )}
         </div>
         {adj.is_reference && <StatusPill tone="success" label="REF" />}
       </div>
       {adj.is_reference ? (
-        <span className="text-[14px] font-bold text-[#2E7D52] dark:text-[#7FCBA0]">0 %</span>
+        <span className="text-[14px] font-bold text-[#02542D] dark:text-[#CFF7D3]">0 %</span>
       ) : (
         <div className="flex items-center gap-1">
           <TextField
@@ -120,7 +120,7 @@ export function RateConfigTab() {
               setLocalValues({ ...localValues, [adj.id]: e.target.value })
             }
             wrapperClassName="w-[72px]"
-            controlClassName="text-right font-bold text-[#C0504D] dark:text-[#E79A9A]"
+            controlClassName="text-right font-bold text-[#900B09] dark:text-[#FDD3D0]"
             aria-label={`Ajustement ${meta.label}`}
           />
           <span className={cn('text-[14px] font-semibold', TEXT.muted)}>%</span>
@@ -132,14 +132,14 @@ export function RateConfigTab() {
   return (
     <div className="space-y-4">
       {/* Ajustements par pays */}
-      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+      <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         <div className="mb-3.5 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2A2738]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
             <Globe className={cn('h-[18px] w-[18px]', TEXT.strong)} />
           </div>
           <div>
-            <h3 className={cn('text-[15px] font-bold leading-tight', TEXT.strong)}>Ajustements par pays</h3>
-            <p className={cn('text-[11px]', TEXT.muted)}>Cameroun = référence (0%)</p>
+            <h3 className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>Ajustements par pays</h3>
+            <p className={cn('text-[14px]', TEXT.muted)}>Cameroun = référence (0%)</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -150,14 +150,14 @@ export function RateConfigTab() {
       </div>
 
       {/* Ajustements par tranche */}
-      <div className={cn('rounded-[18px] p-4', SURFACE.card, SURFACE.shadow)}>
+      <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         <div className="mb-3.5 flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] dark:bg-[#2A2738]">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
             <Layers className={cn('h-[18px] w-[18px]', TEXT.strong)} />
           </div>
           <div>
-            <h3 className={cn('text-[15px] font-bold leading-tight', TEXT.strong)}>Ajustements par tranche</h3>
-            <p className={cn('text-[11px]', TEXT.muted)}>Pourcentage selon le montant</p>
+            <h3 className={cn('text-[16px] font-bold leading-tight', TEXT.strong)}>Ajustements par tranche</h3>
+            <p className={cn('text-[14px]', TEXT.muted)}>Pourcentage selon le montant</p>
           </div>
         </div>
         <div className="space-y-2">
@@ -175,7 +175,7 @@ export function RateConfigTab() {
       <PrimaryPill
         onClick={handleSave}
         loading={saving}
-        className="w-full py-[15px] text-[15px] bg-[#E8932A] text-white dark:bg-[#E8932A] dark:text-white"
+        className="w-full py-[15px] text-[16px] bg-[#E8B931] text-white dark:bg-[#E8B931] dark:text-white"
       >
         Sauvegarder la configuration
       </PrimaryPill>

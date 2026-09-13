@@ -38,7 +38,7 @@ const emailSchema = z.string().email();
 
 /** Pill sombre — l'unique action principale d'un écran (designKit). */
 const CTA =
-  'w-full h-13 min-h-[52px] rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24] text-[15.5px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed';
+  'w-full h-13 min-h-[52px] rounded-full bg-[#2C2C2C] text-white dark:bg-[#E3E3E3] dark:text-[#1E1E1E] text-[15.5px] font-bold flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed';
 
 /** Secondes avant de pouvoir redemander un code. */
 const RESEND_DELAY = 30;
@@ -78,18 +78,18 @@ function MethodRow({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        'w-full flex items-center gap-3.5 rounded-2xl px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-50',
+        'w-full flex items-center gap-3.5 rounded-lg px-4 py-4 text-left transition active:scale-[0.99] disabled:opacity-50',
         primary
-          ? 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]'
-          : 'bg-white text-[#1B1A24] ring-1 ring-black/[0.08] dark:bg-[#211F2B] dark:text-[#F2F1F7]',
+          ? 'bg-[#2C2C2C] text-white dark:bg-[#E3E3E3] dark:text-[#1E1E1E]'
+          : 'bg-white text-[#1E1E1E] ring-1 ring-black/[0.08] dark:bg-[#2C2C2C] dark:text-[#F5F5F5]',
       )}
     >
       <span
         className={cn(
           'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
           primary
-            ? 'bg-white/15 text-white dark:bg-black/10 dark:text-[#1B1A24]'
-            : 'bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]',
+            ? 'bg-white/15 text-white dark:bg-black/10 dark:text-[#1E1E1E]'
+            : 'bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]',
         )}
       >
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : icon}
@@ -99,15 +99,15 @@ function MethodRow({
         <span className="block text-[15.5px] font-bold leading-tight">{title}</span>
         <span
           className={cn(
-            'mt-0.5 block text-[12.5px] leading-snug',
-            primary ? 'text-white/65 dark:text-[#1B1A24]/60' : 'text-[#8E8BA0]',
+            'mt-0.5 block text-[14px] leading-snug',
+            primary ? 'text-white/65 dark:text-[#1E1E1E]/60' : 'text-[#757575]',
           )}
         >
           {hint}
         </span>
       </span>
 
-      <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', primary ? 'opacity-50' : 'text-[#B9B5CC]')} />
+      <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', primary ? 'opacity-50' : 'text-[#757575]')} />
     </button>
   );
 }
@@ -289,7 +289,7 @@ export function MobileLoginScreen() {
                 className="text-center mb-8 animate-slide-up"
                 style={{ animationDelay: '80ms', animationFillMode: 'both' }}
               >
-                <h1 className="text-[26px] font-extrabold tracking-tight mb-1.5">Administration</h1>
+                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">Administration</h1>
                 <p className="text-muted-foreground text-[14.5px] leading-snug">
                   {t('enterEmailToContinue', { defaultValue: 'Entrez votre adresse email pour continuer' })}
                 </p>
@@ -333,14 +333,14 @@ export function MobileLoginScreen() {
               <div className="text-center mb-7">
                 {/* 23px et non 26 : « Comment vous connecter » tient alors sur
                     une ligne jusque sur les petits téléphones. */}
-                <h1 className="text-[23px] font-extrabold tracking-tight mb-1.5">
+                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">
                   {t('howToSignIn', { defaultValue: 'Comment vous connecter' })}
                 </h1>
                 {/* L'adresse reste visible ET modifiable — c'est ce qui manquait. */}
                 <button
                   type="button"
                   onClick={() => go('email', 'back')}
-                  className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {email}
                   <Pencil className="h-3.5 w-3.5" />
@@ -384,7 +384,7 @@ export function MobileLoginScreen() {
               </div>
 
               {error && (
-                <p className="mt-5 text-center text-[13.5px] leading-snug text-[#C0504D] dark:text-[#E79A9A]">
+                <p className="mt-5 text-center text-[14px] leading-snug text-[#900B09] dark:text-[#FDD3D0]">
                   {error}
                 </p>
               )}
@@ -401,7 +401,7 @@ export function MobileLoginScreen() {
               className="max-w-sm mx-auto w-full"
             >
               <div className="text-center mb-7">
-                <h1 className="text-[26px] font-extrabold tracking-tight mb-1.5">
+                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">
                   {t('enterCode', { defaultValue: 'Entrez le code' })}
                 </h1>
                 <p className="text-muted-foreground text-[14.5px] leading-snug">
@@ -439,13 +439,13 @@ export function MobileLoginScreen() {
                 )}
               </button>
 
-              <p className={cn('mt-6 text-center text-[13.5px]', TEXT.muted)}>
+              <p className={cn('mt-6 text-center text-[14px]', TEXT.muted)}>
                 {t('noCodeReceived', { defaultValue: "Vous n'avez pas reçu le code ?" })}{' '}
                 <button
                   type="button"
                   onClick={resend}
                   disabled={cooldown > 0 || isLoading}
-                  className="font-semibold text-[#5B4CC4] hover:underline disabled:opacity-50 disabled:no-underline dark:text-[#B5AAF0]"
+                  className="font-semibold text-[#1E1E1E] hover:underline disabled:opacity-50 disabled:no-underline dark:text-[#F5F5F5]"
                 >
                   {cooldown > 0
                     ? t('resendIn', { defaultValue: 'Renvoyer dans {{count}} s', count: cooldown })
