@@ -30,9 +30,14 @@ import {
   Pencil,
   Trash2,
   Users,
+  Tag,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
+import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
@@ -125,6 +130,10 @@ export function MobileClientDetail() {
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
+
+  // Étiquette colis (feuille)
+  const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
 
   // Password reset drawer state
   const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
@@ -360,6 +369,9 @@ export function MobileClientDetail() {
           )}
         </section>
 
+        {/* Identifiant client — virement bancaire + étiquette colis */}
+        <CustomerCodeCard code={client.customerCode} />
+
         {/* ── L'argent ──────────────────────────────────────── */}
         <section>
           <SectionTitle action={{ label: 'Historique', onClick: () => navigate(`/m/clients/${client.id}/ledger`) }}>
@@ -402,6 +414,13 @@ export function MobileClientDetail() {
               label="Déclarer un dépôt"
               description="Le client a versé de l'argent."
               onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
+            />
+            <ActionRow
+              icon={Tag}
+              tone="pending"
+              label="Étiquette colis"
+              description="Entrepôt ou bureau : l'image ou le PDF à imprimer pour son fournisseur."
+              onClick={() => setLabelOpen(true)}
             />
             <ActionRow
               icon={Users}
@@ -449,6 +468,22 @@ export function MobileClientDetail() {
           </Card>
         </section>
       </div>
+
+      {/* Étiquette colis — même composeur que l'app client */}
+      <BottomSheet open={labelOpen} onClose={() => setLabelOpen(false)} title={t('shippingLabelAction', { defaultValue: 'Étiquette colis' })}>
+        <div className="max-h-[75vh] overflow-y-auto px-1 pb-2">
+          <ShippingLabelComposer
+            code={client.customerCode}
+            clientName={`${client.firstName} ${client.lastName}`.trim()}
+            clientPhone={client.phone}
+            clientEmail={client.email}
+            companyName={client.companyName}
+            clientCity={client.city}
+            clientCountry={client.country}
+            settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+          />
+        </div>
+      </BottomSheet>
 
       {/* Adjustment Drawer */}
       <AdjustmentDrawer

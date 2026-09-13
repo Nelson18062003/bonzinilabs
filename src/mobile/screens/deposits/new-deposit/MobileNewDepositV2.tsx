@@ -18,6 +18,7 @@ import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
 import { cn } from '@/lib/utils';
+import { matchesClientSearch } from '@/lib/clientSearch';
 import { toast } from 'sonner';
 import {
   SUB_METHOD_TO_DB_METHOD,
@@ -179,11 +180,14 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
     if (!clientSearch.trim()) return clients.slice(0, 20);
-    const search = clientSearch.toLowerCase();
+    // Même recherche que la liste clients : nom, téléphone et identifiant
+    // BZ-… — c'est le code lu sur le relevé bancaire qui amène ici.
     return clients
       .filter((c) =>
-        `${c.first_name} ${c.last_name}`.toLowerCase().includes(search) ||
-        c.phone?.includes(search),
+        matchesClientSearch(
+          { firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '', customerCode: c.customer_code },
+          clientSearch,
+        ),
       )
       .slice(0, 20);
   }, [clients, clientSearch]);
@@ -555,7 +559,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
                 className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
-                placeholder="Nom ou téléphone..."
+                placeholder="Nom, téléphone ou identifiant BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
                 autoFocus
@@ -600,7 +604,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                         <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                           {client.first_name} {client.last_name}
                         </div>
-                        {client.phone && <div className={cn('truncate text-[16px]', TEXT.muted)}>{client.phone}</div>}
+                        <div className={cn('truncate text-[16px] tabular-nums', TEXT.muted)}>{[client.customer_code, client.phone].filter(Boolean).join(' · ')}</div>
                       </div>
                       <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
                     </button>

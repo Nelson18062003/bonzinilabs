@@ -8,7 +8,9 @@
 //   · « 677 12 » ne trouvait pas « +23767712… » (espaces/format) ;
 //   · une virgule ou un % dans la saisie cassait le filtre PostgREST.
 // Ici : normalisation (casse + accents), multi-jetons en ET, téléphone
-// comparé chiffres-à-chiffres, e-mail et entreprise inclus.
+// comparé chiffres-à-chiffres, e-mail, entreprise et identifiant client
+// (« BZ-482913 », « bz482913 » ou « 482913 » tel qu'il est lu sur un relevé
+// bancaire) inclus.
 // ============================================================
 
 export interface SearchableClient {
@@ -17,6 +19,8 @@ export interface SearchableClient {
   phone: string;
   email?: string | null;
   companyName?: string | null;
+  /** Identifiant `BZ-NNNNNN` — cherché tel quel ou par ses chiffres. */
+  customerCode?: string | null;
 }
 
 /** minuscules + accents retirés + espaces normalisés. */
@@ -43,12 +47,15 @@ export function matchesClientSearch(client: SearchableClient, query: string): bo
   if (tokens.length === 0) return true;
 
   const haystack = normalizeText(
-    `${client.firstName} ${client.lastName} ${client.email ?? ''} ${client.companyName ?? ''}`,
+    `${client.firstName} ${client.lastName} ${client.email ?? ''} ${client.companyName ?? ''} ${client.customerCode ?? ''}`,
   );
   const phoneDigits = digitsOnly(client.phone ?? '');
+  const codeCompact = normalizeText(client.customerCode ?? '').replace(/[^a-z0-9]/g, '');
 
   return tokens.every((token) => {
     if (haystack.includes(token)) return true;
+    const tokenCompact = token.replace(/[^a-z0-9]/g, '');
+    if (codeCompact && tokenCompact.length >= 3 && codeCompact.includes(tokenCompact)) return true;
     const tokenDigits = digitsOnly(token);
     return tokenDigits.length >= 2 && phoneDigits.includes(tokenDigits);
   });

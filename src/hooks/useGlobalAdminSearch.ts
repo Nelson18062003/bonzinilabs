@@ -12,7 +12,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
  * input in queries).
  */
 export interface GlobalSearchResults {
-  clients: { userId: string; name: string; phone: string }[];
+  clients: { userId: string; name: string; phone: string; customerCode: string }[];
   deposits: { id: string; reference: string; amountXaf: number }[];
   payments: { id: string; reference: string; amountRmb: number }[];
 }
@@ -32,8 +32,8 @@ export function useGlobalAdminSearch(rawTerm: string) {
       const [clientsRes, depositsRes, paymentsRes] = await Promise.all([
         supabaseAdmin
           .from('clients')
-          .select('user_id, first_name, last_name, phone')
-          .or(`first_name.ilike.${like},last_name.ilike.${like},phone.ilike.${like}`)
+          .select('user_id, first_name, last_name, phone, customer_code')
+          .or(`first_name.ilike.${like},last_name.ilike.${like},phone.ilike.${like},customer_code.ilike.${like}`)
           .limit(6),
         supabaseAdmin
           .from('deposits')
@@ -58,6 +58,7 @@ export function useGlobalAdminSearch(rawTerm: string) {
           userId: c.user_id,
           name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Client',
           phone: c.phone ?? '',
+          customerCode: c.customer_code ?? '',
         })),
         deposits: (depositsRes.data ?? []).map((d) => ({
           id: d.id,

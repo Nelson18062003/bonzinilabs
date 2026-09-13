@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClients } from '@/hooks/useClientManagement';
 import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib/clientSearch';
-import { Search, Plus, User, ArrowUpDown, Check } from 'lucide-react';
+import { Search, Plus, User, ArrowUpDown, Check, ScanLine } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatXAF } from '@/lib/formatters';
@@ -72,7 +72,7 @@ export function MobileClientsScreen() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} />} />
+      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<div className="flex items-center gap-2"><IconButton icon={ScanLine} onClick={() => navigate('/m/clients/scan')} ariaLabel={t('scanCustomerCode', { defaultValue: 'Scanner un identifiant client' })} /><IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} /></div>} />
 
       <PullToRefresh
         onRefresh={refetch}
@@ -83,7 +83,7 @@ export function MobileClientsScreen() {
           <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
           <TextInput
             type="text"
-            placeholder={t('searchByNamePhone', { defaultValue: 'Rechercher par nom, téléphone...' })}
+            placeholder={t('searchByNamePhoneCode', { defaultValue: 'Nom, téléphone, identifiant BZ-…' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -134,7 +134,7 @@ export function MobileClientsScreen() {
                         />
                       </div>
                       <p className={cn('text-[16px] leading-snug', TEXT.strong)}>Solde : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
-                      {client.phone && <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{client.phone}</p>}
+                      <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{[client.customerCode, client.phone].filter(Boolean).join(' · ')}</p>
                     </div>
                   </div>
                 </button>

@@ -439,6 +439,13 @@
   "processing": "Processing…",
   "debit": "Debit",
   "home": "Home",
+  "searchByNamePhoneCode": "Name, phone, ID BZ-…",
+  "scanCustomerCode": "Scan a customer ID",
+  "shippingLabelAction": "Shipping label",
+  "shippingLabelActionDesc": "Warehouse or office · image or printable PDF",
+  "shippingSettings": "Shipping",
+  "shippingSettingsRow": "China addresses and contacts",
+  "shippingSettingsRowHint": "Warehouse, office, phone, WeChat, WhatsApp, email — printed on the shipping label",
   "assistant": "Mola",
   "cargo": "Cargo",
   "navOperations": "Operations"

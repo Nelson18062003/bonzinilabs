@@ -65,7 +65,8 @@
     "version": "Bonzini v1.0.0 • Made with 💜 in Cameroon",
     "comingSoon": "Feature coming soon",
     "sectionAccount": "Account",
-    "sectionPreferences": "Preferences"
+    "sectionPreferences": "Preferences",
+    "customerCode": "My customer ID"
   },
   "beneficiaries": {
     "title": "Beneficiaries",
@@ -189,5 +190,38 @@
       "avg": "Avg",
       "max": "Max"
     }
+  },
+  "myCode": {
+    "cardTitle": "My customer ID",
+    "cardHint": "Bank transfers · parcel QR label",
+    "title": "My customer ID",
+    "label": "Customer ID",
+    "back": "Back",
+    "copy": "Copy ID",
+    "copied": "ID copied",
+    "copyFailed": "Could not copy",
+    "bankTitle": "Your bank transfers",
+    "bankBody": "Write this ID in the reference (memo) of every bank transfer or deposit. Your account is credited without any lookup delay.",
+    "bankMotif": "Transfer reference",
+    "cargoTitle": "Your parcels from China",
+    "cargoBody": "Send this label to your supplier: they stick it on every carton. On arrival at our warehouse, one scan links your parcels to your account.",
+    "shareLabel": "Share image",
+    "downloadPdf": "Printable PDF",
+    "labelDownloaded": "Label downloaded",
+    "labelError": "Could not generate the label",
+    "footnote": "This ID is permanent: it never changes, even if you update your details.",
+    "dest": {
+      "warehouse": "Warehouse",
+      "office": "Office"
+    },
+    "destHintWarehouse": "For most shipments. The supplier delivers straight to our warehouse.",
+    "destHintOffice": "Only if Bonzini asked you to use it for this shipment.",
+    "destUnavailable": "Address being updated — the label will be available very soon.",
+    "supplierTitle": "Supplier (optional)",
+    "supplierName": "Name",
+    "supplierPhone": "Phone",
+    "supplierAddress": "Address (in China)",
+    "supplierHint": "Leave empty: the supplier fills these lines in by hand.",
+    "supplierEmail": "Email"
   }
 }

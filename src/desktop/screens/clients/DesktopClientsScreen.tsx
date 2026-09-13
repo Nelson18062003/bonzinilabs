@@ -183,7 +183,7 @@ export function DesktopClientsScreen() {
           <SearchField
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder={compact ? 'Rechercher…' : 'Nom, téléphone, e-mail, entreprise…'}
+            placeholder={compact ? 'Rechercher…' : 'Nom, téléphone, e-mail, identifiant BZ-…'}
             className={compact ? 'w-[200px]' : 'w-[300px]'}
           />
           <DropChip label="Solde" value={balanceFilter} options={BALANCE_OPTIONS} onChange={setBalanceFilter} />
@@ -279,6 +279,7 @@ export function DesktopClientsScreen() {
                             <Td>
                               <div className="leading-[16px]">
                                 <div className={cn('text-[12px] tabular-nums', TEXT.muted)}>{client.phone || '—'}</div>
+                                <div className={cn('text-[11px] font-semibold tabular-nums', TEXT.body)}>{client.customerCode}</div>
                                 {client.email && <div className={cn('max-w-[200px] truncate text-[11px]', TEXT.muted)}>{client.email}</div>}
                               </div>
                             </Td>
