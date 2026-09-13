@@ -68,28 +68,40 @@ export interface ChinaReceivingAddress {
   label: { zh: string; en: string; fr: string };
   /** Adresse complète en chinois — la ligne que lit le livreur. Peut contenir des sauts de ligne. */
   addressZh: string;
-  /** Nom du destinataire à écrire sur le colis (收件人) : notre société / la personne sur place. */
+  /** Même adresse en anglais — pour le client africain et son transitaire. */
+  addressEn?: string;
+  /** Nom du destinataire à écrire sur le colis (收件人) : la personne sur place. */
   recipientZh: string;
-  /** Téléphone joignable en Chine pour cette destination. */
+  /** Téléphone du lieu (celui que compose le livreur). */
   phone: string;
-  /** Numéro WeChat pour cette destination. */
+  /** Numéro WeChat du contact. */
   wechat: string;
+  /** WhatsApp du contact — le canal du client africain. */
+  whatsapp?: string;
 }
 
-/** Notre société, telle qu'elle figure sur l'étiquette (bloc « nos coordonnées »). */
+/** Notre société, telle qu'elle figure sur l'étiquette (bloc « destinataire »). */
 export const BONZINI_CHINA_COMPANY = {
   nameZh: '[NOM DE LA SOCIÉTÉ EN CHINOIS — à compléter]',
   nameEn: 'Bonzini Labs',
 };
 
+/**
+ * Entrepôt : valeurs relevées sur le bon de réception (三联单) de l'entrepôt
+ * de Baiyun — Tina, tél./WeChat 138 2229 7518, WhatsApp +86 186 6743 9286,
+ * tél. entrepôt 199 2746 3902. Vérifier le caractère « 窖 » de 窖心街 (lu sur
+ * une photo) avant la première impression.
+ */
 export const CHINA_RECEIVING_ADDRESSES: Record<ShippingDestination, ChinaReceivingAddress> = {
   warehouse: {
     key: 'warehouse',
     label: { zh: '仓库', en: 'Warehouse', fr: 'Entrepôt' },
-    addressZh: '[ADRESSE ENTREPÔT CHINE — à compléter]',
-    recipientZh: '[DESTINATAIRE ENTREPÔT — à compléter]',
-    phone: '[TÉLÉPHONE ENTREPÔT — à compléter]',
-    wechat: '[WECHAT ENTREPÔT — à compléter]',
+    addressZh: '广东省广州市白云区窖心街\n白云湖物流园 K栋 18档',
+    addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou, Guangdong',
+    recipientZh: 'Tina',
+    phone: '199 2746 3902',
+    wechat: '138 2229 7518',
+    whatsapp: '+86 186 6743 9286',
   },
   office: {
     key: 'office',

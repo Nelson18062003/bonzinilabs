@@ -12,10 +12,14 @@
 //   0. le bandeau : ce que c'est et quoi en faire (imprimer, coller) ;
 //   1. l'ADRESSE de livraison — c'est elle qui fait arriver le carton ;
 //   2. le CODE CLIENT et son QR — c'est ce qui le rattache au bon client ;
-//   3. le client (nom, société, téléphone, destination finale au Cameroun) ;
-//   4. le fournisseur (nom, téléphone, adresse, marchandise, carton n°/total)
-//      — pré-rempli si on le connaît, sinon des lignes à remplir au stylo ;
-//   5. les dates : expédition (fournisseur) et réception (notre entrepôt).
+//   3. le client (nom, société, téléphone Afrique, destination finale) ;
+//   4. le fournisseur (nom, téléphone, adresse, marchandise, quantité,
+//      carton n°/total) — pré-rempli si on le connaît, sinon au stylo ;
+//   5. une bande « réservé à l'entrepôt » : date d'arrivée, cubage, total.
+// Les intitulés reprennent MOT POUR MOT le bon de réception papier (三联单)
+// que l'entrepôt remplit aujourd'hui : 客户姓名, 电话(非洲), 货物品名,
+// 货物数量, 立方 (CBM), 总包数, 供货商及电话, 日期 — l'équipe retrouve ses
+// repères, et le jour où la réception passe dans l'app, les champs existent.
 // Pas d'en-tête de marque : le nom de la société est dans la case
 // « destinataire », là où le livreur le cherche.
 //
@@ -118,7 +122,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         width: LABEL_W,
         height: LABEL_H,
         boxSizing: 'border-box',
-        padding: 22,
+        padding: 18,
         background: '#FFFFFF',
         color: INK,
         fontFamily: FONT,
@@ -140,7 +144,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         </div>
 
         {/* 1 · Destination — la case la plus grande */}
-        <div style={{ padding: '11px 16px 12px', borderBottom: RULE, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '10px 16px 11px', borderBottom: RULE, display: 'flex', flexDirection: 'column', gap: 7 }}>
           <CellHead
             zh="收件地址"
             en="Deliver to"
@@ -151,11 +155,13 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
             }
           />
           <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 27, fontWeight: 900, lineHeight: 1.3, whiteSpace: 'pre-line', letterSpacing: 0.4 }}>{dest.addressZh}</div>
+          {dest.addressEn ? <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, lineHeight: 1.25 }}>{dest.addressEn}</div> : null}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <KV zh="收件人" en="Recipient" value={`${dest.recipientZh} · ${ourCompany}`} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16 }}>
-              <KV zh="电话" en="Phone" value={dest.phone} latin />
-              <KV zh="微信" en="WeChat" value={dest.wechat} latin />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 4 }}>
+              <KV zh="电话" en="Tel" value={dest.phone} latin size={14} />
+              <KV zh="微信" en="WeChat" value={dest.wechat} latin size={14} />
+              {dest.whatsapp ? <KV zh="" en="WhatsApp" value={dest.whatsapp} latin size={14} /> : null}
             </div>
           </div>
         </div>
@@ -163,7 +169,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         {/* 2 · Code client + QR */}
         <div style={{ display: 'flex', borderBottom: RULE }}>
           <div style={{ padding: 14, borderRight: RULE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <QRCodeSVG value={customerQrPayload(code)} size={172} level="H" marginSize={0} />
+            <QRCodeSVG value={customerQrPayload(code)} size={150} level="H" marginSize={0} />
           </div>
           <div style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
             <CellHead zh="客户编号" en="Customer ID" />
@@ -176,26 +182,28 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         </div>
 
         {/* 3 · Client */}
-        <div style={{ padding: '10px 16px 11px', borderBottom: RULE, display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div style={{ padding: '9px 16px 10px', borderBottom: RULE, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <CellHead zh="客户" en="Customer" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 4 }}>
-            <KV zh="姓名" en="Name" value={clientName} latin />
-            <KV zh="电话" en="Phone" value={clientPhone || '—'} latin />
-            <KV zh="公司" en="Company" value={companyName || '—'} latin />
-            <KV zh="目的地" en="Final destination" value={finalDestination || '—'} latin />
+            <KV zh="客户姓名" en="Name" value={clientName} latin size={14} />
+            <KV zh="电话(非洲)" en="Tel" value={clientPhone || '—'} latin size={14} />
+            <KV zh="公司" en="Company" value={companyName || '—'} latin size={14} />
+            <KV zh="目的地" en="Destination" value={finalDestination || '—'} latin size={14} />
           </div>
         </div>
 
         {/* 4 · Fournisseur — pré-rempli ou à remplir au stylo */}
         <div style={{ padding: '10px 16px 11px', borderBottom: RULE, display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-          <CellHead zh="供应商 / 发件人" en="Supplier · Sender" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 8, flex: 1, alignContent: 'space-evenly' }}>
-            <KV zh="名称" en="Name" value={supplier?.name} latin />
-            <KV zh="电话" en="Phone" value={supplier?.phone} latin />
+          <CellHead zh="供货商 / 发件人" en="Supplier · Sender" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 7, flex: 1, alignContent: 'space-evenly' }}>
+            <KV zh="供货商" en="Supplier" value={supplier?.name} latin size={14} />
+            <KV zh="电话" en="Tel" value={supplier?.phone} latin size={14} />
             <div style={{ gridColumn: '1 / -1' }}>
               <KV zh="地址" en="Address" value={supplier?.address} size={13} />
             </div>
-            <KV zh="货物" en="Goods" />
+            <KV zh="货物品名" en="Goods name" />
+            <KV zh="货物数量" en="Qty (件)" />
+            <KV zh="发货日期" en="Ship date" />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <Key zh="箱号" en="Carton no." />
               <span style={{ flex: 1, borderBottom: '1.5px solid #999', height: 18 }} />
@@ -205,10 +213,14 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
           </div>
         </div>
 
-        {/* 5 · Dates : l'expéditeur date l'envoi, notre entrepôt date l'arrivée */}
-        <div style={{ padding: '9px 16px 10px', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16 }}>
-          <KV zh="发货日期" en="Ship date" />
-          <KV zh="到货日期" en="Received on" />
+        {/* 5 · Réservé à l'entrepôt — les colonnes du 三联单 : date, cubage, total */}
+        <div style={{ padding: '8px 16px 9px', background: '#F3F3F3', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <CellHead zh="仓库填写" en="Warehouse use only" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', columnGap: 14 }}>
+            <KV zh="到货日期" en="Date" />
+            <KV zh="立方" en="CBM" />
+            <KV zh="总包数" en="Total" />
+          </div>
         </div>
 
         {/* Pied : rappel du code, lisible même si le QR est abîmé */}

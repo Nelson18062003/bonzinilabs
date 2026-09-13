@@ -42,7 +42,7 @@ describe('isCustomerCode', () => {
 
 describe('adresses de réception', () => {
   it('un placeholder entre crochets n’est pas une adresse configurée', () => {
-    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.warehouse)).toBe(false);
+    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.warehouse)).toBe(true);
     expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.office)).toBe(false);
     expect(
       isAddressConfigured({
