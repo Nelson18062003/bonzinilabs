@@ -20,6 +20,7 @@ export default defineConfig(({ mode }) => ({
             "@/hooks/useTreasury": path.resolve(__dirname, "./src/__screenshot__/mockTreasury.ts"),
             "@/contexts/AdminAuthContext": path.resolve(__dirname, "./src/__screenshot__/mockAdminAuth.ts"),
             "@/hooks/useCargo": path.resolve(__dirname, "./src/__screenshot__/mockCargo.ts"),
+            "@/hooks/useAdminDeposits": path.resolve(__dirname, "./src/__screenshot__/mockDeposits.ts"),
           }
         : {}),
       "@": path.resolve(__dirname, "./src"),

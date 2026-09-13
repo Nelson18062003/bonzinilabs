@@ -1,8 +1,9 @@
 // ============================================================
 // MODULE DEPOTS V2 — MobileDepositDetailV2
-// Présentation migrée sur le design kit (Ofspace/Mola) :
-//   canvas doux · cartes à ombre douce · hero Amount · StatusPill
-//   toné (depositStatusTone) · MIcon · SlaDot · bottom-sheets du kit.
+// Le dépôt en phrases, pour quelqu'un qui lit vite sur un téléphone :
+//   combien · qui · comment · quand, puis la preuve, puis la décision.
+//   Le détail (référence, banque, date) et le suivi sont repliés.
+//   Rien sous 16 px, rien de tronqué.
 // Logique 100% préservée : validate/reject/start-review, upload &
 //   suppression de preuves, suppression dépôt, timeline, PDF reçu.
 // ============================================================
@@ -22,27 +23,26 @@ import {
 } from '@/hooks/useAdminDeposits';
 import {
   DEPOSIT_STATUS_LABELS,
-  DEPOSIT_METHOD_LABELS_SHORT,
+  DEPOSIT_METHOD_LABELS,
   REJECTION_REASONS,
   PROOF_DELETE_REASONS,
 } from '@/types/deposit';
-import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
-import { formatCurrency, formatRelativeDate } from '@/lib/formatters';
+import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel } from '@/lib/depositTimeline';
+import { formatCurrency } from '@/lib/formatters';
+import { whenSentence } from '@/lib/plainTime';
 import { MIN_DEPOSIT_XAF, isValidXafAmount, xafAmountError } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
   TEXT,
   SOFT_PILL,
-  PRIMARY_PILL,
-  SUBTLE_PILL,
-  DANGER_SOFT_PILL,
+  DISABLED_PILL,
   depositStatusTone,
   StatusPill,
   Card,
-  Amount,
+  Button,
+  SectionTitle,
   Holder,
-  Row,
   PrimaryPill,
   SoftPill,
   BottomSheet,
@@ -52,7 +52,6 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Loader2,
   FileText,
   CheckCircle,
   AlertTriangle,
@@ -60,7 +59,6 @@ import {
   BellOff,
   ArrowRight,
   ChevronDown,
-  ChevronUp,
   ChevronLeft,
   Trash2,
   X,
@@ -118,19 +116,28 @@ function MIcon({ family, size = 20 }: { family: string; size?: number }) {
   );
 }
 
-// ── Point SLA ────────────────────────────────────────────────
-function SlaDot({ level }: { level: SlaLevel }) {
-  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
+// ── Une phrase ──────────────────────────────────────────────
+function Line({ children, tone }: { children: React.ReactNode; tone?: 'warn' | 'bad' | 'good' }) {
   return (
-    <span
-      className="inline-block shrink-0 rounded-full"
-      style={{
-        width: 6,
-        height: 6,
-        background: color,
-        animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
-      }}
-    />
+    <p className={cn('text-[16px] leading-relaxed', TEXT.body,
+      tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
+      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
+      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]')}>
+      {children}
+    </p>
+  );
+}
+
+// ── Une section repliée ─────────────────────────────────────
+function Fold({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <Card className="overflow-hidden p-0">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[56px] w-full items-center justify-between px-4 text-left">
+        <span className={cn('text-[18px] font-semibold', TEXT.strong)}>{title}</span>
+        <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
+      </button>
+      {open && <div className={cn('border-t px-4 pb-4 pt-2', SURFACE.divider)}>{children}</div>}
+    </Card>
   );
 }
 
@@ -207,7 +214,8 @@ export function MobileDepositDetailV2() {
   // Delete deposit state
   const [showDeleteDepositSheet, setShowDeleteDepositSheet] = useState(false);
 
-  // Suivi collapsible
+  // Sections repliées
+  const [showDetail, setShowDetail] = useState(false);
   const [showSuivi, setShowSuivi] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
@@ -421,7 +429,7 @@ export function MobileDepositDetailV2() {
         <DetailHeader title="Dépôt" onBack={() => navigate('/m/deposits')} />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
           <Holder icon={AlertTriangle} tone="danger" size="lg" />
-          <p className={cn('text-[14px] font-medium', TEXT.muted)}>Dépôt introuvable</p>
+          <p className={cn('text-[16px] font-medium', TEXT.muted)}>Dépôt introuvable</p>
         </div>
       </div>
     );
@@ -433,8 +441,6 @@ export function MobileDepositDetailV2() {
     ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
     : 'Client inconnu';
   const isLocked = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
-  const canValidate = !isLocked;
-  const canReject = !isLocked;
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
   const canAddProof = !isLocked;
@@ -444,88 +450,75 @@ export function MobileDepositDetailV2() {
   const slaLevel = getDepositSlaLevel(deposit.created_at, deposit.status);
   const statusLabel = DEPOSIT_STATUS_LABELS[deposit.status] || deposit.status;
   const family = getFamilyFromMethod(deposit.method);
-  const methodShort = DEPOSIT_METHOD_LABELS_SHORT[deposit.method] || deposit.method;
+  const methodLabel = DEPOSIT_METHOD_LABELS[deposit.method] || deposit.method;
+  const phone = deposit.client_phone || deposit.profiles?.phone;
 
   const infoRows = [
     { l: 'Référence', v: deposit.reference },
-    { l: 'Méthode', v: methodShort },
+    { l: 'Méthode', v: methodLabel },
     deposit.bank_name ? { l: 'Banque', v: deposit.bank_name } : null,
     deposit.agency_name ? { l: 'Agence', v: deposit.agency_name } : null,
-    { l: 'Date', v: format(new Date(deposit.created_at), 'dd MMM yyyy, HH:mm', { locale: fr }) },
-    deposit.admin_comment ? { l: 'Note admin', v: deposit.admin_comment } : null,
+    phone ? { l: 'Téléphone du client', v: phone } : null,
+    deposit.profiles?.company_name ? { l: 'Entreprise', v: deposit.profiles.company_name } : null,
+    { l: 'Envoyé le', v: format(new Date(deposit.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr }) },
+    deposit.validated_at ? { l: 'Validé le', v: format(new Date(deposit.validated_at), "d MMMM yyyy 'à' HH:mm", { locale: fr }) } : null,
+    deposit.admin_comment ? { l: 'Note pour le client', v: deposit.admin_comment } : null,
+    deposit.admin_internal_note ? { l: 'Note interne', v: deposit.admin_internal_note } : null,
   ].filter(Boolean) as { l: string; v: string }[];
 
   return (
     <div className={cn('flex min-h-full flex-col pb-6', SURFACE.canvas)}>
-      <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
-
-      {/* ── Header : ← REF + [Relevé] ──────────────────────── */}
+      {/* ── En-tête : ← Dépôt + [Relevé] ──────────────────── */}
       <DetailHeader
-        title={deposit.reference}
+        title="Dépôt"
         onBack={() => navigate('/m/deposits')}
         right={
-          <button
-            onClick={handleDownloadReceipt}
-            disabled={isGeneratingPDF}
-            className={cn(
-              'inline-flex h-8 shrink-0 items-center gap-1.5 px-2 text-[14px] font-medium transition-colors', SOFT_PILL,
-              isGeneratingPDF && 'opacity-60',
-            )}
-          >
-            {isGeneratingPDF && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          <Button variant="neutral" onClick={handleDownloadReceipt} loading={isGeneratingPDF}>
+            <Download />
             Relevé
-          </button>
+          </Button>
         }
       />
 
-      <div className="flex flex-col gap-3 px-5 pt-2">
-        {/* ── Sous-header : badge · méthode · date + SLA ────── */}
-        <div className="flex items-center justify-between gap-2 px-1">
-          <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
-          <div className="flex items-center gap-1.5">
-            <MIcon family={family} size={20} />
-            <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{methodShort}</span>
-            {slaLevel && <SlaDot level={slaLevel} />}
-            <span className={cn('text-[14px]', TEXT.muted)}>{formatRelativeDate(deposit.created_at)}</span>
-          </div>
-        </div>
-
-        {/* ── Hero montant ──────────────────────────────────── */}
-        <Card className="flex flex-col items-center gap-3 py-6 text-center">
-          <Amount value={fmt(deposit.amount_xaf)} unit="XAF" size="xl" />
-          <div className={cn('text-[14px]', TEXT.muted)}>
-            Client : <span className={cn('font-bold', TEXT.strong)}>{clientName}</span>
-          </div>
-          {deposit.confirmed_amount_xaf && deposit.confirmed_amount_xaf !== deposit.amount_xaf && (
-            <div className="flex items-center justify-center gap-1.5">
-              <span className={cn('text-[14px] line-through', TEXT.muted)}>{fmt(deposit.amount_xaf)} XAF</span>
-              <ArrowRight className="h-3.5 w-3.5 text-[#02542D] dark:text-[#CFF7D3]" />
-              <span className="text-[14px] font-bold text-[#02542D] dark:text-[#CFF7D3]">
-                {fmt(deposit.confirmed_amount_xaf)} XAF crédité
-              </span>
+      <div className="flex flex-col gap-6 px-5 pt-2">
+        {/* ── En une phrase : combien, qui, comment, quand ──── */}
+        <section className="space-y-3">
+          <div className="flex items-start gap-3">
+            <MIcon family={family} size={44} />
+            <div className="min-w-0 flex-1 space-y-2">
+              <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
+              <p className={cn('text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums', TEXT.strong)}>
+                {fmt(deposit.amount_xaf)} XAF
+              </p>
+              <Line>
+                Envoyé par <b className={TEXT.strong}>{clientName}</b> via {methodLabel}, {whenSentence(deposit.created_at)}.
+              </Line>
             </div>
+          </div>
+          {deposit.confirmed_amount_xaf != null && deposit.confirmed_amount_xaf !== deposit.amount_xaf && (
+            <Line tone="good">
+              Le client a été crédité de {fmt(deposit.confirmed_amount_xaf)} XAF, au lieu de {fmt(deposit.amount_xaf)} XAF.
+            </Line>
           )}
+          {deposit.status === 'rejected' && deposit.rejection_reason && (
+            <Line tone="bad">Refusé : {deposit.rejection_reason}</Line>
+          )}
+          {slaLevel === 'overdue' && <Line tone="bad">Ce dépôt attend depuis plus de 8 heures. Il faut le traiter.</Line>}
+          {slaLevel === 'aging' && <Line tone="warn">Ce dépôt attend depuis plus de 2 heures.</Line>}
           {wallet && (
-            <div className={cn('text-[14px]', TEXT.muted)}>
-              Solde wallet : <strong className={TEXT.strong}>{formatCurrency(wallet.balance_xaf)}</strong>
-            </div>
+            <Line>
+              Solde du client : <b className={cn('tabular-nums', TEXT.strong)}>{fmt(wallet.balance_xaf)} XAF</b>.
+            </Line>
           )}
-        </Card>
+        </section>
 
-        {/* ── Section preuves ───────────────────────────────── */}
-        <Card>
-          <div className="mb-3 flex items-center justify-between">
-            <span className={cn('text-[14px] font-bold', TEXT.strong)}>Preuves ({proofs?.length || 0})</span>
-            {canAddProof && (
-              <button
-                onClick={() => setShowUploadSheet(true)}
-                className={cn('inline-flex h-8 items-center gap-1 px-2 text-[14px] font-medium transition-colors', SOFT_PILL)}
-              >
-                <Plus className="h-3 w-3" />
-                Ajouter
-              </button>
-            )}
-          </div>
+        {/* ── La preuve ─────────────────────────────────────── */}
+        <section>
+          <SectionTitle
+            action={canAddProof && hasProofs ? { label: 'Ajouter', onClick: () => setShowUploadSheet(true) } : undefined}
+          >
+            {hasProofs && proofs!.length > 1 ? `Les preuves (${proofs!.length})` : 'La preuve'}
+          </SectionTitle>
 
           {/* Input caché pour remplacement */}
           <input
@@ -537,213 +530,178 @@ export function MobileDepositDetailV2() {
           />
 
           {!hasProofs ? (
-            <div>
-              <div className="rounded-lg border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
-                <div className={cn('text-[14px] font-bold', TEXT.muted)}>Preuve manquante</div>
-                <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Le client doit envoyer un justificatif</div>
-              </div>
+            <Card className="space-y-3">
+              <Line>Le client n'a pas encore envoyé de preuve de paiement.</Line>
               {canAddProof && (
-                <button
-                  onClick={() => setShowUploadSheet(true)}
-                  className={cn('mt-2 flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', SOFT_PILL)}
-                >
-                  <Plus className="h-3.5 w-3.5" />
+                <Button variant="neutral" className="w-full" onClick={() => setShowUploadSheet(true)}>
+                  <Plus />
                   Ajouter une preuve
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           ) : (
-            <div className="flex flex-col gap-2.5">
-              {proofs!.map((proof, idx) => {
+            <div className="flex flex-col gap-3">
+              {proofs!.map((proof) => {
                 const signedUrl = proof.signedUrl;
                 const isImage = proof.file_type?.startsWith('image/');
                 const isPdf = proof.file_type === 'application/pdf';
                 return (
-                  <div key={proof.id} className="overflow-hidden rounded-lg ring-1 ring-black/[0.06] dark:ring-white/[0.06]">
-                    {/* Preview */}
-                    <div
-                      className="relative w-full bg-black/5 dark:bg-white/5"
-                      style={{ aspectRatio: idx === 0 ? '16/9' : '16/7' }}
-                    >
+                  <Card key={proof.id} className="overflow-hidden p-0">
+                    <div className="relative w-full bg-[#F5F5F5] dark:bg-[#383838]" style={{ aspectRatio: '16/10' }}>
                       {isImage && signedUrl ? (
-                        <img src={signedUrl} alt={proof.file_name} className="h-full w-full object-cover" />
-                      ) : isPdf ? (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5">
-                          <FileText className={cn('h-8 w-8', TEXT.muted)} />
-                          <span className={cn('text-[14px] font-bold', TEXT.muted)}>PDF</span>
-                        </div>
+                        <img src={signedUrl} alt={proof.file_name} className="h-full w-full object-contain" />
                       ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5">
-                          <FileText className={cn('h-8 w-8', TEXT.muted)} />
-                          <span className={cn('px-4 text-center text-[14px]', TEXT.muted)}>{proof.file_name}</span>
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-2">
+                          <FileText className={cn('h-10 w-10', TEXT.muted)} />
+                          <span className={cn('text-[16px] font-semibold', TEXT.muted)}>{isPdf ? 'Document PDF' : 'Fichier'}</span>
                         </div>
                       )}
-                      {/* Overlay nom fichier — haut gauche */}
-                      <div className="absolute left-1.5 top-1.5 max-w-[55%] truncate rounded bg-black/60 px-1.5 py-0.5 text-[14px] font-medium text-white">
-                        {proof.file_name}
-                      </div>
-                      {/* Badge uploader — haut droite */}
-                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[14px] font-medium text-white">
-                        {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <Line>
+                        {proof.uploaded_by_type === 'admin' ? 'Ajoutée par un administrateur' : 'Envoyée par le client'}{' '}
+                        {whenSentence(proof.uploaded_at)}.
+                      </Line>
+                      <p className={cn('break-all text-[16px] leading-snug', TEXT.muted)}>{proof.file_name}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="neutral"
+                          onClick={() => signedUrl && isImage && setViewingProof(signedUrl)}
+                          disabled={!signedUrl || !isImage}
+                        >
+                          <Eye />
+                          Agrandir
+                        </Button>
+                        <a
+                          href={signedUrl ?? undefined}
+                          download={proof.file_name}
+                          className={cn(
+                            'inline-flex h-10 items-center justify-center gap-2 px-3 text-[16px] font-medium no-underline [&_svg]:h-5 [&_svg]:w-5',
+                            signedUrl ? SOFT_PILL : cn(DISABLED_PILL, 'pointer-events-none'),
+                          )}
+                        >
+                          <Download />
+                          Télécharger
+                        </a>
+                        {!isLocked && (
+                          <>
+                            <Button
+                              variant="neutral"
+                              onClick={() => { setReplaceProofId(proof.id); replaceFileRef.current?.click(); }}
+                              disabled={uploadProofs.isPending}
+                            >
+                              <ArrowRight />
+                              Remplacer
+                            </Button>
+                            <Button variant="dangerSubtle" onClick={() => setShowDeleteProofSheet(proof.id)}>
+                              <Trash2 />
+                              Supprimer
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
-
-                    {/* Boutons d'action */}
-                    <div className={cn('flex flex-wrap gap-2 p-2', SURFACE.inset)}>
-                      <button
-                        onClick={() => signedUrl && isImage && setViewingProof(signedUrl)}
-                        disabled={!signedUrl || !isImage}
-                        className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', SOFT_PILL, (!signedUrl || !isImage) && 'opacity-40')}
-                      >
-                        <Eye className="h-4 w-4" />
-                        Agrandir
-                      </button>
-                      <a
-                        href={signedUrl ?? undefined}
-                        download={proof.file_name}
-                        className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium no-underline', SOFT_PILL, !signedUrl && 'pointer-events-none opacity-40')}
-                      >
-                        <Download className="h-4 w-4" />
-                        Télécharger
-                      </a>
-                      {!isLocked && (
-                        <>
-                          <button
-                            onClick={() => { setReplaceProofId(proof.id); replaceFileRef.current?.click(); }}
-                            disabled={uploadProofs.isPending}
-                            className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', SOFT_PILL, uploadProofs.isPending && 'opacity-40')}
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                            Remplacer
-                          </button>
-                          <button
-                            onClick={() => setShowDeleteProofSheet(proof.id)}
-                            className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', DANGER_SOFT_PILL)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Supprimer
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
           )}
-        </Card>
+        </section>
 
-        {/* ── Section infos + actions ───────────────────────── */}
-        <Card>
-          {infoRows.map((r, i) => (
-            <Row key={i} label={r.l} value={<span className="block max-w-[60vw] truncate">{r.v}</span>} />
-          ))}
-
-          {/* ── Boutons d'action ───────────────────────────── */}
-          {(canValidate || canReject || canStartReview || isSuperAdmin) && (
-            <div className="mt-3 flex flex-col gap-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+        {/* ── La décision ───────────────────────────────────── */}
+        <section className="space-y-2">
+          <SectionTitle>La décision</SectionTitle>
+          {isLocked ? (
+            <Line>
+              {deposit.status === 'validated'
+                ? 'Ce dépôt est validé : le client a été crédité.'
+                : deposit.status === 'rejected'
+                  ? 'Ce dépôt a été refusé.'
+                  : 'Ce dépôt a été annulé.'}{' '}
+              Il n'y a plus rien à faire.
+            </Line>
+          ) : (
+            <>
               {canStartReview && (
-                <button
-                  onClick={handleStartReview}
-                  disabled={startReview.isPending}
+                <Button className="w-full" onClick={handleStartReview} loading={startReview.isPending}>
+                  Commencer la vérification
+                </Button>
+              )}
+              <Button
+                className="w-full"
+                variant={canStartReview ? 'neutral' : 'primary'}
+                onClick={() => {
+                  setConfirmedAmount(deposit.amount_xaf.toString());
+                  setShowValidateConfirm(true);
+                }}
+              >
+                Valider le dépôt
+              </Button>
+              <Button className="w-full" variant="dangerSubtle" onClick={() => setShowRejectSheet(true)}>
+                Refuser le dépôt
+              </Button>
+            </>
+          )}
+          {isSuperAdmin && (
+            <Button className="w-full" variant="subtle" onClick={() => setShowDeleteDepositSheet(true)}>
+              <Trash2 />
+              Annuler ce dépôt
+            </Button>
+          )}
+        </section>
+
+        {/* ── Le détail (replié) ────────────────────────────── */}
+        <Fold title="Le détail" open={showDetail} onToggle={() => setShowDetail(!showDetail)}>
+          <div className={cn('divide-y', SURFACE.divider)}>
+            {infoRows.map((r) => (
+              <div key={r.l} className="py-2">
+                <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{r.l}</p>
+                <p className={cn('break-words text-[16px] font-semibold leading-snug tabular-nums', TEXT.strong)}>{r.v}</p>
+              </div>
+            ))}
+          </div>
+        </Fold>
+
+        {/* ── Le suivi (replié) ─────────────────────────────── */}
+        <Fold title="Le suivi" open={showSuivi} onToggle={() => setShowSuivi(!showSuivi)}>
+          {timelineSteps.map((step, index) => (
+            <div key={step.id} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div
                   className={cn(
-                    'flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', PRIMARY_PILL,
-                    startReview.isPending && 'opacity-60',
+                    'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2',
+                    getStepColors(step.key, step.status),
                   )}
                 >
-                  {startReview.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Commencer la vérification
-                </button>
-              )}
-
-              {canValidate && (
-                <>
-                  <button
-                    onClick={() => {
-                      setConfirmedAmount(deposit.amount_xaf.toString());
-                      setShowValidateConfirm(true);
-                    }}
-                    className={cn('flex h-10 w-full items-center justify-center text-[16px] font-medium transition-colors', PRIMARY_PILL)}
-                  >
-                    Valider le dépôt
-                  </button>
-                  <button
-                    onClick={() => setShowRejectSheet(true)}
-                    className={cn('flex h-10 w-full items-center justify-center text-[16px] font-medium transition-colors', DANGER_SOFT_PILL)}
-                  >
-                    Rejeter
-                  </button>
-                  {/* Correction button removed — soit on valide, soit on refuse */}
-                </>
-              )}
-
-              {isSuperAdmin && (
-                <button
-                  onClick={() => setShowDeleteDepositSheet(true)}
-                  className={cn('flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', SUBTLE_PILL)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Annuler
-                </button>
-              )}
-            </div>
-          )}
-        </Card>
-
-        {/* ── Section suivi collapsible ─────────────────────── */}
-        <Card className="overflow-hidden p-0">
-          <button
-            onClick={() => setShowSuivi(!showSuivi)}
-            className="flex w-full items-center justify-between p-4"
-          >
-            <span className={cn('text-[14px] font-bold', TEXT.strong)}>Suivi</span>
-            {showSuivi ? (
-              <ChevronUp className={cn('h-4 w-4', TEXT.muted)} />
-            ) : (
-              <ChevronDown className={cn('h-4 w-4', TEXT.muted)} />
-            )}
-          </button>
-
-          {showSuivi && (
-            <div className="border-t border-black/[0.06] px-4 pb-4 pt-3 dark:border-white/[0.06]">
-              {timelineSteps.map((step, index) => (
-                <div key={step.id} className="flex gap-2.5">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={cn(
-                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
-                        getStepColors(step.key, step.status),
-                      )}
-                    >
-                      {step.status === 'completed' && <CheckCircle className="h-3 w-3" />}
-                      {step.status === 'current' && <span className="h-2 w-2 rounded-full bg-current" />}
-                    </div>
-                    {index < timelineSteps.length - 1 && (
-                      <div
-                        className="my-0.5 w-0.5"
-                        style={{ height: 28, background: step.status === 'completed' ? '#34d399' : 'rgba(0,0,0,0.08)' }}
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 pb-3">
-                    <p className={cn('text-[14px] font-semibold', step.status === 'pending' ? TEXT.muted : TEXT.strong)}>
-                      {step.label}
-                    </p>
-                    <p className={cn('text-[14px]', TEXT.muted)}>{step.description}</p>
-                    {step.formattedDate && <p className={cn('text-[14px]', TEXT.muted)}>{step.formattedDate}</p>}
-                  </div>
+                  {step.status === 'completed' && <CheckCircle className="h-4 w-4" />}
+                  {step.status === 'current' && <span className="h-2.5 w-2.5 rounded-full bg-current" />}
                 </div>
-              ))}
+                {index < timelineSteps.length - 1 && (
+                  <div
+                    className="my-0.5 w-0.5 flex-1"
+                    style={{ minHeight: 24, background: step.status === 'completed' ? '#14AE5C' : '#D9D9D9' }}
+                  />
+                )}
+              </div>
+              <div className="min-w-0 pb-4">
+                <p className={cn('text-[16px] font-semibold leading-snug', step.status === 'pending' ? TEXT.muted : TEXT.strong)}>
+                  {step.label}
+                </p>
+                {/* La description s'adresse au client (« Votre dépôt… ») : ici on ne garde que la date. */}
+                {step.formattedDate
+                  ? <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{step.formattedDate}</p>
+                  : step.status !== 'completed' && <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{step.status === 'current' ? 'En cours' : 'Pas encore'}</p>}
+              </div>
             </div>
-          )}
-        </Card>
+          ))}
+        </Fold>
       </div>
 
       {/* ── BottomSheet validation ────────────────────────── */}
       <BottomSheet open={showValidateConfirm} onClose={() => setShowValidateConfirm(false)} title="Valider ce dépôt">
         <div className="space-y-4">
           <div className={cn('space-y-2 rounded-lg p-3', SURFACE.canvas)}>
-            <div className="flex items-center justify-between text-[14px]">
+            <div className="flex items-center justify-between text-[16px]">
               <span className={TEXT.muted}>Montant déclaré</span>
               <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{formatCurrency(deposit.amount_xaf)}</span>
             </div>
@@ -763,17 +721,17 @@ export function MobileDepositDetailV2() {
           {amountDiffers && (
             <div className="flex items-start gap-2 rounded-lg bg-[#FFF1C2] p-3 dark:bg-[#522504]">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
-              <p className="text-[14px] text-[#682D03] dark:text-[#FFF1C2]">
+              <p className="text-[16px] text-[#682D03] dark:text-[#FFF1C2]">
                 Le montant confirmé ({formatCurrency(confirmedAmountNum)}) diffère du montant déclaré.
               </p>
             </div>
           )}
           <div className="rounded-lg bg-[#CFF7D3] p-4 dark:bg-[#02542D]">
-            <p className="text-[14px] text-[#02542D] dark:text-[#CFF7D3]">
+            <p className="text-[16px] text-[#02542D] dark:text-[#CFF7D3]">
               Le wallet sera crédité de <strong>{formatCurrency(confirmedAmountNum || deposit.amount_xaf)}</strong>
             </p>
             {wallet && (
-              <p className="mt-1 text-[14px] text-[#02542D] dark:text-[#CFF7D3]">
+              <p className="mt-1 text-[16px] text-[#02542D] dark:text-[#CFF7D3]">
                 Nouveau solde estimé : {formatCurrency(wallet.balance_xaf + (confirmedAmountNum || deposit.amount_xaf))}
               </p>
             )}
@@ -799,7 +757,7 @@ export function MobileDepositDetailV2() {
               ) : (
                 <BellOff className={cn('h-4 w-4', TEXT.muted)} />
               )}
-              <span className={cn('text-[14px]', TEXT.strong)}>Notifier le client</span>
+              <span className={cn('text-[16px]', TEXT.strong)}>Notifier le client</span>
             </div>
             <span
               className={cn(
@@ -839,7 +797,7 @@ export function MobileDepositDetailV2() {
       >
         <div className="space-y-4">
           <div>
-            <p className={cn('mb-2 text-[14px]', TEXT.muted)}>Motif du refus</p>
+            <p className={cn('mb-2 text-[16px]', TEXT.muted)}>Motif du refus</p>
             <div className="space-y-2">
               {REJECTION_REASONS.map((reason) => (
                 <button
@@ -851,7 +809,7 @@ export function MobileDepositDetailV2() {
                     }
                   }}
                   className={cn(
-                    'w-full rounded-lg p-3 text-left text-[14px] transition-all ring-1',
+                    'w-full rounded-lg p-3 text-left text-[16px] transition-all ring-1',
                     rejectionCategory === reason
                       ? 'bg-[#FDD3D0] text-[#900B09] ring-[#EC221F]/40 dark:bg-[#900B09] dark:text-[#FDD3D0]'
                       : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
@@ -872,7 +830,7 @@ export function MobileDepositDetailV2() {
               placeholder="Expliquez au client pourquoi son dépôt est refusé..."
               className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
-            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Ce message sera visible par le client</p>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
           <FormField label="Note interne (optionnel)">
             <textarea
@@ -941,14 +899,14 @@ export function MobileDepositDetailV2() {
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[14px]', TEXT.muted)}>Cette action est irréversible.</p>
+          <p className={cn('text-[16px]', TEXT.muted)}>Cette action est irréversible.</p>
           <div className="space-y-2">
             {PROOF_DELETE_REASONS.map((reason) => (
               <button
                 key={reason}
                 onClick={() => setDeleteProofReason(reason)}
                 className={cn(
-                  'w-full rounded-lg p-3 text-left text-[14px] transition-all ring-1',
+                  'w-full rounded-lg p-3 text-left text-[16px] transition-all ring-1',
                   deleteProofReason === reason
                     ? 'bg-[#FDD3D0] text-[#900B09] ring-[#EC221F]/40 dark:bg-[#900B09] dark:text-[#FDD3D0]'
                     : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
@@ -999,10 +957,10 @@ export function MobileDepositDetailV2() {
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[14px]', TEXT.muted)}>
+          <p className={cn('text-[16px]', TEXT.muted)}>
             Voulez-vous annuler ce dépôt ? Le dépôt sera marqué comme annulé et le solde sera ajusté si nécessaire.
           </p>
-          <div className={cn('text-center text-[14px]', TEXT.muted)}>
+          <div className={cn('text-center text-[16px]', TEXT.muted)}>
             {clientName} — {fmt(deposit.amount_xaf)} XAF
           </div>
           <div className="flex gap-2">
