@@ -57,7 +57,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
     <div className={desktop ? 'mx-auto max-w-3xl' : 'flex min-h-full flex-col'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Notifications</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>Notifications</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('actionablePending', { defaultValue: "Éléments en attente d'action" })}</p>
         </header>
       ) : (
@@ -79,7 +79,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
                       <button
                         key={notif.id}
                         onClick={() => navigate(notif.targetPath)}
-                        className={cn('w-full rounded-[22px] p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
+                        className={cn('w-full rounded-lg p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
                       >
                         <div className="flex items-start gap-3">
                           <Holder icon={config.icon} tone={config.tone} />
@@ -87,7 +87,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{notif.title}</p>
-                                <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
+                                <p className={cn('mt-0.5 truncate text-[14px]', TEXT.muted)}>
                                   {notif.subtitle}
                                 </p>
                               </div>
@@ -95,7 +95,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
                                 {formatXAF(notif.amount)}
                               </p>
                             </div>
-                            <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
                               {formatRelativeDate(notif.createdAt)}
                             </p>
                           </div>
@@ -111,7 +111,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Holder icon={Bell} size="lg" />
             <p className={cn('mt-4 font-semibold', TEXT.strong)}>{t('allUpToDate', { defaultValue: 'Tout est à jour' })}</p>
-            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
               {t('noPendingItems', { defaultValue: "Aucun élément en attente d'action" })}
             </p>
           </div>

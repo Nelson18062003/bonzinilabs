@@ -55,7 +55,7 @@ function MIcon({ family, size = 38 }: { family: string; size?: number }) {
   if (!f) return null;
   return (
     <div
-      className="flex shrink-0 items-center justify-center font-black"
+      className="flex shrink-0 items-center justify-center font-bold"
       style={{
         width: size,
         height: size,
@@ -199,11 +199,11 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
         )}
       >
         <div className="flex h-14 w-full items-center justify-between">
-          <h1 className={cn('text-[20px] font-extrabold', TEXT.strong)}>Dépôts</h1>
+          <h1 className={cn('text-[20px] font-bold', TEXT.strong)}>Dépôts</h1>
           <button
             onClick={() => navigate('/m/deposits/new')}
             aria-label="Nouveau dépôt"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#10B981] text-white transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2C2C2C] text-white transition active:scale-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.6} />
           </button>

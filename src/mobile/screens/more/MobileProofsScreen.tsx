@@ -82,7 +82,7 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
     <div className={desktop ? '' : 'flex min-h-screen flex-col'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('proofs', { defaultValue: 'Justificatifs' })}</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('proofs', { defaultValue: 'Justificatifs' })}</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('proofsSubtitle', { defaultValue: 'Preuves de dépôts envoyées par les clients' })}</p>
         </header>
       ) : (
@@ -122,25 +122,25 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
                 <button
                   key={proof.id}
                   onClick={() => handlePreview(proof)}
-                  className={cn('overflow-hidden rounded-[22px] text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
+                  className={cn('overflow-hidden rounded-lg text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
                 >
                   {/* Thumbnail */}
-                  <div className="relative flex aspect-square items-center justify-center bg-[#EDEAFA] dark:bg-[#2F2C3D]">
+                  <div className="relative flex aspect-square items-center justify-center bg-[#F5F5F5] dark:bg-[#383838]">
                     <ProofThumb
                       url={isImage(proof.file_name) ? proof.signedUrl : null}
                       alt={proof.file_name}
                       fallback={getFileIcon(proof.file_name)}
                     />
                     <div className="absolute right-2 top-2">
-                      <StatusPill tone="success" label="Dépôt" className="px-2 py-0.5 text-[10px]" />
+                      <StatusPill tone="success" label="Dépôt" className="px-2 py-0.5 text-[14px]" />
                     </div>
                   </div>
 
                   {/* Info */}
                   <div className="p-3">
                     <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{proof.file_name}</p>
-                    <p className={cn('truncate text-[12px]', TEXT.muted)}>{proof.clientName}</p>
-                    <p className={cn('mt-1 text-[10px]', TEXT.muted)}>
+                    <p className={cn('truncate text-[14px]', TEXT.muted)}>{proof.clientName}</p>
+                    <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
                       {formatDate(proof.uploaded_at)}
                     </p>
                   </div>
@@ -163,7 +163,7 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
           <img
             src={selectedProof.signedUrl}
             alt={selectedProof.file_name}
-            className="w-full rounded-2xl"
+            className="w-full rounded-lg"
           />
         )}
 

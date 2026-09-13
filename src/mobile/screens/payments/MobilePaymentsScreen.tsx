@@ -212,7 +212,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
         )}
       >
         <div className="flex h-14 w-full items-center justify-between">
-          <h1 className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+          <h1 className={cn('text-[20px] font-bold', TEXT.strong)}>
             {t('payments', { defaultValue: 'Paiements' })}
           </h1>
           <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
               disabled={isExporting}
               aria-label="Exporter"
               className={cn(
-                'flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[12px] font-bold transition active:scale-95 disabled:opacity-50',
+                'flex h-10 items-center gap-1.5 rounded-lg px-3.5 text-[14px] font-bold transition active:scale-95 disabled:opacity-50',
                 SOFT_PILL,
               )}
             >
@@ -242,7 +242,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
             <button
               onClick={() => navigate('/m/payments/new')}
               aria-label="Nouveau paiement"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8B5CF6] text-white transition active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2C2C2C] text-white transition active:scale-95"
             >
               <Plus className="h-5 w-5" strokeWidth={2.6} />
             </button>
@@ -272,7 +272,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
           onClick={handleExportBatch}
           disabled={isExporting}
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-[13px] font-semibold transition active:scale-[0.98] disabled:opacity-50',
+            'flex w-full items-center justify-center gap-2 rounded-lg py-3 text-[14px] font-semibold transition active:scale-[0.98] disabled:opacity-50',
             SOFT_PILL,
           )}
         >
@@ -313,7 +313,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
           >
             <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? TEXT.strong : TEXT.muted)} />
             {hasActiveFilters && (
-              <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#2C2C2C] px-1 text-[9px] font-extrabold text-white dark:bg-[#E3E3E3] dark:text-[#1B1A24]">
+              <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-lg bg-[#2C2C2C] px-1 text-[14px] font-bold text-white dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">
                 {activeFilterCount}
               </span>
             )}
@@ -328,7 +328,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAdvancedFilters}
-                  className="text-[12px] font-semibold text-[#1E1E1E] underline dark:text-[#F5F5F5]"
+                  className="text-[14px] font-semibold text-[#1E1E1E] underline dark:text-[#F5F5F5]"
                 >
                   Réinitialiser
                 </button>

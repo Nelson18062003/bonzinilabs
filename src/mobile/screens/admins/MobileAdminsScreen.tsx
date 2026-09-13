@@ -11,17 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  roleMeta,
-  Avatar,
-  StatusPill,
-  TextInput,
-  Holder,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, PRIMARY_PILL, roleMeta, Avatar, StatusPill, TextInput, Holder, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 type RoleFilter = AppRole | 'all';
 type StatusFilter = AdminStatus | 'all';
@@ -96,8 +86,8 @@ export function MobileAdminsScreen() {
               key={filter.value}
               onClick={() => setRoleFilter(filter.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                roleFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                roleFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {filter.label}
@@ -112,8 +102,8 @@ export function MobileAdminsScreen() {
               key={filter.value}
               onClick={() => setStatusFilter(filter.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                statusFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {filter.label}
@@ -133,7 +123,7 @@ export function MobileAdminsScreen() {
                   key={admin.id}
                   onClick={() => navigate(`/m/more/admins/${admin.id}`)}
                   className={cn(
-                    'w-full rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    'w-full rounded-lg p-4 text-left transition-transform active:scale-[0.98]',
                     SURFACE.card,
                     SURFACE.shadow,
                   )}
@@ -144,10 +134,10 @@ export function MobileAdminsScreen() {
                       <Avatar name={name} />
                       <span
                         className={cn(
-                          'absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white dark:ring-[#211F2B]',
+                          'absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white dark:ring-[#2C2C2C]',
                           admin.status === 'ACTIVE'
-                            ? 'bg-[#2E7D52] dark:bg-[#7FCBA0]'
-                            : 'bg-[#C0504D] dark:bg-[#E79A9A]',
+                            ? 'bg-[#02542D] dark:bg-[#CFF7D3]'
+                            : 'bg-[#EC221F] dark:bg-[#FDD3D0]',
                         )}
                       />
                     </div>
@@ -159,12 +149,12 @@ export function MobileAdminsScreen() {
                           {admin.firstName} {admin.lastName}
                         </p>
                         {admin.id === currentUser?.id && (
-                          <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>
+                          <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>
                             ({t('you', { defaultValue: 'vous' })})
                           </span>
                         )}
                       </div>
-                      <p className={cn('truncate text-[13px]', TEXT.muted)}>{admin.email}</p>
+                      <p className={cn('truncate text-[14px]', TEXT.muted)}>{admin.email}</p>
                     </div>
 
                     {/* Role badge + last login */}
@@ -174,7 +164,7 @@ export function MobileAdminsScreen() {
                         label={ADMIN_ROLE_LABELS[admin.role as AppRole] || admin.role}
                       />
                       {admin.lastLoginAt && (
-                        <span className={cn('text-[10px]', TEXT.muted)}>
+                        <span className={cn('text-[14px]', TEXT.muted)}>
                           {formatDistanceToNow(new Date(admin.lastLoginAt), {
                             addSuffix: true,
                             locale: fr,

@@ -34,18 +34,7 @@ import {
   isBeneficiaryFormValid,
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  Card,
-  Holder,
-  TextInput,
-  PrimaryPill,
-  SoftPill,
-  BottomSheet,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, PRIMARY_PILL, Card, Holder, TextInput, PrimaryPill, SoftPill, BottomSheet, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 type View = { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; beneficiary: Beneficiary };
 
@@ -164,10 +153,10 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
       {desktop ? (
         <header className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('beneficiaries.title')}</h2>
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('beneficiaries.title')}</h2>
             {clientName && <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{clientName}</p>}
           </div>
-          <button onClick={() => setView({ kind: 'add' })} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+          <button onClick={() => setView({ kind: 'add' })} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[14px] font-bold', PRIMARY_PILL)}>
             <Plus className="h-4 w-4" /> {t('beneficiaries.add')}
           </button>
         </header>
@@ -220,14 +209,14 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
         {isLoading ? (
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
-              <div key={i} className={cn('h-16 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
+              <div key={i} className={cn('h-16 animate-pulse rounded-lg', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center">
             <Holder icon={User} size="lg" className="mx-auto" />
             <p className={cn('mt-4 text-[14px] font-medium', TEXT.strong)}>{t('beneficiaries.noBeneficiary')}</p>
-            <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
             <PrimaryPill onClick={() => setView({ kind: 'add' })} className="mt-4">
               {t('beneficiaries.add')}
             </PrimaryPill>
@@ -237,19 +226,19 @@ export default function MobileClientBeneficiaries({ desktop = false }: { desktop
             {filtered.map((b) => (
               <Card key={b.id} className="flex items-center gap-3 p-3">
                 <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold text-white"
                   style={{ backgroundColor: modeColor(b.payment_method) }}
                 >
                   {(b.alias || b.name || '?')[0]?.toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{b.alias || b.name}</p>
-                  <p className={cn('truncate text-[12px]', TEXT.muted)}>
+                  <p className={cn('truncate text-[14px]', TEXT.muted)}>
                     {b.identifier || b.bank_account || b.phone || b.name || ''}
                   </p>
                 </div>
                 <span
-                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
+                  className="shrink-0 rounded-lg px-2.5 py-1 text-[14px] font-bold"
                   style={{ backgroundColor: `${modeColor(b.payment_method)}1a`, color: modeColor(b.payment_method) }}
                 >
                   {modeLabel(b.payment_method)}
@@ -315,8 +304,8 @@ function FilterChip({
     <button
       onClick={onClick}
       className={cn(
-        'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-        active ? PRIMARY_PILL : SOFT_PILL,
+        'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+        active ? TOGGLE_ON : TOGGLE_OFF,
       )}
       // Active mode chip keeps its brand accent (color carries the mode meaning).
       style={active && color ? { backgroundColor: color, color: '#fff' } : undefined}
@@ -357,7 +346,7 @@ function BeneficiaryEditor({
     <div className={desktop ? '' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>{isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{isEdit ? t('beneficiaries.edit') : t('beneficiaries.add')}</h2>
         </header>
       ) : (
         <MobileHeader
@@ -368,7 +357,7 @@ function BeneficiaryEditor({
       )}
       <div className={desktop ? 'space-y-3' : 'flex-1 overflow-y-auto px-4 py-5'}>
         {isEdit && (
-          <p className={cn('mb-3 rounded-2xl p-3 text-[12px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
+          <p className={cn('mb-3 rounded-lg p-3 text-[14px]', SURFACE.card, SURFACE.shadow, TEXT.muted)}>
             {t('beneficiaries.snapshotNotice')}
           </p>
         )}

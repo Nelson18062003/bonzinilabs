@@ -210,11 +210,11 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
       )}
       <Avatar name={clientName || (conversation?.client_first_name ?? 'C')} tone="info" size="sm" />
       <div className="min-w-0 flex-1">
-        <h1 className={cn('truncate text-[15px] font-bold leading-tight tracking-tight', TEXT.strong)}>
+        <h1 className={cn('truncate text-[16px] font-bold leading-tight tracking-tight', TEXT.strong)}>
           {clientName || t('admin.noClientName')}
         </h1>
         {(conversation?.subject || conversation?.client_phone) && (
-          <p className={cn('truncate text-[11px] leading-tight', TEXT.muted)}>
+          <p className={cn('truncate text-[14px] leading-tight', TEXT.muted)}>
             {conversation?.subject || conversation?.client_phone}
           </p>
         )}
@@ -224,7 +224,7 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
         <button
           type="button"
           onClick={handleClaim}
-          className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#6B5BD2] px-3 text-[11px] font-bold text-white transition active:scale-95 dark:bg-[#A99BF0] dark:text-[#1B1A24]"
+          className="flex h-8 shrink-0 items-center gap-1 rounded-lg bg-[#2C2C2C] px-3 text-[14px] font-bold text-white transition active:scale-95 dark:bg-[#E3E3E3] dark:text-[#1E1E1E]"
           aria-label={t('admin.actions.claim')}
         >
           <UserPlus className="h-3 w-3" />
@@ -270,7 +270,7 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className={cn('absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-2xl p-1', SURFACE.card, SURFACE.shadow)}
+            className={cn('absolute right-2 top-full z-20 mt-1 flex w-56 flex-col gap-0.5 rounded-lg p-1', SURFACE.card, SURFACE.shadow)}
           >
             <MenuItem
               icon={ExternalLink}
@@ -395,15 +395,15 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
               initial={{ y: 40 }}
               animate={{ y: 0 }}
               exit={{ y: 40 }}
-              className={cn('w-full max-w-sm rounded-t-[28px] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:rounded-[28px]', SURFACE.card, SURFACE.shadow)}
+              className={cn('w-full max-w-sm rounded-t-2xl p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:rounded-[28px]', SURFACE.card, SURFACE.shadow)}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-black/10 dark:bg-white/15 sm:hidden" />
-              <h3 className={cn('mb-3 text-[17px] font-bold', TEXT.strong)}>{t('admin.actions.assignTo')}</h3>
+              <h3 className={cn('mb-3 text-[16px] font-bold', TEXT.strong)}>{t('admin.actions.assignTo')}</h3>
               <button
                 type="button"
                 onClick={() => handleAssign(null)}
-                className={cn('mb-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]', SURFACE.canvas, TEXT.strong)}
+                className={cn('mb-2 flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]', SURFACE.canvas, TEXT.strong)}
               >
                 <span>{t('admin.actions.unassign')}</span>
               </button>
@@ -416,9 +416,9 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
                     type="button"
                     onClick={() => handleAssign(a.id as string)}
                     className={cn(
-                      'mb-2 flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]',
+                      'mb-2 flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-[14px] font-medium transition active:scale-[0.99]',
                       isCurrent
-                        ? 'bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]'
+                        ? 'bg-[#E6E6E6] text-[#1E1E1E] dark:bg-[#444444] dark:text-[#F5F5F5]'
                         : cn(SURFACE.canvas, TEXT.strong),
                     )}
                   >
@@ -445,7 +445,7 @@ function MenuItem({ icon: Icon, label, onClick }: MenuItemProps) {
     <button
       type="button"
       onClick={onClick}
-      className={cn('flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[14px] font-medium transition active:scale-[0.99] hover:bg-black/[0.03] dark:hover:bg-white/[0.04]', TEXT.strong)}
+      className={cn('flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[14px] font-medium transition active:scale-[0.99] hover:bg-black/[0.03] dark:hover:bg-white/[0.04]', TEXT.strong)}
     >
       <Icon className={cn('h-4 w-4', TEXT.muted)} />
       <span>{label}</span>

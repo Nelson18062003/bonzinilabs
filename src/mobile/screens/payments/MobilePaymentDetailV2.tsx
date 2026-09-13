@@ -114,7 +114,7 @@ function DetailHeader({ title, onBack, right }: { title: string; onBack: () => v
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <span className={cn('truncate text-[15px] font-bold', TEXT.strong)}>{title}</span>
+        <span className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{title}</span>
       </div>
       {right}
     </header>
@@ -140,14 +140,14 @@ function CopyRow({
       onClick={() => copyToClipboard(value, label)}
       style={highlight ? { borderColor: `${highlight}55` } : undefined}
       className={cn(
-        'group flex w-full items-start justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.99]',
+        'group flex w-full items-start justify-between gap-3 rounded-lg px-3.5 py-2.5 text-left transition active:scale-[0.99]',
         highlight ? 'ring-1' : SURFACE.canvas,
         !highlight && 'ring-0',
       )}
     >
       <div className="min-w-0 flex-1">
         <div
-          className="text-[10px] font-bold uppercase tracking-wider"
+          className="text-[14px] font-bold"
           style={highlight ? { color: highlight } : undefined}
         >
           <span className={highlight ? '' : TEXT.muted}>{label}</span>
@@ -174,11 +174,11 @@ function KitTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       className={cn(
-        'w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition',
+        'w-full resize-none rounded-lg p-3 text-[16px] outline-none transition',
         SURFACE.card,
         SURFACE.shadow,
         TEXT.strong,
-        'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+        'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
         className,
       )}
       {...rest}
@@ -188,7 +188,7 @@ function KitTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
 
 // ── Petite pill d'action sur une vignette (Agrandir/Télécharger…) ──
 const TILE_BTN =
-  'inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold transition active:scale-95';
+  'inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[14px] font-semibold transition active:scale-95';
 
 // ─────────────────────────────────────────────────────────────
 export function MobilePaymentDetail() {
@@ -664,7 +664,7 @@ export function MobilePaymentDetail() {
           <button
             onClick={handleDownloadReceipt}
             disabled={isGeneratingPDF}
-            className="flex h-9 items-center gap-1.5 rounded-full bg-[#8B5CF6] px-3.5 text-[12px] font-bold text-white transition active:scale-95 disabled:opacity-60"
+            className="flex h-9 items-center gap-1.5 rounded-lg bg-[#2C2C2C] px-3.5 text-[14px] font-bold text-white transition active:scale-95 disabled:opacity-60"
           >
             {isGeneratingPDF ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Reçu'}
           </button>
@@ -682,7 +682,7 @@ export function MobilePaymentDetail() {
           </div>
           <div className="flex items-center gap-2">
             <PaymentMethodLogo method={logoMethod(payment.method)} size={22} />
-            <span className={cn('text-[12px] font-bold', TEXT.strong)}>{methodLabel}</span>
+            <span className={cn('text-[14px] font-bold', TEXT.strong)}>{methodLabel}</span>
           </div>
         </div>
 
@@ -692,7 +692,7 @@ export function MobilePaymentDetail() {
           <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
             {formatNumber(payment.amount_xaf)} XAF
           </div>
-          <div className="mt-3 flex items-center justify-around text-[11px]">
+          <div className="mt-3 flex items-center justify-around text-[14px]">
             <div>
               <span className={TEXT.muted}>Taux </span>
               <span className={cn('font-bold', TEXT.strong)}>1M XAF = ¥{formatNumber(rateInt)}</span>
@@ -702,7 +702,7 @@ export function MobilePaymentDetail() {
               className="active:opacity-70"
             >
               <span className={TEXT.muted}>Client </span>
-              <span className="font-bold text-[#6B5BD2] dark:text-[#A99BF0]">{clientName}</span>
+              <span className="font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">{clientName}</span>
             </button>
           </div>
         </Card>
@@ -721,9 +721,9 @@ export function MobilePaymentDetail() {
         <Card>
           {/* Header bénéficiaire */}
           <div className="mb-2 flex items-center justify-between">
-            <span className={cn('text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>Bénéficiaire</span>
+            <span className={cn('text-[14px] font-bold', TEXT.muted)}>Bénéficiaire</span>
             {hasBeneficiaryInfo && canEditBeneficiary && !editBenef && !isCash && (
-              <button onClick={openEdit} className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+              <button onClick={openEdit} className="text-[14px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">
                 Modifier
               </button>
             )}
@@ -735,9 +735,9 @@ export function MobilePaymentDetail() {
               {/* ÉTAT : infos manquantes */}
               {!hasBeneficiaryInfo && !isCash && (
                 <div>
-                  <div className="mb-2 rounded-2xl bg-[#F8EFD8] p-3.5 text-center dark:bg-[#372D14]">
-                    <div className="text-[13px] font-bold text-[#9A6B12] dark:text-[#E7C083]">Infos manquantes</div>
-                    <div className="mt-0.5 text-[11px] text-[#9A6B12]/80 dark:text-[#E7C083]/80">
+                  <div className="mb-2 rounded-lg bg-[#FFF1C2] p-3.5 text-center dark:bg-[#522504]">
+                    <div className="text-[14px] font-bold text-[#682D03] dark:text-[#FFF1C2]">Infos manquantes</div>
+                    <div className="mt-0.5 text-[14px] text-[#682D03]/80 dark:text-[#FFF1C2]/80">
                       Ajoutez les infos pour traiter ce paiement
                     </div>
                   </div>
@@ -745,9 +745,9 @@ export function MobilePaymentDetail() {
                     <PrimaryPill onClick={openEdit} className="w-full">Ajouter</PrimaryPill>
                   )}
                   {missingBeneficiary && (
-                    <div className="mt-2 flex items-center gap-2 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 dark:bg-[#372D14]">
-                      <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                      <span className="text-[11px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
+                    <div className="mt-2 flex items-center gap-2 rounded-lg bg-[#FFF1C2] px-3 py-2.5 dark:bg-[#522504]">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
+                      <span className="text-[14px] font-semibold text-[#682D03] dark:text-[#FFF1C2]">
                         Paiement impossible sans ces infos
                       </span>
                     </div>
@@ -758,8 +758,8 @@ export function MobilePaymentDetail() {
               {/* CASH */}
               {isCash && (
                 <div>
-                  <div className={cn('text-[15px] font-bold', TEXT.strong)}>{cashBeneficiaryName}</div>
-                  <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
+                  <div className={cn('text-[16px] font-bold', TEXT.strong)}>{cashBeneficiaryName}</div>
+                  <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
                     {isCashSelf ? 'Le client' : 'Tiers'}
                     {(payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone && (
                       <> · {(payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone}</>
@@ -844,7 +844,7 @@ export function MobilePaymentDetail() {
                         )}
                       </div>
                       {showQR && (
-                        <div className={cn('mt-1 overflow-hidden rounded-2xl', SURFACE.canvas)}>
+                        <div className={cn('mt-1 overflow-hidden rounded-lg', SURFACE.canvas)}>
                           <img
                             src={payment.beneficiary_qr_code_url}
                             alt="QR Code bénéficiaire"
@@ -874,7 +874,7 @@ export function MobilePaymentDetail() {
                     <button
                       onClick={() => qrInputRef.current?.click()}
                       className={cn(
-                        'mt-1 flex w-full items-center justify-center gap-1.5 rounded-2xl py-2.5 text-[12px] font-semibold ring-1 ring-dashed ring-black/15 dark:ring-white/15',
+                        'mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-[14px] font-semibold ring-1 ring-dashed ring-black/15 dark:ring-white/15',
                         TEXT.muted,
                       )}
                     >
@@ -936,7 +936,7 @@ export function MobilePaymentDetail() {
                   </FormField>
                   <FormField label="QR Code">
                     {qrPreview || beneficiaryForm.beneficiary_qr_code_url ? (
-                      <div className={cn('relative overflow-hidden rounded-2xl', SURFACE.canvas)}>
+                      <div className={cn('relative overflow-hidden rounded-lg', SURFACE.canvas)}>
                         <img
                           src={qrPreview ?? beneficiaryForm.beneficiary_qr_code_url}
                           alt="QR"
@@ -998,7 +998,7 @@ export function MobilePaymentDetail() {
               {/* VIREMENT */}
               {payment.method === 'bank_transfer' && (
                 <>
-                  <FormField label={<>Titulaire <span className="text-[#C0504D]">*</span></>}>
+                  <FormField label={<>Titulaire <span className="text-[#900B09]">*</span></>}>
                     <TextInput
                       value={beneficiaryForm.beneficiary_name}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_name: e.target.value }))}
@@ -1006,7 +1006,7 @@ export function MobilePaymentDetail() {
                       autoComplete="off"
                     />
                   </FormField>
-                  <FormField label={<>Banque <span className="text-[#C0504D]">*</span></>}>
+                  <FormField label={<>Banque <span className="text-[#900B09]">*</span></>}>
                     <TextInput
                       value={beneficiaryForm.beneficiary_bank_name}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_bank_name: e.target.value }))}
@@ -1014,7 +1014,7 @@ export function MobilePaymentDetail() {
                       autoComplete="off"
                     />
                   </FormField>
-                  <FormField label={<>N° de compte <span className="text-[#C0504D]">*</span></>}>
+                  <FormField label={<>N° de compte <span className="text-[#900B09]">*</span></>}>
                     <TextInput
                       className="font-mono"
                       value={beneficiaryForm.beneficiary_bank_account}
@@ -1068,7 +1068,7 @@ export function MobilePaymentDetail() {
         {isCash ? (
           /* ─── CASH : bloc signature ─── */
           <Card>
-            <span className={cn('mb-2 block text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>Signature</span>
+            <span className={cn('mb-2 block text-[14px] font-bold', TEXT.muted)}>Signature</span>
 
             {/* Signature existante */}
             {(payment as { cash_signature_url?: string | null }).cash_signature_url ? (
@@ -1076,9 +1076,9 @@ export function MobilePaymentDetail() {
                 <img
                   src={(payment as { cash_signature_url?: string | null }).cash_signature_url!}
                   alt="Signature"
-                  className={cn('max-h-[100px] w-full rounded-2xl bg-white object-contain', SURFACE.shadow)}
+                  className={cn('max-h-[100px] w-full rounded-lg bg-white object-contain', SURFACE.shadow)}
                 />
-                <div className={cn('mt-1.5 text-[10px]', TEXT.muted)}>
+                <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
                   {(payment as { cash_signature_url?: string | null; cash_paid_at?: string | null }).cash_paid_at
                     ? `Signé le ${format(new Date((payment as { cash_paid_at?: string | null }).cash_paid_at!), 'dd MMM yyyy à HH:mm', { locale: fr })}`
                     : 'Signature capturée'}
@@ -1109,15 +1109,15 @@ export function MobilePaymentDetail() {
             ) : (
               /* Pas encore signé */
               <div>
-                <div className={cn('mb-2 rounded-2xl p-4 text-center', SURFACE.canvas)}>
-                  <div className={cn('text-[12px]', TEXT.muted)}>
+                <div className={cn('mb-2 rounded-lg p-4 text-center', SURFACE.canvas)}>
+                  <div className={cn('text-[14px]', TEXT.muted)}>
                     Le bénéficiaire doit signer avant la remise des fonds
                   </div>
                 </div>
                 {!isLocked && (
                   <button
                     onClick={() => setSigning(true)}
-                    className="w-full rounded-full bg-[#E0322B] py-3 text-[13px] font-bold text-white transition active:scale-[0.99]"
+                    className="w-full rounded-lg bg-[#E0322B] py-3 text-[14px] font-bold text-white transition active:scale-[0.99]"
                   >
                     Faire signer
                   </button>
@@ -1129,14 +1129,14 @@ export function MobilePaymentDetail() {
           /* ─── NON-CASH : preuves ─── */
           <Card>
             <div className="mb-2 flex items-center justify-between">
-              <span className={cn('text-[12px] font-extrabold uppercase tracking-wider', TEXT.muted)}>
+              <span className={cn('text-[14px] font-bold', TEXT.muted)}>
                 Preuves ({allProofs.length})
               </span>
               {canAddProof && (
                 <button
                   onClick={() => standaloneProofRef.current?.click()}
                   disabled={adminProofUpload.isPending}
-                  className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]"
+                  className="text-[14px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]"
                 >
                   {adminProofUpload.isPending ? <Loader2 className="inline h-3 w-3 animate-spin" /> : '+ Ajouter'}
                 </button>
@@ -1145,9 +1145,9 @@ export function MobilePaymentDetail() {
 
             {/* Warning preuve manquante */}
             {missingAdminProof && (
-              <div className="mb-2 flex items-center gap-2 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 dark:bg-[#372D14]">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-                <span className="text-[11px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
+              <div className="mb-2 flex items-center gap-2 rounded-lg bg-[#FFF1C2] px-3 py-2.5 dark:bg-[#522504]">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
+                <span className="text-[14px] font-semibold text-[#682D03] dark:text-[#FFF1C2]">
                   Ajoutez une preuve avant de valider
                 </span>
               </div>
@@ -1175,8 +1175,8 @@ export function MobilePaymentDetail() {
                     title="Collez, glissez ou cliquez pour ajouter une preuve"
                   />
                 ) : (
-                  <div className={cn('rounded-2xl p-3.5 text-center', SURFACE.canvas)}>
-                    <div className={cn('text-[12px]', TEXT.muted)}>Aucune preuve ajoutée</div>
+                  <div className={cn('rounded-lg p-3.5 text-center', SURFACE.canvas)}>
+                    <div className={cn('text-[14px]', TEXT.muted)}>Aucune preuve ajoutée</div>
                   </div>
                 )}
               </div>
@@ -1186,9 +1186,9 @@ export function MobilePaymentDetail() {
                   const isAdminProof = proof.uploaded_by_type === 'admin';
                   const canDeleteThis = canProcess && (isAdminProof || isSuperAdmin) && (!isLocked || isSuperAdmin);
                   return (
-                    <div key={proof.id} className={cn('overflow-hidden rounded-2xl', SURFACE.canvas)}>
+                    <div key={proof.id} className={cn('overflow-hidden rounded-lg', SURFACE.canvas)}>
                       {/* Preview */}
-                      <div className="relative aspect-[16/9] w-full bg-[#ECE8F6] dark:bg-[#2A2738]">
+                      <div className="relative aspect-[16/9] w-full bg-[#F5F5F5] dark:bg-[#383838]">
                         <img
                           src={proof.file_url}
                           alt={proof.file_name || 'Preuve'}
@@ -1198,7 +1198,7 @@ export function MobilePaymentDetail() {
                           }}
                         />
                         {/* Badge type */}
-                        <div className={cn('absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-bold dark:bg-black/55', TEXT.muted)}>
+                        <div className={cn('absolute left-2 top-2 rounded-lg bg-white/85 px-2 py-0.5 text-[14px] font-bold dark:bg-black/55', TEXT.muted)}>
                           {proof.file_name ? proof.file_name.slice(0, 20) : 'Preuve'}
                           {!isAdminProof && ' · Client'}
                         </div>
@@ -1223,7 +1223,7 @@ export function MobilePaymentDetail() {
                             <span className="flex-1" />
                             <button
                               onClick={() => setProofToDelete(proof.id)}
-                              className={cn(TILE_BTN, 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]')}
+                              className={cn(TILE_BTN, 'bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]')}
                             >
                               Supprimer
                             </button>
@@ -1264,7 +1264,7 @@ export function MobilePaymentDetail() {
                   <button
                     onClick={() => instructionInputRef.current?.click()}
                     disabled={instructionUpload.isPending}
-                    className={cn('mt-2 w-full rounded-2xl py-2 text-[11px] font-semibold ring-1 ring-black/[0.08] dark:ring-white/[0.08]', TEXT.muted)}
+                    className={cn('mt-2 w-full rounded-lg py-2 text-[14px] font-semibold ring-1 ring-black/[0.08] dark:ring-white/[0.08]', TEXT.muted)}
                   >
                     {instructionUpload.isPending
                       ? <Loader2 className="inline h-3 w-3 animate-spin" />
@@ -1302,7 +1302,7 @@ export function MobilePaymentDetail() {
               key={i}
               label={row.l}
               value={
-                <span className={row.danger ? 'text-[#C0504D] dark:text-[#E79A9A]' : undefined}>{row.v}</span>
+                <span className={row.danger ? 'text-[#900B09] dark:text-[#FDD3D0]' : undefined}>{row.v}</span>
               }
             />
           ))}
@@ -1318,8 +1318,8 @@ export function MobilePaymentDetail() {
                 className={cn(
                   'w-full',
                   mainAction.tone === 'info'
-                    ? 'bg-[#6B5BD2] text-white dark:bg-[#6B5BD2] dark:text-white'
-                    : 'bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white',
+                    ? 'bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white'
+                    : 'bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white',
                 )}
               >
                 {mainAction.icon}
@@ -1329,7 +1329,7 @@ export function MobilePaymentDetail() {
             {canReject && (
               <button
                 onClick={() => setIsRejectOpen(true)}
-                className="w-full rounded-full py-3 text-[12px] font-semibold text-[#C0504D] ring-1 ring-[#C0504D]/20 transition active:scale-[0.99] dark:text-[#E79A9A] dark:ring-[#E79A9A]/20"
+                className="w-full rounded-lg py-3 text-[14px] font-semibold text-[#900B09] ring-1 ring-[#C00F0C]/20 transition active:scale-[0.99] dark:text-[#FDD3D0] dark:ring-[#FDD3D0]/20"
               >
                 Refuser
               </button>
@@ -1337,7 +1337,7 @@ export function MobilePaymentDetail() {
             {canDelete && (
               <button
                 onClick={() => setIsDeletePaymentOpen(true)}
-                className={cn('w-full rounded-full py-3 text-[11px] font-semibold ring-1 ring-black/[0.08] transition active:scale-[0.99] dark:ring-white/[0.08]', TEXT.muted)}
+                className={cn('w-full rounded-lg py-3 text-[14px] font-semibold ring-1 ring-black/[0.08] transition active:scale-[0.99] dark:ring-white/[0.08]', TEXT.muted)}
               >
                 Annuler ce paiement
               </button>
@@ -1356,19 +1356,19 @@ export function MobilePaymentDetail() {
         onClose={() => { setIsRejectOpen(false); setRejectionCategory(''); setRejectReason(''); }}
         title={
           <span className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            <AlertTriangle className="h-5 w-5 text-[#900B09] dark:text-[#FDD3D0]" />
             Rejeter le paiement
           </span>
         }
       >
         <div className="space-y-4">
-          <div className="rounded-2xl bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
-            <p className="text-[13px] text-[#C0504D] dark:text-[#E79A9A]">
+          <div className="rounded-lg bg-[#FDD3D0] p-4 dark:bg-[#900B09]">
+            <p className="text-[14px] text-[#900B09] dark:text-[#FDD3D0]">
               Cette action va rejeter le paiement et rembourser {formatCurrency(payment.amount_xaf)} au wallet du client.
             </p>
           </div>
           <div>
-            <p className={cn('mb-2 text-[13px]', TEXT.muted)}>Motif du refus</p>
+            <p className={cn('mb-2 text-[14px]', TEXT.muted)}>Motif du refus</p>
             <div className="space-y-2">
               {PAYMENT_REJECTION_REASONS.map((reason) => (
                 <button
@@ -1378,9 +1378,9 @@ export function MobilePaymentDetail() {
                     if (!rejectReason.trim()) setRejectReason(`Paiement refusé : ${reason.toLowerCase()}.`);
                   }}
                   className={cn(
-                    'w-full rounded-2xl p-3 text-left text-[13px] ring-1 transition-all',
+                    'w-full rounded-lg p-3 text-left text-[14px] ring-1 transition-all',
                     rejectionCategory === reason
-                      ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                      ? 'bg-[#FDD3D0] text-[#900B09] ring-[#EC221F]/40 dark:bg-[#900B09] dark:text-[#FDD3D0]'
                       : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
                   )}
                 >
@@ -1389,7 +1389,7 @@ export function MobilePaymentDetail() {
               ))}
             </div>
           </div>
-          <FormField label={<>Message au client <span className="text-[#C0504D]">*</span></>}>
+          <FormField label={<>Message au client <span className="text-[#900B09]">*</span></>}>
             <KitTextarea
               placeholder="Expliquez pourquoi le paiement est rejeté..."
               value={rejectReason}
@@ -1397,7 +1397,7 @@ export function MobilePaymentDetail() {
               rows={3}
               required
             />
-            <p className={cn('mt-1 text-[10px]', TEXT.muted)}>Ce message sera visible par le client</p>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
           <div className="flex gap-2">
             <SoftPill onClick={() => setIsRejectOpen(false)} className="flex-1">Annuler</SoftPill>
@@ -1422,8 +1422,8 @@ export function MobilePaymentDetail() {
         title="Confirmer le paiement"
       >
         <div className="space-y-4">
-          <div className="rounded-2xl bg-[#DEEFE5] p-4 dark:bg-[#1E3A2C]">
-            <p className="text-[13px] text-[#2E7D52] dark:text-[#7FCBA0]">
+          <div className="rounded-lg bg-[#CFF7D3] p-4 dark:bg-[#02542D]">
+            <p className="text-[14px] text-[#02542D] dark:text-[#CFF7D3]">
               Confirmez que le paiement de <strong>{formatCurrencyRMB(payment.amount_rmb)}</strong> a été effectué au bénéficiaire.
             </p>
           </div>
@@ -1444,7 +1444,7 @@ export function MobilePaymentDetail() {
             />
             {completeProofPreview ? (
               <div className="relative">
-                <img src={completeProofPreview} alt="Preuve" className={cn('h-40 w-full rounded-2xl object-cover', SURFACE.shadow)} />
+                <img src={completeProofPreview} alt="Preuve" className={cn('h-40 w-full rounded-lg object-cover', SURFACE.shadow)} />
                 <button
                   onClick={() => { setCompleteProofFile(null); setCompleteProofPreview(null); if (proofInputRef.current) proofInputRef.current.value = ''; }}
                   className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white"
@@ -1469,7 +1469,7 @@ export function MobilePaymentDetail() {
             <PrimaryPill
               onClick={handleComplete}
               loading={processPayment.isPending || adminProofUpload.isPending}
-              className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-1 bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
             >
               <CheckCircle className="h-5 w-5" />
               Confirmer
@@ -1483,14 +1483,14 @@ export function MobilePaymentDetail() {
         open={isDeletePaymentOpen}
         onClose={() => setIsDeletePaymentOpen(false)}
         title={
-          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+          <span className="flex items-center gap-2 text-[#900B09] dark:text-[#FDD3D0]">
             <Trash2 className="h-5 w-5" />
             Annuler ce paiement
           </span>
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[13px]', TEXT.muted)}>
+          <p className={cn('text-[14px]', TEXT.muted)}>
             Voulez-vous vraiment annuler ce paiement ? Le paiement sera marqué comme annulé et le solde du client sera recrédité si nécessaire.
           </p>
           <div className="flex flex-col gap-2">
@@ -1517,14 +1517,14 @@ export function MobilePaymentDetail() {
         open={!!proofToDelete}
         onClose={() => setProofToDelete(null)}
         title={
-          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+          <span className="flex items-center gap-2 text-[#900B09] dark:text-[#FDD3D0]">
             <Trash2 className="h-5 w-5" />
             Supprimer cette preuve
           </span>
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[13px]', TEXT.muted)}>
+          <p className={cn('text-[14px]', TEXT.muted)}>
             Voulez-vous supprimer cette preuve de paiement ? Cette action est irréversible.
           </p>
           <div className="flex flex-col gap-2">
@@ -1554,7 +1554,7 @@ export function MobilePaymentDetail() {
       >
         {fullscreenProof && (
           <div className="space-y-3">
-            <img src={fullscreenProof} alt="Aperçu" className="w-full rounded-2xl" />
+            <img src={fullscreenProof} alt="Aperçu" className="w-full rounded-lg" />
             <a
               href={fullscreenProof}
               download

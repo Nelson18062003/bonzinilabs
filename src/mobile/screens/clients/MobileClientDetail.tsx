@@ -103,7 +103,7 @@ function ActionRow({
         {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+        <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
         {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
@@ -335,7 +335,7 @@ export function MobileClientDetail() {
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h2 className={cn('truncate text-[18px] font-bold', TEXT.strong)}>
+                <h2 className={cn('truncate text-[20px] font-bold', TEXT.strong)}>
                   {client.firstName} {client.lastName}
                 </h2>
                 <StatusPill
@@ -387,7 +387,7 @@ export function MobileClientDetail() {
             </div>
             <button
               onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-              className="text-[14px] font-semibold text-[#6B5BD2] active:opacity-70 dark:text-[#A99BF0]"
+              className="text-[14px] font-semibold text-[#1E1E1E] active:opacity-70 dark:text-[#F5F5F5]"
             >
               {t('history', { defaultValue: 'Historique' })}
             </button>
@@ -587,7 +587,7 @@ export function MobileClientDetail() {
         open={deleteDrawerOpen}
         onClose={() => setDeleteDrawerOpen(false)}
         title={
-          <span className="flex items-center gap-2 text-[#C0504D] dark:text-[#E79A9A]">
+          <span className="flex items-center gap-2 text-[#900B09] dark:text-[#FDD3D0]">
             <Trash2 className="h-5 w-5" />
             {t('deleteClient', { defaultValue: 'Supprimer le client' })}
           </span>
@@ -645,7 +645,7 @@ export function MobileClientDetail() {
         onClose={() => setPasswordResultDrawerOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+            <Check className="h-5 w-5 text-[#02542D] dark:text-[#CFF7D3]" />
             {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
           </span>
         }
@@ -655,10 +655,10 @@ export function MobileClientDetail() {
             {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
           </p>
           <div className={cn('flex items-center justify-between gap-3 rounded-lg p-4', SURFACE.canvas)}>
-            <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
+            <code className={cn('font-mono text-[20px]', TEXT.strong)}>{newPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <p className="rounded-lg bg-[#F8EFD8] p-3 text-[14px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <p className="rounded-lg bg-[#FFF1C2] p-3 text-[14px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
           </p>
         </div>

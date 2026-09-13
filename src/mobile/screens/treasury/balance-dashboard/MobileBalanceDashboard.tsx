@@ -68,7 +68,7 @@ export function MobileBalanceDashboard() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[14px] font-semibold text-foreground">{a.name}</div>
-                    <div className="text-[11px] text-muted-foreground">{a.type}</div>
+                    <div className="text-[14px] text-muted-foreground">{a.type}</div>
                   </div>
                 </div>
                 <MoneyField currency="XAF" value={balances[a.key] ?? null} onValueChange={(v) => setBalance(a.key, v)} allowDecimal decimals={0} max={null} />
@@ -82,7 +82,7 @@ export function MobileBalanceDashboard() {
           <SectionTitle>Aperçu</SectionTitle>
           <div
             ref={scaleWrapRef}
-            className="w-full overflow-hidden rounded-2xl border border-border"
+            className="w-full overflow-hidden rounded-lg border border-border"
             style={{ height: PAGE.height * scale }}
           >
             <div style={{ transformOrigin: 'top left', transform: `scale(${scale})`, width: PAGE.width, height: PAGE.height }}>
@@ -102,7 +102,7 @@ export function MobileBalanceDashboard() {
             PDF
           </PrimaryPill>
         </section>
-        <p className="text-center text-[11px] text-muted-foreground">
+        <p className="text-center text-[14px] text-muted-foreground">
           Tu peux aussi faire une capture d’écran de l’aperçu ci-dessus.
         </p>
       </div>

@@ -40,7 +40,7 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99]"
+      className="flex w-full items-center gap-3.5 rounded-lg px-2 py-2.5 text-left transition active:scale-[0.99]"
     >
       <span
         className={cn(
@@ -51,13 +51,13 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
+        <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
       </span>
       {badge && (
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#D14343] px-1.5 text-[11px] font-bold text-white">
+        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-lg bg-[#EC221F] px-1.5 text-[14px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -91,7 +91,7 @@ export function MobileMoreScreen() {
         {/* Profile — cliquable pour éditer */}
         <button
           onClick={() => navigate('/m/more/profile')}
-          className={cn('flex w-full items-center gap-4 rounded-[22px] p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
+          className={cn('flex w-full items-center gap-4 rounded-lg p-4 text-left transition active:scale-[0.99]', SURFACE.card, SURFACE.shadow)}
         >
           <div className={cn('flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-xl font-bold', SURFACE.holder)}>
             {profile?.avatar_url ? (
@@ -101,10 +101,10 @@ export function MobileMoreScreen() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className={cn('truncate text-[18px] font-bold', TEXT.strong)}>
+            <p className={cn('truncate text-[20px] font-bold', TEXT.strong)}>
               {profile?.first_name || 'Mon profil'} {profile?.last_name}
             </p>
-            <p className={cn('text-[13px]', TEXT.muted)}>Modifier mes informations</p>
+            <p className={cn('text-[14px]', TEXT.muted)}>Modifier mes informations</p>
           </div>
           <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
         </button>
@@ -220,11 +220,11 @@ export function MobileMoreScreen() {
         {/* Langue & Thème */}
         <Card className="space-y-1 p-4">
           <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[13.5px] font-medium', TEXT.muted)}>{t('language', { defaultValue: 'Langue' })}</span>
+            <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('language', { defaultValue: 'Langue' })}</span>
             <LanguageSwitcher />
           </div>
           <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[13.5px] font-medium', TEXT.muted)}>{t('theme', { defaultValue: 'Thème' })}</span>
+            <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('theme', { defaultValue: 'Thème' })}</span>
             <ThemeToggleCompact />
           </div>
         </Card>

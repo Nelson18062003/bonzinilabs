@@ -29,16 +29,7 @@ import { formatDuration } from '@/lib/voice-recording';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  Card,
-  StatCard,
-  Holder,
-  ScreenLoader,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, Card, StatCard, Holder, ScreenLoader, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 type Period = 7 | 14 | 30;
 
@@ -121,7 +112,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
     <div className={desktop ? '' : cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('admin.statsTitle')}</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('admin.statsTitle')}</h2>
         </header>
       ) : (
         <MobileHeader
@@ -138,8 +129,8 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
               key={filter.value}
               onClick={() => setPeriod(filter.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                period === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                period === filter.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {filter.label}
@@ -227,7 +218,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
             icon={TrendingUp}
           >
             {topAdminsChartData.length === 0 ? (
-              <p className={cn('py-6 text-center text-[12px]', TEXT.muted)}>
+              <p className={cn('py-6 text-center text-[14px]', TEXT.muted)}>
                 {t('admin.statsNoData')}
               </p>
             ) : (
@@ -271,11 +262,11 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
                     <div key={a.admin_user_id} className="flex items-center justify-between py-2.5">
                       <div>
                         <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{name}</p>
-                        <p className={cn('text-[11px]', TEXT.muted)}>
+                        <p className={cn('text-[14px]', TEXT.muted)}>
                           {a.replies_count} {t('admin.statsReplies')}
                         </p>
                       </div>
-                      <span className="font-mono text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                      <span className="font-mono text-[14px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">
                         ⏱ {formatDuration(a.avg_response_seconds || 0)}
                       </span>
                     </div>
@@ -285,7 +276,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
             </Card>
           )}
 
-          <Card className={cn('text-[12px]', TEXT.muted)}>
+          <Card className={cn('text-[14px]', TEXT.muted)}>
             <p>
               <strong className={TEXT.strong}>{t('admin.statsLegendTitle')}</strong> — {t('admin.statsLegend')}
             </p>
@@ -306,10 +297,10 @@ function ChartCard({ title, subtitle, icon: Icon, children }: ChartCardProps) {
   return (
     <Card>
       <div className="mb-3 flex items-start gap-2">
-        {Icon && <Icon className="mt-0.5 h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+        {Icon && <Icon className="mt-0.5 h-4 w-4 text-[#1E1E1E] dark:text-[#F5F5F5]" />}
         <div>
           <h3 className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</h3>
-          {subtitle && <p className={cn('text-[11px]', TEXT.muted)}>{subtitle}</p>}
+          {subtitle && <p className={cn('text-[14px]', TEXT.muted)}>{subtitle}</p>}
         </div>
       </div>
       {children}

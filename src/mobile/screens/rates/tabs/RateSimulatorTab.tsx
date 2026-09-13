@@ -132,7 +132,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
   return (
     <div className="space-y-2">
       {/* ── Carte unique, fidèle à la maquette validée ── */}
-      <div className={cn('rounded-[22px] p-4', SURFACE.card, SURFACE.shadow)}>
+      <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
         {/* Segment devise — Depuis XAF / Depuis CNY (option discrète) */}
         <div className={cn('inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.canvas)}>
           {(['xaf', 'cny'] as InputCurrency[]).map((c) => {
@@ -159,8 +159,8 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 key={c}
                 onClick={() => handleCurrencySwitch(c)}
                 className={cn(
-                  'flex-1 rounded-full py-2 text-[13px] font-bold transition-colors',
-                  active ? 'bg-[#8B5CF6] text-white' : TEXT.muted,
+                  'flex-1 rounded-lg py-2 text-[14px] font-bold transition-colors',
+                  active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
                 )}
               >
                 {c === 'xaf' ? 'Depuis XAF' : 'Depuis CNY'}
@@ -171,7 +171,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
 
         {/* Montant — gros chiffre éditable + unité ambre */}
         <div className="mt-4">
-          <label htmlFor="sim-amount" className={cn('text-[12px] font-medium', TEXT.muted)}>
+          <label htmlFor="sim-amount" className={cn('text-[14px] font-medium', TEXT.muted)}>
             Montant
           </label>
           <div className="mt-1 flex items-baseline gap-2">
@@ -185,12 +185,12 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
               onChange={handleAmountChange}
               placeholder={inputCurrency === 'xaf' ? '500 000' : '5 000'}
               className={cn(
-                'min-w-0 flex-1 bg-transparent text-[40px] font-black leading-none tabular-nums outline-none',
-                'placeholder:text-[#C7C2D6] dark:placeholder:text-[#4A4658]',
+                'min-w-0 flex-1 bg-transparent text-[32px] font-bold leading-none tabular-nums outline-none',
+                'placeholder:text-[#B3B3B3] dark:placeholder:text-[#757575]',
                 TEXT.strong,
               )}
             />
-            <span className="shrink-0 text-[18px] font-extrabold text-[#E8932A]">
+            <span className="shrink-0 text-[20px] font-bold text-[#E8B931]">
               {inputCurrency === 'xaf' ? 'XAF' : 'CNY'}
             </span>
           </div>
@@ -206,12 +206,12 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 onClick={() => setMethod(pm.key)}
                 aria-pressed={active}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-2xl p-2 transition active:scale-[0.97]',
-                  active ? 'bg-[#EDEAFA] dark:bg-[#2A2738]' : '',
+                  'flex flex-col items-center gap-1.5 rounded-lg p-2 transition active:scale-[0.97]',
+                  active ? 'bg-[#F5F5F5] dark:bg-[#383838]' : '',
                 )}
               >
                 <MethodLogo method={pm.key} size={38} />
-                <span className={cn('text-[10px] font-semibold', active ? TEXT.strong : TEXT.muted)}>
+                <span className={cn('text-[14px] font-semibold', active ? TEXT.strong : TEXT.muted)}>
                   {pm.label}
                 </span>
               </button>
@@ -228,8 +228,8 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 key={c.key}
                 onClick={() => setCountry(c.key)}
                 className={cn(
-                  'shrink-0 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors',
-                  active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted),
+                  'shrink-0 rounded-lg px-3 py-1.5 text-[14px] font-semibold transition-colors',
+                  active ? 'bg-[#2C2C2C] text-white' : cn(SURFACE.canvas, TEXT.muted),
                 )}
               >
                 {c.label}
@@ -240,15 +240,15 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
 
         {/* Résultat — bloc lilas « Votre fournisseur reçoit ¥ » (maquette) */}
         {result ? (
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
-            <div className={cn('text-[12px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
+          <div className="mt-4 rounded-lg bg-[#F5F5F5] p-4 dark:bg-[#383838]">
+            <div className={cn('text-[14px] font-medium', TEXT.muted)}>Votre fournisseur reçoit</div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-[28px] font-black text-[#C3BDD2] dark:text-[#5C5772]">¥</span>
-              <span className={cn('text-[40px] font-black leading-none tabular-nums', TEXT.strong)}>
+              <span className="text-[24px] font-bold text-[#B3B3B3] dark:text-[#B3B3B3]">¥</span>
+              <span className={cn('text-[32px] font-bold leading-none tabular-nums', TEXT.strong)}>
                 {result.amountCNY.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
               </span>
             </div>
-            <div className={cn('mt-1.5 text-[12px]', TEXT.muted)}>
+            <div className={cn('mt-1.5 text-[14px]', TEXT.muted)}>
               via {methodLabel} · vous payez{' '}
               <span className="font-semibold tabular-nums">
                 {result.amountXAF.toLocaleString('fr-FR')} XAF
@@ -256,8 +256,8 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
             </div>
           </div>
         ) : (
-          <div className="mt-4 rounded-2xl bg-[#EDEAFA]/60 p-5 text-center dark:bg-[#2F2C3D]/60">
-            <div className={cn('text-[13px]', TEXT.muted)}>{emptyMessage}</div>
+          <div className="mt-4 rounded-lg bg-[#F5F5F5]/60 p-5 text-center dark:bg-[#383838]/60">
+            <div className={cn('text-[14px]', TEXT.muted)}>{emptyMessage}</div>
           </div>
         )}
       </div>
@@ -269,7 +269,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
             type="button"
             onClick={() => setShowDetail((v) => !v)}
             aria-expanded={showDetail}
-            className={cn('flex w-full items-center justify-center gap-1 py-1.5 text-[12px] font-semibold', TEXT.muted)}
+            className={cn('flex w-full items-center justify-center gap-1 py-1.5 text-[14px] font-semibold', TEXT.muted)}
           >
             {showDetail ? 'Masquer le détail' : 'Voir le détail du calcul'}
             <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', !showDetail && '-rotate-90')} />

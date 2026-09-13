@@ -103,7 +103,7 @@ function MIcon({ family, size = 20 }: { family: string; size?: number }) {
   if (!f) return null;
   return (
     <div
-      className="flex shrink-0 items-center justify-center font-black"
+      className="flex shrink-0 items-center justify-center font-bold"
       style={{
         width: size,
         height: size,
@@ -153,7 +153,7 @@ function DetailHeader({ title, onBack, right }: { title: string; onBack: () => v
         >
           <ChevronLeft className="h-6 w-6" />
         </button>
-        <span className={cn('truncate text-[15px] font-bold', TEXT.strong)}>{title}</span>
+        <span className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{title}</span>
       </div>
       {right}
     </header>
@@ -484,29 +484,29 @@ export function MobileDepositDetailV2() {
           <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
           <div className="flex items-center gap-1.5">
             <MIcon family={family} size={20} />
-            <span className={cn('text-[12px] font-semibold', TEXT.strong)}>{methodShort}</span>
+            <span className={cn('text-[14px] font-semibold', TEXT.strong)}>{methodShort}</span>
             {slaLevel && <SlaDot level={slaLevel} />}
-            <span className={cn('text-[11px]', TEXT.muted)}>{formatRelativeDate(deposit.created_at)}</span>
+            <span className={cn('text-[14px]', TEXT.muted)}>{formatRelativeDate(deposit.created_at)}</span>
           </div>
         </div>
 
         {/* ── Hero montant ──────────────────────────────────── */}
         <Card className="flex flex-col items-center gap-3 py-6 text-center">
           <Amount value={fmt(deposit.amount_xaf)} unit="XAF" size="xl" />
-          <div className={cn('text-[12px]', TEXT.muted)}>
+          <div className={cn('text-[14px]', TEXT.muted)}>
             Client : <span className={cn('font-bold', TEXT.strong)}>{clientName}</span>
           </div>
           {deposit.confirmed_amount_xaf && deposit.confirmed_amount_xaf !== deposit.amount_xaf && (
             <div className="flex items-center justify-center gap-1.5">
-              <span className={cn('text-[12px] line-through', TEXT.muted)}>{fmt(deposit.amount_xaf)} XAF</span>
-              <ArrowRight className="h-3.5 w-3.5 text-[#2E7D52] dark:text-[#7FCBA0]" />
-              <span className="text-[12px] font-bold text-[#2E7D52] dark:text-[#7FCBA0]">
+              <span className={cn('text-[14px] line-through', TEXT.muted)}>{fmt(deposit.amount_xaf)} XAF</span>
+              <ArrowRight className="h-3.5 w-3.5 text-[#02542D] dark:text-[#CFF7D3]" />
+              <span className="text-[14px] font-bold text-[#02542D] dark:text-[#CFF7D3]">
                 {fmt(deposit.confirmed_amount_xaf)} XAF crédité
               </span>
             </div>
           )}
           {wallet && (
-            <div className={cn('text-[11px]', TEXT.muted)}>
+            <div className={cn('text-[14px]', TEXT.muted)}>
               Solde wallet : <strong className={TEXT.strong}>{formatCurrency(wallet.balance_xaf)}</strong>
             </div>
           )}
@@ -515,7 +515,7 @@ export function MobileDepositDetailV2() {
         {/* ── Section preuves ───────────────────────────────── */}
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <span className={cn('text-[13px] font-bold', TEXT.strong)}>Preuves ({proofs?.length || 0})</span>
+            <span className={cn('text-[14px] font-bold', TEXT.strong)}>Preuves ({proofs?.length || 0})</span>
             {canAddProof && (
               <button
                 onClick={() => setShowUploadSheet(true)}
@@ -539,8 +539,8 @@ export function MobileDepositDetailV2() {
           {!hasProofs ? (
             <div>
               <div className="rounded-lg border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
-                <div className={cn('text-[12px] font-bold', TEXT.muted)}>Preuve manquante</div>
-                <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>Le client doit envoyer un justificatif</div>
+                <div className={cn('text-[14px] font-bold', TEXT.muted)}>Preuve manquante</div>
+                <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Le client doit envoyer un justificatif</div>
               </div>
               {canAddProof && (
                 <button
@@ -570,20 +570,20 @@ export function MobileDepositDetailV2() {
                       ) : isPdf ? (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-1.5">
                           <FileText className={cn('h-8 w-8', TEXT.muted)} />
-                          <span className={cn('text-[11px] font-bold', TEXT.muted)}>PDF</span>
+                          <span className={cn('text-[14px] font-bold', TEXT.muted)}>PDF</span>
                         </div>
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center gap-1.5">
                           <FileText className={cn('h-8 w-8', TEXT.muted)} />
-                          <span className={cn('px-4 text-center text-[10px]', TEXT.muted)}>{proof.file_name}</span>
+                          <span className={cn('px-4 text-center text-[14px]', TEXT.muted)}>{proof.file_name}</span>
                         </div>
                       )}
                       {/* Overlay nom fichier — haut gauche */}
-                      <div className="absolute left-1.5 top-1.5 max-w-[55%] truncate rounded bg-black/60 px-1.5 py-0.5 text-[12px] font-medium text-white">
+                      <div className="absolute left-1.5 top-1.5 max-w-[55%] truncate rounded bg-black/60 px-1.5 py-0.5 text-[14px] font-medium text-white">
                         {proof.file_name}
                       </div>
                       {/* Badge uploader — haut droite */}
-                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[12px] font-medium text-white">
+                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[14px] font-medium text-white">
                         {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
                       </div>
                     </div>
@@ -696,7 +696,7 @@ export function MobileDepositDetailV2() {
             onClick={() => setShowSuivi(!showSuivi)}
             className="flex w-full items-center justify-between p-4"
           >
-            <span className={cn('text-[13px] font-bold', TEXT.strong)}>Suivi</span>
+            <span className={cn('text-[14px] font-bold', TEXT.strong)}>Suivi</span>
             {showSuivi ? (
               <ChevronUp className={cn('h-4 w-4', TEXT.muted)} />
             ) : (
@@ -726,11 +726,11 @@ export function MobileDepositDetailV2() {
                     )}
                   </div>
                   <div className="min-w-0 pb-3">
-                    <p className={cn('text-[12px] font-semibold', step.status === 'pending' ? TEXT.muted : TEXT.strong)}>
+                    <p className={cn('text-[14px] font-semibold', step.status === 'pending' ? TEXT.muted : TEXT.strong)}>
                       {step.label}
                     </p>
-                    <p className={cn('text-[11px]', TEXT.muted)}>{step.description}</p>
-                    {step.formattedDate && <p className={cn('text-[10px]', TEXT.muted)}>{step.formattedDate}</p>}
+                    <p className={cn('text-[14px]', TEXT.muted)}>{step.description}</p>
+                    {step.formattedDate && <p className={cn('text-[14px]', TEXT.muted)}>{step.formattedDate}</p>}
                   </div>
                 </div>
               ))}
@@ -743,7 +743,7 @@ export function MobileDepositDetailV2() {
       <BottomSheet open={showValidateConfirm} onClose={() => setShowValidateConfirm(false)} title="Valider ce dépôt">
         <div className="space-y-4">
           <div className={cn('space-y-2 rounded-lg p-3', SURFACE.canvas)}>
-            <div className="flex items-center justify-between text-[13px]">
+            <div className="flex items-center justify-between text-[14px]">
               <span className={TEXT.muted}>Montant déclaré</span>
               <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{formatCurrency(deposit.amount_xaf)}</span>
             </div>
@@ -762,18 +762,18 @@ export function MobileDepositDetailV2() {
           </div>
           {amountDiffers && (
             <div className="flex items-start gap-2 rounded-lg bg-[#FFF1C2] p-3 dark:bg-[#522504]">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-              <p className="text-[13px] text-[#9A6B12] dark:text-[#E7C083]">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
+              <p className="text-[14px] text-[#682D03] dark:text-[#FFF1C2]">
                 Le montant confirmé ({formatCurrency(confirmedAmountNum)}) diffère du montant déclaré.
               </p>
             </div>
           )}
           <div className="rounded-lg bg-[#CFF7D3] p-4 dark:bg-[#02542D]">
-            <p className="text-[13px] text-[#2E7D52] dark:text-[#7FCBA0]">
+            <p className="text-[14px] text-[#02542D] dark:text-[#CFF7D3]">
               Le wallet sera crédité de <strong>{formatCurrency(confirmedAmountNum || deposit.amount_xaf)}</strong>
             </p>
             {wallet && (
-              <p className="mt-1 text-[12px] text-[#2E7D52] dark:text-[#7FCBA0]">
+              <p className="mt-1 text-[14px] text-[#02542D] dark:text-[#CFF7D3]">
                 Nouveau solde estimé : {formatCurrency(wallet.balance_xaf + (confirmedAmountNum || deposit.amount_xaf))}
               </p>
             )}
@@ -785,7 +785,7 @@ export function MobileDepositDetailV2() {
               enterKeyHint="done"
               rows={2}
               placeholder="Commentaire visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <button
@@ -795,11 +795,11 @@ export function MobileDepositDetailV2() {
           >
             <div className="flex items-center gap-2">
               {sendNotification ? (
-                <Bell className="h-4 w-4 text-[#5B4CC4] dark:text-[#B5AAF0]" />
+                <Bell className="h-4 w-4 text-[#1E1E1E] dark:text-[#F5F5F5]" />
               ) : (
                 <BellOff className={cn('h-4 w-4', TEXT.muted)} />
               )}
-              <span className={cn('text-[13px]', TEXT.strong)}>Notifier le client</span>
+              <span className={cn('text-[14px]', TEXT.strong)}>Notifier le client</span>
             </div>
             <span
               className={cn(
@@ -832,14 +832,14 @@ export function MobileDepositDetailV2() {
         onClose={() => { setShowRejectSheet(false); setRejectionCategory(''); setClientMessage(''); setAdminNote(''); }}
         title={
           <span className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            <AlertTriangle className="h-5 w-5 text-[#900B09] dark:text-[#FDD3D0]" />
             Refuser ce dépôt
           </span>
         }
       >
         <div className="space-y-4">
           <div>
-            <p className={cn('mb-2 text-[13px]', TEXT.muted)}>Motif du refus</p>
+            <p className={cn('mb-2 text-[14px]', TEXT.muted)}>Motif du refus</p>
             <div className="space-y-2">
               {REJECTION_REASONS.map((reason) => (
                 <button
@@ -851,9 +851,9 @@ export function MobileDepositDetailV2() {
                     }
                   }}
                   className={cn(
-                    'w-full rounded-lg p-3 text-left text-[13px] transition-all ring-1',
+                    'w-full rounded-lg p-3 text-left text-[14px] transition-all ring-1',
                     rejectionCategory === reason
-                      ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                      ? 'bg-[#FDD3D0] text-[#900B09] ring-[#EC221F]/40 dark:bg-[#900B09] dark:text-[#FDD3D0]'
                       : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
                   )}
                 >
@@ -863,16 +863,16 @@ export function MobileDepositDetailV2() {
             </div>
           </div>
           <FormField
-            label={<>Message client <span className="text-[#C0504D]">*</span></>}
+            label={<>Message client <span className="text-[#900B09]">*</span></>}
           >
             <textarea
               value={clientMessage}
               onChange={(e) => setClientMessage(e.target.value)}
               rows={2}
               placeholder="Expliquez au client pourquoi son dépôt est refusé..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
-            <p className={cn('mt-1 text-[10px]', TEXT.muted)}>Ce message sera visible par le client</p>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
           <FormField label="Note interne (optionnel)">
             <textarea
@@ -881,7 +881,7 @@ export function MobileDepositDetailV2() {
               enterKeyHint="done"
               rows={2}
               placeholder="Note visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <div className="flex gap-2">
@@ -935,22 +935,22 @@ export function MobileDepositDetailV2() {
         onClose={() => { setShowDeleteProofSheet(null); setDeleteProofReason(''); setCustomDeleteReason(''); }}
         title={
           <span className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            <Trash2 className="h-5 w-5 text-[#900B09] dark:text-[#FDD3D0]" />
             Supprimer cette preuve ?
           </span>
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[13px]', TEXT.muted)}>Cette action est irréversible.</p>
+          <p className={cn('text-[14px]', TEXT.muted)}>Cette action est irréversible.</p>
           <div className="space-y-2">
             {PROOF_DELETE_REASONS.map((reason) => (
               <button
                 key={reason}
                 onClick={() => setDeleteProofReason(reason)}
                 className={cn(
-                  'w-full rounded-lg p-3 text-left text-[13px] transition-all ring-1',
+                  'w-full rounded-lg p-3 text-left text-[14px] transition-all ring-1',
                   deleteProofReason === reason
-                    ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
+                    ? 'bg-[#FDD3D0] text-[#900B09] ring-[#EC221F]/40 dark:bg-[#900B09] dark:text-[#FDD3D0]'
                     : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
                 )}
               >
@@ -964,7 +964,7 @@ export function MobileDepositDetailV2() {
               onChange={(e) => setCustomDeleteReason(e.target.value)}
               rows={2}
               placeholder="Précisez le motif..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           )}
           <div className="flex gap-2">
@@ -993,16 +993,16 @@ export function MobileDepositDetailV2() {
         onClose={() => setShowDeleteDepositSheet(false)}
         title={
           <span className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            <Trash2 className="h-5 w-5 text-[#900B09] dark:text-[#FDD3D0]" />
             Annuler ce dépôt ?
           </span>
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[13px]', TEXT.muted)}>
+          <p className={cn('text-[14px]', TEXT.muted)}>
             Voulez-vous annuler ce dépôt ? Le dépôt sera marqué comme annulé et le solde sera ajusté si nécessaire.
           </p>
-          <div className={cn('text-center text-[13px]', TEXT.muted)}>
+          <div className={cn('text-center text-[14px]', TEXT.muted)}>
             {clientName} — {fmt(deposit.amount_xaf)} XAF
           </div>
           <div className="flex gap-2">

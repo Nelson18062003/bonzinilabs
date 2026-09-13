@@ -12,16 +12,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  Avatar,
-  TextInput,
-  Holder,
-  ScreenLoader,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar, TextInput, Holder, ScreenLoader, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 type StatusFilter = 'open' | 'all' | 'closed';
 type AssignFilter = 'all' | 'mine' | 'unassigned';
@@ -148,8 +139,8 @@ export function MobileSupportListScreen() {
               key={filter.value}
               onClick={() => setAssignFilter(filter.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                assignFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                assignFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {filter.label}
@@ -164,8 +155,8 @@ export function MobileSupportListScreen() {
               key={filter.value}
               onClick={() => setStatusFilter(filter.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                statusFilter === filter.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                statusFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {filter.label}
@@ -208,7 +199,7 @@ export function MobileSupportListScreen() {
                 type="button"
                 onClick={() => navigate(`/m/support/${c.id}`)}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                  'flex w-full items-center gap-3 rounded-lg p-4 text-left transition-transform active:scale-[0.98]',
                   SURFACE.card,
                   SURFACE.shadow,
                   c.status === 'closed' && 'opacity-60',
@@ -223,10 +214,10 @@ export function MobileSupportListScreen() {
                     <span className={cn('truncate text-[14px]', unread > 0 ? 'font-bold' : 'font-semibold', TEXT.strong)}>
                       {name}
                     </span>
-                    <span className={cn('shrink-0 text-[11px]', TEXT.muted)}>{time}</span>
+                    <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>{time}</span>
                   </div>
                   {subject && (
-                    <p className="truncate text-[11px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]">
+                    <p className="truncate text-[14px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">
                       {subject}
                     </p>
                   )}
@@ -235,22 +226,22 @@ export function MobileSupportListScreen() {
                       text={searchSnippetByConv.get(c.id) ?? ''}
                       query={debouncedSearch}
                       maxLength={100}
-                      className={cn('mt-0.5 truncate text-[12px]', unread > 0 ? TEXT.strong : TEXT.muted)}
+                      className={cn('mt-0.5 truncate text-[14px]', unread > 0 ? TEXT.strong : TEXT.muted)}
                     />
                   ) : (
-                    <p className={cn('mt-0.5 truncate text-[12px]', unread > 0 ? TEXT.strong : TEXT.muted)}>
+                    <p className={cn('mt-0.5 truncate text-[14px]', unread > 0 ? TEXT.strong : TEXT.muted)}>
                       {c.last_message_preview || '—'}
                     </p>
                   )}
                   {assignedName && (
-                    <p className="mt-0.5 text-[10px] text-[#9A6B12] dark:text-[#E7C083]">
+                    <p className="mt-0.5 text-[14px] text-[#682D03] dark:text-[#FFF1C2]">
                       {t('admin.assignedToLabel')} {assignedName}
                     </p>
                   )}
                 </div>
 
                 {unread > 0 && (
-                  <span className="shrink-0 rounded-full bg-[#FE560D] px-2 py-0.5 text-[11px] font-bold text-white">
+                  <span className="shrink-0 rounded-lg bg-[#FE560D] px-2 py-0.5 text-[14px] font-bold text-white">
                     {unread}
                   </span>
                 )}

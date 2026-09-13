@@ -27,7 +27,7 @@ import { RateSimulatorTab } from './tabs/RateSimulatorTab';
 
 function Caption({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className={cn('mb-3 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+    <h2 className={cn('mb-3 px-1 text-[14px] font-bold', TEXT.muted)}>
       {children}
     </h2>
   );
@@ -43,7 +43,7 @@ function Collapsible({ title, children, defaultOpen = false }: { title: string; 
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={cn('flex w-full items-center justify-between rounded-2xl px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
+        className={cn('flex w-full items-center justify-between rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
       >
         <span className={cn('text-[14px] font-bold', TEXT.strong)}>{title}</span>
         <ChevronDown className={cn('h-5 w-5 transition-transform', TEXT.muted, !open && '-rotate-90')} />

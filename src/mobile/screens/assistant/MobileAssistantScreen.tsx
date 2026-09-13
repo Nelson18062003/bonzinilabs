@@ -77,10 +77,10 @@ function ImagePreview({ image, onClose }: { image: { url: string; name: string }
         </button>
       </div>
       <div className="flex flex-1 items-center justify-center overflow-auto px-3 py-1" onClick={(e) => e.stopPropagation()}>
-        <img src={image.url} alt={image.name} className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
+        <img src={image.url} alt={image.name} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
       </div>
       <div className="px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3" onClick={(e) => e.stopPropagation()}>
-        <a href={image.url} target="_blank" rel="noopener noreferrer" download={image.name} className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-[16px] font-semibold text-black transition active:scale-[0.99]">
+        <a href={image.url} target="_blank" rel="noopener noreferrer" download={image.name} className="flex w-full items-center justify-center gap-2 rounded-lg bg-white py-3 text-[16px] font-semibold text-black transition active:scale-[0.99]">
           <Download className="h-4 w-4" /> Télécharger / ouvrir
         </a>
       </div>
@@ -104,8 +104,8 @@ function ConfirmationCard({
   // États « résultat » → carte compacte (la proposition se replie en résultat).
   if (state === 'done' || state === 'failed' || state === 'cancelled') {
     const variant = {
-      done: { holder: 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]', Icon: Check, title: 'Action exécutée' },
-      failed: { holder: 'bg-[#FDD3D0] text-[#C0504D] dark:bg-[#900B09] dark:text-[#FDD3D0]', Icon: AlertTriangle, title: 'Échec' },
+      done: { holder: 'bg-[#CFF7D3] text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]', Icon: Check, title: 'Action exécutée' },
+      failed: { holder: 'bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]', Icon: AlertTriangle, title: 'Échec' },
       cancelled: { holder: HOLDER, Icon: X, title: 'Action annulée' },
     }[state];
     const Icon = variant.Icon;
@@ -117,7 +117,7 @@ function ConfirmationCard({
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">{variant.title}</div>
-            {resultText && <div className="text-[12.5px] text-[#757575] dark:text-[#B3B3B3]">{resultText}</div>}
+            {resultText && <div className="text-[14px] text-[#757575] dark:text-[#B3B3B3]">{resultText}</div>}
           </div>
         </div>
       </div>
@@ -135,19 +135,19 @@ function ConfirmationCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-[16px] font-bold leading-tight text-[#1E1E1E] dark:text-[#F5F5F5]">{summary.title}</div>
-          {summary.subtitle && <div className="mt-0.5 text-[13px] text-[#757575] dark:text-[#B3B3B3]">{summary.subtitle}</div>}
+          {summary.subtitle && <div className="mt-0.5 text-[14px] text-[#757575] dark:text-[#B3B3B3]">{summary.subtitle}</div>}
         </div>
       </div>
 
       {danger && (
-        <div className="mt-4 flex items-start gap-2 rounded-2xl bg-[#FBEFEF] px-3.5 py-2.5 dark:bg-[#2C1F20]">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C0504D]" />
-          <p className="text-[12.5px] leading-snug text-[#9B4A47] dark:text-[#E0A3A1]">Action sensible — vérifie bien avant de confirmer.</p>
+        <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 dark:bg-[#900B09]">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#900B09]" />
+          <p className="text-[14px] leading-snug text-[#900B09] dark:text-[#FDD3D0]">Action sensible — vérifie bien avant de confirmer.</p>
         </div>
       )}
 
       {summary.amount && (
-        <div className="mt-5 text-[30px] font-extrabold leading-none tracking-tight tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">
+        <div className="mt-5 text-[24px] font-bold leading-none tracking-tight tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">
           {summary.amount}
         </div>
       )}
@@ -155,7 +155,7 @@ function ConfirmationCard({
       {summary.lines.length > 0 && (
         <div className="mt-4">
           {summary.lines.map((l, i) => (
-            <div key={i} className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
+            <div key={i} className="flex items-center justify-between gap-3 py-[7px] text-[14px]">
               <span className="text-[#757575] dark:text-[#B3B3B3]">{l.label}</span>
               <span className="text-right font-semibold tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">{l.value}</span>
             </div>
@@ -164,20 +164,20 @@ function ConfirmationCard({
       )}
 
       {executing ? (
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-full bg-[#F5F5F5] py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-lg bg-[#F5F5F5] py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
           <Loader className="h-4 w-4 animate-spin" /> Exécution…
         </div>
       ) : (
         <div className="mt-5 flex gap-2.5">
           <button
             onClick={onConfirm}
-            className={cn('flex-1 rounded-full py-[13px] text-[14px] font-bold', danger ? 'bg-[#D14343] text-white' : 'bg-[#2C2C2C] text-white dark:bg-[#F5F5F5] dark:text-[#1E1E1E]')}
+            className={cn('flex-1 rounded-lg py-[13px] text-[14px] font-bold', danger ? 'bg-[#EC221F] text-white' : 'bg-[#2C2C2C] text-white dark:bg-[#F5F5F5] dark:text-[#1E1E1E]')}
           >
             {summary.confirmLabel}
           </button>
           <button
             onClick={onCancel}
-            className="rounded-full bg-[#F5F5F5] px-6 py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]"
+            className="rounded-lg bg-[#F5F5F5] px-6 py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]"
           >
             Annuler
           </button>
@@ -316,7 +316,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           <button
             onClick={handleNew}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#2C2C2C] py-2.5 text-[13.5px] font-bold text-white transition-opacity active:opacity-90 disabled:opacity-50 dark:bg-[#F5F5F5] dark:text-[#1E1E1E]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#2C2C2C] py-2.5 text-[14px] font-bold text-white transition-opacity active:opacity-90 disabled:opacity-50 dark:bg-[#F5F5F5] dark:text-[#1E1E1E]"
           >
             <Plus className="h-4 w-4" /> Nouvelle conversation
           </button>
@@ -333,7 +333,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           {pending.map((p) => (
             <div key={p.id} className="relative shrink-0">
               {p.isPdf ? (
-                <div className={cn('flex h-16 w-16 flex-col items-center justify-center rounded-2xl px-1 text-[14px] text-[#757575]', CARD, SOFT)}>
+                <div className={cn('flex h-16 w-16 flex-col items-center justify-center rounded-lg px-1 text-[14px] text-[#757575]', CARD, SOFT)}>
                   <FileText className="mb-1 h-5 w-5" />
                   <span className="max-w-[56px] truncate">{p.file.name}</span>
                 </div>
@@ -342,7 +342,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                   type="button"
                   onClick={() => setPreview({ url: p.url, name: p.file.name })}
                   aria-label={`Prévisualiser ${p.file.name}`}
-                  className={cn('block overflow-hidden rounded-2xl transition active:scale-95', SOFT)}
+                  className={cn('block overflow-hidden rounded-lg transition active:scale-95', SOFT)}
                 >
                   <img src={p.url} alt={p.file.name} className="h-16 w-16 object-cover" />
                 </button>
@@ -461,11 +461,11 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                 )}
               <div
                 className={cn(
-                  'max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed',
+                  'max-w-[85%] whitespace-pre-wrap break-words rounded-lg px-4 py-2.5 text-[16px] leading-relaxed',
                   m.role === 'user'
-                    ? 'rounded-br-md bg-[#2C2C2C] text-white dark:bg-[#34323F]'
+                    ? 'rounded-br-md bg-[#2C2C2C] text-white dark:bg-[#383838]'
                     : m.error
-                      ? 'rounded-bl-md bg-[#FBEFEF] text-[#9B4A47] dark:bg-[#2C1F20] dark:text-[#E0A3A1]'
+                      ? 'rounded-bl-md bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]'
                       : cn('rounded-bl-md text-[#1E1E1E] dark:text-[#F5F5F5]', CARD, SOFT),
                 )}
               >
@@ -477,12 +477,12 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                           key={i}
                           type="button"
                           onClick={() => setPreview({ url: a.url!, name: a.name })}
-                          className="overflow-hidden rounded-xl transition active:scale-95"
+                          className="overflow-hidden rounded-lg transition active:scale-95"
                         >
                           <img src={a.url} alt={a.name} className="h-24 w-24 object-cover" />
                         </button>
                       ) : (
-                        <div key={i} className="flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-[14px] dark:bg-white/10">
+                        <div key={i} className="flex items-center gap-2 rounded-lg bg-black/5 px-3 py-2 text-[14px] dark:bg-white/10">
                           <FileText className="h-4 w-4 shrink-0" />
                           <span className="max-w-[140px] truncate">{a.name}</span>
                         </div>
@@ -498,7 +498,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                   key={i}
                   type="button"
                   onClick={() => setPreview({ url: img.url, name: img.name })}
-                  className={cn('group relative block max-w-[85%] overflow-hidden rounded-2xl text-left transition active:scale-[0.99]', CARD, SOFT)}
+                  className={cn('group relative block max-w-[85%] overflow-hidden rounded-lg text-left transition active:scale-[0.99]', CARD, SOFT)}
                 >
                   <img src={img.url} alt={img.name} className="h-auto w-full" />
                   <div className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
@@ -531,7 +531,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                   </div>
                 }
               />
-              <div className={cn('flex items-center gap-2 rounded-2xl rounded-bl-md px-4 py-3 text-[#757575] dark:text-[#B3B3B3]', CARD, SOFT)}>
+              <div className={cn('flex items-center gap-2 rounded-lg rounded-bl-md px-4 py-3 text-[#757575] dark:text-[#B3B3B3]', CARD, SOFT)}>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-[16px]">Mola réfléchit…</span>
               </div>

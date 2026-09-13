@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 /** Skeleton for a stats card (dashboard grid items) */
 export function SkeletonStatCard() {
   return (
-    <div className="bg-card rounded-xl p-4 border border-border">
+    <div className="bg-card rounded-lg p-4 border border-border">
       <div className="flex items-center gap-2 mb-2">
         <Skeleton className="w-8 h-8 rounded-full" />
       </div>
@@ -16,7 +16,7 @@ export function SkeletonStatCard() {
 /** Skeleton for a list item (deposits, payments, clients) */
 export function SkeletonListItem() {
   return (
-    <div className="bg-card rounded-xl p-4 border border-border">
+    <div className="bg-card rounded-lg p-4 border border-border">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
@@ -37,7 +37,7 @@ export function SkeletonListItem() {
 /** Skeleton for a client list item (wider, with stats row) */
 export function SkeletonClientItem() {
   return (
-    <div className="bg-card rounded-xl p-4 border border-border">
+    <div className="bg-card rounded-lg p-4 border border-border">
       <div className="flex items-center gap-3">
         <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
         <div className="flex-1 space-y-2">
@@ -74,7 +74,7 @@ export function SkeletonDashboard() {
       </div>
 
       {/* KPI Card */}
-      <div className="bg-card rounded-2xl p-5 border border-border space-y-3">
+      <div className="bg-card rounded-lg p-5 border border-border space-y-3">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="h-9 w-52" />
         <Skeleton className="h-4 w-36" />
@@ -96,8 +96,8 @@ export function SkeletonDashboard() {
 
       {/* Priority Block */}
       <div className="flex gap-3">
-        <Skeleton className="flex-1 h-16 rounded-xl" />
-        <Skeleton className="flex-1 h-16 rounded-xl" />
+        <Skeleton className="flex-1 h-16 rounded-lg" />
+        <Skeleton className="flex-1 h-16 rounded-lg" />
       </div>
 
       {/* Quick Actions */}
@@ -111,7 +111,7 @@ export function SkeletonDashboard() {
       </div>
 
       {/* Rate card */}
-      <Skeleton className="h-16 w-full rounded-xl" />
+      <Skeleton className="h-16 w-full rounded-lg" />
 
       {/* Recent activity */}
       <div className="space-y-3">
@@ -130,7 +130,7 @@ export function SkeletonDetail() {
     <div className="space-y-4">
       {/* Hero zone - centered */}
       <div className="flex flex-col items-center pt-2 pb-6 px-4">
-        <Skeleton className="w-16 h-16 rounded-2xl mb-4" />
+        <Skeleton className="w-16 h-16 rounded-lg mb-4" />
         <Skeleton className="h-4 w-32 mb-2" />
         <Skeleton className="h-5 w-20 rounded-full mb-4" />
         <Skeleton className="h-10 w-48 mb-1" />
@@ -140,10 +140,10 @@ export function SkeletonDetail() {
 
       <div className="px-4 space-y-4">
         {/* Transaction ID strip */}
-        <Skeleton className="h-14 w-full rounded-xl" />
+        <Skeleton className="h-14 w-full rounded-lg" />
 
         {/* Details card */}
-        <div className="rounded-[26px] bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#211F2B] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
+        <div className="rounded-lg bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#2C2C2C] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
           <div className="px-4 py-3 border-b border-border/30">
             <Skeleton className="h-4 w-16" />
           </div>
@@ -158,7 +158,7 @@ export function SkeletonDetail() {
         </div>
 
         {/* Timeline card */}
-        <div className="rounded-[26px] bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#211F2B] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
+        <div className="rounded-lg bg-white shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:bg-[#2C2C2C] dark:shadow-none dark:ring-1 dark:ring-white/[0.06] overflow-hidden">
           <div className="px-4 py-3 border-b border-border/30">
             <Skeleton className="h-4 w-12" />
           </div>
@@ -193,25 +193,25 @@ export function SkeletonClientDetail() {
       </div>
 
       {/* Balance card */}
-      <div className="bg-card rounded-xl p-5 border border-border">
+      <div className="bg-card rounded-lg p-5 border border-border">
         <Skeleton className="h-4 w-16 mb-2" />
         <Skeleton className="h-8 w-32" />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card rounded-xl p-4 border border-border space-y-2">
+        <div className="bg-card rounded-lg p-4 border border-border space-y-2">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-6 w-24" />
         </div>
-        <div className="bg-card rounded-xl p-4 border border-border space-y-2">
+        <div className="bg-card rounded-lg p-4 border border-border space-y-2">
           <Skeleton className="h-3 w-16" />
           <Skeleton className="h-6 w-24" />
         </div>
       </div>
 
       {/* Info section */}
-      <div className="bg-card rounded-xl p-4 border border-border space-y-3">
+      <div className="bg-card rounded-lg p-4 border border-border space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex items-center justify-between">
             <Skeleton className="h-4 w-24" />

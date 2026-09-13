@@ -10,14 +10,7 @@ import type { LedgerEntryType } from '@/types/admin';
 import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import {
-  SURFACE,
-  TEXT,
-  PRIMARY_PILL,
-  SOFT_PILL,
-  Card,
-  Holder,
-} from '@/mobile/designKit';
+import { SURFACE, TEXT, Card, Holder, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
 
 const FILTER_OPTIONS: { value: LedgerEntryType | 'all'; label: string }[] = [
   { value: 'all', label: 'Tous' },
@@ -48,7 +41,7 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
     <div className={desktop ? '' : 'flex min-h-screen flex-col'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('history', { defaultValue: 'Historique' })}</h2>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('history', { defaultValue: 'Historique' })}</h2>
           <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('clientLedgerSubtitle', { defaultValue: 'Grand livre du client' })}</p>
         </header>
       ) : (
@@ -63,10 +56,10 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
         {/* Client Info */}
         {client && (
           <Card>
-            <p className={cn('text-[15px] font-bold', TEXT.strong)}>
+            <p className={cn('text-[16px] font-bold', TEXT.strong)}>
               {client.firstName} {client.lastName}
             </p>
-            <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>
+            <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
               {t('currentBalance', { defaultValue: 'Solde actuel' })}: {formatCurrency(client.walletBalance || 0)}
             </p>
           </Card>
@@ -79,8 +72,8 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
               key={opt.value}
               onClick={() => setFilter(opt.value)}
               className={cn(
-                'whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition-colors',
-                filter === opt.value ? PRIMARY_PILL : SOFT_PILL,
+                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
+                filter === opt.value ? TOGGLE_ON : TOGGLE_OFF,
               )}
             >
               {opt.label}
@@ -109,11 +102,11 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
                         <div className="min-w-0">
                           <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{config.label}</p>
                           {config.isInformational && (
-                            <p className={cn('text-[11px] italic', TEXT.muted)}>
+                            <p className={cn('text-[14px] italic', TEXT.muted)}>
                               (informatif — aucun impact sur le solde)
                             </p>
                           )}
-                          <p className={cn('line-clamp-2 text-[12px]', TEXT.muted)}>
+                          <p className={cn('line-clamp-2 text-[14px]', TEXT.muted)}>
                             {entry.description}
                           </p>
                         </div>
@@ -122,13 +115,13 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
                         </p>
                       </div>
 
-                      <div className={cn('mt-2 flex items-center justify-between text-[12px]', TEXT.muted)}>
+                      <div className={cn('mt-2 flex items-center justify-between text-[14px]', TEXT.muted)}>
                         <span>{formatDate(entry.createdAt)}</span>
                         <span>{t('balance', { defaultValue: 'Solde' })}: {formatCurrency(entry.balanceAfter)}</span>
                       </div>
 
                       {entry.createdByAdminName && (
-                        <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+                        <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
                           Par: {entry.createdByAdminName}
                         </p>
                       )}

@@ -21,7 +21,7 @@ function fmt(n: number, decimals = 2): string {
 function Row({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-border/60 py-2.5 last:border-0">
-      <span className="text-[12px] text-muted-foreground">{label}</span>
+      <span className="text-[14px] text-muted-foreground">{label}</span>
       <span className={cn('text-right text-[14px] font-semibold text-foreground', mono && 'tabular-nums')}>{value}</span>
     </div>
   );
@@ -50,7 +50,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
   if (isLoading) {
     return (
       <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
-        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
+        {desktop ? <h2 className="mb-4 text-[24px] font-bold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -61,7 +61,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
   if (!op) {
     return (
       <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
-        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
+        {desktop ? <h2 className="mb-4 text-[24px] font-bold tracking-tight text-foreground">Opération</h2> : <MobileHeader title="Opération" showBack />}
         <div className="py-8 text-center text-muted-foreground">Opération introuvable.</div>
       </div>
     );
@@ -89,7 +89,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">{isPurchase ? 'Achat USDT' : 'Vente USDT'}</h2>
+          <h2 className="text-[24px] font-bold tracking-tight text-foreground">{isPurchase ? 'Achat USDT' : 'Vente USDT'}</h2>
           <p className="mt-0.5 text-[14px] text-muted-foreground">Détail de l'opération de trésorerie</p>
         </header>
       ) : (
@@ -98,9 +98,9 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
 
       <div className={desktop ? 'space-y-4' : 'px-5 py-5 space-y-4'}>
         {voided && (
-          <div className="flex items-start gap-2.5 rounded-2xl bg-muted p-4">
+          <div className="flex items-start gap-2.5 rounded-lg bg-muted p-4">
             <IconChip icon={Ban} tone="neutral" size="sm" />
-            <div className="min-w-0 text-[12px] text-muted-foreground">
+            <div className="min-w-0 text-[14px] text-muted-foreground">
               <strong className="text-foreground">Opération supprimée</strong> le{' '}
               {new Date(op.voided_at!).toLocaleString('fr-FR')}
               {op.void_reason && (
@@ -117,11 +117,11 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
         <div className={cn(SOFT_CARD, 'p-4')}>
           <div className="mb-3 flex items-center gap-2.5">
             <IconChip icon={isPurchase ? ArrowDownToLine : ArrowUpFromLine} tone={isPurchase ? 'violet' : 'amber'} size="sm" />
-            <span className="text-[13px] font-bold text-foreground">
+            <span className="text-[14px] font-bold text-foreground">
               {isPurchase ? "Achat d'USDT en XAF" : "Vente d'USDT contre CNY"}
             </span>
           </div>
-          <div className="text-2xl font-extrabold tabular-nums text-foreground">
+          <div className="text-2xl font-bold tabular-nums text-foreground">
             {isPurchase ? (
               <>
                 {fmt(Number((op as { xaf_amount: number }).xaf_amount), 0)} <span className="text-sm text-muted-foreground">XAF</span>
@@ -136,7 +136,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
               </>
             )}
           </div>
-          <div className="mt-1 text-[12px] text-muted-foreground">
+          <div className="mt-1 text-[14px] text-muted-foreground">
             Taux implicite : {fmt(Number(op.implicit_rate), 4)} {isPurchase ? 'XAF/USDT' : 'CNY/USDT'}
           </div>
         </div>
@@ -149,10 +149,10 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
               <Row label="Fournisseur" value={(op as { supplier?: { display_name: string } }).supplier?.display_name ?? '—'} />
               {(splits.data?.length ?? 0) > 1 ? (
                 <div className="border-b border-border/60 py-2.5">
-                  <div className="mb-1.5 text-[12px] text-muted-foreground">Comptes XAF débités</div>
+                  <div className="mb-1.5 text-[14px] text-muted-foreground">Comptes XAF débités</div>
                   <div className="space-y-1">
                     {(splits.data ?? []).map((s) => (
-                      <div key={s.id} className="flex items-center justify-between text-[13px]">
+                      <div key={s.id} className="flex items-center justify-between text-[14px]">
                         <span className="text-foreground">{s.account?.label ?? '—'}</span>
                         <span className="font-semibold tabular-nums text-foreground">{fmt(Math.abs(Number(s.amount)), 0)} XAF</span>
                       </div>
@@ -185,12 +185,12 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
         {/* Void section */}
         {!voided && isSuperAdmin && (
           showVoidForm ? (
-            <div className="space-y-3 rounded-2xl bg-red-500/10 p-4">
+            <div className="space-y-3 rounded-lg bg-[#EC221F]/10 p-4">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer cette opération</span>
+                <AlertTriangle className="h-4 w-4 text-[#C00F0C] dark:text-[#EC221F]" />
+                <span className="text-[14px] font-bold text-[#C00F0C] dark:text-[#EC221F]">Supprimer cette opération</span>
               </div>
-              <p className="text-[12px] leading-snug text-red-700 dark:text-red-300">
+              <p className="text-[14px] leading-snug text-[#C00F0C] dark:text-[#EC221F]">
                 L’opération disparaîtra des stats et des soldes. Pour l’audit, une contre-écriture est
                 enregistrée dans le ledger (action tracée, irréversible).
               </p>
@@ -198,7 +198,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
               <div className="flex gap-2.5">
                 <button
                   onClick={() => setShowVoidForm(false)}
-                  className="h-12 flex-1 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+                  className="h-12 flex-1 rounded-lg bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
                 >
                   Garder
                 </button>
@@ -206,8 +206,8 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
                   onClick={handleVoid}
                   disabled={!reasonValid || voidOp.isPending}
                   className={cn(
-                    'flex h-12 flex-1 items-center justify-center rounded-2xl text-[14px] font-bold transition active:scale-[0.99]',
-                    reasonValid && !voidOp.isPending ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-muted text-muted-foreground',
+                    'flex h-12 flex-1 items-center justify-center rounded-lg text-[14px] font-bold transition active:scale-[0.99]',
+                    reasonValid && !voidOp.isPending ? 'bg-[#EC221F] text-white hover:bg-[#EC221F]' : 'bg-muted text-muted-foreground',
                   )}
                 >
                   {voidOp.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Supprimer'}
@@ -217,7 +217,7 @@ export function MobileOperationDetail({ kind, desktop = false }: Props) {
           ) : (
             <button
               onClick={() => setShowVoidForm(true)}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-500/10 text-[14px] font-bold text-red-600 transition active:scale-[0.99] dark:text-red-400"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#EC221F]/10 text-[14px] font-bold text-[#C00F0C] transition active:scale-[0.99] dark:text-[#EC221F]"
             >
               <Ban className="h-4 w-4" />
               Supprimer cette opération (super admin)

@@ -55,3 +55,24 @@ portent encore leurs tailles en dur : **Analytics** (170), **Taux** (73), les
 `.admin-theme`), **Plus** (22) et les **détails** dépôt / paiement. Ils ont
 pris la palette, les rayons et les boutons du kit ; leur typographie est la
 prochaine passe.
+
+## Passe 2 (même jour) — le reste de l'app
+
+Deux codemods (`scratchpad/codemod*.py`, reproductibles) ont remplacé dans
+**71 fichiers** les utilitaires codés en dur par leurs équivalents du kit :
+couleurs lilas et couleurs de module (`#8B5CF6`, `#10B981`, `#6B5BD2`…) →
+encre `#2C2C2C` ; tons (`#DEEFE5/#2E7D52`…) → Tag Secondary ; couleurs
+Tailwind nommées (`red-600`, `emerald-700`, `violet-500/10`…) → tons du kit ;
+rayons 14–26 px et `rounded-full` sur les pilules → 8 ; toute taille
+< 14 px → 14 ; libellés `uppercase tracking-wider` → 14/600 encre ; paires
+`PRIMARY_PILL : SOFT_PILL` sur les filtres → Tag Toggle. 2 441 remplacements,
+type-check et tests verts.
+
+Après cette passe, sur les 15 écrans re-capturés, « textes < 14 px » tombe à
+0–9 partout sauf Analytics (131 — les libellés de graphiques Recharts) ; les
+formulaires Nouveau dépôt / Nouveau paiement / Paiement groupé sont à 0.
+
+Volontairement conservés : les logos et couleurs **de marque** des méthodes
+(Alipay, WeChat, Orange, MTN, Wave, banque), les couleurs d'identité des
+devises en Trésorerie (XAF / USDT / CNY), et l'écran de connexion (composants
+partagés avec l'app client, dont la charte est verrouillée).
