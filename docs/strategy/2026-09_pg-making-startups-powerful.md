@@ -230,6 +230,8 @@ PG à la fois — la donnée, la relation, et l'argent — et elle **conditionne
 **Ce que ça coûte :** l'extraction de proforma est un problème résolu. Le calcul du coût à
 quai est déjà écrit, en français, dans les modules 5, 6 et 7.
 
+**→ Spécification détaillée : [`manoeuvre-1_proforma-cout-a-quai.md`](manoeuvre-1_proforma-cout-a-quai.md).**
+
 **Ce qui peut mal tourner :** annoncer un coût à quai, c'est s'engager. Un chiffre faux
 est pire qu'aucun chiffre. Il faut afficher les fourchettes et la provenance de chaque
 ligne — ce que les modules font déjà.
