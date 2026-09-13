@@ -94,11 +94,11 @@ interface FormData {
 
 // Shared classes for the native <select> controls (no kit Select; matched to TextInput).
 const selectClass = cn(
-  'h-12 w-full rounded-2xl px-4 text-[16px] outline-none transition',
+  'h-12 w-full rounded-lg px-4 text-[16px] outline-none transition',
   SURFACE.card,
   SURFACE.shadow,
   TEXT.strong,
-  'focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+  'focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
 );
 
 export function MobileCreateClient() {
@@ -174,7 +174,7 @@ export function MobileCreateClient() {
   };
 
   const optional = (
-    <span className={cn('ml-1 text-[12px] font-medium', TEXT.muted)}>optionnel</span>
+    <span className={cn('ml-1 text-[14px] font-medium', TEXT.muted)}>optionnel</span>
   );
   const required = <span className="text-[#FE560D]">*</span>;
 
@@ -190,7 +190,7 @@ export function MobileCreateClient() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
               <Holder icon={Check} tone="success" size="lg" />
             </div>
-            <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+            <div className={cn('text-[20px] font-bold', TEXT.strong)}>
               {t('clientCreatedSuccess', { defaultValue: 'Client créé avec succès' })}
             </div>
             <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -200,11 +200,11 @@ export function MobileCreateClient() {
 
           {/* Mot de passe temporaire */}
           <Card className="mb-4 p-4">
-            <div className={cn('mb-2 text-[13px]', TEXT.muted)}>
+            <div className={cn('mb-2 text-[14px]', TEXT.muted)}>
               {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
             </div>
-            <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
-              <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>
+            <div className={cn('flex items-center justify-between gap-3 rounded-lg p-3.5', SURFACE.canvas)}>
+              <code className={cn('text-[20px] font-bold tracking-wide', TEXT.strong)}>
                 {tempPassword}
               </code>
               <Holder
@@ -214,7 +214,7 @@ export function MobileCreateClient() {
                 onClick={handleCopyPassword}
               />
             </div>
-            <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            <div className="mt-3 rounded-lg bg-[#FFF1C2] px-3 py-2.5 text-[14px] leading-relaxed text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
               Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.
             </div>
           </Card>
@@ -241,12 +241,12 @@ export function MobileCreateClient() {
         <div className="flex h-14 items-center">
           <button
             onClick={() => navigate('/m/clients')}
-            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[26px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
+            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[24px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
             aria-label={t('back', { defaultValue: 'Retour' })}
           >
             ‹
           </button>
-          <span className={cn('text-[15px] font-bold', TEXT.strong)}>
+          <span className={cn('text-[16px] font-bold', TEXT.strong)}>
             {t('newClient', { defaultValue: 'Nouveau client' })}
           </span>
         </div>
@@ -258,14 +258,14 @@ export function MobileCreateClient() {
               <div
                 className={cn(
                   'h-[3px] rounded-full transition-colors',
-                  step >= s.num ? 'bg-[#6B5BD2] dark:bg-[#A99BF0]' : 'bg-black/10 dark:bg-white/10',
+                  step >= s.num ? 'bg-[#2C2C2C] dark:bg-[#E3E3E3]' : 'bg-black/10 dark:bg-white/10',
                 )}
               />
               <div
                 className={cn(
-                  'mt-1.5 text-center text-[10px]',
+                  'mt-1.5 text-center text-[14px]',
                   step === s.num
-                    ? 'font-extrabold text-[#6B5BD2] dark:text-[#A99BF0]'
+                    ? 'font-bold text-[#1E1E1E] dark:text-[#F5F5F5]'
                     : cn('font-medium', TEXT.muted),
                 )}
               >
@@ -282,7 +282,7 @@ export function MobileCreateClient() {
         {step === 1 && (
           <div className="space-y-5">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('whoIsYourClient', { defaultValue: 'Qui est votre client ?' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -326,7 +326,7 @@ export function MobileCreateClient() {
         {step === 2 && (
           <div className="space-y-5">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('howToReachClient', { defaultValue: 'Comment le joindre ?' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -468,7 +468,7 @@ export function MobileCreateClient() {
         {step === 3 && (
           <div className="space-y-3">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('everythingCorrect', { defaultValue: 'Tout est correct ?' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -479,15 +479,15 @@ export function MobileCreateClient() {
             <Card className="p-4">
               {/* Initiales + nom complet */}
               <div className="mb-4 flex items-center gap-3">
-                <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[15px] font-bold', SURFACE.holder)}>
+                <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[16px] font-bold', SURFACE.holder)}>
                   {(form.prenom[0] ?? '').toUpperCase()}{(form.nom[0] ?? '').toUpperCase()}
                 </div>
                 <div>
-                  <div className={cn('text-[17px] font-bold', TEXT.strong)}>
+                  <div className={cn('text-[16px] font-bold', TEXT.strong)}>
                     {form.prenom} {form.nom}
                   </div>
                   {form.entreprise && (
-                    <div className={cn('text-[12px]', TEXT.muted)}>{form.entreprise}</div>
+                    <div className={cn('text-[14px]', TEXT.muted)}>{form.entreprise}</div>
                   )}
                 </div>
               </div>
@@ -508,7 +508,7 @@ export function MobileCreateClient() {
             </Card>
 
             {/* Note mot de passe */}
-            <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            <div className="rounded-lg bg-[#FFF1C2] px-3.5 py-3 text-[14px] leading-relaxed text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
               Un mot de passe temporaire sera envoyé au client par WhatsApp. Il devra le changer lors de sa première connexion.
             </div>
           </div>

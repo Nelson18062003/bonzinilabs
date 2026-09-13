@@ -47,7 +47,7 @@
   "activateAccount": "Activer le compte",
   "active": "Actif",
   "activeUsers": "Actifs",
-  "activityLog": "Journal d",
+  "activityLog": "Journal d'activité",
   "adminCreatedSuccess": "Admin créé avec succès",
   "adminDetail": "Détail admin",
   "adminNotFound": "Admin non trouvé",
@@ -440,5 +440,8 @@
   "actionCannotBeUndone": "Cette action est irréversible.",
   "processing": "En cours…",
   "debit": "Débit",
-  "home": "Accueil"
+  "home": "Accueil",
+  "assistant": "Mola",
+  "cargo": "Cargo",
+  "navOperations": "Opérations"
 }

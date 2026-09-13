@@ -6,7 +6,7 @@
  *   3. la décision (arrivée) + les actions             — à droite
  */
 import { useState } from 'react';
-import { CheckCircle, Copy, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
+import { CheckCircle, Copy, Loader2, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { CargoVesselDialog } from '@/components/cargo/CargoVesselDialog';
@@ -15,6 +15,7 @@ import type { CargoShipment } from '@/lib/cargo/model';
 import { copyToClipboard } from '@/lib/clipboard';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, DANGER_SOFT_PILL, Holder, RefChip, StatusPill, CenterDialog } from '@/desktop/designKit';
+import { BottomSheet as MobileSheet, Button as MobileButton, Line as MobileLine } from '@/mobile/designKit';
 
 function CopyBtn({ value, label }: { value: string; label: string }) {
   return (
@@ -29,6 +30,107 @@ function CopyBtn({ value, label }: { value: string; label: string }) {
   );
 }
 
+/**
+ * Les actions du dossier — rafraîchir, marquer le fret / le télex, renseigner
+ * le navire, retirer de la flotte — avec leurs dialogues. Séparées de
+ * l'en-tête pour que le mobile les pose dans SA barre, sans hériter de la
+ * mise en page desktop.
+ */
+export function DossierActions({ shipment: s, onRemoved, compact = false }: { shipment: CargoShipment; onRemoved?: () => void; /** Mobile : Rafraîchir en icône seule, 36 px. */ compact?: boolean }) {
+  const { hasPermission } = useAdminAuth();
+  const canManage = hasPermission('canManageCargo');
+  const update = useUpdateCargoShipment();
+  const remove = useRemoveCargoShipment();
+  const sync = useRequestCargoSync();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [vesselOpen, setVesselOpen] = useState(false);
+  const doRemove = () => remove.mutate(s.id, { onSuccess: () => { setConfirmRemove(false); onRemoved?.(); } });
+
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {compact ? (
+        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn('h-11 w-11 rounded-full', sync.isPending && '[&_svg]:animate-spin')} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => sync.mutate()}
+          disabled={sync.isPending}
+          className={cn('flex h-8 items-center gap-1.5 px-3 text-[12px] max-lg:text-[16px] font-semibold disabled:opacity-60', SOFT_PILL)}
+        >
+          <RefreshCw className={cn('h-3.5 w-3.5', sync.isPending && 'animate-spin')} /> Rafraîchir
+        </button>
+      )}
+      {canManage && compact && (
+        <>
+          <Holder icon={MoreHorizontal} size="md" onClick={() => setMenuOpen(true)} ariaLabel="Plus d'actions" className="h-11 w-11 rounded-full" />
+          {/* Mobile : une feuille basse, réduite à ce que les sections ne couvrent pas déjà
+              (le fret et le télex se basculent dans « L'argent », le navire dans « Où est le conteneur »). */}
+          <MobileSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Ce conteneur">
+            <div className="flex flex-col gap-2">
+              {/* Le navire se renseigne dans « Où est le conteneur », là où on lit qu'il manque. */}
+              <MobileButton variant="dangerSubtle" className="w-full" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }}>
+                <Trash2 /> Retirer de la flotte
+              </MobileButton>
+            </div>
+          </MobileSheet>
+          <MobileSheet open={confirmRemove} onClose={() => setConfirmRemove(false)} title="Retirer ce conteneur ?">
+            <div className="space-y-4">
+              <MobileLine>
+                <b className={TEXT.strong}>{s.container_number}</b> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses papiers et ses coûts.
+                On pourra le retrouver en cherchant sa référence à nouveau.
+              </MobileLine>
+              <div className="flex gap-2">
+                <MobileButton variant="neutral" className="flex-1" onClick={() => setConfirmRemove(false)}>Garder</MobileButton>
+                <MobileButton variant="danger" className="flex-1" onClick={doRemove} loading={remove.isPending}>Retirer</MobileButton>
+              </div>
+            </div>
+          </MobileSheet>
+        </>
+      )}
+      {canManage && !compact && (
+        <div className="relative">
+          <Holder icon={MoreHorizontal} size={compact ? 'md' : 'sm'} onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" className={cn(compact && 'h-11 w-11 rounded-full')} />
+          {menuOpen && (
+            <div className={cn('absolute right-0 top-[calc(100%+6px)] z-[70] min-w-[250px] overflow-hidden rounded-xl p-1.5', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
+              <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { freight_paid: !s.freight_paid } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] max-lg:text-[16px] font-semibold hover:bg-muted/50', TEXT.strong)}>
+                <CheckCircle className="h-3.5 w-3.5" /> {s.freight_paid ? 'Marquer le fret non réglé' : 'Marquer le fret réglé'}
+              </button>
+              <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { telex_released: !s.telex_released } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] max-lg:text-[16px] font-semibold hover:bg-muted/50', TEXT.strong)}>
+                <CheckCircle className="h-3.5 w-3.5" /> {s.telex_released ? 'Télex : non reçu' : 'Télex reçu'}
+              </button>
+              <button type="button" onClick={() => { setMenuOpen(false); setVesselOpen(true); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] max-lg:text-[16px] font-semibold hover:bg-muted/50', TEXT.strong)}>
+                <Ship className="h-3.5 w-3.5" /> {s.vessel_name ? 'Modifier le navire' : 'Renseigner le navire'}
+              </button>
+              <button type="button" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] max-lg:text-[16px] font-semibold text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-3.5 w-3.5" /> Retirer de la flotte
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
+      <CenterDialog
+        open={confirmRemove && !compact}
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={doRemove}
+        title="Retirer ce conteneur de la flotte ?"
+        footer={
+          <>
+            <button type="button" onClick={() => setConfirmRemove(false)} className={cn('h-9 px-4 text-[13px] max-lg:text-[16px] font-semibold', SOFT_PILL)}>Annuler</button>
+            <button type="button" onClick={doRemove} className={cn('h-9 px-4 text-[13px] max-lg:text-[16px]', DANGER_SOFT_PILL)}>Retirer</button>
+          </>
+        }
+      >
+        <p className={cn('text-[13px] max-lg:text-[16px]', TEXT.body)}>
+          <span className="font-mono font-bold">{s.container_number}</span> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses documents et ses coûts. Tu pourras le retrouver en le recherchant à nouveau.
+        </p>
+      </CenterDialog>
+    </div>
+  );
+}
+
 export function DossierHeader({
   shipment: s,
   onRemoved,
@@ -39,20 +141,10 @@ export function DossierHeader({
   /** Boîte rapide : titre plus petit, pas de ligne d'arrivée (elle est dans le corps). */
   compact?: boolean;
 }) {
-  const { hasPermission } = useAdminAuth();
-  const canManage = hasPermission('canManageCargo');
-  const update = useUpdateCargoShipment();
-  const remove = useRemoveCargoShipment();
-  const sync = useRequestCargoSync();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState(false);
-  const [vesselOpen, setVesselOpen] = useState(false);
-
   const meta = statusMeta(s.status);
   const eta = bestEta(s);
   const slip = etaSlipDays(s);
   const inDays = daysUntilArrival(s);
-  const doRemove = () => remove.mutate(s.id, { onSuccess: () => { setConfirmRemove(false); onRemoved?.(); } });
 
   const identity = (
     <div className="min-w-0">
@@ -62,7 +154,7 @@ export function DossierHeader({
         </h2>
         <StatusPill tone={meta.tone} label={meta.label} />
       </div>
-      <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]', TEXT.muted)}>
+      <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] max-lg:text-[16px]', TEXT.muted)}>
         <span className="inline-flex items-center gap-1">
           <RefChip>{s.container_number}</RefChip>
           <CopyBtn value={s.container_number} label="Numéro de conteneur" />
@@ -76,39 +168,7 @@ export function DossierHeader({
     </div>
   );
 
-  const actions = (
-    <div className="flex shrink-0 items-center gap-1.5">
-      <button
-        type="button"
-        onClick={() => sync.mutate()}
-        disabled={sync.isPending}
-        className={cn('flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold disabled:opacity-60', SOFT_PILL)}
-      >
-        <RefreshCw className={cn('h-3.5 w-3.5', sync.isPending && 'animate-spin')} /> Rafraîchir
-      </button>
-      {canManage && (
-        <div className="relative">
-          <Holder icon={MoreHorizontal} size="sm" onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" />
-          {menuOpen && (
-            <div className={cn('absolute right-0 top-[calc(100%+6px)] z-[70] min-w-[250px] overflow-hidden rounded-xl p-1.5', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
-              <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { freight_paid: !s.freight_paid } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold hover:bg-muted/50', TEXT.strong)}>
-                <CheckCircle className="h-3.5 w-3.5" /> {s.freight_paid ? 'Marquer le fret non réglé' : 'Marquer le fret réglé'}
-              </button>
-              <button type="button" onClick={() => { setMenuOpen(false); update.mutate({ id: s.id, patch: { telex_released: !s.telex_released } }); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold hover:bg-muted/50', TEXT.strong)}>
-                <CheckCircle className="h-3.5 w-3.5" /> {s.telex_released ? 'Télex : non reçu' : 'Télex reçu'}
-              </button>
-              <button type="button" onClick={() => { setMenuOpen(false); setVesselOpen(true); }} className={cn('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold hover:bg-muted/50', TEXT.strong)}>
-                <Ship className="h-3.5 w-3.5" /> {s.vessel_name ? 'Modifier le navire' : 'Renseigner le navire'}
-              </button>
-              <button type="button" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-semibold text-destructive hover:bg-destructive/10">
-                <Trash2 className="h-3.5 w-3.5" /> Retirer de la flotte
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  const actions = <DossierActions shipment={s} onRemoved={onRemoved} />;
 
   return (
     <div className="flex items-start justify-between gap-x-6 gap-y-3 max-sm:flex-col">
@@ -118,11 +178,11 @@ export function DossierHeader({
       ) : (
         <div className="flex items-start gap-4">
           <div className="text-right">
-            <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
+            <div className={cn('text-[11px] max-lg:text-[16px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>
               {eta.source === 'carrier' ? 'Arrivée' : 'Arrivée promise'}
             </div>
             <div className={cn('mt-0.5 text-[17px] font-extrabold tabular-nums', TEXT.strong)}>{s.pod_name} · {fmtDay(eta.date)}</div>
-            <div className={cn('text-[11.5px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>
+            <div className={cn('text-[11.5px] max-lg:text-[16px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>
               {inDays != null && (inDays > 0 ? `dans ${inDays} j` : inDays === 0 ? "aujourd'hui" : `il y a ${-inDays} j`)}
               {slip > 0 && ` · +${slip} j vs promesse`}
             </div>
@@ -130,24 +190,6 @@ export function DossierHeader({
           {actions}
         </div>
       )}
-
-      <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
-      <CenterDialog
-        open={confirmRemove}
-        onClose={() => setConfirmRemove(false)}
-        onConfirm={doRemove}
-        title="Retirer ce conteneur de la flotte ?"
-        footer={
-          <>
-            <button type="button" onClick={() => setConfirmRemove(false)} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-            <button type="button" onClick={doRemove} className={cn('h-9 px-4 text-[13px]', DANGER_SOFT_PILL)}>Retirer</button>
-          </>
-        }
-      >
-        <p className={cn('text-[13px]', TEXT.body)}>
-          <span className="font-mono font-bold">{s.container_number}</span> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses documents et ses coûts. Tu pourras le retrouver en le recherchant à nouveau.
-        </p>
-      </CenterDialog>
     </div>
   );
 }

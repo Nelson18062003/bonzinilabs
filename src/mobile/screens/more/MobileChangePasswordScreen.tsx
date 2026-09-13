@@ -70,7 +70,7 @@ export function MobileChangePasswordScreen({ desktop = false }: { desktop?: bool
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
       {desktop ? (
         <header className="mb-6">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>
             {t('myPassword', { defaultValue: 'Mon mot de passe' })}
           </h2>
         </header>
@@ -81,10 +81,10 @@ export function MobileChangePasswordScreen({ desktop = false }: { desktop?: bool
       <form onSubmit={submit} className={cn(desktop ? 'space-y-5' : 'flex-1 space-y-5 px-4 py-5', !desktop && SURFACE.canvas)}>
         <Card>
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#5B4CC4] dark:bg-[#2F2C3D] dark:text-[#B5AAF0]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
               <Info className="h-[18px] w-[18px]" />
             </div>
-            <p className={cn('text-[13px] leading-relaxed', TEXT.muted)}>
+            <p className={cn('text-[14px] leading-relaxed', TEXT.muted)}>
               {t('choosePasswordHint', {
                 defaultValue:
                   'Choisissez un mot de passe dont vous vous souviendrez. Il ne sert qu’en dernier recours : le code par email et la connexion rapide restent plus simples.',
@@ -120,7 +120,7 @@ export function MobileChangePasswordScreen({ desktop = false }: { desktop?: bool
           />
         </Card>
 
-        {error && <p className="px-1 text-[13px] text-[#C0504D] dark:text-[#E79A9A]">{error}</p>}
+        {error && <p className="px-1 text-[14px] text-[#900B09] dark:text-[#FDD3D0]">{error}</p>}
 
         <PrimaryPill type="submit" disabled={!canSubmit} loading={busy} className="w-full">
           <Check className="h-[17px] w-[17px]" />

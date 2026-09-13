@@ -18,7 +18,7 @@ export function RateHistoryTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#8B5CF6]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
       </div>
     );
   }
@@ -34,14 +34,14 @@ export function RateHistoryTab() {
 
   if (!history || history.length === 0) {
     return (
-      <div className={cn('rounded-2xl p-8 text-center', SURFACE.card, SURFACE.shadow)}>
-        <div className={cn('text-[14px]', TEXT.muted)}>Aucun historique de taux</div>
+      <div className={cn('rounded-lg p-8 text-center', SURFACE.card, SURFACE.shadow)}>
+        <div className={cn('text-[16px]', TEXT.muted)}>Aucun historique de taux</div>
       </div>
     );
   }
 
   return (
-    <div className={cn('rounded-[18px] px-4', SURFACE.card, SURFACE.shadow)}>
+    <div className={cn('rounded-lg px-4', SURFACE.card, SURFACE.shadow)}>
       {history.map((rate, i) => (
         <RateHistoryCard
           key={rate.id}

@@ -17,7 +17,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
       {desktop ? (
         <header className="mb-6">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>
+          <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>
             {t('settings', { defaultValue: 'Paramètres' })}
           </h2>
           <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>{t('settingsSubtitle', { defaultValue: 'Apparence, compte et informations' })}</p>
@@ -38,7 +38,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               </p>
             </div>
             <ThemeToggle />
-            <p className={cn('mt-3 text-[12px]', TEXT.muted)}>
+            <p className={cn('mt-3 text-[14px]', TEXT.muted)}>
               {t('systemModeNote', { defaultValue: "Le mode Système s'adapte automatiquement aux préférences de votre appareil." })}
             </p>
           </Card>
@@ -52,7 +52,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               label={t('name', { defaultValue: 'Nom' })}
               value={`${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim() || '—'}
             />
-            <div className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
+            <div className="flex items-center justify-between gap-3 py-[7px] text-[14px]">
               <span className={TEXT.muted}>{t('role', { defaultValue: 'Rôle' })}</span>
               <StatusPill
                 tone={role ? roleMeta(role).tone : 'neutral'}
@@ -71,14 +71,14 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               onClick={() => navigate('/m/more/passkeys')}
               className="flex w-full items-center gap-3 py-1 text-left"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                 <Fingerprint className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
                   {t('quickSignIn', { defaultValue: 'Connexion rapide' })}
                 </p>
-                <p className={cn('text-[12px]', TEXT.muted)}>
+                <p className={cn('text-[14px]', TEXT.muted)}>
                   {t('quickSignInRowHint', { defaultValue: 'Se connecter sans mot de passe sur vos appareils' })}
                 </p>
               </div>
@@ -92,14 +92,14 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               onClick={() => navigate('/m/more/password')}
               className="flex w-full items-center gap-3 py-1 text-left"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                 <Lock className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
                   {t('myPassword', { defaultValue: 'Mon mot de passe' })}
                 </p>
-                <p className={cn('text-[12px]', TEXT.muted)}>
+                <p className={cn('text-[14px]', TEXT.muted)}>
                   {t('myPasswordRowHint', { defaultValue: 'Choisir un mot de passe dont vous vous souvenez' })}
                 </p>
               </div>

@@ -41,11 +41,11 @@ import {
 
 // Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
 const textareaClass = cn(
-  'w-full rounded-2xl px-4 py-3 text-[16px] outline-none transition',
+  'w-full rounded-lg px-4 py-3 text-[16px] outline-none transition',
   SURFACE.card,
   SURFACE.shadow,
   TEXT.strong,
-  'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+  'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
 );
 
 export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolean } = {}) {
@@ -88,11 +88,11 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
       {desktop ? (
         <header className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('quickReplies.screenTitle')}</h2>
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('quickReplies.screenTitle')}</h2>
             <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('quickReplies.screenSubtitle', { defaultValue: 'Suggestions affichées aux nouveaux clients' })}</p>
           </div>
           {isSuperAdmin && (
-            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[14px] font-bold', PRIMARY_PILL)}>
               <Plus className="h-4 w-4" /> {t('quickReplies.create')}
             </button>
           )}
@@ -118,12 +118,12 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
       )}
 
       <div className={desktop ? 'mx-auto max-w-3xl space-y-3' : 'space-y-3 px-4 py-4'}>
-        <div className="rounded-2xl bg-[#EAE7FA] px-3.5 py-3 text-[12px] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]">
+        <div className="rounded-lg bg-[#E6E6E6] px-3.5 py-3 text-[14px] text-[#1E1E1E] dark:bg-[#444444] dark:text-[#F5F5F5]">
           {t('quickReplies.hint')}
         </div>
 
         {!isSuperAdmin && (
-          <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <div className="rounded-lg bg-[#FFF1C2] px-3.5 py-3 text-[14px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             {t('quickReplies.readOnlyHint')}
           </div>
         )}
@@ -135,7 +135,7 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
             <Holder icon={Sparkles} size="lg" />
             <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>{t('quickReplies.empty')}</p>
             {isSuperAdmin && (
-              <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>{t('quickReplies.emptyHint')}</p>
+              <p className={cn('mt-1 max-w-xs text-[14px]', TEXT.muted)}>{t('quickReplies.emptyHint')}</p>
             )}
           </div>
         ) : (
@@ -173,7 +173,7 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
                   </div>
                 )}
               </div>
-              <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.muted)}>{qr.content}</p>
+              <p className={cn('whitespace-pre-wrap text-[14px]', TEXT.muted)}>{qr.content}</p>
             </Card>
           ))
         )}
@@ -257,12 +257,12 @@ function QuickReplyEditor({ initial, onClose, onSubmit }: QuickReplyEditorProps)
         <button
           type="button"
           onClick={() => setActive((a) => !a)}
-          className={cn('flex w-full items-center gap-3 rounded-2xl p-3 text-left transition active:scale-[0.99]', SURFACE.canvas)}
+          className={cn('flex w-full items-center gap-3 rounded-lg p-3 text-left transition active:scale-[0.99]', SURFACE.canvas)}
         >
           <span
             className={cn(
               'flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors',
-              active ? 'bg-[#6B5BD2] text-white dark:bg-[#A99BF0] dark:text-[#1B1A24]' : 'bg-black/10 dark:bg-white/10',
+              active ? 'bg-[#2C2C2C] text-white dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'bg-black/10 dark:bg-white/10',
             )}
           >
             {active && <Check className="h-4 w-4" />}

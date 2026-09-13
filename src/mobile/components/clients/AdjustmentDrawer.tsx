@@ -83,12 +83,12 @@ export function AdjustmentDrawer({
       title={
         isDebit ? (
           <span className="flex items-center gap-2">
-            <MinusCircle className="h-5 w-5 text-[#C0504D] dark:text-[#E79A9A]" />
+            <MinusCircle className="h-5 w-5 text-[#900B09] dark:text-[#FDD3D0]" />
             {t('manualDebit', { defaultValue: 'Débit manuel' })}
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <PlusCircle className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
+            <PlusCircle className="h-5 w-5 text-[#02542D] dark:text-[#CFF7D3]" />
             {t('manualCredit', { defaultValue: 'Crédit manuel' })}
           </span>
         )
@@ -96,8 +96,8 @@ export function AdjustmentDrawer({
     >
       <div className="space-y-4">
         {/* Current Balance */}
-        <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
-          <p className={cn('text-[13px]', TEXT.muted)}>{t('currentBalance', { defaultValue: 'Solde actuel' })}</p>
+        <div className={cn('rounded-lg p-3', SURFACE.canvas)}>
+          <p className={cn('text-[14px]', TEXT.muted)}>{t('currentBalance', { defaultValue: 'Solde actuel' })}</p>
           <Amount value={formatCurrency(currentBalance)} size="md" className="mt-0.5" />
         </div>
 
@@ -115,13 +115,13 @@ export function AdjustmentDrawer({
 
           {/* Balance preview */}
           {isDebit && amount > 0 && !isInsufficientBalance && (
-            <p className={cn('mt-2 text-[13px]', TEXT.muted)}>
+            <p className={cn('mt-2 text-[14px]', TEXT.muted)}>
               {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance - amount)}
             </p>
           )}
 
           {!isDebit && amount > 0 && (
-            <p className={cn('mt-2 text-[13px]', TEXT.muted)}>
+            <p className={cn('mt-2 text-[14px]', TEXT.muted)}>
               {t('newBalance', { defaultValue: 'Nouveau solde' })}: {formatCurrency(currentBalance + amount)}
             </p>
           )}
@@ -139,9 +139,9 @@ export function AdjustmentDrawer({
         />
 
         {/* Warning */}
-        <div className="flex gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
-          <p className="text-[13px] text-[#9A6B12] dark:text-[#E7C083]">
+        <div className="flex gap-2 rounded-lg bg-[#FFF1C2] p-3 dark:bg-[#522504]">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
+          <p className="text-[14px] text-[#682D03] dark:text-[#FFF1C2]">
             {t('actionCannotBeUndone', { defaultValue: 'Cette action sera enregistrée avec votre nom et ne peut pas être annulée.' })}
           </p>
         </div>

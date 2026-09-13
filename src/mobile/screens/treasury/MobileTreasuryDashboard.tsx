@@ -30,16 +30,16 @@ const KPI_DOT: Record<KpiTone, string> = {
   violet: TONE_DOT.violet,
   amber: TONE_DOT.amber,
   orange: TONE_DOT.orange,
-  emerald: 'bg-emerald-500',
-  red: 'bg-red-500',
+  emerald: 'bg-[#14AE5C]',
+  red: 'bg-[#EC221F]',
   neutral: 'bg-muted-foreground/40',
 };
 const KPI_TEXT: Record<KpiTone, string> = {
   violet: TONE_TEXT.violet,
   amber: TONE_TEXT.amber,
   orange: TONE_TEXT.orange,
-  emerald: 'text-emerald-600 dark:text-emerald-400',
-  red: 'text-red-600 dark:text-red-400',
+  emerald: 'text-[#009951] dark:text-[#14AE5C]',
+  red: 'text-[#C00F0C] dark:text-[#EC221F]',
   neutral: 'text-muted-foreground',
 };
 
@@ -60,18 +60,18 @@ export function KpiCard({
 }) {
   const t = tone ?? 'neutral';
   return (
-    <div className="rounded-2xl border border-border bg-card p-3.5">
+    <div className="rounded-lg border border-border bg-card p-3.5">
       <div className="mb-2 flex items-center gap-1.5">
         <span className={cn('h-2 w-2 shrink-0 rounded-full', KPI_DOT[t])} />
-        <span className={cn('text-[10px] font-bold uppercase tracking-wider', KPI_TEXT[t])}>{label}</span>
-        {trend === 'up' && <TrendingUp className="ml-auto h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />}
-        {trend === 'down' && <TrendingDown className="ml-auto h-3.5 w-3.5 text-red-600 dark:text-red-400" />}
+        <span className={cn('text-[14px] font-bold', KPI_TEXT[t])}>{label}</span>
+        {trend === 'up' && <TrendingUp className="ml-auto h-3.5 w-3.5 text-[#009951] dark:text-[#14AE5C]" />}
+        {trend === 'down' && <TrendingDown className="ml-auto h-3.5 w-3.5 text-[#C00F0C] dark:text-[#EC221F]" />}
       </div>
-      <div className="text-[18px] font-extrabold leading-none tracking-tight tabular-nums text-foreground">
+      <div className="text-[20px] font-bold leading-none tracking-tight tabular-nums text-foreground">
         {value}
-        {unit && <span className="ml-1 text-xs font-semibold text-muted-foreground">{unit}</span>}
+        {unit && <span className="ml-1 text-[14px] font-semibold text-muted-foreground">{unit}</span>}
       </div>
-      {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+      {hint && <div className="mt-1.5 text-[14px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
@@ -153,7 +153,7 @@ export function MobileTreasuryDashboard() {
           />
         )}
 
-        <div className="-mt-3 text-center text-[11px] text-muted-foreground">
+        <div className="-mt-3 text-center text-[14px] text-muted-foreground">
           {range.from.toLocaleDateString('fr-FR')} → {range.to.toLocaleDateString('fr-FR')}
         </div>
 
@@ -164,14 +164,14 @@ export function MobileTreasuryDashboard() {
         ) : (
           <>
             {/* Bénéfice headline */}
-            <div className={cn('rounded-3xl p-5', benefitPositive ? 'bg-emerald-500/10' : 'bg-red-500/10')}>
-              <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Bénéfice période</div>
-              <div className={cn('text-3xl font-extrabold tabular-nums', benefitPositive ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
+            <div className={cn('rounded-lg p-5', benefitPositive ? 'bg-[#14AE5C]/10' : 'bg-[#EC221F]/10')}>
+              <div className="mb-1 text-[14px] font-bold text-muted-foreground">Bénéfice période</div>
+              <div className={cn('text-3xl font-bold tabular-nums', benefitPositive ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#C00F0C] dark:text-[#EC221F]')}>
                 {dash.benefit_total_xaf >= 0 ? '+' : ''}
                 {fmt(dash.benefit_total_xaf, 0)}
                 <span className="ml-1 text-sm font-semibold text-muted-foreground">XAF</span>
               </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">
+              <div className="mt-1 text-[14px] text-muted-foreground">
                 = XAF reçu clients − coût XAF des USDT vendus pour les livrer
               </div>
             </div>
@@ -201,14 +201,14 @@ export function MobileTreasuryDashboard() {
                 <RateCardXafCny label="Revient" xafPerCny={revientXafPerCny} tone="emerald" />
                 <RateCardXafCny label="Client" xafPerCny={clientRateXafPerCny} tone="orange" />
                 {margePerCny !== null && (
-                  <div className="col-span-2 rounded-2xl bg-emerald-500/10 p-4">
-                    <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Marge par CNY livré</div>
-                    <div className={cn('text-[18px] font-extrabold tabular-nums', margePerCny >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300')}>
+                  <div className="col-span-2 rounded-lg bg-[#14AE5C]/10 p-4">
+                    <div className="mb-1 text-[14px] font-bold text-[#009951] dark:text-[#14AE5C]">Marge par CNY livré</div>
+                    <div className={cn('text-[20px] font-bold tabular-nums', margePerCny >= 0 ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#C00F0C] dark:text-[#EC221F]')}>
                       {margePerCny >= 0 ? '+' : ''}
                       {fmt(margePerCny, 4)}
-                      <span className="ml-1 text-xs font-semibold text-muted-foreground">XAF / CNY livré</span>
+                      <span className="ml-1 text-[14px] font-semibold text-muted-foreground">XAF / CNY livré</span>
                     </div>
-                    <div className="mt-1 text-[10px] text-muted-foreground">= Taux client − Taux de revient</div>
+                    <div className="mt-1 text-[14px] text-muted-foreground">= Taux client − Taux de revient</div>
                   </div>
                 )}
               </div>
@@ -225,9 +225,9 @@ export function MobileTreasuryDashboard() {
                 </div>
               </div>
               {dash.is_stock_usdt_negative && (
-                <div className="mt-2.5 flex items-start gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-                  <span className="text-[12px] text-red-700 dark:text-red-300">Stock USDT négatif. Cherche un achat manquant à enregistrer.</span>
+                <div className="mt-2.5 flex items-start gap-2 rounded-lg bg-[#EC221F]/10 px-3.5 py-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C00F0C] dark:text-[#EC221F]" />
+                  <span className="text-[14px] text-[#C00F0C] dark:text-[#EC221F]">Stock USDT négatif. Cherche un achat manquant à enregistrer.</span>
                 </div>
               )}
             </section>
@@ -236,7 +236,7 @@ export function MobileTreasuryDashboard() {
             {wacSeries && wacSeries.length > 1 && (
               <section>
                 <SectionTitle>Évolution WAC USDT</SectionTitle>
-                <div className="rounded-2xl border border-border bg-card p-3">
+                <div className="rounded-lg border border-border bg-card p-3">
                   <ResponsiveContainer width="100%" height={180}>
                     <LineChart data={wacSeries.map((p) => ({
                       ...p,
@@ -349,7 +349,7 @@ export function QuickLink({
   return (
     <button onClick={onClick} className={cn(SOFT_CARD, 'flex flex-col items-center gap-2 py-3.5 transition active:scale-[0.98]')}>
       <IconChip icon={icon} tone={tone} size="sm" />
-      <span className="text-[11px] font-bold text-foreground">{label}</span>
+      <span className="text-[14px] font-bold text-foreground">{label}</span>
     </button>
   );
 }
@@ -371,33 +371,33 @@ export function TopList({
   emptyText: string;
 }) {
   if (!rows || rows.length === 0) {
-    return <div className="py-4 text-center text-[12px] text-muted-foreground">{emptyText}</div>;
+    return <div className="py-4 text-center text-[14px] text-muted-foreground">{emptyText}</div>;
   }
   return (
-    <div className="divide-y divide-border/60 overflow-hidden rounded-3xl border border-border bg-card">
+    <div className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border bg-card">
       {rows.map((r, i) => (
         <div key={r.id} className="flex items-center gap-3 p-3.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[12px] font-bold text-foreground">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[14px] font-bold text-foreground">
             {i + 1}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[14px] font-semibold text-foreground">{r.display_name}</div>
-            <div className="text-[11px] text-muted-foreground">
+            <div className="text-[14px] text-muted-foreground">
               {r.operation_count} op · {fmt(r.total_usdt, 2)} USDT
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[13px] font-bold tabular-nums text-foreground">{fmt(r.weighted_avg_rate, 4)}</div>
-            <div className="text-[10px] text-muted-foreground">{rateLabel}</div>
+            <div className="text-[14px] font-bold tabular-nums text-foreground">{fmt(r.weighted_avg_rate, 4)}</div>
+            <div className="text-[14px] text-muted-foreground">{rateLabel}</div>
           </div>
           <div
             className={cn(
-              'w-12 text-right text-[11px] font-bold tabular-nums',
+              'w-12 text-right text-[14px] font-bold tabular-nums',
               Math.abs(r.deviation_pct) < 0.5
                 ? 'text-muted-foreground'
                 : r.deviation_pct > 0
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-emerald-600 dark:text-emerald-400',
+                  ? 'text-[#C00F0C] dark:text-[#EC221F]'
+                  : 'text-[#009951] dark:text-[#14AE5C]',
             )}
             title="Écart vs moyenne période"
           >
@@ -470,13 +470,13 @@ export function FlowEvolutionChart({
   return (
     <section>
       <SectionTitle>{title}</SectionTitle>
-      <div className="rounded-2xl border border-border bg-card p-3">
+      <div className="rounded-lg border border-border bg-card p-3">
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[18px] font-extrabold tabular-nums" style={{ color: stroke }}>{fmt(weightedRate, decimals)}</span>
-            <span className="text-[11px] font-semibold text-muted-foreground">{unit} moy. pondéré</span>
+            <span className="text-[20px] font-bold tabular-nums" style={{ color: stroke }}>{fmt(weightedRate, decimals)}</span>
+            <span className="text-[14px] font-semibold text-muted-foreground">{unit} moy. pondéré</span>
           </div>
-          <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+          <span className="text-[14px] font-semibold tabular-nums text-muted-foreground">
             {series.length} op · {fmt(totalUsdt, 2)} USDT
           </span>
         </div>
@@ -517,7 +517,7 @@ export function FlowEvolutionChart({
             />
           </AreaChart>
         </ResponsiveContainer>
-        {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+        {hint && <div className="mt-1.5 text-[14px] text-muted-foreground">{hint}</div>}
       </div>
     </section>
   );
@@ -587,13 +587,13 @@ export function FlowDistributionChart({
   return (
     <section>
       <SectionTitle>{title}</SectionTitle>
-      <div className="rounded-2xl border border-border bg-card p-3">
+      <div className="rounded-lg border border-border bg-card p-3">
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <div className="flex items-baseline gap-1.5">
-            <span className="text-[18px] font-extrabold tabular-nums" style={{ color: fill }}>{fmt(median, decimals)}</span>
-            <span className="text-[11px] font-semibold text-muted-foreground">{unit} médiane pondérée</span>
+            <span className="text-[20px] font-bold tabular-nums" style={{ color: fill }}>{fmt(median, decimals)}</span>
+            <span className="text-[14px] font-semibold text-muted-foreground">{unit} médiane pondérée</span>
           </div>
-          <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+          <span className="text-[14px] font-semibold tabular-nums text-muted-foreground">
             {series.length} op · {fmt(totalUsdt, 2)} USDT
           </span>
         </div>
@@ -624,7 +624,7 @@ export function FlowDistributionChart({
             <Bar dataKey="count" fill={fill} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
-        {hint && <div className="mt-1.5 text-[10px] text-muted-foreground">{hint}</div>}
+        {hint && <div className="mt-1.5 text-[14px] text-muted-foreground">{hint}</div>}
       </div>
     </section>
   );

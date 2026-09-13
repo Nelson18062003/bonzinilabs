@@ -55,13 +55,13 @@ export function ExportButton({
       onClick={handleClick}
       disabled={disabled || busy}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs max-lg:h-10 max-lg:px-3 max-lg:text-[16px] font-medium',
         'hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       aria-label={label}
     >
-      <Download className="h-3.5 w-3.5" />
+      <Download className="h-3.5 w-3.5 max-lg:h-5 max-lg:w-5" />
       {label}
     </button>
   );

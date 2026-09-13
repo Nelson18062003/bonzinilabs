@@ -438,5 +438,8 @@
   "actionCannotBeUndone": "此操作无法撤销。",
   "processing": "处理中……",
   "debit": "扣款",
-  "home": "首页"
+  "home": "首页",
+  "assistant": "Mola",
+  "cargo": "货运",
+  "navOperations": "业务"
 }

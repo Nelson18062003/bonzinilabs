@@ -125,7 +125,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
       <div className={desktop ? 'mx-auto max-w-xl' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
         {desktop ? (
           <header className="mb-6">
-            <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h2>
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h2>
           </header>
         ) : (
           <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
@@ -137,7 +137,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
               <Holder icon={Check} tone="success" size="lg" />
             </div>
-            <div className={cn('text-[20px] font-extrabold', TEXT.strong)}>
+            <div className={cn('text-[20px] font-bold', TEXT.strong)}>
               {t('adminCreatedSuccess', { defaultValue: 'Admin créé avec succès' })}
             </div>
             <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -147,11 +147,11 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
 
           {/* Temporary password */}
           <Card className="mb-4 p-4">
-            <div className={cn('mb-2 text-[13px]', TEXT.muted)}>
+            <div className={cn('mb-2 text-[14px]', TEXT.muted)}>
               {t('temporaryPassword', { defaultValue: 'Mot de passe temporaire' })}
             </div>
-            <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-3.5', SURFACE.canvas)}>
-              <code className={cn('text-[18px] font-bold tracking-wide', TEXT.strong)}>
+            <div className={cn('flex items-center justify-between gap-3 rounded-lg p-3.5', SURFACE.canvas)}>
+              <code className={cn('text-[20px] font-bold tracking-wide', TEXT.strong)}>
                 {tempPassword}
               </code>
               <Holder
@@ -161,7 +161,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
                 onClick={handleCopyPassword}
               />
             </div>
-            <div className="mt-3 rounded-2xl bg-[#F8EFD8] px-3 py-2.5 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            <div className="mt-3 rounded-lg bg-[#FFF1C2] px-3 py-2.5 text-[14px] leading-relaxed text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
               Ce mot de passe ne sera plus affiché. Transmettez-le de manière sécurisée à l'administrateur.
             </div>
           </Card>
@@ -182,18 +182,18 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
 
   // ── 3-STEP FORM ───────────────────────────────────────────
   return (
-    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh]', SURFACE.canvas)}>
+    <div className={cn('mx-auto flex flex-col overflow-hidden', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh]', SURFACE.canvas)}>
       {/* HEADER — fixed, does not scroll */}
       <div className={cn('shrink-0 px-4 pt-[env(safe-area-inset-top)]', SURFACE.card, SURFACE.shadow)}>
         <div className="flex h-14 items-center">
           <button
             onClick={() => navigate('/m/more/admins')}
-            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[26px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
+            className={cn('-ml-2 mr-2 flex h-10 w-10 items-center justify-center rounded-full text-[24px] font-light active:bg-black/5 dark:active:bg-white/5', TEXT.muted)}
             aria-label={t('back', { defaultValue: 'Retour' })}
           >
             ‹
           </button>
-          <span className={cn('text-[15px] font-bold', TEXT.strong)}>
+          <span className={cn('text-[16px] font-bold', TEXT.strong)}>
             {t('newAdmin', { defaultValue: 'Nouvel admin' })}
           </span>
         </div>
@@ -205,14 +205,14 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
               <div
                 className={cn(
                   'h-[3px] rounded-full transition-colors',
-                  currentStepNum >= s.num ? 'bg-[#6B5BD2] dark:bg-[#A99BF0]' : 'bg-black/10 dark:bg-white/10',
+                  currentStepNum >= s.num ? 'bg-[#2C2C2C] dark:bg-[#E3E3E3]' : 'bg-black/10 dark:bg-white/10',
                 )}
               />
               <div
                 className={cn(
-                  'mt-1.5 text-center text-[10px]',
+                  'mt-1.5 text-center text-[14px]',
                   currentStepNum === s.num
-                    ? 'font-extrabold text-[#6B5BD2] dark:text-[#A99BF0]'
+                    ? 'font-bold text-[#1E1E1E] dark:text-[#F5F5F5]'
                     : cn('font-medium', TEXT.muted),
                 )}
               >
@@ -229,7 +229,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
         {step === 'personal' && (
           <div className="space-y-5">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('personalInfo', { defaultValue: 'Informations personnelles' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -277,7 +277,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
         {step === 'role' && (
           <div className="space-y-5">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('roleSelection', { defaultValue: 'Sélection du rôle' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -293,20 +293,20 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
                     key={item.role}
                     onClick={() => setSelectedRole(item.role)}
                     className={cn(
-                      'w-full rounded-[22px] p-4 text-left transition active:scale-[0.99]',
+                      'w-full rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
                       SURFACE.shadow,
-                      active && 'ring-2 ring-[#6B5BD2] dark:ring-[#A99BF0]',
+                      active && 'ring-2 ring-[#2C2C2C] dark:ring-[#E3E3E3]',
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <Holder icon={Shield} tone={roleMeta(item.role).tone} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className={cn('text-[15px] font-semibold', TEXT.strong)}>{ADMIN_ROLE_LABELS[item.role]}</p>
-                          {active && <Check className="h-4 w-4 text-[#6B5BD2] dark:text-[#A99BF0]" />}
+                          <p className={cn('text-[16px] font-semibold', TEXT.strong)}>{ADMIN_ROLE_LABELS[item.role]}</p>
+                          {active && <Check className="h-4 w-4 text-[#1E1E1E] dark:text-[#F5F5F5]" />}
                         </div>
-                        <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>
+                        <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
                           {t(item.descriptionKey, { defaultValue: item.descriptionDefault })}
                         </p>
                       </div>
@@ -322,7 +322,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
         {step === 'confirm' && (
           <div className="space-y-3">
             <div>
-              <div className={cn('text-[24px] font-extrabold', TEXT.strong)}>
+              <div className={cn('text-[24px] font-bold', TEXT.strong)}>
                 {t('confirmation', { defaultValue: 'Confirmation' })}
               </div>
               <div className={cn('mt-1 text-[14px]', TEXT.muted)}>
@@ -333,11 +333,11 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
             <Card className="p-4">
               {/* Avatar + name */}
               <div className="mb-4 flex items-center gap-3">
-                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[15px] font-bold', SURFACE.holder)}>
+                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[16px] font-bold', SURFACE.holder)}>
                   {(firstName[0] ?? '').toUpperCase()}{(lastName[0] ?? '').toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <div className={cn('truncate text-[17px] font-bold', TEXT.strong)}>
+                  <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                     {firstName} {lastName}
                   </div>
                   <StatusPill
@@ -352,7 +352,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
               <Row label={t('role', { defaultValue: 'Rôle' })} value={ADMIN_ROLE_LABELS[selectedRole]} />
             </Card>
 
-            <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] leading-relaxed text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+            <div className="rounded-lg bg-[#FFF1C2] px-3.5 py-3 text-[14px] leading-relaxed text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
               Un mot de passe temporaire sera généré. Vous devrez le transmettre manuellement à l'administrateur.
             </div>
           </div>

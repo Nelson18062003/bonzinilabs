@@ -422,7 +422,7 @@ export function MobileNewDeposit() {
             placeholder="Nom ou téléphone..."
             value={clientSearch}
             onChange={(e) => setClientSearch(e.target.value)}
-            className="w-full h-11 pl-10 pr-10 rounded-xl bg-secondary border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all"
+            className="w-full h-11 pl-10 pr-10 rounded-lg bg-secondary border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all"
             autoFocus
           />
           {clientSearch && (
@@ -439,7 +439,7 @@ export function MobileNewDeposit() {
         {clientsLoading ? (
           <div className="flex flex-col items-center py-12 gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground">Chargement...</p>
+            <p className="text-[14px] text-muted-foreground">Chargement...</p>
           </div>
         ) : filteredClients.length > 0 ? (
           <div className="space-y-2">
@@ -461,7 +461,7 @@ export function MobileNewDeposit() {
                     {client.first_name} {client.last_name}
                   </p>
                   {client.phone && (
-                    <p className="text-xs text-muted-foreground">{client.phone}</p>
+                    <p className="text-[14px] text-muted-foreground">{client.phone}</p>
                   )}
                 </div>
                 <ArrowRight className="w-5 h-5 text-muted-foreground" />
@@ -525,7 +525,7 @@ export function MobileNewDeposit() {
               key={preset}
               onClick={() => setAmount(preset.toString())}
               className={cn(
-                'py-3 rounded-xl font-medium transition-all text-sm active:scale-[0.97]',
+                'py-3 rounded-lg font-medium transition-all text-sm active:scale-[0.97]',
                 amountNum === preset
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary text-foreground hover:bg-secondary/80',
@@ -540,7 +540,7 @@ export function MobileNewDeposit() {
           onClick={() => amountNum >= 1000 && goTo('family')}
           disabled={amountNum < 1000}
           className={cn(
-            'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+            'w-full py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2',
             amountNum >= 1000
               ? 'btn-primary-gradient'
               : 'bg-muted text-muted-foreground cursor-not-allowed',
@@ -569,10 +569,10 @@ export function MobileNewDeposit() {
         </p>
 
         {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
-          <div className="p-3 border-l-4 border-amber-500 bg-amber-500/5 rounded-r-xl mb-4">
+          <div className="p-3 border-l-4 border-[#E8B931] bg-[#E8B931]/5 rounded-r-xl mb-4">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-4 h-4 text-[#975102] mt-0.5 flex-shrink-0" />
+              <p className="text-[14px] text-[#975102] dark:text-[#E8B931]">
                 Le montant dépasse la limite mobile money (
                 {formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)})
               </p>
@@ -597,7 +597,7 @@ export function MobileNewDeposit() {
             >
               <div
                 className={cn(
-                  'w-12 h-12 rounded-xl flex items-center justify-center',
+                  'w-12 h-12 rounded-lg flex items-center justify-center',
                   isSelected
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-foreground',
@@ -607,7 +607,7 @@ export function MobileNewDeposit() {
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{family.label}</p>
-                <p className="text-xs text-muted-foreground">{family.description}</p>
+                <p className="text-[14px] text-muted-foreground">{family.description}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -642,7 +642,7 @@ export function MobileNewDeposit() {
             >
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{subMethod.label}</p>
-                <p className="text-xs text-muted-foreground">{subMethod.description}</p>
+                <p className="text-[14px] text-muted-foreground">{subMethod.description}</p>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -712,8 +712,8 @@ export function MobileNewDeposit() {
             </div>
             <div className="flex-1">
               <p className="font-semibold text-foreground">{agency.label}</p>
-              <p className="text-xs text-muted-foreground">{agency.address}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <p className="text-[14px] text-muted-foreground">{agency.address}</p>
+              <p className="text-[14px] text-muted-foreground flex items-center gap-1 mt-1">
                 <Clock className="w-3 h-3" />
                 {agency.hours}
               </p>
@@ -766,7 +766,7 @@ export function MobileNewDeposit() {
                   {selectedClient.last_name?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">Client</p>
+                  <p className="text-[14px] text-muted-foreground">Client</p>
                   <p className="font-semibold text-foreground text-sm truncate">
                     {selectedClient.first_name} {selectedClient.last_name}
                   </p>
@@ -799,7 +799,7 @@ export function MobileNewDeposit() {
                   </span>
                   <button onClick={() => handleCopy(field.value, field.key)}>
                     {copiedField === field.key ? (
-                      <Check className="w-4 h-4 text-green-500" />
+                      <Check className="w-4 h-4 text-[#009951]" />
                     ) : (
                       <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                     )}
@@ -823,7 +823,7 @@ export function MobileNewDeposit() {
                     className="flex-shrink-0 ml-2"
                   >
                     {copiedField === 'merchant' ? (
-                      <Check className="w-4 h-4 text-green-500" />
+                      <Check className="w-4 h-4 text-[#009951]" />
                     ) : (
                       <Copy className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                     )}
@@ -873,9 +873,9 @@ export function MobileNewDeposit() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <div className="border-2 border-dashed border-border/40 hover:border-primary/30 rounded-xl py-6 flex flex-col items-center gap-2 transition-colors">
+              <div className="border-2 border-dashed border-border/40 hover:border-primary/30 rounded-lg py-6 flex flex-col items-center gap-2 transition-colors">
                 <Upload className="w-6 h-6 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Photos ou PDFs</p>
+                <p className="text-[14px] text-muted-foreground">Photos ou PDFs</p>
               </div>
             </label>
 
@@ -922,13 +922,13 @@ export function MobileNewDeposit() {
               value={adminComment}
               onChange={(e) => setAdminComment(e.target.value)}
               enterKeyHint="done"
-              className="w-full h-20 p-3 rounded-xl border border-border/50 bg-secondary/50 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all"
+              className="w-full h-20 p-3 rounded-lg border border-border/50 bg-secondary/50 resize-none text-sm focus:outline-none focus:ring-2 focus:ring-primary/25 transition-all"
             />
           </div>
 
           {/* Confirmation notice */}
-          <div className="rounded-xl border-l-4 border-primary bg-primary/5 px-4 py-3">
-            <p className="text-xs text-primary leading-relaxed">
+          <div className="rounded-lg border-l-4 border-primary bg-primary/5 px-4 py-3">
+            <p className="text-[14px] text-primary leading-relaxed">
               Le dépôt sera créé pour le client.{' '}
               {proofFiles.length > 0
                 ? 'Les preuves seront téléchargées et le statut avancé à "Preuve envoyée".'
@@ -941,7 +941,7 @@ export function MobileNewDeposit() {
             onClick={doCreateDeposit}
             disabled={createDeposit.isPending}
             className={cn(
-              'w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+              'w-full py-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2',
               createDeposit.isPending
                 ? 'bg-primary/60 text-primary-foreground'
                 : 'btn-primary-gradient',

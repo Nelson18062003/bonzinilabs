@@ -49,7 +49,7 @@ function MethodGlyph({ method }: { method: string }) {
   const meta = PAYMENT_METHOD[uiMethod(method)] ?? PAYMENT_METHOD.cash;
   return (
     <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-black"
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
       style={{ backgroundColor: `${meta.color}1A`, color: meta.color }}
     >
       {meta.cn.slice(0, 1)}
@@ -86,10 +86,10 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
             ariaLabel={t('bulk.back', { defaultValue: 'Retour' })}
           />
           <div className="min-w-0">
-            <h1 className={cn('truncate text-[22px] font-extrabold tracking-tight', TEXT.strong)}>
+            <h1 className={cn('truncate text-[20px] font-bold tracking-tight', TEXT.strong)}>
               {batch?.reference ?? t('bulk.title', { defaultValue: 'Paiement groupé' })}
             </h1>
-            <p className={cn('text-[13px]', TEXT.muted)}>
+            <p className={cn('text-[14px]', TEXT.muted)}>
               {batch
                 ? t('bulk.detailSubtitle', {
                     count: batch.line_count,
@@ -116,10 +116,10 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
               <div className="mb-3 flex items-center gap-3">
                 <Avatar name={`${client?.first_name ?? ''} ${client?.last_name ?? ''}`} tone="info" />
                 <div className="min-w-0 flex-1">
-                  <p className={cn('truncate text-[15px] font-bold', TEXT.strong)}>
+                  <p className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                     {client ? `${client.first_name ?? ''} ${client.last_name ?? ''}` : '—'}
                   </p>
-                  <p className={cn('text-[12px]', TEXT.muted)}>{formatDate(batch.created_at, 'datetime')}</p>
+                  <p className={cn('text-[14px]', TEXT.muted)}>{formatDate(batch.created_at, 'datetime')}</p>
                 </div>
                 <Amount value={formatCurrencyRMB(batch.total_amount_rmb)} size="md" />
               </div>
@@ -136,7 +136,7 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
                   type="button"
                   onClick={() => navigate(`/m/payments/${l.id}`)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[22px] p-3.5 text-left transition hover:-translate-y-0.5',
+                    'flex w-full items-center gap-3 rounded-lg p-3.5 text-left transition hover:-translate-y-0.5',
                     SURFACE.card,
                     SURFACE.shadow,
                   )}
@@ -146,15 +146,15 @@ export function BulkPaymentDetail({ desktop = false }: { desktop?: boolean } = {
                     <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>
                       {l.beneficiary_name || methodLabel(l.method)}
                     </p>
-                    <p className={cn('truncate text-[12px]', TEXT.muted)}>
+                    <p className={cn('truncate text-[14px]', TEXT.muted)}>
                       {l.beneficiary_identifier || l.beneficiary_bank_account || l.reference}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className={cn('text-[14px] font-extrabold tabular-nums', TEXT.strong)}>
+                    <p className={cn('text-[14px] font-bold tabular-nums', TEXT.strong)}>
                       {formatCurrencyRMB(l.amount_rmb)}
                     </p>
-                    <p className={cn('text-[11px] tabular-nums', TEXT.muted)}>{formatXAF(l.amount_xaf)}</p>
+                    <p className={cn('text-[14px] tabular-nums', TEXT.muted)}>{formatXAF(l.amount_xaf)}</p>
                   </div>
                   <StatusPill tone={paymentStatusTone(l.status) as Tone} label={statusLabel(l.status)} className="shrink-0" />
                   <ChevronRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />

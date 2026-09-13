@@ -53,9 +53,9 @@ export function OperationDateCard({ enabled, value, onToggle, onChange, accent, 
     <Card className={cn('p-3.5', className)}>
       <div className="flex items-center justify-between">
         <div>
-          <div className={cn('text-[13px] font-bold', TEXT.strong)}>Date de l&apos;opération</div>
+          <div className={cn('text-[14px] font-bold', TEXT.strong)}>Date de l&apos;opération</div>
           {!enabled && (
-            <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>
+            <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>
               Maintenant — activez pour antidater
             </div>
           )}
@@ -76,7 +76,7 @@ export function OperationDateCard({ enabled, value, onToggle, onChange, accent, 
       {enabled && (
         <div className="mt-2.5 border-t border-black/[0.06] pt-2.5 dark:border-white/[0.08]">
           <BzDateTimePicker value={value} onChange={onChange} accent={accent} />
-          <p className={cn('mt-2 text-[11px]', TEXT.muted)}>
+          <p className={cn('mt-2 text-[14px]', TEXT.muted)}>
             L&apos;opération sera enregistrée à cette date (passée uniquement).
           </p>
         </div>

@@ -40,7 +40,7 @@ export function MobileStatCard({
             <p className="text-sm text-primary-foreground/80">{label}</p>
             <p className="text-3xl font-bold text-primary-foreground mt-1 tracking-tight">{value}</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-lg bg-white/15 flex items-center justify-center">
             <Icon className="w-6 h-6 text-primary-foreground" />
           </div>
         </div>
@@ -57,8 +57,8 @@ export function MobileStatCard({
       )}
     >
       {badge != null && badge > 0 && (
-        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-white">{badge}</span>
+        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#E8B931] flex items-center justify-center">
+          <span className="text-[14px] font-bold text-white">{badge}</span>
         </div>
       )}
       <div className="flex items-center gap-2 mb-3">

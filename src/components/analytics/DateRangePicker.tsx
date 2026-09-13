@@ -88,7 +88,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
         <div className="p-3 space-y-3">
           {PRESET_GROUPS.map((group) => (
             <div key={group.label}>
-              <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="px-1 pb-1 text-[14px] max-lg:text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {group.label}
               </div>
               <div className="grid grid-cols-2 gap-1">
@@ -116,7 +116,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
           ))}
 
           <div>
-            <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="px-1 pb-1 text-[14px] max-lg:text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
               Personnalisé
             </div>
             <CustomRangeInputs onApply={handleCustom} current={range} />
@@ -124,7 +124,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
 
           {showGranularity && (
           <div>
-            <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="px-1 pb-1 text-[14px] max-lg:text-[14px] font-semibold uppercase tracking-wider text-muted-foreground">
               Granularité (défaut)
             </div>
             <div className="grid grid-cols-3 gap-1">
@@ -138,7 +138,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
                     disabled={!compatible}
                     onClick={() => setGranularity(g)}
                     className={cn(
-                      'rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                      'rounded-md px-2 py-1.5 text-xs max-lg:text-[14px] font-medium transition-colors',
                       active
                         ? 'bg-primary text-primary-foreground'
                         : compatible
@@ -156,7 +156,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
                 );
               })}
             </div>
-            <p className="mt-1.5 px-1 text-[10px] text-muted-foreground/80 leading-snug">
+            <p className="mt-1.5 px-1 text-[14px] max-lg:text-[14px] text-muted-foreground/80 leading-snug">
               Chaque rapport peut overrider cette granularité par défaut via son propre sélecteur.
             </p>
           </div>
@@ -166,7 +166,7 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
           <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2">
             <div>
               <div className="text-sm font-medium">Comparer à la période précédente</div>
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-[11px] max-lg:text-[14px] text-muted-foreground">
                 Affiche Δ % sur chaque KPI
               </div>
             </div>
@@ -200,7 +200,7 @@ function CustomRangeInputs({ onApply, current }: { onApply: (from: string, to: s
         type="button"
         disabled={!range.from || !range.to}
         onClick={() => onApply(range.from, range.to)}
-        className="w-full rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+        className="w-full rounded-md bg-primary px-3 py-1.5 text-xs max-lg:text-[14px] font-semibold text-primary-foreground disabled:opacity-50"
       >
         OK
       </button>

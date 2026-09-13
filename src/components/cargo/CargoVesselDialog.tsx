@@ -38,12 +38,12 @@ export function CargoVesselDialog({ shipment: s, open, onClose }: { shipment: Ca
       title="Renseigner le navire"
       footer={
         <>
-          <button type="button" onClick={onClose} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-          <button type="button" onClick={submit} disabled={update.isPending} className={cn('h-9 px-4 text-[13px] font-bold disabled:opacity-60', PRIMARY_PILL)}>Enregistrer</button>
+          <button type="button" onClick={onClose} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>Annuler</button>
+          <button type="button" onClick={submit} disabled={update.isPending} className={cn('h-9 px-4 text-[13px] max-lg:text-[14px] font-bold disabled:opacity-60', PRIMARY_PILL)}>Enregistrer</button>
         </>
       }
     >
-      <p className={cn('mb-4 text-[13px]', TEXT.body)}>
+      <p className={cn('mb-4 text-[13px] max-lg:text-[14px]', TEXT.body)}>
         Ce que tu lis sur le site de l'armateur. Avec l'IMO (ou le MMSI), la position du navire est suivie par l'AIS et la boîte apparaît sur la carte.
       </p>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">

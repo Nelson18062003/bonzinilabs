@@ -39,11 +39,11 @@ import {
 
 // Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
 const textareaClass = cn(
-  'w-full rounded-2xl px-4 py-3 text-[16px] outline-none transition',
+  'w-full rounded-lg px-4 py-3 text-[16px] outline-none transition',
   SURFACE.card,
   SURFACE.shadow,
   TEXT.strong,
-  'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
+  'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
 );
 
 export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boolean } = {}) {
@@ -86,11 +86,11 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
       {desktop ? (
         <header className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>{t('templates.screenTitle')}</h2>
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('templates.screenTitle')}</h2>
             <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('templates.screenSubtitle', { defaultValue: 'Réponses pré-enregistrées avec variables' })}</p>
           </div>
           {isSuperAdmin && (
-            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}>
+            <button type="button" onClick={() => setCreating(true)} className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[14px] font-bold', PRIMARY_PILL)}>
               <Plus className="h-4 w-4" /> {t('templates.create')}
             </button>
           )}
@@ -117,7 +117,7 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
 
       <div className={desktop ? 'mx-auto max-w-3xl space-y-3' : 'space-y-3 px-4 py-4'}>
         {!isSuperAdmin && (
-          <div className="rounded-2xl bg-[#F8EFD8] px-3.5 py-3 text-[12px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <div className="rounded-lg bg-[#FFF1C2] px-3.5 py-3 text-[14px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             {t('templates.readOnlyHint')}
           </div>
         )}
@@ -129,7 +129,7 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
             <Holder icon={MessageSquareQuote} size="lg" />
             <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>{t('templates.empty')}</p>
             {isSuperAdmin && (
-              <p className={cn('mt-1 max-w-xs text-[13px]', TEXT.muted)}>{t('templates.emptyHint')}</p>
+              <p className={cn('mt-1 max-w-xs text-[14px]', TEXT.muted)}>{t('templates.emptyHint')}</p>
             )}
           </div>
         ) : (
@@ -156,9 +156,9 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
                   </div>
                 )}
               </div>
-              <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.muted)}>{tpl.content}</p>
+              <p className={cn('whitespace-pre-wrap text-[14px]', TEXT.muted)}>{tpl.content}</p>
               {/\{\{[a-z_]+\}\}/i.test(tpl.content) && (
-                <p className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#9A6B12] dark:text-[#E7C083]">
+                <p className="mt-2 flex items-center gap-1 text-[14px] font-semibold text-[#682D03] dark:text-[#FFF1C2]">
                   <Sparkles className="h-2.5 w-2.5" />
                   {t('templates.varsInside')}
                 </p>
@@ -247,8 +247,8 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
         </FormField>
 
         <div>
-          <p className={cn('mb-1.5 flex items-center gap-1 text-[11px] font-medium', TEXT.muted)}>
-            <Sparkles className="h-3 w-3 text-[#9A6B12] dark:text-[#E7C083]" />
+          <p className={cn('mb-1.5 flex items-center gap-1 text-[14px] font-medium', TEXT.muted)}>
+            <Sparkles className="h-3 w-3 text-[#682D03] dark:text-[#FFF1C2]" />
             {t('templates.varsAvailable')}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -257,7 +257,7 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
                 key={v.key}
                 type="button"
                 onClick={() => insertVar(v.key)}
-                className="rounded-full bg-[#F8EFD8] px-2.5 py-1 font-mono text-[10px] font-semibold text-[#9A6B12] transition active:scale-95 dark:bg-[#372D14] dark:text-[#E7C083]"
+                className="rounded-lg bg-[#FFF1C2] px-2.5 py-1 font-mono text-[14px] font-semibold text-[#682D03] transition active:scale-95 dark:bg-[#522504] dark:text-[#FFF1C2]"
                 title={v.label}
               >
                 {`{{${v.key}}}`}
@@ -267,11 +267,11 @@ function TemplateEditor({ initial, onClose, onSubmit }: TemplateEditorProps) {
         </div>
 
         {content && (
-          <div className="rounded-2xl bg-[#EAE7FA] p-3 dark:bg-[#272252]">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[#5B4CC4] dark:text-[#B5AAF0]">
+          <div className="rounded-lg bg-[#E6E6E6] p-3 dark:bg-[#444444]">
+            <p className="mb-1 text-[14px] font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">
               {t('templates.preview')}
             </p>
-            <p className={cn('whitespace-pre-wrap text-[12px]', TEXT.strong)}>{preview}</p>
+            <p className={cn('whitespace-pre-wrap text-[14px]', TEXT.strong)}>{preview}</p>
           </div>
         )}
       </div>

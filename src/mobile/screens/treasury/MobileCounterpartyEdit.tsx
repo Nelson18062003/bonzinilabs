@@ -52,7 +52,7 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
   if (isLoading) {
     return (
       <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
-        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
+        {desktop ? <h2 className="mb-4 text-[24px] font-bold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
         <div className="flex justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -63,14 +63,14 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
   if (!cp) {
     return (
       <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
-        {desktop ? <h2 className="mb-4 text-[24px] font-extrabold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
+        {desktop ? <h2 className="mb-4 text-[24px] font-bold tracking-tight text-foreground">Contrepartie</h2> : <MobileHeader title="Contrepartie" showBack />}
         <div className="py-8 text-center text-muted-foreground">Introuvable.</div>
       </div>
     );
   }
 
   const isSupplier = cp.type === 'usdt_supplier';
-  const toneBadge = isSupplier ? 'bg-violet-500/10 text-bonzini-violet' : 'bg-amber-500/10 text-bonzini-amber';
+  const toneBadge = isSupplier ? 'bg-[#2C2C2C]/10 text-bonzini-violet' : 'bg-[#E8B931]/10 text-bonzini-amber';
   const nameValid = displayName.trim().length >= 2;
 
   const handleSave = async () => {
@@ -102,7 +102,7 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
       {desktop ? (
         <header className="mb-5">
-          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">{cp.display_name}</h2>
+          <h2 className="text-[24px] font-bold tracking-tight text-foreground">{cp.display_name}</h2>
           <p className="mt-0.5 text-[14px] text-muted-foreground">Modifier la contrepartie</p>
         </header>
       ) : (
@@ -113,11 +113,11 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
         {/* Header */}
         <div className={cn(SOFT_CARD, 'flex items-center justify-between p-4')}>
           <div>
-            <span className={cn('inline-block rounded-lg px-2 py-1 text-[11px] font-bold', toneBadge)}>{cp.short_id}</span>
-            <div className="mt-1.5 text-[11px] text-muted-foreground">{isSupplier ? 'Fournisseur USDT' : 'Acheteur CNY'}</div>
+            <span className={cn('inline-block rounded-lg px-2 py-1 text-[14px] font-bold', toneBadge)}>{cp.short_id}</span>
+            <div className="mt-1.5 text-[14px] text-muted-foreground">{isSupplier ? 'Fournisseur USDT' : 'Acheteur CNY'}</div>
           </div>
           {!cp.is_active && (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[10px] font-bold uppercase text-muted-foreground">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[14px] font-bold uppercase text-muted-foreground">
               <Archive className="h-3 w-3" />
               Archivée
             </span>
@@ -141,7 +141,7 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
         <button
           onClick={handleToggleActive}
           disabled={update.isPending}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99] disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99] disabled:opacity-50"
         >
           {cp.is_active ? (
             <>
@@ -158,18 +158,18 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
 
         {/* Delete section */}
         {confirmDelete ? (
-          <div className="space-y-3 rounded-2xl bg-red-500/10 p-4">
+          <div className="space-y-3 rounded-lg bg-[#EC221F]/10 p-4">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <span className="text-[13px] font-bold text-red-700 dark:text-red-300">Supprimer définitivement ?</span>
+              <AlertTriangle className="h-4 w-4 text-[#C00F0C] dark:text-[#EC221F]" />
+              <span className="text-[14px] font-bold text-[#C00F0C] dark:text-[#EC221F]">Supprimer définitivement ?</span>
             </div>
-            <p className="text-[12px] leading-snug text-red-700 dark:text-red-300">
+            <p className="text-[14px] leading-snug text-[#C00F0C] dark:text-[#EC221F]">
               Suppression possible uniquement si aucune opération n’est liée. Sinon, archive plutôt.
             </p>
             <div className="flex gap-2.5">
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="h-12 flex-1 rounded-2xl bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
+                className="h-12 flex-1 rounded-lg bg-muted text-[14px] font-bold text-foreground transition active:scale-[0.99]"
               >
                 Annuler
               </button>
@@ -177,8 +177,8 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
                 onClick={handleDelete}
                 disabled={del.isPending}
                 className={cn(
-                  'flex h-12 flex-1 items-center justify-center rounded-2xl text-[14px] font-bold transition active:scale-[0.99]',
-                  del.isPending ? 'bg-muted text-muted-foreground' : 'bg-red-600 text-white hover:bg-red-700',
+                  'flex h-12 flex-1 items-center justify-center rounded-lg text-[14px] font-bold transition active:scale-[0.99]',
+                  del.isPending ? 'bg-muted text-muted-foreground' : 'bg-[#EC221F] text-white hover:bg-[#EC221F]',
                 )}
               >
                 {del.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Supprimer'}
@@ -188,7 +188,7 @@ export function MobileCounterpartyEdit({ desktop = false }: { desktop?: boolean 
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-red-500/10 text-[14px] font-bold text-red-600 transition active:scale-[0.99] dark:text-red-400"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#EC221F]/10 text-[14px] font-bold text-[#C00F0C] transition active:scale-[0.99] dark:text-[#EC221F]"
           >
             <Trash2 className="h-4 w-4" />
             Supprimer définitivement

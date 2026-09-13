@@ -37,7 +37,7 @@ function fmt(n: number | null, decimals = 2): string {
 // Discreet computed/derived value — same calm style as the purchase form.
 function Computed({ label, value, unit, decimals }: { label: string; value: number | null; unit: string; decimals: number }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3.5 py-2.5 text-[12px]">
+    <div className="flex items-center justify-between rounded-lg bg-muted/60 px-3.5 py-2.5 text-[14px]">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-semibold tabular-nums text-foreground">
         {fmt(value, decimals)} <span className="font-normal text-muted-foreground">{unit}</span>
@@ -146,7 +146,7 @@ export function MobileNewSale({ desktop = false }: { desktop?: boolean } = {}) {
     <div className={desktop ? 'mx-auto max-w-2xl' : 'flex flex-col min-h-full bg-background'}>
       {desktop ? (
         <header className="mb-6">
-          <h2 className="text-[24px] font-extrabold tracking-tight text-foreground">Nouvelle vente USDT</h2>
+          <h2 className="text-[24px] font-bold tracking-tight text-foreground">Nouvelle vente USDT</h2>
           <p className="mt-0.5 text-[14px] text-muted-foreground">Sortie de stock USDT contre CNY</p>
         </header>
       ) : (
@@ -182,7 +182,7 @@ export function MobileNewSale({ desktop = false }: { desktop?: boolean } = {}) {
             onChange={(v) => setCnyAccountId(v === NO_ACCOUNT ? '' : v)}
             options={accountOptions}
           />
-          <p className="mt-1.5 px-1 text-[11px] leading-tight text-muted-foreground">
+          <p className="mt-1.5 px-1 text-[14px] leading-tight text-muted-foreground">
             Sélectionne le compte uniquement si le CNY a atterri sur un de nos comptes (cash Guangzhou,
             Alipay/WeChat de papa…). Sinon laisse « Aucun ».
           </p>
@@ -210,26 +210,26 @@ export function MobileNewSale({ desktop = false }: { desktop?: boolean } = {}) {
 
         {/* WAC / coût / stock */}
         <div className={cn(SOFT_CARD, 'space-y-2 p-4')}>
-          <div className="flex items-center justify-between text-[13px]">
+          <div className="flex items-center justify-between text-[14px]">
             <span className="text-muted-foreground">WAC à utiliser</span>
             <span className="font-bold tabular-nums text-foreground">{wac ? `${fmt(wac, 4)} XAF/USDT` : '—'}</span>
           </div>
-          <div className="flex items-center justify-between text-[13px]">
+          <div className="flex items-center justify-between text-[14px]">
             <span className="text-muted-foreground">Coût sortie XAF</span>
             <span className="font-bold tabular-nums text-foreground">{costBasis !== null ? `${fmt(costBasis, 0)} XAF` : '—'}</span>
           </div>
-          <div className="flex items-center justify-between border-t border-border pt-2 text-[13px]">
+          <div className="flex items-center justify-between border-t border-border pt-2 text-[14px]">
             <span className="text-muted-foreground">Stock USDT après</span>
-            <span className={cn('font-bold tabular-nums', willGoNegative ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+            <span className={cn('font-bold tabular-nums', willGoNegative ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-foreground')}>
               {stockAfter !== null ? fmt(stockAfter, 4) : '—'}
             </span>
           </div>
         </div>
 
         {willGoNegative && (
-          <div className="flex items-start gap-2 rounded-2xl bg-red-500/10 px-3.5 py-2.5">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-            <span className="text-[12px] text-red-700 dark:text-red-300">
+          <div className="flex items-start gap-2 rounded-lg bg-[#EC221F]/10 px-3.5 py-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#C00F0C] dark:text-[#EC221F]" />
+            <span className="text-[14px] text-[#C00F0C] dark:text-[#EC221F]">
               Cette vente fera passer le stock USDT en négatif. L’opération reste enregistrable
               (à régulariser par un achat manquant).
             </span>
@@ -241,7 +241,7 @@ export function MobileNewSale({ desktop = false }: { desktop?: boolean } = {}) {
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className={cn(INSET, 'flex w-full items-center gap-2 px-4 py-3.5 text-[13px] font-semibold')}
+            className={cn(INSET, 'flex w-full items-center gap-2 px-4 py-3.5 text-[14px] font-semibold')}
           >
             <span>Détails</span>
             <span className="font-normal text-muted-foreground">date · référence · note</span>

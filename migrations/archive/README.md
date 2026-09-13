@@ -18,3 +18,4 @@ erreur au moment de l'exécution, donc sans rien pour mettre sur la piste.
 | --- | --- | --- |
 | `20260831_consolidated.sql` | Sécurité, rôles, trésorerie, paiements | oui |
 | `20260911_consolidated.sql` | Bonzini Cargo, première livraison | oui |
+| `20260912_consolidated.sql` | Bonzini Cargo, dossier complet, colis, MRSU9909331 | à confirmer — s'il ne l'a pas été, `20260913_consolidated.sql` le contient en entier |
