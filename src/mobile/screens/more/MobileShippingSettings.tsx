@@ -123,11 +123,18 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
   );
 
   return (
-    <div className={desktop ? 'mx-auto max-w-2xl' : 'flex min-h-full flex-col'}>
+    <div className={desktop ? 'mx-auto max-w-5xl' : 'flex min-h-full flex-col'}>
       {desktop ? (
-        <header className="mb-6">
-          <h2 className={cn('text-[24px] font-extrabold tracking-tight', TEXT.strong)}>Expédition · Chine</h2>
-          <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Adresses et coordonnées imprimées sur l’étiquette colis</p>
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>Expédition · Chine</h2>
+            <p className={cn('mt-0.5 text-[14px]', TEXT.muted)}>Adresses et coordonnées imprimées sur l’étiquette colis</p>
+          </div>
+          {canEdit && (
+            <PrimaryPill onClick={submit} disabled={!dirty} loading={save.isPending} className="px-6 py-2.5 text-[14px]">
+              Enregistrer
+            </PrimaryPill>
+          )}
         </header>
       ) : (
         <MobileHeader title="Expédition · Chine" subtitle="Ce qui s’imprime sur l’étiquette colis" showBack backTo="/m/more/settings" />
@@ -164,6 +171,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
               </Card>
             </div>
 
+            <div className={cn(desktop && 'grid grid-cols-2 gap-5')}>
             <div>
               <SectionTitle>Entrepôt</SectionTitle>
               <Card className="space-y-3">
@@ -185,9 +193,10 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
                 <LocationFields prefix="o" value={form.office} onChange={(v) => update('office', v)} disabled={!canEdit} />
               </Card>
             </div>
+            </div>
 
-            {canEdit && (
-              <div className={cn(desktop ? '' : 'fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3', !desktop && SURFACE.canvas)}>
+            {canEdit && !desktop && (
+              <div className={cn('fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-3', SURFACE.canvas)}>
                 <PrimaryPill onClick={submit} disabled={!dirty} loading={save.isPending} className="w-full py-3.5 text-[15px]">
                   Enregistrer
                 </PrimaryPill>

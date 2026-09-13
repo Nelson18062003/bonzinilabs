@@ -597,7 +597,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           </div>
         </div>
 
-        <CenterDialog open={labelOpen} onClose={() => setLabelOpen(false)} title="Étiquette colis" width={520}>
+        <CenterDialog open={labelOpen} onClose={() => setLabelOpen(false)} title="Étiquette colis" width={960}>
           <ShippingLabelComposer
             code={client.customerCode}
             clientName={name}
@@ -607,6 +607,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             clientCity={client.city}
             clientCountry={client.country}
             settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+            layout="split"
           />
         </CenterDialog>
 

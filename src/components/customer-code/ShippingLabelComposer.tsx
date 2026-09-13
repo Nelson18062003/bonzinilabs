@@ -32,10 +32,12 @@ export interface ShippingLabelComposerProps {
   clientCountry?: string | null;
   /** Adresses + coordonnées (platform_settings) — fournies par l'app appelante. */
   settings: ShippingSettings;
+  /** `split` (desktop) : réglages à gauche, aperçu à droite ; `stack` (mobile) : l'un sous l'autre. */
+  layout?: 'stack' | 'split';
   className?: string;
 }
 
-export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, className }: ShippingLabelComposerProps) {
+export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   const labelRef = useRef<HTMLDivElement>(null);
   // Entrepôt par défaut : c'est la destination de la plupart des envois ;
@@ -81,8 +83,8 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
     />
   );
 
-  return (
-    <div className={cn('space-y-3', className)}>
+  const controls = (
+    <div className="space-y-3">
       {/* 1 · Destination : une étiquette = une adresse */}
       <div>
         <Segmented
@@ -121,6 +123,10 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
         </p>
       </div>
 
+    </div>
+  );
+  const preview = (
+    <div className="space-y-3">
       {/* 3 · Aperçu à l'échelle du même nœud que celui exporté */}
       <div className="overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
         <div className="relative w-full" style={{ aspectRatio: `${LABEL_W} / ${LABEL_H}` }}>
@@ -174,6 +180,21 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           {t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' })}
         </button>
       </div>
+    </div>
+  );
+
+  if (layout === 'split') {
+    return (
+      <div className={cn('grid grid-cols-[minmax(0,1fr)_440px] gap-5', className)}>
+        {controls}
+        {preview}
+      </div>
+    );
+  }
+  return (
+    <div className={cn('space-y-3', className)}>
+      {controls}
+      {preview}
     </div>
   );
 }

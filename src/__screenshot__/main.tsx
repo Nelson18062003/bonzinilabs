@@ -58,7 +58,7 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
-import { LabelWarehouse, LabelOffice, LabelComposer } from './shippingLabel';
+import { LabelWarehouse, LabelOffice, LabelComposer, LabelComposerDesktop } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
@@ -210,6 +210,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-composer': { Comp: LabelComposer, route: '/' },
   'shipping-settings': { Comp: MobileShippingSettings, route: '/m/more/shipping' },
+  'shipping-settings-desktop': { Comp: () => <MobileShippingSettings desktop />, route: '/m/more/shipping' },
+  'label-composer-desktop': { Comp: LabelComposerDesktop, route: '/' },
   kit: { Comp: Kit, route: '/' },
   'dashboard-home': { Comp: MobileDashboard, route: '/m' },
   analytics: { Comp: MobileAnalyticsDashboard, route: '/m/dashboard' },

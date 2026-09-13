@@ -3,27 +3,25 @@
 // IMPRIME et COLLE sur chaque carton. UNE destination par étiquette
 // (entrepôt OU bureau).
 //
-// Bâtie comme une feuille de route de transporteur (快递面单), parce que
-// c'est ce que l'expéditeur sait lire d'un coup d'œil : des cases à bords
-// noirs, une information par case, le chinois d'abord. Noir sur blanc,
-// sans aplat de couleur — ça sort d'une imprimante laser d'usine.
+// Un FORMULAIRE, pas une affiche : cinq sections numérotées, chacune sous
+// une bande de titre, chacune faite de LIGNES identiques — une colonne
+// d'intitulés à largeur fixe, une colonne de valeurs qui commencent toutes
+// au même endroit, un filet entre deux lignes. Rien ne « commence quelque
+// part et finit ailleurs » : tout ce qui se lit est aligné sur deux
+// verticales. Chinois d'abord, anglais en petites capitales, noir sur blanc
+// pour l'imprimante laser d'usine.
 //
-// Ordre de lecture, du plus gros au plus petit :
-//   0. le bandeau : ce que c'est et quoi en faire (imprimer, coller) ;
-//   1. l'ADRESSE de livraison — c'est elle qui fait arriver le carton —
-//      et nos coordonnées (destinataire, société, tél., WeChat, WhatsApp,
-//      e-mail) ;
-//   2. le CODE CLIENT et son QR — c'est ce qui le rattache au bon client ;
-//   3. le client (nom, téléphone Afrique, société, destination, e-mail) ;
-//   4. le fournisseur (nom, tél., e-mail, adresse, marchandise, quantité,
-//      date d'envoi, carton n°/total) — pré-rempli ou à remplir au stylo ;
-//   5. une bande « réservé à l'entrepôt » : date d'arrivée, cubage, total.
+//   0  bandeau — ce que c'est, quoi en faire (imprimer, coller)
+//   1  收件地址 — l'adresse (la plus grande chose sur la feuille), le
+//      destinataire et nos coordonnées : tél., WeChat, WhatsApp, e-mail
+//   2  客户编号 — le QR, grand, et le code en très gros
+//   3  客户 — le client : nom, tél. Afrique, société, destination, e-mail
+//   4  供货商 — le fournisseur : pré-rempli, sinon des lignes à remplir
+//   5  仓库填写 — réservé à l'entrepôt : date d'arrivée, cubage, total
+//
 // Les intitulés reprennent MOT POUR MOT le bon de réception papier (三联单)
-// que l'entrepôt remplit aujourd'hui : 客户姓名, 电话(非洲), 货物品名,
-// 货物数量, 立方 (CBM), 总包数, 供货商及电话, 日期.
-//
-// Les adresses et coordonnées viennent des réglages (platform_settings),
-// passés en prop : le composant ne lit rien lui-même.
+// de l'entrepôt. Les adresses et coordonnées viennent des réglages
+// (platform_settings), passés en prop.
 // Taille fixe 600 × 850 px — le ratio des formats A : le nœud est rasterisé
 // tel quel et posé sur une page A4 dans le PDF.
 // ============================================================
@@ -58,20 +56,40 @@ export interface ShippingLabelProps {
 
 const FONT = "'DM Sans', 'Noto Sans SC', system-ui, sans-serif";
 const FONT_ZH = "'Noto Sans SC', 'DM Sans', system-ui, sans-serif";
-/** Chinois d'affichage : un serif (宋体) — c'est la typographie des documents
- *  imprimés en Chine, et elle tient mieux le très grand corps de l'adresse. */
+/** Chinois d'affichage : un serif (宋体) — la typographie des documents
+ *  imprimés en Chine ; il tient mieux le très grand corps de l'adresse. */
 const FONT_ZH_DISPLAY = "'Noto Serif SC', 'Noto Sans SC', serif";
 const INK = '#111111';
 const MUTED = '#555555';
+const HAIR = '#DADADA';
 const RULE = `2px solid ${INK}`;
 
-/** En-tête de case : chinois d'abord, anglais en petites capitales. */
-function CellHead({ zh, en, right }: { zh: string; en: string; right?: React.ReactNode }) {
+/** Les deux verticales de l'étiquette : où commence l'intitulé, où commence la valeur. */
+const LABEL_COL = 118;
+const LABEL_COL_2 = 86;
+const ROW_H = 23;
+const PAD_X = 14;
+
+/** Bande de titre d'une section : numéro · chinois · anglais, et parfois une étiquette à droite. */
+function Band({ n, zh, en, right, dark }: { n: string; zh: string; en: string; right?: React.ReactNode; dark?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-        <span style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 13.5, fontWeight: 900 }}>{zh}</span>
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', color: MUTED }}>{en}</span>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        height: 24,
+        padding: `0 ${PAD_X}px`,
+        background: dark ? INK : '#EFEFEF',
+        color: dark ? '#fff' : INK,
+        borderBottom: `1px solid ${dark ? INK : HAIR}`,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: dark ? '#fff' : MUTED }}>{n}</span>
+        <span style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 13, fontWeight: 900 }}>{zh}</span>
+        <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase', color: dark ? 'rgba(255,255,255,0.8)' : MUTED }}>{en}</span>
       </div>
       {right}
     </div>
@@ -80,38 +98,65 @@ function CellHead({ zh, en, right }: { zh: string; en: string; right?: React.Rea
 
 function Key({ zh, en }: { zh: string; en: string }) {
   return (
-    <span style={{ fontFamily: FONT_ZH, fontSize: 11.5, fontWeight: 700, color: MUTED, whiteSpace: 'nowrap' }}>
+    <span style={{ fontFamily: FONT_ZH, fontSize: 11, fontWeight: 700, color: MUTED, whiteSpace: 'nowrap', lineHeight: 1 }}>
       {zh}
       {zh && en ? ' ' : ''}
-      <span style={{ fontFamily: FONT, fontSize: 9.5, letterSpacing: 0.8, textTransform: 'uppercase' }}>{en}</span>
+      <span style={{ fontFamily: FONT, fontSize: 9, letterSpacing: 0.7, textTransform: 'uppercase' }}>{en}</span>
     </span>
   );
 }
 
-/** Clé + valeur ; sans valeur, une ligne à remplir au stylo. */
-function KV({ zh, en, value, latin, size = 13.5 }: { zh: string; en: string; value?: string | null; latin?: boolean; size?: number }) {
+/** Une valeur ; vide, c'est une ligne à remplir au stylo. */
+function Val({ value, latin, size = 13 }: { value?: string | null; latin?: boolean; size?: number }) {
   const v = (value ?? '').trim();
+  if (!v) return <span style={{ display: 'block', height: 1, background: '#9A9A9A', alignSelf: 'end', marginBottom: 4 }} />;
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, lineHeight: 1.25, minWidth: 0 }}>
+    <span style={{ fontFamily: latin ? FONT : FONT_ZH, fontSize: size, fontWeight: 800, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {v}
+    </span>
+  );
+}
+
+/** Une ligne à UN champ : intitulé (colonne fixe) · valeur. */
+function Row1({ zh, en, value, latin, size, last }: { zh: string; en: string; value?: string | null; latin?: boolean; size?: number; last?: boolean }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `${LABEL_COL}px 1fr`, alignItems: 'center', height: ROW_H, padding: `0 ${PAD_X}px`, borderBottom: last ? undefined : `1px solid ${HAIR}` }}>
       <Key zh={zh} en={en} />
-      {v ? (
-        <span style={{ fontFamily: latin ? FONT : FONT_ZH, fontSize: size, fontWeight: 800, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-word', minWidth: 0 }}>{v}</span>
-      ) : (
-        <span style={{ flex: 1, borderBottom: '1.5px solid #999', height: 17 }} />
-      )}
+      <Val value={value} latin={latin} size={size} />
     </div>
   );
 }
 
-const CELL = (extra?: React.CSSProperties): React.CSSProperties => ({
-  padding: '8px 16px 9px',
-  borderBottom: RULE,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 4,
-  ...extra,
-});
-const GRID2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 16, rowGap: 4 };
+/** Une ligne à DEUX champs : deux paires intitulé · valeur, sur les mêmes verticales que partout. */
+function Row2({
+  a,
+  b,
+  last,
+}: {
+  a: { zh: string; en: string; value?: string | null; latin?: boolean; size?: number; custom?: React.ReactNode };
+  b: { zh: string; en: string; value?: string | null; latin?: boolean; size?: number; custom?: React.ReactNode };
+  last?: boolean;
+}) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `${LABEL_COL}px 1fr ${LABEL_COL_2}px 1fr`, columnGap: 0, alignItems: 'center', height: ROW_H, padding: `0 ${PAD_X}px`, borderBottom: last ? undefined : `1px solid ${HAIR}` }}>
+      <Key zh={a.zh} en={a.en} />
+      <div style={{ display: 'grid', paddingRight: 10, minWidth: 0 }}>{a.custom ?? <Val value={a.value} latin={a.latin} size={a.size} />}</div>
+      <Key zh={b.zh} en={b.en} />
+      <div style={{ display: 'grid', minWidth: 0 }}>{b.custom ?? <Val value={b.value} latin={b.latin} size={b.size} />}</div>
+    </div>
+  );
+}
+
+/** « n° __ / __ » : deux traits et une barre. */
+function CartonOf() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 12px 1fr', alignItems: 'end', columnGap: 6, height: 14 }}>
+      <span style={{ height: 1, background: '#9A9A9A', marginBottom: 4 }} />
+      <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1, textAlign: 'center' }}>/</span>
+      <span style={{ height: 1, background: '#9A9A9A', marginBottom: 4 }} />
+    </div>
+  );
+}
 
 export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(function ShippingLabel(
   { code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings, supplier },
@@ -130,7 +175,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         width: LABEL_W,
         height: LABEL_H,
         boxSizing: 'border-box',
-        padding: 18,
+        padding: 14,
         background: '#FFFFFF',
         color: INK,
         fontFamily: FONT,
@@ -138,11 +183,11 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         flexDirection: 'column',
       }}
     >
-      <div style={{ border: RULE, borderRadius: 6, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+      <div style={{ border: RULE, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
         {/* 0 · Bandeau : ce que c'est, quoi en faire */}
-        <div style={{ background: INK, color: '#fff', padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ background: INK, color: '#fff', height: 44, padding: `0 ${PAD_X}px`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 17, fontWeight: 900 }}>发货标签</span>
+            <span style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 18, fontWeight: 900 }}>发货标签</span>
             <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase', opacity: 0.8 }}>Shipping label</span>
           </div>
           <div style={{ textAlign: 'right', lineHeight: 1.15 }}>
@@ -151,39 +196,36 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
           </div>
         </div>
 
-        {/* 1 · Destination — la case la plus grande */}
-        <div style={CELL({ padding: '9px 16px 10px', gap: 6 })}>
-          <CellHead
-            zh="收件地址"
-            en="Deliver to"
-            right={
-              <span style={{ background: INK, color: '#fff', borderRadius: 4, padding: '2px 10px', fontFamily: FONT_ZH_DISPLAY, fontSize: 13, fontWeight: 900, letterSpacing: 0.5 }}>
-                {tag.zh} · {tag.en.toUpperCase()}
-              </span>
-            }
-          />
-          <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 26, fontWeight: 900, lineHeight: 1.28, whiteSpace: 'pre-line', letterSpacing: 0.4 }}>{loc.addressZh}</div>
-          {loc.addressEn.trim() ? <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, lineHeight: 1.25 }}>{loc.addressEn}</div> : null}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 2 }}>
-            <KV zh="收件人" en="Recipient" value={[loc.recipient, ourCompany].filter((v) => v.trim()).join(' · ')} />
-            <div style={GRID2}>
-              <KV zh="电话" en="Tel" value={loc.phone} latin />
-              <KV zh="微信" en="WeChat" value={loc.wechat} latin />
-              <KV zh="" en="WhatsApp" value={loc.whatsapp} latin />
-              <KV zh="邮箱" en="Email" value={loc.email || company.email} latin />
-            </div>
-          </div>
+        {/* 1 · Destination */}
+        <Band
+          n="1"
+          zh="收件地址"
+          en="Deliver to"
+          right={
+            <span style={{ background: INK, color: '#fff', borderRadius: 3, padding: '1px 8px', fontFamily: FONT_ZH_DISPLAY, fontSize: 11.5, fontWeight: 900, letterSpacing: 0.4, lineHeight: 1.4 }}>
+              {tag.zh} · {tag.en.toUpperCase()}
+            </span>
+          }
+        />
+        <div style={{ padding: `6px ${PAD_X}px 5px`, borderBottom: `1px solid ${HAIR}` }}>
+          <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 25, fontWeight: 900, lineHeight: 1.25, whiteSpace: 'pre-line', letterSpacing: 0.3 }}>{loc.addressZh}</div>
+          {loc.addressEn.trim() ? <div style={{ marginTop: 3, fontSize: 10.5, fontWeight: 600, color: MUTED, lineHeight: 1.25 }}>{loc.addressEn}</div> : null}
         </div>
+        <Row1 zh="收件人" en="Recipient" value={[loc.recipient, ourCompany].filter((v) => v.trim()).join(' · ')} />
+        <Row2 a={{ zh: '电话', en: 'Tel', value: loc.phone, latin: true }} b={{ zh: '微信', en: 'WeChat', value: loc.wechat, latin: true }} />
+        <Row2 a={{ zh: '', en: 'WhatsApp', value: loc.whatsapp, latin: true }} b={{ zh: '邮箱', en: 'Email', value: loc.email || company.email, latin: true, size: 12 }} last />
 
         {/* 2 · Code client + QR */}
-        <div style={{ display: 'flex', borderBottom: RULE }}>
-          <div style={{ padding: 12, borderRight: RULE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <QRCodeSVG value={customerQrPayload(code)} size={140} level="H" marginSize={0} />
+        <div style={{ borderTop: RULE }}>
+          <Band n="2" zh="客户编号" en="Customer ID" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '236px 1fr', borderBottom: RULE }}>
+          <div style={{ padding: 10, borderRight: `1px solid ${HAIR}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <QRCodeSVG value={customerQrPayload(code)} size={216} level="H" marginSize={0} />
           </div>
-          <div style={{ flex: 1, padding: '10px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
-            <CellHead zh="客户编号" en="Customer ID" />
-            <div style={{ fontSize: 46, fontWeight: 900, letterSpacing: 1, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{code}</div>
-            <div style={{ lineHeight: 1.25 }}>
+          <div style={{ padding: `10px ${PAD_X}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, minWidth: 0 }}>
+            <div style={{ fontSize: 44, fontWeight: 900, letterSpacing: 1, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{code}</div>
+            <div style={{ lineHeight: 1.3 }}>
               <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 13, fontWeight: 900 }}>到货后扫码入库，归属此客户</div>
               <div style={{ fontSize: 10.5, fontWeight: 700, color: MUTED }}>Scanned on arrival — links the carton to this customer.</div>
             </div>
@@ -191,57 +233,38 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         </div>
 
         {/* 3 · Client */}
-        <div style={CELL()}>
-          <CellHead zh="客户" en="Customer" />
-          <div style={GRID2}>
-            <KV zh="客户姓名" en="Name" value={clientName} latin />
-            <KV zh="电话(非洲)" en="Tel" value={clientPhone || '—'} latin />
-            <KV zh="公司" en="Company" value={companyName || '—'} latin />
-            <KV zh="目的地" en="Destination" value={finalDestination || '—'} latin />
-            <div style={{ gridColumn: '1 / -1' }}>
-              <KV zh="邮箱" en="Email" value={clientEmail || '—'} latin />
-            </div>
-          </div>
-        </div>
+        <Band n="3" zh="客户" en="Customer" />
+        <Row1 zh="客户姓名" en="Name" value={clientName} latin />
+        <Row2 a={{ zh: '电话(非洲)', en: 'Tel', value: clientPhone || '—', latin: true }} b={{ zh: '目的地', en: 'Destination', value: finalDestination || '—', latin: true }} />
+        <Row2 a={{ zh: '公司', en: 'Company', value: companyName || '—', latin: true }} b={{ zh: '邮箱', en: 'Email', value: clientEmail || '—', latin: true, size: 12 }} last />
 
         {/* 4 · Fournisseur — pré-rempli ou à remplir au stylo */}
-        <div style={CELL({ flex: 1, gap: 5 })}>
-          <CellHead zh="供货商 / 发件人" en="Supplier · Sender" />
-          <div style={{ ...GRID2, rowGap: 6, flex: 1, alignContent: 'space-evenly' }}>
-            <KV zh="供货商" en="Supplier" value={supplier?.name} latin />
-            <KV zh="电话" en="Tel" value={supplier?.phone} latin />
-            <div style={{ gridColumn: '1 / -1' }}>
-              <KV zh="邮箱" en="Email" value={supplier?.email} latin />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <KV zh="地址" en="Address" value={supplier?.address} size={12.5} />
-            </div>
-            <KV zh="货物品名" en="Goods name" />
-            <KV zh="货物数量" en="Qty (件)" />
-            <KV zh="发货日期" en="Ship date" />
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
-              <Key zh="箱号" en="Carton no." />
-              <span style={{ flex: 1, borderBottom: '1.5px solid #999', height: 17 }} />
-              <span style={{ fontSize: 14, fontWeight: 800 }}>/</span>
-              <span style={{ flex: 1, borderBottom: '1.5px solid #999', height: 17 }} />
-            </div>
-          </div>
+        <div style={{ borderTop: RULE }}>
+          <Band n="4" zh="供货商 / 发件人" en="Supplier · Sender" />
         </div>
+        <Row1 zh="供货商" en="Supplier" value={supplier?.name} latin />
+        <Row2 a={{ zh: '电话', en: 'Tel', value: supplier?.phone, latin: true }} b={{ zh: '邮箱', en: 'Email', value: supplier?.email, latin: true, size: 12 }} />
+        <Row1 zh="地址" en="Address" value={supplier?.address} />
+        <Row2 a={{ zh: '货物品名', en: 'Goods name' }} b={{ zh: '货物数量', en: 'Qty (件)' }} />
+        <Row2 a={{ zh: '发货日期', en: 'Ship date' }} b={{ zh: '箱号', en: 'Carton no.', custom: <CartonOf /> }} last />
 
-        {/* 5 · Réservé à l'entrepôt — les colonnes du 三联单 : date, cubage, total */}
-        <div style={{ padding: '7px 16px 8px', background: '#F3F3F3', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <CellHead zh="仓库填写" en="Warehouse use only" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', columnGap: 14 }}>
-            <KV zh="到货日期" en="Date" />
-            <KV zh="立方" en="CBM" />
-            <KV zh="总包数" en="Total" />
-          </div>
+        {/* 5 · Réservé à l'entrepôt — les colonnes du 三联单 */}
+        <div style={{ borderTop: RULE, marginTop: 'auto' }}>
+          <Band n="5" zh="仓库填写" en="Warehouse use only" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: `${LABEL_COL}px 1fr 70px 1fr 74px 1fr`, alignItems: 'center', height: ROW_H + 4, padding: `0 ${PAD_X}px`, background: '#F7F7F7' }}>
+          <Key zh="到货日期" en="Date" />
+          <div style={{ display: 'grid', paddingRight: 14 }}><Val /></div>
+          <Key zh="立方" en="CBM" />
+          <div style={{ display: 'grid', paddingRight: 14 }}><Val /></div>
+          <Key zh="总包数" en="Total" />
+          <div style={{ display: 'grid' }}><Val /></div>
         </div>
 
         {/* Pied : rappel du code, lisible même si le QR est abîmé */}
-        <div style={{ borderTop: RULE, padding: '4px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10.5, fontWeight: 700, color: MUTED }}>
+        <div style={{ borderTop: RULE, height: 20, padding: `0 ${PAD_X}px`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, fontWeight: 700, color: MUTED }}>
           <span style={{ fontFamily: FONT_ZH }}>{company.nameEn || 'Bonzini'} · 客户编号 · Customer ID</span>
-          <span style={{ fontVariantNumeric: 'tabular-nums', color: INK, fontSize: 12 }}>{code}</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums', color: INK, fontSize: 11.5 }}>{code}</span>
         </div>
       </div>
     </div>
