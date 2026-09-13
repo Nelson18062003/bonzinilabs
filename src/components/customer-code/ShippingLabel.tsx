@@ -66,7 +66,7 @@ const RULE = `2px solid ${INK}`;
 
 /** Les deux verticales de l'étiquette : où commence l'intitulé, où commence la valeur. */
 const LABEL_COL = 118;
-const LABEL_COL_2 = 86;
+const LABEL_COL_2 = 92;
 const ROW_H = 23;
 const PAD_X = 14;
 
@@ -235,7 +235,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         {/* 3 · Client */}
         <Band n="3" zh="客户" en="Customer" />
         <Row1 zh="客户姓名" en="Name" value={clientName} latin />
-        <Row2 a={{ zh: '电话(非洲)', en: 'Tel', value: clientPhone || '—', latin: true }} b={{ zh: '目的地', en: 'Destination', value: finalDestination || '—', latin: true }} />
+        <Row2 a={{ zh: '电话(非洲)', en: 'Tel', value: clientPhone || '—', latin: true }} b={{ zh: '目的地', en: 'Dest.', value: finalDestination || '—', latin: true }} />
         <Row2 a={{ zh: '公司', en: 'Company', value: companyName || '—', latin: true }} b={{ zh: '邮箱', en: 'Email', value: clientEmail || '—', latin: true, size: 12 }} last />
 
         {/* 4 · Fournisseur — pré-rempli ou à remplir au stylo */}
@@ -246,7 +246,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         <Row2 a={{ zh: '电话', en: 'Tel', value: supplier?.phone, latin: true }} b={{ zh: '邮箱', en: 'Email', value: supplier?.email, latin: true, size: 12 }} />
         <Row1 zh="地址" en="Address" value={supplier?.address} />
         <Row2 a={{ zh: '货物品名', en: 'Goods name' }} b={{ zh: '货物数量', en: 'Qty (件)' }} />
-        <Row2 a={{ zh: '发货日期', en: 'Ship date' }} b={{ zh: '箱号', en: 'Carton no.', custom: <CartonOf /> }} last />
+        <Row2 a={{ zh: '发货日期', en: 'Ship date' }} b={{ zh: '箱号', en: 'Carton', custom: <CartonOf /> }} last />
 
         {/* 5 · Réservé à l'entrepôt — les colonnes du 三联单 */}
         <div style={{ borderTop: RULE, marginTop: 'auto' }}>
