@@ -27,7 +27,7 @@ export function nextSteps(s: CargoShipment, docs?: CargoDocument[], now = new Da
     }
     if (s.status === 'UNKNOWN') items.push({ id: 'vessel', label: 'Renseigner le navire', detail: 'pour placer la boîte sur la carte', level: s.vessel_imo ? 'done' : 'soon' });
     // Prévenir le client : urgent seulement quand l'arrivée est proche, sinon « bientôt ».
-    if (etaSlipDays(s) > 3) items.push({ id: 'client', label: `Prévenir ${s.client_label} du report`, detail: `+${etaSlipDays(s)} j vs la date promise`, level: days != null && days <= 14 ? 'now' : 'soon' });
+    if (etaSlipDays(s) > 3) items.push({ id: 'client', label: `Prévenir ${s.client_label} du report`, detail: `retard de ${etaSlipDays(s)} jours sur la date promise`, level: days != null && days <= 14 ? 'now' : 'soon' });
   }
   return items;
 }

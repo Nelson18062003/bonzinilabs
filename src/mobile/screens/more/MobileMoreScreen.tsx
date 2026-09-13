@@ -54,7 +54,7 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
         <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block break-words text-[14px]', TEXT.muted)}>{description}</span>}
       </span>
       {badge && (
         <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-lg bg-[#EC221F] px-1.5 text-[14px] font-bold text-white">
@@ -101,7 +101,7 @@ export function MobileMoreScreen() {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className={cn('truncate text-[20px] font-bold', TEXT.strong)}>
+            <p className={cn('break-words text-[20px] font-bold', TEXT.strong)}>
               {profile?.first_name || 'Mon profil'} {profile?.last_name}
             </p>
             <p className={cn('text-[14px]', TEXT.muted)}>Modifier mes informations</p>

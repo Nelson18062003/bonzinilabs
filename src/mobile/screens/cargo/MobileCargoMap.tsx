@@ -15,9 +15,9 @@ import { CargoMap } from '@/components/cargo/CargoMap';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
 import { ALERT, alertLevel, type AlertLevel } from '@/lib/cargo/palette';
-import { bestEta, fmtDay, positionAge } from '@/lib/cargo/model';
+import { agoSentence, arrivalSentence } from '@/lib/cargo/plain';
 import { cn } from '@/lib/utils';
-import { TEXT, TYPE, BottomSheet, ListRow, StatusPill, type Tone } from '@/mobile/designKit';
+import { TEXT, BottomSheet, ListRow, StatusPill, type Tone } from '@/mobile/designKit';
 
 const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
@@ -57,9 +57,9 @@ export function MobileCargoMap() {
       <BottomSheet open={!!vessel} onClose={() => setSelected(null)} title={vessel?.position.vessel_name ?? vessel?.position.vessel_imo}>
         {vessel && (
           <div>
-            <p className={cn('-mt-2 mb-3', TYPE.small, TEXT.muted)}>
-              {LIVE_STATUS_LABEL[vesselLiveStatus(vessel.position)]} · position {positionAge(vessel.position)}
-              {vessel.position.speed_kn != null && ` · ${vessel.position.speed_kn} nd`}
+            <p className={cn('-mt-2 mb-3 text-[16px] leading-relaxed', TEXT.muted)}>
+              {LIVE_STATUS_LABEL[vesselLiveStatus(vessel.position)]}, position relevée {agoSentence(vessel.position.reported_at)}
+              {vessel.position.speed_kn != null && `, ${vessel.position.speed_kn} nœuds`}.
             </p>
             <div className="-mx-2">
               {vessel.shipments.map((s) => {
@@ -68,8 +68,8 @@ export function MobileCargoMap() {
                   <ListRow
                     key={s.id}
                     className="px-2"
-                    title={<>{s.client_label} · <span className="tabular-nums">{s.container_number}</span></>}
-                    subtitle={`${s.pod_name} · ${fmtDay(bestEta(s).date)}`}
+                    title={s.client_label}
+                    subtitle={arrivalSentence(s)}
                     trailing={<StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />}
                     onClick={() => navigate(`/m/cargo/${s.id}`)}
                   />

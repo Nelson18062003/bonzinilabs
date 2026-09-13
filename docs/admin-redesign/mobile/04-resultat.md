@@ -105,3 +105,23 @@ L'onglet Cargo de la barre du bas porte un badge = nombre de conteneurs
 « en retard » (`alertTally`). Dans le dossier, Rafraîchir devient une icône
 de 36 px (`DossierActions compact`). La barre de la 3D passe à 14 px / 32 px
 sous 640 px. Desktop re-capturé : inchangé.
+
+## Passe 5 — Cargo pour la vraie cible (voir `05-simplicite.md`)
+
+Retour fondateur : trop complexe, trop pâle, trop petit, du texte coupé.
+Réponse : `src/lib/cargo/plain.ts` (16 tests) écrit l'état d'un conteneur
+en phrases — « Arrive à Kribi le 11 octobre, dans 28 jours », « Retard de
+14 jours sur la date promise », « Fret 6 550 $, pas encore payé. Télex pas
+encore reçu. », « 5 pièces manquantes sur 5 ». Le sourd passe à `#5A5A5A`,
+rien sous 16 px sur les écrans Cargo, plus aucun `truncate` dans les listes.
+
+- **Flotte** : quatre lignes par conteneur (client + état, arrivée, retard,
+  la prochaine chose à faire). Le numéro de boîte attend dans le dossier.
+- **Dossier** : une phrase en en-tête, puis onze sections repliées en
+  français (À faire · Où est le conteneur · Le trajet · L'argent · Les
+  papiers · La douane et l'arrivée · Ce qu'il y a dedans · Le chargement en
+  3D · Le client · Les coûts · Les notes), chacune avec un sous-titre qui
+  dit l'essentiel sans l'ouvrir. Une ouverte à la fois, l'adresse suit.
+- **Suivre** : le résultat en trois lignes et le bouton « Ajouter à ma
+  flotte » ; le détail (ports, jalons) replié dessous.
+- **Carte** : la feuille du navire dit « Arrive à Kribi le 11 octobre ».

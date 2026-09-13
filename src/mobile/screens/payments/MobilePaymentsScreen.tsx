@@ -431,11 +431,11 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
                   <PaymentMethodLogo method={logoMethod(payment.method)} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
-                      <span className={cn('min-w-0 flex-1 truncate text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
+                      <span className={cn('min-w-0 flex-1 break-words text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
                       <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
                     </div>
                     <div className={cn('mt-0.5 flex items-center justify-between gap-3 text-[14px]', TEXT.muted)}>
-                      <span className="min-w-0 truncate">{payment.reference} · {methodLabel}</span>
+                      <span className="min-w-0 break-words">{payment.reference} · {methodLabel}</span>
                       <span className="shrink-0">{formatRelativeDate(payment.created_at)}</span>
                     </div>
                     <div className="mt-2 flex items-center gap-2">

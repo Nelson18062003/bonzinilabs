@@ -43,7 +43,12 @@ export const SURFACE = {
 export const TEXT = {
   strong: 'text-[#1E1E1E] dark:text-[#F5F5F5]',
   body: 'text-[#303030] dark:text-[#E3E3E3]',
-  muted: 'text-[#757575] dark:text-[#B3B3B3]',
+  /** Text/Neutral/Secondary (#5A5A5A, 7:1 sur blanc) et non Base/Secondary
+   *  (#757575) : la cible a 50–60 ans et lit au soleil. Le gris clair ne
+   *  sert plus qu'aux filets. */
+  muted: 'text-[#5A5A5A] dark:text-[#CDCDCD]',
+  /** Le gris vraiment discret — placeholders, mentions légales. */
+  faint: 'text-[#757575] dark:text-[#B3B3B3]',
   /** Texte posé sur le primaire. */
   onPrimary: 'text-[#F5F5F5] dark:text-[#1E1E1E]',
 } as const;
@@ -56,6 +61,10 @@ export const TEXT = {
  */
 export const TYPE = {
   heading: 'text-[24px] font-semibold leading-[1.2] tracking-[-0.02em]',
+  /** Le nom qui identifie une carte (client, boîte) : 22/600. */
+  title: 'text-[22px] font-semibold leading-[1.2] tracking-[-0.01em]',
+  /** Ce qui compte dans une phrase : 18/600. */
+  lead: 'text-[18px] font-semibold leading-[1.35]',
   subheading: 'text-[20px] font-normal leading-[1.2]',
   body: 'text-[16px] font-normal leading-[1.4]',
   bodyStrong: 'text-[16px] font-semibold leading-[1.4]',

@@ -125,7 +125,7 @@ export function MobileClientsScreen() {
                     {/* Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className={cn('truncate text-[16px] font-semibold', TEXT.strong)}>
+                        <p className={cn('break-words text-[16px] font-semibold', TEXT.strong)}>
                           {client.firstName} {client.lastName}
                         </p>
                         <StatusPill
@@ -136,7 +136,7 @@ export function MobileClientsScreen() {
                         />
                       </div>
                       {client.phone && (
-                        <p className={cn('truncate text-[14px]', TEXT.muted)}>{client.phone}</p>
+                        <p className={cn('break-words text-[14px]', TEXT.muted)}>{client.phone}</p>
                       )}
                     </div>
 
@@ -151,8 +151,8 @@ export function MobileClientsScreen() {
 
                   {/* Stats Row */}
                   <div className={cn('mt-3 grid grid-cols-2 gap-3 text-[14px] tabular-nums', TEXT.muted)}>
-                    <span className="truncate">{t('deposits', { defaultValue: 'Dépôts' })} <span className={TEXT.strong}>{formatCurrency(client.totalDeposits || 0)}</span></span>
-                    <span className="truncate">{t('payments', { defaultValue: 'Paiements' })} <span className={TEXT.strong}>{formatCurrency(client.totalPayments || 0)}</span></span>
+                    <span className="break-words">{t('deposits', { defaultValue: 'Dépôts' })} <span className={TEXT.strong}>{formatCurrency(client.totalDeposits || 0)}</span></span>
+                    <span className="break-words">{t('payments', { defaultValue: 'Paiements' })} <span className={TEXT.strong}>{formatCurrency(client.totalPayments || 0)}</span></span>
                   </div>
                 </button>
               );

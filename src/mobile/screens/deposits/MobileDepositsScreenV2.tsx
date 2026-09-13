@@ -362,11 +362,11 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
                   <MIcon family={family} size={40} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
-                      <span className={cn('min-w-0 flex-1 truncate text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
+                      <span className={cn('min-w-0 flex-1 break-words text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
                       <Amount value={fmtAmount(deposit.amount_xaf)} unit="XAF" size="md" />
                     </div>
                     <div className={cn('mt-0.5 flex items-center justify-between gap-3 text-[14px]', TEXT.muted)}>
-                      <span className="min-w-0 truncate">{deposit.reference} · {methodShort}</span>
+                      <span className="min-w-0 break-words">{deposit.reference} · {methodShort}</span>
                       <span className="shrink-0">{formatRelativeDate(deposit.created_at)}</span>
                     </div>
                     <div className="mt-2 flex items-center gap-2">

@@ -9,54 +9,65 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search as SearchIcon } from 'lucide-react';
+import { ChevronDown, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddCargoShipment, useCargoLookup, useCargoShipments, useRecentCargoLookups, useRequestCargoLookup } from '@/hooks/useCargo';
 import { CargoTimeline } from '@/components/cargo/CargoTimeline';
 import { CargoManualAddDialog } from '@/components/cargo/CargoManualAddDialog';
 import { lookupState, STALLED_BODY, STALLED_CAUSES, STALLED_TITLE } from '@/lib/cargo/lookup';
+import { fmtDayLong } from '@/lib/cargo/plain';
 import {
-  CARRIER_LABEL, CARRIER_SUPPORT, cleanReference, fmtDay, fmtDayTime, guessCarrier, parseLookupResult, statusMeta, timelineFromLookup,
+  CARRIER_LABEL, CARRIER_SUPPORT, cleanReference, fmtDayTime, guessCarrier, parseLookupResult, statusMeta, timelineFromLookup,
 } from '@/lib/cargo/model';
 import type { CargoLookup, LookupContainer } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
 import {
-  TEXT, TYPE, SURFACE, Button, BottomSheet, Card, FormField, ListRow, Row, ScreenLoader, SectionTitle, StatusPill, TextInput,
+  TEXT, TYPE, SURFACE, Button, BottomSheet, Card, FormField, ListRow, ScreenLoader, SectionTitle, StatusPill, TextInput,
 } from '@/mobile/designKit';
+
+/** « Arrive à Kribi le 11 octobre » — pour un résultat d'armateur, qui n'est pas encore un dossier. */
+function lookupArrival(c: LookupContainer): string {
+  const place = c.pod?.name ?? 'destination inconnue';
+  if (c.status === 'DELIVERED') return 'Livré';
+  if (c.status === 'ARRIVED') return `Arrivé à ${place}`;
+  if (!c.eta_carrier) return `Arrivée à ${place} : date inconnue`;
+  return `Arrive à ${place} le ${fmtDayLong(new Date(c.eta_carrier))}`;
+}
 
 function ContainerResult({ c, lookup, alreadyId, onAdd, canManage }: { c: LookupContainer; lookup: CargoLookup; alreadyId: string | null; onAdd: () => void; canManage: boolean }) {
   const navigate = useNavigate();
+  const [detail, setDetail] = useState(false);
   const meta = statusMeta(c.status);
   const items = useMemo(() => timelineFromLookup(c.events), [c.events]);
   const bl = (lookup.result && parseLookupResult(lookup.result)?.bl_number) || lookup.reference;
   return (
-    <Card className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className={cn(TYPE.code, TEXT.strong)}>{c.number}</span>
+    <Card className="space-y-4">
+      {/* Trois lignes, puis le bouton. Le reste attend en dessous. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className={cn('tabular-nums', TYPE.lead, TEXT.strong)}>{c.number}</span>
         <StatusPill tone={meta.tone} label={meta.label} />
       </div>
-      <div className="-my-1">
-        <Row label="Navire" value={c.vessel?.name ?? '—'} />
-        <Row label="Voyage" value={c.voyage ?? '—'} />
-        <Row label="Bill of lading" value={bl} />
-        <Row label="Chargement" value={c.pol?.name ?? '—'} />
-        <Row label="Déchargement" value={c.pod?.name ?? '—'} />
-        <Row label="Départ réel" value={c.etd_actual ? fmtDay(new Date(c.etd_actual)) : '—'} />
-        <Row label="Arrivée" value={c.eta_carrier ? fmtDay(new Date(c.eta_carrier)) : '—'} />
-        <Row label="Dernier jalon" value={c.last_event_at ? `${c.last_event_label ?? ''} · ${fmtDayTime(new Date(c.last_event_at))}` : (c.last_event_label ?? '—')} />
-      </div>
+      <p className={cn('text-[18px] font-semibold leading-snug', TEXT.strong)}>{lookupArrival(c)}.</p>
+      {c.vessel?.name && <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>Sur le navire {c.vessel.name}{c.voyage ? `, voyage ${c.voyage}` : ''}.</p>}
       {alreadyId ? (
-        <Button variant="neutral" className="w-full" onClick={() => navigate(`/m/cargo/${alreadyId}`)}>Déjà dans la flotte · ouvrir</Button>
+        <Button variant="neutral" className="w-full" onClick={() => navigate(`/m/cargo/${alreadyId}`)}>Déjà dans ma flotte — ouvrir</Button>
       ) : canManage ? (
         <Button className="w-full" onClick={onAdd}>Ajouter à ma flotte</Button>
       ) : null}
-      <div className={cn('border-t pt-3', SURFACE.divider)}>
-        <SectionTitle>Suivi</SectionTitle>
-        <div className="admin-theme">
-          <CargoTimeline items={items} />
+
+      <button type="button" onClick={() => setDetail((v) => !v)} aria-expanded={detail} className={cn('flex h-10 w-full items-center justify-between text-[16px] font-semibold', TEXT.strong)}>
+        {detail ? 'Masquer le détail' : 'Voir le détail'}
+        <ChevronDown className={cn('h-5 w-5 transition-transform', detail && 'rotate-180')} />
+      </button>
+      {detail && (
+        <div className={cn('space-y-3 border-t pt-3', SURFACE.divider)}>
+          <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>Bill of lading <b className="tabular-nums">{bl}</b>.</p>
+          <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>Chargé à <b>{c.pol?.name ?? '—'}</b>{c.etd_actual ? ` le ${fmtDayLong(new Date(c.etd_actual))}` : ''}, déchargé à <b>{c.pod?.name ?? '—'}</b>.</p>
+          {c.last_event_label && <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>Dernier jalon : <b>{c.last_event_label}</b>{c.last_event_at ? ` (${fmtDayTime(new Date(c.last_event_at))})` : ''}.</p>}
+          <div className="admin-theme pt-1"><CargoTimeline items={items} /></div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }
@@ -137,8 +148,8 @@ export function MobileCargoTrack() {
             {state === 'stalled' && (
               <Card className="space-y-3">
                 <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{STALLED_TITLE}</p>
-                <p className={cn(TYPE.small, TEXT.body)}>{STALLED_BODY}</p>
-                <ul className={cn('list-disc space-y-1 pl-5', TYPE.small, TEXT.muted)}>
+                <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>{STALLED_BODY}</p>
+                <ul className={cn('list-disc space-y-1 pl-5', 'text-[16px] leading-relaxed', TEXT.muted)}>
                   {STALLED_CAUSES.map((c) => <li key={c}>{c}</li>)}
                 </ul>
                 {canManage && <Button className="w-full" onClick={() => setManualOpen(true)}>Ajouter quand même à ma flotte</Button>}
@@ -148,7 +159,7 @@ export function MobileCargoTrack() {
             {(lookup.status === 'error' || lookup.status === 'unsupported') && (
               <Card className="space-y-3">
                 <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{lookup.status === 'unsupported' ? 'Pas encore interrogeable' : 'Pas de résultat'}</p>
-                <p className={cn(TYPE.small, TEXT.body)}>{lookup.error}</p>
+                <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>{lookup.error}</p>
                 {lookup.carrier === 'CMA_CGM' && (
                   <a
                     href={`https://www.cma-cgm.com/ebusiness/tracking/search?SearchBy=${lookup.reference_type === 'CONTAINER' ? 'Container' : 'BL'}&Reference=${lookup.reference}`}
@@ -159,7 +170,7 @@ export function MobileCargoTrack() {
                   </a>
                 )}
                 {canManage && <Button className="w-full" onClick={() => setManualOpen(true)}>Ajouter quand même à ma flotte</Button>}
-                <p className={cn(TYPE.small, TEXT.muted)}>Le dossier existera avec les dates du transitaire ; les jalons arriveront quand l'armateur sera interrogeable.</p>
+                <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>Le dossier existera avec les dates du transitaire ; les jalons arriveront quand l'armateur sera interrogeable.</p>
               </Card>
             )}
             {lookup.status === 'done' && result && result.containers.map((c) => (
@@ -185,7 +196,7 @@ export function MobileCargoTrack() {
         <section>
           <SectionTitle>Dernières recherches</SectionTitle>
           {!recent || recent.length === 0 ? (
-            <p className={cn(TYPE.small, TEXT.muted)}>Aucune pour l'instant.</p>
+            <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>Aucune pour l'instant.</p>
           ) : (
             <Card className="py-0">
               {recent.map((l) => (
@@ -219,7 +230,7 @@ export function MobileCargoTrack() {
               <TextInput id="cargo-add-etd" type="date" value={etdPromised} onChange={(e) => setEtdPromised(e.target.value)} />
             </FormField>
           </div>
-          <p className={cn(TYPE.small, TEXT.muted)}>Ce que le transitaire a annoncé. On le comparera à ce que l'armateur mesure.</p>
+          <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>Ce que le transitaire a annoncé. On le comparera à ce que l'armateur mesure.</p>
           <div className="flex gap-2">
             <Button variant="neutral" className="flex-1" onClick={() => setAdding(null)}>Annuler</Button>
             <Button className="flex-1" onClick={confirmAdd} disabled={!clientLabel.trim()} loading={add.isPending}>Ajouter</Button>

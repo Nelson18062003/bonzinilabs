@@ -215,8 +215,8 @@ export function ListRow({
     >
       {leading}
       <span className="min-w-0 flex-1">
-        <span className={cn('block truncate', TYPE.bodyStrong, TEXT.strong)}>{title}</span>
-        {subtitle != null && <span className={cn('mt-0.5 block truncate', TYPE.small, TEXT.muted)}>{subtitle}</span>}
+        <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{title}</span>
+        {subtitle != null && <span className={cn('mt-0.5 block break-words', TYPE.small, TEXT.muted)}>{subtitle}</span>}
       </span>
       {trailing}
       {chevron && <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />}

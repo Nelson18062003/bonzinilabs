@@ -9,9 +9,11 @@ import type { CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { nearestRouteIndex } from '@/lib/cargo/geo';
 
 // Escales de la ligne WAX1, dans l'ordre, avec leur index sur la tournée.
-const STOPS: { code: string; short: string }[] = [
+// `narrow` : le nom qui tient dans une colonne de 65 px sur un téléphone —
+// une abréviation honnête plutôt qu'un texte coupé par des points.
+const STOPS: { code: string; short: string; narrow?: string }[] = [
   { code: 'CNNSA', short: 'Nansha' },
-  { code: 'SGSIN', short: 'Singapour' },
+  { code: 'SGSIN', short: 'Singapour', narrow: 'Singap.' },
   { code: 'CIABJ', short: 'Abidjan' },
   { code: 'NGLKK', short: 'Lekki' },
   { code: 'CMKBI', short: 'Kribi' },
@@ -46,7 +48,9 @@ export function CargoJourney({ shipment: s, position }: { shipment: CargoShipmen
               )}
             </div>
             <div className="mt-1.5 min-w-0 max-w-full pr-1">
-              <div className={cn('truncate text-[12px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>{st.short}</div>
+              <div className={cn('text-[12px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>
+                {st.narrow ? <><span className="lg:hidden">{st.narrow}</span><span className="max-lg:hidden">{st.short}</span></> : st.short}
+              </div>
               <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>
                 {i === 0 && (s.etd_actual ? fmtDay(new Date(s.etd_actual)) : s.etd_promised ? fmtDay(new Date(s.etd_promised + 'T12:00:00')) : '')}
                 {last && (eta.date ? fmtDay(eta.date) : '')}
