@@ -74,7 +74,7 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
           </div>
         </div>
         <div style={{ textAlign: 'right', lineHeight: 1.1 }}>
-          <div style={{ fontFamily: FONT_ZH, fontWeight: 900, fontSize: 22 }}>收货标签</div>
+          <div style={{ fontFamily: FONT_ZH, fontWeight: 900, fontSize: 22 }}>发货标签</div>
           <div style={{ fontSize: 12, color: '#8E8BA0', fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase' }}>Shipping label</div>
         </div>
       </div>
@@ -93,8 +93,8 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
       >
         <div style={{ width: 10, height: 10, borderRadius: 999, background: '#FF6B2B', flexShrink: 0 }} />
         <div style={{ lineHeight: 1.25 }}>
-          <div style={{ fontFamily: FONT_ZH, fontSize: 19, fontWeight: 900 }}>请将此标签贴在每一个包裹上</div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>Stick this label on every parcel of this shipment.</div>
+          <div style={{ fontFamily: FONT_ZH, fontSize: 19, fontWeight: 900 }}>请将此标签贴在每一个纸箱上</div>
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>Stick this label on every carton of this shipment.</div>
         </div>
       </div>
 
