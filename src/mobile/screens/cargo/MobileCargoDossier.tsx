@@ -14,16 +14,17 @@
  */
 import { useMemo } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, Circle, ExternalLink } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, ExternalLink } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoDocuments, useCargoShipment, useCargoVesselPositions } from '@/hooks/useCargo';
-import { DossierActions, TabChargement } from '@/components/cargo/dossier';
+import { useCargoDocuments, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
+import { DossierActions } from '@/components/cargo/dossier';
 import { MobilePapiers } from './MobilePapiers';
 import { MobileDouane } from './MobileDouane';
 import { MobileCouts } from './MobileCouts';
 import { MobileClient } from './MobileClient';
 import { MobileNotes } from './MobileNotes';
+import { MobileChargement } from './MobileChargement';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
@@ -55,22 +56,40 @@ function Line({ children, strong, tone }: { children: React.ReactNode; strong?: 
   );
 }
 
-function Todo({ s, docs }: { s: CargoShipment; docs?: CargoDocument[] }) {
+/** La section qui règle chaque chose à faire : on y va d'un tap. */
+const TODO_SECTION: Record<string, SectionKey> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
+
+function Todo({ s, docs, onGo }: { s: CargoShipment; docs?: CargoDocument[]; onGo: (k: SectionKey) => void }) {
   const items = nextSteps(s, docs);
   if (items.length === 0) return <Line>Rien à faire : ce conteneur est livré.</Line>;
   return (
-    <ul className="space-y-3">
-      {items.map((t) => (
-        <li key={t.id} className="flex items-start gap-3">
-          {t.level === 'done'
-            ? <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-[#009951] dark:text-[#14AE5C]" />
-            : <Circle className={cn('mt-0.5 h-6 w-6 shrink-0', t.level === 'now' ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-[#B3B3B3]')} />}
-          <div className="min-w-0">
-            <p className={cn('text-[16px] leading-snug', t.level === 'done' ? cn('line-through', TEXT.muted) : cn('font-semibold', TEXT.strong))}>{t.label}</p>
-            {t.detail && t.level !== 'done' && <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{t.detail}</p>}
-          </div>
-        </li>
-      ))}
+    <ul className="space-y-1">
+      {items.map((t) => {
+        const target = t.level === 'done' ? null : TODO_SECTION[t.id] ?? null;
+        const inner = (
+          <>
+            {t.level === 'done'
+              ? <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-[#009951] dark:text-[#14AE5C]" />
+              : <Circle className={cn('mt-0.5 h-6 w-6 shrink-0', t.level === 'now' ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-[#B3B3B3]')} />}
+            <span className="min-w-0 flex-1">
+              <span className={cn('block text-[16px] leading-snug', t.level === 'done' ? cn('line-through', TEXT.muted) : cn('font-semibold', TEXT.strong))}>{t.label}</span>
+              {t.detail && t.level !== 'done' && <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{t.detail}</span>}
+            </span>
+            {target && <ChevronRight className={cn('mt-0.5 h-6 w-6 shrink-0', TEXT.muted)} />}
+          </>
+        );
+        return (
+          <li key={t.id}>
+            {target ? (
+              <button type="button" onClick={() => onGo(target)} className="flex w-full items-start gap-3 rounded-lg py-2 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]">
+                {inner}
+              </button>
+            ) : (
+              <div className="flex items-start gap-3 py-2">{inner}</div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -102,12 +121,24 @@ function Journey({ s, pos }: { s: CargoShipment; pos: CargoVesselPosition | null
   );
 }
 
-function Money({ s }: { s: CargoShipment }) {
+function Money({ s, canManage }: { s: CargoShipment; canManage: boolean }) {
+  const update = useUpdateCargoShipment();
+  const flip = (patch: { freight_paid?: boolean; telex_released?: boolean }) => update.mutate({ id: s.id, patch });
   return (
     <div className="space-y-3">
       <Line>Le fret dû au transitaire : <b>{fmtUsd(s.freight_usd)}</b>.</Line>
       <Line tone={s.freight_paid ? 'good' : 'bad'}>{s.freight_paid ? 'Fret payé.' : 'Fret pas encore payé.'}</Line>
+      {canManage && (
+        <Button variant={s.freight_paid ? 'subtle' : 'primary'} className="w-full" loading={update.isPending} onClick={() => flip({ freight_paid: !s.freight_paid })}>
+          {s.freight_paid ? 'Le fret n\'est pas payé, finalement' : 'Le fret est payé'}
+        </Button>
+      )}
       <Line tone={s.telex_released ? 'good' : 'bad'}>{s.telex_released ? 'Télex reçu : le conteneur peut sortir du port.' : 'Télex pas encore reçu : sans lui, le conteneur reste au port.'}</Line>
+      {canManage && (
+        <Button variant={s.telex_released ? 'subtle' : s.freight_paid ? 'primary' : 'neutral'} className="w-full" loading={update.isPending} onClick={() => flip({ telex_released: !s.telex_released })}>
+          {s.telex_released ? 'Le télex n\'est pas reçu, finalement' : 'Le télex est reçu'}
+        </Button>
+      )}
       <Line>Le télex est envoyé par l'armateur une fois le fret payé. Les coûts réels se notent dans « Les coûts ».</Line>
     </div>
   );
@@ -141,14 +172,14 @@ export function MobileCargoDossier() {
   const go = (k: SectionKey) => navigate(path(shipmentId, open === k ? DEFAULT : k), { replace: true });
 
   const sections: { key: SectionKey; title: string; summary: (s: CargoShipment) => string; body: (s: CargoShipment) => React.ReactNode }[] = s ? [
-    { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} /> },
+    { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} onGo={go} /> },
     { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} /> },
     { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} /> },
-    { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} /> },
+    { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
     { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
     { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },
     { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} /> },
-    { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <div className="admin-theme"><TabChargement shipment={x} canManage={canManage} /></div> },
+    { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <MobileChargement shipment={x} canManage={canManage} /> },
     { key: 'client', title: 'Le client', summary: (x) => x.client_id ? `${x.client_label}, rattaché à sa fiche` : `${x.client_label}, pas encore rattaché à une fiche`, body: (x) => <MobileClient shipment={x} canManage={canManage} /> },
     { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté', body: (x) => <MobileCouts shipment={x} canManage={canManage} /> },
     { key: 'notes', title: 'Les notes', summary: (x) => x.notes ? x.notes : 'Rien de noté pour l’instant', body: (x) => <MobileNotes shipment={x} canManage={canManage} /> },

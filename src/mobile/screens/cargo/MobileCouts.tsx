@@ -13,22 +13,10 @@ import { useAddCargoCost, useCargoCosts, useDeleteCargoCost, useUpdateCargoCost 
 import { COST_KINDS, COST_KIND_LABEL, fmtDay, fmtMoney, fmtUsd } from '@/lib/cargo/model';
 import type { CargoCost, CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { TEXT, SURFACE, PRIMARY_PILL, SOFT_PILL, BottomSheet, Button, FormField, Line, StatusPill, TextInput } from '@/mobile/designKit';
+import { TEXT, SURFACE, BottomSheet, Button, FormField, Line, StatusPill, TextInput } from '@/mobile/designKit';
+import { Pick } from './Pick';
 
 const CURRENCIES = ['XAF', 'USD', 'EUR', 'CNY'] as const;
-
-function Pick<T extends string>({ options, value, onChange, label }: { options: readonly T[]; value: T; onChange: (v: T) => void; label: (v: T) => string }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} aria-pressed={o === value}
-          className={cn('h-10 px-3 text-[16px] font-medium', o === value ? PRIMARY_PILL : SOFT_PILL)}>
-          {label(o)}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 export function MobileCouts({ shipment: s, canManage }: { shipment: CargoShipment; canManage: boolean }) {
   const { data: costs } = useCargoCosts(s.id);

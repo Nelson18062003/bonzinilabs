@@ -7,7 +7,7 @@
  *   2. « Arrive à Kribi le 11 octobre, dans 28 jours »
  *   3. « Retard de 14 jours » — seulement s'il y en a un
  *   4. « À faire : régler le fret au transitaire » — la prochaine, une seule
- * Le numéro de boîte et l'armateur attendent dans le dossier.
+ * Le numéro de boîte n'apparaît que si le client a plusieurs boîtes.
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -31,6 +31,13 @@ export function MobileCargoScreen() {
 
   const all = useMemo(() => data ?? [], [data]);
   const tally = useMemo(() => alertTally(all), [all]);
+  // Trois cartes « PRC » identiques ne se distinguent pas : quand un client a
+  // plusieurs boîtes, on écrit le numéro de boîte sous son nom.
+  const dupes = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const s of all) n.set(s.client_label, (n.get(s.client_label) ?? 0) + 1);
+    return n;
+  }, [all]);
   const rows = useMemo(() => {
     const list = filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter);
     return [...list].sort((a, b) => {
@@ -94,6 +101,7 @@ export function MobileCargoScreen() {
                   <span className={cn('break-words', TYPE.title, TEXT.strong)}>{s.client_label}</span>
                   <StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />
                 </div>
+                {(dupes.get(s.client_label) ?? 0) > 1 && <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{s.container_number}</p>}
                 <p className={cn('text-[16px] leading-snug', TEXT.strong)}>{arrivalSentence(s)}</p>
                 {delay && <p className="text-[16px] font-semibold leading-snug text-[#975102] dark:text-[#E8B931]">{delay}</p>}
                 {next && <p className={cn('text-[16px] leading-snug', level === 'late' ? 'text-[#C00F0C] dark:text-[#EC221F]' : TEXT.muted)}>{next}</p>}
