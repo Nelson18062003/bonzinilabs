@@ -7,7 +7,7 @@
  * n'a pas sa place sur 390 px : c'est la feuille qui la remplace.
  */
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments, useCargoVesselPositions } from '@/hooks/useCargo';
@@ -24,9 +24,11 @@ const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok
 export function MobileCargoMap() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const { data: shipments } = useCargoShipments();
   const { data: positions } = useCargoVesselPositions();
-  const [selected, setSelected] = useState<string | null>(null);
+  // « Voir sur la carte » depuis un dossier arrive avec ?vessel=<IMO> : la feuille du navire s'ouvre d'elle-même.
+  const [selected, setSelected] = useState<string | null>(params.get('vessel'));
   const rows = useMemo(() => (shipments ?? []).filter((s) => s.status !== 'DELIVERED'), [shipments]);
   const vessels = useMemo(() => groupVessels(rows, positions ?? []), [rows, positions]);
   const vessel = useMemo(() => vessels.find((v) => v.position.vessel_imo === selected) ?? null, [vessels, selected]);

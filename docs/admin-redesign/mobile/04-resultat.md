@@ -279,3 +279,29 @@ phrase (le nom du client) ou le curseur de la 3D.
 | `m/cargo/2/chargement` | 0 | 1 |
 | `m/cargo/2/documents` | 0 | 0 |
 | `m/cargo/2/couts` | 0 | 0 |
+
+## Passes 11 et 12 — Cargo : les gestes là où est l'information
+
+- **« L'argent »** ne se lit plus seulement, il se touche : « Le fret est
+  payé » et « Le télex est reçu » sont deux boutons sous les phrases (et se
+  défont : « Le fret n'est pas payé, finalement »). Le menu « … » du dossier
+  n'a plus à les porter.
+- **« À faire »** emmène : chaque chose à faire ouvre la section qui la
+  règle (le fret → L'argent, le bill of lading → Les papiers, prévenir le
+  client → Le client).
+- **La flotte** écrit le numéro de boîte sous le nom du client quand il a
+  plusieurs conteneurs (trois cartes « PRC » identiques ne se distinguaient
+  pas).
+- **« Le chargement en 3D »** est en phrases : « Remplie à 52 % : 39,9 m³
+  occupés sur 76,4 m³. », le poids, les étages, ce qui ne colle pas, puis
+  la boîte en 3D et les lots (« 220 cartons de 60 × 40 × 40 cm, 18,0 kg
+  chacun. ») avec « Retirer » confirmé. L'ajout d'un lot se fait en cinq
+  questions dans une feuille basse. Fin du dernier composant desktop dans le
+  dossier mobile.
+- **« Où est le conteneur »** ouvre la carte avec le navire déjà sélectionné
+  (`/m/cargo/map?vessel=<IMO>`) ; MarineTraffic reste en lien discret.
+- **Suivre** reconnaît une référence déjà dans la flotte pendant la saisie
+  et propose d'ouvrir le dossier avant d'interroger l'armateur.
+- Le menu « … » du dossier est une feuille basse réduite à deux gestes
+  (renseigner le navire, retirer de la flotte), et retirer se confirme en
+  phrase. Le numéro de boîte et le bill of lading se copient d'un tap.

@@ -14,7 +14,7 @@
  */
 import { useMemo } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, ExternalLink } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
@@ -35,6 +35,7 @@ import {
 import { CARRIER_LABEL, fmtUsd, liveVesselUrl, statusMeta } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
+import { copyToClipboard } from '@/lib/clipboard';
 import { TEXT, TYPE, SURFACE, Button, ScreenError, ScreenLoader, StatusPill } from '@/mobile/designKit';
 
 type SectionKey = 'afaire' | 'ou' | 'trajet' | 'argent' | 'papiers' | 'douane' | 'dedans' | 'chargement' | 'client' | 'couts' | 'notes';
@@ -95,15 +96,22 @@ function Todo({ s, docs, onGo }: { s: CargoShipment; docs?: CargoDocument[]; onG
 }
 
 function Where({ s, pos }: { s: CargoShipment; pos: CargoVesselPosition | null }) {
+  const navigate = useNavigate();
   const live = liveVesselUrl(s.vessel_imo);
   return (
     <div className="space-y-3">
       <Line strong>{whereSentence(s, pos)}</Line>
       {s.vessel_name && <Line>Sur le navire <b>{s.vessel_name}</b>{s.voyage ? `, voyage ${s.voyage}` : ''}.</Line>}
       {pos?.speed_kn != null && <Line>Il avance à {pos.speed_kn} nœuds.</Line>}
+      {pos && s.vessel_imo && (
+        <Button variant="neutral" className="w-full" onClick={() => navigate(`/m/cargo/map?vessel=${encodeURIComponent(s.vessel_imo!)}`)}>
+          <MapIcon />
+          Voir sur la carte
+        </Button>
+      )}
       {live && (
-        <a href={live} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#767676] bg-[#E3E3E3] px-3 text-[16px] font-medium text-[#303030] dark:border-[#767676] dark:bg-[#444444] dark:text-[#F5F5F5]">
-          Voir la position en direct <ExternalLink className="h-4 w-4" />
+        <a href={live} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-transparent text-[16px] font-medium text-[#303030] active:bg-[#F5F5F5] dark:text-[#E3E3E3] dark:active:bg-[#383838]">
+          Voir la position en direct sur MarineTraffic <ExternalLink className="h-4 w-4" />
         </a>
       )}
     </div>
@@ -202,12 +210,21 @@ export function MobileCargoDossier() {
         <>
           {/* L'identité et la décision, en une phrase. */}
           <div className={cn('space-y-2 border-b px-4 py-4', SURFACE.divider)}>
+            {/* Les deux numéros qu'on recopie dans WhatsApp ou au transitaire : un tap les copie. */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <span className={cn('tabular-nums', TYPE.lead, TEXT.strong)}>{s.container_number}</span>
+              <button type="button" onClick={() => copyToClipboard(s.container_number, 'Numéro de conteneur')} aria-label={`Copier le numéro ${s.container_number}`}
+                className={cn('-ml-1 inline-flex h-10 items-center gap-2 rounded-lg px-1 tabular-nums active:bg-[#F5F5F5] dark:active:bg-[#383838]', TYPE.lead, TEXT.strong)}>
+                {s.container_number}
+                <Copy className={cn('h-5 w-5', TEXT.muted)} />
+              </button>
               <StatusPill tone={statusMeta(s.status).tone} label={statusMeta(s.status).label} />
             </div>
             <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
-              {CARRIER_LABEL[s.carrier] ?? s.carrier}, bill of lading <span className={cn('tabular-nums', TEXT.strong)}>{s.bl_number}</span>.
+              {CARRIER_LABEL[s.carrier] ?? s.carrier}, bill of lading{' '}
+              <button type="button" onClick={() => copyToClipboard(s.bl_number, 'Bill of lading')} aria-label={`Copier le bill of lading ${s.bl_number}`}
+                className={cn('inline-flex items-center gap-1 rounded-md tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
+                {s.bl_number}
+              </button>.
             </p>
             <p className={cn('text-[18px] font-semibold leading-snug', TEXT.strong)}>{arrivalSentence(s)}.</p>
             {delaySentence(s) && <p className="text-[16px] font-semibold leading-snug text-[#975102] dark:text-[#E8B931]">{delaySentence(s)}.</p>}

@@ -115,6 +115,9 @@ export function MobileCargoTrack() {
   };
 
   const fleetIdFor = (n: string) => fleet?.find((s) => s.container_number === n)?.id ?? null;
+  // Une boîte qu'on suit déjà : inutile d'interroger l'armateur, on l'ouvre.
+  const typed = cleanReference(ref);
+  const known = typed.length >= 6 ? fleet?.find((s) => s.container_number === typed || (s.bl_number ?? '').toUpperCase() === typed) ?? null : null;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -133,9 +136,19 @@ export function MobileCargoTrack() {
           >
             <TextInput id="cargo-track-ref" value={ref} onChange={(e) => setRef(e.target.value)} placeholder="274428633" autoComplete="off" autoCapitalize="characters" className="uppercase tracking-wide" inputMode="text" />
           </FormField>
-          <Button type="submit" className="w-full" disabled={!guess || guess.carrier === 'UNKNOWN'} loading={request.isPending}>
-            <SearchIcon /> Rechercher
-          </Button>
+          {known ? (
+            <Card className="space-y-3">
+              <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>
+                Cette boîte est déjà dans ma flotte : <b className={TEXT.strong}>{known.client_label}</b>, {known.container_number}.
+              </p>
+              <Button type="button" className="w-full" onClick={() => navigate(`/m/cargo/${known.id}`)}>Ouvrir le dossier</Button>
+              <Button type="submit" variant="subtle" className="w-full" loading={request.isPending}>Interroger quand même l'armateur</Button>
+            </Card>
+          ) : (
+            <Button type="submit" className="w-full" disabled={!guess || guess.carrier === 'UNKNOWN'} loading={request.isPending}>
+              <SearchIcon /> Rechercher
+            </Button>
+          )}
         </form>
 
         {lookup && (

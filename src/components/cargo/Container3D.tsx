@@ -237,7 +237,8 @@ export function Container3D({
       </div>
 
       <p className="c3d-hint">
-        Glisser pour tourner · molette pour approcher · « Étages » retire les couches du haut pour voir dessous.
+        <span className="max-lg:hidden">Glisser pour tourner · molette pour approcher · « Étages » retire les couches du haut pour voir dessous.</span>
+        <span className="lg:hidden">Glissez pour tourner la boîte. « Étages » retire les couches du haut pour voir dessous.</span>
       </p>
     </div>
   );
