@@ -192,3 +192,23 @@ dépôt, **le suivi** replié.
 entrent dans le kit. Les trois fiches sont à 0 texte sous 14 px. Le harnais
 a désormais des fixtures pour les dépôts, les paiements et les clients
 (`src/__screenshot__/mock*.ts`, actives seulement avec `SCREENSHOT_MOCK=1`).
+
+## Passe 9 — Le dossier cargo finit ses phrases
+
+Les trois dernières sections qui ouvraient les composants desktop dans un
+`admin-theme` ont leur version mobile :
+- **Les coûts** : « En tout : 535 000 XAF, dont 85 000 XAF déjà payés. Il
+  reste 450 000 XAF à payer. », le devis du transitaire tel que noté dans
+  « L'argent » (on dit d'où vient chaque chiffre plutôt que de laisser deux
+  sources se contredire), puis une ligne par coût avec « C'est payé » et
+  « Retirer » (confirmé). L'ajout se fait en cinq questions dans une feuille
+  basse : c'est quoi, combien, quelle monnaie, quel jour, quelle facture.
+- **Le client** : « Le dossier est au nom de « GAUSS », le nom donné par le
+  transitaire. » et un bouton « Rattacher à un client » ; rattaché, la
+  fiche se lit en phrases (téléphone à appeler, email, ville, identité
+  vérifiée ou non) et s'ouvre d'un geste. Ses autres conteneurs dessous.
+- **Les notes** : la note interne à 16 px qui s'enregistre en quittant le
+  champ, puis « Dossier ouvert le 11 sept. 20:00 », « Le suivi vient de
+  Maersk, mis à jour automatiquement, la dernière fois il y a 2 jours ».
+Seule « Le chargement en 3D » reste partagée avec le desktop (elle se
+mesure déjà). Les trois sections sont à 0 texte sous 14 px.
