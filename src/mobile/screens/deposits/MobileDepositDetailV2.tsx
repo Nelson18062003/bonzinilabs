@@ -42,6 +42,8 @@ import {
   Card,
   Button,
   SectionTitle,
+  Line,
+  Fold,
   Holder,
   PrimaryPill,
   SoftPill,
@@ -58,7 +60,6 @@ import {
   Bell,
   BellOff,
   ArrowRight,
-  ChevronDown,
   ChevronLeft,
   Trash2,
   X,
@@ -113,31 +114,6 @@ function MIcon({ family, size = 20 }: { family: string; size?: number }) {
     >
       {f.letter}
     </div>
-  );
-}
-
-// ── Une phrase ──────────────────────────────────────────────
-function Line({ children, tone }: { children: React.ReactNode; tone?: 'warn' | 'bad' | 'good' }) {
-  return (
-    <p className={cn('text-[16px] leading-relaxed', TEXT.body,
-      tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
-      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
-      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]')}>
-      {children}
-    </p>
-  );
-}
-
-// ── Une section repliée ─────────────────────────────────────
-function Fold({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
-  return (
-    <Card className="overflow-hidden p-0">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[56px] w-full items-center justify-between px-4 text-left">
-        <span className={cn('text-[18px] font-semibold', TEXT.strong)}>{title}</span>
-        <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
-      </button>
-      {open && <div className={cn('border-t px-4 pb-4 pt-2', SURFACE.divider)}>{children}</div>}
-    </Card>
   );
 }
 

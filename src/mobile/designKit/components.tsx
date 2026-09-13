@@ -11,7 +11,7 @@
  */
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Loader2, X, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   SURFACE, TEXT, TYPE,
@@ -579,5 +579,34 @@ export function SectionTitle({
         </button>
       )}
     </div>
+  );
+}
+
+/* ── Line ─────────────────────────────────────────────────────────────────
+ * Une phrase de la fiche : 16 px, interligne aéré, jamais tronquée. Le ton
+ * colore toute la phrase (alerte, problème, bonne nouvelle). */
+export function Line({ children, tone, className }: { children: React.ReactNode; tone?: 'warn' | 'bad' | 'good'; className?: string }) {
+  return (
+    <p className={cn('text-[16px] leading-relaxed', TEXT.body,
+      tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
+      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
+      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]', className)}>
+      {children}
+    </p>
+  );
+}
+
+/* ── Fold ─────────────────────────────────────────────────────────────────
+ * Une section repliée : un titre 18/600 sur toute la largeur, un chevron,
+ * le contenu dessous quand on l'ouvre. Pour ce qu'on lit rarement. */
+export function Fold({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
+  return (
+    <Card className="overflow-hidden p-0">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[56px] w-full items-center justify-between px-4 text-left">
+        <span className={cn('text-[18px] font-semibold', TEXT.strong)}>{title}</span>
+        <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
+      </button>
+      {open && <div className={cn('border-t px-4 pb-4 pt-2', SURFACE.divider)}>{children}</div>}
+    </Card>
   );
 }

@@ -155,3 +155,40 @@ ont leur version mobile (`MobilePapiers.tsx`, `MobileDouane.tsx`) :
   jours ; les numéros de BESC et de déclaration se lisent en phrase et se
   saisissent dessous.
 Les deux sections sont à 0 texte sous 14 px et 2 cibles sous 40 px.
+
+## Passe 8 — Les trois fiches du quotidien en phrases
+
+Le dépôt, le paiement et le client sont les écrans qu'on ouvre cinquante
+fois par jour ; ils suivent maintenant la même structure que le dossier
+cargo, dans cet ordre : **combien · qui · comment · quand** en une phrase,
+puis **la preuve** (ou la signature, pour le cash), puis **la décision**,
+puis **le détail** replié (référence, banque, dates, notes) et, pour le
+dépôt, **le suivi** replié.
+
+- **Dépôt** : « 850 000 XAF — Envoyé par Fatou Ndiaye via Orange Money –
+  Transfert, il y a 3 jours. » Si ça attend trop : « Ce dépôt attend depuis
+  plus de 8 heures. Il faut le traiter. » La preuve se lit en entier
+  (`object-contain`), avec « Envoyée par le client il y a 3 jours » et
+  quatre boutons à 40 px. Un seul bouton primaire : « Commencer la
+  vérification » quand la preuve vient d'arriver, sinon « Valider le
+  dépôt » ; « Refuser le dépôt » en rouge discret. Le titre de l'en-tête
+  est « Dépôt », la référence est dans le détail.
+- **Paiement** : « ¥ 16 718 — Demandé par Fatou Ndiaye, via Alipay, il y a
+  15 heures. Soit 1 450 000 XAF, au taux de 1 million XAF = ¥11 530. » Les
+  coordonnées du bénéficiaire sont des lignes étiquette / valeur à 16 px,
+  un appui copie. Le cash dit « Li Wei, une autre personne que le client,
+  joignable au … » puis « La personne qui reçoit le cash doit signer avant
+  la remise des fonds » et un bouton « Faire signer ». La fiche paiement
+  n'affiche plus la barre d'onglets, comme la fiche dépôt.
+- **Client** : le nom, l'entreprise, puis « Téléphone : … », « Email : … »,
+  « Client depuis le 6 mai 2025 » ; « L'argent » : le solde, « Dernier
+  mouvement il y a 15 heures », « Au total, ce client a déposé … et payé
+  … », « Ajouter de l'argent » / « Retirer de l'argent » ; « Les gestes » :
+  six lignes de 64 px avec une phrase d'explication chacune (« Le client a
+  versé de l'argent. », « Les fournisseurs qu'il paie. », « Définitif :
+  tout son historique disparaît. »). Les deux tuiles de totaux disparaissent.
+
+`Line` (une phrase, tonée si besoin) et `Fold` (une section repliée)
+entrent dans le kit. Les trois fiches sont à 0 texte sous 14 px. Le harnais
+a désormais des fixtures pour les dépôts, les paiements et les clients
+(`src/__screenshot__/mock*.ts`, actives seulement avec `SCREENSHOT_MOCK=1`).

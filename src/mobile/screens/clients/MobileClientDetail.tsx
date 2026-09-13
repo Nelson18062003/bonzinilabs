@@ -6,7 +6,10 @@ import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } f
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { formatXAF, formatDate } from '@/lib/formatters';
+import { formatXAF } from '@/lib/formatters';
+import { whenSentence } from '@/lib/plainTime';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import {
   generateClientStatement,
   buildMovementFromLedgerEntry,
@@ -15,14 +18,8 @@ import {
 } from '@/lib/generateClientStatement';
 import { cn } from '@/lib/utils';
 import {
-  Phone,
-  Mail,
-  Calendar,
-  Wallet,
   ArrowDownCircle,
-  ArrowUpCircle,
   ChevronRight,
-  History,
   Plus,
   Minus,
   FileDown,
@@ -32,7 +29,6 @@ import {
   Loader2,
   Pencil,
   Trash2,
-  Link2,
   Users,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
@@ -48,8 +44,9 @@ import {
   type Tone,
   clientStatusTone,
   Card,
-  Amount,
-  StatCard,
+  Button,
+  SectionTitle,
+  Line,
   StatusPill,
   Holder,
   BottomSheet,
@@ -67,8 +64,9 @@ const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> =
   PENDING_KYC: { key: 'kycPending', defaultValue: 'KYC en attente' },
 };
 
-// Action row in the Ofspace/Mola language: neutral (or toned) round holder +
-// label/desc + chevron. No divider hairlines (cards group items).
+// Une ligne-geste : pastille ronde (tonée quand la couleur a un sens),
+// étiquette 16/600, phrase d'explication 16 sourd, chevron. Un filet entre
+// deux lignes pour que le doigt ne se trompe pas.
 function ActionRow({
   icon: Icon,
   tone = 'neutral',
@@ -92,7 +90,7 @@ function ActionRow({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex w-full items-center gap-3.5 rounded-lg px-2 py-2.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+      className={cn('flex min-h-[64px] w-full items-center gap-3.5 border-b py-3 text-left transition last:border-b-0 active:opacity-70 disabled:opacity-60', SURFACE.divider)}
     >
       <span
         className={cn(
@@ -106,7 +104,7 @@ function ActionRow({
         <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block break-words text-[16px] leading-snug', TEXT.muted)}>{description}</span>}
       </span>
       <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
     </button>
@@ -320,200 +318,136 @@ export function MobileClientDetail() {
   }
 
   const initials = `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`;
+  const fullName = `${client.firstName} ${client.lastName}`.trim() || 'Client';
+  const statusLabel = t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status });
+  const since = format(new Date(client.createdAt), 'd MMMM yyyy', { locale: fr });
+  const place = [client.city, client.country].filter(Boolean).join(', ');
+  const ledgerCount = ledgerEntries?.length ?? 0;
 
   return (
     <div className="flex min-h-screen flex-col">
-      <MobileHeader title={t('clientProfile', { defaultValue: 'Fiche client' })} showBack backTo="/m/clients" />
+      <MobileHeader title="Client" showBack backTo="/m/clients" />
 
-      <div className={cn('flex-1 space-y-4 px-4 py-5', SURFACE.canvas)}>
-        {/* Profile Card */}
-        <Card className="p-5">
-          <div className="flex items-start gap-4">
-            <div className={cn('flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold', SURFACE.holder)}>
+      <div className={cn('flex flex-1 flex-col gap-6 px-5 pb-8 pt-4', SURFACE.canvas)}>
+        {/* ── Qui c'est ─────────────────────────────────────── */}
+        <section className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[20px] font-semibold', SURFACE.holder)}>
               {initials || '?'}
             </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className={cn('truncate text-[20px] font-bold', TEXT.strong)}>
-                  {client.firstName} {client.lastName}
-                </h2>
-                <StatusPill
-                  tone={clientStatusTone(client.status)}
-                  label={t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status })}
-                />
-              </div>
-
-              {client.phone && (
-                <a
-                  href={`tel:${client.phone}`}
-                  className={cn('mt-1.5 flex items-center gap-1.5 text-[14px]', TEXT.muted)}
-                >
-                  <Phone className="h-3.5 w-3.5" />
-                  {client.phone}
-                </a>
-              )}
-
-              <div className={cn('mt-1 flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
-                <Mail className="h-3.5 w-3.5" />
-                {client.email || t('notProvided', { defaultValue: 'Non renseigné' })}
-              </div>
-
-              <div className={cn('mt-2 flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
-                <Calendar className="h-3 w-3" />
-                {t('clientSince', { defaultValue: 'Client depuis' })} {formatDate(client.createdAt)}
-              </div>
-
-              {client.utmSource && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-[14px]">
-                  <Link2 className={cn('h-3 w-3 shrink-0', TEXT.muted)} />
-                  <span className={TEXT.muted}>Source :</span>
-                  <StatusPill tone="info" label={<span className="capitalize">{client.utmSource}</span>} />
-                  {client.utmCampaign && (
-                    <span className={cn('truncate', TEXT.muted)}>· {client.utmCampaign}</span>
-                  )}
-                </div>
-              )}
+            <div className="min-w-0 flex-1 space-y-2">
+              <StatusPill tone={clientStatusTone(client.status)} label={statusLabel} />
+              <h1 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h1>
+              {client.companyName && <Line>{client.companyName}</Line>}
             </div>
           </div>
-        </Card>
+          {client.phone ? (
+            <Line>
+              Téléphone :{' '}
+              <a href={`tel:${client.phone}`} className={cn('font-semibold underline decoration-[#B3B3B3] underline-offset-4', TEXT.strong)}>
+                {client.phone}
+              </a>
+              .
+            </Line>
+          ) : (
+            <Line tone="warn">Pas de numéro de téléphone : ce client ne reçoit aucun SMS.</Line>
+          )}
+          <Line>{client.email ? <>Email : <b className={cn('break-all', TEXT.strong)}>{client.email}</b>.</> : "Pas d'adresse email."}</Line>
+          {place && <Line>À {place}.</Line>}
+          <Line>Client depuis le {since}.</Line>
+          {client.utmSource && (
+            <Line>Venu par {client.utmSource}{client.utmCampaign ? ` (campagne ${client.utmCampaign})` : ''}.</Line>
+          )}
+        </section>
 
-        {/* Wallet Balance Card */}
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <Holder icon={Wallet} size="sm" />
-              <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
-            </div>
-            <button
-              onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-              className="text-[14px] font-semibold text-[#1E1E1E] active:opacity-70 dark:text-[#F5F5F5]"
-            >
-              {t('history', { defaultValue: 'Historique' })}
-            </button>
-          </div>
-
-          <Amount value={formatXAF(client.walletBalance || 0)} unit="XAF" size="xl" />
-
-          {client.lastLedgerEntry && (
-            <p className={cn('mt-2 text-[14px]', TEXT.muted)}>
-              {t('lastMovement', { defaultValue: 'Dernier mouvement' })} : {formatDate(client.lastLedgerEntry.createdAt)}
+        {/* ── L'argent ──────────────────────────────────────── */}
+        <section>
+          <SectionTitle action={{ label: 'Historique', onClick: () => navigate(`/m/clients/${client.id}/ledger`) }}>
+            L'argent
+          </SectionTitle>
+          <Card className="space-y-3">
+            <p className={cn('text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums', TEXT.strong)}>
+              {formatXAF(client.walletBalance || 0)} XAF
             </p>
-          )}
+            <Line>
+              {client.lastLedgerEntry
+                ? `Dernier mouvement ${whenSentence(client.lastLedgerEntry.createdAt)}.`
+                : "Aucun mouvement pour l'instant."}
+            </Line>
+            <Line>
+              Au total, ce client a déposé <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.totalDeposits || 0)} XAF</b> et payé{' '}
+              <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.totalPayments || 0)} XAF</b>.
+            </Line>
+            {/* Le serveur garde l'ajustement (admin_adjust_wallet) ; l'UI ne cache rien. */}
+            <div className="flex flex-col gap-2 pt-1">
+              <Button variant="neutral" className="w-full" onClick={() => openAdjustment('CREDIT')}>
+                <Plus />
+                Ajouter de l'argent
+              </Button>
+              <Button variant="neutral" className="w-full" onClick={() => openAdjustment('DEBIT')}>
+                <Minus />
+                Retirer de l'argent
+              </Button>
+            </div>
+          </Card>
+        </section>
 
-          {/* Quick Actions */}
-          <div className="mt-4 flex gap-2.5">
-            <button
-              onClick={() => openAdjustment('CREDIT')}
-              className={cn(
-                'flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-[16px] font-medium transition-colors',
-                TONE_HOLDER.success,
-              )}
-            >
-              <Plus className="h-4 w-4" />
-              {t('credit', { defaultValue: 'Crédit' })}
-            </button>
-            <button
-              onClick={() => openAdjustment('DEBIT')}
-              className={cn(
-                'flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-[16px] font-medium transition-colors',
-                TONE_HOLDER.danger,
-              )}
-            >
-              <Minus className="h-4 w-4" />
-              {t('debitLabel', { defaultValue: 'Débit' })}
-            </button>
-          </div>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            icon={ArrowDownCircle}
-            tone="success"
-            label={t('totalDeposits', { defaultValue: 'Total dépôts' })}
-            value={formatXAF(client.totalDeposits || 0)}
-            unit="XAF"
-          />
-          <StatCard
-            icon={ArrowUpCircle}
-            tone="info"
-            label={t('totalPayments', { defaultValue: 'Total paiements' })}
-            value={formatXAF(client.totalPayments || 0)}
-            unit="XAF"
-          />
-        </div>
-
-        {/* Actions */}
-        <Card className="space-y-0.5 p-2">
-          <ActionRow
-            icon={History}
-            label={t('movementHistory', { defaultValue: 'Historique mouvements' })}
-            description={t('viewFullLedger', { defaultValue: 'Voir le ledger complet' })}
-            onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-          />
-          <ActionRow
-            icon={ArrowDownCircle}
-            tone="success"
-            label={t('declareDeposit', { defaultValue: 'Déclarer un dépôt' })}
-            description={t('createNewDeposit', { defaultValue: 'Créer un nouveau dépôt' })}
-            onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
-          />
-          <ActionRow
-            icon={Users}
-            tone="info"
-            label={t('beneficiaries', { defaultValue: 'Bénéficiaires' })}
-            description={t('manageBeneficiaries', { defaultValue: 'Gérer le carnet du client' })}
-            onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
-          />
-          <ActionRow
-            icon={FileDown}
-            tone="info"
-            label={isStatementGenerating ? t('generatingStatement', { defaultValue: 'Génération en cours…' }) : t('exportPDFStatement', { defaultValue: 'Exporter relevé PDF' })}
-            description={
-              ledgerEntries?.length
-                ? `${ledgerEntries.length} ${t('operations', { defaultValue: 'opération', count: ledgerEntries.length })}${ledgerEntries.length > 1 ? 's' : ''}`
-                : t('downloadHistory', { defaultValue: "Télécharger l'historique" })
-            }
-            onClick={handleDownloadStatement}
-            disabled={isStatementGenerating}
-            loading={isStatementGenerating}
-          />
-
-          {/* Edit Client */}
-          {canManageUsers && (
+        {/* ── Les gestes ────────────────────────────────────── */}
+        <section>
+          <SectionTitle>Les gestes</SectionTitle>
+          <Card className="py-0">
             <ActionRow
-              icon={Pencil}
-              label={t('editProfile', { defaultValue: 'Modifier le profil' })}
-              description={t('namePhoneEmailCompany', { defaultValue: 'Nom, téléphone, email, entreprise…' })}
-              onClick={openEdit}
+              icon={ArrowDownCircle}
+              tone="success"
+              label="Déclarer un dépôt"
+              description="Le client a versé de l'argent."
+              onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
             />
-          )}
-
-          {/* Reset Password */}
-          {canManageUsers && (
             <ActionRow
-              icon={Key}
-              tone="pending"
-              label={t('resetPasswordAction', { defaultValue: 'Réinitialiser mot de passe' })}
-              description={t('generateNewPassword', { defaultValue: 'Générer un nouveau mot de passe' })}
-              onClick={() => setResetDrawerOpen(true)}
+              icon={Users}
+              tone="info"
+              label="Ses bénéficiaires"
+              description="Les fournisseurs qu'il paie."
+              onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
             />
-          )}
-
-          {/* Delete Client */}
-          {canManageUsers && (
             <ActionRow
-              icon={Trash2}
-              destructive
-              label={t('deleteClient', { defaultValue: 'Supprimer le client' })}
-              description={t('permanentDeletion', { defaultValue: 'Suppression définitive et irréversible' })}
-              onClick={handleDeleteCheck}
-              disabled={deleteChecking}
-              loading={deleteChecking}
+              icon={FileDown}
+              label={isStatementGenerating ? 'Relevé en préparation…' : 'Télécharger le relevé'}
+              description={ledgerCount > 0 ? `Tout son historique en PDF : ${ledgerCount} ${ledgerCount > 1 ? 'opérations' : 'opération'}.` : 'Tout son historique en PDF.'}
+              onClick={handleDownloadStatement}
+              disabled={isStatementGenerating}
+              loading={isStatementGenerating}
             />
-          )}
-        </Card>
+            {canManageUsers && (
+              <ActionRow
+                icon={Pencil}
+                label="Modifier ses informations"
+                description="Nom, téléphone, email, entreprise."
+                onClick={openEdit}
+              />
+            )}
+            {canManageUsers && (
+              <ActionRow
+                icon={Key}
+                tone="pending"
+                label="Nouveau mot de passe"
+                description="À transmettre au client."
+                onClick={() => setResetDrawerOpen(true)}
+              />
+            )}
+            {canManageUsers && (
+              <ActionRow
+                icon={Trash2}
+                destructive
+                label="Supprimer ce client"
+                description="Définitif : tout son historique disparaît."
+                onClick={handleDeleteCheck}
+                disabled={deleteChecking}
+                loading={deleteChecking}
+              />
+            )}
+          </Card>
+        </section>
       </div>
 
       {/* Adjustment Drawer */}
@@ -593,7 +527,7 @@ export function MobileClientDetail() {
           </span>
         }
       >
-        <p className={cn('text-[14px]', TEXT.muted)}>
+        <p className={cn('text-[16px]', TEXT.muted)}>
           Voulez-vous vraiment supprimer{' '}
           <strong className={TEXT.strong}>{client?.firstName} {client?.lastName}</strong> ?
           Cette action est <strong className={TEXT.strong}>irréversible</strong> et supprimera toutes ses données
@@ -625,7 +559,7 @@ export function MobileClientDetail() {
           </span>
         }
       >
-        <p className={cn('text-[14px]', TEXT.muted)}>
+        <p className={cn('text-[16px]', TEXT.muted)}>
           {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
           <strong className={TEXT.strong}>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
         </p>
@@ -651,14 +585,14 @@ export function MobileClientDetail() {
         }
       >
         <div className="space-y-4">
-          <p className={cn('text-[14px]', TEXT.muted)}>
+          <p className={cn('text-[16px]', TEXT.muted)}>
             {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
           </p>
           <div className={cn('flex items-center justify-between gap-3 rounded-lg p-4', SURFACE.canvas)}>
             <code className={cn('font-mono text-[20px]', TEXT.strong)}>{newPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <p className="rounded-lg bg-[#FFF1C2] p-3 text-[14px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
+          <p className="rounded-lg bg-[#FFF1C2] p-3 text-[16px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
           </p>
         </div>
