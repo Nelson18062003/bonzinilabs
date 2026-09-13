@@ -27,10 +27,13 @@ import {
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
-import { formatRelativeDate } from '@/lib/formatters';
-import { getDepositSlaLevel, type SlaLevel } from '@/lib/depositTimeline';
+import { whenSentence } from '@/lib/plainTime';
+
+/** Une phrase commence par une majuscule. */
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+import { getDepositSlaLevel } from '@/lib/depositTimeline';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Search, SlidersHorizontal, Paperclip, Plus, X } from 'lucide-react';
+import { FileText, Search, SlidersHorizontal, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   SURFACE,
@@ -42,7 +45,6 @@ import {
   StatusPill,
   TextInput,
   Holder,
-  Amount,
   Card,
 } from '@/mobile/designKit';
 
@@ -70,21 +72,6 @@ function MIcon({ family, size = 38 }: { family: string; size?: number }) {
   );
 }
 
-// ── Point SLA ────────────────────────────────────────────────
-function SlaDot({ level }: { level: SlaLevel }) {
-  const color = level === 'fresh' ? '#14AE5C' : level === 'aging' ? '#E8B931' : '#EC221F';
-  return (
-    <span
-      className="inline-block shrink-0 rounded-full"
-      style={{
-        width: 6,
-        height: 6,
-        background: color,
-        animation: level === 'overdue' ? 'sla-pulse 1.5s infinite' : undefined,
-      }}
-    />
-  );
-}
 
 
 // ── Composant principal ──────────────────────────────────────
@@ -220,7 +207,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
           <div className="relative flex-1">
             <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
             <TextInput
-              placeholder="Nom, téléphone ou référence..."
+              placeholder="Nom ou téléphone"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-10"
@@ -360,25 +347,15 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
                   )}
                 >
                   <MIcon family={family} size={40} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className={cn('min-w-0 flex-1 break-words text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
-                      <Amount value={fmtAmount(deposit.amount_xaf)} unit="XAF" size="md" />
-                    </div>
-                    <div className={cn('mt-0.5 flex items-center justify-between gap-3 text-[14px]', TEXT.muted)}>
-                      <span className="min-w-0 break-words">{deposit.reference} · {methodShort}</span>
-                      <span className="shrink-0">{formatRelativeDate(deposit.created_at)}</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      {slaLevel && <SlaDot level={slaLevel} />}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                      <span className={cn('break-words text-[20px] font-semibold leading-tight', TEXT.strong)}>{clientName}</span>
                       <StatusPill tone={depositStatusTone(deposit.status)} label={statusLabel} />
-                      {proofCount > 0 && (
-                        <span className={cn('inline-flex items-center gap-1 text-[14px] font-semibold', TEXT.muted)}>
-                          <Paperclip className="h-4 w-4" />
-                          {proofCount}
-                        </span>
-                      )}
                     </div>
+                    <p className={cn('text-[16px] leading-snug', TEXT.strong)}><b className="tabular-nums">{fmtAmount(deposit.amount_xaf)} XAF</b> par {methodShort}</p>
+                    <p className={cn('text-[16px] leading-snug', slaLevel === 'overdue' ? 'font-semibold text-[#C00F0C] dark:text-[#EC221F]' : slaLevel === 'aging' ? 'font-semibold text-[#975102] dark:text-[#E8B931]' : TEXT.muted)}>
+                      {cap(whenSentence(deposit.created_at))}{proofCount > 0 ? ` · ${proofCount} ${proofCount > 1 ? 'preuves' : 'preuve'}` : ''}
+                    </p>
                   </div>
                 </button>
               );

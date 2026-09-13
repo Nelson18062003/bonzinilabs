@@ -125,3 +125,16 @@ rien sous 16 px sur les écrans Cargo, plus aucun `truncate` dans les listes.
 - **Suivre** : le résultat en trois lignes et le bouton « Ajouter à ma
   flotte » ; le détail (ports, jalons) replié dessous.
 - **Carte** : la feuille du navire dit « Arrive à Kribi le 11 octobre ».
+
+## Passe 6 — Opérations et Clients, même méthode
+
+Le kit lui-même monte à 16 px là où la cible lit : chips et segmenté à
+40 px / 16 px, tags de statut à 16, lignes de liste et champs à 16.
+`src/lib/plainTime.ts` dit « il y a 11 heures », « hier », « le 6
+septembre ». Une ligne de dépôt ou de paiement, c'est désormais : le
+client (20/600) et son état, « 2 400 000 XAF par Virement », « Il y a 11
+heures · 1 preuve » (en rouge quand ça attend trop). Le point SLA de 6 px
+et la référence BZ-DP-… quittent la liste (ils sont dans le détail, et la
+recherche par référence marche toujours). Un client : le nom et son état,
+« Solde : 310 000 XAF », le téléphone. Les totaux dépôts / paiements
+quittent la liste. Sur les 578 tests et les 21 écrans, rien ne casse.

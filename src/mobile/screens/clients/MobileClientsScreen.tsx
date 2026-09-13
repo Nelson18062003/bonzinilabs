@@ -6,7 +6,7 @@ import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib
 import { Search, Plus, User, ArrowUpDown, Check } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { formatCurrency, formatXAF } from '@/lib/formatters';
+import { formatXAF } from '@/lib/formatters';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -119,13 +119,11 @@ export function MobileClientsScreen() {
                     SURFACE.shadow,
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <Avatar name={name} />
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className={cn('break-words text-[16px] font-semibold', TEXT.strong)}>
+                  <div className="flex items-start gap-3">
+                    <Avatar name={name} size="lg" />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <p className={cn('break-words text-[20px] font-semibold leading-tight', TEXT.strong)}>
                           {client.firstName} {client.lastName}
                         </p>
                         <StatusPill
@@ -135,24 +133,9 @@ export function MobileClientsScreen() {
                             client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
                         />
                       </div>
-                      {client.phone && (
-                        <p className={cn('break-words text-[14px]', TEXT.muted)}>{client.phone}</p>
-                      )}
+                      <p className={cn('text-[16px] leading-snug', TEXT.strong)}>Solde : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
+                      {client.phone && <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{client.phone}</p>}
                     </div>
-
-                    {/* Balance */}
-                    <div className="shrink-0 text-right">
-                      <p className={cn('text-[16px] font-semibold tabular-nums', TEXT.strong)}>
-                        {formatXAF(client.walletBalance || 0)}
-                      </p>
-                      <p className={cn('text-[14px]', TEXT.muted)}>XAF</p>
-                    </div>
-                  </div>
-
-                  {/* Stats Row */}
-                  <div className={cn('mt-3 grid grid-cols-2 gap-3 text-[14px] tabular-nums', TEXT.muted)}>
-                    <span className="break-words">{t('deposits', { defaultValue: 'Dépôts' })} <span className={TEXT.strong}>{formatCurrency(client.totalDeposits || 0)}</span></span>
-                    <span className="break-words">{t('payments', { defaultValue: 'Paiements' })} <span className={TEXT.strong}>{formatCurrency(client.totalPayments || 0)}</span></span>
                   </div>
                 </button>
               );

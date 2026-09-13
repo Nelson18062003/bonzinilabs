@@ -178,7 +178,7 @@ export function Avatar({
  * Étiquette / valeur, 14 px, valeur alignée à droite en chiffres tabulaires. */
 export function Row({ label, value, className }: { label: React.ReactNode; value: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-between gap-3 py-2 text-[14px]', className)}>
+    <div className={cn('flex items-center justify-between gap-3 py-2 text-[16px]', className)}>
       <span className={TEXT.muted}>{label}</span>
       <span className={cn('text-right font-semibold tabular-nums', TEXT.strong)}>{value}</span>
     </div>
@@ -216,7 +216,7 @@ export function ListRow({
       {leading}
       <span className="min-w-0 flex-1">
         <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{title}</span>
-        {subtitle != null && <span className={cn('mt-0.5 block break-words', TYPE.small, TEXT.muted)}>{subtitle}</span>}
+        {subtitle != null && <span className={cn('mt-0.5 block break-words text-[16px] leading-snug', TEXT.muted)}>{subtitle}</span>}
       </span>
       {trailing}
       {chevron && <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />}
@@ -239,7 +239,7 @@ export function Amount({
   return (
     <div className={cn('font-semibold leading-none tracking-[-0.02em] tabular-nums', num, TEXT.strong, className)}>
       {value}
-      {unit != null && <span className={cn('ml-1 text-[14px] font-medium', TEXT.muted)}>{unit}</span>}
+      {unit != null && <span className={cn('ml-1 text-[16px] font-medium', TEXT.muted)}>{unit}</span>}
     </div>
   );
 }
@@ -286,7 +286,7 @@ export function SoftPill({
  * statut, le libellé le dit en toutes lettres. */
 export function StatusPill({ tone, label, className }: { tone: Tone; label: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-2 text-[14px] font-semibold', TONE_PILL[tone], className)}>
+    <span className={cn('inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-lg px-2.5 text-[16px] font-semibold', TONE_PILL[tone], className)}>
       {label}
     </span>
   );
@@ -311,7 +311,7 @@ export function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex h-8 shrink-0 items-center gap-2 whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+        'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap px-3 text-[16px] font-semibold transition-colors',
         active ? TOGGLE_ON : TOGGLE_OFF,
         className,
       )}
@@ -349,9 +349,9 @@ export function StatCard({
       )}
     >
       {icon && <Holder icon={icon} tone={tone} size="sm" />}
-      <div className={cn(TYPE.small, TEXT.muted)}>{label}</div>
+      <div className={cn('text-[16px]', TEXT.muted)}>{label}</div>
       <Amount value={value} unit={unit} size="md" />
-      {hint != null && <div className={cn(TYPE.small, TEXT.muted)}>{hint}</div>}
+      {hint != null && <div className={cn('text-[16px]', TEXT.muted)}>{hint}</div>}
     </Wrapper>
   );
 }
@@ -379,7 +379,7 @@ export function Segmented<T extends string>({
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'inline-flex h-8 flex-1 items-center justify-center gap-2 whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+              'inline-flex h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap px-2 text-[16px] font-semibold transition-colors',
               active ? TOGGLE_ON : TOGGLE_OFF,
             )}
           >
@@ -406,12 +406,12 @@ export function FormField({
 }) {
   return (
     <div className={cn('space-y-2', className)}>
-      <label htmlFor={htmlFor} className={cn('block', TYPE.smallStrong, TEXT.strong)}>{label}</label>
+      <label htmlFor={htmlFor} className={cn('block', TYPE.bodyStrong, TEXT.strong)}>{label}</label>
       {children}
       {error ? (
-        <p className="text-[14px] text-[#900B09] dark:text-[#FCB3AD]">{error}</p>
+        <p className="text-[16px] leading-snug text-[#900B09] dark:text-[#FCB3AD]">{error}</p>
       ) : hint ? (
-        <p className={cn(TYPE.small, TEXT.muted)}>{hint}</p>
+        <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{hint}</p>
       ) : null}
     </div>
   );
@@ -571,7 +571,7 @@ export function SectionTitle({
 }) {
   return (
     <div className={cn('mb-2 flex items-center justify-between', className)}>
-      <h2 className={cn(TYPE.smallStrong, TEXT.strong)}>{children}</h2>
+      <h2 className={cn(TYPE.bodyStrong, TEXT.strong)}>{children}</h2>
       {action && (
         <button type="button" onClick={action.onClick} className={cn('inline-flex h-8 items-center gap-0.5 text-[14px] font-semibold', TEXT.body, 'active:opacity-70')}>
           {action.label}
