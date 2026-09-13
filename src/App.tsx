@@ -92,6 +92,7 @@ const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
+const MobileShippingSettings = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileShippingSettings })));
 const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobilePasskeysScreen })));
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
@@ -251,6 +252,7 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
                 <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />

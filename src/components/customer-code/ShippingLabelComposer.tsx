@@ -5,17 +5,19 @@
 // imprime. L'étiquette elle-même (ShippingLabel) est rendue à taille réelle,
 // réduite à l'échelle pour l'aperçu, et rasterisée telle quelle à l'export.
 // ============================================================
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileDown, Loader2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
-  CHINA_RECEIVING_ADDRESSES,
+  DESTINATION_LABEL,
   SHIPPING_DESTINATIONS,
-  isAddressConfigured,
+  isLocationConfigured,
   type ShippingDestination,
+  type ShippingSettings,
 } from '@/lib/customerCode';
+import { prewarmFontEmbedCss } from '@/lib/nodeImage';
 import { ShippingLabel, LABEL_W, LABEL_H, type LabelSupplierInfo } from './ShippingLabel';
 import { shareShippingLabel, downloadShippingLabelPdf } from './exportShippingLabel';
 import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Segmented, TextInput } from '@/mobile/designKit';
@@ -24,13 +26,16 @@ export interface ShippingLabelComposerProps {
   code: string;
   clientName: string;
   clientPhone?: string | null;
+  clientEmail?: string | null;
   companyName?: string | null;
   clientCity?: string | null;
   clientCountry?: string | null;
+  /** Adresses + coordonnées (platform_settings) — fournies par l'app appelante. */
+  settings: ShippingSettings;
   className?: string;
 }
 
-export function ShippingLabelComposer({ code, clientName, clientPhone, companyName, clientCity, clientCountry, className }: ShippingLabelComposerProps) {
+export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   const labelRef = useRef<HTMLDivElement>(null);
   // Entrepôt par défaut : c'est la destination de la plupart des envois ;
@@ -39,8 +44,14 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, companyNa
   const [supplier, setSupplier] = useState<LabelSupplierInfo>({});
   const [busy, setBusy] = useState<'share' | 'pdf' | null>(null);
 
-  const destConfigured = isAddressConfigured(CHINA_RECEIVING_ADDRESSES[destination]);
+  const destConfigured = isLocationConfigured(settings[destination]);
   const canExport = !!code && destConfigured && busy === null;
+
+  // La CSS des polices (dont les sous-ensembles Noto SC, lourds) se calcule
+  // une fois par session : on la lance dès l'ouverture, pas au premier clic.
+  useEffect(() => {
+    if (labelRef.current) prewarmFontEmbedCss(labelRef.current);
+  }, []);
 
   const run = async (kind: 'share' | 'pdf') => {
     if (!labelRef.current || !canExport) return;
@@ -79,7 +90,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, companyNa
           onChange={setDestination}
           options={SHIPPING_DESTINATIONS.map((d) => ({
             value: d,
-            label: t(`myCode.dest.${d}`, { defaultValue: CHINA_RECEIVING_ADDRESSES[d].label.fr }),
+            label: t(`myCode.dest.${d}`, { defaultValue: DESTINATION_LABEL[d].fr }),
           }))}
         />
         <p className={cn('mt-2 px-1 text-[12px] leading-snug', TEXT.muted)}>
@@ -102,6 +113,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, companyNa
         <div className="grid grid-cols-2 gap-2">
           {field('name', t('myCode.supplierName', { defaultValue: 'Nom' }))}
           {field('phone', t('myCode.supplierPhone', { defaultValue: 'Téléphone' }))}
+          <div className="col-span-2">{field('email', t('myCode.supplierEmail', { defaultValue: 'E-mail' }))}</div>
           <div className="col-span-2">{field('address', t('myCode.supplierAddress', { defaultValue: 'Adresse (en Chine)' }))}</div>
         </div>
         <p className={cn('mt-2 text-[11.5px] leading-snug', TEXT.muted)}>
@@ -128,10 +140,12 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, companyNa
                 code={code}
                 clientName={clientName}
                 clientPhone={clientPhone}
+                clientEmail={clientEmail}
                 companyName={companyName}
                 clientCity={clientCity}
                 clientCountry={clientCountry}
                 destination={destination}
+                settings={settings}
                 supplier={supplier}
               />
             </div>

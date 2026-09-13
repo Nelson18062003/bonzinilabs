@@ -221,6 +221,7 @@
     "supplierName": "Nom",
     "supplierPhone": "Téléphone",
     "supplierAddress": "Adresse (en Chine)",
-    "supplierHint": "Laissez vide : le fournisseur remplira ces lignes au stylo."
+    "supplierHint": "Laissez vide : le fournisseur remplira ces lignes au stylo.",
+    "supplierEmail": "E-mail"
   }
 }

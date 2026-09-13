@@ -56,69 +56,113 @@ export function customerQrPayload(code: string): string {
  * Le client choisit celle qu'on lui a indiquée (entrepôt en général, bureau
  * pour certains). Chaque étiquette porte donc UNE adresse, très grande.
  *
- * À COMPLÉTER par l'équipe : tant qu'une valeur est entre crochets, la
- * destination est considérée non configurée et l'app client ne propose pas
- * l'étiquette (on n'envoie pas un placeholder chez un fournisseur).
+ * Les valeurs vivent en base (platform_settings, clé « shipping »), éditables
+ * depuis l'app admin ; ce qui suit est le FORMAT et le REPLI (valeurs de
+ * départ, identiques à celles semées par la migration) — utilisé le temps que
+ * la ligne arrive, ou si elle est absente.
  */
 export type ShippingDestination = 'warehouse' | 'office';
 
-export interface ChinaReceivingAddress {
-  key: ShippingDestination;
-  /** Libellé court, trilingue (zh en premier : c'est le lecteur de l'étiquette). */
-  label: { zh: string; en: string; fr: string };
-  /** Adresse complète en chinois — la ligne que lit le livreur. Peut contenir des sauts de ligne. */
+export interface ShippingLocation {
+  /** Adresse complète en chinois — la ligne que lit le livreur. Sauts de ligne permis. */
   addressZh: string;
   /** Même adresse en anglais — pour le client africain et son transitaire. */
-  addressEn?: string;
+  addressEn: string;
   /** Nom du destinataire à écrire sur le colis (收件人) : la personne sur place. */
-  recipientZh: string;
+  recipient: string;
   /** Téléphone du lieu (celui que compose le livreur). */
   phone: string;
-  /** Numéro WeChat du contact. */
   wechat: string;
-  /** WhatsApp du contact — le canal du client africain. */
-  whatsapp?: string;
+  whatsapp: string;
+  email: string;
 }
 
-/** Notre société, telle qu'elle figure sur l'étiquette (bloc « destinataire »). */
-export const BONZINI_CHINA_COMPANY = {
-  nameZh: '[NOM DE LA SOCIÉTÉ EN CHINOIS — à compléter]',
-  nameEn: 'Bonzini Labs',
-};
+export interface ShippingCompany {
+  nameZh: string;
+  nameEn: string;
+  email: string;
+  phone: string;
+  wechat: string;
+  whatsapp: string;
+}
 
-/**
- * Entrepôt : valeurs relevées sur le bon de réception (三联单) de l'entrepôt
- * de Baiyun — Tina, tél./WeChat 138 2229 7518, WhatsApp +86 186 6743 9286,
- * tél. entrepôt 199 2746 3902. Vérifier le caractère « 窖 » de 窖心街 (lu sur
- * une photo) avant la première impression.
- */
-export const CHINA_RECEIVING_ADDRESSES: Record<ShippingDestination, ChinaReceivingAddress> = {
-  warehouse: {
-    key: 'warehouse',
-    label: { zh: '仓库', en: 'Warehouse', fr: 'Entrepôt' },
-    addressZh: '广东省广州市白云区窖心街\n白云湖物流园 K栋 18档',
-    addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou, Guangdong',
-    recipientZh: 'Tina',
-    phone: '199 2746 3902',
-    wechat: '138 2229 7518',
-    whatsapp: '+86 186 6743 9286',
-  },
-  office: {
-    key: 'office',
-    label: { zh: '广州办公室', en: 'Guangzhou office', fr: 'Bureau de Guangzhou' },
-    addressZh: '[ADRESSE BUREAU GUANGZHOU — à compléter]',
-    recipientZh: '[DESTINATAIRE BUREAU — à compléter]',
-    phone: '[TÉLÉPHONE BUREAU — à compléter]',
-    wechat: '[WECHAT BUREAU — à compléter]',
-  },
-};
+export interface ShippingSettings {
+  company: ShippingCompany;
+  warehouse: ShippingLocation;
+  office: ShippingLocation;
+}
 
 export const SHIPPING_DESTINATIONS: ShippingDestination[] = ['warehouse', 'office'];
 
-function isPlaceholder(v: string): boolean {
-  return /^\[.*\]$/.test(v.trim());
+export const DESTINATION_LABEL: Record<ShippingDestination, { zh: string; en: string; fr: string }> = {
+  warehouse: { zh: '仓库', en: 'Warehouse', fr: 'Entrepôt' },
+  office: { zh: '广州办公室', en: 'Guangzhou office', fr: 'Bureau de Guangzhou' },
+};
+
+export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {
+  company: {
+    nameZh: '',
+    nameEn: 'Bonzini Labs',
+    email: 'contact@bonziniapps.com',
+    phone: '+86 186 6743 9286',
+    wechat: '138 2229 7518',
+    whatsapp: '+86 186 6743 9286',
+  },
+  warehouse: {
+    addressZh: '广东省广州市白云区窖心街\n白云湖物流园 K栋 18档',
+    addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou, Guangdong',
+    recipient: 'Tina',
+    phone: '199 2746 3902',
+    wechat: '138 2229 7518',
+    whatsapp: '+86 186 6743 9286',
+    email: 'contact@bonziniapps.com',
+  },
+  office: {
+    addressZh: '广州市广园西路219号\n客麦隆大厦二楼 259',
+    addressEn: '259, 2/F, Cameroon Building, No. 219 Guangyuan West Road, Guangzhou, China',
+    recipient: 'Tina',
+    phone: '138 2229 7518',
+    wechat: '138 2229 7518',
+    whatsapp: '+86 186 6743 9286',
+    email: 'contact@bonziniapps.com',
+  },
+};
+
+const str = (v: unknown, fallback: string): string => (typeof v === 'string' ? v : fallback);
+
+function parseLocation(raw: unknown, fallback: ShippingLocation): ShippingLocation {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  return {
+    addressZh: str(r.addressZh, fallback.addressZh),
+    addressEn: str(r.addressEn, fallback.addressEn),
+    recipient: str(r.recipient, fallback.recipient),
+    phone: str(r.phone, fallback.phone),
+    wechat: str(r.wechat, fallback.wechat),
+    whatsapp: str(r.whatsapp, fallback.whatsapp),
+    email: str(r.email, fallback.email),
+  };
 }
 
-export function isAddressConfigured(a: ChinaReceivingAddress): boolean {
-  return ![a.addressZh, a.recipientZh, a.phone].some(isPlaceholder);
+/** Ce qui sort de la base est du jsonb libre : on le ramène au format, champ par champ. */
+export function parseShippingSettings(raw: unknown): ShippingSettings {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const c = (r.company && typeof r.company === 'object' ? r.company : {}) as Record<string, unknown>;
+  const d = DEFAULT_SHIPPING_SETTINGS;
+  return {
+    company: {
+      nameZh: str(c.nameZh, d.company.nameZh),
+      nameEn: str(c.nameEn, d.company.nameEn),
+      email: str(c.email, d.company.email),
+      phone: str(c.phone, d.company.phone),
+      wechat: str(c.wechat, d.company.wechat),
+      whatsapp: str(c.whatsapp, d.company.whatsapp),
+    },
+    warehouse: parseLocation(r.warehouse, d.warehouse),
+    office: parseLocation(r.office, d.office),
+  };
+}
+
+/** Une destination sans adresse ni destinataire n'est pas proposée au client. */
+export function isLocationConfigured(l: ShippingLocation): boolean {
+  return l.addressZh.trim().length > 0 && l.recipient.trim().length > 0;
 }

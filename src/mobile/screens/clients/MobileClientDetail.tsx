@@ -40,6 +40,8 @@ import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
@@ -133,6 +135,7 @@ export function MobileClientDetail() {
 
   // Étiquette colis (feuille)
   const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
 
   // Password reset drawer state
   const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
@@ -539,9 +542,11 @@ export function MobileClientDetail() {
             code={client.customerCode}
             clientName={`${client.firstName} ${client.lastName}`.trim()}
             clientPhone={client.phone}
+            clientEmail={client.email}
             companyName={client.companyName}
             clientCity={client.city}
             clientCountry={client.country}
+            settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
           />
         </div>
       </BottomSheet>

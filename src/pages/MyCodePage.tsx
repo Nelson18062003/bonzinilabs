@@ -18,7 +18,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { useMyProfile } from '@/hooks/useProfile';
-import { customerQrPayload } from '@/lib/customerCode';
+import { useShippingSettings } from '@/hooks/useShippingSettings';
+import { customerQrPayload, DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
 import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL } from '@/mobile/designKit';
 
@@ -26,6 +27,7 @@ const MyCodePage = () => {
   const { t } = useTranslation('client');
   const navigate = useNavigate();
   const { data: profile, isLoading } = useMyProfile();
+  const { data: shipping } = useShippingSettings();
   const [copied, setCopied] = useState(false);
 
   const code = profile?.customer_code ?? '';
@@ -130,9 +132,11 @@ const MyCodePage = () => {
               code={code}
               clientName={clientName}
               clientPhone={profile?.phone}
+              clientEmail={profile?.email}
               companyName={profile?.company_name}
               clientCity={profile?.city}
               clientCountry={profile?.country}
+              settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
             />
           </section>
 

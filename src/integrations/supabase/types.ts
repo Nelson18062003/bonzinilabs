@@ -1981,6 +1981,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       rate_adjustments: {
         Row: {
           id: string
@@ -3672,6 +3693,10 @@ export type Database = {
           p_beneficiary_qr_code_url?: string
           p_payment_id: string
         }
+        Returns: Json
+      }
+      update_platform_setting: {
+        Args: { p_key: string; p_value: Json }
         Returns: Json
       }
       update_rate_adjustment: {

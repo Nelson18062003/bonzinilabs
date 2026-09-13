@@ -15,7 +15,9 @@ function fileName(code: string, destination: string, ext: 'png' | 'pdf') {
 }
 
 async function labelPng(node: HTMLElement): Promise<string> {
-  return captureNodePng(node, { width: LABEL_W, height: LABEL_H, pixelRatio: 2, backgroundColor: '#FFFFFF' });
+  // ×3 : 1800 × 2550 px, ~220 dpi sur une page A4 — net à l'impression,
+  // lisible en zoom sur WeChat, et toujours sous 1 Mo.
+  return captureNodePng(node, { width: LABEL_W, height: LABEL_H, pixelRatio: 3, backgroundColor: '#FFFFFF' });
 }
 
 export type ShareOutcome = 'shared' | 'downloaded';

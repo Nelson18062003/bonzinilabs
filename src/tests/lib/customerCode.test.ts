@@ -3,8 +3,9 @@ import {
   normalizeCustomerCode,
   isCustomerCode,
   customerQrPayload,
-  isAddressConfigured,
-  CHINA_RECEIVING_ADDRESSES,
+  isLocationConfigured,
+  parseShippingSettings,
+  DEFAULT_SHIPPING_SETTINGS,
 } from '@/lib/customerCode';
 
 describe('normalizeCustomerCode', () => {
@@ -40,20 +41,19 @@ describe('isCustomerCode', () => {
   });
 });
 
-describe('adresses de réception', () => {
-  it('un placeholder entre crochets n’est pas une adresse configurée', () => {
-    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.warehouse)).toBe(true);
-    expect(isAddressConfigured(CHINA_RECEIVING_ADDRESSES.office)).toBe(false);
-    expect(
-      isAddressConfigured({
-        key: 'warehouse',
-        label: { fr: 'x', zh: 'x', en: 'x' },
-        addressZh: '广东省广州市…',
-        recipientZh: 'Bonzini',
-        phone: '+86 138 0000 0000',
-        wechat: 'bonzini',
-      }),
-    ).toBe(true);
+describe('réglages d’expédition', () => {
+  it('les valeurs de départ ont deux destinations utilisables', () => {
+    expect(isLocationConfigured(DEFAULT_SHIPPING_SETTINGS.warehouse)).toBe(true);
+    expect(isLocationConfigured(DEFAULT_SHIPPING_SETTINGS.office)).toBe(true);
+    expect(isLocationConfigured({ ...DEFAULT_SHIPPING_SETTINGS.office, addressZh: '  ' })).toBe(false);
+  });
+  it('un jsonb partiel ou mal formé retombe sur les valeurs de départ, champ par champ', () => {
+    const parsed = parseShippingSettings({ company: { email: 'ops@example.com' }, warehouse: { phone: 42 }, office: null });
+    expect(parsed.company.email).toBe('ops@example.com');
+    expect(parsed.company.nameEn).toBe('Bonzini Labs');
+    expect(parsed.warehouse.phone).toBe(DEFAULT_SHIPPING_SETTINGS.warehouse.phone);
+    expect(parsed.office).toEqual(DEFAULT_SHIPPING_SETTINGS.office);
+    expect(parseShippingSettings(undefined)).toEqual(DEFAULT_SHIPPING_SETTINGS);
   });
 });
 

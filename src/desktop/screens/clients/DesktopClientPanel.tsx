@@ -59,6 +59,8 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { customerQrPayload } from '@/lib/customerCode';
 import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
   AlertTriangle,
   ArrowDownCircle,
@@ -241,6 +243,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
 
   const copyCustomerCode = async () => {
     if (!client?.customerCode) return;
@@ -599,9 +602,11 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             code={client.customerCode}
             clientName={name}
             clientPhone={client.phone}
+            clientEmail={client.email}
             companyName={client.companyName}
             clientCity={client.city}
             clientCountry={client.country}
+            settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
           />
         </CenterDialog>
 

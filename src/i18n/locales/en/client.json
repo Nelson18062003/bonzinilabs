@@ -221,6 +221,7 @@
     "supplierName": "Name",
     "supplierPhone": "Phone",
     "supplierAddress": "Address (in China)",
-    "supplierHint": "Leave empty: the supplier fills these lines in by hand."
+    "supplierHint": "Leave empty: the supplier fills these lines in by hand.",
+    "supplierEmail": "Email"
   }
 }

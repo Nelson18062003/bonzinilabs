@@ -444,5 +444,8 @@
   "searchByNamePhoneCode": "Nom, téléphone, identifiant BZ-…",
   "scanCustomerCode": "Scanner un identifiant client",
   "shippingLabelAction": "Étiquette colis",
-  "shippingLabelActionDesc": "Entrepôt ou bureau · image ou PDF à imprimer"
+  "shippingLabelActionDesc": "Entrepôt ou bureau · image ou PDF à imprimer",
+  "shippingSettings": "Expédition",
+  "shippingSettingsRow": "Adresses en Chine et coordonnées",
+  "shippingSettingsRowHint": "Entrepôt, bureau, téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis"
 }

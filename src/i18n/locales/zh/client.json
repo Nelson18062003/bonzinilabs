@@ -213,6 +213,7 @@
     "supplierName": "名称",
     "supplierPhone": "电话",
     "supplierAddress": "地址（中国）",
-    "supplierHint": "留空即可：供应商可手写填写。"
+    "supplierHint": "留空即可：供应商可手写填写。",
+    "supplierEmail": "邮箱"
   }
 }
