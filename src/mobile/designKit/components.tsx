@@ -560,8 +560,8 @@ export function ScreenError({
 }
 
 /* ── SectionTitle ─────────────────────────────────────────────────────────
- * Titre de section : Body Small Strong 14/600 encre, action à droite en
- * 14/600. Pas de majuscules espacées — le kit n'en a pas. */
+ * Titre de section : Body Strong 16/600 encre, action à droite en
+ * 16/600 sur 40 px de haut. Pas de majuscules espacées — le kit n'en a pas. */
 export function SectionTitle({
   children, action, className,
 }: {
@@ -573,7 +573,7 @@ export function SectionTitle({
     <div className={cn('mb-2 flex items-center justify-between', className)}>
       <h2 className={cn(TYPE.bodyStrong, TEXT.strong)}>{children}</h2>
       {action && (
-        <button type="button" onClick={action.onClick} className={cn('inline-flex h-8 items-center gap-0.5 text-[14px] font-semibold', TEXT.body, 'active:opacity-70')}>
+        <button type="button" onClick={action.onClick} className={cn('-mr-2 inline-flex h-10 items-center gap-0.5 rounded-lg px-2 text-[16px] font-semibold', TEXT.body, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
           {action.label}
           <ChevronRight className="h-4 w-4" />
         </button>

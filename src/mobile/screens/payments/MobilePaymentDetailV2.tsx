@@ -99,7 +99,7 @@ function DetailHeader({ title, onBack, right }: { title: string; onBack: () => v
         <button
           onClick={onBack}
           aria-label="Retour"
-          className={cn('-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', TEXT.muted)}
+          className={cn('-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}
         >
           <ChevronLeft className="h-6 w-6" />
         </button>

@@ -48,10 +48,10 @@ export function CargoJourney({ shipment: s, position }: { shipment: CargoShipmen
               )}
             </div>
             <div className="mt-1.5 min-w-0 max-w-full pr-1">
-              <div className={cn('text-[12px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>
+              <div className={cn('text-[12px] max-lg:text-[16px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>
                 {st.narrow ? <><span className="lg:hidden">{st.narrow}</span><span className="max-lg:hidden">{st.short}</span></> : st.short}
               </div>
-              <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>
+              <div className={cn('text-[11px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>
                 {i === 0 && (s.etd_actual ? fmtDay(new Date(s.etd_actual)) : s.etd_promised ? fmtDay(new Date(s.etd_promised + 'T12:00:00')) : '')}
                 {last && (eta.date ? fmtDay(eta.date) : '')}
               </div>

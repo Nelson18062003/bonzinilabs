@@ -20,10 +20,11 @@ import {
   Newspaper,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ThemeToggleCompact } from '@/components/ui/ThemeToggle';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTheme } from 'next-themes';
+import { supportedLanguages, languageNames, type SupportedLanguage } from '@/i18n';
+import { persistPreferredLocale } from '@/lib/persistLocale';
 import { useAdminConversations } from '@/hooks/useAdminChat';
-import { SURFACE, TEXT, TONE_HOLDER, Card, SectionTitle } from '@/mobile/designKit';
+import { SURFACE, TEXT, TONE_HOLDER, Card, Chip, SectionTitle, Segmented } from '@/mobile/designKit';
 
 interface MenuRowProps {
   icon: React.ElementType;
@@ -54,10 +55,10 @@ function MenuRow({ icon: Icon, label, description, onClick, destructive, badge }
         <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block break-words text-[14px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block break-words text-[16px]', TEXT.muted)}>{description}</span>}
       </span>
       {badge && (
-        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-lg bg-[#EC221F] px-1.5 text-[14px] font-bold text-white">
+        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-lg bg-[#EC221F] px-1.5 text-[16px] font-bold text-white">
           {badge}
         </span>
       )}
@@ -77,6 +78,10 @@ export function MobileMoreScreen() {
     ? (convs ?? []).reduce((sum, c) => sum + (c.unread_count_admin || 0), 0)
     : 0;
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const { i18n } = useTranslation();
+  const currentLang = (i18n.language?.slice(0, 2) ?? 'fr') as SupportedLanguage;
+  const selectLanguage = (lang: SupportedLanguage) => { i18n.changeLanguage(lang); void persistPreferredLocale(lang); };
 
   const handleLogout = async () => {
     await logout();
@@ -104,7 +109,7 @@ export function MobileMoreScreen() {
             <p className={cn('break-words text-[20px] font-bold', TEXT.strong)}>
               {profile?.first_name || 'Mon profil'} {profile?.last_name}
             </p>
-            <p className={cn('text-[14px]', TEXT.muted)}>Modifier mes informations</p>
+            <p className={cn('text-[16px]', TEXT.muted)}>Modifier mes informations</p>
           </div>
           <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
         </button>
@@ -217,15 +222,23 @@ export function MobileMoreScreen() {
           </Card>
         </div>
 
-        {/* Langue & Thème */}
-        <Card className="space-y-1 p-4">
-          <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('language', { defaultValue: 'Langue' })}</span>
-            <LanguageSwitcher />
+        {/* Langue & Thème — des choix qu'on voit tous en même temps, pas un bouton qui tourne. */}
+        <Card className="space-y-4">
+          <div className="space-y-2">
+            <p className={cn('text-[16px] font-semibold', TEXT.strong)}>{t('language', { defaultValue: 'Langue' })}</p>
+            <div className="flex flex-wrap gap-2">
+              {supportedLanguages.map((lang) => (
+                <Chip key={lang} label={languageNames[lang]} active={currentLang === lang} onClick={() => selectLanguage(lang)} />
+              ))}
+            </div>
           </div>
-          <div className="flex items-center justify-between py-1">
-            <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('theme', { defaultValue: 'Thème' })}</span>
-            <ThemeToggleCompact />
+          <div className="space-y-2">
+            <p className={cn('text-[16px] font-semibold', TEXT.strong)}>{t('theme', { defaultValue: 'Thème' })}</p>
+            <Segmented
+              options={[{ value: 'light', label: 'Clair' }, { value: 'dark', label: 'Sombre' }, { value: 'system', label: 'Auto' }] as const}
+              value={(theme ?? 'system') as 'light' | 'dark' | 'system'}
+              onChange={setTheme}
+            />
           </div>
         </Card>
 

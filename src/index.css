@@ -1587,10 +1587,12 @@
   user-select: none;
 }
 .c3d-stage:active { cursor: grabbing; }
-@media (max-width: 640px) {
+@media (max-width: 1023px) {
+  /* Mobile : la cible a 50–60 ans — boutons de 40 px, texte 16 px, comme le kit. */
   .c3d-stage { height: 300px; }
-  .c3d-bar button, .c3d-layers { font-size: 14px; }
-  .c3d-bar button { height: 32px; border-radius: 8px; }
+  .c3d-bar button, .c3d-layers { font-size: 16px; }
+  .c3d-bar button { height: 40px; padding: 0 12px; border-radius: 8px; color: hsl(var(--foreground)); }
+  .c3d-layers input { width: 120px; height: 24px; }
 }
 
 .c3d-world,
@@ -1658,3 +1660,8 @@
   overflow: hidden;
 }
 .cargo-gauge__fill { display: block; height: 100%; border-radius: 9999px; }
+@media (max-width: 1023px) {
+  /* Après les règles de base pour gagner la cascade : 16 px sur mobile. */
+  .c3d-hint { font-size: 16px; }
+  .cargo-gauge__head { font-size: 16px; }
+}

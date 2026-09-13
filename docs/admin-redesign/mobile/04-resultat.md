@@ -229,3 +229,11 @@ mesure déjà). Les trois sections sont à 0 texte sous 14 px.
 - **Barre du bas** : étiquettes à 14 px (elles tenaient à 12 en gris pâle),
   gris `#5A5A5A`, icônes 24, badges 20 px.
 Fixtures ajoutées pour le carnet (`mockBeneficiaries.ts`).
+- **Finition après audit global** : le trajet (étiquettes de ports 16 px,
+  dates 14 px), la barre de la 3D (boutons 40 px, texte 16 px, légendes
+  et jauges 16 px), les boutons du dossier (Rafraîchir, Plus d'actions,
+  Retirer un lot : 44 px), les boutons Retour des fiches (44 px), les
+  actions de section (« Ajouter », « Historique » : 40 px, 16 px). L'écran
+  Plus montre la langue et le thème comme des choix visibles (chips et
+  segmenté) au lieu d'un bouton qui tourne. Il ne reste sous 14 px que
+  les badges de la barre du bas (12 px) et le curseur de la 3D.
