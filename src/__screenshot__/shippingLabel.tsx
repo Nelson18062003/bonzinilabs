@@ -29,6 +29,6 @@ export const LabelComposer = () => (
 
 export const LabelComposerDesktop = () => (
   <div style={{ padding: 24, background: '#fff', minHeight: '100vh' }}>
-    <ShippingLabelComposer {...props} layout="split" />
+    <ShippingLabelComposer {...props} layout="split" mode="admin" />
   </div>
 );

@@ -7,7 +7,7 @@
 // navigateur ne l'offre pas (bureau, WebView ancienne), on télécharge.
 // ============================================================
 import { jsPDF } from 'jspdf';
-import { captureNodePng, triggerDownload } from '@/lib/nodeImage';
+import { captureNodePng, copyNodePng, triggerDownload, type CopyOutcome } from '@/lib/nodeImage';
 import { LABEL_W, LABEL_H } from './ShippingLabel';
 
 function fileName(code: string, destination: string, ext: 'png' | 'pdf') {
@@ -44,10 +44,25 @@ export async function shareShippingLabel(node: HTMLElement, code: string, destin
   return 'downloaded';
 }
 
-/** Étiquette en PDF A4 (210 × 297 mm — le ratio du nœud), prête à imprimer. */
+/** Étiquette en PNG, téléchargée (bureau, ou quand on veut le fichier). */
+export async function downloadShippingLabelPng(node: HTMLElement, code: string, destination: string): Promise<void> {
+  triggerDownload(await labelPng(node), fileName(code, destination, 'png'));
+}
+
+/** Étiquette en PNG dans le presse-papiers — à coller dans WeChat, WhatsApp ou un e-mail. */
+export async function copyShippingLabelPng(node: HTMLElement, code: string, destination: string): Promise<CopyOutcome> {
+  return copyNodePng(node, fileName(code, destination, 'png'), { width: LABEL_W, height: LABEL_H, pixelRatio: 3, backgroundColor: '#FFFFFF' });
+}
+
+/** Étiquette en PDF A4, prête à imprimer : posée à sa proportion, centrée, avec une marge. */
 export async function downloadShippingLabelPdf(node: HTMLElement, code: string, destination: string): Promise<void> {
   const dataUrl = await labelPng(node);
+  const PAGE_W = 210, PAGE_H = 297, MARGIN = 8;
+  const ratio = LABEL_H / LABEL_W;
+  let w = PAGE_W - 2 * MARGIN;
+  let h = w * ratio;
+  if (h > PAGE_H - 2 * MARGIN) { h = PAGE_H - 2 * MARGIN; w = h / ratio; }
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  pdf.addImage(dataUrl, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+  pdf.addImage(dataUrl, 'PNG', (PAGE_W - w) / 2, (PAGE_H - h) / 2, w, h, undefined, 'FAST');
   pdf.save(fileName(code, destination, 'pdf'));
 }

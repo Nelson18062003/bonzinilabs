@@ -481,6 +481,7 @@ export function MobileClientDetail() {
             clientCity={client.city}
             clientCountry={client.country}
             settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+            mode="admin"
           />
         </div>
       </BottomSheet>

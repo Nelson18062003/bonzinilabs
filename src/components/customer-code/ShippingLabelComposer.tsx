@@ -7,7 +7,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileDown, Loader2, Share2 } from 'lucide-react';
+import { Copy, Download, FileDown, Loader2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -19,7 +19,7 @@ import {
 } from '@/lib/customerCode';
 import { prewarmFontEmbedCss } from '@/lib/nodeImage';
 import { ShippingLabel, LABEL_W, LABEL_H, type LabelSupplierInfo } from './ShippingLabel';
-import { shareShippingLabel, downloadShippingLabelPdf } from './exportShippingLabel';
+import { shareShippingLabel, downloadShippingLabelPdf, downloadShippingLabelPng, copyShippingLabelPng } from './exportShippingLabel';
 import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Segmented, TextInput } from '@/mobile/designKit';
 
 export interface ShippingLabelComposerProps {
@@ -34,17 +34,19 @@ export interface ShippingLabelComposerProps {
   settings: ShippingSettings;
   /** `split` (desktop) : réglages à gauche, aperçu à droite ; `stack` (mobile) : l'un sous l'autre. */
   layout?: 'stack' | 'split';
+  /** `admin` : copier / télécharger l'image + PDF ; `client` : partager l'image (WeChat, WhatsApp) + PDF. */
+  mode?: 'admin' | 'client';
   className?: string;
 }
 
-export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', className }: ShippingLabelComposerProps) {
+export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', mode = 'client', className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   const labelRef = useRef<HTMLDivElement>(null);
   // Entrepôt par défaut : c'est la destination de la plupart des envois ;
   // le bureau est indiqué au cas par cas.
   const [destination, setDestination] = useState<ShippingDestination>('warehouse');
   const [supplier, setSupplier] = useState<LabelSupplierInfo>({});
-  const [busy, setBusy] = useState<'share' | 'pdf' | null>(null);
+  const [busy, setBusy] = useState<'share' | 'copy' | 'png' | 'pdf' | null>(null);
 
   const destConfigured = isLocationConfigured(settings[destination]);
   const canExport = !!code && destConfigured && busy === null;
@@ -55,13 +57,23 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
     if (labelRef.current) prewarmFontEmbedCss(labelRef.current);
   }, []);
 
-  const run = async (kind: 'share' | 'pdf') => {
+  const run = async (kind: 'share' | 'copy' | 'png' | 'pdf') => {
     if (!labelRef.current || !canExport) return;
     setBusy(kind);
     try {
       if (kind === 'share') {
         const outcome = await shareShippingLabel(labelRef.current, code, destination);
         if (outcome === 'downloaded') toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
+      } else if (kind === 'copy') {
+        const outcome = await copyShippingLabelPng(labelRef.current, code, destination);
+        toast.success(
+          outcome === 'copied'
+            ? t('myCode.imageCopied', { defaultValue: 'Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail' })
+            : t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }),
+        );
+      } else if (kind === 'png') {
+        await downloadShippingLabelPng(labelRef.current, code, destination);
+        toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
       } else {
         await downloadShippingLabelPdf(labelRef.current, code, destination);
       }
@@ -119,7 +131,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           <div className="col-span-2">{field('address', t('myCode.supplierAddress', { defaultValue: 'Adresse (en Chine)' }))}</div>
         </div>
         <p className={cn('mt-2 text-[14px] leading-snug', TEXT.muted)}>
-          {t('myCode.supplierHint', { defaultValue: 'Laissez vide : le fournisseur remplira ces lignes au stylo.' })}
+          {t('myCode.supplierHint', { defaultValue: 'Facultatif : ce que vous saisissez s’imprime sur l’étiquette.' })}
         </p>
       </div>
 
@@ -159,27 +171,33 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
         </div>
       </div>
 
-      {/* 4 · Sortie : image pour WeChat / WhatsApp, PDF A4 pour l'imprimante */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <button
-          type="button"
-          onClick={() => run('share')}
-          disabled={!canExport}
-          className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', PRIMARY_PILL)}
-        >
-          {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
-          {t('myCode.shareLabel', { defaultValue: 'Partager l’image' })}
-        </button>
-        <button
-          type="button"
-          onClick={() => run('pdf')}
-          disabled={!canExport}
-          className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', SOFT_PILL)}
-        >
-          {busy === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-          {t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' })}
-        </button>
-      </div>
+      {/* 4 · Sortie. Admin : copier / télécharger l'image, PDF. Client (téléphone) : partager, PDF. */}
+      {(() => {
+        const btn = (kind: 'share' | 'copy' | 'png' | 'pdf', Icon: typeof Copy, label: string, primary: boolean) => (
+          <button
+            key={kind}
+            type="button"
+            onClick={() => run(kind)}
+            disabled={!canExport}
+            className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', primary ? PRIMARY_PILL : SOFT_PILL)}
+          >
+            {busy === kind ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+            {label}
+          </button>
+        );
+        return mode === 'admin' ? (
+          <div className="grid grid-cols-3 gap-2.5">
+            {btn('copy', Copy, t('myCode.copyImage', { defaultValue: 'Copier l’image' }), true)}
+            {btn('png', Download, t('myCode.downloadImage', { defaultValue: 'Télécharger l’image' }), false)}
+            {btn('pdf', FileDown, t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' }), false)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2.5">
+            {btn('share', Share2, t('myCode.shareLabel', { defaultValue: 'Partager l’image' }), true)}
+            {btn('pdf', FileDown, t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' }), false)}
+          </div>
+        );
+      })()}
     </div>
   );
 

@@ -16,21 +16,21 @@
 //      destinataire et nos coordonnées : tél., WeChat, WhatsApp, e-mail
 //   2  客户编号 — le QR, grand, et le code en très gros
 //   3  客户 — le client : nom, tél. Afrique, société, destination, e-mail
-//   4  供货商 — le fournisseur : pré-rempli, sinon des lignes à remplir
+//   4  供货商 — le fournisseur : pré-rempli, sinon la place pour l'écrire
 //   5  仓库填写 — réservé à l'entrepôt : date d'arrivée, cubage, total
 //
 // Les intitulés reprennent MOT POUR MOT le bon de réception papier (三联单)
 // de l'entrepôt. Les adresses et coordonnées viennent des réglages
 // (platform_settings), passés en prop.
-// Taille fixe 600 × 850 px — le ratio des formats A : le nœud est rasterisé
-// tel quel et posé sur une page A4 dans le PDF.
+// Taille fixe 600 × 950 px : le nœud est rasterisé tel quel ; dans le PDF il
+// est posé sur une page A4 en gardant ses proportions.
 // ============================================================
 import { forwardRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { customerQrPayload, DESTINATION_LABEL, type ShippingDestination, type ShippingSettings } from '@/lib/customerCode';
 
 export const LABEL_W = 600;
-export const LABEL_H = 850;
+export const LABEL_H = 950;
 
 /** Ce qu'on sait du fournisseur au moment de générer l'étiquette (optionnel). */
 export interface LabelSupplierInfo {
@@ -65,9 +65,9 @@ const HAIR = '#DADADA';
 const RULE = `2px solid ${INK}`;
 
 /** Les deux verticales de l'étiquette : où commence l'intitulé, où commence la valeur. */
-const LABEL_COL = 118;
-const LABEL_COL_2 = 92;
-const ROW_H = 23;
+const LABEL_COL = 124;
+const LABEL_COL_2 = 96;
+const ROW_H = 28;
 const PAD_X = 14;
 
 /** Bande de titre d'une section : numéro · chinois · anglais, et parfois une étiquette à droite. */
@@ -98,18 +98,18 @@ function Band({ n, zh, en, right, dark }: { n: string; zh: string; en: string; r
 
 function Key({ zh, en }: { zh: string; en: string }) {
   return (
-    <span style={{ fontFamily: FONT_ZH, fontSize: 11, fontWeight: 700, color: MUTED, whiteSpace: 'nowrap', lineHeight: 1 }}>
+    <span style={{ fontFamily: FONT_ZH, fontSize: 11.5, fontWeight: 700, color: MUTED, whiteSpace: 'nowrap', lineHeight: 1 }}>
       {zh}
       {zh && en ? ' ' : ''}
-      <span style={{ fontFamily: FONT, fontSize: 9, letterSpacing: 0.7, textTransform: 'uppercase' }}>{en}</span>
+      <span style={{ fontFamily: FONT, fontSize: 9.5, letterSpacing: 0.7, textTransform: 'uppercase' }}>{en}</span>
     </span>
   );
 }
 
-/** Une valeur ; vide, c'est une ligne à remplir au stylo. */
-function Val({ value, latin, size = 13 }: { value?: string | null; latin?: boolean; size?: number }) {
+/** Une valeur ; vide, on laisse la place (pas de trait : le fournisseur n'écrit pas dessus, il tape ou il colle). */
+function Val({ value, latin, size = 14 }: { value?: string | null; latin?: boolean; size?: number }) {
   const v = (value ?? '').trim();
-  if (!v) return <span style={{ display: 'block', height: 1, background: '#9A9A9A', alignSelf: 'end', marginBottom: 4 }} />;
+  if (!v) return <span />;
   return (
     <span style={{ fontFamily: latin ? FONT : FONT_ZH, fontSize: size, fontWeight: 800, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {v}
@@ -143,17 +143,6 @@ function Row2({
       <div style={{ display: 'grid', paddingRight: 10, minWidth: 0 }}>{a.custom ?? <Val value={a.value} latin={a.latin} size={a.size} />}</div>
       <Key zh={b.zh} en={b.en} />
       <div style={{ display: 'grid', minWidth: 0 }}>{b.custom ?? <Val value={b.value} latin={b.latin} size={b.size} />}</div>
-    </div>
-  );
-}
-
-/** « n° __ / __ » : deux traits et une barre. */
-function CartonOf() {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 12px 1fr', alignItems: 'end', columnGap: 6, height: 14 }}>
-      <span style={{ height: 1, background: '#9A9A9A', marginBottom: 4 }} />
-      <span style={{ fontSize: 12, fontWeight: 800, lineHeight: 1, textAlign: 'center' }}>/</span>
-      <span style={{ height: 1, background: '#9A9A9A', marginBottom: 4 }} />
     </div>
   );
 }
@@ -207,21 +196,22 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
             </span>
           }
         />
-        <div style={{ padding: `6px ${PAD_X}px 5px`, borderBottom: `1px solid ${HAIR}` }}>
-          <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 25, fontWeight: 900, lineHeight: 1.25, whiteSpace: 'pre-line', letterSpacing: 0.3 }}>{loc.addressZh}</div>
-          {loc.addressEn.trim() ? <div style={{ marginTop: 3, fontSize: 10.5, fontWeight: 600, color: MUTED, lineHeight: 1.25 }}>{loc.addressEn}</div> : null}
+        <div style={{ padding: `8px ${PAD_X}px 7px`, borderBottom: `1px solid ${HAIR}` }}>
+          <div style={{ fontFamily: FONT_ZH_DISPLAY, fontSize: 26, fontWeight: 900, lineHeight: 1.28, whiteSpace: 'pre-line', letterSpacing: 0.3 }}>{loc.addressZh}</div>
+          {loc.addressEn.trim() ? <div style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: MUTED, lineHeight: 1.3 }}>{loc.addressEn}</div> : null}
         </div>
         <Row1 zh="收件人" en="Recipient" value={[loc.recipient, ourCompany].filter((v) => v.trim()).join(' · ')} />
         <Row2 a={{ zh: '电话', en: 'Tel', value: loc.phone, latin: true }} b={{ zh: '微信', en: 'WeChat', value: loc.wechat, latin: true }} />
-        <Row2 a={{ zh: '', en: 'WhatsApp', value: loc.whatsapp, latin: true }} b={{ zh: '邮箱', en: 'Email', value: loc.email || company.email, latin: true, size: 12 }} last />
+        <Row1 zh="" en="WhatsApp" value={loc.whatsapp} latin />
+        <Row1 zh="邮箱" en="Email" value={loc.email || company.email} latin last />
 
         {/* 2 · Code client + QR */}
         <div style={{ borderTop: RULE }}>
           <Band n="2" zh="客户编号" en="Customer ID" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '236px 1fr', borderBottom: RULE }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', borderBottom: RULE }}>
           <div style={{ padding: 10, borderRight: `1px solid ${HAIR}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <QRCodeSVG value={customerQrPayload(code)} size={216} level="H" marginSize={0} />
+            <QRCodeSVG value={customerQrPayload(code)} size={226} level="H" marginSize={0} />
           </div>
           <div style={{ padding: `10px ${PAD_X}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, minWidth: 0 }}>
             <div style={{ fontSize: 44, fontWeight: 900, letterSpacing: 1, lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{code}</div>
@@ -236,29 +226,33 @@ export const ShippingLabel = forwardRef<HTMLDivElement, ShippingLabelProps>(func
         <Band n="3" zh="客户" en="Customer" />
         <Row1 zh="客户姓名" en="Name" value={clientName} latin />
         <Row2 a={{ zh: '电话(非洲)', en: 'Tel', value: clientPhone || '—', latin: true }} b={{ zh: '目的地', en: 'Dest.', value: finalDestination || '—', latin: true }} />
-        <Row2 a={{ zh: '公司', en: 'Company', value: companyName || '—', latin: true }} b={{ zh: '邮箱', en: 'Email', value: clientEmail || '—', latin: true, size: 12 }} last />
+        <Row1 zh="公司" en="Company" value={companyName || '—'} latin />
+        <Row1 zh="邮箱" en="Email" value={clientEmail || '—'} latin last />
 
         {/* 4 · Fournisseur — pré-rempli ou à remplir au stylo */}
         <div style={{ borderTop: RULE }}>
           <Band n="4" zh="供货商 / 发件人" en="Supplier · Sender" />
         </div>
-        <Row1 zh="供货商" en="Supplier" value={supplier?.name} latin />
-        <Row2 a={{ zh: '电话', en: 'Tel', value: supplier?.phone, latin: true }} b={{ zh: '邮箱', en: 'Email', value: supplier?.email, latin: true, size: 12 }} />
-        <Row1 zh="地址" en="Address" value={supplier?.address} />
-        <Row2 a={{ zh: '货物品名', en: 'Goods name' }} b={{ zh: '货物数量', en: 'Qty (件)' }} />
-        <Row2 a={{ zh: '发货日期', en: 'Ship date' }} b={{ zh: '箱号', en: 'Carton', custom: <CartonOf /> }} last />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' }}>
+          <Row1 zh="供货商" en="Supplier" value={supplier?.name} latin />
+          <Row1 zh="电话" en="Tel" value={supplier?.phone} latin />
+          <Row1 zh="邮箱" en="Email" value={supplier?.email} latin />
+          <Row1 zh="地址" en="Address" value={supplier?.address} />
+          <Row2 a={{ zh: '货物品名', en: 'Goods name' }} b={{ zh: '货物数量', en: 'Qty (件)' }} />
+          <Row2 a={{ zh: '发货日期', en: 'Ship date' }} b={{ zh: '箱号', en: 'Carton no.' }} last />
+        </div>
 
         {/* 5 · Réservé à l'entrepôt — les colonnes du 三联单 */}
         <div style={{ borderTop: RULE, marginTop: 'auto' }}>
           <Band n="5" zh="仓库填写" en="Warehouse use only" />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `${LABEL_COL}px 1fr 70px 1fr 74px 1fr`, alignItems: 'center', height: ROW_H + 4, padding: `0 ${PAD_X}px`, background: '#F7F7F7' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `${LABEL_COL}px 1fr 70px 1fr 74px 1fr`, alignItems: 'center', height: ROW_H + 6, padding: `0 ${PAD_X}px`, background: '#F7F7F7' }}>
           <Key zh="到货日期" en="Date" />
-          <div style={{ display: 'grid', paddingRight: 14 }}><Val /></div>
+          <span />
           <Key zh="立方" en="CBM" />
-          <div style={{ display: 'grid', paddingRight: 14 }}><Val /></div>
+          <span />
           <Key zh="总包数" en="Total" />
-          <div style={{ display: 'grid' }}><Val /></div>
+          <span />
         </div>
 
         {/* Pied : rappel du code, lisible même si le QR est abîmé */}
