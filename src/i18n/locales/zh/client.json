@@ -197,7 +197,7 @@
     "bankMotif": "转账附言",
     "cargoTitle": "您从中国发出的包裹",
     "cargoBody": "将此标签发送给您的供应商：贴在每个纸箱上。到达我们仓库后，扫一下码即可将包裹关联到您的账户。",
-    "shareLabel": "分享标签",
+    "shareLabel": "分享图片",
     "downloadPdf": "可打印 PDF",
     "labelDownloaded": "标签已下载",
     "labelError": "无法生成标签",
@@ -208,6 +208,11 @@
     },
     "destHintWarehouse": "适用于大多数货件。供应商直接送到我们的仓库。",
     "destHintOffice": "仅当 Bonzini 要求您本次使用办公室地址时选择。",
-    "destUnavailable": "地址更新中，标签即将可用。"
+    "destUnavailable": "地址更新中，标签即将可用。",
+    "supplierTitle": "供应商（可选）",
+    "supplierName": "名称",
+    "supplierPhone": "电话",
+    "supplierAddress": "地址（中国）",
+    "supplierHint": "留空即可：供应商可手写填写。"
   }
 }

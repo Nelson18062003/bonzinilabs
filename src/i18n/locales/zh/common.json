@@ -440,5 +440,7 @@
   "debit": "扣款",
   "home": "首页",
   "searchByNamePhoneCode": "姓名、电话、编号 BZ-…",
-  "scanCustomerCode": "扫描客户编号"
+  "scanCustomerCode": "扫描客户编号",
+  "shippingLabelAction": "发货标签",
+  "shippingLabelActionDesc": "仓库或办公室 · 图片或可打印 PDF"
 }

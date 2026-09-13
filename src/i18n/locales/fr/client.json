@@ -205,7 +205,7 @@
     "bankMotif": "Libellé du virement",
     "cargoTitle": "Vos colis depuis la Chine",
     "cargoBody": "Envoyez cette étiquette à votre fournisseur : il la colle sur chaque carton. À l’arrivée dans notre entrepôt, un scan suffit pour rattacher vos colis à votre compte.",
-    "shareLabel": "Partager l’étiquette",
+    "shareLabel": "Partager l’image",
     "downloadPdf": "PDF à imprimer",
     "labelDownloaded": "Étiquette téléchargée",
     "labelError": "Impossible de générer l’étiquette",
@@ -216,6 +216,11 @@
     },
     "destHintWarehouse": "Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.",
     "destHintOffice": "Uniquement si Bonzini vous l’a demandé pour cet envoi.",
-    "destUnavailable": "Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt."
+    "destUnavailable": "Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt.",
+    "supplierTitle": "Fournisseur (facultatif)",
+    "supplierName": "Nom",
+    "supplierPhone": "Téléphone",
+    "supplierAddress": "Adresse (en Chine)",
+    "supplierHint": "Laissez vide : le fournisseur remplira ces lignes au stylo."
   }
 }

@@ -42,10 +42,10 @@ export async function shareShippingLabel(node: HTMLElement, code: string, destin
   return 'downloaded';
 }
 
-/** Étiquette en PDF A5 (148 × 210 mm — le ratio du nœud), prête à imprimer. */
+/** Étiquette en PDF A4 (210 × 297 mm — le ratio du nœud), prête à imprimer. */
 export async function downloadShippingLabelPdf(node: HTMLElement, code: string, destination: string): Promise<void> {
   const dataUrl = await labelPng(node);
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
-  pdf.addImage(dataUrl, 'PNG', 0, 0, 148, 210, undefined, 'FAST');
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  pdf.addImage(dataUrl, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
   pdf.save(fileName(code, destination, 'pdf'));
 }

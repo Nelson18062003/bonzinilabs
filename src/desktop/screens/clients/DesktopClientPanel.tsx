@@ -41,6 +41,7 @@ import {
   TEXT,
   TONE_HOLDER,
   PRIMARY_PILL,
+  VIOLET_PILL,
   clientStatusTone,
   Avatar,
   Amount,
@@ -57,6 +58,7 @@ import {
 } from '@/desktop/designKit';
 import { QRCodeSVG } from 'qrcode.react';
 import { customerQrPayload } from '@/lib/customerCode';
+import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
 import {
   AlertTriangle,
   ArrowDownCircle,
@@ -71,6 +73,7 @@ import {
   Minus,
   Pencil,
   Plus,
+  Tag,
   Trash2,
   Users,
   X,
@@ -237,6 +240,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [deleteChecking, setDeleteChecking] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
 
   const copyCustomerCode = async () => {
     if (!client?.customerCode) return;
@@ -571,15 +575,35 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <div className={cn('mt-0.5 text-[20px] font-black leading-none tracking-[0.04em] tabular-nums', TEXT.strong)}>{client.customerCode}</div>
             <div className={cn('mt-1 text-[11.5px]', TEXT.muted)}>Libellé de virement · étiquette colis (QR)</div>
           </div>
-          <button
-            type="button"
-            onClick={copyCustomerCode}
-            className={cn('flex items-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', codeCopied ? TONE_HOLDER.success : SURFACE.holder)}
-          >
-            {codeCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {codeCopied ? 'Copié' : 'Copier'}
-          </button>
+          <div className="flex shrink-0 flex-col items-stretch gap-1.5">
+            <button
+              type="button"
+              onClick={copyCustomerCode}
+              className={cn('flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', codeCopied ? TONE_HOLDER.success : SURFACE.holder)}
+            >
+              {codeCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {codeCopied ? 'Copié' : 'Copier'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLabelOpen(true)}
+              className={cn('flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', VIOLET_PILL)}
+            >
+              <Tag className="h-3.5 w-3.5" /> Étiquette colis
+            </button>
+          </div>
         </div>
+
+        <CenterDialog open={labelOpen} onClose={() => setLabelOpen(false)} title="Étiquette colis" width={520}>
+          <ShippingLabelComposer
+            code={client.customerCode}
+            clientName={name}
+            clientPhone={client.phone}
+            companyName={client.companyName}
+            clientCity={client.city}
+            clientCountry={client.country}
+          />
+        </CenterDialog>
 
         {/* Grille de faits */}
         <div className="rounded-2xl px-4 pb-3 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">

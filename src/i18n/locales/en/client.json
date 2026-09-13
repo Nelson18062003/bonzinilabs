@@ -205,7 +205,7 @@
     "bankMotif": "Transfer reference",
     "cargoTitle": "Your parcels from China",
     "cargoBody": "Send this label to your supplier: they stick it on every carton. On arrival at our warehouse, one scan links your parcels to your account.",
-    "shareLabel": "Share label",
+    "shareLabel": "Share image",
     "downloadPdf": "Printable PDF",
     "labelDownloaded": "Label downloaded",
     "labelError": "Could not generate the label",
@@ -216,6 +216,11 @@
     },
     "destHintWarehouse": "For most shipments. The supplier delivers straight to our warehouse.",
     "destHintOffice": "Only if Bonzini asked you to use it for this shipment.",
-    "destUnavailable": "Address being updated — the label will be available very soon."
+    "destUnavailable": "Address being updated — the label will be available very soon.",
+    "supplierTitle": "Supplier (optional)",
+    "supplierName": "Name",
+    "supplierPhone": "Phone",
+    "supplierAddress": "Address (in China)",
+    "supplierHint": "Leave empty: the supplier fills these lines in by hand."
   }
 }

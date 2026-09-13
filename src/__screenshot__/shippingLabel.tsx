@@ -20,7 +20,17 @@ const OFFICE: ChinaReceivingAddress = {
   wechat: 'bonzini_gz',
 };
 
-const props = { code: 'BZ-482913', clientName: 'Aïcha Mbarga', clientPhone: '+237 677 12 34 56', companyName: 'Mbarga Import SARL' };
+const props = { code: 'BZ-482913', clientName: 'Aïcha Mbarga', clientPhone: '+237 677 12 34 56', companyName: 'Mbarga Import SARL', clientCity: 'Douala', clientCountry: 'Cameroun' };
+const supplier = { name: 'Yiwu Hengda Trading Co.', phone: '+86 137 0000 0000', address: '浙江省义乌市国际商贸城三区 12345 号' };
 
-export const LabelWarehouse = () => <ShippingLabel {...props} destination="warehouse" address={WAREHOUSE} />;
+export const LabelWarehouse = () => <ShippingLabel {...props} destination="warehouse" address={WAREHOUSE} supplier={supplier} />;
 export const LabelOffice = () => <ShippingLabel {...props} destination="office" address={OFFICE} />;
+
+// Le composeur (destination · fournisseur · aperçu · export), tel qu'il
+// s'affiche sur un téléphone.
+import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+export const LabelComposer = () => (
+  <div style={{ padding: 16, background: '#ECEAF7', minHeight: '100vh' }}>
+    <ShippingLabelComposer code="BZ-482913" clientName="Aïcha Mbarga" clientPhone="+237 677 12 34 56" companyName="Mbarga Import SARL" clientCity="Douala" clientCountry="Cameroun" />
+  </div>
+);

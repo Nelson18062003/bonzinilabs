@@ -440,5 +440,7 @@
   "debit": "Debit",
   "home": "Home",
   "searchByNamePhoneCode": "Name, phone, ID BZ-…",
-  "scanCustomerCode": "Scan a customer ID"
+  "scanCustomerCode": "Scan a customer ID",
+  "shippingLabelAction": "Shipping label",
+  "shippingLabelActionDesc": "Warehouse or office · image or printable PDF"
 }

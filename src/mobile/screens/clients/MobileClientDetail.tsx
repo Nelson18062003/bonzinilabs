@@ -34,10 +34,12 @@ import {
   Trash2,
   Link2,
   Users,
+  Tag,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
+import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
@@ -128,6 +130,9 @@ export function MobileClientDetail() {
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
+
+  // Étiquette colis (feuille)
+  const [labelOpen, setLabelOpen] = useState(false);
 
   // Password reset drawer state
   const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
@@ -464,6 +469,13 @@ export function MobileClientDetail() {
             onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
           />
           <ActionRow
+            icon={Tag}
+            tone="pending"
+            label={t('shippingLabelAction', { defaultValue: 'Étiquette colis' })}
+            description={t('shippingLabelActionDesc', { defaultValue: 'Entrepôt ou bureau · image ou PDF à imprimer' })}
+            onClick={() => setLabelOpen(true)}
+          />
+          <ActionRow
             icon={Users}
             tone="info"
             label={t('beneficiaries', { defaultValue: 'Bénéficiaires' })}
@@ -519,6 +531,20 @@ export function MobileClientDetail() {
           )}
         </Card>
       </div>
+
+      {/* Étiquette colis — même composeur que l'app client */}
+      <BottomSheet open={labelOpen} onClose={() => setLabelOpen(false)} title={t('shippingLabelAction', { defaultValue: 'Étiquette colis' })}>
+        <div className="max-h-[75vh] overflow-y-auto px-1 pb-2">
+          <ShippingLabelComposer
+            code={client.customerCode}
+            clientName={`${client.firstName} ${client.lastName}`.trim()}
+            clientPhone={client.phone}
+            companyName={client.companyName}
+            clientCity={client.city}
+            clientCountry={client.country}
+          />
+        </div>
+      </BottomSheet>
 
       {/* Adjustment Drawer */}
       <AdjustmentDrawer

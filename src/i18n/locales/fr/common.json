@@ -442,5 +442,7 @@
   "debit": "Débit",
   "home": "Accueil",
   "searchByNamePhoneCode": "Nom, téléphone, identifiant BZ-…",
-  "scanCustomerCode": "Scanner un identifiant client"
+  "scanCustomerCode": "Scanner un identifiant client",
+  "shippingLabelAction": "Étiquette colis",
+  "shippingLabelActionDesc": "Entrepôt ou bureau · image ou PDF à imprimer"
 }
