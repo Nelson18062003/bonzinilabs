@@ -34,6 +34,9 @@ import {
   SURFACE,
   TEXT,
   SOFT_PILL,
+  PRIMARY_PILL,
+  SUBTLE_PILL,
+  DANGER_SOFT_PILL,
   depositStatusTone,
   StatusPill,
   Card,
@@ -465,7 +468,7 @@ export function MobileDepositDetailV2() {
             onClick={handleDownloadReceipt}
             disabled={isGeneratingPDF}
             className={cn(
-              'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#10B981] px-3.5 py-2 text-[12px] font-bold text-white transition active:scale-95',
+              'inline-flex h-8 shrink-0 items-center gap-1.5 px-2 text-[14px] font-medium transition-colors', SOFT_PILL,
               isGeneratingPDF && 'opacity-60',
             )}
           >
@@ -516,7 +519,7 @@ export function MobileDepositDetailV2() {
             {canAddProof && (
               <button
                 onClick={() => setShowUploadSheet(true)}
-                className="inline-flex items-center gap-1 rounded-full bg-[#DEEFE5] px-2.5 py-1 text-[11px] font-bold text-[#2E7D52] transition active:scale-95 dark:bg-[#1E3A2C] dark:text-[#7FCBA0]"
+                className={cn('inline-flex h-8 items-center gap-1 px-2 text-[14px] font-medium transition-colors', SOFT_PILL)}
               >
                 <Plus className="h-3 w-3" />
                 Ajouter
@@ -535,14 +538,14 @@ export function MobileDepositDetailV2() {
 
           {!hasProofs ? (
             <div>
-              <div className="rounded-2xl border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
+              <div className="rounded-lg border-2 border-dashed border-black/10 p-4 text-center dark:border-white/10">
                 <div className={cn('text-[12px] font-bold', TEXT.muted)}>Preuve manquante</div>
                 <div className={cn('mt-0.5 text-[11px]', TEXT.muted)}>Le client doit envoyer un justificatif</div>
               </div>
               {canAddProof && (
                 <button
                   onClick={() => setShowUploadSheet(true)}
-                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full bg-[#DEEFE5] py-2.5 text-[12px] font-bold text-[#2E7D52] transition active:scale-[0.99] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]"
+                  className={cn('mt-2 flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', SOFT_PILL)}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Ajouter une preuve
@@ -556,7 +559,7 @@ export function MobileDepositDetailV2() {
                 const isImage = proof.file_type?.startsWith('image/');
                 const isPdf = proof.file_type === 'application/pdf';
                 return (
-                  <div key={proof.id} className="overflow-hidden rounded-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.06]">
+                  <div key={proof.id} className="overflow-hidden rounded-lg ring-1 ring-black/[0.06] dark:ring-white/[0.06]">
                     {/* Preview */}
                     <div
                       className="relative w-full bg-black/5 dark:bg-white/5"
@@ -576,31 +579,31 @@ export function MobileDepositDetailV2() {
                         </div>
                       )}
                       {/* Overlay nom fichier — haut gauche */}
-                      <div className="absolute left-1.5 top-1.5 max-w-[55%] truncate rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      <div className="absolute left-1.5 top-1.5 max-w-[55%] truncate rounded bg-black/60 px-1.5 py-0.5 text-[12px] font-medium text-white">
                         {proof.file_name}
                       </div>
                       {/* Badge uploader — haut droite */}
-                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      <div className="absolute right-1.5 top-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[12px] font-medium text-white">
                         {proof.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
                       </div>
                     </div>
 
                     {/* Boutons d'action */}
-                    <div className={cn('flex gap-1.5 p-2', SURFACE.canvas)}>
+                    <div className={cn('flex flex-wrap gap-2 p-2', SURFACE.inset)}>
                       <button
                         onClick={() => signedUrl && isImage && setViewingProof(signedUrl)}
                         disabled={!signedUrl || !isImage}
-                        className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold transition active:scale-95', SOFT_PILL, (!signedUrl || !isImage) && 'opacity-40')}
+                        className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', SOFT_PILL, (!signedUrl || !isImage) && 'opacity-40')}
                       >
-                        <Eye className="h-3 w-3" />
+                        <Eye className="h-4 w-4" />
                         Agrandir
                       </button>
                       <a
                         href={signedUrl ?? undefined}
                         download={proof.file_name}
-                        className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold no-underline', SOFT_PILL, !signedUrl && 'pointer-events-none opacity-40')}
+                        className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium no-underline', SOFT_PILL, !signedUrl && 'pointer-events-none opacity-40')}
                       >
-                        <Download className="h-3 w-3" />
+                        <Download className="h-4 w-4" />
                         Télécharger
                       </a>
                       {!isLocked && (
@@ -608,16 +611,16 @@ export function MobileDepositDetailV2() {
                           <button
                             onClick={() => { setReplaceProofId(proof.id); replaceFileRef.current?.click(); }}
                             disabled={uploadProofs.isPending}
-                            className={cn('flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-[10px] font-semibold transition active:scale-95', SOFT_PILL, uploadProofs.isPending && 'opacity-40')}
+                            className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', SOFT_PILL, uploadProofs.isPending && 'opacity-40')}
                           >
-                            <ArrowRight className="h-3 w-3" />
+                            <ArrowRight className="h-4 w-4" />
                             Remplacer
                           </button>
                           <button
                             onClick={() => setShowDeleteProofSheet(proof.id)}
-                            className="flex h-8 flex-1 items-center justify-center gap-1 rounded-lg bg-[#FBE7E7] text-[10px] font-semibold text-[#C0504D] transition active:scale-95 dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                            className={cn('flex h-8 min-w-[calc(50%-4px)] flex-1 items-center justify-center gap-1 rounded-lg text-[14px] font-medium transition-colors', DANGER_SOFT_PILL)}
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-4 w-4" />
                             Supprimer
                           </button>
                         </>
@@ -644,7 +647,7 @@ export function MobileDepositDetailV2() {
                   onClick={handleStartReview}
                   disabled={startReview.isPending}
                   className={cn(
-                    'flex w-full items-center justify-center gap-1.5 rounded-full bg-[#7C3AED] py-3 text-[13px] font-bold text-white transition active:scale-[0.99]',
+                    'flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', PRIMARY_PILL,
                     startReview.isPending && 'opacity-60',
                   )}
                 >
@@ -660,13 +663,13 @@ export function MobileDepositDetailV2() {
                       setConfirmedAmount(deposit.amount_xaf.toString());
                       setShowValidateConfirm(true);
                     }}
-                    className="w-full rounded-full bg-[#10B981] py-3 text-[13px] font-bold text-white transition active:scale-[0.99]"
+                    className={cn('flex h-10 w-full items-center justify-center text-[16px] font-medium transition-colors', PRIMARY_PILL)}
                   >
                     Valider le dépôt
                   </button>
                   <button
                     onClick={() => setShowRejectSheet(true)}
-                    className="w-full rounded-full bg-[#FBE7E7] py-2.5 text-[12px] font-semibold text-[#C0504D] transition active:scale-[0.99] dark:bg-[#3A2526] dark:text-[#E79A9A]"
+                    className={cn('flex h-10 w-full items-center justify-center text-[16px] font-medium transition-colors', DANGER_SOFT_PILL)}
                   >
                     Rejeter
                   </button>
@@ -677,9 +680,9 @@ export function MobileDepositDetailV2() {
               {isSuperAdmin && (
                 <button
                   onClick={() => setShowDeleteDepositSheet(true)}
-                  className={cn('flex w-full items-center justify-center gap-1.5 rounded-full py-2.5 text-[11px] font-semibold transition active:scale-[0.99]', SOFT_PILL, TEXT.muted)}
+                  className={cn('flex h-10 w-full items-center justify-center gap-2 text-[16px] font-medium transition-colors', SUBTLE_PILL)}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                   Annuler
                 </button>
               )}
@@ -739,7 +742,7 @@ export function MobileDepositDetailV2() {
       {/* ── BottomSheet validation ────────────────────────── */}
       <BottomSheet open={showValidateConfirm} onClose={() => setShowValidateConfirm(false)} title="Valider ce dépôt">
         <div className="space-y-4">
-          <div className={cn('space-y-2 rounded-2xl p-3', SURFACE.canvas)}>
+          <div className={cn('space-y-2 rounded-lg p-3', SURFACE.canvas)}>
             <div className="flex items-center justify-between text-[13px]">
               <span className={TEXT.muted}>Montant déclaré</span>
               <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{formatCurrency(deposit.amount_xaf)}</span>
@@ -758,14 +761,14 @@ export function MobileDepositDetailV2() {
             </FormField>
           </div>
           {amountDiffers && (
-            <div className="flex items-start gap-2 rounded-2xl bg-[#F8EFD8] p-3 dark:bg-[#372D14]">
+            <div className="flex items-start gap-2 rounded-lg bg-[#FFF1C2] p-3 dark:bg-[#522504]">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#9A6B12] dark:text-[#E7C083]" />
               <p className="text-[13px] text-[#9A6B12] dark:text-[#E7C083]">
                 Le montant confirmé ({formatCurrency(confirmedAmountNum)}) diffère du montant déclaré.
               </p>
             </div>
           )}
-          <div className="rounded-2xl bg-[#DEEFE5] p-4 dark:bg-[#1E3A2C]">
+          <div className="rounded-lg bg-[#CFF7D3] p-4 dark:bg-[#02542D]">
             <p className="text-[13px] text-[#2E7D52] dark:text-[#7FCBA0]">
               Le wallet sera crédité de <strong>{formatCurrency(confirmedAmountNum || deposit.amount_xaf)}</strong>
             </p>
@@ -782,13 +785,13 @@ export function MobileDepositDetailV2() {
               enterKeyHint="done"
               rows={2}
               placeholder="Commentaire visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
             />
           </FormField>
           <button
             type="button"
             onClick={() => setSendNotification(!sendNotification)}
-            className={cn('flex w-full items-center justify-between rounded-2xl p-3', SURFACE.canvas)}
+            className={cn('flex w-full items-center justify-between rounded-lg p-3', SURFACE.canvas)}
           >
             <div className="flex items-center gap-2">
               {sendNotification ? (
@@ -801,7 +804,7 @@ export function MobileDepositDetailV2() {
             <span
               className={cn(
                 'relative h-6 w-10 rounded-full transition-colors',
-                sendNotification ? 'bg-[#10B981]' : 'bg-black/15 dark:bg-white/15',
+                sendNotification ? 'bg-[#2C2C2C] dark:bg-[#E3E3E3]' : 'bg-[#D9D9D9] dark:bg-[#444444]',
               )}
             >
               <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all', sendNotification ? 'left-[18px]' : 'left-0.5')} />
@@ -815,7 +818,7 @@ export function MobileDepositDetailV2() {
               onClick={handleValidate}
               loading={validateDeposit.isPending}
               disabled={!confirmedAmountValid}
-              className="flex-1 bg-[#10B981] text-white dark:bg-[#10B981] dark:text-white"
+              className="flex-1"
             >
               Confirmer la validation
             </PrimaryPill>
@@ -848,7 +851,7 @@ export function MobileDepositDetailV2() {
                     }
                   }}
                   className={cn(
-                    'w-full rounded-2xl p-3 text-left text-[13px] transition-all ring-1',
+                    'w-full rounded-lg p-3 text-left text-[13px] transition-all ring-1',
                     rejectionCategory === reason
                       ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
                       : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
@@ -867,7 +870,7 @@ export function MobileDepositDetailV2() {
               onChange={(e) => setClientMessage(e.target.value)}
               rows={2}
               placeholder="Expliquez au client pourquoi son dépôt est refusé..."
-              className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
             />
             <p className={cn('mt-1 text-[10px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
@@ -878,7 +881,7 @@ export function MobileDepositDetailV2() {
               enterKeyHint="done"
               rows={2}
               placeholder="Note visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
             />
           </FormField>
           <div className="flex gap-2">
@@ -945,7 +948,7 @@ export function MobileDepositDetailV2() {
                 key={reason}
                 onClick={() => setDeleteProofReason(reason)}
                 className={cn(
-                  'w-full rounded-2xl p-3 text-left text-[13px] transition-all ring-1',
+                  'w-full rounded-lg p-3 text-left text-[13px] transition-all ring-1',
                   deleteProofReason === reason
                     ? 'bg-[#FBE7E7] text-[#C0504D] ring-[#C0504D]/40 dark:bg-[#3A2526] dark:text-[#E79A9A]'
                     : cn(SURFACE.card, 'ring-black/[0.06] dark:ring-white/[0.06]', TEXT.strong),
@@ -961,7 +964,7 @@ export function MobileDepositDetailV2() {
               onChange={(e) => setCustomDeleteReason(e.target.value)}
               rows={2}
               placeholder="Précisez le motif..."
-              className={cn('w-full resize-none rounded-2xl p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
+              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]')}
             />
           )}
           <div className="flex gap-2">

@@ -92,7 +92,7 @@ function ActionRow({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-2.5 text-left transition active:scale-[0.99] disabled:opacity-60"
+      className="flex w-full items-center gap-3.5 rounded-lg px-2 py-2.5 text-left transition active:scale-[0.99] disabled:opacity-60"
     >
       <span
         className={cn(
@@ -106,7 +106,7 @@ function ActionRow({
         <span className={cn('block text-[15px] font-semibold', destructive ? 'text-[#C0504D] dark:text-[#E79A9A]' : TEXT.strong)}>
           {label}
         </span>
-        {description && <span className={cn('block truncate text-[12.5px]', TEXT.muted)}>{description}</span>}
+        {description && <span className={cn('block truncate text-[14px]', TEXT.muted)}>{description}</span>}
       </span>
       <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
     </button>
@@ -347,25 +347,25 @@ export function MobileClientDetail() {
               {client.phone && (
                 <a
                   href={`tel:${client.phone}`}
-                  className={cn('mt-1.5 flex items-center gap-1.5 text-[13px]', TEXT.muted)}
+                  className={cn('mt-1.5 flex items-center gap-1.5 text-[14px]', TEXT.muted)}
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {client.phone}
                 </a>
               )}
 
-              <div className={cn('mt-1 flex items-center gap-1.5 text-[13px]', TEXT.muted)}>
+              <div className={cn('mt-1 flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
                 <Mail className="h-3.5 w-3.5" />
                 {client.email || t('notProvided', { defaultValue: 'Non renseigné' })}
               </div>
 
-              <div className={cn('mt-2 flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
+              <div className={cn('mt-2 flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
                 <Calendar className="h-3 w-3" />
                 {t('clientSince', { defaultValue: 'Client depuis' })} {formatDate(client.createdAt)}
               </div>
 
               {client.utmSource && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
+                <div className="mt-1.5 flex items-center gap-1.5 text-[14px]">
                   <Link2 className={cn('h-3 w-3 shrink-0', TEXT.muted)} />
                   <span className={TEXT.muted}>Source :</span>
                   <StatusPill tone="info" label={<span className="capitalize">{client.utmSource}</span>} />
@@ -383,11 +383,11 @@ export function MobileClientDetail() {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <Holder icon={Wallet} size="sm" />
-              <span className={cn('text-[13px] font-medium', TEXT.muted)}>{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
+              <span className={cn('text-[14px] font-medium', TEXT.muted)}>{t('availableBalance', { defaultValue: 'Solde disponible' })}</span>
             </div>
             <button
               onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
-              className="text-[13px] font-semibold text-[#6B5BD2] active:opacity-70 dark:text-[#A99BF0]"
+              className="text-[14px] font-semibold text-[#6B5BD2] active:opacity-70 dark:text-[#A99BF0]"
             >
               {t('history', { defaultValue: 'Historique' })}
             </button>
@@ -396,7 +396,7 @@ export function MobileClientDetail() {
           <Amount value={formatXAF(client.walletBalance || 0)} unit="XAF" size="xl" />
 
           {client.lastLedgerEntry && (
-            <p className={cn('mt-2 text-[12px]', TEXT.muted)}>
+            <p className={cn('mt-2 text-[14px]', TEXT.muted)}>
               {t('lastMovement', { defaultValue: 'Dernier mouvement' })} : {formatDate(client.lastLedgerEntry.createdAt)}
             </p>
           )}
@@ -406,7 +406,7 @@ export function MobileClientDetail() {
             <button
               onClick={() => openAdjustment('CREDIT')}
               className={cn(
-                'flex flex-1 items-center justify-center gap-1.5 rounded-full py-3 text-[14px] font-bold transition active:scale-[0.99]',
+                'flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-[16px] font-medium transition-colors',
                 TONE_HOLDER.success,
               )}
             >
@@ -416,7 +416,7 @@ export function MobileClientDetail() {
             <button
               onClick={() => openAdjustment('DEBIT')}
               className={cn(
-                'flex flex-1 items-center justify-center gap-1.5 rounded-full py-3 text-[14px] font-bold transition active:scale-[0.99]',
+                'flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-[16px] font-medium transition-colors',
                 TONE_HOLDER.danger,
               )}
             >
@@ -535,7 +535,7 @@ export function MobileClientDetail() {
         onClose={() => setEditOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Pencil className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            <Pencil className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
             {t('editProfile', { defaultValue: 'Modifier le profil' })}
           </span>
         }
@@ -620,7 +620,7 @@ export function MobileClientDetail() {
         onClose={() => setResetDrawerOpen(false)}
         title={
           <span className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-[#6B5BD2] dark:text-[#A99BF0]" />
+            <Key className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
             {t('resetPasswordAction', { defaultValue: 'Réinitialiser le mot de passe' })}
           </span>
         }
@@ -654,11 +654,11 @@ export function MobileClientDetail() {
           <p className={cn('text-[14px]', TEXT.muted)}>
             {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
           </p>
-          <div className={cn('flex items-center justify-between gap-3 rounded-2xl p-4', SURFACE.canvas)}>
+          <div className={cn('flex items-center justify-between gap-3 rounded-lg p-4', SURFACE.canvas)}>
             <code className={cn('font-mono text-[18px]', TEXT.strong)}>{newPassword}</code>
             <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
           </div>
-          <p className="rounded-2xl bg-[#F8EFD8] p-3 text-[13px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+          <p className="rounded-lg bg-[#F8EFD8] p-3 text-[14px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
             {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
           </p>
         </div>

@@ -29,16 +29,13 @@ function CopyBtn({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function DossierHeader({
-  shipment: s,
-  onRemoved,
-  compact = false,
-}: {
-  shipment: CargoShipment;
-  onRemoved?: () => void;
-  /** Boîte rapide : titre plus petit, pas de ligne d'arrivée (elle est dans le corps). */
-  compact?: boolean;
-}) {
+/**
+ * Les actions du dossier — rafraîchir, marquer le fret / le télex, renseigner
+ * le navire, retirer de la flotte — avec leurs dialogues. Séparées de
+ * l'en-tête pour que le mobile les pose dans SA barre, sans hériter de la
+ * mise en page desktop.
+ */
+export function DossierActions({ shipment: s, onRemoved }: { shipment: CargoShipment; onRemoved?: () => void }) {
   const { hasPermission } = useAdminAuth();
   const canManage = hasPermission('canManageCargo');
   const update = useUpdateCargoShipment();
@@ -47,36 +44,9 @@ export function DossierHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [vesselOpen, setVesselOpen] = useState(false);
-
-  const meta = statusMeta(s.status);
-  const eta = bestEta(s);
-  const slip = etaSlipDays(s);
-  const inDays = daysUntilArrival(s);
   const doRemove = () => remove.mutate(s.id, { onSuccess: () => { setConfirmRemove(false); onRemoved?.(); } });
 
-  const identity = (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className={cn(compact ? 'text-[17px]' : 'text-[20px]', 'font-extrabold tracking-tight', TEXT.strong)}>
-          Conteneur de {s.client_label}
-        </h2>
-        <StatusPill tone={meta.tone} label={meta.label} />
-      </div>
-      <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]', TEXT.muted)}>
-        <span className="inline-flex items-center gap-1">
-          <RefChip>{s.container_number}</RefChip>
-          <CopyBtn value={s.container_number} label="Numéro de conteneur" />
-        </span>
-        <span className="inline-flex items-center gap-1">
-          {CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className={cn('font-mono font-semibold', TEXT.body)}>{s.bl_number}</span>
-          <CopyBtn value={s.bl_number} label="Numéro de B/L" />
-        </span>
-        {s.vessel_name && <span>{s.vessel_name}{s.voyage ? ` · ${s.voyage}` : ''}</span>}
-      </div>
-    </div>
-  );
-
-  const actions = (
+  return (
     <div className="flex shrink-0 items-center gap-1.5">
       <button
         type="button"
@@ -107,8 +77,66 @@ export function DossierHeader({
           )}
         </div>
       )}
+
+      <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
+      <CenterDialog
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={doRemove}
+        title="Retirer ce conteneur de la flotte ?"
+        footer={
+          <>
+            <button type="button" onClick={() => setConfirmRemove(false)} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
+            <button type="button" onClick={doRemove} className={cn('h-9 px-4 text-[13px]', DANGER_SOFT_PILL)}>Retirer</button>
+          </>
+        }
+      >
+        <p className={cn('text-[13px]', TEXT.body)}>
+          <span className="font-mono font-bold">{s.container_number}</span> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses documents et ses coûts. Tu pourras le retrouver en le recherchant à nouveau.
+        </p>
+      </CenterDialog>
     </div>
   );
+}
+
+export function DossierHeader({
+  shipment: s,
+  onRemoved,
+  compact = false,
+}: {
+  shipment: CargoShipment;
+  onRemoved?: () => void;
+  /** Boîte rapide : titre plus petit, pas de ligne d'arrivée (elle est dans le corps). */
+  compact?: boolean;
+}) {
+  const meta = statusMeta(s.status);
+  const eta = bestEta(s);
+  const slip = etaSlipDays(s);
+  const inDays = daysUntilArrival(s);
+
+  const identity = (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className={cn(compact ? 'text-[17px]' : 'text-[20px]', 'font-extrabold tracking-tight', TEXT.strong)}>
+          Conteneur de {s.client_label}
+        </h2>
+        <StatusPill tone={meta.tone} label={meta.label} />
+      </div>
+      <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]', TEXT.muted)}>
+        <span className="inline-flex items-center gap-1">
+          <RefChip>{s.container_number}</RefChip>
+          <CopyBtn value={s.container_number} label="Numéro de conteneur" />
+        </span>
+        <span className="inline-flex items-center gap-1">
+          {CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className={cn('font-mono font-semibold', TEXT.body)}>{s.bl_number}</span>
+          <CopyBtn value={s.bl_number} label="Numéro de B/L" />
+        </span>
+        {s.vessel_name && <span>{s.vessel_name}{s.voyage ? ` · ${s.voyage}` : ''}</span>}
+      </div>
+    </div>
+  );
+
+  const actions = <DossierActions shipment={s} onRemoved={onRemoved} />;
 
   return (
     <div className="flex items-start justify-between gap-x-6 gap-y-3 max-sm:flex-col">
@@ -130,24 +158,6 @@ export function DossierHeader({
           {actions}
         </div>
       )}
-
-      <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
-      <CenterDialog
-        open={confirmRemove}
-        onClose={() => setConfirmRemove(false)}
-        onConfirm={doRemove}
-        title="Retirer ce conteneur de la flotte ?"
-        footer={
-          <>
-            <button type="button" onClick={() => setConfirmRemove(false)} className={cn('h-9 px-4 text-[13px] font-semibold', SOFT_PILL)}>Annuler</button>
-            <button type="button" onClick={doRemove} className={cn('h-9 px-4 text-[13px]', DANGER_SOFT_PILL)}>Retirer</button>
-          </>
-        }
-      >
-        <p className={cn('text-[13px]', TEXT.body)}>
-          <span className="font-mono font-bold">{s.container_number}</span> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses documents et ses coûts. Tu pourras le retrouver en le recherchant à nouveau.
-        </p>
-      </CenterDialog>
     </div>
   );
 }

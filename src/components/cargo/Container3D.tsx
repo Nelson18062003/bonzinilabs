@@ -101,6 +101,21 @@ export function Container3D({
   const [upTo, setUpTo] = useState<number | null>(null);
   const drag = useRef<{ x: number; y: number; yaw: number; pitch: number } | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
+  const [stageWidth, setStageWidth] = useState(760);
+
+  // La scène se mesure elle-même : la même caisse tient sur 1440 px et sur 390.
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    setStageWidth(host.clientWidth || 760);
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w) setStageWidth(w);
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
 
   const applyCam = useCallback((c: CameraPreset) => { setCam(c); setYaw(c.yaw); setPitch(c.pitch); }, []);
 
@@ -131,13 +146,16 @@ export function Container3D({
   }, []);
 
   const { dims } = plan;
-  // La caisse tient dans ~660 px de scène.
+  // La caisse tient dans la LARGEUR RÉELLE de la scène, mesurée — pas dans
+  // 660 px codés en dur, qui faisaient sortir un 40 pieds du cadre sur un
+  // téléphone de 390 px. De trois-quarts, l'empreinte projetée vaut environ
+  // 0,85 × longueur + 0,6 × largeur ; on garde 10 % de marge.
   //
   // ⚠ `scale3d` et non `scale` : `scale()` est une mise à l'échelle 2D, elle
   // n'agit QUE sur X et Y. L'axe de profondeur restait donc à taille réelle, et
   // un 40 pieds paraissait deux fois trop large — invisible de trois-quarts,
   // flagrant en vue de dessus (rapport 3,2 au lieu de 5,1).
-  const scale = (660 / dims.length) * zoom;
+  const scale = ((stageWidth * 0.9) / (dims.length * 0.85 + dims.width * 0.6)) * zoom;
   const visible: PlacedBox[] = upTo == null ? plan.boxes : plan.boxes.filter((b) => b.layer <= upTo);
   const shellColor = dark ? '#5f6b78' : '#9fb0c0';
 

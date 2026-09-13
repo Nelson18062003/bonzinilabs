@@ -1,4 +1,4 @@
-export { DossierHeader } from './DossierHeader';
+export { DossierHeader, DossierActions } from './DossierHeader';
 export { DossierTabsBar } from './DossierTabsBar';
 export { TabApercu } from './TabApercu';
 export { TabSuivi } from './TabSuivi';

@@ -1,64 +1,119 @@
-/** Mobile admin — Cargo : la flotte, une carte par conteneur, l'arrivée en premier. */
-import { useMemo } from 'react';
+/**
+ * Mobile admin — Cargo : ce qui brûle, puis le reste.
+ *
+ * L'admin sur son téléphone ne vient pas explorer la flotte : il vient savoir
+ * quel conteneur a besoin de lui aujourd'hui. Donc : une bande de chips par
+ * niveau d'alerte (qui filtre), les dossiers triés par gravité puis par date
+ * d'arrivée, et sur chaque ligne la PROCHAINE ACTION — pas les métadonnées.
+ * Aucun bouton flottant : les deux actions (carte, suivre une référence)
+ * sont dans l'en-tête, à 44 px.
+ */
+import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
-import { CARRIER_LABEL, bestEta, etaSlipDays, fmtDay, statusMeta } from '@/lib/cargo/model';
+import { ALERT, ALERT_ORDER, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
+import { nextSteps } from '@/lib/cargo/todo';
+import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays, fmtDay } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, Card, StatusPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
+import { TEXT, TYPE, Button, Chip, IconButton, ScreenLoader, StatusPill, SURFACE, type Tone } from '@/mobile/designKit';
+
+const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const { data, isLoading } = useCargoShipments();
-  const rows = useMemo(() => [...(data ?? [])].sort((a, b) => (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity)), [data]);
+  const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
+
+  const all = useMemo(() => data ?? [], [data]);
+  const tally = useMemo(() => alertTally(all), [all]);
+  const rows = useMemo(() => {
+    const list = filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter);
+    return [...list].sort((a, b) => {
+      const d = ALERT[alertLevel(b)].rank - ALERT[alertLevel(a)].rank;
+      if (d !== 0) return d;
+      return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
+    });
+  }, [all, filter]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
   return (
-    <div className="min-h-screen pb-28">
+    <div className="flex min-h-full flex-col">
       <MobileHeader
         title="Cargo"
-        subtitle={`${rows.length} conteneur${rows.length > 1 ? 's' : ''} suivi${rows.length > 1 ? 's' : ''}`}
-        showBack
-        backTo="/m/more"
+        subtitle={all.length > 0 ? `${all.length} conteneur${all.length > 1 ? 's' : ''} · ${tally.late} en retard` : undefined}
         rightElement={
-          <button type="button" aria-label="Carte" onClick={() => navigate('/m/cargo/map')} className={cn('flex h-9 w-9 items-center justify-center rounded-full', SURFACE.holder)}>
-            <MapIcon className="h-4 w-4" />
-          </button>
+          <>
+            <IconButton icon={MapIcon} variant="subtle" onClick={() => navigate('/m/cargo/map')} ariaLabel="Carte des navires" />
+            <IconButton icon={SearchIcon} variant="primary" onClick={() => navigate('/m/cargo/track')} ariaLabel="Suivre une référence" />
+          </>
         }
       />
-      <div className="space-y-2.5 px-4 pt-3">
+
+      {/* Ce qui brûle : la bande de chips filtre la liste. */}
+      <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pt-3">
+        <Chip label="Tous" count={all.length} active={filter === 'all'} onClick={() => setFilter('all')} />
+        {ALERT_ORDER.map((k) => (
+          <Chip key={k} label={ALERT[k].label} count={tally[k]} active={filter === k} onClick={() => setFilter(filter === k ? 'all' : k)} />
+        ))}
+      </div>
+
+      <div className="space-y-3 px-4 pt-3">
         {isLoading && <ScreenLoader />}
         {rows.map((s) => {
-          const meta = statusMeta(s.status);
+          const level = alertLevel(s);
           const eta = bestEta(s);
+          const inDays = daysUntilArrival(s);
           const slip = etaSlipDays(s);
+          const next = nextSteps(s).find((t) => t.level !== 'done');
           return (
-            <Card key={s.id} onClick={() => navigate(`/m/cargo/${s.id}`)} className="flex cursor-pointer items-center gap-3 p-3.5">
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => navigate(`/m/cargo/${s.id}`)}
+              className={cn('flex w-full items-center gap-3 rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.card, SURFACE.shadow)}
+            >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{s.client_label}</span>
-                  <StatusPill tone={meta.tone} label={meta.label} />
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cn('min-w-0 truncate', TYPE.bodyStrong, TEXT.strong)}>{s.client_label}</span>
+                  <StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />
                 </div>
-                <div className={cn('mt-0.5 font-mono text-[12px]', TEXT.muted)}>{s.container_number} · {CARRIER_LABEL[s.carrier] ?? s.carrier}</div>
-                <div className={cn('mt-1.5 text-[13px]', TEXT.strong)}>
+                <div className={cn('mt-0.5 truncate tabular-nums', TYPE.small, TEXT.muted)}>
+                  {s.container_number} · {CARRIER_LABEL[s.carrier] ?? s.carrier}
+                </div>
+                <div className={cn('mt-2 tabular-nums', TYPE.small, TEXT.strong)}>
                   {s.pod_name} · <b>{fmtDay(eta.date)}</b>
-                  {slip > 0 && <span className="ml-1.5 text-[11.5px] font-semibold text-amber-700 dark:text-amber-400">+{slip} j</span>}
+                  {inDays != null && <span className={TEXT.muted}> · {inDays > 0 ? `dans ${inDays} j` : inDays === 0 ? "aujourd'hui" : `il y a ${-inDays} j`}</span>}
+                  {slip > 0 && <span className="text-[#975102] dark:text-[#E8B931]"> · +{slip} j</span>}
                 </div>
+                {next && (
+                  <div className={cn('mt-1 truncate', TYPE.small, next.level === 'now' ? 'text-[#C00F0C] dark:text-[#EC221F]' : TEXT.muted)}>
+                    → {next.label}
+                  </div>
+                )}
               </div>
               <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-            </Card>
+            </button>
           );
         })}
-        {!isLoading && rows.length === 0 && <p className={cn('py-10 text-center text-[13px]', TEXT.muted)}>Aucun conteneur suivi.</p>}
-      </div>
-      <div className="fixed inset-x-4 bottom-24 z-20">
-        <PrimaryPill onClick={() => navigate('/m/cargo/track')} className="w-full">
-          <SearchIcon className="h-4 w-4" /> Suivre un conteneur
-        </PrimaryPill>
+
+        {!isLoading && rows.length === 0 && (
+          <div className="flex flex-col items-center py-12 text-center">
+            <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{filter === 'all' ? 'Aucun conteneur suivi' : `Rien « ${ALERT[filter as AlertLevel].label.toLowerCase()} »`}</p>
+            <p className={cn('mt-1 max-w-xs', TYPE.small, TEXT.muted)}>
+              {filter === 'all' ? 'Un bill of lading, un booking ou un numéro de conteneur suffit pour commencer.' : 'Bonne nouvelle — change de filtre pour voir le reste.'}
+            </p>
+            {filter === 'all' && (
+              <Button className="mt-4" onClick={() => navigate('/m/cargo/track')}>
+                <SearchIcon /> Suivre une référence
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

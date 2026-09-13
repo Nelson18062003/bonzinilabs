@@ -45,8 +45,8 @@ export function CargoJourney({ shipment: s, position }: { shipment: CargoShipmen
                 </span>
               )}
             </div>
-            <div className="mt-1.5 pr-2">
-              <div className={cn('text-[12px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>{st.short}</div>
+            <div className="mt-1.5 min-w-0 max-w-full pr-1">
+              <div className={cn('truncate text-[12px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>{st.short}</div>
               <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>
                 {i === 0 && (s.etd_actual ? fmtDay(new Date(s.etd_actual)) : s.etd_promised ? fmtDay(new Date(s.etd_promised + 'T12:00:00')) : '')}
                 {last && (eta.date ? fmtDay(eta.date) : '')}

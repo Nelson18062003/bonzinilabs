@@ -1587,6 +1587,7 @@
   user-select: none;
 }
 .c3d-stage:active { cursor: grabbing; }
+@media (max-width: 640px) { .c3d-stage { height: 300px; } }
 
 .c3d-world,
 .c3d-origin,

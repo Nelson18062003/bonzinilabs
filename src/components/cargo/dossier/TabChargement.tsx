@@ -140,7 +140,27 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
 
         {list.length > 0 && (
           <Section title="Les lots" meta={`${list.length} lot${list.length > 1 ? 's' : ''} · ${counted} colis`} bodyClassName="p-0">
-            <table className="w-full">
+            {/* Sur un téléphone, six colonnes ne tiennent pas : une ligne empilée par lot. */}
+            <ul className="divide-y divide-black/[0.06] px-4 dark:divide-white/[0.06] lg:hidden">
+              {list.map((p, i) => (
+                <li key={p.id} className="flex items-center gap-3 py-3">
+                  <i aria-hidden className="inline-block h-3 w-3 shrink-0 rounded-[3px]" style={{ background: lotColor(i, dark) }} />
+                  <div className="min-w-0 flex-1">
+                    <div className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{p.label}</div>
+                    <div className={cn('text-[14px] tabular-nums', TEXT.muted)}>
+                      {KIND_LABEL[p.kind] ?? p.kind} · {p.qty} × {num(Number(p.length_cm), 0)}×{num(Number(p.width_cm), 0)}×{num(Number(p.height_cm), 0)} cm
+                      {p.weight_kg != null && ` · ${num(Number(p.weight_kg), 1)} kg`}
+                    </div>
+                  </div>
+                  {canManage && (
+                    <button type="button" className={cn('inline-flex h-9 w-9 shrink-0 items-center justify-center', SOFT_PILL)} onClick={() => remove.mutate({ id: p.id, shipmentId: s.id })} aria-label={`Retirer ${p.label}`}>
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <table className="w-full max-lg:hidden">
               <thead>
                 <tr>
                   <Th>Lot</Th>
@@ -198,7 +218,7 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
         )}
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-lg:order-first">
         <Section title="Le remplissage" bodyClassName="flex flex-col gap-4 p-5">
           {list.length === 0 ? (
             <div className={cn('text-[13px]', TEXT.muted)}>Rien à mesurer tant qu'aucun colis n'est saisi.</div>

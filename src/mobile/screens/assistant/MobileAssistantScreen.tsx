@@ -7,6 +7,8 @@ import { useAdminAssistant, type AssistantProposal } from '@/hooks/useAdminAssis
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MolaMascot } from '@/components/MolaMascot';
 import { validateUploadFile, cn } from '@/lib/utils';
+import { MOBILE_TAB_BAR_HEIGHT } from '@/mobile/components/layout/MobileTabBar';
+import { SURFACE } from '@/mobile/designKit';
 
 const SUGGESTIONS = [
   'Volume de la semaine ?',
@@ -22,10 +24,10 @@ const COMPOSER_MAX_H = 128;
 // Langage visuel (réf Ofspace "Banking App UI") : canvas lilas doux, cartes
 // blanches à ombre diffuse (sans bordure dure), pastilles rondes neutres,
 // chiffres focaux, pilules sombres. Aucun dégradé, aucun trait de séparation.
-const CANVAS = 'bg-[#ECEAF7] dark:bg-[#141320]';
-const CARD = 'bg-white dark:bg-[#211F2B]';
-const SOFT = 'shadow-[0_8px_30px_-12px_rgba(46,32,92,0.18)] dark:shadow-none';
-const HOLDER = 'bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]';
+const CANVAS = SURFACE.canvas;
+const CARD = SURFACE.card;
+const SOFT = SURFACE.shadow;
+const HOLDER = SURFACE.holder;
 
 interface PendingFile {
   id: string;
@@ -69,7 +71,7 @@ function ImagePreview({ image, onClose }: { image: { url: string; name: string }
       aria-label={`Prévisualisation : ${image.name}`}
     >
       <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+14px)]" onClick={(e) => e.stopPropagation()}>
-        <span className="truncate text-sm font-medium text-white/90">{image.name}</span>
+        <span className="truncate text-[16px] font-medium text-white/90">{image.name}</span>
         <button onClick={onClose} aria-label="Fermer la prévisualisation" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition active:scale-95 active:bg-white/20">
           <X className="h-5 w-5" />
         </button>
@@ -78,7 +80,7 @@ function ImagePreview({ image, onClose }: { image: { url: string; name: string }
         <img src={image.url} alt={image.name} className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
       </div>
       <div className="px-4 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3" onClick={(e) => e.stopPropagation()}>
-        <a href={image.url} target="_blank" rel="noopener noreferrer" download={image.name} className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-semibold text-black transition active:scale-[0.99]">
+        <a href={image.url} target="_blank" rel="noopener noreferrer" download={image.name} className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-[16px] font-semibold text-black transition active:scale-[0.99]">
           <Download className="h-4 w-4" /> Télécharger / ouvrir
         </a>
       </div>
@@ -103,19 +105,19 @@ function ConfirmationCard({
   if (state === 'done' || state === 'failed' || state === 'cancelled') {
     const variant = {
       done: { holder: 'bg-[#DEEFE5] text-[#2E7D52] dark:bg-[#1E3A2C] dark:text-[#7FCBA0]', Icon: Check, title: 'Action exécutée' },
-      failed: { holder: 'bg-[#FBE7E7] text-[#C0504D] dark:bg-[#3A2526] dark:text-[#E79A9A]', Icon: AlertTriangle, title: 'Échec' },
+      failed: { holder: 'bg-[#FDD3D0] text-[#C0504D] dark:bg-[#900B09] dark:text-[#FDD3D0]', Icon: AlertTriangle, title: 'Échec' },
       cancelled: { holder: HOLDER, Icon: X, title: 'Action annulée' },
     }[state];
     const Icon = variant.Icon;
     return (
-      <div className={cn('w-full rounded-[22px] p-4', CARD, SOFT)}>
+      <div className={cn('w-full rounded-lg p-4', CARD, SOFT)}>
         <div className="flex items-center gap-3">
           <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', variant.holder)}>
             <Icon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-bold text-[#1B1A24] dark:text-[#F2F1F7]">{variant.title}</div>
-            {resultText && <div className="text-[12.5px] text-[#8E8BA0] dark:text-[#9B98AD]">{resultText}</div>}
+            <div className="text-[14px] font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">{variant.title}</div>
+            {resultText && <div className="text-[12.5px] text-[#757575] dark:text-[#B3B3B3]">{resultText}</div>}
           </div>
         </div>
       </div>
@@ -126,14 +128,14 @@ function ConfirmationCard({
   const danger = !!summary.danger;
   const executing = state === 'executing';
   return (
-    <div className={cn('w-full rounded-[26px] p-5', CARD, SOFT)}>
+    <div className={cn('w-full rounded-lg p-5', CARD, SOFT)}>
       <div className="flex items-center gap-3">
-        <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full', danger ? 'bg-[#FBE7E7] text-[#B23A3A] dark:bg-[#3A2526] dark:text-[#E79A9A]' : HOLDER)}>
+        <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-full', danger ? 'bg-[#FDD3D0] text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]' : HOLDER)}>
           {danger ? <AlertTriangle className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[16px] font-bold leading-tight text-[#1B1A24] dark:text-[#F2F1F7]">{summary.title}</div>
-          {summary.subtitle && <div className="mt-0.5 text-[13px] text-[#8E8BA0] dark:text-[#9B98AD]">{summary.subtitle}</div>}
+          <div className="text-[16px] font-bold leading-tight text-[#1E1E1E] dark:text-[#F5F5F5]">{summary.title}</div>
+          {summary.subtitle && <div className="mt-0.5 text-[13px] text-[#757575] dark:text-[#B3B3B3]">{summary.subtitle}</div>}
         </div>
       </div>
 
@@ -145,7 +147,7 @@ function ConfirmationCard({
       )}
 
       {summary.amount && (
-        <div className="mt-5 text-[30px] font-extrabold leading-none tracking-tight tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">
+        <div className="mt-5 text-[30px] font-extrabold leading-none tracking-tight tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">
           {summary.amount}
         </div>
       )}
@@ -154,28 +156,28 @@ function ConfirmationCard({
         <div className="mt-4">
           {summary.lines.map((l, i) => (
             <div key={i} className="flex items-center justify-between gap-3 py-[7px] text-[13.5px]">
-              <span className="text-[#8E8BA0] dark:text-[#9B98AD]">{l.label}</span>
-              <span className="text-right font-semibold tabular-nums text-[#1B1A24] dark:text-[#F2F1F7]">{l.value}</span>
+              <span className="text-[#757575] dark:text-[#B3B3B3]">{l.label}</span>
+              <span className="text-right font-semibold tabular-nums text-[#1E1E1E] dark:text-[#F5F5F5]">{l.value}</span>
             </div>
           ))}
         </div>
       )}
 
       {executing ? (
-        <div className="mt-5 flex items-center justify-center gap-2 rounded-full bg-[#EDEAFA] py-[13px] text-[14px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+        <div className="mt-5 flex items-center justify-center gap-2 rounded-full bg-[#F5F5F5] py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
           <Loader className="h-4 w-4 animate-spin" /> Exécution…
         </div>
       ) : (
         <div className="mt-5 flex gap-2.5">
           <button
             onClick={onConfirm}
-            className={cn('flex-1 rounded-full py-[13px] text-[14px] font-bold', danger ? 'bg-[#D14343] text-white' : 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]')}
+            className={cn('flex-1 rounded-full py-[13px] text-[14px] font-bold', danger ? 'bg-[#D14343] text-white' : 'bg-[#2C2C2C] text-white dark:bg-[#F5F5F5] dark:text-[#1E1E1E]')}
           >
             {summary.confirmLabel}
           </button>
           <button
             onClick={onCancel}
-            className="rounded-full bg-[#EDEAFA] px-6 py-[13px] text-[14px] font-semibold text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]"
+            className="rounded-full bg-[#F5F5F5] px-6 py-[13px] text-[14px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]"
           >
             Annuler
           </button>
@@ -294,12 +296,12 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
       <MobileHeader
         title="Mola"
         subtitle="Directeur des Opérations"
-        showBack={!desktop}
+        showBack={false}
         leading={
           <MolaMascot
             className="h-9 w-9"
             fallback={
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                 <Bot className="h-5 w-5" />
               </div>
             }
@@ -314,7 +316,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           <button
             onClick={handleNew}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#1C1B22] py-2.5 text-[13.5px] font-bold text-white transition-opacity active:opacity-90 disabled:opacity-50 dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+            className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#2C2C2C] py-2.5 text-[13.5px] font-bold text-white transition-opacity active:opacity-90 disabled:opacity-50 dark:bg-[#F5F5F5] dark:text-[#1E1E1E]"
           >
             <Plus className="h-4 w-4" /> Nouvelle conversation
           </button>
@@ -324,14 +326,14 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
   );
 
   const composer = (
-    <div className={cn(CANVAS, 'px-4 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]')}>
+    <div className={cn(CANVAS, 'border-t px-4 pt-2', SURFACE.divider)} style={{ paddingBottom: desktop ? 12 : `calc(0.75rem + ${MOBILE_TAB_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))` }}>
       {/* Plateau d'aperçu des pièces jointes en attente */}
       {pending.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
           {pending.map((p) => (
             <div key={p.id} className="relative shrink-0">
               {p.isPdf ? (
-                <div className={cn('flex h-16 w-16 flex-col items-center justify-center rounded-2xl px-1 text-[10px] text-[#8E8BA0]', CARD, SOFT)}>
+                <div className={cn('flex h-16 w-16 flex-col items-center justify-center rounded-2xl px-1 text-[14px] text-[#757575]', CARD, SOFT)}>
                   <FileText className="mb-1 h-5 w-5" />
                   <span className="max-w-[56px] truncate">{p.file.name}</span>
                 </div>
@@ -348,7 +350,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
               <button
                 onClick={() => removePending(p.id)}
                 aria-label="Retirer"
-                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]"
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#2C2C2C] text-white dark:bg-[#F5F5F5] dark:text-[#1E1E1E]"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -370,7 +372,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
           aria-label="Joindre un fichier"
-          className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#2C2740] disabled:opacity-40 dark:text-[#E7E5F0]', CARD, SOFT)}
+          className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#1E1E1E] disabled:opacity-40 dark:text-[#F5F5F5]', CARD, SOFT)}
         >
           <Paperclip className="h-5 w-5" />
         </button>
@@ -392,14 +394,14 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           }}
           rows={1}
           placeholder="Écris, dicte ou joins un fichier…"
-          className={cn('max-h-32 flex-1 resize-none rounded-[22px] px-4 py-3 text-[16px] text-[#1B1A24] outline-none placeholder:text-[#9B98AD] focus:ring-2 focus:ring-[#C9C2F0] dark:text-[#F2F1F7] dark:focus:ring-[#4A4660]', CARD, SOFT)}
+          className={cn('max-h-32 flex-1 resize-none rounded-lg border border-[#D9D9D9] px-3 py-2 text-[16px] text-[#1E1E1E] outline-none placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C] dark:border-[#444444] dark:text-[#F5F5F5] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]', CARD)}
         />
         <button
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Envoyer"
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1C1B22] text-white transition-opacity dark:bg-[#F2F1F7] dark:text-[#1B1A24]',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2C2C2C] text-white transition-opacity dark:bg-[#F5F5F5] dark:text-[#1E1E1E]',
             !canSend && 'opacity-40',
           )}
         >
@@ -416,25 +418,25 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           <MolaMascot
             className="h-24 w-24"
             fallback={
-              <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#2C2740] dark:text-[#E7E5F0]', CARD, SOFT)}>
+              <div className={cn('flex h-16 w-16 items-center justify-center rounded-full text-[#1E1E1E] dark:text-[#F5F5F5]', CARD, SOFT)}>
                 <Bot className="h-8 w-8" />
               </div>
             }
           />
-          <h2 className="mt-4 text-lg font-bold text-[#1B1A24] dark:text-[#F2F1F7]">
+          <h2 className="mt-4 text-lg font-bold text-[#1E1E1E] dark:text-[#F5F5F5]">
             Bonjour {profile?.first_name || ''} 👋
           </h2>
-          <p className="mt-1 max-w-xs text-sm text-[#6B6880] dark:text-[#9B98AD]">
+          <p className="mt-1 max-w-xs text-[16px] text-[#757575] dark:text-[#B3B3B3]">
             Je suis Mola, ton directeur des opérations. Pose-moi une question sur la plateforme — clients, dépôts, paiements, taux, statistiques.
-            Tu peux écrire, <span className="font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">dicter avec le micro du clavier</span>,
-            ou <span className="font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">joindre une capture ou un PDF</span> (📎).
+            Tu peux écrire, <span className="font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">dicter avec le micro du clavier</span>,
+            ou <span className="font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">joindre une capture ou un PDF</span> (📎).
           </p>
           <div className="mt-6 grid w-full max-w-sm grid-cols-1 gap-2">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 onClick={() => sendMessage(s)}
-                className={cn('rounded-[18px] px-4 py-3 text-left text-sm font-medium text-[#1B1A24] transition-opacity active:opacity-80 dark:text-[#F2F1F7]', CARD, SOFT)}
+                className={cn('rounded-lg px-4 py-3 text-left text-[16px] font-medium text-[#1E1E1E] transition-colors active:bg-[#F5F5F5] dark:text-[#F5F5F5] dark:active:bg-[#383838]', CARD, SOFT)}
               >
                 {s}
               </button>
@@ -451,7 +453,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                     className="h-7 w-7 shrink-0 self-end"
                     alt=""
                     fallback={
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center self-end rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center self-end rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                         <Bot className="h-4 w-4" />
                       </div>
                     }
@@ -459,12 +461,12 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                 )}
               <div
                 className={cn(
-                  'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-4 py-2.5 text-[15px] leading-relaxed',
+                  'max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed',
                   m.role === 'user'
-                    ? 'rounded-br-md bg-[#1C1B22] text-white dark:bg-[#34323F]'
+                    ? 'rounded-br-md bg-[#2C2C2C] text-white dark:bg-[#34323F]'
                     : m.error
                       ? 'rounded-bl-md bg-[#FBEFEF] text-[#9B4A47] dark:bg-[#2C1F20] dark:text-[#E0A3A1]'
-                      : cn('rounded-bl-md text-[#1B1A24] dark:text-[#F2F1F7]', CARD, SOFT),
+                      : cn('rounded-bl-md text-[#1E1E1E] dark:text-[#F5F5F5]', CARD, SOFT),
                 )}
               >
                 {m.attachments?.length ? (
@@ -480,7 +482,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                           <img src={a.url} alt={a.name} className="h-24 w-24 object-cover" />
                         </button>
                       ) : (
-                        <div key={i} className="flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-xs dark:bg-white/10">
+                        <div key={i} className="flex items-center gap-2 rounded-xl bg-black/5 px-3 py-2 text-[14px] dark:bg-white/10">
                           <FileText className="h-4 w-4 shrink-0" />
                           <span className="max-w-[140px] truncate">{a.name}</span>
                         </div>
@@ -496,13 +498,13 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                   key={i}
                   type="button"
                   onClick={() => setPreview({ url: img.url, name: img.name })}
-                  className={cn('group relative block max-w-[85%] overflow-hidden rounded-[20px] text-left transition active:scale-[0.99]', CARD, SOFT)}
+                  className={cn('group relative block max-w-[85%] overflow-hidden rounded-2xl text-left transition active:scale-[0.99]', CARD, SOFT)}
                 >
                   <img src={img.url} alt={img.name} className="h-auto w-full" />
                   <div className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur-sm">
                     <Maximize2 className="h-4 w-4" />
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-2 text-xs text-[#8E8BA0] dark:text-[#9B98AD]">
+                  <div className="flex items-center gap-2 px-3 py-2 text-[14px] text-[#757575] dark:text-[#B3B3B3]">
                     <FileText className="h-3.5 w-3.5" /> {img.name} — appuyer pour prévisualiser
                   </div>
                 </button>
@@ -524,14 +526,14 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
                 alt=""
                 breathing
                 fallback={
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EDEAFA] text-[#2C2740] dark:bg-[#2F2C3D] dark:text-[#E7E5F0]">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                     <Bot className="h-4 w-4" />
                   </div>
                 }
               />
-              <div className={cn('flex items-center gap-2 rounded-[20px] rounded-bl-md px-4 py-3 text-[#6B6880] dark:text-[#9B98AD]', CARD, SOFT)}>
+              <div className={cn('flex items-center gap-2 rounded-2xl rounded-bl-md px-4 py-3 text-[#757575] dark:text-[#B3B3B3]', CARD, SOFT)}>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Mola réfléchit…</span>
+                <span className="text-[16px]">Mola réfléchit…</span>
               </div>
             </div>
           )}
@@ -544,7 +546,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
 
   if (desktop) {
     return (
-      <div className={cn('mx-auto flex h-[calc(100vh-120px)] min-h-[560px] max-w-3xl flex-col overflow-hidden rounded-[24px] shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]', CANVAS)}>
+      <div className={cn('mx-auto flex h-[calc(100vh-120px)] min-h-[560px] max-w-3xl flex-col overflow-hidden rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]', CANVAS)}>
         <div className="shrink-0">{header}</div>
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">{body}</div>
         <div className="shrink-0">{composer}</div>

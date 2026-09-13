@@ -22,9 +22,10 @@ import { type FilterKey, METHOD_FILTERS, SORT_OPTIONS, logoMethod } from '@/lib/
 import {
   SURFACE,
   TEXT,
-  PRIMARY_PILL,
   SOFT_PILL,
-  type Tone,
+  TOGGLE_ON,
+  TOGGLE_OFF,
+  Chip,
   paymentStatusTone,
   StatusPill,
   TextInput,
@@ -52,7 +53,7 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 
 // ── Point SLA (calqué sur deposits V2) ───────────────────────
 function SlaDot({ level }: { level: SlaLevel }) {
-  const color = level === 'fresh' ? '#34d399' : level === 'aging' ? '#F3A745' : '#ef4444';
+  const color = level === 'fresh' ? '#14AE5C' : level === 'aging' ? '#E8B931' : '#EC221F';
   return (
     <span
       className="inline-block shrink-0 rounded-full"
@@ -67,16 +68,10 @@ function SlaDot({ level }: { level: SlaLevel }) {
   );
 }
 
-// KPI rapides → tone unifié (la couleur porte le statut).
-const KPI_TILES: { label: string; key: FilterKey; tone: Tone; figure: string; ring: string }[] = [
-  { label: 'À traiter', key: 'to_process', tone: 'pending', figure: 'text-[#9A6B12] dark:text-[#E7C083]', ring: 'ring-[#E7C083]' },
-  { label: 'En cours', key: 'processing', tone: 'info', figure: 'text-[#5B4CC4] dark:text-[#B5AAF0]', ring: 'ring-[#C9C2F0] dark:ring-[#4A4660]' },
-  { label: 'Terminés', key: 'completed', tone: 'success', figure: 'text-[#2E7D52] dark:text-[#7FCBA0]', ring: 'ring-[#7FCBA0]' },
-];
 
 // ── Composant principal ──────────────────────────────────────
 
-export function MobilePaymentsScreen() {
+export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const { t } = useTranslation('common');
   const [statusFilter, setStatusFilter] = useState<FilterKey>('all');
   const [methodFilter, setMethodFilter] = useState<PaymentMethod | 'all'>('all');
@@ -166,11 +161,6 @@ export function MobilePaymentsScreen() {
     return { toProcess: 0, inProgress: 0, completed: 0, total: 0 };
   }, [stats]);
 
-  const kpiValue: Record<FilterKey, number> = {
-    to_process: counts.toProcess,
-    processing: counts.inProgress,
-    completed: counts.completed,
-  } as Record<FilterKey, number>;
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -214,6 +204,7 @@ export function MobilePaymentsScreen() {
       <style>{`@keyframes sla-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }`}</style>
 
       {/* ── Header ─────────────────────────────────────────── */}
+      {!embedded && (
       <header
         className={cn(
           'sticky top-0 z-40 flex shrink-0 items-center justify-between px-5 pt-[env(safe-area-inset-top)]',
@@ -258,49 +249,25 @@ export function MobilePaymentsScreen() {
           </div>
         </div>
       </header>
+      )}
 
       <PullToRefresh
         onRefresh={refetch}
         className="flex-1 space-y-3 overflow-y-auto px-5 pb-28 pt-1"
       >
-        {/* ── KPIs compacts (tap = filtre statut) ───────────── */}
-        <div className="flex gap-2.5">
-          {KPI_TILES.map((k) => {
-            const active = statusFilter === k.key;
-            return (
-              <button
-                key={k.key}
-                onClick={() => setStatusFilter(active ? 'all' : k.key)}
-                className={cn(
-                  'flex-1 rounded-[18px] py-3 text-center transition active:scale-[0.98]',
-                  SURFACE.card,
-                  SURFACE.shadow,
-                  active && cn('ring-2', k.ring),
-                )}
-              >
-                <div className={cn('text-[22px] font-extrabold leading-none tabular-nums', k.figure)}>
-                  {kpiValue[k.key] ?? 0}
-                </div>
-                <div className={cn('mt-1.5 text-[9px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                  {k.label}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
         {/* ── Bandeau « aujourd'hui » (si activité) ─────────── */}
         {stats && stats.today_completed > 0 && (
           <Card className="flex items-center justify-between py-3">
             <div>
-              <div className={cn('text-[12px] font-medium', TEXT.muted)}>Réglés aujourd'hui</div>
-              <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{formatCurrencyRMB(stats.today_amount_rmb)}</div>
+              <div className={cn('text-[14px] font-medium', TEXT.muted)}>Réglés aujourd'hui</div>
+              <div className={cn('mt-0.5 text-[14px]', TEXT.muted)}>{formatCurrencyRMB(stats.today_amount_rmb)}</div>
             </div>
             <Amount value={stats.today_completed} size="md" />
           </Card>
         )}
 
         {/* ── Export batch (PDF) ───────────────────────────── */}
+        {!embedded && (
         <button
           onClick={handleExportBatch}
           disabled={isExporting}
@@ -312,6 +279,7 @@ export function MobilePaymentsScreen() {
           {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
           Exporter paiements en cours (PDF)
         </button>
+        )}
 
         {/* ── Recherche + bouton filtres ─────────────────────── */}
         <div className="flex gap-2.5">
@@ -337,15 +305,15 @@ export function MobilePaymentsScreen() {
             onClick={() => setShowFilters(!showFilters)}
             aria-label="Filtres avancés"
             className={cn(
-              'relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition active:scale-95',
+              'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
               SURFACE.card,
               SURFACE.shadow,
-              (showFilters || hasActiveFilters) && 'ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]',
+              (showFilters || hasActiveFilters) && 'border-[#2C2C2C] dark:border-[#E3E3E3]',
             )}
           >
-            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? 'text-[#6B5BD2] dark:text-[#A99BF0]' : TEXT.muted)} />
+            <SlidersHorizontal className={cn('h-[18px] w-[18px]', showFilters || hasActiveFilters ? TEXT.strong : TEXT.muted)} />
             {hasActiveFilters && (
-              <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#6B5BD2] px-1 text-[9px] font-extrabold text-white dark:bg-[#A99BF0] dark:text-[#1B1A24]">
+              <span className="absolute right-2 top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#2C2C2C] px-1 text-[9px] font-extrabold text-white dark:bg-[#E3E3E3] dark:text-[#1B1A24]">
                 {activeFilterCount}
               </span>
             )}
@@ -356,11 +324,11 @@ export function MobilePaymentsScreen() {
         {showFilters && (
           <Card className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className={cn('text-[13px] font-bold', TEXT.strong)}>Filtres avancés</h3>
+              <h3 className={cn('text-[14px] font-semibold', TEXT.strong)}>Filtres avancés</h3>
               {activeFilterCount > 0 && (
                 <button
                   onClick={clearAdvancedFilters}
-                  className="text-[12px] font-semibold text-[#6B5BD2] dark:text-[#A99BF0]"
+                  className="text-[12px] font-semibold text-[#1E1E1E] underline dark:text-[#F5F5F5]"
                 >
                   Réinitialiser
                 </button>
@@ -369,15 +337,15 @@ export function MobilePaymentsScreen() {
 
             {/* Filtre méthode */}
             <div>
-              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Méthode</div>
+              <div className={cn('mb-2 text-[14px] font-semibold', TEXT.strong)}>Méthode</div>
               <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
                 {METHOD_FILTERS.map((m) => (
                   <button
                     key={m.key}
                     onClick={() => setMethodFilter(m.key)}
                     className={cn(
-                      'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
-                      methodFilter === m.key ? PRIMARY_PILL : SOFT_PILL,
+                      'inline-flex h-8 shrink-0 items-center whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+                      methodFilter === m.key ? TOGGLE_ON : TOGGLE_OFF,
                     )}
                   >
                     {m.label}
@@ -388,15 +356,15 @@ export function MobilePaymentsScreen() {
 
             {/* Tri */}
             <div>
-              <div className={cn('mb-2 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Tri</div>
+              <div className={cn('mb-2 text-[14px] font-semibold', TEXT.strong)}>Tri</div>
               <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
                 {SORT_OPTIONS.map((opt) => (
                   <button
                     key={opt.key}
                     onClick={() => setSortKey(opt.key)}
                     className={cn(
-                      'whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors',
-                      sortKey === opt.key ? PRIMARY_PILL : SOFT_PILL,
+                      'inline-flex h-8 shrink-0 items-center whitespace-nowrap px-2 text-[14px] font-semibold transition-colors',
+                      sortKey === opt.key ? TOGGLE_ON : TOGGLE_OFF,
                     )}
                   >
                     {opt.label}
@@ -407,14 +375,14 @@ export function MobilePaymentsScreen() {
 
             {/* Période */}
             <div>
-              <div className={cn('mb-2 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>
+              <div className={cn('mb-2 flex items-center gap-1 text-[14px] font-semibold', TEXT.strong)}>
                 <Calendar className="h-3 w-3" />
                 Période
               </div>
               <BzDateRangeField
                 value={{ from: dateFrom, to: dateTo }}
                 onChange={(r) => { setDateFrom(r.from); setDateTo(r.to); }}
-                accent="#8B5CF6"
+                accent="#2C2C2C"
               />
             </div>
           </Card>
@@ -431,26 +399,7 @@ export function MobilePaymentsScreen() {
           ].map((ch) => {
             const active = statusFilter === ch.k;
             return (
-              <button
-                key={ch.k}
-                onClick={() => setStatusFilter(ch.k)}
-                className={cn(
-                  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-[12px] font-semibold transition-colors',
-                  active ? PRIMARY_PILL : SOFT_PILL,
-                )}
-              >
-                {ch.l}
-                {ch.c != null && ch.c > 0 && (
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-px text-[9px] font-extrabold tabular-nums',
-                      active ? 'bg-white/20 text-white dark:bg-black/15 dark:text-[#1B1A24]' : 'bg-black/[0.06] dark:bg-white/10',
-                    )}
-                  >
-                    {ch.c}
-                  </span>
-                )}
-              </button>
+              <Chip key={ch.k} label={ch.l} count={ch.c} active={active} onClick={() => setStatusFilter(ch.k)} />
             );
           })}
         </div>
@@ -474,36 +423,30 @@ export function MobilePaymentsScreen() {
                   key={payment.id}
                   onClick={() => navigate(`/m/payments/${payment.id}`)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-[22px] p-4 text-left transition-transform active:scale-[0.98]',
+                    'flex w-full items-center gap-3 rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]',
                     SURFACE.card,
                     SURFACE.shadow,
                   )}
                 >
                   <PaymentMethodLogo method={logoMethod(payment.method)} size={40} />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>
-                        {clientName}
-                      </span>
+                    <div className="flex items-start justify-between gap-3">
+                      <span className={cn('min-w-0 flex-1 truncate text-[16px] font-semibold', TEXT.strong)}>{clientName}</span>
+                      <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
+                    </div>
+                    <div className={cn('mt-0.5 flex items-center justify-between gap-3 text-[14px]', TEXT.muted)}>
+                      <span className="min-w-0 truncate">{payment.reference} · {methodLabel}</span>
+                      <span className="shrink-0">{formatRelativeDate(payment.created_at)}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      {slaLevel && <SlaDot level={slaLevel} />}
+                      <StatusPill tone={paymentStatusTone(payment.status)} label={statusLabel} />
                       {proofCount > 0 && (
-                        <span className={cn('inline-flex shrink-0 items-center gap-0.5 text-[10px] font-semibold', TEXT.muted)}>
-                          <Paperclip className="h-3 w-3" />
+                        <span className={cn('inline-flex items-center gap-1 text-[14px] font-semibold', TEXT.muted)}>
+                          <Paperclip className="h-4 w-4" />
                           {proofCount}
                         </span>
                       )}
-                    </div>
-                    <div className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>
-                      {payment.reference} · {methodLabel}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
-                    <div className="mt-1 flex items-center justify-end gap-1.5">
-                      {slaLevel && <SlaDot level={slaLevel} />}
-                      <StatusPill tone={paymentStatusTone(payment.status)} label={statusLabel} />
-                    </div>
-                    <div className={cn('mt-1 text-[10px]', TEXT.muted)}>
-                      {formatRelativeDate(payment.created_at)}
                     </div>
                   </div>
                 </button>
@@ -522,10 +465,10 @@ export function MobilePaymentsScreen() {
         ) : (
           <div className="flex flex-col items-center justify-center py-14 text-center">
             <Holder icon={CreditCard} size="lg" />
-            <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
+            <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>
               {t('noPaymentFound', { defaultValue: 'Aucun paiement trouvé' })}
             </p>
-            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
               {statusFilter !== 'all' || activeFilterCount > 0
                 ? 'Essayez de modifier vos filtres'
                 : 'Les paiements apparaîtront ici'}
