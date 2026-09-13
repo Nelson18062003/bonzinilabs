@@ -69,7 +69,7 @@ export function MobileTabBar({ className }: { className?: string }) {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 outline-none',
-                active ? 'text-[#1E1E1E] dark:text-[#F5F5F5]' : 'text-[#757575] dark:text-[#B3B3B3]',
+                active ? 'text-[#1E1E1E] dark:text-[#F5F5F5]' : 'text-[#5A5A5A] dark:text-[#CDCDCD]',
               )}
             >
               <span
@@ -87,15 +87,15 @@ export function MobileTabBar({ className }: { className?: string }) {
                     onError={(ev) => { (ev.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
-                  <e.icon className="h-5 w-5" strokeWidth={active ? 2.25 : 2} />
+                  <e.icon className="h-6 w-6" strokeWidth={active ? 2.25 : 2} />
                 )}
                 {e.badge != null && e.badge > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#EC221F] px-1 text-[11px] font-semibold leading-none text-white">
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#EC221F] px-1 text-[12px] font-semibold leading-none text-white">
                     {e.badge > 99 ? '99+' : e.badge}
                   </span>
                 )}
               </span>
-              <span className={cn('max-w-full truncate text-[12px] leading-none', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
+              <span className={cn('max-w-full whitespace-nowrap text-[14px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
             </Link>
           );
         })}
