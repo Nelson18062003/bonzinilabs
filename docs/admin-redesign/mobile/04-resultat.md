@@ -594,3 +594,21 @@ px ; 0 débordement / troncature sur 22 écrans à 320 et 390 px ; 2 failles
 d'argent fermées (dépôt annulé validable, paiement clos « refusable ») ; temps
 réel réparé (jeton) et étendu au cargo ; étiquette colis dessinée (aucun
 chevauchement, fichier partagé natif) ; 601 → 624 tests.
+
+## Passe 25 — critique UX (une décision, l'âge réel, le vocabulaire de « Plus »)
+
+Suite à la critique évaluative de l'application : **une seule action
+principale par fiche**. Sur le dépôt, « Valider le dépôt » reste le seul
+bouton plein ; « Marquer « en vérification » » devient discret, avec la
+phrase qui dit à quoi il sert (le client le voit, les collègues savent qu'on
+s'en occupe) ; « Refuser » reste en texte rouge. **L'urgence dit l'âge réel** :
+« Ce dépôt attend depuis 4 jours » / « Ce paiement attend depuis 24 heures »
+(`sinceSentence`, heures sous 48 h, jours au-delà) au lieu d'une phrase fixe.
+La file « À traiter » se lit **du plus ancien au plus récent**. Sur le
+paiement, l'alerte distingue la facture du client (reçue) de la preuve
+manquante de l'opérateur. Le bouton d'en-tête « Relevé » devient « Reçu ».
+L'écran « Plus » parle français : « Tableau de bord », « Messages des
+clients », « Réponses toutes faites », « Suggestions aux nouveaux clients »,
+et la trésorerie explique ce qu'elle contient. Le champ de recherche du
+nouveau dépôt ne prend plus le focus tout seul (le clavier n'apparaît plus
+avant qu'on l'ait demandé). 624 tests verts, build propre.

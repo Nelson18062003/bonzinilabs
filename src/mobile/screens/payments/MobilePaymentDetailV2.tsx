@@ -55,7 +55,7 @@ import {
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
-import { whenSentence } from '@/lib/plainTime';
+import { whenSentence, sinceSentence } from '@/lib/plainTime';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
@@ -171,6 +171,10 @@ export function MobilePaymentDetail() {
   const confirmCash              = useAgentConfirmCashPayment();
 
   // ── Derived proof lists ───────────────────────────────────
+  const clientProofs = useMemo(
+    () => proofs?.filter(p => p.uploaded_by_type !== 'admin') ?? [],
+    [proofs],
+  );
   const adminProofs = useMemo(
     () => proofs?.filter(p => p.uploaded_by_type === 'admin') ?? [],
     [proofs],
@@ -664,10 +668,14 @@ export function MobilePaymentDetail() {
             Soit <b className={cn('tabular-nums', TEXT.strong)}>{formatNumber(payment.amount_xaf)} XAF</b>, au taux de 1 million XAF = ¥{formatNumber(rateInt)}.
           </Line>
           {payment.status === 'rejected' && payment.rejection_reason && <Line tone="bad">Refusé : {payment.rejection_reason}</Line>}
-          {slaLevel === 'overdue' && <Line tone="bad">Ce paiement attend depuis plus de 12 heures. Il faut le traiter.</Line>}
-          {slaLevel === 'aging' && <Line tone="warn">Ce paiement attend depuis plus de 4 heures.</Line>}
+          {slaLevel === 'overdue' && <Line tone="bad">Ce paiement attend {sinceSentence(payment.created_at)}. Il faut le traiter.</Line>}
+          {slaLevel === 'aging' && <Line tone="warn">Ce paiement attend {sinceSentence(payment.created_at)}.</Line>}
           {missingBeneficiary && <Line tone="warn">Il manque les coordonnées du bénéficiaire : on ne peut pas payer sans.</Line>}
-          {missingAdminProof && <Line tone="warn">Ajoutez la preuve du paiement avant de valider.</Line>}
+          {missingAdminProof && (
+            <Line tone="warn">
+              {clientProofs.length > 0 ? 'Le client a envoyé sa facture. ' : ''}Il manque votre preuve de paiement (la capture Alipay, WeChat ou banque) avant de valider.
+            </Line>
+          )}
         </section>
 
         {/* ── QR Code cash (cash_pending / cash_scanned) ────── */}

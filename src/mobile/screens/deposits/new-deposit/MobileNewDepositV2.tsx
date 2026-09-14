@@ -562,7 +562,6 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 placeholder="Nom, téléphone ou BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
-                autoFocus
               />
               {clientSearch && (
                 <button

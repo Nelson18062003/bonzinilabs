@@ -110,7 +110,8 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
     if (dateTo) params.dateTo = dateTo;
 
     params.sortField = 'created_at';
-    params.sortAscending = false;
+    // La file « À traiter » se lit comme une file : le plus ancien en tête.
+    params.sortAscending = statusFilter === 'to_process';
 
     const hasFilters = params.status || params.statuses || params.dateFrom || params.dateTo;
     const isDefault = !hasFilters;

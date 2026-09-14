@@ -29,7 +29,7 @@ import {
 } from '@/types/deposit';
 import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel } from '@/lib/depositTimeline';
 import { formatCurrency } from '@/lib/formatters';
-import { whenSentence } from '@/lib/plainTime';
+import { whenSentence, sinceSentence } from '@/lib/plainTime';
 import { MIN_DEPOSIT_XAF, isValidXafAmount, xafAmountError } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
 import {
@@ -379,7 +379,7 @@ export function MobileDepositDetailV2() {
         <DepositReceiptPDF data={receiptData} />,
         `recu_depot_${deposit.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
-      toast.success('Relevé téléchargé');
+      toast.success('Reçu téléchargé');
     } catch (error) {
       console.error('Error generating deposit PDF:', error);
       toast.error('Erreur lors de la génération du PDF');
@@ -444,14 +444,14 @@ export function MobileDepositDetailV2() {
 
   return (
     <div className={cn('flex min-h-full flex-col pb-6', SURFACE.canvas)}>
-      {/* ── En-tête : ← Dépôt + [Relevé] ──────────────────── */}
+      {/* ── En-tête : ← Dépôt + [Reçu] ──────────────────── */}
       <DetailHeader
         title="Dépôt"
         onBack={() => navigate('/m/deposits')}
         right={
           <Button variant="neutral" onClick={handleDownloadReceipt} loading={isGeneratingPDF}>
             <Download />
-            Relevé
+            Reçu
           </Button>
         }
       />
@@ -479,8 +479,8 @@ export function MobileDepositDetailV2() {
           {deposit.status === 'rejected' && deposit.rejection_reason && (
             <Line tone="bad">Refusé : {deposit.rejection_reason}</Line>
           )}
-          {slaLevel === 'overdue' && <Line tone="bad">Ce dépôt attend depuis plus de 8 heures. Il faut le traiter.</Line>}
-          {slaLevel === 'aging' && <Line tone="warn">Ce dépôt attend depuis plus de 2 heures.</Line>}
+          {slaLevel === 'overdue' && <Line tone="bad">Ce dépôt attend {sinceSentence(deposit.created_at)}. Il faut le traiter.</Line>}
+          {slaLevel === 'aging' && <Line tone="warn">Ce dépôt attend {sinceSentence(deposit.created_at)}.</Line>}
           {wallet && (
             <Line>
               Solde du client : <b className={cn('tabular-nums', TEXT.strong)}>{fmt(wallet.balance_xaf)} XAF</b>.
@@ -598,14 +598,11 @@ export function MobileDepositDetailV2() {
             </Line>
           ) : (
             <>
-              {canStartReview && (
-                <Button className="w-full" onClick={handleStartReview} loading={startReview.isPending}>
-                  Commencer la vérification
-                </Button>
-              )}
+              {/* Une seule action principale : valider. Le marquage « en vérification »
+                  est un geste secondaire, expliqué — deux boutons noirs côte à côte
+                  redonnaient à l'opérateur une décision que l'écran doit prendre. */}
               <Button
                 className="w-full"
-                variant={canStartReview ? 'neutral' : 'primary'}
                 onClick={() => {
                   setConfirmedAmount(deposit.amount_xaf.toString());
                   setShowValidateConfirm(true);
@@ -613,6 +610,14 @@ export function MobileDepositDetailV2() {
               >
                 Valider le dépôt
               </Button>
+              {canStartReview && (
+                <>
+                  <Button className="w-full" variant="subtle" onClick={handleStartReview} loading={startReview.isPending}>
+                    Marquer « en vérification »
+                  </Button>
+                  <Line className={TEXT.muted}>Le client voit « en vérification » et vos collègues savent que vous vous en occupez.</Line>
+                </>
+              )}
               <Button className="w-full" variant="dangerSubtle" onClick={() => setShowRejectSheet(true)}>
                 Refuser le dépôt
               </Button>
