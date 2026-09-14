@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -28,7 +29,7 @@ const FILTERS = [
 
 export function MobileHistoryScreen() {
   const { t } = useTranslation('common');
-  const { data: logs, isLoading, refetch } = useAdminAuditLogs();
+  const { data: logs, isLoading, isError, refetch } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('all');
@@ -101,6 +102,8 @@ export function MobileHistoryScreen() {
         <div className="px-4 pb-5">
           {isLoading ? (
             <SkeletonListScreen count={8} />
+          ) : isError ? (
+            <QueryError what="l'historique" onRetry={() => { void refetch(); }} />
           ) : filteredLogs.length > 0 ? (
             <div className="space-y-2">
               {filteredLogs.map((log) => {

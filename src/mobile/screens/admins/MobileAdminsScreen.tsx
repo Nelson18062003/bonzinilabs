@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -22,7 +23,7 @@ export function MobileAdminsScreen() {
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const { data: admins, isLoading, refetch } = useAdminUsers();
+  const { data: admins, isLoading, isError, refetch } = useAdminUsers();
   const { currentUser, hasPermission } = useAdminAuth();
   const navigate = useNavigate();
 
@@ -96,6 +97,8 @@ export function MobileAdminsScreen() {
         {/* Admins List */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
+        ) : isError ? (
+          <QueryError what="les administrateurs" onRetry={() => { void refetch(); }} />
         ) : filteredAdmins && filteredAdmins.length > 0 ? (
           <div className="space-y-3">
             {filteredAdmins.map((admin) => {

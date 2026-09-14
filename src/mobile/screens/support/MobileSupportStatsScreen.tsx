@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -55,7 +56,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
   const { hasPermission } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
   const [period, setPeriod] = useState<Period>(7);
-  const { data: stats, isLoading } = useChatAdminStats(period);
+  const { data: stats, isLoading, isError, refetch } = useChatAdminStats(period);
   const [locale, setLocale] = useState<Locale | undefined>(undefined);
 
   useEffect(() => {
@@ -130,7 +131,9 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
         </div>
       </div>
 
-      {isLoading || !stats ? (
+      {isError ? (
+        <div className="p-4"><QueryError what="les statistiques" onRetry={() => { void refetch(); }} /></div>
+      ) : isLoading || !stats ? (
         <ScreenLoader />
       ) : (
         <div className="space-y-4 p-4">
