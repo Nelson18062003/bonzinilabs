@@ -1,0 +1,51 @@
+-- PROPOSITION (non appliquée) — audit produit, itérations 4 « App client » et 6 « Clients »
+-- Findings F-031 (P1), F-033 (P0), F-034 (P2) du registre docs/registre-findings.md.
+--
+-- F-033 (P0, perte de données) — admin_delete_client n'a AUCUNE garde métier côté serveur.
+--   Preuve : 20260831160000_role_permission_enforcement.sql, corps de admin_delete_client :
+--   après `admin_has_permission(…, 'canManageUsers')` et le refus des comptes staff, la fonction
+--   enchaîne directement `DELETE FROM ledger_entries / deposits / payments …` (lignes 27–41).
+--   Le solde du portefeuille et les paiements en cours ne sont vérifiés QUE dans l'UI
+--   (MobileClientDetail.tsx:217-234, DesktopClientPanel.tsx:337-353), sur un solde possiblement
+--   périmé. Un appel direct (Mola, PostgREST, UI désynchronisée) supprime un client avec de
+--   l'argent : grand livre et paiements disparaissent, la trésorerie ne se réconcilie plus.
+--   Correction : redéfinition complète à partir de 20260831160000, en insérant après la
+--   vérification du rôle :
+--
+--   SELECT * INTO v_wallet FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
+--   IF v_wallet.balance_xaf IS NOT NULL AND v_wallet.balance_xaf <> 0 THEN
+--     RETURN json_build_object('success', false, 'error',
+--       'Impossible de supprimer un client dont le solde n''est pas nul (' || v_wallet.balance_xaf || ' XAF)');
+--   END IF;
+--   IF EXISTS (SELECT 1 FROM public.payments WHERE user_id = p_user_id
+--              AND status IN ('created','waiting_beneficiary_info','ready_for_payment','processing','cash_pending','cash_scanned')) THEN
+--     RETURN json_build_object('success', false, 'error', 'Impossible de supprimer un client ayant des paiements en cours');
+--   END IF;
+--   IF EXISTS (SELECT 1 FROM public.deposits WHERE user_id = p_user_id
+--              AND status IN ('created','awaiting_proof','proof_submitted','admin_review','pending_correction')) THEN
+--     RETURN json_build_object('success', false, 'error', 'Impossible de supprimer un client ayant des dépôts en attente');
+--   END IF;
+--
+--   (déclarer `v_wallet public.wallets%ROWTYPE;`). Puis aiguille
+--   `admin_delete_client: ['balance_xaf <> 0']` dans moneyRpcGuards.test.ts.
+--
+-- F-031 (P1, dérive de schéma probable) — aucune policy SELECT « propriétaire » sur public.wallets
+--   dans le dépôt : "Users can view their own wallet" a été retirée le 17/12/2025
+--   (20251217203856…sql) et jamais recréée (grep insensible à la casse sur supabase/migrations,
+--   migrations/ et docs/*.sql : vide). Or l'app client lit `wallets` en direct
+--   (src/hooks/useWallet.ts:38) et fonctionne en production ⇒ la policy existe en prod mais pas
+--   dans le dépôt (créée à la main ?). Rendre l'état explicite et idempotent :
+begin;
+drop policy if exists "Users can view own wallet" on public.wallets;
+create policy "Users can view own wallet" on public.wallets
+  for select using (auth.uid() = user_id);
+commit;
+--
+-- F-034 (P2, autorisation) — admin_create_client (20260301240000…sql:26) et admin_setup_client
+--   (20260221000000…sql:18) sont gardées par `is_admin` seul : tout membre du staff (support,
+--   trésorier, agent cash) peut créer des clients. Règle : clients/admins → canManageUsers
+--   (déjà appliqué à admin_delete_client et admin_set_client_phones). Correction : remplacer
+--   `IF NOT public.is_admin(auth.uid())` par
+--   `IF NOT public.admin_has_permission(auth.uid(), 'canManageUsers')` dans les deux fonctions
+--   (redéfinition complète), et vérifier que le rôle `ops` garde bien canManageUsers dans
+--   ROLE_PERMISSIONS avant d'appliquer — sinon les opérateurs ne pourront plus créer de clients.
