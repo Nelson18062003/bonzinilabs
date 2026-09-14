@@ -28,7 +28,7 @@ export function SelectField({
 }) {
   return (
     <div className={className}>
-      {label && <label className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">{label}</label>}
+      {label && <label className="mb-1.5 block text-[14px] font-semibold text-muted-foreground">{label}</label>}
       <Select value={value || undefined} onValueChange={onChange}>
         <SelectTrigger className="h-[52px] rounded-2xl border-0 bg-muted/70 px-4 text-[15px] font-medium ring-offset-0 focus:ring-2 focus:ring-bonzini-violet/40 data-[placeholder]:font-normal data-[placeholder]:text-muted-foreground [&>svg]:h-5 [&>svg]:w-5 [&>svg]:opacity-50">
           <SelectValue placeholder={placeholder} />

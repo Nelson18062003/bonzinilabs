@@ -46,7 +46,7 @@ export function MoneyField({
 
   return (
     <div className={className}>
-      {label && <label className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">{label}</label>}
+      {label && <label className="mb-1.5 block text-[14px] font-semibold text-muted-foreground">{label}</label>}
       <div className="flex h-[54px] items-center rounded-2xl bg-muted/70 px-4 transition focus-within:ring-2 focus-within:ring-bonzini-violet/40">
         {/* eslint-disable-next-line no-restricted-syntax -- text is 18px (≥16) so the iOS auto-zoom this rule guards against cannot occur; the soft shell needs a raw transparent input */}
         <input
@@ -66,9 +66,9 @@ export function MoneyField({
             onValueChange(parseAmount(cleaned, isDecimal));
           }}
           placeholder={placeholder}
-          className="min-w-0 flex-1 bg-transparent text-right text-[18px] font-bold tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground"
+          className="h-full min-w-0 flex-1 bg-transparent text-right text-[18px] font-bold tabular-nums outline-none placeholder:font-normal placeholder:text-muted-foreground"
         />
-        <span className="ml-2 shrink-0 text-[13px] font-semibold text-muted-foreground">{currency}</span>
+        <span className="ml-2 shrink-0 text-[14px] font-semibold text-muted-foreground">{currency}</span>
       </div>
     </div>
   );

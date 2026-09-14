@@ -243,8 +243,8 @@ export function MobileTreasuryDashboard() {
                       label: new Date(p.at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
-                      <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" domain={['dataMin - 10', 'dataMax + 10']} />
+                      <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+                      <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" domain={['dataMin - 10', 'dataMax + 10']} />
                       <Tooltip
                         formatter={(v: number) => [`${fmt(v, 4)} XAF/USDT`, 'WAC']}
                         labelStyle={{ fontSize: 12, color: 'hsl(var(--popover-foreground))' }}
@@ -489,9 +489,9 @@ export function FlowEvolutionChart({
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
             <YAxis
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               stroke="hsl(var(--border))"
               domain={[yMin, yMax]}
               tickFormatter={(v: number) => fmt(v, decimals)}
@@ -600,9 +600,9 @@ export function FlowDistributionChart({
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={buckets}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} stroke="hsl(var(--border))" />
             <YAxis
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               stroke="hsl(var(--border))"
               allowDecimals={false}
               width={32}
