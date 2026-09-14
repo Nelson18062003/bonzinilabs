@@ -37,7 +37,7 @@ import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
-import { useCargoShipments } from '@/hooks/useCargo';
+import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
 import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
@@ -150,6 +150,7 @@ export function MobileClientDetail() {
   const canViewCargo = hasPermission('canViewCargo');
   // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
   const { data: fleet } = useCargoShipments();
+  const { data: docsBy } = useCargoFleetDocuments();
   const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
 
@@ -434,7 +435,7 @@ export function MobileClientDetail() {
             </SectionTitle>
             <Card className="py-0">
               {containers.map((c) => {
-                const level = alertLevel(c);
+                const level = alertLevel(c, docsBy?.[c.id]);
                 return (
                   <ListRow
                     key={c.id}

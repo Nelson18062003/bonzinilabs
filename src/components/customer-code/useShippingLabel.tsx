@@ -8,7 +8,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { customerQrPayload, renderShippingLabel, LABEL_W, LABEL_H, type LabelData } from '@/lib/shippingLabelCanvas';
 
-export function useShippingLabel(data: LabelData): { preview: string | null; render: (scale?: number) => Promise<HTMLCanvasElement>; qr: ReactNode } {
+export function useShippingLabel(data: LabelData, { active = true }: { /** `false` : rien n'est peint (feuille fermée) — on ne paie pas deux peintures et un canvas ×3 pour une fiche client qu'on ne fait que lire. */ active?: boolean } = {}): { preview: string | null; render: (scale?: number) => Promise<HTMLCanvasElement>; qr: ReactNode } {
   // Le canvas du QR arrive par une ref-fonction : tant qu'il n'est pas monté
   // (feuille fermée), il n'y a pas d'aperçu à peindre ; dès qu'il l'est, on
   // repeint — sinon l'étiquette partait sans QR quand la feuille s'ouvrait
@@ -25,7 +25,7 @@ export function useShippingLabel(data: LabelData): { preview: string | null; ren
   // polices faisaient expirer l'activation, et la feuille de partage refusait.
   const exportRef = useRef<{ key: string; canvas: HTMLCanvasElement } | null>(null);
   useEffect(() => {
-    if (!qrEl) return;
+    if (!qrEl || !active) return;
     let alive = true;
     setPreview(null);
     exportRef.current = null;
@@ -39,7 +39,7 @@ export function useShippingLabel(data: LabelData): { preview: string | null; ren
         .catch((err) => console.error('shipping label preview', err));
     });
     return () => { alive = false; cancelAnimationFrame(id); };
-  }, [stable, qrEl]);
+  }, [stable, qrEl, active]);
 
   const render = useCallback(async (scale = 3) => {
     const cached = exportRef.current;

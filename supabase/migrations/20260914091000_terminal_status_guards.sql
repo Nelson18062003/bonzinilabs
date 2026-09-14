@@ -5,8 +5,10 @@
 --     'cancelled_by_admin' ne peut plus être validé (crédit) ni refusé.
 --   • process_payment(reject) : un paiement 'rejected' ou 'cancelled_by_admin'
 --     a déjà été remboursé — le refuser à nouveau remboursait une seconde fois.
--- Corps des fonctions repris à l'identique de 20260831160000, seule la garde
--- change. Idempotent (CREATE OR REPLACE, même signature).
+-- Corps des fonctions repris de 20260831160000 PLUS les correctifs appliqués
+-- « en place » ensuite (20260831200000 : FOR UPDATE sur le paiement ;
+-- 20260831220000 : montant crédité > 0) — une redéfinition complète doit les
+-- reconduire, sinon elle les efface. Idempotent (CREATE OR REPLACE, même signature).
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.validate_deposit(p_deposit_id uuid, p_admin_comment text DEFAULT NULL::text, p_confirmed_amount bigint DEFAULT NULL::bigint, p_send_notification boolean DEFAULT true)
@@ -65,6 +67,11 @@ BEGIN
   v_client_name := COALESCE(v_client_name, 'Client');
 
   v_credit_amount := COALESCE(p_confirmed_amount, v_deposit.amount_xaf);
+
+  IF v_credit_amount IS NULL OR v_credit_amount <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error',
+      'Le montant à créditer doit être strictement positif');
+  END IF;
 
   INSERT INTO wallets (user_id, balance_xaf)
   VALUES (v_deposit.user_id, 0)
@@ -329,7 +336,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Non autorisé');
   END IF;
 
-  SELECT * INTO v_payment FROM public.payments WHERE id = p_payment_id;
+  SELECT * INTO v_payment FROM public.payments WHERE id = p_payment_id FOR UPDATE;
 
   IF v_payment IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Paiement non trouvé');

@@ -43,7 +43,7 @@ export interface MobileShippingLabelSheetProps {
 
 export function MobileShippingLabelSheet({ open, onClose, code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings }: MobileShippingLabelSheetProps) {
   const [destination, setDestination] = useState<ShippingDestination>('warehouse');
-  const { preview, render, qr } = useShippingLabel({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings });
+  const { preview, render, qr } = useShippingLabel({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings }, { active: open });
 
   const configured = isLocationConfigured(settings[destination]);
   const share = canShareFiles();

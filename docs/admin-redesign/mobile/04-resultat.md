@@ -541,3 +541,27 @@ Audit à 320 / 390 / 430 px et en sombre, 25 routes. Corrigé :
 Sonde `tools/_w320` (jetable) : 0 débordement de document, 0 troncature, 0
 erreur JS sur 22 routes à 320 et 390 px (les seuls dépassements restants sont
 des rangées de puces qui défilent horizontalement, volontaires).
+
+## Passe 22 — boucle d'audit, tour 2 (contre-vérification)
+
+**Régression attrapée avant mise en ligne** : la migration des statuts
+terminaux (`20260914091000`) reprenait le texte des fonctions de
+`20260831160000`, mais deux migrations postérieures les avaient corrigées
+« en place » (`replace()` sur `pg_get_functiondef`) : le verrou `FOR UPDATE`
+sur le paiement (`20260831200000`) et « montant crédité > 0 »
+(`20260831220000`). Une redéfinition complète les effaçait en silence —
+deux `reject` concurrents auraient remboursé deux fois. Réintégrés dans la
+migration et le consolidé ; nouveau test `moneyRpcGuards` : toute
+redéfinition postérieure de `process_payment` / `validate_deposit` /
+`reject_deposit` doit reconduire ces correctifs.
+- Étiquette : le pré-rendu ×3 (canvas de ~20 Mo) n'est plus lancé qu'à
+  l'ouverture de la feuille (`active`), pas à chaque fiche client ouverte.
+- Fiche client et légende de la carte desktop : `alertLevel` avec les pièces,
+  comme la liste et le dossier.
+Vérifié propre par l'agent : idempotence des trois migrations, portée RLS de
+`platform_settings` (seul lecteur : `shipping`), préfixe temps réel cargo,
+absence de cycle d'import des badges, découpage des chunks (aucun PDF /
+graphique au premier chargement des trois entrées), Suspense au-dessus de la
+page d'accueil lazy, `MobileOperationsScreen` lit `tab` à chaque rendu,
+kit 44 px sans parent à hauteur fixe, en-tête à 320 px, `uid()` jamais au
+chargement de module, `resetPassword` sans consommateur chaîne.
