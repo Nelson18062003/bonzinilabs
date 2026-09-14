@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +15,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { cn } from '@/lib/utils';
 import { PaymentProof } from '@/hooks/usePayments';
 
@@ -45,6 +46,7 @@ export const PaymentProofGallery = ({
   emptyMessage,
   showUploadedBy = true
 }: PaymentProofGalleryProps) => {
+  const { t } = useTranslation('payments');
   const [selectedProof, setSelectedProof] = useState<PaymentProof | null>(null);
 
   const isImage = (fileType: string | null) => {
@@ -120,7 +122,7 @@ export const PaymentProofGallery = ({
                   {proof.file_name}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(proof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                  {format(new Date(proof.created_at), 'PP HH:mm', { locale: dateLocale() })}
                 </p>
               </div>
 
@@ -185,7 +187,7 @@ export const PaymentProofGallery = ({
                 <FileText className="w-16 h-16 text-primary mb-4" />
                 <p className="text-lg font-medium mb-2">{selectedProof.file_name}</p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Ce fichier ne peut pas être prévisualisé
+                  {t('detail.gallery.cannotPreview')}
                 </p>
                 <Button onClick={() => handleDownload(selectedProof)}>
                   <Download className="w-4 h-4 mr-2" />
@@ -199,12 +201,12 @@ export const PaymentProofGallery = ({
             <div className="px-4 pb-4 pt-0">
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 {selectedProof.uploaded_by_type === 'admin' ? (
-                  <><Building2 className="w-3.5 h-3.5" /> Ajouté par Bonzini</>
+                  <><Building2 className="w-3.5 h-3.5" /> {t('detail.gallery.addedByBonzini')}</>
                 ) : (
-                  <><User className="w-3.5 h-3.5" /> Ajouté par vous</>
+                  <><User className="w-3.5 h-3.5" /> {t('detail.gallery.addedByYou')}</>
                 )}
                 <span className="mx-1">•</span>
-                {format(new Date(selectedProof.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                {format(new Date(selectedProof.created_at), 'PP HH:mm', { locale: dateLocale() })}
               </p>
             </div>
           )}

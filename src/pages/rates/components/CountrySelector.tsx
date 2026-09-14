@@ -29,7 +29,7 @@ export function CountrySelector({ selectedCountry, onCountryChange }: CountrySel
                 active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
-              <span>{c.flag}</span> {c.label}
+              <span>{c.flag}</span> {t(`rates.countries.${c.key}`, { defaultValue: c.label })}
             </button>
           );
         })}

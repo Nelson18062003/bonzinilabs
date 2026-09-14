@@ -12,6 +12,7 @@
  * wizard step — two live zones would attach the same screenshot twice.
  */
 
+import { useTranslation } from 'react-i18next';
 import { useRef, useState } from 'react';
 import { Upload, ClipboardPaste, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,7 @@ export function PasteDropZone({
   busy = false,
   className,
 }: Props) {
+  const { t } = useTranslation('common');
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   // Nested dragenter/dragleave pairs fire for every child element; counting
@@ -115,7 +117,7 @@ export function PasteDropZone({
           {title ?? (single ? 'Collez, glissez ou cliquez' : 'Collez, glissez ou cliquez vos fichiers')}
         </span>
         <span className={cn('text-[11px]', TEXT.muted)}>
-          {hint ?? 'Ctrl+V pour coller une capture · JPG, PNG, WebP ou PDF · 10 Mo max'}
+          {hint ?? t('pasteHint')}
         </span>
       </button>
 

@@ -450,5 +450,13 @@
   "shippingSettingsRowHint": "海运（仓库）、空运（办公室）、电话、微信、WhatsApp、邮箱 — 打印在发货标签上",
   "assistant": "Mola",
   "cargo": "货运",
-  "navOperations": "业务"
+  "navOperations": "业务",
+  "pasteHint": "Ctrl+V 粘贴截图 · JPG、PNG、WebP 或 PDF · 最大 10 MB",
+  "showPassword": "显示密码",
+  "hidePassword": "隐藏密码",
+  "otpCode": "验证码",
+  "phoneField": {
+    "searchCountry": "搜索国家...",
+    "noResult": "无结果"
+  }
 }

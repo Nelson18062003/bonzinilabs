@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -103,6 +104,7 @@ export function PhoneCountryInput({
   autoFocus,
   hideLabel,
 }: PhoneCountryInputProps) {
+  const { t } = useTranslation('common');
   const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
   const [localNumber, setLocalNumber] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -191,7 +193,7 @@ export function PhoneCountryInput({
       {!hideLabel && (
         <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">
           <Phone className="w-4 h-4" />
-          Téléphone *
+          {t('phone')} *
         </label>
       )}
 
@@ -246,7 +248,7 @@ export function PhoneCountryInput({
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Rechercher un pays..."
+                placeholder={t('phoneField.searchCountry')}
                 className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/50"
               />
             </div>
@@ -255,7 +257,7 @@ export function PhoneCountryInput({
           {/* Country list */}
           <div className="max-h-52 overflow-y-auto">
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Aucun résultat</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t('phoneField.noResult')}</p>
             ) : (
               filtered.map(country => (
                 <button

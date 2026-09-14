@@ -50,7 +50,8 @@
       "adjustmentCredit": "调整入账",
       "operation": "操作"
     },
-    "search": "搜索一笔操作…"
+    "search": "搜索一笔操作…",
+    "loadWhat": "您的历史记录"
   },
   "profile": {
     "title": "个人资料",
@@ -197,6 +198,19 @@
       "min": "最低",
       "avg": "平均",
       "max": "最高"
+    },
+    "notConfigured": "汇率未设置",
+    "details": "详情 →",
+    "swapDirection": "切换换算方向",
+    "updatedToday": "今日 {{time}} 更新",
+    "updatedOn": "{{date}} {{time}} 更新",
+    "countries": {
+      "cameroun": "喀麦隆",
+      "gabon": "加蓬",
+      "tchad": "乍得",
+      "rca": "中非",
+      "congo": "刚果",
+      "guinee": "赤道几内亚"
     }
   },
   "myCode": {

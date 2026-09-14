@@ -43,7 +43,8 @@
       "paidOn": "Payé le {{date}}",
       "rejected": "Paiement refusé",
       "cancelled": "Paiement annulé"
-    }
+    },
+    "loadWhat": "vos paiements"
   },
   "status": {
     "created": "Créé",
@@ -183,7 +184,8 @@
       "amountDebited": "Débité maintenant",
       "newBalance": "Nouveau solde",
       "debitNotice": "Votre solde est débité à la confirmation. Bonzini règle ensuite votre fournisseur et vous envoie la preuve."
-    }
+    },
+    "rateAppliedTitle": "Taux du jour appliqué"
   },
   "detail": {
     "title": "Détail du paiement",
@@ -219,7 +221,13 @@
     "enlarge": "Agrandir",
     "cashPickupPresentQr": "Retrait au bureau Bonzini — présentez le QR ci-dessus.",
     "addBeneficiaryPrompt": "Ajoutez les coordonnées du bénéficiaire pour que Bonzini puisse régler votre paiement.",
-    "documents": "Documents",
+    "documents": {
+      "title": "Preuve & détails",
+      "paymentProof": "Preuve de paiement",
+      "addedByBonzini": "Ajoutée par Bonzini · toucher pour agrandir",
+      "paidOn": "Payé le",
+      "processedOn": "Traité le"
+    },
     "noDocuments": "Aucun document pour le moment.",
     "bonziniProofs": "Preuves Bonzini ({{count}})",
     "bonziniProofsDescription": "Justificatifs envoyés par Bonzini après le règlement de votre fournisseur.",
@@ -266,13 +274,6 @@
         "bonziniSettling": "Bonzini règle votre fournisseur",
         "inProgress": "En cours…"
       }
-    },
-    "documents": {
-      "title": "Preuve & détails",
-      "paymentProof": "Preuve de paiement",
-      "addedByBonzini": "Ajoutée par Bonzini · toucher pour agrandir",
-      "paidOn": "Payé le",
-      "processedOn": "Traité le"
     },
     "fields": {
       "name": "Nom",
@@ -338,6 +339,18 @@
       "completeLater": "Vous pourrez compléter ces informations plus tard.",
       "receiptDownloaded": "Reçu téléchargé.",
       "receiptError": "Échec du téléchargement."
+    },
+    "gallery": {
+      "cannotPreview": "Ce fichier ne peut pas être prévisualisé",
+      "addedByBonzini": "Ajouté par Bonzini",
+      "addedByYou": "Ajouté par vous"
+    },
+    "upload": {
+      "title": "Instructions de paiement",
+      "hint": "Ajoutez des images ou documents pour indiquer à Bonzini où et comment effectuer le paiement.",
+      "drop": "Glissez vos fichiers ici",
+      "browse": "ou cliquez pour parcourir",
+      "formats": "Formats acceptés : JPG, PNG, PDF • Max 10 MB par fichier"
     }
   },
   "rejectionReasons": {
@@ -452,5 +465,13 @@
     "channelsHint": "Choisissez un ou plusieurs moyens (au moins un).",
     "idPlaceholder": "ID Alipay / WeChat du fournisseur",
     "close": "Fermer"
+  },
+  "lifecycle": {
+    "paid": "Payé",
+    "refused": "Refusé",
+    "cancelled": "Annulé",
+    "toPresent": "À présenter",
+    "toComplete": "À compléter",
+    "inProgress": "En cours"
   }
 }

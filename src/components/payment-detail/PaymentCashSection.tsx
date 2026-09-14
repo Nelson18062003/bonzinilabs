@@ -5,7 +5,7 @@
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { CheckCircle2, ScanLine } from 'lucide-react';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
@@ -58,7 +58,7 @@ export function PaymentCashSection({ payment }: Props) {
                 {t('detail.signatureRecordedOn')}{' '}
                 {payment.cash_signature_timestamp &&
                   format(new Date(payment.cash_signature_timestamp), 'dd MMMM yyyy à HH:mm', {
-                    locale: fr,
+                    locale: dateLocale(),
                   })}
               </p>
               {payment.cash_signed_by_name && (

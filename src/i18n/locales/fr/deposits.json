@@ -252,7 +252,12 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "reference": "Référence",
-    "creditedAt": "Crédité le"
+    "creditedAt": "Crédité le",
+    "addYourProof": "Ajoutez votre preuve de versement",
+    "amountCredited": "Montant crédité sur votre solde",
+    "amountDeposit": "Montant du dépôt",
+    "amountToPay": "Montant à verser",
+    "amountDeclared": "Montant déclaré"
   },
   "new": {
     "amountToDeposit": "Montant à déposer",
@@ -337,7 +342,9 @@
       "waveInstr3": "Entrez le numéro: {{phone}}",
       "waveInstr4": "Saisissez le montant: {{amount}}",
       "waveInstr5": "Confirmez le transfert"
-    }
+    },
+    "balance": "Solde",
+    "newBalance": "Nouveau solde après dépôt"
   },
   "countdown": {
     "expired": "Délai dépassé",
@@ -355,6 +362,26 @@
   },
   "searchPlaceholder": "Rechercher (référence, méthode…)",
   "list": {
-    "emptyFilter": "Aucun dépôt pour ce filtre."
+    "emptyFilter": "Aucun dépôt pour ce filtre.",
+    "tabs": {
+      "all": "Tous",
+      "todo": "À traiter",
+      "progress": "En cours",
+      "done": "Terminés"
+    },
+    "proofMissing": "Preuve de versement manquante",
+    "toCorrect": "À corriger",
+    "balance": "Solde",
+    "addProof": "Ajouter la preuve",
+    "loadWhat": "vos dépôts"
+  },
+  "lifecycle": {
+    "awaitingProof": "Preuve en attente",
+    "toCorrect": "À corriger",
+    "verifying": "En vérification",
+    "credited": "Crédité",
+    "rejected": "Rejeté",
+    "cancelled": "Annulé",
+    "inProgress": "En cours"
   }
 }

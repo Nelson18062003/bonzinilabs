@@ -50,7 +50,8 @@
       "adjustmentCredit": "Credit adjustment",
       "operation": "Operation"
     },
-    "search": "Search an operation…"
+    "search": "Search an operation…",
+    "loadWhat": "your history"
   },
   "profile": {
     "title": "Profile",
@@ -197,6 +198,19 @@
       "min": "Min",
       "avg": "Avg",
       "max": "Max"
+    },
+    "notConfigured": "Rates not set",
+    "details": "Details →",
+    "swapDirection": "Swap conversion direction",
+    "updatedToday": "Updated today at {{time}}",
+    "updatedOn": "Updated on {{date}} at {{time}}",
+    "countries": {
+      "cameroun": "Cameroon",
+      "gabon": "Gabon",
+      "tchad": "Chad",
+      "rca": "Central African Republic",
+      "congo": "Congo",
+      "guinee": "Equatorial Guinea"
     }
   },
   "myCode": {

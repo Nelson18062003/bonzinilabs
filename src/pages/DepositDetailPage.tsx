@@ -238,7 +238,7 @@ const DepositDetailPage = () => {
             <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
               <div className="flex items-center justify-between gap-2">
                 <p className="px-1 text-[13px] font-semibold" style={{ color: LIFECYCLE_COLOR.todo }}>
-                  Ajoutez votre preuve de versement
+                  {t('detail.addYourProof')}
                 </p>
                 <CountdownTimer createdAt={deposit.created_at} compact />
               </div>
@@ -247,7 +247,7 @@ const DepositDetailPage = () => {
                   onClick={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                   className={cn('mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
                 >
-                  Ajouter la preuve <ArrowRight className="h-4 w-4" />
+                  {t('list.addProof')} <ArrowRight className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -273,7 +273,7 @@ const DepositDetailPage = () => {
             </div>
 
             <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>
-              {isValidated ? 'Montant crédité sur votre solde' : lc.kind === 'failed' ? 'Montant du dépôt' : canUploadProof ? 'Montant à verser' : 'Montant déclaré'}
+              {isValidated ? t('detail.amountCredited') : lc.kind === 'failed' ? t('detail.amountDeposit') : canUploadProof ? t('detail.amountToPay') : t('detail.amountDeclared')}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               {isValidated && <span className="text-[34px] font-black" style={{ color: LIFECYCLE_COLOR.done }}>+</span>}

@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -177,12 +177,12 @@ const HistoryPage = () => {
             ))}
           </div>
         ) : isError ? (
-          <QueryError what="votre historique" onRetry={() => { void refetch(); }} />
+          <QueryError what={t('history.loadWhat')} onRetry={() => { void refetch(); }} />
         ) : Object.entries(groupedOperations).length > 0 ? (
           Object.entries(groupedOperations).map(([date, ops]) => (
             <section key={date} className="animate-slide-up">
               <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
+                {format(new Date(date), 'EEEE d MMMM', { locale: dateLocale() })}
               </h2>
               <div className="space-y-2.5">
                 {ops.map((op) => {

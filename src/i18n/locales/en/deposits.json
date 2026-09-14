@@ -252,7 +252,12 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "reference": "Reference",
-    "creditedAt": "Credited on"
+    "creditedAt": "Credited on",
+    "addYourProof": "Add your payment proof",
+    "amountCredited": "Amount credited to your balance",
+    "amountDeposit": "Deposit amount",
+    "amountToPay": "Amount to pay",
+    "amountDeclared": "Declared amount"
   },
   "new": {
     "amountToDeposit": "Amount to deposit",
@@ -337,7 +342,9 @@
       "waveInstr3": "Enter the number: {{phone}}",
       "waveInstr4": "Enter the amount: {{amount}}",
       "waveInstr5": "Confirm the transfer"
-    }
+    },
+    "balance": "Balance",
+    "newBalance": "New balance after deposit"
   },
   "countdown": {
     "expired": "Deadline exceeded",
@@ -355,6 +362,26 @@
   },
   "searchPlaceholder": "Search (reference, method…)",
   "list": {
-    "emptyFilter": "No deposit for this filter."
+    "emptyFilter": "No deposit for this filter.",
+    "tabs": {
+      "all": "All",
+      "todo": "To do",
+      "progress": "In progress",
+      "done": "Completed"
+    },
+    "proofMissing": "Payment proof missing",
+    "toCorrect": "To correct",
+    "balance": "Balance",
+    "addProof": "Add proof",
+    "loadWhat": "your deposits"
+  },
+  "lifecycle": {
+    "awaitingProof": "Proof pending",
+    "toCorrect": "To correct",
+    "verifying": "Under review",
+    "credited": "Credited",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "inProgress": "In progress"
   }
 }

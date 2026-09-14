@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 // ============================================================
 // Cycle de vie d'un paiement (client) — source unique pour la
 // liste + la fiche refondues. Mappe le statut métier vers :
@@ -48,11 +49,12 @@ export function paymentLifecycle(status: string): PaymentLifecycle {
 
 /** Libellé court de la pastille — UNIQUE pour la liste ET la fiche. */
 export function lifecycleStatusLabel(status: string): string {
+  const k = (key: string) => i18n.t(`lifecycle.${key}`, { ns: 'payments' });
   const { kind } = paymentLifecycle(status);
-  if (kind === 'done') return 'Payé';
-  if (kind === 'failed') return status === 'rejected' ? 'Refusé' : 'Annulé';
-  if (kind === 'todo') return status === 'cash_pending' ? 'À présenter' : 'À compléter';
-  return 'En cours';
+  if (kind === 'done') return k('paid');
+  if (kind === 'failed') return status === 'rejected' ? k('refused') : k('cancelled');
+  if (kind === 'todo') return status === 'cash_pending' ? k('toPresent') : k('toComplete');
+  return k('inProgress');
 }
 
 /** Le paiement entre-t-il dans l'onglet de filtre demandé ? */

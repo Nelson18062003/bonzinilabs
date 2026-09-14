@@ -1,5 +1,5 @@
 import { parseISO, isValid, format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 
 // Canonical payment steps in order (main flow)
 export const PAYMENT_STEPS = [
@@ -63,13 +63,13 @@ export interface PaymentTimelineEvent {
 /**
  * Safely format a date string, returns undefined if invalid
  */
-export function safeFormatDate(dateStr: string | undefined | null, formatStr: string = 'dd MMM yyyy, HH:mm'): string | undefined {
+export function safeFormatDate(dateStr: string | undefined | null, formatStr: string = 'PP, HH:mm'): string | undefined {
   if (!dateStr) return undefined;
 
   try {
     const date = parseISO(dateStr);
     if (!isValid(date)) return undefined;
-    return format(date, formatStr, { locale: fr });
+    return format(date, formatStr, { locale: dateLocale() });
   } catch {
     return undefined;
   }

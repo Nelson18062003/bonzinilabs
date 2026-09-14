@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { WalletOperation } from '@/hooks/useWallet';
 import { formatNumber } from '@/lib/formatters';
 import { format, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 
@@ -42,7 +42,7 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn('break-words text-[14px] font-bold leading-snug', TEXT.strong)}>{op.description || t('wallet.operation')}</p>
-                <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{format(date, 'd MMM · HH:mm', { locale: fr })}</p>
+                <p className={cn('mt-0.5 text-[12px]', TEXT.muted)}>{format(date, 'd MMM · HH:mm', { locale: dateLocale() })}</p>
               </div>
               <div className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', credit ? 'text-[#2E7D52] dark:text-[#7FCBA0]' : TEXT.strong)}>
                 {credit ? '+' : '−'} {formatNumber(op.amount_xaf)}

@@ -6,7 +6,7 @@
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { ArrowLeft, Bell, CheckCircle2, XCircle, AlertCircle, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -103,7 +103,7 @@ const NotificationsPage = () => {
                     <div className={cn('text-[14px] font-bold', TEXT.strong)}>{n.title}</div>
                     <div className={cn('mt-0.5 line-clamp-2 text-[13px]', TEXT.muted)}>{n.message}</div>
                     <div className={cn('mt-1.5 text-[11px]', TEXT.muted)}>
-                      {format(new Date(n.created_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
+                      {format(new Date(n.created_at), 'PP · HH:mm', { locale: dateLocale() })}
                     </div>
                   </div>
                   {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: LILAC }} />}

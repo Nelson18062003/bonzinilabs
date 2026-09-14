@@ -12,7 +12,7 @@ import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { format, isAfter, startOfMonth, subWeeks } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { Send, Search, ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -47,7 +47,7 @@ function statusHint(payment: Payment, kind: LifecycleKind, t: TFunction): string
   if (kind === 'progress') return t('list.statusHint.progress');
   if (kind === 'done')
     return t('list.statusHint.paidOn', {
-      date: format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: fr }),
+      date: format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: dateLocale() }),
     });
   if (payment.status === 'rejected') return t('list.statusHint.rejected');
   if (payment.status === 'cancelled_by_admin') return t('list.statusHint.cancelled');
@@ -195,7 +195,7 @@ const PaymentsPage = () => {
             ))}
           </div>
         ) : isError ? (
-          <QueryError what="vos paiements" onRetry={() => { void refetch(); }} />
+          <QueryError what={t('list.loadWhat')} onRetry={() => { void refetch(); }} />
         ) : !payments || payments.length === 0 ? (
           <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
@@ -247,7 +247,7 @@ const PaymentsPage = () => {
                   <div className="mt-3.5"><Progress step={lc.step} color={color} /></div>
                   <div className="mt-2 flex items-center justify-between">
                     <span className={cn('truncate text-[12px]', todo ? 'font-semibold' : TEXT.muted)} style={todo ? { color } : undefined}>
-                      {p.reference} · {todo ? t('list.toComplete') : format(new Date(p.created_at), 'd MMM yyyy', { locale: fr })}
+                      {p.reference} · {todo ? t('list.toComplete') : format(new Date(p.created_at), 'PP', { locale: dateLocale() })}
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0" style={{ color: todo ? color : undefined }} />
                   </div>

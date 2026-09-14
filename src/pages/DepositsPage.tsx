@@ -10,7 +10,7 @@ import { useMemo, useState } from 'react';
 import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { ArrowDownToLine, ChevronRight, ArrowRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -29,20 +29,20 @@ import {
 } from '@/lib/depositLifecycle';
 import type { Deposit } from '@/types/deposit';
 
-const TABS: { key: DepositFilterTab; label: string }[] = [
-  { key: 'all', label: 'Tous' },
-  { key: 'todo', label: 'À traiter' },
-  { key: 'progress', label: 'En cours' },
-  { key: 'done', label: 'Terminés' },
+const TABS: { key: DepositFilterTab; labelKey: string }[] = [
+  { key: 'all', labelKey: 'list.tabs.all' },
+  { key: 'todo', labelKey: 'list.tabs.todo' },
+  { key: 'progress', labelKey: 'list.tabs.progress' },
+  { key: 'done', labelKey: 'list.tabs.done' },
 ];
 
-function statusHint(d: Deposit): string {
+function statusHint(d: Deposit, t: (k: string) => string): string {
   switch (d.status) {
     case 'created':
     case 'awaiting_proof':
-      return 'Preuve de versement manquante';
+      return t('list.proofMissing');
     case 'pending_correction':
-      return d.admin_comment || 'À corriger';
+      return d.admin_comment || t('list.toCorrect');
     default:
       return '';
   }
@@ -116,7 +116,7 @@ const DepositsPage = () => {
             <div className={cn('text-[17px] font-black', TEXT.strong)}>{t('newDeposit')}</div>
             {wallet ? (
               <div className={cn('mt-0.5 text-[12px] tabular-nums', TEXT.muted)}>
-                Solde · <span className={cn('font-bold', TEXT.strong)}>{formatNumber(wallet.balance_xaf)} XAF</span>
+                {t('list.balance')} · <span className={cn('font-bold', TEXT.strong)}>{formatNumber(wallet.balance_xaf)} XAF</span>
               </div>
             ) : null}
           </div>
@@ -150,7 +150,7 @@ const DepositsPage = () => {
                   active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 )}
               >
-                {tb.label}
+                {t(tb.labelKey)}
                 {tb.key === 'todo' && todoCount > 0 ? (
                   <span className="rounded-full bg-[#C0504D] px-1.5 text-[10px] text-white">{todoCount}</span>
                 ) : null}
@@ -167,7 +167,7 @@ const DepositsPage = () => {
             ))}
           </div>
         ) : isError ? (
-          <QueryError what="vos dépôts" onRetry={() => { void refetch(); }} />
+          <QueryError what={t('list.loadWhat')} onRetry={() => { void refetch(); }} />
         ) : !deposits || deposits.length === 0 ? (
           <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
@@ -206,7 +206,7 @@ const DepositsPage = () => {
                         {t(`method.${d.method}`, d.method)}
                       </div>
                       {todo ? (
-                        <div className="mt-0.5 break-words text-[12px] font-semibold leading-snug" style={{ color }}>{statusHint(d)}</div>
+                        <div className="mt-0.5 break-words text-[12px] font-semibold leading-snug" style={{ color }}>{statusHint(d, t)}</div>
                       ) : (
                         <div className={cn('mt-0.5 text-[13px] font-bold tabular-nums', TEXT.strong)}>
                           +{formatNumber(d.amount_xaf)} <span className={cn('text-[11px] font-semibold', TEXT.muted)}>XAF</span>
@@ -231,12 +231,12 @@ const DepositsPage = () => {
                     <div
                       className={cn('mt-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-bold', 'bg-[#1C1B22] text-white dark:bg-[#F2F1F7] dark:text-[#1B1A24]')}
                     >
-                      Ajouter la preuve <ArrowRight className="h-4 w-4" />
+                      {t('list.addProof')} <ArrowRight className="h-4 w-4" />
                     </div>
                   ) : (
                     <div className="mt-2 flex items-center justify-between">
                       <span className={cn('truncate text-[12px]', TEXT.muted)}>
-                        {d.reference} · {format(new Date(d.created_at), 'd MMM yyyy', { locale: fr })}
+                        {d.reference} · {format(new Date(d.created_at), 'PP', { locale: dateLocale() })}
                       </span>
                       <ChevronRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
                     </div>

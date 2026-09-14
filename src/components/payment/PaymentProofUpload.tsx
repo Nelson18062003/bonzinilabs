@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Camera, Image, X, FileCheck, Loader2, Plus } from 'lucide-react';
@@ -18,6 +19,7 @@ export const PaymentProofUpload = ({
   isSubmitting,
   disabled = false 
 }: PaymentProofUploadProps) => {
+  const { t } = useTranslation('payments');
   const [dragActive, setDragActive] = useState(false);
   const [previews, setPreviews] = useState<{ file: File; url: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,11 +93,11 @@ export const PaymentProofUpload = ({
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Upload className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-foreground">Instructions de paiement</h3>
+        <h3 className="font-semibold text-foreground">{t('detail.upload.title')}</h3>
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Ajoutez des images ou documents pour indiquer à Bonzini où et comment effectuer le paiement.
+        {t('detail.upload.hint')}
       </p>
 
       {/* Files preview grid */}
@@ -167,10 +169,10 @@ export const PaymentProofUpload = ({
               <Upload className="w-7 h-7 text-primary" />
             </div>
             <p className="text-sm font-medium text-foreground mb-1">
-              Glissez vos fichiers ici
+              {t('detail.upload.drop')}
             </p>
             <p className="text-xs text-muted-foreground">
-              ou cliquez pour parcourir
+              {t('detail.upload.browse')}
             </p>
           </div>
 
@@ -209,7 +211,7 @@ export const PaymentProofUpload = ({
       )}
 
       <p className="text-xs text-muted-foreground text-center">
-        Formats acceptés : JPG, PNG, PDF • Max 10 MB par fichier
+        {t('detail.upload.formats')}
       </p>
 
       <input

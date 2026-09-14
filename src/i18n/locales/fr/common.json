@@ -450,5 +450,13 @@
   "shippingSettingsRowHint": "Sea cargo (entrepôt), air cargo (bureau), téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis",
   "assistant": "Mola",
   "cargo": "Cargo",
-  "navOperations": "Opérations"
+  "navOperations": "Opérations",
+  "pasteHint": "Ctrl+V pour coller une capture · JPG, PNG, WebP ou PDF · 10 Mo max",
+  "showPassword": "Afficher le mot de passe",
+  "hidePassword": "Masquer le mot de passe",
+  "otpCode": "Code de vérification",
+  "phoneField": {
+    "searchCountry": "Rechercher un pays...",
+    "noResult": "Aucun résultat"
+  }
 }

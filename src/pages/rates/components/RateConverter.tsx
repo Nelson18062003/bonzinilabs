@@ -105,7 +105,7 @@ export function RateConverter({
         <div className="my-3 flex justify-center">
           <button
             onClick={() => setDirection((d) => (d === 'xaf' ? 'cny' : 'xaf'))}
-            aria-label="Inverser le sens de conversion"
+            aria-label={t('rates.swapDirection')}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EDEAFA] transition active:scale-90 dark:bg-[#2F2C3D]"
           >
             <ArrowUpDown className="h-[18px] w-[18px] text-[#5B4CC4] dark:text-[#B5AAF0]" />

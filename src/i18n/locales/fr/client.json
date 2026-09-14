@@ -50,7 +50,8 @@
       "adjustmentCredit": "Ajustement Crédit",
       "operation": "Opération"
     },
-    "search": "Rechercher une opération…"
+    "search": "Rechercher une opération…",
+    "loadWhat": "votre historique"
   },
   "profile": {
     "title": "Profil",
@@ -197,6 +198,19 @@
       "min": "Min",
       "avg": "Moy",
       "max": "Max"
+    },
+    "notConfigured": "Taux non configurés",
+    "details": "Détails →",
+    "swapDirection": "Inverser le sens de conversion",
+    "updatedToday": "Mis à jour aujourd'hui à {{time}}",
+    "updatedOn": "Mis à jour le {{date}} à {{time}}",
+    "countries": {
+      "cameroun": "Cameroun",
+      "gabon": "Gabon",
+      "tchad": "Tchad",
+      "rca": "Centrafrique",
+      "congo": "Congo",
+      "guinee": "Guinée Équatoriale"
     }
   },
   "myCode": {

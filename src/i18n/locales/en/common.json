@@ -450,5 +450,13 @@
   "shippingSettingsRowHint": "Sea cargo (warehouse), air cargo (office), phone, WeChat, WhatsApp, email — printed on the shipping label",
   "assistant": "Mola",
   "cargo": "Cargo",
-  "navOperations": "Operations"
+  "navOperations": "Operations",
+  "pasteHint": "Ctrl+V to paste a screenshot · JPG, PNG, WebP or PDF · 10 MB max",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "otpCode": "Verification code",
+  "phoneField": {
+    "searchCountry": "Search a country...",
+    "noResult": "No result"
+  }
 }

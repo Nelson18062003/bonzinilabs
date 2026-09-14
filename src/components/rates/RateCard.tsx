@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { format, isToday } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import i18n from '@/i18n';
+import { dateLocale } from '@/lib/dateLocale';
 import { formatNumber } from '@/lib/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -66,12 +68,13 @@ function formatUpdatedAt(dateStr: string): string {
   const d = new Date(dateStr);
   const time = format(d, 'HH:mm');
   if (isToday(d)) {
-    return `Mis à jour aujourd'hui à ${time}`;
+    return i18n.t('rates.updatedToday', { ns: 'client', time });
   }
-  return `Mis à jour le ${format(d, 'd MMMM', { locale: fr })} à ${time}`;
+  return i18n.t('rates.updatedOn', { ns: 'client', date: format(d, 'd MMMM', { locale: dateLocale() }), time });
 }
 
 export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className }: RateCardProps) {
+  const { t: tr } = useTranslation('client');
   const { resolvedTheme } = useTheme();
   const t = TOKENS[resolvedTheme === 'dark' ? 'dark' : 'light'];
 
@@ -109,7 +112,7 @@ export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className
           Taux du jour
         </div>
         <p style={{ fontSize: 13, color: t.labelColor, fontStyle: 'italic', marginTop: 8 }}>
-          Taux non configurés
+          {tr('rates.notConfigured')}
         </p>
       </div>
     );
@@ -133,7 +136,7 @@ export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className
             fontSize: 11, fontWeight: 600, color: '#7c3aed',
             padding: '5px 10px', borderRadius: 7, background: t.btnBg,
           }}>
-            Détails →
+            {tr('rates.details')}
           </div>
         </div>
 
@@ -182,7 +185,7 @@ export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className
           borderTop: `1px solid ${t.footerBorder}`,
           fontSize: 10, color: t.footerText, fontWeight: 500,
         }}>
-          {effectiveAt ? formatUpdatedAt(effectiveAt) : 'Taux non configurés'}
+          {effectiveAt ? formatUpdatedAt(effectiveAt) : tr('rates.notConfigured')}
         </div>
       </div>
     </Link>

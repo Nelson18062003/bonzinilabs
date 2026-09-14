@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -45,6 +46,7 @@ export const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldPro
     },
     ref,
   ) {
+    const { t } = useTranslation('common');
     const reactId = React.useId();
     const id = idProp ?? reactId;
     const [visible, setVisible] = React.useState(false);
@@ -100,7 +102,7 @@ export const PasswordField = React.forwardRef<HTMLInputElement, PasswordFieldPro
             <button
               type="button"
               onClick={() => setVisible((v) => !v)}
-              aria-label={visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              aria-label={visible ? t('hidePassword') : t('showPassword')}
               className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
               tabIndex={-1}
             >
