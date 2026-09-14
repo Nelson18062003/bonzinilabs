@@ -640,3 +640,16 @@ visible seulement au clavier) sur Button, ListRow, Chip, Segmented et Fold.
 Sur la fiche paiement, le nom du client reste en ligne dans la phrase mais
 sa zone tactile atteint 44 px (padding vertical d'un élément en ligne).
 628 tests verts, build propre.
+
+## Passe 28 — un seul chiffre pour « ce qui attend »
+
+Le badge « Opérations » de la barre comptait les paiements en cours mais
+pas les dépôts à corriger ; le hub Opérations faisait l'inverse (dépôts à
+traiter + à corriger, paiements sans « en cours »). Un opérateur pouvait
+lire 12 sur la barre et 5 + 3 sur l'écran. Désormais une seule liste
+(`src/lib/actionable.ts`) définit ce qui attend un opérateur — dépôt :
+preuve envoyée ou en vérification ; paiement : prêt, espèces scannées ou en
+cours — et le hub lit les mêmes compteurs que le badge : Dépôts + Paiements
+= badge, et dans chaque liste « À traiter » (+ « En cours » pour les
+paiements) = le segment. Un test de parité fige l'accord avec les filtres
+des listes. 630 tests verts, build propre.
