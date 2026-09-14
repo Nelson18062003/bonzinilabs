@@ -111,6 +111,8 @@ describe('SÉCURITÉ — une redéfinition complète reconduit les correctifs ap
     // ont aussi patché les ajustements de portefeuille en place.
     create_wallet_adjustment: ['FOR UPDATE'],
     admin_adjust_wallet: ['p_amount <= 0'],
+    // 20260914120000 : plus de plafond, mais le montant reste strictement positif.
+    admin_correct_payment: ['p_amount_xaf <= 0', 'FOR UPDATE'],
   };
   const later = migrationFiles().filter((f) => f > '20260831220000');
 
