@@ -19,9 +19,9 @@ import type {
 // ──────────────────────────────────────────────────────────────────
 // Imported (not just re-exported) because the schemas below reference them —
 // a bare `export … from` would not bind the names in this module's scope.
-import { MAX_AMOUNT_XAF, MIN_PAYMENT_XAF as MIN_AMOUNT_XAF } from '@/lib/amountLimits';
+import { MIN_PAYMENT_XAF as MIN_AMOUNT_XAF } from '@/lib/amountLimits';
 
-export { MAX_AMOUNT_XAF, MIN_AMOUNT_XAF };
+export { MIN_AMOUNT_XAF };
 
 // ──────────────────────────────────────────────────────────────────
 // Step 1 — method
@@ -52,7 +52,6 @@ export function makeAmountStepSchema({ walletBalanceXaf }: AmountStepInput) {
       .number({ invalid_type_error: 'form.amountTooHigh' })
       .int('form.amountTooHigh')
       .min(MIN_AMOUNT_XAF, 'form.amountTooHigh')
-      .max(MAX_AMOUNT_XAF, 'form.amountTooHigh')
       .refine((value) => Number.isSafeInteger(value), {
         message: 'form.amountTooHigh',
       })

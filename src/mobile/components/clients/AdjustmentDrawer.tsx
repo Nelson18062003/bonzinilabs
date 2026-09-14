@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateAdjustment } from '@/hooks/useClientManagement';
 import { formatCurrency } from '@/lib/formatters';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, isValidXafAmount } from '@/lib/amountLimits';
+import { isValidXafAmount } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
 import { AmountField, TextArea } from '@/components/form';
 import {
@@ -46,8 +46,7 @@ export function AdjustmentDrawer({
   const amount = amountNumber ?? 0;
   const isDebit = type === 'DEBIT';
   const isInsufficientBalance = isDebit && amount > currentBalance;
-  // Même plafond de saisie (50 M) et même garde d'entier que dépôts et paiements.
-  const amountOverCap = amount > MAX_AMOUNT_XAF;
+  // Même garde d'entier que dépôts et paiements ; pas de plafond.
   const isValid = isValidXafAmount(amount) && reason.trim().length > 0 && !isInsufficientBalance;
 
   const handleSubmit = async () => {
@@ -113,7 +112,7 @@ export function AdjustmentDrawer({
             value={amountNumber}
             onValueChange={setAmountNumber}
             enterKeyHint="next"
-            error={amountOverCap ? `Le montant dépasse ${MAX_AMOUNT_XAF_LABEL} XAF` : isInsufficientBalance ? t('insufficientBalance', { defaultValue: 'Solde insuffisant' }) : undefined}
+            error={isInsufficientBalance ? t('insufficientBalance', { defaultValue: 'Solde insuffisant' }) : undefined}
           />
 
           {/* Balance preview */}

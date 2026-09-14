@@ -27,7 +27,7 @@ import {
   type Beneficiary,
 } from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
@@ -281,10 +281,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
 
   const hasEnoughBalance = xaf <= clientBalance;
-  // Same 50 M ceiling the client-facing wizard enforces — the admin form had
-  // only a floor, so an extra zero passed straight through to the wallet debit.
+  // Pas de plafond : entier positif, dans la limite du solde du client.
   const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
-  const amountOverCap = xaf > MAX_AMOUNT_XAF;
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
@@ -344,7 +342,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       toast.error(
         amountValid
           ? 'Solde insuffisant pour ce paiement.'
-          : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`,
+          : 'Montant invalide.',
       );
       return;
     }
@@ -832,11 +830,6 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             />
 
             {/* Alertes montant */}
-            {amountOverCap && (
-              <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
-                Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement
-              </div>
-            )}
             {xaf > clientBalance && xaf > 0 && (
               <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 Solde insuffisant ({fmt(clientBalance)} XAF)

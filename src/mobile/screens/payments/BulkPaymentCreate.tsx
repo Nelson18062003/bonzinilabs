@@ -40,7 +40,7 @@ import {
 import { formatXAF, formatYuan } from '@/lib/formatters';
 import { toStoredPath } from '@/lib/signedUrls';
 import { validateUploadFile, cn } from '@/lib/utils';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 import type { PaymentMethodKey } from '@/types/rates';
@@ -218,13 +218,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
   const benefErrors = validateBeneficiaryInput(editorBenef);
   const benefComplete = isBeneficiaryComplete(editorBenef);
-  // Même plafond (50 M) et même garde d'entier que le paiement simple.
+  // Même garde d'entier que le paiement simple ; pas de plafond.
   const amountValid = isValidXafAmount(eXaf, MIN_PAYMENT_XAF) && eCny >= 1;
-  const amountOverCap = eXaf > MAX_AMOUNT_XAF;
   const editorValid = amountValid && benefComplete;
 
   function errMsg(): string | null {
-    if (amountOverCap) return t('bulk.errAmountCap', { cap: MAX_AMOUNT_XAF_LABEL, defaultValue: `Le montant dépasse ${MAX_AMOUNT_XAF_LABEL}` });
     if (!amountValid) return t('bulk.errAmount', { defaultValue: 'Renseignez un montant valide' });
     const k = Object.values(benefErrors)[0];
     if (!k) return null;

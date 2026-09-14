@@ -45,7 +45,6 @@ import type {
 type Step = 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
 
 const MIN_DEPOSIT_XAF = 50_000;
-const MAX_DEPOSIT_XAF = 50_000_000;
 
 const PHASES = ['Montant', 'Méthode', 'Confirmation'];
 const phaseOf = (s: Step): number => (s === 'amount' ? 0 : s === 'recap' ? 2 : 1);
@@ -65,9 +64,8 @@ const NewDepositPage = () => {
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // Jamais de plafonnement silencieux : un montant hors limite est refusé et expliqué.
+  // Pas de plafond sur un dépôt : seul le minimum s'applique.
   const parsedAmount = parseInt(amount) || 0;
-  const amountOverCap = parsedAmount > MAX_DEPOSIT_XAF;
   const newBalance = (wallet?.balance_xaf ?? 0) + parsedAmount;
 
   const handleCopy = async (text: string, field: string) => {
@@ -392,9 +390,7 @@ const NewDepositPage = () => {
             })}
           </div>
 
-          <p className={cn('px-1 text-center text-[13px]', amountOverCap ? 'font-semibold text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted)}>
-            {amountOverCap ? t('new.maximumAmount', { defaultValue: 'Montant maximum : 50 000 000 XAF' }) : t('new.minimumAmount')}
-          </p>
+          <p className={cn('px-1 text-center text-[13px]', TEXT.muted)}>{t('new.minimumAmount')}</p>
         </div>
       );
     }
@@ -551,7 +547,7 @@ const NewDepositPage = () => {
     return null;
   };
 
-  const amountValid = parsedAmount >= MIN_DEPOSIT_XAF && !amountOverCap;
+  const amountValid = Number.isSafeInteger(parsedAmount) && parsedAmount >= MIN_DEPOSIT_XAF;
 
   return (
     <MobileLayout showNav={false} showHeader={false}>

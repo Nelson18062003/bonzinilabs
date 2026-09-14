@@ -13,7 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAllClients, useAdminCreateDeposit } from '@/hooks/useAdminDeposits';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatCurrency } from '@/lib/formatters';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
@@ -160,10 +160,8 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   const [createdDepositId, setCreatedDepositId] = useState<string | null>(null);
 
   const amountNum = parseInt(amount) || 0;
-  // The admin wizard had no ceiling at all while the client form capped at 50 M:
-  // one stray zero here credited a wallet 10x over with nothing to catch it.
+  // Pas de plafond sur un dépôt : entier positif au-dessus du minimum.
   const amountValid = isValidXafAmount(amountNum, MIN_DEPOSIT_XAF);
-  const amountOverCap = amountNum > MAX_AMOUNT_XAF;
   const animatedAmount = useCountUp(amountNum, { enabled: amountNum > 0 });
 
   const totalSteps = getTotalSteps(selectedFamily);
@@ -308,7 +306,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
     }
     // Re-check at the call site: the CTA guard is UI, this one protects the RPC.
     if (!amountValid) {
-      toast.error(`Montant invalide — entre ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`);
+      toast.error(`Montant invalide — minimum ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} XAF.`);
       return;
     }
     const opDate = resolveOperationDate(useCustomDate, customDateStr);
@@ -672,15 +670,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               onChange={setCustomDateStr}
               accent={GREEN}
             />
-            {amountOverCap && (
-              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C00F0C] bg-[#FDD3D0] p-3 dark:bg-[#900B09]">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#900B09] dark:text-[#FDD3D0]" />
-                <p className="text-[16px] font-semibold text-[#900B09] dark:text-[#FDD3D0]">
-                  Montant maximum : {MAX_AMOUNT_XAF_LABEL} XAF par dépôt.
-                </p>
-              </div>
-            )}
-            {!amountOverCap && amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
+            {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
               <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#E8B931] bg-[#FFF1C2] p-3 dark:bg-[#522504]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
                 <p className="text-[16px] text-[#682D03] dark:text-[#FFF1C2]">
