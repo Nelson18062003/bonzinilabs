@@ -173,6 +173,7 @@ export function MobileAdminsScreen() {
       {canManageUsers && (
         <button
           onClick={() => navigate('/m/more/admins/new')}
+          aria-label="Nouvel administrateur"
           className={cn(
             'fixed bottom-20 right-4 z-10 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-transform active:scale-95',
             PRIMARY_PILL,

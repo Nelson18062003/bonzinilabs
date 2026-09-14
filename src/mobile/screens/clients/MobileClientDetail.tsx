@@ -367,7 +367,7 @@ export function MobileClientDetail() {
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               <StatusPill tone={clientStatusTone(client.status)} label={statusLabel} />
-              <h1 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h1>
+              <h2 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h2>
               {client.companyName && <Line>{client.companyName}</Line>}
             </div>
           </div>

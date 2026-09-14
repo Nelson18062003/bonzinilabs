@@ -248,7 +248,7 @@ export function Amount({
  * Les anciens noms, sur le nouveau bouton. `PrimaryPill` = Button primary
  * (danger → Button danger) ; `SoftPill` = Button neutral. */
 export function PrimaryPill({
-  children, onClick, disabled, loading, danger, type = 'button', className,
+  children, onClick, disabled, loading, danger, type = 'button', className, ariaLabel,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -257,9 +257,10 @@ export function PrimaryPill({
   danger?: boolean;
   type?: 'button' | 'submit';
   className?: string;
+  ariaLabel?: string;
 }) {
   return (
-    <Button onClick={onClick} disabled={disabled} loading={loading} variant={danger ? 'danger' : 'primary'} type={type} className={className}>
+    <Button onClick={onClick} disabled={disabled} loading={loading} variant={danger ? 'danger' : 'primary'} type={type} className={className} ariaLabel={ariaLabel}>
       {children}
     </Button>
   );

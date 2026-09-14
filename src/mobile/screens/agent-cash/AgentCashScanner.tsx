@@ -186,7 +186,7 @@ export function AgentCashScanner() {
             <PrimaryPill
               onClick={handleManualSearch}
               disabled={!manualId.trim()}
-              aria-label={t('search')}
+              ariaLabel={t('search')}
               className="shrink-0 px-4"
             >
               <Search className="w-4 h-4" />
