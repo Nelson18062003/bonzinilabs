@@ -124,7 +124,7 @@ const DepositsPage = () => {
         </button>
 
         {/* Recherche */}
-        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3 focus-within:ring-2 focus-within:ring-[#8B5CF6]/60', SURFACE.card, SURFACE.shadow)}>
           <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
           {/* input nu volontaire 16px (anti auto-zoom iOS) */}
           {/* eslint-disable-next-line no-restricted-syntax */}
