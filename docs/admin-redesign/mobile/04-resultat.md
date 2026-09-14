@@ -565,3 +565,15 @@ graphique au premier chargement des trois entrées), Suspense au-dessus de la
 page d'accueil lazy, `MobileOperationsScreen` lit `tab` à chaque rendu,
 kit 44 px sans parent à hauteur fixe, en-tête à 320 px, `uid()` jamais au
 chargement de module, `resetPassword` sans consommateur chaîne.
+
+## Passe 23 — boucle d'audit, tour 2 (responsive, contre-vérification)
+
+Huit finitions : ligne e-mail des réglages d'expédition en `col-span-full`
+(la grille à une colonne la cassait à 320 px) ; nouveau paiement : le solde
+sous le nom (à côté, il coupait les noms) ; parcours : étiquettes 14 px sans
+coupure de mot ; en-têtes de graphiques : la barre d'outils descend sous le
+titre sur mobile ; KPI sur une ligne ; montant du simulateur à 32 px (la règle
+globale `input { font-size: 16px !important }` l'écrasait) ; « Pré-remplir »
+sous le taux suggéré à 320 px ; copie du B/L en cible de 44 px.
+Propre à 320 / 390 / 430 / sombre (agent) : Opérations, nouveau dépôt,
+clients, fiche, scan, flotte, dossier, papiers, coût à quai, carte.

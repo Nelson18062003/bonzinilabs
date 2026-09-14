@@ -102,7 +102,7 @@ export function KpiCard({
             <div className="h-7 w-28 animate-pulse rounded bg-muted" />
           ) : (
             <p
-              className={cn('text-xl md:text-2xl font-extrabold tabular-nums leading-tight break-words', TEXT.strong)}
+              className={cn('whitespace-nowrap text-[18px] min-[400px]:text-xl md:text-2xl font-extrabold tabular-nums leading-tight', TEXT.strong)}
               title={typeof value === 'string' ? value : undefined}
             >
               {value}

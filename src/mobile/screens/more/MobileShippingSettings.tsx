@@ -82,7 +82,7 @@ function LocationFields({
         <Field id={`${prefix}-phone`} label="Téléphone" value={value.phone} onChange={set('phone')} disabled={disabled} />
         <Field id={`${prefix}-wechat`} label="WeChat" value={value.wechat} onChange={set('wechat')} disabled={disabled} />
         <Field id={`${prefix}-whatsapp`} label="WhatsApp" value={value.whatsapp} onChange={set('whatsapp')} disabled={disabled} />
-        <div className="col-span-2">
+        <div className="col-span-full">
           <Field id={`${prefix}-email`} label="E-mail" value={value.email} onChange={set('email')} disabled={disabled} />
         </div>
       </div>
@@ -161,7 +161,7 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
                 <div className="grid grid-cols-1 min-[360px]:grid-cols-2 gap-3">
                   <Field id="c-en" label="Nom (latin)" value={form.company.nameEn} onChange={(v) => update('company', { ...form.company, nameEn: v })} disabled={!canEdit} />
                   <Field id="c-zh" label="Nom en chinois" value={form.company.nameZh} onChange={(v) => update('company', { ...form.company, nameZh: v })} disabled={!canEdit} placeholder="facultatif" />
-                  <div className="col-span-2">
+                  <div className="col-span-full">
                     <Field id="c-email" label="E-mail" value={form.company.email} onChange={(v) => update('company', { ...form.company, email: v })} disabled={!canEdit} />
                   </div>
                   <Field id="c-phone" label="Téléphone" value={form.company.phone} onChange={(v) => update('company', { ...form.company, phone: v })} disabled={!canEdit} />

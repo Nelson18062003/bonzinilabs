@@ -576,16 +576,13 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                       {ini}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={cn('break-words text-[16px] font-bold', TEXT.strong)}>{name}</div>
-                      <div className={cn('break-words text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      <div className={cn('text-[16px] font-bold leading-snug', TEXT.strong)}>{name}</div>
+                      <div className={cn('text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      {/* Le solde sous le nom : à côté, il coupait les noms en deux sur un petit écran. */}
+                      <div className={cn('text-[16px] font-bold tabular-nums', bal !== null && bal > 0 ? TEXT.strong : TEXT.muted)}>
+                        {bal !== null ? `Solde : ${fmt(bal)} XAF` : 'Solde inconnu'}
+                      </div>
                     </div>
-                    {bal !== null ? (
-                      <span className={cn('shrink-0 text-[16px] font-bold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
-                        {fmt(bal)} XAF
-                      </span>
-                    ) : (
-                      <span className={cn('shrink-0 text-[16px]', TEXT.muted)}>—</span>
-                    )}
                   </button>
                 );
               })}

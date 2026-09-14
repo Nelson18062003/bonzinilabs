@@ -185,7 +185,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
               onChange={handleAmountChange}
               placeholder={inputCurrency === 'xaf' ? '500 000' : '5 000'}
               className={cn(
-                'min-w-0 flex-1 bg-transparent text-[32px] font-bold leading-none tabular-nums outline-none',
+                'h-11 min-w-0 flex-1 bg-transparent !text-[32px] font-bold leading-none tabular-nums outline-none',
                 'placeholder:text-[#B3B3B3] dark:placeholder:text-[#757575]',
                 TEXT.strong,
               )}

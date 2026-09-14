@@ -233,7 +233,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </div>
         ) : (
           <>
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[#FFF1C2] px-3.5 py-3 dark:bg-[#E8B931]/10">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#FFF1C2] px-3.5 py-3 dark:bg-[#E8B931]/10">
               <div className="min-w-0">
                 <div className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">
                   Taux suggéré · 1M XAF
@@ -245,7 +245,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               <button
                 type="button"
                 onClick={handleUseSuggestion}
-                className="shrink-0 rounded-lg bg-[#E8B931] px-3.5 py-2.5 text-[16px] font-bold text-[#401B01]"
+                className="w-full min-h-11 rounded-lg bg-[#E8B931] px-3.5 py-2.5 text-[16px] font-bold text-[#401B01] min-[360px]:w-auto"
               >
                 Pré-remplir
               </button>

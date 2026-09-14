@@ -262,7 +262,7 @@ export function MobileCargoDossier() {
             <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
               {CARRIER_LABEL[s.carrier] ?? s.carrier}, bill of lading{' '}
               <button type="button" onClick={() => copyToClipboard(s.bl_number, 'Bill of lading')} aria-label={`Copier le bill of lading ${s.bl_number}`}
-                className={cn('inline-flex items-center gap-1 rounded-md tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
+                className={cn('-my-2 inline-flex min-h-11 items-center gap-1 rounded-md px-1 tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
                 {s.bl_number}
               </button>.
             </p>

@@ -48,7 +48,7 @@ export function ChartCard({
 }: ChartCardProps) {
   return (
     <div className={cn('overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow, className)}>
-      <div className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
+      <div className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0 p-4 pb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1.5">
             <h3 className={cn('text-sm max-lg:text-[16px] font-bold tracking-normal leading-snug line-clamp-2 max-lg:line-clamp-none break-words', TEXT.strong)}>
@@ -82,7 +82,7 @@ export function ChartCard({
             </p>
           ) : null}
         </div>
-        {toolbar ? <div className="flex-shrink-0">{toolbar}</div> : null}
+        {toolbar ? <div className="flex-shrink-0 max-lg:basis-full">{toolbar}</div> : null}
       </div>
 
       <div className="p-4 pt-2">
