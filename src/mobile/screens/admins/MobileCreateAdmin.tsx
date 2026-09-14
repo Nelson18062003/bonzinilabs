@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useCreateAdmin } from '@/hooks/useAdminManagement';
@@ -112,9 +113,13 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
   };
 
   const handleCopyPassword = async () => {
-    await navigator.clipboard.writeText(tempPassword);
-    setPasswordCopied(true);
-    setTimeout(() => setPasswordCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
+    }
   };
 
   const required = <span className="text-[#FE560D]">*</span>;

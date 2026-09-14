@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCreateClient } from '@/hooks/useClientManagement';
@@ -127,12 +128,17 @@ export function MobileCreateClient() {
   const set = (k: keyof FormData, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   // Validation per step
+  // Téléphone : au moins 8 chiffres une fois nettoyé ; e-mail : forme
+  // valide s'il est renseigné (sinon auth.signUp échoue avec un message obscur).
+  const phoneDigits = form.phone.replace(/\D/g, '');
+  const emailTrim = form.email.trim();
+  const emailValid = !emailTrim || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim);
   const canNext =
     step === 1
       ? form.prenom.trim().length > 0 && form.nom.trim().length > 0
       : step === 2
-        ? form.phone.trim().length >= 9
-        : true;
+        ? phoneDigits.length >= 8
+        : emailValid;
 
   const handleNext = () => {
     if (step < 3 && canNext) setStep(s => s + 1);
@@ -168,9 +174,13 @@ export function MobileCreateClient() {
   };
 
   const handleCopyPassword = async () => {
-    await navigator.clipboard.writeText(tempPassword);
-    setPasswordCopied(true);
-    setTimeout(() => setPasswordCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
+    }
   };
 
   const optional = (
@@ -366,7 +376,7 @@ export function MobileCreateClient() {
             </FormField>
 
             {/* Email */}
-            <FormField label={<>Email {optional}</>} htmlFor="cc-email">
+            <FormField label={<>Email {optional}</>} htmlFor="cc-email" error={!emailValid ? 'Cette adresse e-mail ne semble pas complète.' : undefined}>
               <TextInput
                 id="cc-email"
                 placeholder="fabrice@jakocargo.com"
