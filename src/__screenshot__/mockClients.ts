@@ -40,3 +40,5 @@ const ok = <T,>(data: T) => ({ data, isLoading: false, isError: false, error: nu
 export const useClients = () => ok(CLIENTS);
 export const useClient = (id: string) => ok(CLIENTS.find((c) => c.id === id) ?? null);
 export const useClientLedger = (id: string) => ok(id === 'u5' ? LEDGER : []);
+export const useClientLedgerPaged = (id: string) => ({ ...ok(id === 'u5' ? LEDGER : []), hasNextPage: false, fetchNextPage: async () => undefined, isFetchingNextPage: false });
+export const useClientLedgerCount = (id: string) => ok(id === 'u5' ? LEDGER.length : 0);

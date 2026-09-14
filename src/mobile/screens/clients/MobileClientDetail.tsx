@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
+import { useClient, useResetClientPassword, useClientLedger, useClientLedgerCount, useUpdateClient } from '@/hooks/useClientManagement';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -131,6 +131,7 @@ export function MobileClientDetail() {
 
   const [isStatementGenerating, setIsStatementGenerating] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
+  const { data: ledgerTotal } = useClientLedgerCount(clientId || '');
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
@@ -351,7 +352,7 @@ export function MobileClientDetail() {
   const statusLabel = t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status });
   const since = format(new Date(client.createdAt), 'd MMMM yyyy', { locale: fr });
   const place = [client.city, client.country].filter(Boolean).join(', ');
-  const ledgerCount = ledgerEntries?.length ?? 0;
+  const ledgerCount = ledgerTotal ?? ledgerEntries?.length ?? 0;
 
   return (
     <div className="flex min-h-screen flex-col">
