@@ -199,11 +199,11 @@ const DepositsPage = () => {
                   <div className="flex items-center gap-3">
                     <DepositMethodLogo method={d.method} bankName={d.bank_name} size={44} radius={22} />
                     <div className="min-w-0 flex-1">
-                      <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
+                      <div className={cn('break-words text-[16px] font-bold leading-snug', TEXT.strong)}>
                         {t(`method.${d.method}`, d.method)}
                       </div>
                       {todo ? (
-                        <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(d)}</div>
+                        <div className="mt-0.5 break-words text-[12px] font-semibold leading-snug" style={{ color }}>{statusHint(d)}</div>
                       ) : (
                         <div className={cn('mt-0.5 text-[13px] font-bold tabular-nums', TEXT.strong)}>
                           +{formatNumber(d.amount_xaf)} <span className={cn('text-[11px] font-semibold', TEXT.muted)}>XAF</span>

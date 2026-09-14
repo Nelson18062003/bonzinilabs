@@ -228,11 +228,11 @@ const PaymentsPage = () => {
                   <div className="flex items-center gap-3">
                     <PaymentMethodLogo method={p.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={44} />
                     <div className="min-w-0 flex-1">
-                      <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{name}</div>
+                      <div className={cn('break-words text-[16px] font-bold leading-snug', TEXT.strong)}>{name}</div>
                       {todo ? (
-                        <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(p, lc.kind, t)}</div>
+                        <div className="mt-0.5 break-words text-[12px] font-semibold leading-snug" style={{ color }}>{statusHint(p, lc.kind, t)}</div>
                       ) : (
-                        <div className={cn('mt-0.5 truncate text-[12px] tabular-nums', TEXT.muted)}>
+                        <div className={cn('mt-0.5 break-words text-[12px] tabular-nums leading-snug', TEXT.muted)}>
                           ¥ {formatYuan(p.amount_rmb)} · −{formatNumber(p.amount_xaf)} XAF
                         </div>
                       )}
