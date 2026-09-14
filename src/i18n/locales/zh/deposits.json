@@ -250,7 +250,9 @@
     "deleteProofDesc": "请指定删除原因。此操作不可逆。",
     "specifyReason": "指定原因...",
     "cancel": "取消",
-    "delete": "删除"
+    "delete": "删除",
+    "reference": "参考号",
+    "creditedAt": "入账日期"
   },
   "new": {
     "amountToDeposit": "充值金额",
@@ -349,5 +351,9 @@
     "criticalBannerWarning": "警告：截止期限即将到期！",
     "warningBannerMessage": "请尽快发送您的凭证",
     "normalBannerMessage": "进行充值并发送凭证"
+  },
+  "searchPlaceholder": "搜索（参考号、方式…）",
+  "list": {
+    "emptyFilter": "此筛选条件下没有存款。"
   }
 }

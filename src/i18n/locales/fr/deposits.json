@@ -251,7 +251,8 @@
     "specifyReason": "Précisez le motif...",
     "cancel": "Annuler",
     "delete": "Supprimer",
-    "reference": "Référence"
+    "reference": "Référence",
+    "creditedAt": "Crédité le"
   },
   "new": {
     "amountToDeposit": "Montant à déposer",
@@ -351,5 +352,8 @@
     "warningBannerMessage": "Pensez a envoyer votre preuve rapidement",
     "normalBannerMessage": "Effectuez le depot et envoyez la preuve"
   },
-  "searchPlaceholder": "Rechercher (référence, méthode…)"
+  "searchPlaceholder": "Rechercher (référence, méthode…)",
+  "list": {
+    "emptyFilter": "Aucun dépôt pour ce filtre."
+  }
 }

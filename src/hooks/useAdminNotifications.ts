@@ -191,6 +191,12 @@ export function useAdminNotificationCount() {
 /**
  * Split counts of actionable deposits and payments
  */
+/** Les compteurs à rafraîchir après tout geste d'argent (badges des onglets, cloche). */
+export const ACTION_BADGE_KEYS: ReadonlyArray<readonly string[]> = [['admin-notification-count'], ['admin-notifications'], ['admin-actionable-counts']];
+export function invalidateActionBadges(qc: { invalidateQueries: (o: { queryKey: readonly unknown[] }) => unknown }): void {
+  for (const k of ACTION_BADGE_KEYS) qc.invalidateQueries({ queryKey: k });
+}
+
 export function useAdminActionableCounts() {
   return useQuery({
     queryKey: ['admin-actionable-counts'],

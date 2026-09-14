@@ -569,11 +569,11 @@ export function MobilePaymentDetail() {
 
   // Permissions
   const canProcess           = hasPermission('canProcessPayments');
-  const isLocked             = ['completed', 'rejected'].includes(payment.status);
+  const isLocked             = ['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
   const isCash               = payment.method === 'cash';
   const canStartProcessing   = canProcess && ['ready_for_payment', 'cash_scanned'].includes(payment.status);
   const canComplete          = canProcess && payment.status === 'processing';
-  const canReject            = canProcess && !['completed', 'rejected'].includes(payment.status);
+  const canReject            = canProcess && !isLocked;
   const canDelete            = isSuperAdmin;
   const canEditBeneficiary   = canProcess && !isLocked &&
     ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);

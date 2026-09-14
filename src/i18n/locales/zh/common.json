@@ -251,7 +251,9 @@
   "blockAccess": "禁止访问",
   "restoreAccess": "恢复访问",
   "changeMyPassword": "修改我的密码",
-  "resetPassword": "重置密码",
+  "resetPassword": {
+    "linkExpired": "链接无效或已过期。请重新使用“忘记密码”。"
+  },
   "generateNewPassword": "生成新密码",
   "generateTempPassword": "生成临时密码",
   "editAdmin": "编辑管理员",

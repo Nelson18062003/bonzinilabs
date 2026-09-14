@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import type { Database, Json } from '@/integrations/supabase/types';
@@ -559,8 +560,12 @@ export function useProcessPayment() {
         );
       }
 
-      // Only the timeline can't be computed locally
+      // Only the timeline can't be computed locally — under BOTH its names
+      // (client app and admin app), plus the admin detail and the action badges.
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+      invalidateActionBadges(queryClient);
 
       const messages = {
         start_processing: i18n.t('hooks.processPayment.startProcessing', { ns: 'common', defaultValue: 'Paiement en cours de traitement' }),

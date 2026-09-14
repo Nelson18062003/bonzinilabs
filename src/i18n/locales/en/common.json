@@ -251,7 +251,9 @@
   "blockAccess": "Block access",
   "restoreAccess": "Restore access",
   "changeMyPassword": "Change my password",
-  "resetPassword": "Reset password",
+  "resetPassword": {
+    "linkExpired": "Invalid or expired link. Please use “Forgot password” again."
+  },
   "generateNewPassword": "Generate new password",
   "generateTempPassword": "Generate a temporary password",
   "editAdmin": "Edit admin",

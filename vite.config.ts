@@ -38,14 +38,11 @@ export default defineConfig(({ mode }) => ({
       },
       output: {
         manualChunks(id) {
-          // PDF libs (~2.2MB) — loaded only when user generates a PDF
-          if (id.includes('@react-pdf/renderer') || id.includes('jspdf') || id.includes('jspdf-autotable') || id.includes('html2canvas')) {
-            return 'chunk-pdf';
-          }
-          // Charts (~400KB) — only on rates screen
-          if (id.includes('recharts') || id.includes('d3-')) {
-            return 'chunk-charts';
-          }
+          // PDF et graphiques : PAS de chunk manuel. Forcés dans un chunk nommé,
+          // Rollup y rangeait aussi ~1 ko d'aides partagées (tslib, clsx, le
+          // préchargeur Vite) et le point d'entrée les tirait au premier
+          // rendu : 2,6 Mo (830 ko gzip) pour ouvrir Mola. Laissés au découpage
+          // naturel, ils ne partent qu'avec la route qui les importe.
           // Animation (~80KB) — framer-motion
           if (id.includes('framer-motion')) {
             return 'chunk-motion';
@@ -55,7 +52,8 @@ export default defineConfig(({ mode }) => ({
             return 'chunk-radix';
           }
           // React Query + React ecosystem
-          if (id.includes('@tanstack/react-query') || id.includes('react-dom') || id.includes('react/')) {
+          // `react/` seul attrapait aussi lucide-react/, qrcode.react/, @phosphor-icons/react/…
+          if (id.includes('@tanstack/react-query') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react/') || id.includes('/node_modules/scheduler/')) {
             return 'chunk-react';
           }
           // Supabase client

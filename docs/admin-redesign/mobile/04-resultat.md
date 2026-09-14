@@ -482,3 +482,37 @@ ouverte à tout rôle par choix documenté (« Mola AI-native ») et s'exécute 
 service-role — un `cash_agent` peut donc lire la trésorerie via Mola. La règle
 `security.md` dit l'inverse. Une ligne suffit à rétablir la garde :
 `READ_TOOLS.filter((t) => t.always || perms[t.permission])`.
+
+## Passe 20 — boucle d'audit, tour 1 (fonctionnel, performance)
+
+**Argent** (migration `20260914091000`, consolidé section 10) : un dépôt
+`cancelled` / `cancelled_by_admin` ne peut plus être validé ni refusé ; un
+paiement `rejected` / `cancelled_by_admin` (déjà remboursé) ne peut plus être
+« refusé » — c'était un second remboursement. Les écrans verrouillent les
+mêmes statuts (`isLocked`).
+
+**Cohérence** : la liste et la carte cargo lisent désormais les pièces de
+toute la flotte (`useCargoFleetDocuments`) — elles disaient « B/L manquant »
+quand le dossier le voyait classé. Les badges d'action (onglets, cloche) sont
+invalidés après chaque geste d'argent ; la fiche paiement admin se rafraîchit
+après une signature cash.
+
+**Étiquette** : export ×3 pré-peint (le partage iOS reste dans le geste) ;
+presse-papiers avec repli téléchargement ; aperçu remis à zéro au changement.
+
+**Cargo** : fin de franchise lue à midi (plus de « en retard » un jour trop
+tôt à l'ouest de Greenwich) ; « 0 jour » au singulier.
+
+**i18n** : `resetPassword` en objet en/zh (le lien expiré s'affichait en
+français) ; 17 clés zh manquantes ajoutées ; deux textes en dur de l'app
+client passés par `t()`.
+
+**Performance** (mesuré sur `dist/m/index.html`) : JS au premier chargement
+**4 782 kB → 1 168 kB** (−75 %). Chunks PDF/graphiques laissés au découpage
+naturel (ils étaient tirés par des aides partagées), règle `react/` resserrée
+(elle attrapait lucide-react et qrcode.react), V1 du formulaire de dépôt
+(`import * as Icons`, 508 kB, non routée) supprimée, page d'accueil publique
+en lazy, mascotte en WebP (315 kB → 8 kB dans la barre), polices : DM Sans en
+un fichier variable, Syne (jamais utilisée) retirée, feuille non bloquante sur
+l'entrée admin. Plus de remontage entre Dépôts et Paiements (même écran),
+tally cargo mémorisé, images d'export sans cache-bust.

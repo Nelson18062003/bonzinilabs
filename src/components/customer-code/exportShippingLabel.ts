@@ -103,9 +103,13 @@ export async function downloadLabelPdf(render: RenderLabel, code: string, destin
 export async function copyLabelImage(render: RenderLabel, code: string, destination: ShippingDestination): Promise<CopyOutcome> {
   const canWrite = typeof ClipboardItem !== 'undefined' && typeof navigator !== 'undefined' && !!navigator.clipboard?.write;
   if (canWrite) {
-    const blob = render(EXPORT_SCALE).then(canvasToBlob);
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    return 'copied';
+    try {
+      const blob = render(EXPORT_SCALE).then(canvasToBlob);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      return 'copied';
+    } catch {
+      // Geste expiré (Safari), Blob en promesse non pris en charge (Chrome < 97)… : l'image passe par le disque.
+    }
   }
   await downloadLabelImage(render, code, destination);
   return 'downloaded';

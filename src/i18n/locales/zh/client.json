@@ -7,7 +7,12 @@
     "retryLater": "请稍后重试",
     "recentOperations": "最近操作",
     "viewAll": "查看全部",
-    "operation": "操作"
+    "operation": "操作",
+    "homeSubtitle": "这是您的 Bonzini 账户",
+    "dailyRate": "今日汇率",
+    "viewRates": "查看汇率",
+    "ratePer": "每 1 000 000 XAF",
+    "noOperations": "暂无操作。"
   },
   "quickActions": {
     "deposit": "充值",
@@ -36,7 +41,8 @@
       "adjustmentDebit": "调整出账",
       "adjustmentCredit": "调整入账",
       "operation": "操作"
-    }
+    },
+    "search": "搜索一笔操作…"
   },
   "profile": {
     "title": "个人资料",
@@ -58,7 +64,9 @@
     "logout": "退出登录",
     "version": "Bonzini v1.0.0 • 在喀麦隆用 💜 制作",
     "comingSoon": "功能即将推出",
-    "customerCode": "我的客户编号"
+    "customerCode": "我的客户编号",
+    "sectionAccount": "账户",
+    "sectionPreferences": "偏好设置"
   },
   "beneficiaries": {
     "title": "收款人",

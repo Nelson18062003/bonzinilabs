@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -99,6 +100,11 @@ export function useAgentConfirmCashPayment() {
       if (result.success) {
         queryClient.invalidateQueries({ queryKey: ['agent-cash-payments'] });
         queryClient.invalidateQueries({ queryKey: ['agent-cash-payment', variables.paymentId] });
+        // L'écran admin du même paiement (signature, statut) et les badges.
+        queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
+        queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
+        queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
+        invalidateActionBadges(queryClient);
       }
     },
     onError: (error: Error) => {

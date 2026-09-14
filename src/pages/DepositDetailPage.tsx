@@ -412,7 +412,7 @@ const DepositDetailPage = () => {
               {deposit.agency_name && <DetailRow label={t('detail.agency')} value={deposit.agency_name} />}
               <DetailRow label={t('detail.date')} value={safeFormatDate(deposit.created_at) || '-'} />
               {isValidated && deposit.validated_at && (
-                <DetailRow label="Crédité le" value={safeFormatDate(deposit.validated_at) || '-'} last />
+                <DetailRow label={t('detail.creditedAt', { defaultValue: 'Crédité le' })} value={safeFormatDate(deposit.validated_at) || '-'} last />
               )}
             </div>
           </section>

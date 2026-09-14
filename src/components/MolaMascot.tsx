@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
  *
  * Pour changer la mascotte : remplace simplement le fichier image, rien d'autre.
  */
-const MASCOT_SRC = '/assets/mola-mascot.png';
+const MASCOT_SRC = '/assets/mola-mascot.webp';
 
 interface MolaMascotProps {
   /** Classes de taille/forme (ex. "h-20 w-20"). */

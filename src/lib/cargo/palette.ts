@@ -29,7 +29,7 @@
  */
 import type { Tone } from '@/mobile/designKit/tokens';
 import { differenceInCalendarDays } from 'date-fns';
-import { bestEta, etaSlipDays } from '@/lib/cargo/model';
+import { bestEta, etaSlipDays, fromDate } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment } from '@/lib/cargo/model';
 import { todoCounts } from '@/lib/cargo/todo';
 
@@ -94,8 +94,9 @@ export function alertLevel(s: CargoShipment, docs?: CargoDocument[], now = new D
   const days = eta ? differenceInCalendarDays(eta, now) : null;
 
   // Franchise dépassée et boîte encore au port : les surestaries courent déjà.
-  if (s.free_time_ends_on && !s.gate_out_at) {
-    const left = differenceInCalendarDays(new Date(s.free_time_ends_on), now);
+  const freeEnd = fromDate(s.free_time_ends_on);
+  if (freeEnd && !s.gate_out_at) {
+    const left = differenceInCalendarDays(freeEnd, now);
     if (left < 0) return 'late';
     if (left <= 3) return 'watch';
   }

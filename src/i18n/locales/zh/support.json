@@ -92,7 +92,8 @@
     "create": "创建",
     "empty": "暂无对话",
     "defaultSubject": "一般讨论",
-    "closedBadge": "对话已关闭"
+    "closedBadge": "对话已关闭",
+    "sectionTitle": "我的会话"
   },
   "detail": {
     "back": "返回",

@@ -251,7 +251,8 @@
     "specifyReason": "Specify the reason...",
     "cancel": "Cancel",
     "delete": "Delete",
-    "reference": "Reference"
+    "reference": "Reference",
+    "creditedAt": "Credited on"
   },
   "new": {
     "amountToDeposit": "Amount to deposit",
@@ -351,5 +352,8 @@
     "warningBannerMessage": "Remember to send your proof quickly",
     "normalBannerMessage": "Make the deposit and send the proof"
   },
-  "searchPlaceholder": "Search (reference, method…)"
+  "searchPlaceholder": "Search (reference, method…)",
+  "list": {
+    "emptyFilter": "No deposit for this filter."
+  }
 }

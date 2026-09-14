@@ -416,7 +416,7 @@ export function MobileDepositDetailV2() {
   const clientName = deposit.profiles
     ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
     : 'Client inconnu';
-  const isLocked = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const isLocked = ['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
   const canAddProof = !isLocked;

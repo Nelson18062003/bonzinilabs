@@ -14,7 +14,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoShipments } from '@/hooks/useCargo';
+import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
 import { ALERT, ALERT_ORDER, TONE_OF, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence, delaySentence, nextActionSentence, plural, uncap } from '@/lib/cargo/plain';
 import { nextSteps } from '@/lib/cargo/todo';
@@ -32,12 +32,14 @@ export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const { data, isLoading } = useCargoShipments();
+  const { data: docsBy } = useCargoFleetDocuments();
   const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
   const [query, setQuery] = useState('');
   const [weekOpen, setWeekOpen] = useState(false);
 
   const all = useMemo(() => data ?? [], [data]);
-  const tally = useMemo(() => alertTally(all), [all]);
+  const allDocs = useMemo(() => Object.values(docsBy ?? {}).flat(), [docsBy]);
+  const tally = useMemo(() => alertTally(all, allDocs), [all, allDocs]);
   // Trois cartes « PRC » identiques ne se distinguent pas : quand un client a
   // plusieurs boîtes, on écrit le numéro de boîte sous son nom.
   const dupes = useMemo(() => {
@@ -46,17 +48,17 @@ export function MobileCargoScreen() {
     return n;
   }, [all]);
   // Ce qui presse cette semaine, toutes boîtes confondues : les choses « à faire maintenant ».
-  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all]);
+  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s, docsBy?.[s.id]).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all, docsBy]);
   const rows = useMemo(() => {
     const q = query.trim().toUpperCase();
-    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter))
+    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s, docsBy?.[s.id]) === filter))
       .filter((s) => !q || s.client_label.toUpperCase().includes(q) || s.container_number.includes(q) || (s.bl_number ?? '').toUpperCase().includes(q) || (s.vessel_name ?? '').toUpperCase().includes(q));
     return [...list].sort((a, b) => {
-      const d = ALERT[alertLevel(b)].rank - ALERT[alertLevel(a)].rank;
+      const d = ALERT[alertLevel(b, docsBy?.[b.id])].rank - ALERT[alertLevel(a, docsBy?.[a.id])].rank;
       if (d !== 0) return d;
       return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
     });
-  }, [all, filter, query]);
+  }, [all, filter, query, docsBy]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -132,9 +134,9 @@ export function MobileCargoScreen() {
       <div className="space-y-3 px-4 pt-3">
         {isLoading && <ScreenLoader />}
         {rows.map((s) => {
-          const level = alertLevel(s);
+          const level = alertLevel(s, docsBy?.[s.id]);
           const delay = delaySentence(s);
-          const next = nextActionSentence(s);
+          const next = nextActionSentence(s, docsBy?.[s.id]);
           return (
             <button
               key={s.id}

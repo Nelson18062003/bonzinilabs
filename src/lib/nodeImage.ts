@@ -136,9 +136,9 @@ export interface CaptureOptions {
 export async function captureNodePng(node: HTMLElement, options: CaptureOptions = {}): Promise<string> {
   const { embedFonts = true, ...rest } = options;
   await ensureFontsReady();
-  if (!embedFonts) return toPng(node, { cacheBust: true, skipFonts: true, ...rest });
+  if (!embedFonts) return toPng(node, { skipFonts: true, ...rest });
   const fontEmbedCSS = await loadFontEmbedCss(node);
-  return toPng(node, { cacheBust: true, fontEmbedCSS, ...rest });
+  return toPng(node, { fontEmbedCSS, ...rest });
 }
 
 /** Déclenche un téléchargement de navigateur pour une data URL. */

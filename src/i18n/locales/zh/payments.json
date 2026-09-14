@@ -179,7 +179,11 @@
       "amountDebited": "扣款金额",
       "newBalance": "新余额",
       "debitNotice": "确认后将立即从您的余额扣款。"
-    }
+    },
+    "rateDependsOnMethod": "今日汇率取决于所选方式。",
+    "balanceAfterPayment": "付款后余额",
+    "minMaxCaption": "最高 50 000 000 XAF",
+    "all": "全部"
   },
   "detail": {
     "title": "付款详情",
@@ -215,7 +219,13 @@
     "enlarge": "放大",
     "cashPickupPresentQr": "在Bonzini办公室领取 — 请出示上方QR码。",
     "addBeneficiaryPrompt": "请补充收款人信息，以便Bonzini为您处理付款。",
-    "documents": "文档",
+    "documents": {
+      "title": "凭证与详情",
+      "paymentProof": "付款凭证",
+      "addedByBonzini": "由Bonzini添加 · 点击放大",
+      "paidOn": "付款于",
+      "processedOn": "处理于"
+    },
     "noDocuments": "暂无文档。",
     "bonziniProofs": "Bonzini凭证 ({{count}})",
     "bonziniProofsDescription": "Bonzini在结算供应商后发送的凭证。",
@@ -262,13 +272,6 @@
         "bonziniSettling": "Bonzini 正在为您结算供应商",
         "inProgress": "进行中…"
       }
-    },
-    "documents": {
-      "title": "凭证与详情",
-      "paymentProof": "付款凭证",
-      "addedByBonzini": "由Bonzini添加 · 点击放大",
-      "paidOn": "付款于",
-      "processedOn": "处理于"
     },
     "fields": {
       "name": "姓名",

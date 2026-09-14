@@ -2,6 +2,7 @@
 // ADMIN-SIDE DEPOSIT HOOKS (from scratch)
 // CRITICAL: Uses `supabaseAdmin` (admin session, storageKey: bonzini-admin-auth)
 // ============================================================
+import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { rpcArgs } from '@/integrations/supabase/rpcArgs';
@@ -248,6 +249,7 @@ export function useValidateDeposit() {
       // Only refetch what can't be computed locally
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(i18n.t('hooks.validateDeposit.success', { ns: 'common', defaultValue: `Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}`, amount: formatCurrency(data.amount_credited || 0) }));
     },
@@ -311,6 +313,7 @@ export function useRejectDeposit() {
 
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       toast.error(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
     },
     onError: (error: Error) => {
@@ -360,6 +363,7 @@ export function useStartDepositReview() {
 
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -464,6 +468,7 @@ export function useAdminCreateDeposit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(i18n.t('hooks.adminCreateDeposit.success', { ns: 'common', defaultValue: 'Dépôt créé avec succès' }));
     },
@@ -656,6 +661,7 @@ export function useCancelDeposit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
       toast.success(i18n.t('hooks.adminCancelDeposit.success', { ns: 'common', defaultValue: 'Dépôt annulé' }));

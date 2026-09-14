@@ -179,7 +179,7 @@ const DepositsPage = () => {
           </div>
         ) : visible.length === 0 ? (
           <div className={cn('mt-2 rounded-[22px] p-8 text-center', SURFACE.card, SURFACE.shadow)}>
-            <p className={cn('text-[14px]', TEXT.muted)}>Aucun dépôt pour ce filtre.</p>
+            <p className={cn('text-[14px]', TEXT.muted)}>{t('list.emptyFilter', { defaultValue: 'Aucun dépôt pour ce filtre.' })}</p>
           </div>
         ) : (
           <div className="space-y-3 pt-1">

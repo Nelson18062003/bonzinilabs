@@ -418,6 +418,25 @@ export function useCargoClientOptions(search: string) {
 
 const BUCKET = 'cargo-documents';
 
+/**
+ * Les pièces de TOUTE la flotte, groupées par conteneur — pour que la liste,
+ * la carte et le dossier calculent le même « à faire » (sans elles, la liste
+ * croyait le B/L manquant alors que le dossier le voyait classé).
+ */
+export function useCargoFleetDocuments() {
+  return useQuery({
+    queryKey: ['cargo', 'documents', 'fleet'],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('cargo_documents').select('*').limit(3000);
+      if (error) throw error;
+      const by: Record<string, CargoDocument[]> = {};
+      for (const d of (data ?? []) as CargoDocument[]) (by[d.shipment_id] ??= []).push(d);
+      return by;
+    },
+    staleTime: 60_000,
+  });
+}
+
 export function useCargoDocuments(shipmentId: string | null) {
   return useQuery({
     queryKey: ['cargo', 'documents', shipmentId],
