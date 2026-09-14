@@ -108,7 +108,7 @@ const SupportPage = () => {
         B
       </div>
       <div className="min-w-0 flex-1">
-        <h1 className={cn('truncate text-[15px] font-black leading-tight', TEXT.strong)}>{headerTitle}</h1>
+        <h1 className={cn('line-clamp-2 text-[15px] font-black leading-tight', TEXT.strong)}>{headerTitle}</h1>
         <p className={cn('truncate text-[13px] leading-tight', TEXT.muted)}>{t('detail.bonziniTeam')}</p>
       </div>
       <ResponseTimeBadge compact />

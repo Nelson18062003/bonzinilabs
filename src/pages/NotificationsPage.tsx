@@ -59,7 +59,7 @@ const NotificationsPage = () => {
         <button
           onClick={() => markAllAsRead.mutate()}
           disabled={markAllAsRead.isPending}
-          className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-[#5B4CC4] active:opacity-70 disabled:opacity-50 dark:text-[#B5AAF0]"
+          className="flex min-h-11 shrink-0 items-center gap-1 text-[13px] font-bold text-[#5B4CC4] active:opacity-70 disabled:opacity-50 dark:text-[#B5AAF0]"
         >
           <CheckCheck className="h-4 w-4" />
           {t('notifications.markAllRead')}

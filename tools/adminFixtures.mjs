@@ -167,12 +167,25 @@ function byId(url, list) {
   return list;
 }
 
+// Notifications client (page /notifications, cloche, pastille) — user u5.
+const notifications = [
+  { id: 'n1', user_id: 'u5', type: 'deposit_validated', title: 'Dépôt validé', message: 'Votre dépôt BZ-DP-2026-0841 de 2 500 000 XAF a été crédité.', metadata: { deposit_id: 'd5', reference: 'BZ-DP-2026-0841', amount_xaf: 2500000 }, is_read: false, created_at: ago(2) },
+  { id: 'n2', user_id: 'u5', type: 'payment_processing', title: 'Paiement en cours', message: 'Votre règlement BZ-PY-2026-1203 est en cours de traitement.', metadata: { payment_id: 'p3', reference: 'BZ-PY-2026-1203' }, is_read: false, created_at: ago(20) },
+  { id: 'n3', user_id: 'u5', type: 'deposit_correction_requested', title: 'Preuve à corriger', message: 'La preuve de votre dépôt est illisible, merci de la renvoyer.', metadata: { deposit_id: 'd5' }, is_read: true, created_at: ago(70) },
+  { id: 'n4', user_id: 'u5', type: 'payment_completed', title: 'Fournisseur payé', message: 'Le règlement BZ-PY-2026-1180 de ¥ 12 000 est arrivé chez votre fournisseur.', metadata: { payment_id: 'p1', reference: 'BZ-PY-2026-1180' }, is_read: true, created_at: ago(300) },
+];
+
 function respond(url) {
   if (url.includes('/rpc/get_deposit_stats')) return stats;
   if (url.includes('/storage/v1/object/sign')) {
     // Echo the object path so the GET interception can tell QR from proof.
     const m = url.match(/object\/sign\/([^?]+)/);
     return { signedURL: `/object/fake/${m ? m[1] : 'unknown'}?sig=1` };
+  }
+  if (url.includes('/notifications')) {
+    const m = url.match(/user_id=eq\.([^&]+)/);
+    const mine = m ? notifications.filter((n) => n.user_id === decodeURIComponent(m[1])) : notifications;
+    return url.includes('is_read=eq.false') ? mine.filter((n) => !n.is_read) : mine;
   }
   if (url.includes('/deposit_timeline_events')) return depositTimeline;
   if (url.includes('/deposit_proofs')) {
@@ -220,6 +233,7 @@ function respond(url) {
 
 export { respond, qrSvg, proofSvg };
 export function headCount(url) {
+  if (url.includes('/notifications')) return url.includes('is_read=eq.false') ? 2 : 4;
   if (url.includes('/deposits')) {
     if (url.includes('status=eq.pending_correction')) return 2;
     if (url.includes('status=in.')) return 7;

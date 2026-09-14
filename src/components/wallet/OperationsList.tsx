@@ -22,7 +22,7 @@ export const OperationsList = ({ operations }: OperationsListProps) => {
     <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
       <div className="mb-2 flex items-center justify-between px-1">
         <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('wallet.recentOperations')}</h2>
-        <button onClick={() => navigate('/history')} className="text-[12px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
+        <button onClick={() => navigate('/history')} className="inline-flex min-h-11 items-center text-[13px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
           {t('wallet.viewAll')}
         </button>
       </div>
