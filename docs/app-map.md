@@ -47,6 +47,7 @@ macro, messages clients, réponses toutes faites, suggestions, administrateurs, 
 | Mola (assistant) | `assistant/MobileAssistantScreen` | `useAdminAssistant` (SSE) | edge `admin-assistant` (outils découverts par étiquette `@mola` sur les RPC) ; `assistant_*`, `mola_*` |
 | Tableau de bord / analytics | `dashboard/*`, `analytics/*` | `hooks/analytics/*` | vues et RPC de stats ; edge `generate-report-pdf` |
 | Notifications / e-mail / SMS | `more/MobileNotificationsScreen` | `useAdminNotifications` (`src/lib/actionable.ts`) | `notifications`, `email_outbox`, `sms_outbox` ; edge `send-email`, `send-sms`, `notify-admin` |
+| Edge functions internes (cron / bot) | — | — | `send-brief`, `fetch-macro`, `predict-rate`, `monitor-rates`, `generate-report-pdf`, `generate-receipt`, `generate-flyer`, `telegram-bot`, `notify-admin-assignment` ; gardées : `passkey`, `send-email`, `send-sms`, `telnyx-webhook`, `resend-events`, `notify-admin`, `cargo-*`, `admin-assistant` |
 
 ## Statuts (source : `src/integrations/supabase/types.ts`)
 - Dépôt : created → awaiting_proof → proof_submitted → admin_review → validated | rejected | pending_correction ; cancelled, cancelled_by_admin.
