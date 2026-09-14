@@ -1,9 +1,10 @@
 // DEV-ONLY — l'étiquette colis avec des données d'exemple, pour la regarder
 // en vrai avant de la mettre entre les mains d'un client.
-import { ShippingLabel } from '@/components/customer-code/ShippingLabel';
 import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { useShippingLabel, ShippingLabelPreview } from '@/components/customer-code/useShippingLabel';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
-import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
+import { DEFAULT_SHIPPING_SETTINGS, type ShippingDestination } from '@/lib/customerCode';
+import type { LabelSupplierInfo } from '@/lib/shippingLabelCanvas';
 
 const props = {
   code: 'BZ-482913',
@@ -17,8 +18,13 @@ const props = {
 };
 const supplier = { name: 'Yiwu Hengda Trading Co.', phone: '+86 137 0000 0000', email: 'sales@hengda-trading.cn', address: '浙江省义乌市国际商贸城三区 12345 号' };
 
-export const LabelWarehouse = () => <ShippingLabel {...props} destination="warehouse" supplier={supplier} />;
-export const LabelOffice = () => <ShippingLabel {...props} destination="office" />;
+/** L'étiquette seule, à sa taille naturelle (600 px). */
+function Label({ destination, supplier: s }: { destination: ShippingDestination; supplier?: LabelSupplierInfo }) {
+  const { preview, qr } = useShippingLabel({ ...props, destination, supplier: s });
+  return <div style={{ width: 600, padding: 16, background: '#ECEAF7' }}>{qr}<ShippingLabelPreview src={preview} /></div>;
+}
+export const LabelWarehouse = () => <Label destination="warehouse" supplier={supplier} />;
+export const LabelOffice = () => <Label destination="office" />;
 
 // Le composeur (destination · fournisseur · aperçu · export), tel qu'il
 // s'affiche sur un téléphone.

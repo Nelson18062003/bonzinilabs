@@ -217,6 +217,7 @@
     "supplierEmail": "邮箱",
     "copyImage": "复制图片",
     "downloadImage": "下载图片",
-    "imageCopied": "图片已复制 — 可粘贴到微信、WhatsApp 或邮件"
+    "imageCopied": "图片已复制 — 可粘贴到微信、WhatsApp 或邮件",
+    "sharePdf": "分享 PDF"
   }
 }

@@ -408,3 +408,31 @@ fichier). Les clés `warehouse` / `office` de `platform_settings` ne changent pa
   au rythme des images — fin du rechargement d'onglet iPhone sur un gros colisage.
 - `crypto.randomUUID` → `uid()` (repli iOS < 15.4) : le bouton Envoyer de Mola
   ne peut plus mourir en silence.
+
+## Passe 17 — 14 septembre, soir : l'étiquette colis est DESSINÉE
+
+Retour fondateur (test sur iPhone) : dans l'image exportée, tout se chevauche
+(« DELIVER TO » sur deux lignes, l'adresse sur elle-même, le fournisseur
+écrasé) ; et « partager le PDF » remet un lien `blob:` au lieu d'un fichier.
+
+**Cause** : l'étiquette était un bloc HTML rasterisé (html-to-image). Sur le
+téléphone, l'image partait sans les polices web ; des polices système plus
+larges entraient dans des lignes de hauteur FIXE. Et le bloc débordait déjà
+de ~10 % sur desktop (sections « écrasées »).
+
+**Refonte** (`src/lib/shippingLabelCanvas.ts`) :
+- `layoutLabel()` : un PLAN pur — curseur vertical, chaque texte MESURÉ
+  (retour à la ligne pour l'adresse, rétrécissement 13,5 → 10,5 px puis « … »
+  seulement en dernier recours), champs longs (WhatsApp, e-mails, société,
+  fournisseur) sur leur propre ligne, section 5 ancrée en bas, la section
+  fournisseur prend l'espace restant. 11 tests, dont un « pire cas » avec une
+  police large et des valeurs très longues : aucun texte ne dépasse sa
+  largeur, aucun filet à moins de 12 px d'un autre.
+- `paintLabel()` : la peinture sur canvas, avec les polices de la page si
+  elles sont chargées (DM Sans, Noto SC), sinon celles du système — mesurées.
+- L'aperçu est l'image exacte qui part (×2) ; l'export est peint à ×3.
+- Sorties : de vrais FICHIERS. Sur téléphone, `navigator.share({ files })`
+  pour l'image ET le PDF (WhatsApp, WeChat, Fichiers…) ; sinon téléchargement
+  par URL d'objet révoquée. Plus jamais de `blob:` dans un onglet.
+- `ShippingLabel.tsx` (DOM) supprimé ; composeur desktop et feuille mobile
+  branchés sur `useShippingLabel()`.

@@ -225,6 +225,7 @@
     "supplierEmail": "Email",
     "copyImage": "Copy image",
     "downloadImage": "Download image",
-    "imageCopied": "Image copied — paste it into WeChat, WhatsApp or an email"
+    "imageCopied": "Image copied — paste it into WeChat, WhatsApp or an email",
+    "sharePdf": "Share the PDF"
   }
 }
