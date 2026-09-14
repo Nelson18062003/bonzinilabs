@@ -15,6 +15,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatDate } from '@/lib/formatters';
 import { LogOut, ChevronRight, Banknote, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import {
   SURFACE,
   TEXT,
@@ -57,12 +58,7 @@ export function AgentCashPayments() {
     setLanguage(language === 'en' ? 'zh' : 'en');
   };
 
-  const getBeneficiaryName = (payment: CashPayment) => {
-    if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-      return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-    }
-    return payment.beneficiary_name || '—';
-  };
+  const getBeneficiaryName = (payment: CashPayment) => cashBeneficiaryName(payment);
 
   const getClientName = (payment: CashPayment) => {
     if (payment.profile) {

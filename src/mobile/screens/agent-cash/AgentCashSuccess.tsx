@@ -13,6 +13,7 @@ import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownload
 import { formatCurrencyRMB } from '@/lib/formatters';
 import { CheckCircle2, ArrowLeft, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import { SURFACE, TEXT, Holder, Amount, SoftPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 
 export function AgentCashSuccess() {
@@ -21,15 +22,7 @@ export function AgentCashSuccess() {
   const { t } = useLanguage();
   const { data: payment, isLoading } = useAgentCashPaymentDetail(paymentId);
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   if (isLoading) {
     return (

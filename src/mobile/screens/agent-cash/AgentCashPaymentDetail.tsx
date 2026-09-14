@@ -16,6 +16,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
 import { Banknote, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import { toast } from 'sonner';
 import {
   SURFACE,
@@ -38,15 +39,7 @@ export function AgentCashPaymentDetail() {
   const { data: payment, isLoading, error } = useAgentCashPaymentDetail(paymentId);
   const scanMutation = useAgentScanCashPayment();
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   const getClientName = () => {
     try {

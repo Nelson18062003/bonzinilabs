@@ -18,6 +18,7 @@ import { Check, Eraser, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import SignaturePad from 'react-signature-canvas';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import {
   SURFACE,
   TEXT,
@@ -40,15 +41,7 @@ export function AgentCashConfirm() {
   const [signatureEmpty, setSignatureEmpty] = useState(true);
   const sigCanvas = useRef<SignaturePad>(null);
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   const handleClearSignature = () => {
     sigCanvas.current?.clear();
