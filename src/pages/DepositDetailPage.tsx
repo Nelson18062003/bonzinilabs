@@ -273,7 +273,7 @@ const DepositDetailPage = () => {
             </div>
 
             <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>
-              {isValidated ? 'Montant crédité sur votre solde' : lc.kind === 'failed' ? 'Montant du dépôt' : 'Montant à verser'}
+              {isValidated ? 'Montant crédité sur votre solde' : lc.kind === 'failed' ? 'Montant du dépôt' : canUploadProof ? 'Montant à verser' : 'Montant déclaré'}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               {isValidated && <span className="text-[34px] font-black" style={{ color: LIFECYCLE_COLOR.done }}>+</span>}
@@ -318,8 +318,10 @@ const DepositDetailPage = () => {
             </div>
           )}
 
-          {/* Coordonnées Bonzini — où verser (repli si terminal) */}
-          {!isTerminal ? (
+          {/* Coordonnées Bonzini — où verser. En évidence tant que le client doit
+              encore verser ; repliées dès que la preuve est envoyée (sinon l'écran
+              invite à payer une seconde fois pendant la vérification). */}
+          {canUploadProof ? (
             <DepositInstructions deposit={deposit} />
           ) : (
             <div>
