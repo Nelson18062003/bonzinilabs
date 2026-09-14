@@ -612,3 +612,18 @@ clients », « Réponses toutes faites », « Suggestions aux nouveaux clients �
 et la trésorerie explique ce qu'elle contient. Le champ de recherche du
 nouveau dépôt ne prend plus le focus tout seul (le clavier n'apparaît plus
 avant qu'on l'ait demandé). 624 tests verts, build propre.
+
+## Passe 26 — la barre de décision collante
+
+Sur les fiches dépôt et paiement, dès que le bouton principal de « La
+décision » quitte l'écran (on lit la preuve, on ouvre « Le détail » ou
+« Le suivi »), le même bouton réapparaît en bas, sous le pouce : « Valider le
+dépôt », « Commencer le paiement » ou « Valider le paiement ». Une seule
+action, jamais deux : la barre ne redonne pas une décision, elle rapproche
+celle que l'écran propose déjà. Elle se range tant que le bouton se voit
+(au moins à moitié, hors de l'en-tête collant — `useOnScreen`), sous les
+feuilles basses, et avec le clavier (`html.kb-open`). Elle glisse depuis le
+bas en 18/100 s, sans mouvement si l'appareil le demande, respecte la zone
+de sécurité de l'iPhone, et une cale de sa hauteur est posée en fin de page
+pour que la dernière ligne reste lisible. Vérifié par capture à 390 et 320
+px, clair et sombre. 628 tests verts (4 nouveaux sur le hook), build propre.

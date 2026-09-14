@@ -189,7 +189,8 @@
      d'onglets s'efface. Sur iOS elle serait sous le clavier de toute façon ;
      sur Android (layout viewport réduit) elle viendrait s'intercaler entre le
      champ de saisie et le clavier. */
-  html.kb-open .mobile-tab-bar {
+  html.kb-open .mobile-tab-bar,
+  html.kb-open .decision-dock {
     display: none;
   }
 

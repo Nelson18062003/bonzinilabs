@@ -9,6 +9,8 @@
 //   complete, annulation, taux XAF/CNY, relevé PDF.
 // ============================================================
 import { useState, useRef, useMemo, useCallback } from 'react';
+import { useOnScreen } from '@/hooks/useOnScreen';
+import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -196,6 +198,8 @@ export function MobilePaymentDetail() {
   const [fullscreenProof,     setFullscreenProof]      = useState<string | null>(null);
   const [isGeneratingPDF,     setIsGeneratingPDF]      = useState(false);
   const [showDetail,          setShowDetail]           = useState(false);
+  // Le bouton principal de « La décision » est-il à l'écran ? (barre collante)
+  const decision = useOnScreen();
 
   // ── Reject drawer ────────────────────────────────────────
   const [rejectionCategory, setRejectionCategory] = useState('');
@@ -605,6 +609,11 @@ export function MobilePaymentDetail() {
     : canComplete
     ? { label: 'Valider le paiement', icon: <CheckCircle />, onClick: () => setIsCompleteOpen(true) }
     : null;
+
+  // Barre de décision collante : tant que le bouton principal se voit, elle
+  // reste rangée ; elle se range aussi sous les feuilles basses.
+  const sheetOpen = isRejectOpen || isCompleteOpen || isDeletePaymentOpen || !!proofToDelete || !!fullscreenProof;
+  const dockShown = !!mainAction && !decision.onScreen && !sheetOpen;
 
   const cashPhone = (payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone;
   const signatureUrl = (payment as { cash_signature_url?: string | null }).cash_signature_url;
@@ -1093,10 +1102,12 @@ export function MobilePaymentDetail() {
             <Line>{canProcess ? 'Rien à décider pour le moment.' : "Vous n'avez pas le droit de traiter les paiements."}</Line>
           )}
           {mainAction && (
-            <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
-              {mainAction.icon}
-              {mainAction.label}
-            </Button>
+            <div ref={decision.ref}>
+              <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
+                {mainAction.icon}
+                {mainAction.label}
+              </Button>
+            </div>
           )}
           {canReject && (
             <Button className="w-full" variant="dangerSubtle" onClick={() => setIsRejectOpen(true)}>
@@ -1122,6 +1133,15 @@ export function MobilePaymentDetail() {
             ))}
           </div>
         </Fold>
+
+        {mainAction && (
+          <DecisionDock show={dockShown}>
+            <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
+              {mainAction.icon}
+              {mainAction.label}
+            </Button>
+          </DecisionDock>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════

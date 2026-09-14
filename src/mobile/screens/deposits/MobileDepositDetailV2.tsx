@@ -8,6 +8,8 @@
 //   suppression de preuves, suppression dépôt, timeline, PDF reçu.
 // ============================================================
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useOnScreen } from '@/hooks/useOnScreen';
+import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useAdminDepositDetail,
@@ -194,6 +196,8 @@ export function MobileDepositDetailV2() {
   const [showDetail, setShowDetail] = useState(false);
   const [showSuivi, setShowSuivi] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  // Le bouton « Valider le dépôt » est-il à l'écran ? (barre collante)
+  const decision = useOnScreen();
 
   // Initialize confirmed amount when deposit loads
   useEffect(() => {
@@ -420,6 +424,14 @@ export function MobileDepositDetailV2() {
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
   const canAddProof = !isLocked;
+  // Barre de décision collante : tant que « Valider le dépôt » se voit, elle
+  // reste rangée ; elle se range aussi sous les feuilles basses.
+  const sheetOpen = showValidateConfirm || showRejectSheet || showUploadSheet || !!showDeleteProofSheet || showDeleteDepositSheet || !!viewingProof;
+  const dockShown = !isLocked && !decision.onScreen && !sheetOpen;
+  const openValidate = () => {
+    setConfirmedAmount(deposit.amount_xaf.toString());
+    setShowValidateConfirm(true);
+  };
   const confirmedAmountNum = Number(confirmedAmount) || 0;
   const confirmedAmountValid = isValidXafAmount(confirmedAmountNum, MIN_DEPOSIT_XAF);
   const amountDiffers = confirmedAmountNum !== deposit.amount_xaf && confirmedAmountNum > 0;
@@ -601,15 +613,11 @@ export function MobileDepositDetailV2() {
               {/* Une seule action principale : valider. Le marquage « en vérification »
                   est un geste secondaire, expliqué — deux boutons noirs côte à côte
                   redonnaient à l'opérateur une décision que l'écran doit prendre. */}
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setConfirmedAmount(deposit.amount_xaf.toString());
-                  setShowValidateConfirm(true);
-                }}
-              >
-                Valider le dépôt
-              </Button>
+              <div ref={decision.ref}>
+                <Button className="w-full" onClick={openValidate}>
+                  Valider le dépôt
+                </Button>
+              </div>
               {canStartReview && (
                 <>
                   <Button className="w-full" variant="subtle" onClick={handleStartReview} loading={startReview.isPending}>
@@ -677,6 +685,12 @@ export function MobileDepositDetailV2() {
           ))}
         </Fold>
       </div>
+
+      <DecisionDock show={dockShown}>
+        <Button className="w-full" onClick={openValidate}>
+          Valider le dépôt
+        </Button>
+      </DecisionDock>
 
       {/* ── BottomSheet validation ────────────────────────── */}
       <BottomSheet open={showValidateConfirm} onClose={() => setShowValidateConfirm(false)} title="Valider ce dépôt">
