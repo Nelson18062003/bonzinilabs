@@ -211,7 +211,8 @@
       "rca": "Centrafrique",
       "congo": "Congo",
       "guinee": "Guinée Équatoriale"
-    }
+    },
+    "cardTitle": "Taux du jour"
   },
   "myCode": {
     "cardTitle": "Mon identifiant client",

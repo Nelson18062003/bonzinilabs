@@ -108,8 +108,8 @@ export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className
   if (!rates) {
     return (
       <div className={className} style={cardStyle}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: t.titleColor, textTransform: 'uppercase', letterSpacing: 1.2 }}>
-          Taux du jour
+        <div style={{ fontSize: 12, fontWeight: 700, color: t.titleColor, textTransform: 'uppercase', letterSpacing: 1.2 }}>
+          {tr('rates.cardTitle')}
         </div>
         <p style={{ fontSize: 13, color: t.labelColor, fontStyle: 'italic', marginTop: 8 }}>
           {tr('rates.notConfigured')}
@@ -125,8 +125,8 @@ export function RateCard({ rates, effectiveAt, isLoading, detailsHref, className
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: t.titleColor, textTransform: 'uppercase', letterSpacing: 1.2 }}>
-              Taux du jour
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.titleColor, textTransform: 'uppercase', letterSpacing: 1.2 }}>
+              {tr('rates.cardTitle')}
             </div>
             <div style={{ fontSize: 13, fontWeight: 800, color: t.mainText, marginTop: 2 }}>
               1 000 000 XAF <span style={{ color: t.equalSign, fontWeight: 500 }}>=</span>

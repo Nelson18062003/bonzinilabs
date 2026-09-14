@@ -211,7 +211,8 @@
       "rca": "Central African Republic",
       "congo": "Congo",
       "guinee": "Equatorial Guinea"
-    }
+    },
+    "cardTitle": "Today's rate"
   },
   "myCode": {
     "cardTitle": "My customer ID",

@@ -179,7 +179,7 @@ export const PaymentProofGallery = ({
                   onClick={() => handleDownload(selectedProof)}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Télécharger
+                  {t('download', { ns: 'common' })}
                 </Button>
               </>
             ) : selectedProof ? (
@@ -191,7 +191,7 @@ export const PaymentProofGallery = ({
                 </p>
                 <Button onClick={() => handleDownload(selectedProof)}>
                   <Download className="w-4 h-4 mr-2" />
-                  Télécharger
+                  {t('download', { ns: 'common' })}
                 </Button>
               </div>
             ) : null}

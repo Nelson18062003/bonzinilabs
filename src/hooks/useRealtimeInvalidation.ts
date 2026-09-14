@@ -84,6 +84,7 @@ const TABLE_STEMS: Record<string, readonly string[]> = {
   daily_rates:             ['rate'],
   rate_adjustments:        ['rate'],
   user_roles:              ['admin'],
+  notifications:           ['notification'], // my-notifications · unread-notification-count
 };
 
 const CLIENT_TABLES = [
