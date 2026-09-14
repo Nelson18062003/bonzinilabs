@@ -256,9 +256,9 @@ export function MobileCreateClient() {
           >
             ‹
           </button>
-          <span className={cn('text-[16px] font-bold', TEXT.strong)}>
+          <h1 className={cn('text-[16px] font-bold', TEXT.strong)}>
             {t('newClient', { defaultValue: 'Nouveau client' })}
-          </span>
+          </h1>
         </div>
 
         {/* Barre de progression 3 segments */}

@@ -188,7 +188,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
                 if (e.key === 'Enter') submitManual();
               }}
             />
-            <PrimaryPill onClick={submitManual} disabled={!manual.trim() || resolving} loading={resolving} className="shrink-0 px-4">
+            <PrimaryPill onClick={submitManual} disabled={!manual.trim() || resolving} loading={resolving} ariaLabel="Rechercher" className="shrink-0 px-4">
               <Search className="h-4 w-4" />
             </PrimaryPill>
           </div>

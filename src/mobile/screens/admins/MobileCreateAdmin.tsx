@@ -130,7 +130,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
       <div className={desktop ? 'mx-auto max-w-xl' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
         {desktop ? (
           <header className="mb-6">
-            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h2>
+            <h1 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h1>
           </header>
         ) : (
           <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
@@ -198,9 +198,9 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
           >
             ‹
           </button>
-          <span className={cn('text-[16px] font-bold', TEXT.strong)}>
+          <h1 className={cn('text-[16px] font-bold', TEXT.strong)}>
             {t('newAdmin', { defaultValue: 'Nouvel admin' })}
-          </span>
+          </h1>
         </div>
 
         {/* Progress bar — 3 segments */}
