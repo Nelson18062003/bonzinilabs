@@ -26,7 +26,7 @@ export const QuickActions = () => {
           <div className={cn('flex h-11 w-11 items-center justify-center rounded-full', SURFACE.holder)}>
             <action.icon className="h-5 w-5" strokeWidth={2} />
           </div>
-          <span className={cn('text-[11px] font-semibold', TEXT.strong)}>{action.label}</span>
+          <span className={cn('max-w-full break-words text-center text-[11px] font-semibold leading-tight [hyphens:auto]', TEXT.strong)}>{action.label}</span>
         </button>
       ))}
     </div>

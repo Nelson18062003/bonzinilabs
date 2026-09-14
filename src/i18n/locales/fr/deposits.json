@@ -159,7 +159,7 @@
         "Prenez une capture d'écran du SMS de confirmation"
       ],
       "omWithdrawal": [
-        "Sur votre téléphone, tapez le code marchand affiché ci-dessous",
+        "Sur votre téléphone, tapez le code marchand affiché ci-dessus",
         "Remplacez MONTANT par le montant à envoyer",
         "Validez avec votre code PIN Orange Money",
         "Prenez une capture d'écran du SMS de confirmation"
@@ -172,7 +172,7 @@
         "Prenez une capture d'écran de la confirmation"
       ],
       "mtnWithdrawal": [
-        "Sur votre téléphone, tapez le code marchand affiché ci-dessous",
+        "Sur votre téléphone, tapez le code marchand affiché ci-dessus",
         "Remplacez MONTANT par le montant à envoyer",
         "Validez avec votre code PIN MTN Mobile Money",
         "Prenez une capture d'écran du SMS de confirmation"

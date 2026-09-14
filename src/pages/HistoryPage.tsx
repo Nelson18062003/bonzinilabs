@@ -197,8 +197,8 @@ const HistoryPage = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{getOperationLabel(op)}</p>
-                        {op.description && <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>{op.description}</p>}
+                        <p className={cn('break-words text-[14px] font-bold leading-snug', TEXT.strong)}>{getOperationLabel(op)}</p>
+                        {op.description && <p className={cn('mt-0.5 break-words text-[12px] leading-snug', TEXT.muted)}>{op.description}</p>}
                       </div>
                       <div className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', isDebit && TEXT.strong)} style={isDebit ? undefined : { color: GREEN }}>
                         {isDebit ? '−' : '+'} {formatNumber(Math.abs(op.amount_xaf))}
