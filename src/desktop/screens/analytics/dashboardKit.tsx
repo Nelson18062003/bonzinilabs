@@ -75,6 +75,7 @@ export function StatCard({
   delta,
   deltaInvert,
   loading,
+  error,
   tone = 'neutral',
 }: {
   label: string;
@@ -84,6 +85,8 @@ export function StatCard({
   delta?: number | null;
   deltaInvert?: boolean;
   loading?: boolean;
+  /** Requête en échec : tiret, jamais un 0 qui ressemble à une valeur. */
+  error?: boolean;
   tone?: keyof typeof TONE;
 }) {
   return (
@@ -92,14 +95,20 @@ export function StatCard({
         <div className={LABEL}>{label}</div>
         {loading ? (
           <Skeleton className="mt-2 h-7 w-32" />
+        ) : error ? (
+          <div className="mt-1.5 text-[22px] font-bold leading-none text-muted-foreground" title="Données indisponibles">—</div>
         ) : (
           <div className={cn('mt-1.5 text-[22px] font-bold leading-none tracking-[-0.02em]', NUM, TONE[tone])}>
             {value}
           </div>
         )}
         <div className="mt-1.5 flex items-center gap-2">
-          {delta !== undefined && <DeltaBadge value={delta} invert={deltaInvert} />}
-          {hint && <span className="truncate text-[11.5px] text-muted-foreground">{hint}</span>}
+          {delta !== undefined && !error && <DeltaBadge value={delta} invert={deltaInvert} />}
+          {error ? (
+            <span className="truncate text-[11.5px] text-muted-foreground">Données indisponibles</span>
+          ) : hint ? (
+            <span className="truncate text-[11.5px] text-muted-foreground">{hint}</span>
+          ) : null}
         </div>
       </CardContent>
     </Card>

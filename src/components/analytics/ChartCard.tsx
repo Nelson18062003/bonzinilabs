@@ -89,7 +89,10 @@ export function ChartCard({
         {error ? (
           <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-xs max-lg:text-[14px]', TONE_PILL.danger)}>
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{typeof error === 'string' ? error : error.message}</span>
+            <span>
+              Impossible de charger ce graphique.
+              <span className="ml-1 opacity-70">({typeof error === 'string' ? error : error.message})</span>
+            </span>
           </div>
         ) : empty ? (
           <div className={cn('flex min-h-[160px] items-center justify-center text-sm', TEXT.muted)}>

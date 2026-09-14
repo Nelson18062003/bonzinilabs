@@ -29,6 +29,8 @@ export interface KpiCardProps {
   icon?: React.ReactNode;
   /** When true, shows a skeleton shimmer instead of the value. */
   loading?: boolean;
+  /** La requête a échoué : on montre un tiret, jamais un 0 qui ressemble à une vraie valeur. */
+  error?: boolean;
   className?: string;
   /**
    * Subtle colour hint on the icon badge and value. Defaults to 'neutral'
@@ -61,6 +63,7 @@ export function KpiCard({
   description,
   icon,
   loading,
+  error,
   className,
   accent = 'neutral',
 }: KpiCardProps) {
@@ -100,6 +103,8 @@ export function KpiCard({
 
           {loading ? (
             <div className="h-7 w-28 animate-pulse rounded bg-muted" />
+          ) : error ? (
+            <p className={cn('text-[16px] min-[400px]:text-[18px] md:text-2xl font-extrabold leading-tight', TEXT.muted)} title="Données indisponibles">—</p>
           ) : (
             <p
               className={cn('min-w-0 whitespace-nowrap text-[16px] min-[400px]:text-[18px] md:text-2xl font-extrabold tabular-nums leading-tight', TEXT.strong)}
@@ -110,8 +115,10 @@ export function KpiCard({
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
-            {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
-            {secondary ? (
+            {delta !== undefined && !error ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
+            {error ? (
+              <p className={cn('text-[11px] max-lg:text-[16px] md:text-xs leading-snug', TEXT.muted)}>Données indisponibles</p>
+            ) : secondary ? (
               <p className={cn('text-[11px] max-lg:text-[16px] md:text-xs tabular-nums leading-snug', TEXT.muted)}>
                 {secondary}
               </p>
