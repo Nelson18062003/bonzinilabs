@@ -40,6 +40,7 @@ import {
 // Every table the app touches → the query key prefixes that depend on it.
 // Keep prefixes only (not full keyed queries) so prefix-matching invalidation
 // catches every descendant key without us enumerating them.
+const CARGO_KEY = ['cargo'] as const;
 const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
   deposits:                [depositKeys.all, dashboardKeys.all],
   deposit_proofs:          [depositKeys.all],
@@ -55,6 +56,14 @@ const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
   rate_adjustments:        [rateKeys.all],
   user_roles:              [adminKeys.all],
   admin_audit_logs:        [adminKeys.all],
+  // Cargo : tout est sous le préfixe ['cargo', …] (useCargo.ts). Le cron
+  // cargo-sync et un second admin écrivent ces tables sans passer par l'app.
+  cargo_shipments:         [CARGO_KEY],
+  cargo_events:            [CARGO_KEY],
+  cargo_costs:             [CARGO_KEY],
+  cargo_packages:          [CARGO_KEY],
+  cargo_documents:         [CARGO_KEY],
+  cargo_lookups:           [CARGO_KEY],
 };
 
 // Tables the CLIENT app cares about (subset — RLS hides the rest anyway,

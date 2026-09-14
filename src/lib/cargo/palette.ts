@@ -27,6 +27,7 @@
  * clair (ΔE 13.6) et orange contre rouge en sombre (ΔE 7.2). Trois niveaux
  * passent partout — et trois suffisent à un opérateur.
  */
+import type { Tone } from '@/mobile/designKit/tokens';
 import { differenceInCalendarDays } from 'date-fns';
 import { bestEta, etaSlipDays } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment } from '@/lib/cargo/model';
@@ -34,6 +35,9 @@ import { todoCounts } from '@/lib/cargo/todo';
 
 /** L'état d'un conteneur, tel qu'il se lit sur la carte. */
 export type AlertLevel = 'late' | 'watch' | 'ok' | 'done';
+
+/** Le ton du kit mobile pour chaque niveau — une seule table pour toute l'app. */
+export const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export interface AlertMeta {
   /** Ce qu'on écrit à côté du point — la couleur ne suffit jamais. */

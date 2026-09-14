@@ -14,7 +14,6 @@
 // ============================================================
 import { useState } from 'react';
 import { Download, FileDown, Share2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   DESTINATION_HINT_FR,
@@ -25,7 +24,8 @@ import {
   type ShippingSettings,
 } from '@/lib/customerCode';
 import { useShippingLabel, ShippingLabelPreview } from '@/components/customer-code/useShippingLabel';
-import { canShareFiles, downloadLabelImage, downloadLabelPdf, labelFileName, sendLabelImage, sendLabelPdf } from '@/components/customer-code/exportShippingLabel';
+import { canShareFiles, labelFileName } from '@/components/customer-code/exportShippingLabel';
+import { useLabelExport } from '@/components/customer-code/useLabelExport';
 import { BottomSheet, Button, Line, Segmented } from '@/mobile/designKit';
 
 export interface MobileShippingLabelSheetProps {
@@ -41,32 +41,18 @@ export interface MobileShippingLabelSheetProps {
   settings: ShippingSettings;
 }
 
-type Kind = 'share' | 'sharePdf' | 'png' | 'pdf';
-
 export function MobileShippingLabelSheet({ open, onClose, code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings }: MobileShippingLabelSheetProps) {
   const [destination, setDestination] = useState<ShippingDestination>('warehouse');
-  const [busy, setBusy] = useState<Kind | null>(null);
   const { preview, render, qr } = useShippingLabel({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings });
 
   const configured = isLocationConfigured(settings[destination]);
-  const ready = !!code && configured && busy === null;
   const share = canShareFiles();
-
-  const run = async (kind: Kind) => {
-    if (!ready) return;
-    setBusy(kind);
-    try {
-      if (kind === 'share') { if ((await sendLabelImage(render, code, destination)) === 'downloaded') toast.success('Étiquette téléchargée'); }
-      else if (kind === 'sharePdf') { if ((await sendLabelPdf(render, code, destination)) === 'downloaded') toast.success('PDF téléchargé'); }
-      else if (kind === 'png') { await downloadLabelImage(render, code, destination); toast.success('Étiquette téléchargée'); }
-      else { await downloadLabelPdf(render, code, destination); }
-    } catch (err) {
-      console.error('shipping label export', err);
-      toast.error("Impossible de générer l'étiquette. Réessaie dans un instant.");
-    } finally {
-      setBusy(null);
-    }
-  };
+  const { busy, canRun: ready, run } = useLabelExport(render, code, destination, !!code && configured, {
+    downloaded: 'Étiquette téléchargée',
+    pdfDownloaded: 'PDF téléchargé',
+    copied: 'Image copiée',
+    error: "Impossible de générer l'étiquette. Réessaie dans un instant.",
+  });
 
   return (
     <>

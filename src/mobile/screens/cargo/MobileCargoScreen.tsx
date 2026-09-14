@@ -15,19 +15,18 @@ import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
-import { ALERT, ALERT_ORDER, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
+import { ALERT, ALERT_ORDER, TONE_OF, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence, delaySentence, nextActionSentence, plural, uncap } from '@/lib/cargo/plain';
 import { nextSteps } from '@/lib/cargo/todo';
 import { bestEta } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput, type Tone } from '@/mobile/designKit';
+import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput } from '@/mobile/designKit';
 
 /** Au-delà, les filtres ne suffisent plus : un champ de recherche apparaît. */
 const SEARCH_FROM = 8;
 /** La section qui règle chaque chose à faire (même table que le dossier). */
 const TODO_SECTION: Record<string, string> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
 
-const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();

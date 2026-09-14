@@ -1648,14 +1648,21 @@ async function resolveRef(admin: AnyClient, type: string, value: unknown): Promi
   }
   if (type === "cargo") {
     // Un conteneur se nomme par son numéro (MIEU3611115), son B/L (274428633) ou le client (GAUSS).
-    const ref = v.replace(/[\s-]/g, "").toUpperCase();
-    const exact = await admin.from("cargo_shipments").select("id, container_number, client_label")
-      .or(`container_number.eq.${ref},bl_number.eq.${ref}`).limit(5);
+    // Assaini AVANT d'entrer dans la grammaire du filtre PostgREST (`,` `(` `)`
+    // `.` `*` y sont des opérateurs) : un numéro de conteneur ou de B/L n'est
+    // fait que de lettres et de chiffres.
+    const ref = v.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const label = v.replace(/[,():*%\\]/g, " ").trim();
+    if (!ref && !label) return { ok: false, error: `Référence cargo vide.` };
+    const exact = ref
+      ? await admin.from("cargo_shipments").select("id, container_number, client_label")
+        .or(`container_number.eq.${ref},bl_number.eq.${ref}`).limit(5)
+      : { data: [] };
     const rows = (exact.data ?? []) as Array<{ id: string; container_number: string; client_label: string }>;
     if (rows.length === 1) return { ok: true, id: rows[0].id };
     if (rows.length > 1) return { ok: false, error: `Plusieurs conteneurs pour « ${v} » : ${rows.map((r) => `${r.container_number} (${r.client_label})`).join(", ")}. Précise le numéro de conteneur.` };
     const byClient = await admin.from("cargo_shipments").select("id, container_number, client_label, status")
-      .ilike("client_label", `%${v}%`).neq("status", "DELIVERED").limit(5);
+      .ilike("client_label", `%${label}%`).neq("status", "DELIVERED").limit(5);
     const c = (byClient.data ?? []) as Array<{ id: string; container_number: string; client_label: string }>;
     if (c.length === 1) return { ok: true, id: c[0].id };
     if (c.length > 1) return { ok: false, error: `${c[0].client_label} a plusieurs conteneurs en cours : ${c.map((r) => r.container_number).join(", ")}. Précise le numéro de conteneur.` };

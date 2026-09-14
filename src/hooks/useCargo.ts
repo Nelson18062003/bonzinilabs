@@ -402,7 +402,10 @@ export function useCargoClientOptions(search: string) {
     queryKey: ['cargo', 'client-options', search],
     queryFn: async () => {
       let q = supabaseAdmin.from('clients').select('id, first_name, last_name, company_name').limit(20);
-      if (search.trim()) q = q.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,company_name.ilike.%${search}%`);
+      // `,` `(` `)` `%` `\` sont la grammaire du filtre PostgREST : tapés dans la
+      // recherche, ils cassaient (ou réécrivaient) la requête. On les efface.
+      const needle = search.replace(/[,()%\\]/g, ' ').trim();
+      if (needle) q = q.or(`first_name.ilike.%${needle}%,last_name.ilike.%${needle}%,company_name.ilike.%${needle}%`);
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];

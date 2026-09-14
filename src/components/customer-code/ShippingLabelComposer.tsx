@@ -8,7 +8,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Copy, Download, FileDown, Loader2, Share2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   DESTINATION_HINT_FR,
@@ -20,7 +19,8 @@ import {
 } from '@/lib/customerCode';
 import type { LabelSupplierInfo } from '@/lib/shippingLabelCanvas';
 import { useShippingLabel, ShippingLabelPreview } from './useShippingLabel';
-import { canShareFiles, copyLabelImage, downloadLabelImage, downloadLabelPdf, sendLabelImage, sendLabelPdf } from './exportShippingLabel';
+import { canShareFiles } from './exportShippingLabel';
+import { useLabelExport, type LabelExportKind as Kind } from './useLabelExport';
 import { SURFACE, TEXT, PRIMARY_PILL, SOFT_PILL, Segmented, TextInput } from '@/mobile/designKit';
 
 export interface ShippingLabelComposerProps {
@@ -40,41 +40,21 @@ export interface ShippingLabelComposerProps {
   className?: string;
 }
 
-type Kind = 'share' | 'sharePdf' | 'copy' | 'png' | 'pdf';
-
 export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', mode = 'client', className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   // Sea cargo (entrepôt) par défaut : c'est le mode de la plupart des envois ;
   // l'air cargo (bureau) est indiqué au cas par cas.
   const [destination, setDestination] = useState<ShippingDestination>('warehouse');
   const [supplier, setSupplier] = useState<LabelSupplierInfo>({});
-  const [busy, setBusy] = useState<Kind | null>(null);
-
   const { preview, render, qr } = useShippingLabel({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings, supplier });
 
   const destConfigured = isLocationConfigured(settings[destination]);
-  const canExport = !!code && destConfigured && busy === null;
-  const downloaded = () => toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
-
-  const run = async (kind: Kind) => {
-    if (!canExport) return;
-    setBusy(kind);
-    try {
-      if (kind === 'share') { if ((await sendLabelImage(render, code, destination)) === 'downloaded') downloaded(); }
-      else if (kind === 'sharePdf') { if ((await sendLabelPdf(render, code, destination)) === 'downloaded') downloaded(); }
-      else if (kind === 'copy') {
-        const outcome = await copyLabelImage(render, code, destination);
-        if (outcome === 'copied') toast.success(t('myCode.imageCopied', { defaultValue: 'Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail' }));
-        else downloaded();
-      } else if (kind === 'png') { await downloadLabelImage(render, code, destination); downloaded(); }
-      else { await downloadLabelPdf(render, code, destination); }
-    } catch (err) {
-      console.error('shipping label export', err);
-      toast.error(t('myCode.labelError', { defaultValue: 'Impossible de générer l’étiquette' }));
-    } finally {
-      setBusy(null);
-    }
-  };
+  const { busy, canRun: canExport, run } = useLabelExport(render, code, destination, !!code && destConfigured, {
+    downloaded: t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }),
+    pdfDownloaded: t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }),
+    copied: t('myCode.imageCopied', { defaultValue: 'Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail' }),
+    error: t('myCode.labelError', { defaultValue: 'Impossible de générer l’étiquette' }),
+  });
 
   const field = (key: keyof LabelSupplierInfo, placeholder: string) => (
     <TextInput

@@ -293,7 +293,7 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
 
 /**
  * Create a new client via RPC (server-side, no email rate limits)
- * The RPC inserts directly into auth.users + profiles + wallets
+ * The RPC inserts directly into auth.users + clients + wallets
  */
 export function useCreateClient() {
   const queryClient = useQueryClient();

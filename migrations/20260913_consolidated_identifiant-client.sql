@@ -355,3 +355,18 @@ COMMENT ON FUNCTION public.update_platform_setting(TEXT, JSONB) IS
   '@mola:{"expose":true,"kind":"write","permission":"canManageUsers","confirm":true,"danger":false,"label":"Modifier un réglage de plateforme (adresses d''expédition, coordonnées de la société)"}';
 
 NOTIFY pgrst, 'reload schema';
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- SECTION AJOUTÉE le 14/09 — lecture de platform_settings limitée aux clés publiques
+-- (= supabase/migrations/20260914090500_platform_settings_read_scope.sql)
+-- ─────────────────────────────────────────────────────────────────────────
+-- ============================================================
+-- platform_settings : la lecture par tout utilisateur connecté (app client
+-- comprise) se limite aux clés PUBLIQUES. La politique initiale ouvrait toute
+-- la table (USING (true)) : une future clé (seuils, fournisseurs…) aurait été
+-- lisible par n'importe quel client. Idempotent.
+-- ============================================================
+DROP POLICY IF EXISTS platform_settings_read ON public.platform_settings;
+CREATE POLICY platform_settings_read ON public.platform_settings
+  FOR SELECT TO authenticated USING (key IN ('shipping'));

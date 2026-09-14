@@ -392,4 +392,13 @@ export async function renderShippingLabel(d: LabelData, qr: CanvasImageSource | 
   return canvas;
 }
 
+/** L'étiquette posée sur une page (mm) à sa proportion, centrée, avec une marge. */
+export function fitOnPage(labelW: number, labelH: number, pageW = 210, pageH = 297, margin = 8): { x: number; y: number; w: number; h: number } {
+  const ratio = labelH / labelW;
+  let w = pageW - 2 * margin;
+  let h = w * ratio;
+  if (h > pageH - 2 * margin) { h = pageH - 2 * margin; w = h / ratio; }
+  return { x: (pageW - w) / 2, y: (pageH - h) / 2, w, h };
+}
+
 export { customerQrPayload };

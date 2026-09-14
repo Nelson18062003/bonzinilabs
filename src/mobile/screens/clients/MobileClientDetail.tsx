@@ -38,7 +38,7 @@ import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import { useCargoShipments } from '@/hooks/useCargo';
-import { alertLevel, type AlertLevel } from '@/lib/cargo/palette';
+import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
@@ -120,14 +120,6 @@ function ActionRow({
     </button>
   );
 }
-
-/** L'état d'un conteneur, dans les mots et les couleurs de la flotte. */
-const CARGO_TONE: Record<AlertLevel, { tone: Tone; label: string }> = {
-  late: { tone: 'danger', label: 'En retard' },
-  watch: { tone: 'pending', label: 'À surveiller' },
-  ok: { tone: 'success', label: "À l'heure" },
-  done: { tone: 'neutral', label: 'Livré' },
-};
 
 export function MobileClientDetail() {
   const { t } = useTranslation('common');
@@ -448,7 +440,7 @@ export function MobileClientDetail() {
                     key={c.id}
                     title={c.container_number || c.bl_number || 'Conteneur'}
                     subtitle={arrivalSentence(c)}
-                    trailing={<StatusPill tone={CARGO_TONE[level].tone} label={CARGO_TONE[level].label} />}
+                    trailing={<StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />}
                     onClick={() => navigate(`/m/cargo/${c.id}`)}
                   />
                 );

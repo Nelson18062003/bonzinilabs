@@ -451,3 +451,34 @@ de ~10 % sur desktop (sections « écrasées »).
   vit hors de la feuille basse — sinon, feuille ouverte après le montage, l'image
   partait sans QR.
 - Scanner un client : sous-titre qui tient sur une ligne.
+
+## Passe 19 — 14 septembre, nuit : boucle d'audit, tour 1 (base, sécurité, qualité)
+
+Six agents en lecture seule (sécurité, base de données, responsive/UX,
+fonctionnel, performance, qualité). Corrigé dès le premier tour :
+- **Temps réel** : les six tables `cargo_*` invalident le préfixe `['cargo']`
+  (elles n'étaient pas abonnées : le cron `cargo-sync` écrivait sans que
+  l'app le voie) ; migration `20260914090000` : index `client_id` /
+  `bl_number` + tables ajoutées à la publication `supabase_realtime`.
+- **Types** : les trois RPC cargo (`cargo_fleet_status`, `cargo_set_freight_paid`,
+  `cargo_set_telex`) ajoutées à `types.ts` (à regénérer par `/gen-types` quand
+  le projet est joignable).
+- **Filtres PostgREST** : `useCargoClientOptions` efface `, ( ) % \` avant
+  `.or()` ; le résolveur cargo de Mola (`resolveRef`, service-role) ne garde
+  que `[A-Za-z0-9]` pour la référence et assainit le libellé client.
+- **`platform_settings`** : lecture limitée aux clés publiques (`key IN
+  ('shipping')`) — migration `20260914090500`, reportée dans le consolidé
+  identifiant-client.
+- **Edge functions mortes** `create-admin`, `create-agent`, `create-client` :
+  retirées du dépôt — elles écrivaient dans `profiles` (supprimée en février),
+  n'avaient pas de garde `is_disabled`, et l'app ne les appelle plus. **À
+  dé-déployer** : `npx supabase functions delete create-admin` (× 3).
+- `uid()` : plus de repli `Math.random` (nom de fichier de stockage).
+- Qualité : `TONE_OF` unique dans `palette.ts` ; `useLabelExport()` partagé
+  par le composeur et la feuille ; `fitOnPage()` pur et testé (13 tests).
+
+**Décision à prendre (non modifié)** : dans `admin-assistant`, la LECTURE est
+ouverte à tout rôle par choix documenté (« Mola AI-native ») et s'exécute en
+service-role — un `cash_agent` peut donc lire la trésorerie via Mola. La règle
+`security.md` dit l'inverse. Une ligne suffit à rétablir la garde :
+`READ_TOOLS.filter((t) => t.always || perms[t.permission])`.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fitText, wrapText, layoutLabel, LABEL_H, LABEL_W, type Measure, type Op } from '@/lib/shippingLabelCanvas';
+import { fitText, wrapText, layoutLabel, fitOnPage, LABEL_H, LABEL_W, type Measure, type Op } from '@/lib/shippingLabelCanvas';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 
 // Une mesure « pire cas » : police système large — 0,62 em par lettre latine,
@@ -98,5 +98,22 @@ describe('layoutLabel — rien ne se chevauche, rien ne déborde', () => {
   it('l’étiquette porte le mode d’envoi', () => {
     expect(texts(layoutLabel(base, measure)).some((t) => t.text === '海运 · SEA CARGO')).toBe(true);
     expect(texts(layoutLabel({ ...base, destination: 'office' }, measure)).some((t) => t.text === '空运 · AIR CARGO')).toBe(true);
+  });
+});
+
+describe('fitOnPage — l’étiquette sur une A4', () => {
+  it('tient en hauteur, centrée, avec la marge', () => {
+    const b = fitOnPage(LABEL_W, LABEL_H);
+    expect(b.h).toBeCloseTo(297 - 16, 5);
+    expect(b.w).toBeCloseTo(b.h / (LABEL_H / LABEL_W), 5);
+    expect(b.x).toBeCloseTo((210 - b.w) / 2, 5);
+    expect(b.y).toBeCloseTo(8, 5);
+    expect(b.x).toBeGreaterThanOrEqual(8);
+  });
+  it('une étiquette large tient en largeur', () => {
+    const b = fitOnPage(1000, 300);
+    expect(b.w).toBeCloseTo(210 - 16, 5);
+    expect(b.x).toBeCloseTo(8, 5);
+    expect(b.y).toBeGreaterThan(8);
   });
 });

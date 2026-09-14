@@ -10,7 +10,7 @@
 // ============================================================
 import { jsPDF } from 'jspdf';
 import { DESTINATION_SLUG, type ShippingDestination } from '@/lib/customerCode';
-import { LABEL_W, LABEL_H } from '@/lib/shippingLabelCanvas';
+import { LABEL_W, LABEL_H, fitOnPage } from '@/lib/shippingLabelCanvas';
 
 /** Peint l'étiquette à l'échelle demandée — fourni par useShippingLabel(). */
 export type RenderLabel = (scale?: number) => Promise<HTMLCanvasElement>;
@@ -41,13 +41,9 @@ export async function labelImageFile(render: RenderLabel, code: string, destinat
 /** PDF A4, prêt à imprimer : l'étiquette posée à sa proportion, centrée, avec une marge. */
 export async function labelPdfFile(render: RenderLabel, code: string, destination: ShippingDestination): Promise<File> {
   const canvas = await render(EXPORT_SCALE);
-  const PAGE_W = 210, PAGE_H = 297, MARGIN = 8;
-  const ratio = LABEL_H / LABEL_W;
-  let w = PAGE_W - 2 * MARGIN;
-  let h = w * ratio;
-  if (h > PAGE_H - 2 * MARGIN) { h = PAGE_H - 2 * MARGIN; w = h / ratio; }
+  const box = fitOnPage(LABEL_W, LABEL_H);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (PAGE_W - w) / 2, (PAGE_H - h) / 2, w, h, undefined, 'FAST');
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', box.x, box.y, box.w, box.h, undefined, 'FAST');
   return new File([pdf.output('blob')], labelFileName(code, destination, 'pdf'), { type: 'application/pdf' });
 }
 
