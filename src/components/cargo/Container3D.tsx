@@ -199,6 +199,7 @@ export function Container3D({
             <label className="c3d-layers">
               Étages
               <input
+                className="h-11"
                 type="range" min={0} max={plan.layers - 1}
                 value={upTo ?? plan.layers - 1}
                 onChange={(e) => {

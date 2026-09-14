@@ -657,7 +657,7 @@ export function MobilePaymentDetail() {
               </p>
               <Line>
                 Demandé par{' '}
-                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn('-mx-1 px-1 py-3 font-semibold underline decoration-[#B3B3B3] underline-offset-4', FOCUS_RING, TEXT.strong)}>
+                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn("relative font-semibold underline decoration-[#B3B3B3] underline-offset-4 before:absolute before:-inset-y-3 before:-inset-x-1 before:content-['']", FOCUS_RING, TEXT.strong)}>
                   {clientName}
                 </button>
                 , via {methodLabel}, {whenSentence(payment.created_at)}.

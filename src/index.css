@@ -1524,6 +1524,7 @@
 .maplibregl-popup-close-button:hover { background: transparent; color: hsl(var(--foreground)); }
 .maplibregl-ctrl-group { background: hsl(var(--card)); box-shadow: none; border: 1px solid hsl(var(--border)); border-radius: 8px; overflow: hidden; }
 .maplibregl-ctrl-group button + button { border-top-color: hsl(var(--border)); }
+.maplibregl-ctrl-group button { width: 44px; height: 44px; }
 .dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
 .maplibregl-ctrl-attrib { background: hsl(var(--card) / 0.85); color: hsl(var(--muted-foreground)); font-size: 10px; border-radius: 6px 0 0 0; }
 .maplibregl-ctrl-attrib a { color: hsl(var(--muted-foreground)); }

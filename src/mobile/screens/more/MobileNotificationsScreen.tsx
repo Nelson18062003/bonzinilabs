@@ -91,7 +91,10 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
                               <div className="min-w-0">
                                 <p className={cn('break-words text-[16px] font-semibold leading-snug', TEXT.strong)}>{notif.title}</p>
                                 <p className={cn('mt-0.5 break-words text-[16px] leading-snug', TEXT.muted)}>
-                                  {notif.subtitle}
+                                  {/* « Nom — BZ-DP-… » : la référence reste entière sur sa ligne. */}
+                                  {notif.subtitle?.includes(' — ')
+                                    ? <>{notif.subtitle.split(' — ')[0]} — <span className="whitespace-nowrap">{notif.subtitle.split(' — ').slice(1).join(' — ')}</span></>
+                                    : notif.subtitle}
                                 </p>
                               </div>
                               {notif.amount != null && (

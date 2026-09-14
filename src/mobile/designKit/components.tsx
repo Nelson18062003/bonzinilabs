@@ -428,7 +428,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttri
       <input
         ref={ref}
         className={cn(
-          'h-11 w-full rounded-lg bg-white px-3 text-[16px] outline-none transition-colors',
+          'h-11 w-full rounded-lg bg-white px-3 text-[16px] text-ellipsis outline-none transition-colors',
           SURFACE.field,
           TEXT.strong,
           'placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C]',

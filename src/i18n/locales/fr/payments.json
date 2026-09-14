@@ -367,7 +367,7 @@
     "subtitle": "Plusieurs bénéficiaires, un seul client, payés ensemble",
     "entry": "Paiement groupé",
     "clientToDebit": "Client à débiter",
-    "searchClient": "Rechercher un client (nom, téléphone)…",
+    "searchClient": "Nom ou téléphone",
     "noClientFound": "Aucun client trouvé.",
     "change": "Changer",
     "beneficiariesCount": "Bénéficiaires ({{count}})",

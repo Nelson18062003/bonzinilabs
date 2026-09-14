@@ -107,10 +107,10 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
               <button
                 type="button"
                 onClick={() => setCreating(true)}
-                className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+                className={cn('flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
                 aria-label={t('quickReplies.create')}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </button>
             ) : undefined
           }

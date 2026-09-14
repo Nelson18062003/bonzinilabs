@@ -683,3 +683,27 @@ presse-papiers refusé signalé.
 
 **Qualité.** Fiche client sans requêtes cargo hors droit ; écrans dépôts V1
 (1 703 lignes mortes) supprimés. 632 tests verts, build propre.
+
+## Passe 30 — audit en direct des écrans jamais capturés (Plus, support, trésorerie)
+
+Vingt-deux écrans de plus capturés à 390 et 320 px. **Bugs réels** :
+vingt traductions françaises coupées à l'apostrophe dans `common.json`
+depuis des mois (« Thème de l », « Bloquer l », « Créer l », « Erreur lors
+de l », « Aucun élément en attente d »…) — restaurées en entier ; l'écran
+« Statistiques support » plantait (`undefined.map`) et affichait
+« undefined » — tableaux et compteurs gardés. **Cibles et tailles** : puces de
+filtre à 44 px (kit `Chip`) sur Support, Administrateurs, Historique et
+Statistiques ; bascule de thème à 44 px avec libellés (« Clair / Sombre /
+Auto »), sans déborder à 320 px ; œil du mot de passe, « Changer la photo »,
+« + » des réponses, retour du paiement groupé, curseur des étages 3D, zoom de
+la carte à 44 px ; kit trésorerie à 14 px minimum, sous-titres entiers ;
+tableau de bord : montants qui ne débordent plus de leur tuile ; identifiant
+client à 20 px sous 360 px ; placeholders avec points de suspension. **Mots** :
+« Super admin / Opérations / Agent cash », « Mes conversations »,
+« Conversations ouvertes », « Temps de réponse moyen », « Qui répond le
+plus », « Aucune action trouvée », « Coût moyen d'achat USDT », « Analyse »,
+« Historique des opérations », « Visuel des soldes », « Solde : … XAF » dans
+le paiement groupé. **320 px** : carte « Taux actifs » en 2 × 2, soldes de
+trésorerie empilés, frise du trajet à 14 px, référence des notifications
+jamais coupée au milieu, lien du client et téléphone en zone tactile de 44 px
+sans gonfler l'interligne. 632 tests verts, build propre.

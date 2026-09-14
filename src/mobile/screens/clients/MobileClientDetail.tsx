@@ -369,7 +369,7 @@ export function MobileClientDetail() {
           {client.phone ? (
             <Line>
               Téléphone :{' '}
-              <a href={`tel:${client.phone}`} className={cn('font-semibold underline decoration-[#B3B3B3] underline-offset-4', TEXT.strong)}>
+              <a href={`tel:${client.phone}`} className={cn("relative font-semibold underline decoration-[#B3B3B3] underline-offset-4 before:absolute before:-inset-y-3 before:-inset-x-1 before:content-['']", TEXT.strong)}>
                 {client.phone}
               </a>
               .

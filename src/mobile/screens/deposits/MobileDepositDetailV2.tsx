@@ -566,7 +566,7 @@ export function MobileDepositDetailV2() {
                           href={signedUrl ?? undefined}
                           download={proof.file_name}
                           className={cn(
-                            'inline-flex h-10 items-center justify-center gap-2 px-3 text-[16px] font-medium no-underline [&_svg]:h-5 [&_svg]:w-5',
+                            'inline-flex min-h-11 items-center justify-center gap-2 px-3 text-[16px] font-medium no-underline [&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0',
                             signedUrl ? SOFT_PILL : cn(DISABLED_PILL, 'pointer-events-none'),
                           )}
                         >

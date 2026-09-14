@@ -12,7 +12,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
-import { SURFACE, TEXT, Avatar, TextInput, Holder, ScreenLoader, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
+import { SURFACE, TEXT, Avatar, TextInput, Holder, ScreenLoader, Chip } from '@/mobile/designKit';
 
 type StatusFilter = 'open' | 'all' | 'closed';
 type AssignFilter = 'all' | 'mine' | 'unassigned';
@@ -101,7 +101,7 @@ export function MobileSupportListScreen() {
           <button
             type="button"
             onClick={() => navigate('/m/support/stats')}
-            className={cn('flex h-9 w-9 items-center justify-center rounded-full', TEXT.muted)}
+            className={cn('flex h-11 w-11 items-center justify-center rounded-full', TEXT.muted)}
             aria-label={t('admin.statsLink')}
           >
             <BarChart3 className="h-4 w-4" />
@@ -135,32 +135,14 @@ export function MobileSupportListScreen() {
         {/* Assign filter chips */}
         <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {assignFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setAssignFilter(filter.value)}
-              className={cn(
-                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
-                assignFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
-              )}
-            >
-              {filter.label}
-            </button>
+            <Chip key={filter.value} label={filter.label} active={assignFilter === filter.value} onClick={() => setAssignFilter(filter.value)} />
           ))}
         </div>
 
         {/* Status filter chips */}
         <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {statusFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setStatusFilter(filter.value)}
-              className={cn(
-                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
-                statusFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
-              )}
-            >
-              {filter.label}
-            </button>
+            <Chip key={filter.value} label={filter.label} active={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)} />
           ))}
         </div>
       </div>

@@ -173,14 +173,14 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       {/* ── 1. ÉTAT — taux actuellement actifs ── */}
       {currentRate && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone="success" label="En ligne" />
-              {activeSince && <span className={cn('text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
+              {activeSince && <span className={cn('whitespace-nowrap text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-3 min-[360px]:grid-cols-4 min-[360px]:gap-2">
             {PAYMENT_METHODS.map((pm) => {
               const v = currentRate[`rate_${pm.key}` as keyof DailyRate] as number | undefined;
               return (
@@ -251,7 +251,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               </button>
             </div>
 
-            <div className="mt-2.5 grid grid-cols-2 gap-2 text-[16px]">
+            <div className="mt-2.5 grid grid-cols-1 gap-2 text-[16px] min-[360px]:grid-cols-2">
               <div className={cn('rounded-lg px-3 py-2', SURFACE.card)}>
                 <div className={cn('text-[16px] font-bold', TEXT.muted)}>
                   CMR · max + {latestSuggestion.cmr_margin_xaf} XAF

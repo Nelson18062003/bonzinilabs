@@ -83,7 +83,7 @@ export function MobileClientsScreen() {
           <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
           <TextInput
             type="text"
-            placeholder={t('searchByNamePhoneCode', { defaultValue: 'Nom, téléphone, identifiant BZ-…' })}
+            placeholder={t('searchByNamePhoneCode', { defaultValue: 'Nom, téléphone ou BZ-…' })}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
