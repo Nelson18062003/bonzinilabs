@@ -38,6 +38,7 @@ import {
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import { cn, validateUploadFile } from '@/lib/utils';
 import { isTerminalPayment } from '@/lib/terminalStatuses';
+import { paymentMainAction } from '@/lib/paymentActions';
 import {
   SURFACE,
   TEXT,
@@ -570,8 +571,11 @@ export function MobilePaymentDetail() {
   const canProcess           = hasPermission('canProcessPayments');
   const isLocked             = isTerminalPayment(payment.status);
   const isCash               = payment.method === 'cash';
-  const canStartProcessing   = canProcess && ['ready_for_payment', 'cash_scanned'].includes(payment.status);
-  const canComplete          = canProcess && payment.status === 'processing';
+  // Aligné sur ce que process_payment accepte (src/lib/paymentActions.ts) :
+  // un cash scanné se termine par la signature, pas par « Commencer ».
+  const mainKind             = paymentMainAction(payment.status, canProcess);
+  const canStartProcessing   = mainKind === 'start_processing';
+  const canComplete          = mainKind === 'complete';
   const canReject            = canProcess && !isLocked;
   const canDelete            = isSuperAdmin;
   const canEditBeneficiary   = canProcess && !isLocked &&
