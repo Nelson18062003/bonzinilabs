@@ -34,12 +34,12 @@ export function OccurredAtField({ label = "Date / heure de l'opération", value,
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[13px] font-semibold">{label}</label>
+        <label className="text-[14px] font-semibold">{label}</label>
         <button
           type="button"
           onClick={() => onChange(new Date().toISOString())}
           className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border-2 transition-colors',
+            'inline-flex min-h-9 items-center gap-1 px-3 py-1 rounded-full text-[14px] font-semibold border-2 transition-colors',
             isNow
               ? 'border-violet-600 bg-violet-50 text-violet-700'
               : 'border-border bg-white text-muted-foreground',
