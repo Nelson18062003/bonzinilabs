@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "Bonjour",
+    "afternoon": "Bon après-midi",
+    "evening": "Bonsoir",
+    "withName": "{{prefix}}, {{name}} !",
+    "welcomeLast": "Bienvenue, {{name}} 👋",
+    "anonymous": "{{prefix}} 👋 Bienvenue chez Bonzini"
+  },
   "wallet": {
     "availableBalance": "Solde disponible",
     "hideBalance": "Masquer le solde",

@@ -47,6 +47,7 @@ await ctx.route(/openfreemap|tiles\./, (r) => r.fulfill({ status: 204, body: '' 
 const report = {};
 for (const screen of SCREENS) {
   const page = await ctx.newPage();
+  if (process.env.LANG_APP) await page.addInitScript((l) => localStorage.setItem('bonzini-language', l), process.env.LANG_APP);
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message.slice(0, 120)));
   try {

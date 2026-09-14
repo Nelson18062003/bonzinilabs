@@ -168,7 +168,7 @@ const BeneficiariesPage = () => {
           <button
             onClick={() => setModeFilter('all')}
             className={cn(
-              'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+              'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
               modeFilter === 'all' ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
             )}
           >
@@ -179,7 +179,7 @@ const BeneficiariesPage = () => {
               key={m}
               onClick={() => setModeFilter(m)}
               className={cn(
-                'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                 modeFilter === m ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
@@ -202,7 +202,7 @@ const BeneficiariesPage = () => {
             </div>
             <p className={cn('text-[15px] font-bold', TEXT.strong)}>{t('beneficiaries.noBeneficiary')}</p>
             <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
-            <button onClick={() => setView({ kind: 'add' })} className="mt-4 text-[14px] font-bold text-[#5B4CC4] dark:text-[#B5AAF0]">
+            <button onClick={() => setView({ kind: 'add' })} className="mt-3 inline-flex min-h-11 items-center text-[14px] font-bold text-[#5B4CC4] dark:text-[#B5AAF0]">
               {t('beneficiaries.add')}
             </button>
           </div>

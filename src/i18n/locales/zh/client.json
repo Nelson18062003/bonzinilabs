@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "早上好",
+    "afternoon": "下午好",
+    "evening": "晚上好",
+    "withName": "{{prefix}}，{{name}}！",
+    "welcomeLast": "欢迎，{{name}} 👋",
+    "anonymous": "{{prefix}} 👋 欢迎来到 Bonzini"
+  },
   "wallet": {
     "availableBalance": "可用余额",
     "hideBalance": "隐藏余额",

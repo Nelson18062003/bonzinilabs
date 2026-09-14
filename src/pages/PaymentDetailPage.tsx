@@ -192,7 +192,7 @@ export default function PaymentDetailPage() {
               <button
                 onClick={goToEditBeneficiary}
                 className={cn(
-                  'mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]',
+                  'mt-3 flex min-h-11 w-full items-center justify-center gap-2 text-[14px] font-bold transition active:scale-[0.99]',
                   PRIMARY_PILL,
                 )}
               >

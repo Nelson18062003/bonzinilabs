@@ -146,7 +146,7 @@ const DepositsPage = () => {
                 key={tb.key}
                 onClick={() => setTab(tb.key)}
                 className={cn(
-                  'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                  'flex shrink-0 items-center gap-1.5 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                   active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 )}
               >

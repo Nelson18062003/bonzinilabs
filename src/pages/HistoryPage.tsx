@@ -160,7 +160,7 @@ const HistoryPage = () => {
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                 filter === f.value ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >

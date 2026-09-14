@@ -73,7 +73,7 @@ export function RateConverter({
             <button
               key={d.key}
               onClick={() => setDirection(d.key)}
-              className={cn('flex-1 rounded-full py-2 text-[13px] font-bold transition-colors', direction === d.key ? 'bg-[#8B5CF6] text-white' : TEXT.muted)}
+              className={cn('min-h-10 flex-1 rounded-full text-[13px] font-bold transition-colors', direction === d.key ? 'bg-[#8B5CF6] text-white' : TEXT.muted)}
             >
               {d.label}
             </button>
@@ -129,7 +129,7 @@ export function RateConverter({
               <button
                 key={v}
                 onClick={() => onAmountChange(v)}
-                className={cn('rounded-xl py-2 text-[12px] font-bold transition-colors', active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted))}
+                className={cn('min-h-10 rounded-xl text-[13px] font-bold transition-colors', active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.canvas, TEXT.muted))}
               >
                 {label}
               </button>
