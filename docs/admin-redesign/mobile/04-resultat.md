@@ -707,3 +707,21 @@ le paiement groupé. **320 px** : carte « Taux actifs » en 2 × 2, soldes de
 trésorerie empilés, frise du trajet à 14 px, référence des notifications
 jamais coupée au milieu, lien du client et téléphone en zone tactile de 44 px
 sans gonfler l'interligne. 632 tests verts, build propre.
+
+## Passe 31 — chasse par motifs et derniers écrans (agent cash, formulaires)
+
+L'espace agent cash affichait « 继续 » à un opérateur francophone : la
+langue du contexte peut être « fr », les ternaires en/zh tombaient sur le
+chinois — remplacés par un choix à trois langues. Rôles en français
+(« Super admin », « Agent cash »). Indications et erreurs des formulaires à
+14 px minimum ; réglages d'expédition : numéros sur toute la largeur (ils
+étaient coupés dans deux colonnes). Paiement groupé plafonné à 50 M avec la
+même garde d'entier que le paiement simple. Réponses toutes faites et
+suggestions : confirmation de suppression en feuille basse au lieu du
+`confirm()` natif du navigateur, icônes à 44 px. Création de client :
+e-mail vérifié avant `auth.signUp`, téléphone à 8 chiffres minimum. Copie
+du mot de passe : refus du presse-papiers signalé (client, admin, fiche
+admin) ; nouveau mot de passe sans rejet non géré. Carte : points des ports
+avec zone tactile de 32 px ; curseur des étages 3D à 44 px.
+**Bilan de la passe complète (30 et 31)** : 0 plantage, 0 débordement sur
+les 43 écrans capturés à 390 et 320 px, clair et sombre ; 632 tests verts.

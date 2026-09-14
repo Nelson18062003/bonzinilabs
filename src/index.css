@@ -1503,6 +1503,13 @@
   border: 1.5px solid hsl(var(--card));
   cursor: pointer;
 }
+/* Le point reste discret (8 px) mais la zone qui répond au doigt fait 32 px. */
+.cargo-port::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+}
 .cargo-port.has-arrivals { width: 11px; height: 11px; background: hsl(var(--foreground)); }
 /* Pastilles de statut dans les listes et légendes */
 .cargo-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; background: hsl(var(--foreground)); border: 2px solid hsl(var(--card)); box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.5); vertical-align: middle; }
@@ -1575,7 +1582,7 @@
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
   color: hsl(var(--muted-foreground));
-  font: 500 12px/1 "DM Sans", system-ui, sans-serif;
+  font: 500 14px/1 "DM Sans", system-ui, sans-serif;
   cursor: pointer;
 }
 .c3d-bar button:hover { color: hsl(var(--foreground)); }
@@ -1591,7 +1598,7 @@
   font: 500 12px/1 "DM Sans", system-ui, sans-serif;
   color: hsl(var(--muted-foreground));
 }
-.c3d-layers input { width: 96px; accent-color: hsl(var(--foreground)); }
+.c3d-layers input { width: 120px; height: 44px; accent-color: hsl(var(--foreground)); }
 .c3d-layers b { color: hsl(var(--foreground)); font-variant-numeric: tabular-nums; }
 
 /* La scène. `perspective` ici et nulle part ailleurs : c'est l'œil. */
