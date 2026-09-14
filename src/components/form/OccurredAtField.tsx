@@ -39,10 +39,10 @@ export function OccurredAtField({ label = "Date / heure de l'opération", value,
           type="button"
           onClick={() => onChange(new Date().toISOString())}
           className={cn(
-            'inline-flex min-h-9 items-center gap-1 px-3 py-1 rounded-full text-[14px] font-semibold border-2 transition-colors',
+            'inline-flex min-h-11 items-center gap-1 px-3 py-1 rounded-full text-[14px] font-semibold border-2 transition-colors',
             isNow
-              ? 'border-violet-600 bg-violet-50 text-violet-700'
-              : 'border-border bg-white text-muted-foreground',
+              ? 'border-violet-600 bg-violet-50 text-violet-700 dark:border-violet-400 dark:bg-violet-950/40 dark:text-violet-200'
+              : 'border-border bg-white text-muted-foreground dark:bg-[#1E1E1E]',
           )}
         >
           <Clock className="w-3 h-3" />

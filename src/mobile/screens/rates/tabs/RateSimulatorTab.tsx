@@ -132,7 +132,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E] dark:text-[#E3E3E3]" />
       </div>
     );
   }
