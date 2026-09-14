@@ -134,14 +134,16 @@
       "emailInvalid": "Invalid email",
       "tooLong": "Text too long",
       "invalid": "Invalid details"
-    }
+    },
+    "loadWhat": "your beneficiaries"
   },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "loadError": "Error loading notifications",
     "noNotifications": "No notifications yet",
-    "noNotificationsHint": "You'll be notified when your deposits are validated"
+    "noNotificationsHint": "You'll be notified when your deposits are validated",
+    "loadWhat": "your notifications"
   },
   "notFound": {
     "title": "404",
@@ -212,7 +214,8 @@
       "congo": "Congo",
       "guinee": "Equatorial Guinea"
     },
-    "cardTitle": "Today's rate"
+    "cardTitle": "Today's rate",
+    "loadWhat": "today's rates"
   },
   "myCode": {
     "cardTitle": "My customer ID",

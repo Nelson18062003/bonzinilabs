@@ -458,5 +458,10 @@
   "phoneField": {
     "searchCountry": "Rechercher un pays...",
     "noResult": "Aucun résultat"
-  }
+  },
+  "queryError": {
+    "title": "Impossible de charger {{what}}.",
+    "hint": "Vérifiez votre connexion, puis réessayez."
+  },
+  "retry": "Réessayer"
 }

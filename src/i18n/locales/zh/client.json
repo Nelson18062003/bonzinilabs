@@ -134,14 +134,16 @@
       "emailInvalid": "邮箱无效",
       "tooLong": "文本过长",
       "invalid": "信息无效"
-    }
+    },
+    "loadWhat": "您的收款人"
   },
   "notifications": {
     "title": "通知",
     "markAllRead": "全部已读",
     "loadError": "加载通知时出错",
     "noNotifications": "暂无通知",
-    "noNotificationsHint": "您的充值被验证后会收到通知"
+    "noNotificationsHint": "您的充值被验证后会收到通知",
+    "loadWhat": "您的通知"
   },
   "notFound": {
     "title": "404",
@@ -212,7 +214,8 @@
       "congo": "刚果",
       "guinee": "赤道几内亚"
     },
-    "cardTitle": "今日汇率"
+    "cardTitle": "今日汇率",
+    "loadWhat": "今日汇率"
   },
   "myCode": {
     "cardTitle": "我的客户编号",

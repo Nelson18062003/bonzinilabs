@@ -134,14 +134,16 @@
       "emailInvalid": "Email invalide",
       "tooLong": "Texte trop long",
       "invalid": "Informations invalides"
-    }
+    },
+    "loadWhat": "vos bénéficiaires"
   },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Tout lire",
     "loadError": "Erreur lors du chargement des notifications",
     "noNotifications": "Aucune notification pour le moment",
-    "noNotificationsHint": "Vous serez notifié lorsque vos dépôts seront validés"
+    "noNotificationsHint": "Vous serez notifié lorsque vos dépôts seront validés",
+    "loadWhat": "vos notifications"
   },
   "notFound": {
     "title": "404",
@@ -212,7 +214,8 @@
       "congo": "Congo",
       "guinee": "Guinée Équatoriale"
     },
-    "cardTitle": "Taux du jour"
+    "cardTitle": "Taux du jour",
+    "loadWhat": "les taux du jour"
   },
   "myCode": {
     "cardTitle": "Mon identifiant client",

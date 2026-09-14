@@ -458,5 +458,10 @@
   "phoneField": {
     "searchCountry": "Search a country...",
     "noResult": "No result"
-  }
+  },
+  "queryError": {
+    "title": "Could not load {{what}}.",
+    "hint": "Check your connection, then try again."
+  },
+  "retry": "Retry"
 }

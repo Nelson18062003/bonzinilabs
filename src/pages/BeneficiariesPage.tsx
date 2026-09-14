@@ -5,6 +5,7 @@
 // confirmé. « Supprimer » = archiver (snapshot : les paiements passés ne
 // sont jamais affectés). Logique 100% PRÉSERVÉE.
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, User, Pencil, Trash2, ArrowLeft, Check, Loader2 } from 'lucide-react';
@@ -59,7 +60,7 @@ const BeneficiariesPage = () => {
   const [modeFilter, setModeFilter] = useState<BeneficiaryMode | 'all'>('all');
   const [confirmArchive, setConfirmArchive] = useState<Beneficiary | null>(null);
 
-  const { data: beneficiaries, isLoading } = useBeneficiaries();
+  const { data: beneficiaries, isLoading, isError, refetch } = useBeneficiaries();
   const createBeneficiary = useCreateBeneficiary();
   const updateBeneficiary = useUpdateBeneficiary();
   const archiveBeneficiary = useArchiveBeneficiary();
@@ -195,6 +196,8 @@ const BeneficiariesPage = () => {
               <div key={i} className={cn('h-[72px] animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what={t('beneficiaries.loadWhat', { defaultValue: 'vos bénéficiaires' })} onRetry={() => { void refetch(); }} />
         ) : filtered.length === 0 ? (
           <div className={cn('mt-2 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>

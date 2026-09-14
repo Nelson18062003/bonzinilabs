@@ -4,6 +4,7 @@
 // logos) · convertisseur · indicateur de palier · tendance · info.
 // Calculs 100% PRÉSERVÉS (useClientRates, calculateFinalRate, etc.).
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ import { RateInfoBanner } from './components/RateInfoBanner';
 export function ClientRatesPage() {
   const navigate = useNavigate();
   const { t } = useTranslation('client');
-  const { data, isLoading } = useClientRates();
+  const { data, isLoading, isError, refetch } = useClientRates();
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey>('cash');
   const [selectedCountry, setSelectedCountry] = useState('cameroun');
@@ -52,6 +53,9 @@ export function ClientRatesPage() {
         <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
           {Header}
           <div className="space-y-5 p-4 pt-3">
+            {isError || (!isLoading && !data?.activeRate) ? (
+              <QueryError what={t('rates.loadWhat', { defaultValue: 'les taux du jour' })} onRetry={() => { void refetch(); }} />
+            ) : null}
             <div className={cn('h-44 animate-pulse rounded-[26px]', SURFACE.card, SURFACE.shadow)} />
             <div className={cn('h-12 animate-pulse rounded-full', SURFACE.card, SURFACE.shadow)} />
             <div className={cn('h-24 animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />

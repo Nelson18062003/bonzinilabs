@@ -458,5 +458,10 @@
   "phoneField": {
     "searchCountry": "搜索国家...",
     "noResult": "无结果"
-  }
+  },
+  "queryError": {
+    "title": "无法加载{{what}}。",
+    "hint": "请检查网络连接后重试。"
+  },
+  "retry": "重试"
 }

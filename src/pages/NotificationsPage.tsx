@@ -4,6 +4,7 @@
 // type, non-lu = pleine opacité + point lilas, lu = estompé). Logique
 // 100% PRÉSERVÉE (marquer lu / tout marquer, navigation au clic).
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { dateLocale } from '@/lib/dateLocale';
@@ -34,7 +35,7 @@ const TONE: Record<string, { box: string; Icon: typeof Bell }> = {
 const NotificationsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('client');
-  const { data: notifications, isLoading, error } = useMyNotifications();
+  const { data: notifications, isLoading, error, refetch } = useMyNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
 
@@ -79,9 +80,7 @@ const NotificationsPage = () => {
               <div key={i} className={cn('h-20 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))
           ) : error ? (
-            <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
-              <p className="text-[14px] text-[#C0504D] dark:text-[#E79A9A]">{t('notifications.loadError')}</p>
-            </div>
+            <QueryError what={t('notifications.loadWhat', { defaultValue: 'vos notifications' })} onRetry={() => { void refetch(); }} />
           ) : notifications && notifications.length > 0 ? (
             notifications.map((n) => {
               const tone = TONE[getNotificationStyle(n.type).icon] ?? TONE.bell;

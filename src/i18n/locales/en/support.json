@@ -93,7 +93,8 @@
     "empty": "No conversations yet",
     "defaultSubject": "General discussion",
     "closedBadge": "Conversation closed",
-    "sectionTitle": "My conversations"
+    "sectionTitle": "My conversations",
+    "loadWhat": "your conversations"
   },
   "detail": {
     "back": "Back",
