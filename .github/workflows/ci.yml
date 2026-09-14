@@ -1,0 +1,36 @@
+name: CI — porte qualité
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: type-check · lint · tests · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Type-check (tsconfig.app.json)
+        run: npm run type-check
+      # Non bloquant pour l'instant : 75 erreurs ESLint héritées au moment de
+      # l'ajout de cette porte. Retirer `continue-on-error` une fois à zéro.
+      - name: Lint (non bloquant)
+        run: npm run lint
+        continue-on-error: true
+      - name: Tests
+        run: npx vitest run
+      - name: Build
+        run: npm run build
