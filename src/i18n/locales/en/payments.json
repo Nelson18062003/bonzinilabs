@@ -439,6 +439,7 @@
     "remainingAfter": "Remaining balance",
     "createBatch": "Create the batch",
     "errAmount": "Enter a valid amount",
+    "errAmountCap": "Amount exceeds {{cap}}",
     "errChannel": "Add a QR, an ID, a phone or an email",
     "errName": "Beneficiary name required",
     "errBank": "Bank required",

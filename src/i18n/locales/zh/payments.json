@@ -438,6 +438,7 @@
     "remainingAfter": "剩余余额",
     "createBatch": "创建批次",
     "errAmount": "请输入有效金额",
+    "errAmountCap": "金额超过 {{cap}}",
     "errChannel": "请添加二维码、ID、电话或邮箱",
     "errName": "需要收款人姓名",
     "errBank": "需要银行名称",

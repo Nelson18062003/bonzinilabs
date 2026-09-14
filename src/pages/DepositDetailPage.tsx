@@ -366,7 +366,9 @@ const DepositDetailPage = () => {
                         </div>
                         {canDeleteProofs && (
                           <button
-                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                            type="button"
+                            aria-label="Supprimer cette preuve"
+                            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeletingProofId(proof.id);
@@ -374,7 +376,7 @@ const DepositDetailPage = () => {
                               setCustomDeleteReason('');
                             }}
                           >
-                            <Trash2 className="h-3 w-3 text-white" />
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50"><Trash2 className="h-3 w-3 text-white" /></span>
                           </button>
                         )}
                       </div>
