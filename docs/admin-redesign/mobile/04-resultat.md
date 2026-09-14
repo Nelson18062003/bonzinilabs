@@ -577,3 +577,20 @@ globale `input { font-size: 16px !important }` l'écrasait) ; « Pré-remplir »
 sous le taux suggéré à 320 px ; copie du B/L en cible de 44 px.
 Propre à 320 / 390 / 430 / sombre (agent) : Opérations, nouveau dépôt,
 clients, fiche, scan, flotte, dossier, papiers, coût à quai, carte.
+
+## Passe 24 — boucle d'audit, tour 3 (fin de boucle)
+
+Le tour 3 n'a plus trouvé que des finitions : KPI du tableau de bord en une
+colonne sous 360 px (le chiffre débordait de sa carte), étiquettes du
+parcours à 14 px seulement à partir de 360 px, boutons info / export /
+granularité et copie du numéro de conteneur à 44 px. Scripts de capture
+jetables retirés du dépôt (`tools/_*.tmp.*` ignorés). Vérifié par capture
+(320 px, sombre) : rien à signaler. **Boucle arrêtée** : trois tours, 6 + 2 +
+1 agents, 624 tests verts.
+
+**Bilan chiffré (version en ligne 3063bad → branche)** : JS au premier
+chargement 4 690 → 1 168 kB ; mascotte 315 → 8 kB ; cibles tactiles 40 → 44
+px ; 0 débordement / troncature sur 22 écrans à 320 et 390 px ; 2 failles
+d'argent fermées (dépôt annulé validable, paiement clos « refusable ») ; temps
+réel réparé (jeton) et étendu au cargo ; étiquette colis dessinée (aucun
+chevauchement, fichier partagé natif) ; 601 → 624 tests.
