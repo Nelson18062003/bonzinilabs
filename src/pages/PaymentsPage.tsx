@@ -8,6 +8,7 @@
 // (pas de numérotation). Logique 100% PRÉSERVÉE : useMyPayments, nav.
 // ============================================================
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { format, isAfter, startOfMonth, subWeeks } from 'date-fns';
@@ -70,7 +71,7 @@ function Progress({ step, color }: { step: number; color: string }) {
 const PaymentsPage = () => {
   const { t } = useTranslation('payments');
   const navigate = useNavigate();
-  const { data: payments, isLoading } = useMyPayments();
+  const { data: payments, isLoading, isError, refetch } = useMyPayments();
   const { data: ratesData } = useClientRates();
 
   const [search, setSearch] = useState('');
@@ -193,6 +194,8 @@ const PaymentsPage = () => {
               <div key={i} className={cn('h-[112px] animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what="vos paiements" onRetry={() => { void refetch(); }} />
         ) : !payments || payments.length === 0 ? (
           <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>

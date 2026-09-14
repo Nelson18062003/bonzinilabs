@@ -5,6 +5,7 @@
 // isDebitOperation (tous types), filtre, groupement, libellés, relevé.
 // ============================================================
 import { useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -32,7 +33,7 @@ const HistoryPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [search, setSearch] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { data: operations, isLoading } = useMyWalletOperations();
+  const { data: operations, isLoading, isError, refetch } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
   // ── Crédit / débit (tous types) — LOGIQUE PRÉSERVÉE ───────────
@@ -175,6 +176,8 @@ const HistoryPage = () => {
               <div key={i} className={cn('h-16 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what="votre historique" onRetry={() => { void refetch(); }} />
         ) : Object.entries(groupedOperations).length > 0 ? (
           Object.entries(groupedOperations).map(([date, ops]) => (
             <section key={date} className="animate-slide-up">

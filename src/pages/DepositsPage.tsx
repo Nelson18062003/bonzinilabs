@@ -7,6 +7,7 @@
 // affichée. Logique 100% PRÉSERVÉE : useMyDeposits, nav.
 // ============================================================
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -64,7 +65,7 @@ function Progress({ step, color }: { step: number; color: string }) {
 const DepositsPage = () => {
   const { t } = useTranslation('deposits');
   const navigate = useNavigate();
-  const { data: deposits, isLoading } = useMyDeposits();
+  const { data: deposits, isLoading, isError, refetch } = useMyDeposits();
   const { data: wallet } = useMyWallet();
 
   const [tab, setTab] = useState<DepositFilterTab>('all');
@@ -165,6 +166,8 @@ const DepositsPage = () => {
               <div key={i} className={cn('h-[112px] animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what="vos dépôts" onRetry={() => { void refetch(); }} />
         ) : !deposits || deposits.length === 0 ? (
           <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
