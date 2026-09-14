@@ -439,6 +439,7 @@
     "remainingAfter": "Solde restant",
     "createBatch": "Créer le lot",
     "errAmount": "Renseignez un montant valide",
+    "errAmountCap": "Le montant dépasse {{cap}}",
     "errChannel": "Ajoutez un QR, un ID, un téléphone ou un e-mail",
     "errName": "Nom du bénéficiaire requis",
     "errBank": "Banque requise",

@@ -302,11 +302,15 @@ export function MobileClientDetail() {
 
   const handleResetPassword = async () => {
     if (!client) return;
-    const result = await resetPasswordMutation.mutateAsync(client.id);
-    if (result.tempPassword) {
-      setNewPassword(result.tempPassword);
-      setResetDrawerOpen(false);
-      setPasswordResultDrawerOpen(true);
+    try {
+      const result = await resetPasswordMutation.mutateAsync(client.id);
+      if (result.tempPassword) {
+        setNewPassword(result.tempPassword);
+        setResetDrawerOpen(false);
+        setPasswordResultDrawerOpen(true);
+      }
+    } catch {
+      // Le hook affiche déjà l'erreur ; on évite un rejet non géré.
     }
   };
 
