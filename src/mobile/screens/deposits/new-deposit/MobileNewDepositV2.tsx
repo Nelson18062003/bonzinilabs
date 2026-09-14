@@ -558,7 +558,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             <div className="relative mb-3">
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
-                className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
+                className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.field, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
                 placeholder="Nom, téléphone ou BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}

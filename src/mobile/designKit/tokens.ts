@@ -37,7 +37,16 @@ export const SURFACE = {
   inset: 'bg-[#F5F5F5] dark:bg-[#383838]',
   /** Le filet qui sépare deux lignes d'une même liste. */
   divider: 'border-[#D9D9D9] dark:border-[#444444]',
+  /** Le bord d'un champ de saisie. Plus foncé que le filet d'une carte
+   *  (#949494 : 3,1:1 sur blanc ; #6E6E6E : 3,2:1 sur #1E1E1E — le minimum
+   *  WCAG pour un composant) : la cible a 50–60 ans et doit voir où écrire. */
+  field: 'border border-[#949494] dark:border-[#6E6E6E]',
 } as const;
+
+/** L'anneau de focus clavier, commun à tout ce qui se tape. Invisible au
+ *  doigt (`focus-visible`), net au clavier et aux lecteurs d'écran. */
+export const FOCUS_RING =
+  'outline-none focus-visible:ring-2 focus-visible:ring-[#2C2C2C] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-[#E3E3E3] dark:focus-visible:ring-offset-[#1E1E1E]';
 
 /** Texte. Text/Base : Default · Neutral/Default · Secondary. */
 export const TEXT = {

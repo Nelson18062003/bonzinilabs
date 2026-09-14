@@ -96,7 +96,7 @@ interface FormData {
 const selectClass = cn(
   'h-12 w-full rounded-lg px-4 text-[16px] outline-none transition',
   SURFACE.card,
-  SURFACE.shadow,
+  SURFACE.field,
   TEXT.strong,
   'focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
 );

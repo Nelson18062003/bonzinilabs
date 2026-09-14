@@ -52,6 +52,7 @@ import {
   BottomSheet,
   FormField,
   TextInput,
+  TextArea,
 } from '@/mobile/designKit';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -732,13 +733,12 @@ export function MobileDepositDetailV2() {
             )}
           </div>
           <FormField label="Note interne (optionnel)">
-            <textarea
+            <TextArea
               value={adminComment}
               onChange={(e) => setAdminComment(e.target.value)}
               enterKeyHint="done"
               rows={2}
               placeholder="Commentaire visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <button
@@ -818,23 +818,21 @@ export function MobileDepositDetailV2() {
           <FormField
             label={<>Message client <span className="text-[#900B09]">*</span></>}
           >
-            <textarea
+            <TextArea
               value={clientMessage}
               onChange={(e) => setClientMessage(e.target.value)}
               rows={2}
               placeholder="Expliquez au client pourquoi son dépôt est refusé..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
             <p className={cn('mt-1 text-[16px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
           <FormField label="Note interne (optionnel)">
-            <textarea
+            <TextArea
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
               enterKeyHint="done"
               rows={2}
               placeholder="Note visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <div className="flex gap-2">
@@ -912,12 +910,11 @@ export function MobileDepositDetailV2() {
             ))}
           </div>
           {deleteProofReason === 'Autre' && (
-            <textarea
+            <TextArea
               value={customDeleteReason}
               onChange={(e) => setCustomDeleteReason(e.target.value)}
               rows={2}
               placeholder="Précisez le motif..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           )}
           <div className="flex gap-2">

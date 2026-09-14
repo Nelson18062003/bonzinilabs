@@ -17,8 +17,7 @@ import {
   SURFACE, TEXT, TYPE,
   PRIMARY_PILL, SOFT_PILL, SUBTLE_PILL, DANGER_PILL, DANGER_SOFT_PILL, DISABLED_PILL,
   TOGGLE_ON, TOGGLE_OFF, TONE_PILL, TONE_HOLDER,
-  type Tone,
-} from './tokens';
+  type Tone, FOCUS_RING } from './tokens';
 
 /* ── Card ─────────────────────────────────────────────────────────────────
  * Card (Stroke) : blanc, bord #D9D9D9, rayon 8. Padding 16 par défaut (la
@@ -61,6 +60,7 @@ export function Button({
       aria-label={ariaLabel}
       className={cn(
         'inline-flex min-w-0 max-w-full items-center justify-center gap-2 text-center font-medium transition-colors',
+        FOCUS_RING,
         size === 'sm' ? 'h-8 px-2 text-[14px] [&_svg]:h-4 [&_svg]:w-4' : 'min-h-11 px-3 py-2 text-[16px] leading-snug [&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0',
         dead ? DISABLED_PILL : VARIANT[variant],
         className,
@@ -209,7 +209,7 @@ export function ListRow({
       className={cn(
         'flex w-full min-h-[56px] items-center gap-3 py-2 text-left',
         divider && cn('border-b last:border-b-0', SURFACE.divider),
-        onClick && 'transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]',
+        onClick && cn('transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]', FOCUS_RING),
         className,
       )}
     >
@@ -312,6 +312,7 @@ export function Chip({
       aria-pressed={active}
       className={cn(
         'inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap px-3 text-[16px] font-semibold transition-colors',
+        FOCUS_RING,
         active ? TOGGLE_ON : TOGGLE_OFF,
         className,
       )}
@@ -380,6 +381,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(opt.value)}
             className={cn(
               'inline-flex h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap px-2 text-[16px] font-semibold transition-colors',
+              FOCUS_RING,
               active ? TOGGLE_ON : TOGGLE_OFF,
             )}
           >
@@ -418,19 +420,44 @@ export function FormField({
 }
 
 /* ── TextInput ────────────────────────────────────────────────────────────
- * Input Field : h 40, rayon 8, bord #D9D9D9, padding 12, texte 16 (pas de
- * zoom iOS), placeholder #B3B3B3, focus bord #2C2C2C. */
+ * Input Field : h 44, rayon 8, bord SURFACE.field, padding 12, texte 16 (pas
+ * de zoom iOS), placeholder #B3B3B3, focus bord #2C2C2C. */
 export const TextInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   function TextInput({ className, ...rest }, ref) {
     return (
       <input
         ref={ref}
         className={cn(
-          'h-11 w-full rounded-lg border border-[#D9D9D9] bg-white px-3 text-[16px] outline-none transition-colors',
+          'h-11 w-full rounded-lg bg-white px-3 text-[16px] outline-none transition-colors',
+          SURFACE.field,
           TEXT.strong,
           'placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C]',
           'disabled:border-[#B3B3B3] disabled:bg-[#D9D9D9] disabled:text-[#B3B3B3]',
-          'dark:border-[#444444] dark:bg-[#2C2C2C] dark:placeholder:text-[#757575] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]',
+          'dark:bg-[#2C2C2C] dark:placeholder:text-[#757575] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]',
+          className,
+        )}
+        {...rest}
+      />
+    );
+  },
+);
+
+/* ── TextArea ─────────────────────────────────────────────────────────────
+ * Le champ long (motif, note, message) : même bord et même focus que
+ * TextInput, padding 12, texte 16, pas de poignée de redimensionnement. */
+export const TextArea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function TextArea({ className, ...rest }, ref) {
+    return (
+      // eslint-disable-next-line no-restricted-syntax -- c'est LA primitive du kit mobile
+      <textarea
+        ref={ref}
+        className={cn(
+          'w-full resize-none rounded-lg p-3 text-[16px] outline-none transition-colors',
+          SURFACE.card,
+          SURFACE.field,
+          TEXT.strong,
+          'placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C]',
+          'dark:placeholder:text-[#757575] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]',
           className,
         )}
         {...rest}
@@ -612,7 +639,7 @@ export function Line({ children, tone, className }: { children: React.ReactNode;
 export function Fold({ title, open, onToggle, children }: { title: string; open: boolean; onToggle: () => void; children: React.ReactNode }) {
   return (
     <Card className="overflow-hidden p-0">
-      <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-[56px] w-full items-center justify-between px-4 text-left">
+      <button type="button" onClick={onToggle} aria-expanded={open} className={cn('flex min-h-[56px] w-full items-center justify-between px-4 text-left', FOCUS_RING)}>
         <span className={cn('text-[18px] font-semibold', TEXT.strong)}>{title}</span>
         <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
       </button>

@@ -53,6 +53,8 @@ import {
   BottomSheet,
   FormField,
   TextInput,
+  TextArea,
+  FOCUS_RING,
 } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
@@ -133,22 +135,6 @@ function CopyRow({ label, value, mono, multiline }: { label: string; value: stri
 }
 
 // ── Textarea au gabarit kit ──────────────────────────────────
-function KitTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const { className, ...rest } = props;
-  return (
-    <textarea
-      className={cn(
-        'w-full resize-none rounded-lg p-3 text-[16px] outline-none transition',
-        SURFACE.card,
-        SURFACE.shadow,
-        TEXT.strong,
-        'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 export function MobilePaymentDetail() {
@@ -666,7 +652,7 @@ export function MobilePaymentDetail() {
               </p>
               <Line>
                 Demandé par{' '}
-                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn('font-semibold underline decoration-[#B3B3B3] underline-offset-4', TEXT.strong)}>
+                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn('-mx-1 px-1 py-3 font-semibold underline decoration-[#B3B3B3] underline-offset-4', FOCUS_RING, TEXT.strong)}>
                   {clientName}
                 </button>
                 , via {methodLabel}, {whenSentence(payment.created_at)}.
@@ -889,7 +875,7 @@ export function MobilePaymentDetail() {
                     />
                   </FormField>
                   <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
-                    <KitTextarea
+                    <TextArea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
@@ -936,7 +922,7 @@ export function MobilePaymentDetail() {
                     />
                   </FormField>
                   <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
-                    <KitTextarea
+                    <TextArea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
@@ -1188,7 +1174,7 @@ export function MobilePaymentDetail() {
             </div>
           </div>
           <FormField label={<>Message au client <span className="text-[#900B09]">*</span></>}>
-            <KitTextarea
+            <TextArea
               placeholder="Expliquez pourquoi le paiement est rejeté..."
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}

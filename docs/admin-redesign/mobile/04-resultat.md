@@ -627,3 +627,16 @@ bas en 18/100 s, sans mouvement si l'appareil le demande, respecte la zone
 de sécurité de l'iPhone, et une cale de sa hauteur est posée en fin de page
 pour que la dernière ligne reste lisible. Vérifié par capture à 390 et 320
 px, clair et sombre. 628 tests verts (4 nouveaux sur le hook), build propre.
+
+## Passe 27 — voir où écrire, atteindre au clavier
+
+Le bord des champs passe de #D9D9D9 (1,3:1, invisible au soleil) à #949494
+en clair et #6E6E6E en sombre (3:1, le minimum WCAG pour un composant) :
+nouveau jeton `SURFACE.field`, porté par `TextInput`, la nouvelle primitive
+`TextArea` du kit (qui remplace cinq `<textarea>` bruts des fiches dépôt et
+paiement), la recherche du nouveau dépôt, les sélecteurs de création de
+client et le composeur de Mola. Un anneau de focus commun (`FOCUS_RING`,
+visible seulement au clavier) sur Button, ListRow, Chip, Segmented et Fold.
+Sur la fiche paiement, le nom du client reste en ligne dans la phrase mais
+sa zone tactile atteint 44 px (padding vertical d'un élément en ligne).
+628 tests verts, build propre.
