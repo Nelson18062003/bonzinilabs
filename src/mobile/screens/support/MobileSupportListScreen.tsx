@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, BarChart3, Search, X } from 'lucide-react';
@@ -28,7 +29,7 @@ export function MobileSupportListScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
   const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
 
-  const { data: conversations, isLoading } = useAdminConversations(statusFilter);
+  const { data: conversations, isLoading, isError, refetch } = useAdminConversations(statusFilter);
   const { data: searchResults, isLoading: isSearchLoading } = useSearchConversations(
     debouncedSearch.length >= 2 ? debouncedSearch : ''
   );
@@ -149,6 +150,8 @@ export function MobileSupportListScreen() {
 
       {isLoading || (debouncedSearch.length >= 2 && isSearchLoading) ? (
         <ScreenLoader />
+      ) : isError ? (
+        <QueryError what="les conversations" onRetry={() => { void refetch(); }} className="mx-4" />
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
           <Holder icon={MessageCircle} size="lg" />

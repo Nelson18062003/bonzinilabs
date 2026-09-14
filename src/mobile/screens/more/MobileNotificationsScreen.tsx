@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { QueryError } from '@/components/ui/QueryError';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import type { AdminNotificationType } from '@/hooks/useAdminNotifications';
@@ -38,7 +39,7 @@ function formatRelativeDate(dateStr: string) {
 
 export function MobileNotificationsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
-  const { data: notifications, isLoading, refetch } = useAdminNotifications();
+  const { data: notifications, isLoading, isError, refetch } = useAdminNotifications();
   const navigate = useNavigate();
 
   // Group by date
@@ -70,6 +71,8 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
       <PullToRefresh onRefresh={refetch} className={desktop ? 'space-y-6' : cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}>
         {isLoading ? (
           <SkeletonListScreen count={6} />
+        ) : isError ? (
+          <QueryError what="les notifications" onRetry={() => { void refetch(); }} />
         ) : groupKeys.length > 0 ? (
           <div className="space-y-6">
             {groupKeys.map((dateKey) => (

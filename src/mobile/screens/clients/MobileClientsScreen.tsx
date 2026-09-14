@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClients } from '@/hooks/useClientManagement';
@@ -55,7 +56,7 @@ export function MobileClientsScreen() {
 
   const STATUS_FILTERS = STATUS_FILTER_KEYS.map(f => ({ value: f.value, label: t(f.labelKey, { defaultValue: f.defaultLabel }) }));
 
-  const { data: clients, isLoading, refetch } = useClients();
+  const { data: clients, isLoading, isError, refetch } = useClients();
 
   // Recherche + filtre + tri côté client (voir src/lib/clientSearch.ts) :
   // instantané, insensible aux accents, prénom+nom, téléphone, e-mail.
@@ -105,6 +106,8 @@ export function MobileClientsScreen() {
               <SkeletonClientItem key={i} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what="les clients" onRetry={() => { void refetch(); }} />
         ) : filteredClients.length > 0 ? (
           <div className="space-y-3">
             {filteredClients.map((client) => {

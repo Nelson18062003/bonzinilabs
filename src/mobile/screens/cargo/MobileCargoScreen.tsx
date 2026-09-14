@@ -10,6 +10,7 @@
  * Le numéro de boîte n'apparaît que si le client a plusieurs boîtes.
  */
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -31,7 +32,7 @@ const TODO_SECTION: Record<string, string> = { freight: 'argent', telex: 'argent
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
-  const { data, isLoading } = useCargoShipments();
+  const { data, isLoading, isError, refetch } = useCargoShipments();
   const { data: docsBy } = useCargoFleetDocuments();
   const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
   const [query, setQuery] = useState('');
@@ -133,6 +134,7 @@ export function MobileCargoScreen() {
 
       <div className="space-y-3 px-4 pt-3">
         {isLoading && <ScreenLoader />}
+        {isError && !isLoading && <QueryError what="la flotte" onRetry={() => { void refetch(); }} />}
         {rows.map((s) => {
           const level = alertLevel(s, docsBy?.[s.id]);
           const delay = delaySentence(s);
@@ -159,7 +161,7 @@ export function MobileCargoScreen() {
           );
         })}
 
-        {!isLoading && rows.length === 0 && (
+        {!isLoading && !isError && rows.length === 0 && (
           <div className="flex flex-col items-center py-12 text-center">
             <p className={cn(TYPE.lead, TEXT.strong)}>{query ? 'Aucun conteneur ne correspond' : filter === 'all' ? 'Aucun conteneur suivi' : 'Aucun conteneur dans cet état'}</p>
             <p className={cn('mt-2 max-w-xs text-[16px]', TEXT.muted)}>

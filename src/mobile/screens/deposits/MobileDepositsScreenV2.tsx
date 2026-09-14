@@ -7,6 +7,7 @@
 // (famille/période/tri), chips statut, infinite scroll, SLA.
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
@@ -126,6 +127,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
   const {
     data,
     isLoading,
+    isError,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -324,6 +326,8 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
         {/* ── Liste dépôts ───────────────────────────────────── */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
+        ) : isError ? (
+          <QueryError what="les dépôts" onRetry={() => { void refetch(); }} />
         ) : filteredDeposits.length > 0 ? (
           <div className="space-y-2.5">
             {filteredDeposits.map((deposit) => {
