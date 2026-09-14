@@ -107,6 +107,10 @@ describe('SÉCURITÉ — une redéfinition complète reconduit les correctifs ap
     process_payment: ['WHERE id = p_payment_id FOR UPDATE', 'WHERE user_id = v_payment.user_id FOR UPDATE'],
     validate_deposit: ['v_credit_amount IS NULL OR v_credit_amount <= 0', 'FOR UPDATE'],
     reject_deposit: ['FOR UPDATE'],
+    // 20260831200000 (verrou + écriture relative) et 20260831220000 (montant > 0)
+    // ont aussi patché les ajustements de portefeuille en place.
+    create_wallet_adjustment: ['FOR UPDATE'],
+    admin_adjust_wallet: ['p_amount <= 0'],
   };
   const later = migrationFiles().filter((f) => f > '20260831220000');
 
