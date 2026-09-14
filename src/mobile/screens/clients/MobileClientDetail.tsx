@@ -149,8 +149,10 @@ export function MobileClientDetail() {
   const canManageUsers = hasPermission('canManageUsers');
   const canViewCargo = hasPermission('canViewCargo');
   // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
-  const { data: fleet } = useCargoShipments();
-  const { data: docsBy } = useCargoFleetDocuments();
+  // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
+  // toute la flotte pèsent jusqu'à 3 000 lignes).
+  const { data: fleet } = useCargoShipments({ enabled: canViewCargo });
+  const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
   const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
 

@@ -16,9 +16,10 @@ function assertOk(data: unknown): Record<string, unknown> {
 
 /* ── Flotte ─────────────────────────────────────────────────────────────── */
 
-export function useCargoShipments() {
+export function useCargoShipments(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['cargo', 'shipments'],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('cargo_shipments')
@@ -423,9 +424,10 @@ const BUCKET = 'cargo-documents';
  * la carte et le dossier calculent le même « à faire » (sans elles, la liste
  * croyait le B/L manquant alors que le dossier le voyait classé).
  */
-export function useCargoFleetDocuments() {
+export function useCargoFleetDocuments(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['cargo', 'documents', 'fleet'],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin.from('cargo_documents').select('*').limit(3000);
       if (error) throw error;

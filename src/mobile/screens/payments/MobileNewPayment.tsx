@@ -518,7 +518,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             <div
               key={n}
               className="h-[3px] flex-1 rounded-full transition-colors"
-              style={{ background: step >= n ? 'var(--ink, #2C2C2C)' : 'rgba(128,128,128,0.25)' }}
+              style={{ background: step >= n ? VIOLET : 'rgba(128,128,128,0.25)' }}
             />
           ))}
         </div>
