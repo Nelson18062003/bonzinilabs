@@ -57,12 +57,12 @@ for (const screen of SCREENS) {
       const all = [...document.querySelectorAll('body *')];
       const vis = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
       const fonts = {}; const radii = {}; const bgs = {}; const families = {};
-      let small = 0, tiny = 0, texts = 0;
+      let small = 0, tiny = 0, texts = 0; const smallTexts = [];
       for (const el of all) {
         if (!vis(el)) continue;
         const cs = getComputedStyle(el);
         const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-        if (hasText) { texts++; const fs = Math.round(parseFloat(cs.fontSize) * 10) / 10; fonts[fs] = (fonts[fs] || 0) + 1; if (fs < 14) small++; if (fs < 12) tiny++; families[cs.fontFamily.split(',')[0].replace(/"/g, '')] = 1; }
+        if (hasText) { texts++; const fs = Math.round(parseFloat(cs.fontSize) * 10) / 10; fonts[fs] = (fonts[fs] || 0) + 1; if (fs < 14) { small++; if (smallTexts.length < 40) smallTexts.push(`${fs}px <${el.tagName.toLowerCase()} ${String(el.className).slice(0, 50)}> "${el.textContent.trim().slice(0, 30)}"`); } if (fs < 12) tiny++; families[cs.fontFamily.split(',')[0].replace(/"/g, '')] = 1; }
         const br = cs.borderTopLeftRadius; if (br && br !== '0px' && (cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.borderTopWidth !== '0px')) radii[br] = (radii[br] || 0) + 1;
         const bg = cs.backgroundColor; if (bg && bg !== 'rgba(0, 0, 0, 0)') bgs[bg] = (bgs[bg] || 0) + 1;
       }
@@ -79,7 +79,7 @@ for (const screen of SCREENS) {
       const h1 = document.querySelector('h1')?.textContent?.trim();
       const shadows = all.filter((el) => vis(el) && getComputedStyle(el).boxShadow !== 'none').length;
       const blur = all.filter((el) => vis(el) && (getComputedStyle(el).backdropFilter || 'none') !== 'none').length;
-      return { docW: document.documentElement.scrollWidth, vw, docH: document.documentElement.scrollHeight, h1, headerH: hh, firstContentY: firstY, navH, navLabels, texts, small, tiny, fonts, families: Object.keys(families), radii, bgs: Object.entries(bgs).sort((a, b) => b[1] - a[1]).slice(0, 8), buttons, roundButtons, smallTargets: smallTargets.slice(0, 12), smallTargetCount: smallTargets.length, overflow: overflow.slice(0, 6), shadows, blur };
+      return { docW: document.documentElement.scrollWidth, vw, docH: document.documentElement.scrollHeight, h1, headerH: hh, firstContentY: firstY, navH, navLabels, texts, small, tiny, fonts, families: Object.keys(families), radii, bgs: Object.entries(bgs).sort((a, b) => b[1] - a[1]).slice(0, 8), buttons, roundButtons, smallTargets: smallTargets.slice(0, 30), smallTargetCount: smallTargets.length, smallTexts, overflow: overflow.slice(0, 6), shadows, blur };
     });
     const name = screen.replace(/\//g, '_');
     await page.screenshot({ path: `${OUT}/${name}.png` });

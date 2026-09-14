@@ -214,11 +214,14 @@ export function LegalLayout({
             to="/"
             style={{
               fontFamily: F.body,
-              fontSize: 13.5,
+              fontSize: 14,
               fontWeight: 500,
               color: C.muted,
               textDecoration: 'none',
               whiteSpace: 'nowrap',
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 44,
             }}
           >
             ← Retour à l'accueil
@@ -244,7 +247,7 @@ export function LegalLayout({
           <span
             style={{
               fontFamily: F.body,
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: 1.4,
               textTransform: 'uppercase',
@@ -290,7 +293,7 @@ export function LegalLayout({
           <h2
             style={{
               fontFamily: F.body,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: 1.5,
               textTransform: 'uppercase',
@@ -300,7 +303,7 @@ export function LegalLayout({
           >
             Sommaire
           </h2>
-          <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 9 }}>
+          <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 0 }}>
             {sections.map((section, i) => (
               <li key={section.id}>
                 <a
@@ -313,6 +316,7 @@ export function LegalLayout({
                     display: 'flex',
                     gap: 10,
                     alignItems: 'baseline',
+                    padding: '10px 0',
                   }}
                 >
                   <span style={{ color: ACCENTS[i % 3], fontWeight: 700, minWidth: 18 }}>{i + 1}</span>

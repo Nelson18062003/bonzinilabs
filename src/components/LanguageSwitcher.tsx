@@ -44,10 +44,10 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'flex items-center gap-1.5 px-3 py-2 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer',
+              'flex min-h-11 items-center gap-1.5 px-3 rounded-full border border-white/20 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer',
               className
             )}
-            style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#8b82a0' }}
+            style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#8b82a0' }}
           >
             <Globe className="h-4 w-4" />
             <span>{languageFlags[currentLang]}</span>

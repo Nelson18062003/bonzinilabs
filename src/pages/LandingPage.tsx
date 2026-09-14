@@ -180,10 +180,10 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
         {/* Simulator */}
         <div style={{ ...anim(0.5), width: 360, flexShrink: 0, transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}>
           <div style={{ background: `linear-gradient(160deg, ${C.surfaceLight}, ${C.surface})`, borderRadius: 24, padding: 28, border: `1px solid ${C.dim}`, boxShadow: `0 20px 80px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)` }}>
-            <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>{t('hero.simulator.title')}</div>
+            <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>{t('hero.simulator.title')}</div>
 
             <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginBottom: 10 }}>
-              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.youSend')}</div>
+              <div style={{ fontFamily: F.body, fontSize: 12, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.youSend')}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>{displayMap[xafKey]}</span>
                 <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.gold}15`, color: C.gold, padding: '5px 12px', borderRadius: 8 }}>XAF</span>
@@ -195,14 +195,14 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
             </div>
 
             <div style={{ background: C.bg, borderRadius: 14, padding: '16px 18px', border: `1px solid ${C.dim}`, marginTop: 10 }}>
-              <div style={{ fontFamily: F.body, fontSize: 10, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.supplierReceives')}</div>
+              <div style={{ fontFamily: F.body, fontSize: 12, color: C.muted, fontWeight: 600, marginBottom: 6 }}>{t('hero.simulator.supplierReceives')}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: C.gold, letterSpacing: '-1px' }}>¥{cny.toLocaleString('fr-FR')}</span>
                 <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, background: `${C.alipay}15`, color: C.alipay, padding: '5px 12px', borderRadius: 8 }}>支 Alipay</span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontFamily: F.body, fontSize: 11, color: C.muted }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontFamily: F.body, fontSize: 12, color: C.muted }}>
               <span>{t('hero.simulator.rate', { rate: rate.toLocaleString('fr-FR') })}</span>
               <span style={{ color: '#4ade80', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80', display: 'inline-block' }} />
@@ -214,7 +214,7 @@ function Hero({ rate, onCTA }: { rate: number; onCTA: () => void }) {
               {Object.keys(amountMap).map(q => (
                 <button key={q} onClick={() => setXafKey(q)} style={{
                   flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
-                  fontFamily: F.body, fontWeight: 700, fontSize: 11,
+                  fontFamily: F.body, fontWeight: 700, fontSize: 13, minHeight: 44,
                   background: xafKey === q ? `${C.violet}20` : `${C.dim}50`,
                   color: xafKey === q ? C.violetGlow : C.muted,
                   border: `1px solid ${xafKey === q ? C.violet + '30' : 'transparent'}`,
@@ -337,7 +337,7 @@ function Methods() {
                 <div style={{ position: 'absolute', bottom: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: `${m.color}06` }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                   <div style={{ width: 56, height: 56, borderRadius: 16, background: `${m.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: m.color, fontWeight: 700 }}>{m.icon}</div>
-                  <span style={{ fontFamily: F.body, fontSize: 10, fontWeight: 700, color: m.color, background: `${m.color}12`, padding: '4px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t(`methods.${m.key}.tag`)}</span>
+                  <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: m.color, background: `${m.color}12`, padding: '4px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t(`methods.${m.key}.tag`)}</span>
                 </div>
                 <h3 style={{ fontFamily: F.display, fontWeight: 800, fontSize: 22, color: '#fff', margin: '0 0 8px', letterSpacing: '-0.5px' }}>{t(`methods.${m.key}.name`)}</h3>
                 <p style={{ fontFamily: F.body, fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>{t(`methods.${m.key}.desc`)}</p>
@@ -442,9 +442,9 @@ function Footer() {
           </div>
           {cols.map(col => (
             <div key={col.title}>
-              <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 11, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
+              <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 12, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
               {col.links.map(l => {
-                const style = { display: 'block', fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none', padding: '3px 0' };
+                const style = { display: 'flex', alignItems: 'center', minHeight: 44, fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none' };
                 return 'to' in l && l.to
                   ? <Link key={l.key} to={l.to} style={style}>{l.label}</Link>
                   : <a key={l.key} href="#" style={style}>{l.label}</a>;

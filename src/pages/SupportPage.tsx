@@ -99,7 +99,7 @@ const SupportPage = () => {
       <button
         type="button"
         onClick={() => navigate('/support')}
-        className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.holder)}
+        className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.holder)}
         aria-label={t('detail.back')}
       >
         <ChevronLeft className={cn('h-5 w-5', TEXT.strong)} />
@@ -109,7 +109,7 @@ const SupportPage = () => {
       </div>
       <div className="min-w-0 flex-1">
         <h1 className={cn('truncate text-[15px] font-black leading-tight', TEXT.strong)}>{headerTitle}</h1>
-        <p className={cn('truncate text-[11px] leading-tight', TEXT.muted)}>{t('detail.bonziniTeam')}</p>
+        <p className={cn('truncate text-[13px] leading-tight', TEXT.muted)}>{t('detail.bonziniTeam')}</p>
       </div>
       <ResponseTimeBadge compact />
     </header>
