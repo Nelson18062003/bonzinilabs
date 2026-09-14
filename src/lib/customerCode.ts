@@ -94,9 +94,28 @@ export interface ShippingSettings {
 
 export const SHIPPING_DESTINATIONS: ShippingDestination[] = ['warehouse', 'office'];
 
+/**
+ * Nomenclature fondateur (14/09/2026) : on ne parle plus d'« entrepôt » et de
+ * « bureau » mais du MODE D'ENVOI — « Sea cargo » (par bateau, livré à
+ * l'entrepôt) et « Air cargo » (par avion, livré au bureau de Guangzhou).
+ * Les clés `warehouse` / `office` restent celles de la base
+ * (platform_settings) : seul ce qui se lit change.
+ */
 export const DESTINATION_LABEL: Record<ShippingDestination, { zh: string; en: string; fr: string }> = {
-  warehouse: { zh: '仓库', en: 'Warehouse', fr: 'Entrepôt' },
-  office: { zh: '广州办公室', en: 'Guangzhou office', fr: 'Bureau de Guangzhou' },
+  warehouse: { zh: '海运', en: 'Sea cargo', fr: 'Sea cargo' },
+  office: { zh: '空运', en: 'Air cargo', fr: 'Air cargo' },
+};
+
+/** Ce que chaque mode veut dire, en une phrase — pour l'opérateur comme pour le client. */
+export const DESTINATION_HINT_FR: Record<ShippingDestination, string> = {
+  warehouse: 'Par bateau. Le fournisseur livre à notre entrepôt de Guangzhou.',
+  office: 'Par avion. Le fournisseur livre à notre bureau de Guangzhou.',
+};
+
+/** Le mot qui va dans le nom du fichier exporté. */
+export const DESTINATION_SLUG: Record<ShippingDestination, string> = {
+  warehouse: 'sea-cargo',
+  office: 'air-cargo',
 };
 
 export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {

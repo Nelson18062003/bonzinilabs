@@ -211,11 +211,11 @@
     "labelError": "Impossible de générer l’étiquette",
     "footnote": "Cet identifiant est permanent : il ne change jamais, même si vous modifiez vos coordonnées.",
     "dest": {
-      "warehouse": "Entrepôt",
-      "office": "Bureau"
+      "warehouse": "Sea cargo",
+      "office": "Air cargo"
     },
-    "destHintWarehouse": "Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.",
-    "destHintOffice": "Uniquement si Bonzini vous l’a demandé pour cet envoi.",
+    "destHintWarehouse": "Par bateau. Le fournisseur livre à notre entrepôt de Guangzhou.",
+    "destHintOffice": "Par avion. Le fournisseur livre à notre bureau de Guangzhou.",
     "destUnavailable": "Adresse en cours de mise à jour — l’étiquette sera disponible très bientôt.",
     "supplierTitle": "Fournisseur (facultatif)",
     "supplierName": "Nom",

@@ -388,7 +388,8 @@ export function MobileSupportConversationScreen({ embedded = false }: MobileSupp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-40 flex items-end bg-black/40 sm:items-center sm:justify-center"
+            className="fixed inset-x-0 z-40 flex items-end bg-black/40 sm:items-center sm:justify-center"
+            style={{ top: 'var(--vvt, 0px)', height: 'var(--vvh, 100dvh)' }}
             onClick={() => setAssignOpen(false)}
           >
             <motion.div

@@ -173,22 +173,22 @@ export function MobileShippingSettings({ desktop = false }: { desktop?: boolean 
 
             <div className={cn(desktop && 'grid grid-cols-2 gap-5')}>
             <div>
-              <SectionTitle>Entrepôt</SectionTitle>
+              <SectionTitle>Sea cargo — l'entrepôt</SectionTitle>
               <Card className="space-y-3">
                 <div className="flex items-center gap-3">
                   {sectionIcon(Warehouse)}
-                  <p className={cn('text-[14px]', TEXT.muted)}>La destination par défaut des étiquettes.</p>
+                  <p className={cn('text-[16px]', TEXT.muted)}>Les envois par bateau. La destination par défaut des étiquettes.</p>
                 </div>
                 <LocationFields prefix="w" value={form.warehouse} onChange={(v) => update('warehouse', v)} disabled={!canEdit} />
               </Card>
             </div>
 
             <div>
-              <SectionTitle>Bureau de Guangzhou</SectionTitle>
+              <SectionTitle>Air cargo — le bureau de Guangzhou</SectionTitle>
               <Card className="space-y-3">
                 <div className="flex items-center gap-3">
                   {sectionIcon(Building2)}
-                  <p className={cn('text-[14px]', TEXT.muted)}>Proposé au client comme seconde destination.</p>
+                  <p className={cn('text-[16px]', TEXT.muted)}>Les envois par avion. Proposé comme second mode.</p>
                 </div>
                 <LocationFields prefix="o" value={form.office} onChange={(v) => update('office', v)} disabled={!canEdit} />
               </Card>

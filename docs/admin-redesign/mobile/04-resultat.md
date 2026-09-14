@@ -362,3 +362,49 @@ proforma, pas de nouvelle table, une règle de calcul et un écran.
   le fret, le poids et le port sont déjà remplis. Le rejeu du tracteur de
   MRSU9909331 (6 057 USD, 1 750 kg, FOB, 10 %, TVA exonérée) donne le même
   ordre de grandeur que le dossier.
+
+## Passe 16 — 14 septembre : stabilité sur iPhone, étiquette colis mobile
+
+Retour fondateur (captures Safari iOS) : sur Mola, à l'ouverture du clavier
+l'écran se décale de ~200 px et reste coupé à la hauteur « clavier ouvert »
+même clavier fermé ; l'étiquette colis est longue à sortir, ses trois boutons
+sont écrasés, le bloc fournisseur prend la place, le geste est enfoui en bas
+de la fiche client.
+
+**Cause du décalage** (reproduite en simulation Playwright, `computeViewportVars`
+testé) : le cadre fixe suit `visualViewport` via `--vvh/--vvt` ; iOS remet
+`offsetTop` à zéro APRÈS l'événement `resize`, sans `scroll`. Rien ne relisait
+la géométrie → cadre figé à `top: 208px`. Corrections :
+- `useVisibleViewportSync` : relecture différée (80 / 260 / 600 ms) après chaque
+  événement, `focusin`/`focusout`, tout toucher ; `--vvk` (hauteur clavier) et
+  `html.kb-open` (la barre d'onglets s'efface) ; document verrouillé remis à 0.
+- `MobileAppShell` : `min-h-[100dvh]` (100vh = grand viewport iOS → document
+  plus haut que l'écran, que Safari faisait défiler au focus).
+- `BottomSheet` et la feuille « assigner » du support ancrées sur la zone
+  visible (`top: var(--vvt)`, `height: var(--vvh)`) : un champ dans une
+  feuille ne passe plus sous le clavier.
+- `useScrollIntoViewOnFocus` : inerte dans un document verrouillé ou sous un
+  ancêtre fixe.
+
+**Étiquette colis** : feuille mobile dédiée (`MobileShippingLabelSheet`) —
+Sea cargo · Air cargo, une phrase, trois sorties pleine largeur 48 px
+(Télécharger d'abord, Envoyer si `navigator.share`, PDF), l'aperçu dessous,
+pas de bloc fournisseur (desktop le garde). Export en mode rapide (×2, sans
+incorporer Noto SC — plusieurs Mo encodés sur le téléphone, c'était le
+« ça cale »). Le bouton monte sous l'identité du client, au-dessus de
+l'identifiant ; la carte identifiant gagne un vrai bouton « Copier ».
+
+**Nomenclature** : « Entrepôt » → **Sea cargo** (海运), « Bureau » → **Air cargo**
+(空运), partout (étiquette, PDF, image, réglages, i18n fr/en/zh, nom de
+fichier). Les clés `warehouse` / `office` de `platform_settings` ne changent pas.
+
+**Audit stabilité (agent, lecture seule)** — corrigé dans la même passe :
+- Temps réel : l'abonnement dépendait de l'objet `currentUser` (recréé à
+  chaque rafraîchissement de jeton) et réutilisait un canal en train de partir
+  → les listes cessaient de bouger. Dépend maintenant de l'id, canal unique.
+- Filet 8 s de `AdminAuthContext` : ne renvoie plus vers `/m/login` un admin
+  dont la session est connue ; l'écran de connexion redirige s'il est connecté.
+- Chargement 3D : au plus 160 pavés dessinés (six calques GPU chacun), glisser
+  au rythme des images — fin du rechargement d'onglet iPhone sur un gros colisage.
+- `crypto.randomUUID` → `uid()` (repli iOS < 15.4) : le bouton Envoyer de Mola
+  ne peut plus mourir en silence.

@@ -3,6 +3,7 @@
 // Uses `supabaseAdmin` (admin session, storageKey: bonzini-admin-auth)
 // ============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { uid } from '@/lib/uid';
 import { useEffect } from 'react';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
@@ -300,7 +301,7 @@ export function useSendAdminImage() {
       validateUploadFile(params.file);
 
       const ext = params.file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const path = `${params.conversationId}/${crypto.randomUUID()}.${ext}`;
+      const path = `${params.conversationId}/${uid()}.${ext}`;
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from(CHAT_BUCKET)
@@ -354,7 +355,7 @@ export function useSendAdminVoice() {
       const { data: { user } } = await supabaseAdmin.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const path = `${params.conversationId}/voice/${crypto.randomUUID()}.${params.extension}`;
+      const path = `${params.conversationId}/voice/${uid()}.${params.extension}`;
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from(CHAT_BUCKET)
@@ -415,7 +416,7 @@ export function useSendAdminVideo() {
         throw new Error(`Vidéo trop longue (max ${MAX_VIDEO_DURATION_SECONDS}s)`);
       }
 
-      const uuid = crypto.randomUUID();
+      const uuid = uid();
       const ext = params.file.name.split('.').pop()?.toLowerCase() ?? 'mp4';
       const videoPath = `${params.conversationId}/video/${uuid}.${ext}`;
       const posterPath = `${params.conversationId}/video/${uuid}.poster.jpg`;
@@ -486,7 +487,7 @@ export function useSendAdminFile() {
       validateUploadFile(params.file);
 
       const ext = params.file.name.split('.').pop()?.toLowerCase() ?? 'bin';
-      const path = `${params.conversationId}/file/${crypto.randomUUID()}.${ext}`;
+      const path = `${params.conversationId}/file/${uid()}.${ext}`;
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from(CHAT_BUCKET)

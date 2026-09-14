@@ -124,13 +124,21 @@ export interface CaptureOptions {
   /** 1 pour un nœud déjà en taille naturelle, 2–3 pour densifier un bloc d'écran. */
   pixelRatio?: number;
   backgroundColor?: string;
+  /**
+   * `false` : ne PAS incorporer les polices web (rendu avec celles du
+   * système). C'est le mode « téléphone » : la collecte des @font-face pèse
+   * des mégaoctets sur une police idéographique et gèle un mobile.
+   */
+  embedFonts?: boolean;
 }
 
 /** Le nœud tel qu'il est à l'écran, en PNG (data URL). */
 export async function captureNodePng(node: HTMLElement, options: CaptureOptions = {}): Promise<string> {
+  const { embedFonts = true, ...rest } = options;
   await ensureFontsReady();
+  if (!embedFonts) return toPng(node, { cacheBust: true, skipFonts: true, ...rest });
   const fontEmbedCSS = await loadFontEmbedCss(node);
-  return toPng(node, { cacheBust: true, fontEmbedCSS, ...options });
+  return toPng(node, { cacheBust: true, fontEmbedCSS, ...rest });
 }
 
 /** Déclenche un téléchargement de navigateur pour une data URL. */

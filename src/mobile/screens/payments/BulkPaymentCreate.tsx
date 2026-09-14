@@ -14,6 +14,7 @@
 // du data layer (qr_code_files), et la validation par méthode (spec.ts).
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { uid } from '@/lib/uid';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -315,7 +316,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   function commitLine() {
     if (!editorValid) { setTriedCommit(true); return; }
     const draft: DraftLine = {
-      id: editingId ?? crypto.randomUUID(),
+      id: editingId ?? uid(),
       method: eMethod, xaf: eXaf, cny: eCny, rate: eRate, rateIsCustom: eCustomRate,
       alias: eAlias.trim() || eName.trim(), name: eName.trim(),
       identifierType: eIdType, identifier: eIdentifier.trim(),
@@ -480,7 +481,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         <Holder icon={Pencil} size="sm" onClick={() => openEdit(l)} ariaLabel={t('detail.edit', { defaultValue: 'Modifier' })} />
-                        <Holder icon={Copy} size="sm" onClick={() => setLines((p) => [...p, { ...l, id: crypto.randomUUID(), beneficiaryId: undefined, saveToCarnet: false }])} ariaLabel={t('bulk.duplicate', { defaultValue: 'Dupliquer' })} />
+                        <Holder icon={Copy} size="sm" onClick={() => setLines((p) => [...p, { ...l, id: uid(), beneficiaryId: undefined, saveToCarnet: false }])} ariaLabel={t('bulk.duplicate', { defaultValue: 'Dupliquer' })} />
                         <Holder icon={Trash2} size="sm" tone="danger" onClick={() => setLines((p) => p.filter((x) => x.id !== l.id))} ariaLabel={t('bulk.remove', { defaultValue: 'Retirer' })} />
                       </div>
                     </Card>

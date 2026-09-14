@@ -11,6 +11,7 @@ import { Copy, Download, FileDown, Loader2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
+  DESTINATION_HINT_FR,
   DESTINATION_LABEL,
   SHIPPING_DESTINATIONS,
   isLocationConfigured,
@@ -42,8 +43,8 @@ export interface ShippingLabelComposerProps {
 export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', mode = 'client', className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   const labelRef = useRef<HTMLDivElement>(null);
-  // Entrepôt par défaut : c'est la destination de la plupart des envois ;
-  // le bureau est indiqué au cas par cas.
+  // Sea cargo (entrepôt) par défaut : c'est le mode de la plupart des envois ;
+  // l'air cargo (bureau) est indiqué au cas par cas.
   const [destination, setDestination] = useState<ShippingDestination>('warehouse');
   const [supplier, setSupplier] = useState<LabelSupplierInfo>({});
   const [busy, setBusy] = useState<'share' | 'copy' | 'png' | 'pdf' | null>(null);
@@ -51,31 +52,36 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
   const destConfigured = isLocationConfigured(settings[destination]);
   const canExport = !!code && destConfigured && busy === null;
 
+  // Téléphone (pointeur tactile) : export en mode rapide — pas d'incorporation
+  // des polices (plusieurs Mo de Noto SC à télécharger et encoder : c'est ce
+  // qui gelait l'iPhone), ×2 au lieu de ×3. Voir exportShippingLabel.ts.
+  const fast = typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches;
+
   // La CSS des polices (dont les sous-ensembles Noto SC, lourds) se calcule
   // une fois par session : on la lance dès l'ouverture, pas au premier clic.
   useEffect(() => {
-    if (labelRef.current) prewarmFontEmbedCss(labelRef.current);
-  }, []);
+    if (!fast && labelRef.current) prewarmFontEmbedCss(labelRef.current);
+  }, [fast]);
 
   const run = async (kind: 'share' | 'copy' | 'png' | 'pdf') => {
     if (!labelRef.current || !canExport) return;
     setBusy(kind);
     try {
       if (kind === 'share') {
-        const outcome = await shareShippingLabel(labelRef.current, code, destination);
+        const outcome = await shareShippingLabel(labelRef.current, code, destination, { fast });
         if (outcome === 'downloaded') toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
       } else if (kind === 'copy') {
-        const outcome = await copyShippingLabelPng(labelRef.current, code, destination);
+        const outcome = await copyShippingLabelPng(labelRef.current, code, destination, { fast });
         toast.success(
           outcome === 'copied'
             ? t('myCode.imageCopied', { defaultValue: 'Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail' })
             : t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }),
         );
       } else if (kind === 'png') {
-        await downloadShippingLabelPng(labelRef.current, code, destination);
+        await downloadShippingLabelPng(labelRef.current, code, destination, { fast });
         toast.success(t('myCode.labelDownloaded', { defaultValue: 'Étiquette téléchargée' }));
       } else {
-        await downloadShippingLabelPdf(labelRef.current, code, destination);
+        await downloadShippingLabelPdf(labelRef.current, code, destination, { fast });
       }
     } catch (err) {
       console.error('shipping label export', err);
@@ -109,8 +115,8 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
         />
         <p className={cn('mt-2 px-1 text-[14px] leading-snug', TEXT.muted)}>
           {destination === 'warehouse'
-            ? t('myCode.destHintWarehouse', { defaultValue: 'Pour la plupart des envois. Le fournisseur livre directement à notre entrepôt.' })
-            : t('myCode.destHintOffice', { defaultValue: 'Uniquement si Bonzini vous l’a demandé pour cet envoi.' })}
+            ? t('myCode.destHintWarehouse', { defaultValue: DESTINATION_HINT_FR.warehouse })
+            : t('myCode.destHintOffice', { defaultValue: DESTINATION_HINT_FR.office })}
         </p>
         {!destConfigured && (
           <p className={cn('mt-2 rounded-lg px-3 py-2 text-[14px]', SURFACE.inset, TEXT.body)}>

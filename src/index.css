@@ -15,6 +15,7 @@
        fallbacks used before the JS runs (or without the VisualViewport API). */
     --vvh: 100dvh;
     --vvt: 0px;
+    --vvk: 0px;
 
     /* Bonzini Brand Colors */
     --bonzini-purple: 258 100% 60%;
@@ -179,6 +180,14 @@
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
+  }
+
+  /* Clavier ouvert (html.kb-open, posé par useVisibleViewportSync) : la barre
+     d'onglets s'efface. Sur iOS elle serait sous le clavier de toute façon ;
+     sur Android (layout viewport réduit) elle viendrait s'intercaler entre le
+     champ de saisie et le clavier. */
+  html.kb-open .mobile-tab-bar {
+    display: none;
   }
 
   /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px).

@@ -55,7 +55,7 @@ export function MobileTabBar({ className }: { className?: string }) {
     <nav
       aria-label="Navigation principale"
       className={cn(
-        'fixed inset-x-0 bottom-0 z-50 border-t border-[#D9D9D9] bg-white pb-[env(safe-area-inset-bottom)] dark:border-[#444444] dark:bg-[#1E1E1E]',
+        'mobile-tab-bar fixed inset-x-0 bottom-0 z-50 border-t border-[#D9D9D9] bg-white pb-[env(safe-area-inset-bottom)] dark:border-[#444444] dark:bg-[#1E1E1E]',
         className,
       )}
     >

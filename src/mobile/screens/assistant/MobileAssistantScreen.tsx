@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { uid } from '@/lib/uid';
 import { Send, Bot, Loader2, Paperclip, X, FileText, Check, Loader, AlertTriangle, Plus, Wallet, Download, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -245,7 +246,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
         continue;
       }
       next.push({
-        id: crypto.randomUUID(),
+        id: uid(),
         file,
         url: URL.createObjectURL(file),
         isPdf: file.type === 'application/pdf',
@@ -326,7 +327,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
   );
 
   const composer = (
-    <div className={cn(CANVAS, 'border-t px-4 pt-2', SURFACE.divider)} style={{ paddingBottom: desktop ? 12 : `calc(0.75rem + ${MOBILE_TAB_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))` }}>
+    <div className={cn(CANVAS, 'border-t px-4 pt-2', SURFACE.divider)} style={{ paddingBottom: desktop ? 12 : `calc(0.75rem + max(0px, ${MOBILE_TAB_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) - var(--vvk, 0px)))` }}>
       {/* Plateau d'aperçu des pièces jointes en attente */}
       {pending.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -393,7 +394,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
             el.style.height = Math.min(el.scrollHeight, COMPOSER_MAX_H) + 'px';
           }}
           rows={1}
-          placeholder="Écris, dicte ou joins un fichier…"
+          placeholder="Écris à Mola…"
           className={cn('max-h-32 flex-1 resize-none rounded-lg border border-[#D9D9D9] px-3 py-2 text-[16px] text-[#1E1E1E] outline-none placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C] dark:border-[#444444] dark:text-[#F5F5F5] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]', CARD)}
         />
         <button
