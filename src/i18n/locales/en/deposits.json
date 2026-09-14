@@ -159,7 +159,7 @@
         "Take a screenshot of the confirmation SMS"
       ],
       "omWithdrawal": [
-        "On your phone, dial the merchant code displayed below",
+        "On your phone, dial the merchant code displayed above",
         "Replace AMOUNT with the amount to send",
         "Validate with your Orange Money PIN",
         "Take a screenshot of the confirmation SMS"
@@ -172,7 +172,7 @@
         "Take a screenshot of the confirmation"
       ],
       "mtnWithdrawal": [
-        "On your phone, dial the merchant code displayed below",
+        "On your phone, dial the merchant code displayed above",
         "Replace AMOUNT with the amount to send",
         "Validate with your MTN Mobile Money PIN",
         "Take a screenshot of the confirmation SMS"
