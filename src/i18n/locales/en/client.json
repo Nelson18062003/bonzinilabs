@@ -211,11 +211,11 @@
     "labelError": "Could not generate the label",
     "footnote": "This ID is permanent: it never changes, even if you update your details.",
     "dest": {
-      "warehouse": "Warehouse",
-      "office": "Office"
+      "warehouse": "Sea cargo",
+      "office": "Air cargo"
     },
-    "destHintWarehouse": "For most shipments. The supplier delivers straight to our warehouse.",
-    "destHintOffice": "Only if Bonzini asked you to use it for this shipment.",
+    "destHintWarehouse": "By sea. The supplier delivers to our Guangzhou warehouse.",
+    "destHintOffice": "By air. The supplier delivers to our Guangzhou office.",
     "destUnavailable": "Address being updated — the label will be available very soon.",
     "supplierTitle": "Supplier (optional)",
     "supplierName": "Name",

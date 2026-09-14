@@ -203,11 +203,11 @@
     "labelError": "无法生成标签",
     "footnote": "此编号是永久的：即使您更改了个人信息，它也不会改变。",
     "dest": {
-      "warehouse": "仓库",
-      "office": "办公室"
+      "warehouse": "海运",
+      "office": "空运"
     },
-    "destHintWarehouse": "适用于大多数货件。供应商直接送到我们的仓库。",
-    "destHintOffice": "仅当 Bonzini 要求您本次使用办公室地址时选择。",
+    "destHintWarehouse": "海运。供应商送到我们位于广州的仓库。",
+    "destHintOffice": "空运。供应商送到我们位于广州的办公室。",
     "destUnavailable": "地址更新中，标签即将可用。",
     "supplierTitle": "供应商（可选）",
     "supplierName": "名称",

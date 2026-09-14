@@ -33,6 +33,11 @@ export function useScrollIntoViewOnFocus({
     const handleFocusIn = (event: FocusEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target || !isEditable(target)) return;
+      // Locked document (chat shells) : the page must not move, the shell
+      // follows the keyboard by itself. Fixed containers (bottom sheets,
+      // dialogs) : scrolling the document would only move the page BEHIND
+      // them — they are anchored to the visible viewport on their own.
+      if (document.documentElement.classList.contains('viewport-locked') || hasFixedAncestor(target)) return;
 
       // Wait for the keyboard to finish opening before measuring.
       const timer = window.setTimeout(() => {
@@ -71,4 +76,13 @@ function isEditable(el: HTMLElement): boolean {
     return type !== 'button' && type !== 'submit' && type !== 'reset' && type !== 'file' && type !== 'checkbox' && type !== 'radio' && type !== 'range';
   }
   return el.isContentEditable;
+}
+
+function hasFixedAncestor(el: HTMLElement): boolean {
+  let node: HTMLElement | null = el.parentElement;
+  while (node && node !== document.body) {
+    if (getComputedStyle(node).position === 'fixed') return true;
+    node = node.parentElement;
+  }
+  return false;
 }

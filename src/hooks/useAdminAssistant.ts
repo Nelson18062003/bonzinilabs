@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { uid } from '@/lib/uid';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { compressImage } from '@/lib/imageCompression';
@@ -89,7 +90,7 @@ export function useAdminAssistant() {
     }));
 
     const userMsg: AssistantMessage = {
-      id: crypto.randomUUID(), role: 'user', text,
+      id: uid(), role: 'user', text,
       attachments: localAttachments.length ? localAttachments : undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
@@ -115,7 +116,7 @@ export function useAdminAssistant() {
       }
 
       // Réponse en STREAMING : on crée une bulle assistant vide qu'on remplit au fil de l'eau.
-      const assistantId = crypto.randomUUID();
+      const assistantId = uid();
       setMessages((prev) => [...prev, { id: assistantId, role: 'assistant', text: '' }]);
 
       const res = await fetch(FUNCTION_URL, {
@@ -173,7 +174,7 @@ export function useAdminAssistant() {
       else apply((m) => (m.text || m.proposals?.length ? m : { ...m, text: '…' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Une erreur est survenue';
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', text: `⚠️ ${msg}`, error: true }]);
+      setMessages((prev) => [...prev, { id: uid(), role: 'assistant', text: `⚠️ ${msg}`, error: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +249,7 @@ export function useAdminAssistant() {
           const atts = Array.isArray(c.attachments) && c.attachments.length
             ? c.attachments.map((a) => ({ name: a.name, kind: attachmentKind(a.mime) }))
             : undefined;
-          return { id: crypto.randomUUID(), role: m.role as 'user' | 'assistant', text: c.text ?? '', attachments: atts };
+          return { id: uid(), role: m.role as 'user' | 'assistant', text: c.text ?? '', attachments: atts };
         })
         .filter((m) => m.text || m.attachments);
 
@@ -261,7 +262,7 @@ export function useAdminAssistant() {
         .order('created_at', { ascending: true });
       if (pending && pending.length) {
         mapped.push({
-          id: crypto.randomUUID(), role: 'assistant', text: 'Action(s) en attente de confirmation :',
+          id: uid(), role: 'assistant', text: 'Action(s) en attente de confirmation :',
           proposals: pending.map((p) => ({ id: p.id, tool: p.tool as string, summary: p.summary as unknown as ProposalSummary, state: 'pending' as const })),
         });
       }

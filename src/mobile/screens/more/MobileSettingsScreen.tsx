@@ -125,7 +125,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
                   {t('shippingSettingsRow', { defaultValue: 'Adresses en Chine et coordonnées' })}
                 </p>
                 <p className={cn('text-[14px]', TEXT.muted)}>
-                  {t('shippingSettingsRowHint', { defaultValue: 'Entrepôt, bureau, téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis' })}
+                  {t('shippingSettingsRowHint', { defaultValue: 'Sea cargo (entrepôt), air cargo (bureau), téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis' })}
                 </p>
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />

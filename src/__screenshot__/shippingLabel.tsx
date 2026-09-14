@@ -2,6 +2,7 @@
 // en vrai avant de la mettre entre les mains d'un client.
 import { ShippingLabel } from '@/components/customer-code/ShippingLabel';
 import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 
 const props = {
@@ -30,5 +31,12 @@ export const LabelComposer = () => (
 export const LabelComposerDesktop = () => (
   <div style={{ padding: 24, background: '#fff', minHeight: '100vh' }}>
     <ShippingLabelComposer {...props} layout="split" mode="admin" />
+  </div>
+);
+
+// La feuille admin mobile (mode d'envoi · sorties · aperçu), ouverte.
+export const LabelSheetMobile = () => (
+  <div style={{ minHeight: '100vh', background: '#fff' }}>
+    <MobileShippingLabelSheet open onClose={() => undefined} {...props} />
   </div>
 );

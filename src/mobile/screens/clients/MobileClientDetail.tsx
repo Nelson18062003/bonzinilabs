@@ -35,7 +35,7 @@ import {
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
-import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
@@ -369,6 +369,19 @@ export function MobileClientDetail() {
           )}
         </section>
 
+        {/* ── Le colis — le geste le plus fréquent, donc tout en haut ── */}
+        {client.customerCode && (
+          <Card className="space-y-3">
+            <Line>
+              Son fournisseur colle <b className={TEXT.strong}>l'étiquette colis</b> sur chaque carton. Sea cargo ou air cargo, en image ou en PDF.
+            </Line>
+            <Button className="h-12 w-full text-[16px]" onClick={() => setLabelOpen(true)}>
+              <Tag />
+              Étiquette colis
+            </Button>
+          </Card>
+        )}
+
         {/* Identifiant client — virement bancaire + étiquette colis */}
         <CustomerCodeCard code={client.customerCode} />
 
@@ -414,13 +427,6 @@ export function MobileClientDetail() {
               label="Déclarer un dépôt"
               description="Le client a versé de l'argent."
               onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
-            />
-            <ActionRow
-              icon={Tag}
-              tone="pending"
-              label="Étiquette colis"
-              description="Entrepôt ou bureau : l'image ou le PDF à imprimer pour son fournisseur."
-              onClick={() => setLabelOpen(true)}
             />
             <ActionRow
               icon={Users}
@@ -469,22 +475,19 @@ export function MobileClientDetail() {
         </section>
       </div>
 
-      {/* Étiquette colis — même composeur que l'app client */}
-      <BottomSheet open={labelOpen} onClose={() => setLabelOpen(false)} title={t('shippingLabelAction', { defaultValue: 'Étiquette colis' })}>
-        <div className="max-h-[75vh] overflow-y-auto px-1 pb-2">
-          <ShippingLabelComposer
-            code={client.customerCode}
-            clientName={`${client.firstName} ${client.lastName}`.trim()}
-            clientPhone={client.phone}
-            clientEmail={client.email}
-            companyName={client.companyName}
-            clientCity={client.city}
-            clientCountry={client.country}
-            settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
-            mode="admin"
-          />
-        </div>
-      </BottomSheet>
+      {/* Étiquette colis — feuille mobile dédiée (mode rapide, sans bloc fournisseur) */}
+      <MobileShippingLabelSheet
+        open={labelOpen}
+        onClose={() => setLabelOpen(false)}
+        code={client.customerCode}
+        clientName={fullName}
+        clientPhone={client.phone}
+        clientEmail={client.email}
+        companyName={client.companyName}
+        clientCity={client.city}
+        clientCountry={client.country}
+        settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+      />
 
       {/* Adjustment Drawer */}
       <AdjustmentDrawer

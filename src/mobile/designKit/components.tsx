@@ -491,7 +491,17 @@ export function BottomSheet({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div key="bottomsheet" className="fixed inset-0 z-[60] flex flex-col justify-end" role="dialog" aria-modal="true">
+        <motion.div
+          key="bottomsheet"
+          className="fixed inset-x-0 z-[60] flex flex-col justify-end"
+          // Ancrée sur la zone VISIBLE (pas `inset-0`) : quand le clavier
+          // s'ouvre sur un champ de la feuille, iOS ne déplace pas les
+          // éléments fixés — sans ceci, la feuille reste sous le clavier et
+          // Safari fait défiler l'écran dans tous les sens pour montrer le champ.
+          style={{ top: 'var(--vvt, 0px)', height: 'var(--vvh, 100dvh)' }}
+          role="dialog"
+          aria-modal="true"
+        >
           <motion.button
             type="button"
             aria-label="Fermer"
@@ -509,7 +519,7 @@ export function BottomSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 34, stiffness: 360, mass: 0.9 }}
             className={cn(
-              'relative max-h-[90dvh] overflow-y-auto rounded-t-2xl border-t p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]',
+              'relative max-h-[90%] overflow-y-auto overscroll-contain rounded-t-2xl border-t p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]',
               SURFACE.card, SURFACE.divider,
               className,
             )}

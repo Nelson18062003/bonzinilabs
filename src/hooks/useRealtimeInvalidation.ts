@@ -138,18 +138,27 @@ export function useAdminRealtimeInvalidation() {
   const queryClient = useQueryClient();
   const { isAuthenticated, currentUser } = useAdminAuth();
 
+  // On dépend de l'IDENTITÉ (l'id), pas de l'objet : AdminAuthContext pose un
+  // nouvel objet `currentUser` à chaque rafraîchissement de jeton (toutes les
+  // heures, et à chaque retour au premier plan sur iOS). Avec l'objet en
+  // dépendance, l'effet se relançait : `removeChannel` est asynchrone, et
+  // `channel('admin-realtime-invalidation')` rendait le MÊME canal en train
+  // de partir — `subscribe()` ne faisait rien, le canal était retiré à l'ack,
+  // et les listes cessaient de se mettre à jour en direct. D'où aussi un nom
+  // de canal unique par abonnement.
+  const adminId = currentUser?.id ?? null;
   useEffect(() => {
-    if (!isAuthenticated || !currentUser) return;
+    if (!isAuthenticated || !adminId) return;
     const channel = subscribeTables(
       supabaseAdmin,
-      'admin-realtime-invalidation',
+      `admin-realtime-invalidation:${adminId}:${Date.now()}`,
       ADMIN_TABLES,
       queryClient,
     );
     return () => {
       supabaseAdmin.removeChannel(channel);
     };
-  }, [isAuthenticated, currentUser, queryClient]);
+  }, [isAuthenticated, adminId, queryClient]);
 }
 
 /**
