@@ -1617,7 +1617,7 @@ BEGIN
     VALUES (p_payment_id, 'completed', 'Paiement effectué avec succès', v_admin_id);
 
     -- Ledger entry for executed payment
-    SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_payment.user_id;
+    SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_payment.user_id FOR UPDATE;
     IF v_wallet IS NOT NULL THEN
       INSERT INTO public.ledger_entries (
         wallet_id, user_id, entry_type, amount_xaf, balance_before, balance_after,
@@ -1674,7 +1674,7 @@ BEGIN
     END IF;
 
     -- Get wallet for ledger entry
-    SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_payment.user_id;
+    SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_payment.user_id FOR UPDATE;
 
     -- Refund the balance
     UPDATE public.wallets

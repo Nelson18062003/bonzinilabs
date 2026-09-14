@@ -150,8 +150,11 @@ function DetailHeader({ title, onBack, right }: { title: string; onBack: () => v
 export function MobileDepositDetailV2() {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAdminAuth();
+  const { currentUser, hasPermission } = useAdminAuth();
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  // Le serveur refuse déjà (admin_has_permission 'canProcessDeposits') ;
+  // l'UI ne montre pas un bouton qui mène à « Accès non autorisé ».
+  const canProcess = hasPermission('canProcessDeposits');
 
   const { data: deposit, isLoading } = useAdminDepositDetail(depositId);
   const { data: proofs } = useAdminDepositProofs(depositId);
@@ -424,11 +427,11 @@ export function MobileDepositDetailV2() {
   const isLocked = ['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
-  const canAddProof = !isLocked;
+  const canAddProof = canProcess && !isLocked;
   // Barre de décision collante : tant que « Valider le dépôt » se voit, elle
   // reste rangée ; elle se range aussi sous les feuilles basses.
   const sheetOpen = showValidateConfirm || showRejectSheet || showUploadSheet || !!showDeleteProofSheet || showDeleteDepositSheet || !!viewingProof;
-  const dockShown = !isLocked && !decision.onScreen && !sheetOpen;
+  const dockShown = canProcess && !isLocked && !decision.onScreen && !sheetOpen;
   const openValidate = () => {
     setConfirmedAmount(deposit.amount_xaf.toString());
     setShowValidateConfirm(true);
@@ -600,6 +603,7 @@ export function MobileDepositDetailV2() {
         {/* ── La décision ───────────────────────────────────── */}
         <section className="space-y-2">
           <SectionTitle>La décision</SectionTitle>
+          {!isLocked && !canProcess && <Line>Vous n'avez pas le droit de traiter les dépôts.</Line>}
           {isLocked ? (
             <Line>
               {deposit.status === 'validated'
@@ -609,7 +613,7 @@ export function MobileDepositDetailV2() {
                   : 'Ce dépôt a été annulé.'}{' '}
               Il n'y a plus rien à faire.
             </Line>
-          ) : (
+          ) : canProcess ? (
             <>
               {/* Une seule action principale : valider. Le marquage « en vérification »
                   est un geste secondaire, expliqué — deux boutons noirs côte à côte
@@ -631,7 +635,7 @@ export function MobileDepositDetailV2() {
                 Refuser le dépôt
               </Button>
             </>
-          )}
+          ) : null}
           {isSuperAdmin && (
             <Button className="w-full" variant="subtle" onClick={() => setShowDeleteDepositSheet(true)}>
               <Trash2 />

@@ -104,7 +104,7 @@ describe('SÉCURITÉ — une redéfinition complète reconduit les correctifs ap
   // pg_get_functiondef. Un CREATE OR REPLACE écrit à partir du dernier
   // fichier « complet » les efface en silence — c'est arrivé le 14/09.
   const REQUIRED: Record<string, string[]> = {
-    process_payment: ['WHERE id = p_payment_id FOR UPDATE'],
+    process_payment: ['WHERE id = p_payment_id FOR UPDATE', 'WHERE user_id = v_payment.user_id FOR UPDATE'],
     validate_deposit: ['v_credit_amount IS NULL OR v_credit_amount <= 0', 'FOR UPDATE'],
     reject_deposit: ['FOR UPDATE'],
   };

@@ -36,7 +36,7 @@ import {
   PAYMENT_REJECTION_REASONS,
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
-import { cn } from '@/lib/utils';
+import { cn, validateUploadFile } from '@/lib/utils';
 import {
   SURFACE,
   TEXT,
@@ -784,6 +784,9 @@ export function MobilePaymentDetail() {
                       if (!file || !paymentId) return;
                       setIsUploadingQr(true);
                       try {
+                        // Le bucket refuse déjà les mauvais types et > 10 Mo,
+                        // mais avec une erreur opaque : on le dit clairement ici.
+                        validateUploadFile(file);
                         const compressed = await compressImage(file);
                         const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
                         const { error } = await supabaseAdmin.storage
@@ -796,8 +799,8 @@ export function MobilePaymentDetail() {
                           beneficiaryInfo: { beneficiary_qr_code_url: qrUrl },
                         });
                         toast.success('QR code mis à jour');
-                      } catch {
-                        toast.error('Erreur lors de l\'upload du QR code');
+                      } catch (err) {
+                        toast.error(err instanceof Error && err.message ? err.message : 'Erreur lors de l\'upload du QR code');
                       } finally {
                         setIsUploadingQr(false);
                         if (qrInputRef.current) qrInputRef.current.value = '';
