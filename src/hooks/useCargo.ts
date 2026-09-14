@@ -386,7 +386,7 @@ export function useCargoClient(clientId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('clients')
-        .select('id, first_name, last_name, company_name, phone, email, city, country, kyc_verified')
+        .select('id, first_name, last_name, company_name, phone, email, city, country, kyc_verified, customer_code')
         .eq('id', clientId!)
         .maybeSingle();
       if (error) throw error;

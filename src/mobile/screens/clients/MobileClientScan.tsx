@@ -138,7 +138,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader title="Scanner un client" subtitle="QR de l’étiquette colis · code de virement" showBack backTo="/m/clients" />
+      <MobileHeader title="Scanner un client" subtitle="QR de l’étiquette ou code BZ-…" showBack backTo="/m/clients" />
 
       <div className={cn('space-y-4 px-4 pb-24 pt-4', desktop && 'mx-auto max-w-[560px]')}>
         {!desktop && (

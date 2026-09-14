@@ -69,9 +69,10 @@ export function MobileShippingLabelSheet({ open, onClose, code, clientName, clie
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Étiquette colis">
+    <>
+      {qr}
+      <BottomSheet open={open} onClose={onClose} title="Étiquette colis">
       <div className="space-y-4">
-        {qr}
         {/* 1 · Le mode d'envoi */}
         <div className="space-y-2">
           <Segmented
@@ -122,6 +123,7 @@ export function MobileShippingLabelSheet({ open, onClose, code, clientName, clie
           Le fichier s'appelle {labelFileName(code, destination, 'png')}.
         </p>
       </div>
-    </BottomSheet>
+      </BottomSheet>
+    </>
   );
 }

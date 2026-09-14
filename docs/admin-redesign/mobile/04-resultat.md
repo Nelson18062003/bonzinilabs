@@ -436,3 +436,18 @@ de ~10 % sur desktop (sections « écrasées »).
   par URL d'objet révoquée. Plus jamais de `blob:` dans un onglet.
 - `ShippingLabel.tsx` (DOM) supprimé ; composeur desktop et feuille mobile
   branchés sur `useShippingLabel()`.
+
+## Passe 18 — 14 septembre, nuit : le client et son cargo se répondent
+
+- **Fiche client → « Son conteneur / Ses N conteneurs »** : la flotte (déjà en
+  cache pour le badge de l'onglet) filtrée sur `client_id`, une ligne par
+  boîte (numéro, phrase d'arrivée, état), qui ouvre le dossier. Section absente
+  quand il n'y a rien à dire. Geste « Suivre un conteneur » dans « Les gestes »
+  (réservé à `canViewCargo`).
+- **Dossier cargo → « Le client »** : l'identifiant `BZ-…` en toutes lettres et
+  le bouton « Étiquette colis pour son fournisseur » (même feuille que la fiche
+  client). `useCargoClient` lit désormais `customer_code`.
+- **Étiquette** : le QR est peint dès que son canvas est monté (ref-fonction) et
+  vit hors de la feuille basse — sinon, feuille ouverte après le montage, l'image
+  partait sans QR.
+- Scanner un client : sous-titre qui tient sur une ligne.

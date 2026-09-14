@@ -31,11 +31,15 @@ import {
   Trash2,
   Users,
   Tag,
+  Ship,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
+import { useCargoShipments } from '@/hooks/useCargo';
+import { alertLevel, type AlertLevel } from '@/lib/cargo/palette';
+import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
@@ -53,6 +57,7 @@ import {
   SectionTitle,
   Line,
   StatusPill,
+  ListRow,
   Holder,
   BottomSheet,
   FormField,
@@ -116,6 +121,14 @@ function ActionRow({
   );
 }
 
+/** L'état d'un conteneur, dans les mots et les couleurs de la flotte. */
+const CARGO_TONE: Record<AlertLevel, { tone: Tone; label: string }> = {
+  late: { tone: 'danger', label: 'En retard' },
+  watch: { tone: 'pending', label: 'À surveiller' },
+  ok: { tone: 'success', label: "À l'heure" },
+  done: { tone: 'neutral', label: 'Livré' },
+};
+
 export function MobileClientDetail() {
   const { t } = useTranslation('common');
   const { clientId } = useParams();
@@ -142,6 +155,10 @@ export function MobileClientDetail() {
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   const canManageUsers = hasPermission('canManageUsers');
+  const canViewCargo = hasPermission('canViewCargo');
+  // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
+  const { data: fleet } = useCargoShipments();
+  const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
 
   // Edit client drawer state
@@ -417,6 +434,29 @@ export function MobileClientDetail() {
           </Card>
         </section>
 
+        {/* ── Ses conteneurs (Cargo) ────────────────────────── */}
+        {containers.length > 0 && (
+          <section>
+            <SectionTitle action={{ label: 'Cargo', onClick: () => navigate('/m/cargo') }}>
+              {containers.length > 1 ? `Ses ${containers.length} conteneurs` : 'Son conteneur'}
+            </SectionTitle>
+            <Card className="py-0">
+              {containers.map((c) => {
+                const level = alertLevel(c);
+                return (
+                  <ListRow
+                    key={c.id}
+                    title={c.container_number || c.bl_number || 'Conteneur'}
+                    subtitle={arrivalSentence(c)}
+                    trailing={<StatusPill tone={CARGO_TONE[level].tone} label={CARGO_TONE[level].label} />}
+                    onClick={() => navigate(`/m/cargo/${c.id}`)}
+                  />
+                );
+              })}
+            </Card>
+          </section>
+        )}
+
         {/* ── Les gestes ────────────────────────────────────── */}
         <section>
           <SectionTitle>Les gestes</SectionTitle>
@@ -428,6 +468,15 @@ export function MobileClientDetail() {
               description="Le client a versé de l'argent."
               onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
             />
+            {canViewCargo && (
+              <ActionRow
+                icon={Ship}
+                tone="info"
+                label="Suivre un conteneur"
+                description="Un numéro de conteneur ou de bill of lading."
+                onClick={() => navigate('/m/cargo/track')}
+              />
+            )}
             <ActionRow
               icon={Users}
               tone="info"

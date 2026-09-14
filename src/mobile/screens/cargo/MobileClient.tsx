@@ -7,11 +7,14 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Link2, Link2Off, MessageCircle, Search } from 'lucide-react';
+import { Link2, Link2Off, MessageCircle, Search, Tag } from 'lucide-react';
 import { useCargoClient, useCargoClientOptions, useCargoShipments, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { bestEta, fmtDay, statusMeta } from '@/lib/cargo/model';
 import { arrivalSentence, delaySentence, uncap } from '@/lib/cargo/plain';
 import { normalizePhone } from '@/lib/phone';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
+import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import type { CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
 import { TEXT, BottomSheet, Button, Line, ListRow, StatusPill, TextInput } from '@/mobile/designKit';
@@ -22,6 +25,8 @@ export function MobileClient({ shipment: s, canManage }: { shipment: CargoShipme
   const { data: fleet } = useCargoShipments();
   const update = useUpdateCargoShipment();
   const [linkOpen, setLinkOpen] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
   const [search, setSearch] = useState('');
   const { data: options } = useCargoClientOptions(search);
 
@@ -52,6 +57,27 @@ export function MobileClient({ shipment: s, canManage }: { shipment: CargoShipme
           {client.email && <Line>Email : <b className={cn('break-all', TEXT.strong)}>{client.email}</b>.</Line>}
           {place && <Line>À {place}.</Line>}
           <Line tone={client.kyc_verified ? 'good' : 'warn'}>{client.kyc_verified ? 'Identité vérifiée.' : 'Identité pas encore vérifiée.'}</Line>
+          {client.customer_code && (
+            <>
+              <Line>Identifiant client : <b className={cn('tabular-nums', TEXT.strong)}>{client.customer_code}</b>. C'est le code de ses étiquettes colis.</Line>
+              <Button variant="neutral" className="w-full" onClick={() => setLabelOpen(true)}>
+                <Tag />
+                Étiquette colis pour son fournisseur
+              </Button>
+              <MobileShippingLabelSheet
+                open={labelOpen}
+                onClose={() => setLabelOpen(false)}
+                code={client.customer_code}
+                clientName={`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}
+                clientPhone={client.phone}
+                clientEmail={client.email}
+                companyName={client.company_name}
+                clientCity={client.city}
+                clientCountry={client.country}
+                settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+              />
+            </>
+          )}
           {waHref && (
             <a href={waHref} target="_blank" rel="noopener noreferrer"
               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#2C2C2C] bg-[#2C2C2C] px-3 text-[16px] font-medium text-[#F5F5F5] active:bg-[#1E1E1E] dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">
