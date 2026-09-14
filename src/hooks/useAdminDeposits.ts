@@ -314,7 +314,7 @@ export function useRejectDeposit() {
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
       invalidateActionBadges(queryClient);
-      toast.error(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
+      toast.success(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -450,7 +450,9 @@ export function useAdminCreateDeposit() {
         }
       }
 
-      await supabaseAdmin.from('admin_audit_logs').insert({
+      // Le dépôt existe déjà : un journal d'audit en échec ne doit pas faire
+      // passer la création pour ratée (et provoquer un doublon au second essai).
+      const audit = await supabaseAdmin.from('admin_audit_logs').insert({
         admin_user_id: admin.id,
         action_type: 'create_deposit_for_client',
         target_type: 'deposit',
@@ -462,6 +464,7 @@ export function useAdminCreateDeposit() {
           proofs_count: data.proofFiles?.length || 0,
         },
       });
+      if (audit.error) console.error('[Create] audit log:', audit.error);
 
       return { id: depositId, reference: response.reference };
     },

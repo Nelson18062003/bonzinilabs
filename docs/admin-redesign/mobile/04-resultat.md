@@ -653,3 +653,33 @@ cours — et le hub lit les mêmes compteurs que le badge : Dépôts + Paiements
 = badge, et dans chaque liste « À traiter » (+ « En cours » pour les
 paiements) = le segment. Un test de parité fige l'accord avec les filtres
 des listes. 630 tests verts, build propre.
+
+## Passe 29 — chasse aux bugs et revue sécurité (trois agents), correctifs
+
+**Sécurité.** `process_payment` lisait le portefeuille sans verrou avant
+d'écrire `balance_before` dans le grand livre : nouvelle migration
+`20260914093000` (redéfinition complète avec `FOR UPDATE` sur `wallets`,
+reportée en place et dans le fichier consolidé, aiguille ajoutée au test de
+non-régression). Le QR du bénéficiaire passe par `validateUploadFile`. La
+fiche dépôt est gardée par `canProcessDeposits` comme la fiche paiement.
+
+**Bugs.** Nouveau paiement : changer de client ou de mode remet le
+bénéficiaire à zéro (le paiement pouvait partir avec le bénéficiaire d'un
+autre client) ; taux personnalisé vidé → taux du jour, jamais 11 530, et
+« Suivant » bloqué ; un bénéficiaire créé au carnet n'est pas recréé au
+second essai. Fiche dépôt : le montant à confirmer n'est plus écrasé par une
+mise à jour de la ligne pendant la saisie ; « Dépôt rejeté » en vert, pas en
+rouge ; journal d'audit non bloquant à la création (plus de doublon au second
+essai). Statuts terminaux : une seule liste (`src/lib/terminalStatuses.ts`)
+pour le collage de preuve, le QR cash, le verrou des fiches et l'urgence —
+plus de « Il faut le traiter » sur un dépôt annulé ou à corriger, plus de
+preuve collée sur une ligne annulée. Temps réel : les clés tapées à la main
+(`admin-deposit-proofs`, `deposit-stats`, `client-ledger`…) et les badges
+sont rafraîchis par radical de table ; le canal client ne meurt plus au
+rafraîchissement du jeton. Liste des dépôts : famille filtrée côté serveur
+(une première page sans Wave affichait « Aucun dépôt »). Nouveau dépôt :
+identifiant client inconnu → retour au choix du client. Fiche client :
+presse-papiers refusé signalé.
+
+**Qualité.** Fiche client sans requêtes cargo hors droit ; écrans dépôts V1
+(1 703 lignes mortes) supprimés. 632 tests verts, build propre.

@@ -194,6 +194,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // Carnet du client (Lot 4): onglet "enregistré" vs "nouveau", + sélection.
   const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
   const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
+  // Bénéficiaire déjà ajouté au carnet lors d'une tentative précédente : un
+  // second essai (paiement en échec) ne le recrée pas en double.
+  const carnetIdRef = useRef<string | null>(null);
   const [saveToCarnet, setSaveToCarnet] = useState(true);
   const createBeneficiary = useAdminCreateBeneficiary();
 
@@ -245,7 +248,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // ── Calculs ───────────────────────────────────────────────────
   const clientBalance = client ? (walletsMap.get(client.user_id) ?? 0) : 0;
   const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
-  const rate = useCustomRate ? (parseInt(customRateStr) || FALLBACK_RATE) : baseRate;
+  // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
+  // sur la constante de secours (le paiement partait à 11 530).
+  const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
+  const customRateValid = !useCustomRate || parseInt(customRateStr) > 0;
   const raw = parseInt(rawAmount) || 0;
   const xaf = inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate);
   const cny = inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw;
@@ -282,7 +288,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
-    step === 3 ? (amountValid && hasEnoughBalance) :
+    step === 3 ? (amountValid && hasEnoughBalance && customRateValid) :
     step === 4 ? benef4Valid :
     true;
 
@@ -292,7 +298,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setUseCustomDate(false); setCustomDateStr('');
-    setBenef(BENEF0); setSkipBenef(false);
+    setBenef(BENEF0); setSkipBenef(false); carnetIdRef.current = null;
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     removeQr(); setDone(null);
   }
@@ -317,6 +323,18 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       return null;
     });
   }, []);
+
+  // Changer de client ou de mode invalide le bénéficiaire choisi : il vient du
+  // carnet de CE client pour CE mode. Sans cela « Suivant » restait actif et
+  // le paiement partait avec le bénéficiaire d'un autre client.
+  const chooseClient = (c: NonNullable<typeof client>) => {
+    if (c.user_id !== client?.user_id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    setClient(c);
+  };
+  const chooseMode = (m: NonNullable<typeof mode>) => {
+    if (m.id !== mode?.id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    setMode(m);
+  };
 
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
@@ -387,7 +405,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         const resolvedName = autoName ?? (benef.name || undefined);
 
         // Save to the CLIENT's carnet (unless cash+self — that's the client).
-        if (saveToCarnet && !isCashSelf && benef.name.trim()) {
+        if (carnetIdRef.current) {
+          beneficiaryId = carnetIdRef.current;
+        } else if (saveToCarnet && !isCashSelf && benef.name.trim()) {
           try {
             const created = await createBeneficiary.mutateAsync({
               client_id: client.user_id,
@@ -403,6 +423,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               qr_code_file: qrFile || undefined,
             });
             beneficiaryId = created.id;
+            carnetIdRef.current = created.id;
           } catch {
             // Non-silent (hook toasts); the payment still proceeds.
           }
@@ -561,7 +582,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 return (
                   <button
                     key={c.user_id}
-                    onClick={() => setClient(c)}
+                    onClick={() => chooseClient(c)}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
@@ -607,7 +628,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 return (
                   <button
                     key={m.id}
-                    onClick={() => setMode(m)}
+                    onClick={() => chooseMode(m)}
                     className={cn(
                       'flex w-full items-center gap-3.5 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,

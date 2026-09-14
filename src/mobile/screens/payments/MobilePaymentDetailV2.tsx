@@ -37,6 +37,7 @@ import {
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import { cn, validateUploadFile } from '@/lib/utils';
+import { isTerminalPayment } from '@/lib/terminalStatuses';
 import {
   SURFACE,
   TEXT,
@@ -241,7 +242,7 @@ export function MobilePaymentDetail() {
         : isCompleteOpen
           ? 'complete'
           : hasPermission('canProcessPayments') &&
-              !['completed', 'rejected'].includes(payment.status) &&
+              !isTerminalPayment(payment.status) &&
               payment.method !== 'cash'
             ? 'proof'
             : null;
@@ -395,6 +396,10 @@ export function MobilePaymentDetail() {
     try {
       if (completeProofFile) {
         await adminProofUpload.mutateAsync({ paymentId, file: completeProofFile });
+        // La preuve est en base : un second essai (si le RPC échoue) ne la
+        // renvoie pas en double.
+        setCompleteProofFile(null);
+        setCompleteProofPreview(null);
       }
       await processPayment.mutateAsync({ paymentId, action: 'complete' });
       setIsCompleteOpen(false);
@@ -563,7 +568,7 @@ export function MobilePaymentDetail() {
 
   // Permissions
   const canProcess           = hasPermission('canProcessPayments');
-  const isLocked             = ['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
+  const isLocked             = isTerminalPayment(payment.status);
   const isCash               = payment.method === 'cash';
   const canStartProcessing   = canProcess && ['ready_for_payment', 'cash_scanned'].includes(payment.status);
   const canComplete          = canProcess && payment.status === 'processing';
@@ -674,7 +679,7 @@ export function MobilePaymentDetail() {
         </section>
 
         {/* ── QR Code cash (cash_pending / cash_scanned) ────── */}
-        {isCash && !['completed', 'rejected'].includes(payment.status) && (
+        {isCash && !isTerminalPayment(payment.status) && (
           <CashQRCode
             paymentId={payment.id}
             paymentReference={payment.reference}
@@ -1084,7 +1089,7 @@ export function MobilePaymentDetail() {
           <SectionTitle>La décision</SectionTitle>
           {isLocked && (
             <Line>
-              {payment.status === 'completed' ? 'Ce paiement est effectué.' : 'Ce paiement a été refusé.'} Il n'y a plus rien à faire.
+              {payment.status === 'completed' ? 'Ce paiement est effectué.' : payment.status === 'rejected' ? 'Ce paiement a été refusé.' : 'Ce paiement a été annulé.'} Il n'y a plus rien à faire.
             </Line>
           )}
           {!isLocked && !mainAction && !canReject && (

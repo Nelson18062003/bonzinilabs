@@ -7,7 +7,7 @@
 // Logique 100% préservée : validate/reject/start-review, upload &
 //   suppression de preuves, suppression dépôt, timeline, PDF reçu.
 // ============================================================
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useOnScreen } from '@/hooks/useOnScreen';
 import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -34,6 +34,7 @@ import { formatCurrency } from '@/lib/formatters';
 import { whenSentence, sinceSentence } from '@/lib/plainTime';
 import { MIN_DEPOSIT_XAF, isValidXafAmount, xafAmountError } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
+import { isTerminalDeposit } from '@/lib/terminalStatuses';
 import {
   SURFACE,
   TEXT,
@@ -203,12 +204,9 @@ export function MobileDepositDetailV2() {
   // Le bouton « Valider le dépôt » est-il à l'écran ? (barre collante)
   const decision = useOnScreen();
 
-  // Initialize confirmed amount when deposit loads
-  useEffect(() => {
-    if (deposit) {
-      setConfirmedAmount(deposit.amount_xaf.toString());
-    }
-  }, [deposit]);
+  // (Le montant à confirmer est posé à l'ouverture de la feuille, dans
+  // openValidate — pas dans un effet sur `deposit`, qui écrasait la saisie
+  // de l'opérateur dès que la ligne bougeait ailleurs.)
 
   const timelineSteps = buildDepositTimelineSteps(
     deposit?.status || 'created',
@@ -284,7 +282,7 @@ export function MobileDepositDetailV2() {
 
   // Ctrl+V anywhere on the fiche stages a proof — and opens the sheet if it is
   // still closed, so a pasted screenshot is never silently swallowed.
-  const canPasteProof = !!deposit && !['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const canPasteProof = !!deposit && !isTerminalDeposit(deposit.status);
   usePasteFiles({
     onFiles: useCallback(
       (files: File[]) => {
@@ -424,7 +422,7 @@ export function MobileDepositDetailV2() {
   const clientName = deposit.profiles
     ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
     : 'Client inconnu';
-  const isLocked = ['validated', 'rejected', 'cancelled', 'cancelled_by_admin'].includes(deposit.status);
+  const isLocked = isTerminalDeposit(deposit.status);
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
   const canAddProof = canProcess && !isLocked;

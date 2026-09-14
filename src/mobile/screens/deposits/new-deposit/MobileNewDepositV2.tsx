@@ -174,6 +174,9 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
     if (preselectedClientId && clients && !selectedClient) {
       const client = clients.find((c) => c.user_id === preselectedClientId);
       if (client) setSelectedClient(client);
+      // Identifiant inconnu : on repart du choix du client plutôt que
+      // d'aller jusqu'au récapitulatif sans client.
+      else setStep('client');
     }
   }, [preselectedClientId, clients, selectedClient]);
 

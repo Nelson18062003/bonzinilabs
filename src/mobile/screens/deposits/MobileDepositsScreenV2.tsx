@@ -106,6 +106,10 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
     // Note: DepositFilters supporte method (string unique) — on filtre par famille côté client
     // Pas besoin d'envoyer le filtre méthode au serveur ici
 
+    // Famille filtrée côté serveur : filtrée côté client, une première page
+    // sans Wave affichait « Aucun dépôt » alors que la suite en contenait.
+    if (familyFilter !== 'all') params.methods = FAMILY_TO_METHODS[familyFilter] ?? [];
+
     if (dateFrom) params.dateFrom = dateFrom;
     if (dateTo) params.dateTo = dateTo;
 
@@ -117,7 +121,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
     const isDefault = !hasFilters;
     if (isDefault) return undefined;
     return params;
-  }, [statusFilter, dateFrom, dateTo]);
+  }, [statusFilter, familyFilter, dateFrom, dateTo]);
 
   const {
     data,
@@ -138,11 +142,6 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
   // Filtrage côté client : recherche + famille
   const filteredDeposits = useMemo(() => {
     let list = allDeposits;
-    // Filtre famille côté client
-    if (familyFilter !== 'all') {
-      const methods = FAMILY_TO_METHODS[familyFilter] || [];
-      list = list.filter((d) => methods.includes(d.method));
-    }
     // Recherche
     if (debouncedSearch) {
       const search = debouncedSearch.toLowerCase();
@@ -156,7 +155,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
       });
     }
     return list;
-  }, [allDeposits, debouncedSearch, familyFilter]);
+  }, [allDeposits, debouncedSearch]);
 
   const counts = useMemo(() => {
     if (stats) {
@@ -375,7 +374,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
           <div className="flex flex-col items-center justify-center py-14 text-center">
             <Holder icon={FileText} size="lg" />
             <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>Aucun dépôt trouvé</p>
-            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>
               {statusFilter !== 'all' || hasActiveFilters
                 ? 'Essayez de modifier vos filtres'
                 : 'Les dépôts apparaîtront ici'}

@@ -311,9 +311,13 @@ export function MobileClientDetail() {
   };
 
   const handleCopyPassword = async () => {
-    await navigator.clipboard.writeText(newPassword);
-    setPasswordCopied(true);
-    setTimeout(() => setPasswordCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
+    }
   };
 
   if (isLoading) {
