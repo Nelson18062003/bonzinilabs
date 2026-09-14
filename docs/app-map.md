@@ -76,3 +76,9 @@ macro, messages clients, réponses toutes faites, suggestions, administrateurs, 
 9. Trésorerie.
 10. Support chat, Mola, notifications, tableau de bord.
 11. Réglages, profil, passkeys, expédition — polish.
+
+## Couverture de l'audit (mise à jour 14/09, itérations 9 à 20)
+- Surfaces passées au harnais (captures 390 px, scan des cibles < 40 px, textes < 12 px, noms accessibles, h1, images sans alt, champs sans libellé) : admin mobile (≈ 45 écrans), agent cash (`ROLE=cash_agent`), app client (14 écrans en fr/en/zh), pages publiques, desktop admin (1280 px).
+- Parcours rejoués (Playwright, réseau simulé) : nouveau dépôt admin et client (plafond 50 M), nouveau paiement client (RPC `create_payment`), confirmation cash agent (signature + `confirm_cash_payment`), création de conversation et de bénéficiaire (bloquées par le harnais, pas par l'app).
+- Pannes simulées (`FAIL=` dans `tools/audit-*.mjs`) sur chaque table : états d'erreur réessayables partout côté client ; admin : support, stats, admins, historique, justificatifs, notifications, tableau de bord analytics.
+- Reste hors harnais : Mola (SSE), flux d'upload réels vers Storage, edge functions (revue statique seulement, cf. F-048 à F-052).
