@@ -410,22 +410,22 @@ function Footer() {
   const { t } = useTranslation('landing');
   const cols = [
     { title: t('footer.product'), links: [
-      { key: 'howItWorks', label: t('footer.links.howItWorks') },
+      { key: 'howItWorks', label: t('footer.links.howItWorks'), href: '#fonctionnement' },
       { key: 'pricing', label: t('footer.links.pricing') },
-      { key: 'faq', label: t('footer.links.faq') },
+      { key: 'faq', label: t('footer.links.faq'), href: '#faq' },
       { key: 'security', label: t('footer.links.security') },
     ]},
     { title: t('footer.company'), links: [
       { key: 'about', label: t('footer.links.about') },
-      { key: 'contact', label: t('footer.links.contact') },
+      { key: 'contact', label: t('footer.links.contact'), href: 'mailto:contact@bonzinilabs.com' },
       // Ces deux-là mènent à de vraies pages : Google vérifie qu'elles
       // répondent avant d'afficher « Bonzini Labs » sur l'écran de consentement.
       { key: 'privacy', label: t('footer.links.privacy'), to: '/confidentialite' },
       { key: 'terms', label: t('footer.links.terms'), to: '/conditions' },
     ]},
     { title: t('footer.support'), links: [
-      { key: 'whatsapp', label: t('footer.links.whatsapp') },
-      { key: 'emailSupport', label: t('footer.links.emailSupport') },
+      { key: 'whatsapp', label: t('footer.links.whatsapp'), href: 'https://wa.me/237652236856', external: true },
+      { key: 'emailSupport', label: t('footer.links.emailSupport'), href: 'mailto:contact@bonzinilabs.com' },
       { key: 'helpCenter', label: t('footer.links.helpCenter') },
     ]},
   ];
@@ -445,9 +445,10 @@ function Footer() {
               <h4 style={{ fontFamily: F.body, fontWeight: 700, fontSize: 12, color: C.muted, margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: 1.5 }}>{col.title}</h4>
               {col.links.map(l => {
                 const style = { display: 'flex', alignItems: 'center', minHeight: 44, fontFamily: F.body, fontSize: 14, color: C.dim, textDecoration: 'none' };
-                return 'to' in l && l.to
-                  ? <Link key={l.key} to={l.to} style={style}>{l.label}</Link>
-                  : <a key={l.key} href="#" style={style}>{l.label}</a>;
+                if ('to' in l && l.to) return <Link key={l.key} to={l.to} style={style}>{l.label}</Link>;
+                // Sans cible connue, l'entrée reste un texte : un href="#" renvoyait en haut de page.
+                if (!('href' in l) || !l.href) return <span key={l.key} style={{ ...style, cursor: 'default' }}>{l.label}</span>;
+                return <a key={l.key} href={l.href} style={style} {...('external' in l && l.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{l.label}</a>;
               })}
             </div>
           ))}

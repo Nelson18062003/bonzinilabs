@@ -34,6 +34,8 @@ await ctx.route('**/*supabase.co/**', (route) => {
   if (req.url().includes('/auth/v1/token')) return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(SESSION) });
   if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS, body: '' });
   const url = req.url();
+  // FAIL=table1,table2 (ou FAIL=, pour tout) : ces tables/RPC répondent 500 — audit des états d'erreur.
+  if (process.env.FAIL && process.env.FAIL.split(',').some((t) => url.includes('/rest/v1/' + t) || url.includes('/rpc/' + t))) return route.fulfill({ status: 500, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify({ message: 'boom' }) });
   if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { ...CORS, 'content-range': `0-0/${headCount(url)}` }, body: '' });
   if (req.method() === 'GET' && url.includes('/storage/v1/object/fake/')) return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/svg+xml' }, body: url.includes('qr') ? qrSvg : proofSvg });
   let body = respond(url);
