@@ -179,21 +179,21 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
 
       {/* 4 · Sortie. Admin : copier / télécharger l'image, PDF. Client (téléphone) : partager, PDF. */}
       {(() => {
-        const btn = (kind: 'share' | 'copy' | 'png' | 'pdf', Icon: typeof Copy, label: string, primary: boolean) => (
+        const btn = (kind: 'share' | 'copy' | 'png' | 'pdf', Icon: typeof Copy, label: string, primary: boolean, wide = false) => (
           <button
             key={kind}
             type="button"
             onClick={() => run(kind)}
             disabled={!canExport}
-            className={cn('flex items-center justify-center gap-2 py-3 text-[14px] font-bold transition active:scale-[0.98] disabled:opacity-60', primary ? PRIMARY_PILL : SOFT_PILL)}
+            className={cn('flex h-11 items-center justify-center gap-2 whitespace-nowrap px-4 text-[15px] font-bold transition active:scale-[0.98] disabled:opacity-60', wide && 'col-span-2', primary ? PRIMARY_PILL : SOFT_PILL)}
           >
             {busy === kind ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
             {label}
           </button>
         );
         return mode === 'admin' ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            {btn('copy', Copy, t('myCode.copyImage', { defaultValue: 'Copier l’image' }), true)}
+          <div className="grid grid-cols-2 gap-2.5">
+            {btn('copy', Copy, t('myCode.copyImage', { defaultValue: 'Copier l’image' }), true, true)}
             {btn('png', Download, t('myCode.downloadImage', { defaultValue: 'Télécharger l’image' }), false)}
             {btn('pdf', FileDown, t('myCode.downloadPdf', { defaultValue: 'PDF à imprimer' }), false)}
           </div>

@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import {
   DESTINATION_HINT_FR,
   DESTINATION_LABEL,
+  DESTINATION_SLUG,
   SHIPPING_DESTINATIONS,
   isLocationConfigured,
   type ShippingDestination,
@@ -136,7 +137,9 @@ export function MobileShippingLabelSheet({ open, onClose, code, clientName, clie
             )}
           </div>
         </div>
-        <p className={cn('text-[14px] text-[#5A5A5A] dark:text-[#CDCDCD]')}>Identifiant {code}. Le fichier s'appelle bonzini-etiquette-{destination === 'warehouse' ? 'sea-cargo' : 'air-cargo'}-{code}.</p>
+        <p className={cn('text-[16px] leading-relaxed text-[#5A5A5A] dark:text-[#CDCDCD]')}>
+          Identifiant {code}. Le fichier s'appelle bonzini-etiquette-{DESTINATION_SLUG[destination]}-{code}.
+        </p>
       </div>
     </BottomSheet>
   );
