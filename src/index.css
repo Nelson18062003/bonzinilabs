@@ -872,7 +872,7 @@
   }
 
   .liquid-tab-label {
-    @apply text-[10px] font-medium leading-none;
+    @apply text-[12px] font-semibold leading-none;
   }
 
   .liquid-tab-icon {

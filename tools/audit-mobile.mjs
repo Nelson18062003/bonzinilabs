@@ -3,7 +3,7 @@
 // répondu par les fixtures partagées. Sort aussi des mesures de dérive kit :
 // tailles de police < 14 px, rayons hors {4,8,16,9999}, cibles < 44 px,
 // débordement horizontal, hauteur d'en-tête avant le premier contenu.
-// Lancer vite avec SCREENSHOT_MOCK=1 ; PORT=8093 OUT=… node tools/audit-mobile.mjs
+// Lancer vite avec SCREENSHOT_MOCK=1 ; PORT=8093 OUT=… [ROLE=cash_agent] node tools/audit-mobile.mjs
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { respond, headCount, qrSvg, proofSvg } from './adminFixtures.mjs';
@@ -21,6 +21,9 @@ const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers
 
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM ?? '/opt/pw-browsers/chromium', args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'fr-FR', colorScheme: (process.env.THEME === 'dark' ? 'dark' : 'light') });
+// ROLE=cash_agent : le contexte admin simulé (mockAdminAuth) lit ce rôle et
+// ouvre la chaîne agent cash (/a/…), fermée aux autres rôles.
+if (process.env.ROLE) await ctx.addInitScript((r) => { try { localStorage.setItem('screenshot-role', r); } catch { /* privé */ } }, process.env.ROLE);
 await ctx.route('**/*supabase.co/**', (route) => {
   const req = route.request();
   if (req.method() === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS, body: '' });

@@ -175,7 +175,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
                 <XAxis dataKey="dayLabel" tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
                 <Line type="monotone" dataKey="Client" stroke={ORANGE} strokeWidth={2.5} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="Bonzini" stroke={VIOLET} strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>

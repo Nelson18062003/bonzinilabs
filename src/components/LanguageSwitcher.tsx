@@ -75,9 +75,9 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className={cn('h-9 gap-1.5 px-2.5', className)}>
+        <Button variant="ghost" size="sm" className={cn('h-11 gap-1.5 px-3', className)}>
           <Globe className="h-4 w-4" />
-          <span className="text-xs">{languageFlags[currentLang]}</span>
+          <span className="text-[14px]">{languageFlags[currentLang]}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

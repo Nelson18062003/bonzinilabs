@@ -162,7 +162,7 @@ export function AgentCashScanner() {
         </Card>
 
         {/* Section label — whitespace only, no divider lines (kit language) */}
-        <p className={cn('px-1 pt-1 text-xs font-bold uppercase tracking-wider', TEXT.muted)}>
+        <p className={cn('px-1 pt-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
           {t('manual_entry')}
         </p>
 
@@ -186,6 +186,7 @@ export function AgentCashScanner() {
             <PrimaryPill
               onClick={handleManualSearch}
               disabled={!manualId.trim()}
+              aria-label={t('search')}
               className="shrink-0 px-4"
             >
               <Search className="w-4 h-4" />

@@ -86,16 +86,16 @@ export function AgentCashPayments() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleLanguage}
-              className={cn('px-2 py-1 rounded-md text-xs font-medium transition-colors hover:text-foreground', TEXT.muted)}
+              className={cn('min-h-11 rounded-lg px-3 text-[14px] font-semibold transition-colors hover:text-foreground', TEXT.muted)}
             >
               {language === 'en' ? '中文' : 'EN'}
             </button>
             <button
               onClick={handleLogout}
-              className={cn('w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
+              className={cn('flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
               aria-label={t('logout')}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
         }
@@ -162,7 +162,7 @@ export function AgentCashPayments() {
                   <div>
                     <Row label={t('beneficiary')} value={getBeneficiaryName(payment)} />
                     <Row label={t('client')} value={getClientName(payment)} />
-                    <Row label={t('reference')} value={<span className="font-mono text-xs">{payment.reference}</span>} />
+                    <Row label={t('reference')} value={<span className="font-mono text-[14px]">{payment.reference}</span>} />
                     <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />
                   </div>
                 </Card>

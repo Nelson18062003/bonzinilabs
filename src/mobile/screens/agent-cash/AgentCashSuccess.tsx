@@ -74,7 +74,7 @@ export function AgentCashSuccess() {
           {/* Signature confirmation */}
           {payment.cash_signature_url && (
             <div className="mx-auto mt-4 w-full max-w-xs rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
-              <p className={cn('mb-2 text-center text-xs font-medium', TEXT.muted)}>
+              <p className={cn('mb-2 text-center text-[14px] font-medium', TEXT.muted)}>
                 {t('beneficiary_signature') || 'Signature du bénéficiaire'}
               </p>
               <img
@@ -84,7 +84,7 @@ export function AgentCashSuccess() {
                 style={{ maxHeight: '100px', objectFit: 'contain' }}
               />
               {payment.cash_signed_by_name && (
-                <p className={cn('mt-1 text-center text-xs', TEXT.muted)}>
+                <p className={cn('mt-1 text-center text-[14px]', TEXT.muted)}>
                   {payment.cash_signed_by_name}
                 </p>
               )}

@@ -350,7 +350,7 @@
     "expiredBannerMessage": "Le delai recommande est depasse, mais vous pouvez toujours envoyer votre preuve",
     "criticalBannerWarning": "Attention: delai presque ecoule !",
     "warningBannerMessage": "Pensez a envoyer votre preuve rapidement",
-    "normalBannerMessage": "Effectuez le depot et envoyez la preuve"
+    "normalBannerMessage": "Effectuez le dépôt et envoyez la preuve"
   },
   "searchPlaceholder": "Rechercher (référence, méthode…)",
   "list": {
