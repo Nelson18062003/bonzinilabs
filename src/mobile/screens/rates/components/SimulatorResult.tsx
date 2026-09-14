@@ -58,7 +58,7 @@ export function SimulatorResult({
       {inputCurrency === 'cny' && inputAmount != null && (
         <div className={cn('mb-2 flex items-center justify-between rounded-lg px-3 py-2', SURFACE.canvas)}>
           <span className={cn('text-[16px] font-semibold', TEXT.muted)}>Saisie CNY</span>
-          <span className="text-[16px] font-bold text-[#E8B931]">
+          <span className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">
             {inputAmount.toLocaleString('fr-FR')} CNY
           </span>
         </div>
@@ -74,7 +74,7 @@ export function SimulatorResult({
             {amountXAF.toLocaleString('fr-FR')}
           </div>
         </div>
-        <span className="text-[16px] font-bold text-[#E8B931]">XAF</span>
+        <span className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">XAF</span>
       </div>
 
       {/* Flèche */}

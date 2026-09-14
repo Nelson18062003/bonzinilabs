@@ -57,7 +57,7 @@ import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
-const VIOLET = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
+const VIOLET = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
 const FALLBACK_RATE = 11530;
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -511,14 +511,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             <ChevronLeft className="h-6 w-6" />
           </button>
           <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau paiement</span>
-          <span className="text-[16px] font-bold" style={{ color: VIOLET }}>{step}/5</span>
+          <span className={cn('text-[16px] font-bold', TEXT.strong)}>{step}/5</span>
         </div>
         <div className="flex gap-1 pb-3">
           {[1, 2, 3, 4, 5].map((n) => (
             <div
               key={n}
               className="h-[3px] flex-1 rounded-full transition-colors"
-              style={{ background: step >= n ? VIOLET : 'rgba(0,0,0,0.08)' }}
+              style={{ background: step >= n ? 'var(--ink, #2C2C2C)' : 'rgba(128,128,128,0.25)' }}
             />
           ))}
         </div>
@@ -571,13 +571,13 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   >
                     <div
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                      style={{ background: `${VIOLET}14`, color: VIOLET }}
+                      style={{ background: 'rgba(128,128,128,0.16)' }}
                     >
                       {ini}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{name}</div>
-                      <div className={cn('truncate text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      <div className={cn('break-words text-[16px] font-bold', TEXT.strong)}>{name}</div>
+                      <div className={cn('break-words text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
                     </div>
                     {bal !== null ? (
                       <span className={cn('shrink-0 text-[16px] font-bold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
@@ -904,7 +904,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                             >
                               <div
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                                style={{ background: `${VIOLET}14`, color: VIOLET }}
+                                style={{ background: 'rgba(128,128,128,0.16)' }}
                               >
                                 {(b.alias || b.name)[0]?.toUpperCase()}
                               </div>
@@ -970,7 +970,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   <Card className="flex items-center gap-3">
                     <div
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                      style={{ background: `${VIOLET}14`, color: VIOLET }}
+                      style={{ background: 'rgba(128,128,128,0.16)' }}
                     >
                       {getInitials(client.first_name ?? '', client.last_name ?? '')}
                     </div>
@@ -1012,7 +1012,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     {/* QR Code upload */}
                     <FormField label={<>QR Code {mode.name}<Opt /></>}>
                       {qrPreview ? (
-                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
+                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: 'inset 0 0 0 2px rgba(128,128,128,0.35)' }}>
                           <img
                             src={qrPreview}
                             alt="QR code"

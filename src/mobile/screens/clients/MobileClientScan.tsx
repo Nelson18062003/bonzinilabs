@@ -167,7 +167,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
           </Card>
         )}
 
-        <p className={cn('px-1 pt-1 text-[14px] font-semibold uppercase tracking-wider', TEXT.muted)}>Saisie manuelle</p>
+        <p className={cn('px-1 pt-1 text-[16px] font-semibold', TEXT.strong)}>Saisie manuelle</p>
 
         <Card className="space-y-3">
           <p className={cn('text-[16px]', TEXT.muted)}>

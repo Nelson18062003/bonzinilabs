@@ -139,7 +139,7 @@ export const TONE_SOLID: Record<Tone, string> = {
 export const TONE_TEXT: Record<Tone, string> = {
   success: 'text-[#009951] dark:text-[#14AE5C]',
   pending: 'text-[#975102] dark:text-[#E8B931]',
-  danger: 'text-[#C00F0C] dark:text-[#EC221F]',
+  danger: 'text-[#C00F0C] dark:text-[#FCB3AD]',
   info: 'text-[#1E1E1E] dark:text-[#F5F5F5]',
   neutral: 'text-[#757575] dark:text-[#B3B3B3]',
 };

@@ -175,7 +175,7 @@ export function RateConfigTab() {
       <PrimaryPill
         onClick={handleSave}
         loading={saving}
-        className="w-full py-[15px] text-[16px] bg-[#E8B931] text-white dark:bg-[#E8B931] dark:text-white"
+        className="w-full py-[15px] text-[16px] bg-[#E8B931] text-[#401B01] dark:bg-[#E8B931] dark:text-[#401B01]"
       >
         Sauvegarder la configuration
       </PrimaryPill>

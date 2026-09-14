@@ -197,7 +197,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
         </div>
 
         {/* Méthodes — grille 4, tuile active remplie (lilas) */}
-        <div className="mt-4 grid grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-2 min-[360px]:grid-cols-4 gap-2">
           {PAYMENT_METHODS.map((pm) => {
             const active = method === pm.key;
             return (

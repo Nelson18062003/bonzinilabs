@@ -438,9 +438,8 @@ export function MobileClientDetail() {
                 return (
                   <ListRow
                     key={c.id}
-                    title={c.container_number || c.bl_number || 'Conteneur'}
-                    subtitle={arrivalSentence(c)}
-                    trailing={<StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />}
+                    title={<span className="whitespace-nowrap tabular-nums">{c.container_number || c.bl_number || 'Conteneur'}</span>}
+                    subtitle={<><span className="block">{arrivalSentence(c)}</span><StatusPill className="mt-1.5" tone={TONE_OF[level]} label={ALERT[level].label} /></>}
                     onClick={() => navigate(`/m/cargo/${c.id}`)}
                   />
                 );

@@ -60,8 +60,8 @@ export function Button({
       disabled={dead}
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors',
-        size === 'sm' ? 'h-8 px-2 text-[14px] [&_svg]:h-4 [&_svg]:w-4' : 'h-10 px-3 text-[16px] [&_svg]:h-5 [&_svg]:w-5',
+        'inline-flex min-w-0 max-w-full items-center justify-center gap-2 text-center font-medium transition-colors',
+        size === 'sm' ? 'h-8 px-2 text-[14px] [&_svg]:h-4 [&_svg]:w-4' : 'min-h-11 px-3 py-2 text-[16px] leading-snug [&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0',
         dead ? DISABLED_PILL : VARIANT[variant],
         className,
       )}
@@ -311,7 +311,7 @@ export function Chip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap px-3 text-[16px] font-semibold transition-colors',
+        'inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap px-3 text-[16px] font-semibold transition-colors',
         active ? TOGGLE_ON : TOGGLE_OFF,
         className,
       )}
@@ -379,7 +379,7 @@ export function Segmented<T extends string>({
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'inline-flex h-10 flex-1 items-center justify-center gap-2 whitespace-nowrap px-2 text-[16px] font-semibold transition-colors',
+              'inline-flex h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap px-2 text-[16px] font-semibold transition-colors',
               active ? TOGGLE_ON : TOGGLE_OFF,
             )}
           >
@@ -426,7 +426,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttri
       <input
         ref={ref}
         className={cn(
-          'h-10 w-full rounded-lg border border-[#D9D9D9] bg-white px-3 text-[16px] outline-none transition-colors',
+          'h-11 w-full rounded-lg border border-[#D9D9D9] bg-white px-3 text-[16px] outline-none transition-colors',
           TEXT.strong,
           'placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C]',
           'disabled:border-[#B3B3B3] disabled:bg-[#D9D9D9] disabled:text-[#B3B3B3]',
@@ -583,7 +583,7 @@ export function SectionTitle({
     <div className={cn('mb-2 flex items-center justify-between', className)}>
       <h2 className={cn(TYPE.bodyStrong, TEXT.strong)}>{children}</h2>
       {action && (
-        <button type="button" onClick={action.onClick} className={cn('-mr-2 inline-flex h-10 items-center gap-0.5 rounded-lg px-2 text-[16px] font-semibold', TEXT.body, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
+        <button type="button" onClick={action.onClick} className={cn('-mr-2 inline-flex h-11 items-center gap-0.5 rounded-lg px-2 text-[16px] font-semibold', TEXT.body, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
           {action.label}
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -599,7 +599,7 @@ export function Line({ children, tone, className }: { children: React.ReactNode;
   return (
     <p className={cn('text-[16px] leading-relaxed', TEXT.body,
       tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
-      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
+      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#FCB3AD]',
       tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]', className)}>
       {children}
     </p>

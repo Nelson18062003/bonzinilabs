@@ -77,7 +77,7 @@ const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean
 };
 
 // Vert d'action = marque Dépôts (cohérent liste/détail).
-const GREEN = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
+const GREEN = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
 
 // ── Types ──────────────────────────────────────────────────
 type Step = 'client' | 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
@@ -531,7 +531,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           )}
           <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau dépôt</span>
           {step !== 'creating' && (
-            <span className="text-[16px] font-bold" style={{ color: GREEN }}>
+            <span className={cn('text-[16px] font-bold', TEXT.strong)}>
               {currentStepNum}/{totalSteps}
             </span>
           )}
@@ -542,7 +542,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               <div
                 key={i}
                 className="h-[3px] flex-1 rounded-full transition-colors"
-                style={{ background: currentStepNum >= i + 1 ? GREEN : 'rgba(0,0,0,0.08)' }}
+                style={{ background: currentStepNum >= i + 1 ? GREEN : 'rgba(128,128,128,0.25)' }}
               />
             ))}
           </div>
@@ -559,7 +559,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
                 className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
-                placeholder="Nom, téléphone ou identifiant BZ-…"
+                placeholder="Nom, téléphone ou BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
                 autoFocus
@@ -919,7 +919,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 <div className={cn(infoLineCls, 'mt-1 border-t border-black/[0.06] dark:border-white/[0.06]')}>
                   <span className={cn('text-[16px]', TEXT.muted)}>Montant à envoyer</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[16px] font-bold" style={{ color: GREEN }}>{fmt(amountNum)} XAF</span>
+                    <span className={cn('text-[16px] font-bold', TEXT.strong)}>{fmt(amountNum)} XAF</span>
                     <CopyBtn text={`${fmt(amountNum)} XAF`} fieldKey="amount" copiedField={copiedField} onCopy={handleCopy} />
                   </div>
                 </div>
@@ -933,7 +933,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     <li key={index} className="flex items-start gap-2.5">
                       <span
                         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[16px] font-bold"
-                        style={{ background: `${GREEN}1A`, color: GREEN }}
+                        style={{ background: 'rgba(128,128,128,0.16)', color: GREEN }}
                       >
                         {index + 1}
                       </span>

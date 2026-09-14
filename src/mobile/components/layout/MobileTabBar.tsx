@@ -96,7 +96,7 @@ export function MobileTabBar({ className }: { className?: string }) {
                   </span>
                 )}
               </span>
-              <span className={cn('max-w-full whitespace-nowrap text-[14px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
+              <span className={cn('max-w-full whitespace-nowrap text-[12px] leading-none tracking-[-0.02em] min-[360px]:text-[14px] min-[360px]:tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
             </Link>
           );
         })}

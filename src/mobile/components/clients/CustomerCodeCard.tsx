@@ -38,7 +38,7 @@ export function CustomerCodeCard({ code, className }: { code: string; className?
         </div>
         <div className="min-w-0 flex-1">
           <p className={cn('text-[16px]', TEXT.muted)}>Identifiant client</p>
-          <p className={cn('mt-1 text-[26px] font-black leading-none tracking-[0.03em] tabular-nums', TEXT.strong)}>{code}</p>
+          <p className={cn('mt-1 whitespace-nowrap text-[22px] min-[360px]:text-[26px] font-black leading-none tracking-[0.03em] tabular-nums', TEXT.strong)}>{code}</p>
         </div>
       </div>
       <p className={cn('text-[16px] leading-relaxed', TEXT.body)}>

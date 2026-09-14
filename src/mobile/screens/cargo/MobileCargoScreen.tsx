@@ -86,7 +86,7 @@ export function MobileCargoScreen() {
               aria-pressed={active}
               onClick={() => setFilter(active && k !== 'all' ? 'all' : (k as AlertLevel | 'all'))}
               className={cn(
-                'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[16px] font-semibold transition-colors',
+                'inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[16px] font-semibold transition-colors',
                 active ? 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]',
               )}
             >

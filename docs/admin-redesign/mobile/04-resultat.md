@@ -516,3 +516,28 @@ en lazy, mascotte en WebP (315 kB → 8 kB dans la barre), polices : DM Sans en
 un fichier variable, Syne (jamais utilisée) retirée, feuille non bloquante sur
 l'entrée admin. Plus de remontage entre Dépôts et Paiements (même écran),
 tally cargo mémorisé, images d'export sans cache-bust.
+
+## Passe 21 — boucle d'audit, tour 1 (responsive, UI/UX)
+
+Audit à 320 / 390 / 430 px et en sombre, 25 routes. Corrigé :
+- **Kit** : `Button` md à 44 px (`min-h-11`), peut passer à la ligne et ne
+  déborde plus de son parent ; `Chip`, `Segmented`, `TextInput`, action de
+  section à 44 px ; rouge « danger » lisible en sombre (`#FCB3AD`).
+- **En-tête** : plus de `truncate` (titre et sous-titre passent à la ligne),
+  sous-titre à 16 px, hauteur qui suit.
+- **Barre d'onglets** : « Opérations » tient à 320 px (12 px sous 360 px).
+- **Nouveau paiement / dépôt** : l'encre d'accent devient `var(--ink)` (suit le
+  thème — compteur, barre d'étapes, anneaux invisibles en sombre) ; noms et
+  téléphones sans troncature.
+- **Taux** : encre sombre sur amber (1,8:1 → 7:1), unités lisibles, en-tête
+  qui passe à la ligne, « Prise d'effet » en grille 2×2, simulateur en 2
+  colonnes sous 360 px, historique sans troncature.
+- **Dossier cargo** : ronds d'en-tête lisibles en sombre ; parcours lisible à
+  320 px ; puces du coût à quai à 44 px, texte qui passe à la ligne.
+- **Fiche client** : numéro de conteneur entier, pastille sous la phrase ;
+  identifiant BZ entier à 320 px. Réglages d'expédition en une colonne sous
+  360 px. Sélecteur de période du tableau de bord au kit. Carte : zoom 44 px,
+  légende 16 px. « Saisie manuelle » sans capitales. Placeholder court.
+Sonde `tools/_w320` (jetable) : 0 débordement de document, 0 troncature, 0
+erreur JS sur 22 routes à 320 et 390 px (les seuls dépassements restants sont
+des rangées de puces qui défilent horizontalement, volontaires).

@@ -48,7 +48,7 @@ export function CargoJourney({ shipment: s, position }: { shipment: CargoShipmen
               )}
             </div>
             <div className="mt-1.5 min-w-0 max-w-full pr-1">
-              <div className={cn('text-[12px] max-lg:text-[16px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>
+              <div className={cn('break-words text-[12px] max-lg:text-[14px] min-[360px]:max-lg:text-[16px] font-semibold', passed || here ? TEXT.strong : TEXT.muted)}>
                 {st.narrow ? <><span className="lg:hidden">{st.narrow}</span><span className="max-lg:hidden">{st.short}</span></> : st.short}
               </div>
               <div className={cn('text-[11px] max-lg:text-[14px] tabular-nums', TEXT.muted)}>

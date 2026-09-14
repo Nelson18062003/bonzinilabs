@@ -16,6 +16,8 @@
     --vvh: 100dvh;
     --vvt: 0px;
     --vvk: 0px;
+    /* L'encre d'accent des formulaires mobiles (anneaux, barres d'étapes) : suit le thème. */
+    --ink: #2C2C2C;
 
     /* Bonzini Brand Colors */
     --bonzini-purple: 258 100% 60%;
@@ -100,6 +102,7 @@
   }
 
   .dark {
+    --ink: #E3E3E3;
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
     
@@ -1532,7 +1535,9 @@
 .cargo-popup__k { margin-top: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
 @media (max-width: 1023px) {
   /* Mobile : la carte se lit aussi au soleil — étiquettes 14 px, encre foncée. */
-  .cargo-ship__label, .cargo-port__label, .cargo-legend { font-size: 14px; }
+  .cargo-ship__label, .cargo-port__label { font-size: 14px; }
+  .cargo-legend { font-size: 16px; }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
   .cargo-ship__label em { font-size: 13px; }
   .cargo-port__label { color: hsl(var(--foreground)); }
   .cargo-popup__k { font-size: 12px; }

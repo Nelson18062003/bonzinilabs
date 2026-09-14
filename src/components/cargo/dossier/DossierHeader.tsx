@@ -50,7 +50,7 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {compact ? (
-        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn('h-11 w-11 rounded-full', sync.isPending && '[&_svg]:animate-spin')} />
+        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn('h-11 w-11 rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]', sync.isPending && '[&_svg]:animate-spin')} />
       ) : (
         <button
           type="button"
@@ -63,7 +63,7 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
       )}
       {canManage && compact && (
         <>
-          <Holder icon={MoreHorizontal} size="md" onClick={() => setMenuOpen(true)} ariaLabel="Plus d'actions" className="h-11 w-11 rounded-full" />
+          <Holder icon={MoreHorizontal} size="md" onClick={() => setMenuOpen(true)} ariaLabel="Plus d'actions" className="h-11 w-11 rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]" />
           {/* Mobile : une feuille basse, réduite à ce que les sections ne couvrent pas déjà
               (le fret et le télex se basculent dans « L'argent », le navire dans « Où est le conteneur »). */}
           <MobileSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Ce conteneur">
