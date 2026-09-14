@@ -109,7 +109,7 @@ const DepositDetailPage = () => {
       >
         <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</span>
+      <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</h1>
     </div>
   );
 

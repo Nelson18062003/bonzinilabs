@@ -456,7 +456,7 @@ const NewPaymentPage = () => {
           >
             <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
           </button>
-          <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</span>
+          <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</h1>
         </div>
 
         {/* Progression — masquée sur l'écran Méthode (validé). */}

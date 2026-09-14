@@ -49,12 +49,12 @@ const NotificationsPage = () => {
     <div className="flex items-center gap-3 px-4 pb-1 pt-4">
       <button
         onClick={() => navigate(-1)}
-        aria-label={t('notifications.title')}
+        aria-label={t('myCode.back', { defaultValue: 'Retour' })}
         className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
       >
         <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <span className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('notifications.title')}</span>
+      <h1 className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('notifications.title')}</h1>
       {hasUnread && (
         <button
           onClick={() => markAllAsRead.mutate()}

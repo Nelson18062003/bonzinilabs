@@ -161,9 +161,9 @@ export default function PaymentDetailPage() {
           >
             <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
           </button>
-          <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>
+          <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>
             {payment.reference}
-          </span>
+          </h1>
         </div>
 
         <div className="space-y-5 px-4 pb-8 pt-3">

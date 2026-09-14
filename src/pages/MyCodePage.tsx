@@ -57,7 +57,7 @@ const MyCodePage = () => {
           >
             <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
           </button>
-          <span className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('myCode.title', { defaultValue: 'Mon identifiant client' })}</span>
+          <h1 className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('myCode.title', { defaultValue: 'Mon identifiant client' })}</h1>
         </div>
 
         <div className="space-y-4 px-4 pt-3">

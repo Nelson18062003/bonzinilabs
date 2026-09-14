@@ -42,7 +42,7 @@ export function ClientRatesPage() {
       >
         <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('rates.title', { defaultValue: 'Taux de change' })}</span>
+      <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('rates.title', { defaultValue: 'Taux de change' })}</h1>
     </div>
   );
 
