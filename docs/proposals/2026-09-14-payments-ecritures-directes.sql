@@ -56,3 +56,13 @@ commit;
 --   insert into public.payments (user_id, amount_xaf, amount_rmb, status) values (auth.uid(), 1, 1, 'ready_for_payment'); -- doit échouer
 -- Risque résiduel : `rate_is_custom` reste modifiable par le client (l'app l'écrit à la création) —
 -- à retirer de la liste si le taux perso est réservé à l'admin.
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VÉRIFIÉ LOCALEMENT le 14 sept. 2026 (Postgres 16 jetable, docs/proposals/verif/) :
+--   avant : client insère un paiement « prêt à payer » de 1 XAF / 999 999 ¥ (INSERT 0 1),
+--           gonfle amount_rmb (UPDATE 1) ; agent cash clôt un cash sans signature (UPDATE 1) ;
+--           admin change un montant en direct (UPDATE 1).
+--   après : A1 « violates row-level security », A2/B1/C2 « permission denied » ;
+--           A3 (client, colonnes bénéficiaire) et C1 (admin, colonnes bénéficiaire) passent ;
+--           une RPC SECURITY DEFINER met toujours le statut à jour.
+-- ─────────────────────────────────────────────────────────────────────────

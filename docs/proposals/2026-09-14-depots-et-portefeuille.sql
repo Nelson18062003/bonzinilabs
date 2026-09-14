@@ -41,3 +41,10 @@ commit;
 -- correctifs. Le test moneyRpcGuards.test.ts exige désormais ces aiguilles dans toute
 -- redéfinition postérieure. Toute future migration qui recopie 20260831160000 telle quelle
 -- réintroduirait le crédit par montant négatif.
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VÉRIFIÉ LOCALEMENT le 14 sept. 2026 (docs/proposals/verif/guards_test.sql) :
+--   F-033 : solde 1 213 450 → refusé ; solde 0 + paiement en cours → refusé ; solde 0 sans
+--           opération → supprimé. F-025 : dépôt sur le compte d'un autre → refusé ; sur son
+--           propre compte → accepté ; par un admin canProcessDeposits pour autrui → accepté.
+-- ─────────────────────────────────────────────────────────────────────────

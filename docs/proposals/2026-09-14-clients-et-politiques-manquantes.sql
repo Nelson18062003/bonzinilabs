@@ -49,3 +49,10 @@ commit;
 --   `IF NOT public.admin_has_permission(auth.uid(), 'canManageUsers')` dans les deux fonctions
 --   (redéfinition complète), et vérifier que le rôle `ops` garde bien canManageUsers dans
 --   ROLE_PERMISSIONS avant d'appliquer — sinon les opérateurs ne pourront plus créer de clients.
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VÉRIFIÉ LOCALEMENT le 14 sept. 2026 (docs/proposals/verif/guards_test.sql) :
+--   F-033 : solde 1 213 450 → refusé ; solde 0 + paiement en cours → refusé ; solde 0 sans
+--           opération → supprimé. F-025 : dépôt sur le compte d'un autre → refusé ; sur son
+--           propre compte → accepté ; par un admin canProcessDeposits pour autrui → accepté.
+-- ─────────────────────────────────────────────────────────────────────────
