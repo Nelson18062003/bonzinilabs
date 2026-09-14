@@ -257,6 +257,7 @@
   "new": {
     "amountToDeposit": "Montant à déposer",
     "minimumAmount": "Montant minimum : 50 000 XAF",
+    "maximumAmount": "Montant maximum : 50 000 000 XAF",
     "continue": "Continuer",
     "back": "Retour",
     "howToDeposit": "Comment souhaitez-vous déposer ?",

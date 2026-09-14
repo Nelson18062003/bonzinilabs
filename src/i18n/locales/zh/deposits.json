@@ -257,6 +257,7 @@
   "new": {
     "amountToDeposit": "充值金额",
     "minimumAmount": "最低金额：50,000 XAF",
+    "maximumAmount": "最高金额：50,000,000 XAF",
     "continue": "继续",
     "back": "返回",
     "howToDeposit": "您想如何充值？",

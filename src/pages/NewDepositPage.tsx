@@ -65,7 +65,9 @@ const NewDepositPage = () => {
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const parsedAmount = Math.min(parseInt(amount) || 0, MAX_DEPOSIT_XAF);
+  // Jamais de plafonnement silencieux : un montant hors limite est refusé et expliqué.
+  const parsedAmount = parseInt(amount) || 0;
+  const amountOverCap = parsedAmount > MAX_DEPOSIT_XAF;
   const newBalance = (wallet?.balance_xaf ?? 0) + parsedAmount;
 
   const handleCopy = async (text: string, field: string) => {
@@ -390,7 +392,9 @@ const NewDepositPage = () => {
             })}
           </div>
 
-          <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>{t('new.minimumAmount')}</p>
+          <p className={cn('px-1 text-center text-[13px]', amountOverCap ? 'font-semibold text-[#C0504D] dark:text-[#E79A9A]' : TEXT.muted)}>
+            {amountOverCap ? t('new.maximumAmount', { defaultValue: 'Montant maximum : 50 000 000 XAF' }) : t('new.minimumAmount')}
+          </p>
         </div>
       );
     }
@@ -547,7 +551,7 @@ const NewDepositPage = () => {
     return null;
   };
 
-  const amountValid = parsedAmount >= MIN_DEPOSIT_XAF;
+  const amountValid = parsedAmount >= MIN_DEPOSIT_XAF && !amountOverCap;
 
   return (
     <MobileLayout showNav={false} showHeader={false}>

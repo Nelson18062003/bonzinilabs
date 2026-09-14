@@ -257,6 +257,7 @@
   "new": {
     "amountToDeposit": "Amount to deposit",
     "minimumAmount": "Minimum amount: 50,000 XAF",
+    "maximumAmount": "Maximum amount: 50,000,000 XAF",
     "continue": "Continue",
     "back": "Back",
     "howToDeposit": "How would you like to deposit?",
