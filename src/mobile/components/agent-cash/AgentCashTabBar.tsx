@@ -7,7 +7,7 @@ export function AgentCashTabBar({ className }: { className?: string }) {
   const { t } = useLanguage();
 
   const items: TabItem[] = [
-    { to: '/a', icon: Banknote, label: t('cash_payments'), end: true },
+    { to: '/a', icon: Banknote, label: t('tab_payments'), end: true },
     { to: '/a/scan', icon: ScanLine, label: t('scanner') },
   ];
 

@@ -37,6 +37,7 @@ import {
   SoftPill,
   BottomSheet,
   ScreenLoader,
+  Button,
 } from '@/mobile/designKit';
 
 // Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
@@ -58,6 +59,7 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
   const create = useCreateQuickReply();
   const update = useUpdateQuickReply();
   const del = useDeleteQuickReply();
+  const [toDelete, setToDelete] = useState<string | null>(null);
   const reorder = useReorderQuickReplies();
 
   const [editing, setEditing] = useState<ChatClientQuickReply | null>(null);
@@ -107,10 +109,10 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
               <button
                 type="button"
                 onClick={() => setCreating(true)}
-                className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+                className={cn('flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
                 aria-label={t('quickReplies.create')}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </button>
             ) : undefined
           }
@@ -141,39 +143,33 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
         ) : (
           (replies ?? []).map((qr, idx) => (
             <Card key={qr.id} className={cn(!qr.active && 'opacity-60')}>
-              <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className={cn('text-[14px] font-bold', TEXT.strong)}>{qr.label}</p>
+                  <p className={cn('text-[16px] font-bold', TEXT.strong)}>{qr.label}</p>
                   {!qr.active && (
                     <StatusPill tone="neutral" label={t('quickReplies.inactive')} className="mt-1" />
                   )}
                 </div>
                 {isSuperAdmin && (
-                  <div className="flex gap-1">
-                    <Holder icon={ArrowUp} size="sm" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn('h-7 w-7', idx === 0 && 'pointer-events-none opacity-30')} />
-                    <Holder icon={ArrowDown} size="sm" onClick={idx === (replies ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn('h-7 w-7', idx === (replies ?? []).length - 1 && 'pointer-events-none opacity-30')} />
+                  <div className="flex flex-wrap gap-1">
+                    <Holder icon={ArrowUp} size="md" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn(idx === 0 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={ArrowDown} size="md" onClick={idx === (replies ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn(idx === (replies ?? []).length - 1 && 'pointer-events-none opacity-30')} />
                     <Holder
                       icon={qr.active ? EyeOff : Eye}
-                      size="sm"
+                      size="md"
                       onClick={() => update.mutate({ id: qr.id, active: !qr.active })}
-                      className="h-7 w-7"
                     />
-                    <Holder icon={Edit3} size="sm" onClick={() => setEditing(qr)} className="h-7 w-7" />
+                    <Holder icon={Edit3} size="md" onClick={() => setEditing(qr)} />
                     <Holder
                       icon={Trash2}
                       tone="danger"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm(t('quickReplies.confirmDelete'))) {
-                          del.mutate(qr.id);
-                        }
-                      }}
-                      className="h-7 w-7"
+                      size="md"
+                      onClick={() => setToDelete(qr.id)}
                     />
                   </div>
                 )}
               </div>
-              <p className={cn('whitespace-pre-wrap text-[14px]', TEXT.muted)}>{qr.content}</p>
+              <p className={cn('whitespace-pre-wrap text-[16px]', TEXT.muted)}>{qr.content}</p>
             </Card>
           ))
         )}
@@ -204,6 +200,14 @@ export function MobileQuickRepliesScreen({ desktop = false }: { desktop?: boolea
           }}
         />
       )}
+
+      <BottomSheet open={toDelete != null} onClose={() => setToDelete(null)} title={t('quickReplies.confirmDelete')}>
+        <p className={cn('text-[16px]', TEXT.muted)}>Cette suggestion ne sera plus proposée. Ce geste ne se défait pas.</p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <Button variant="neutral" onClick={() => setToDelete(null)}>Garder</Button>
+          <Button variant="danger" loading={del.isPending} onClick={() => { if (toDelete) del.mutate(toDelete, { onSettled: () => setToDelete(null) }); }}>Supprimer</Button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

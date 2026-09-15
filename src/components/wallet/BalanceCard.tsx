@@ -39,7 +39,7 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
         </div>
         <button
           onClick={() => setShowBalance((v) => !v)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 transition active:scale-95"
           aria-label={showBalance ? t('wallet.hideBalance') : t('wallet.showBalance')}
         >
           {showBalance ? <EyeOff className="h-4 w-4 text-white/80" /> : <Eye className="h-4 w-4 text-white/80" />}

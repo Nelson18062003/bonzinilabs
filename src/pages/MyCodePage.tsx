@@ -57,7 +57,7 @@ const MyCodePage = () => {
           >
             <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
           </button>
-          <span className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('myCode.title', { defaultValue: 'Mon identifiant client' })}</span>
+          <h1 className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('myCode.title', { defaultValue: 'Mon identifiant client' })}</h1>
         </div>
 
         <div className="space-y-4 px-4 pt-3">
@@ -105,7 +105,7 @@ const MyCodePage = () => {
                     <div className={cn('text-[10.5px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('myCode.bankMotif', { defaultValue: 'Libellé du virement' })}</div>
                     <div className={cn('text-[15px] font-black tabular-nums', TEXT.strong)}>{code || '—'}</div>
                   </div>
-                  <button type="button" onClick={copyCode} aria-label={t('myCode.copy', { defaultValue: 'Copier l’identifiant' })} className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
+                  <button type="button" onClick={copyCode} aria-label={t('myCode.copy', { defaultValue: 'Copier l’identifiant' })} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </button>
                 </div>

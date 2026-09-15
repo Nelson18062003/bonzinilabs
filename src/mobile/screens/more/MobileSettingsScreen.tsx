@@ -33,12 +33,12 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
           <Card>
             <div className="mb-3 flex items-center gap-2">
               <Palette className={cn('h-4 w-4', TEXT.muted)} />
-              <p className={cn('text-[14px] font-semibold', TEXT.strong)}>
+              <p className={cn('text-[16px] font-semibold', TEXT.strong)}>
                 {t('appTheme', { defaultValue: "Thème de l'application" })}
               </p>
             </div>
             <ThemeToggle />
-            <p className={cn('mt-3 text-[14px]', TEXT.muted)}>
+            <p className={cn('mt-3 text-[16px]', TEXT.muted)}>
               {t('systemModeNote', { defaultValue: "Le mode Système s'adapte automatiquement aux préférences de votre appareil." })}
             </p>
           </Card>

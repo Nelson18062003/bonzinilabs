@@ -5,6 +5,7 @@
 // Logique 100% PRÉSERVÉE (conversations, création, nav). Le CHAT lui-même
 // reste le design partagé admin↔client.
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +24,7 @@ const LILAC = '#8B5CF6';
 const SupportListPage = () => {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
-  const { data: conversations, isLoading } = useMyChatConversations();
+  const { data: conversations, isLoading, isError, refetch } = useMyChatConversations();
   const create = useCreateChatConversation();
   const [showNewForm, setShowNewForm] = useState(false);
   const [subject, setSubject] = useState('');
@@ -123,6 +124,8 @@ const SupportListPage = () => {
               <div key={i} className={cn('h-[68px] animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what={t('list.loadWhat', { defaultValue: 'vos conversations' })} onRetry={() => { void refetch(); }} />
         ) : list.length === 0 ? (
           <div className={cn('mt-2 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>

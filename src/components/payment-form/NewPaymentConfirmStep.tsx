@@ -62,7 +62,7 @@ export function NewPaymentConfirmStep({
         {showRate && (
           <div className="mt-4 rounded-2xl bg-[#EDEAFA] px-4 py-3.5 dark:bg-[#2F2C3D]">
             <div className={cn('text-[11px] font-bold uppercase tracking-wide', TEXT.muted)}>
-              Taux du jour appliqué
+              {t('form.rateAppliedTitle')}
             </div>
             <div className={cn('mt-1 text-[17px] font-black tabular-nums', TEXT.strong)}>
               1 000 000 XAF = ¥{formatNumber(Math.round(1_000_000 * rate))}

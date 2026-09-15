@@ -395,7 +395,7 @@ export function MobileAssistantScreen({ desktop = false }: { desktop?: boolean }
           }}
           rows={1}
           placeholder="Écris à Mola…"
-          className={cn('max-h-32 flex-1 resize-none rounded-lg border border-[#D9D9D9] px-3 py-2 text-[16px] text-[#1E1E1E] outline-none placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C] dark:border-[#444444] dark:text-[#F5F5F5] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]', CARD)}
+          className={cn('max-h-32 flex-1 resize-none rounded-lg px-3 py-2 text-[16px] text-[#1E1E1E] outline-none placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C] dark:text-[#F5F5F5] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]', SURFACE.field, CARD)}
         />
         <button
           onClick={handleSend}

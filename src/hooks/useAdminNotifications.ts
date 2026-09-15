@@ -3,9 +3,9 @@
 // Uses supabaseAdmin (admin session)
 // ============================================================
 import { useQuery } from '@tanstack/react-query';
+import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/actionable';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG } from '@/lib/constants';
-import type { Enums } from '@/integrations/supabase/types';
 import i18n from '@/i18n';
 import { alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence, delaySentence } from '@/lib/cargo/plain';
@@ -75,8 +75,6 @@ function cargoNotifications(shipments: CargoShipment[]): AdminNotification[] {
   return out;
 }
 
-const ACTIONABLE_DEPOSIT_STATUSES: Enums<'deposit_status'>[] = ['proof_submitted', 'admin_review'];
-const ACTIONABLE_PAYMENT_STATUSES: Enums<'payment_status'>[] = ['ready_for_payment', 'cash_scanned', 'processing'];
 
 /**
  * Fetches all actionable items for the admin notification center.
@@ -191,6 +189,12 @@ export function useAdminNotificationCount() {
 /**
  * Split counts of actionable deposits and payments
  */
+/** Les compteurs à rafraîchir après tout geste d'argent (badges des onglets, cloche). */
+export const ACTION_BADGE_KEYS: ReadonlyArray<readonly string[]> = [['admin-notification-count'], ['admin-notifications'], ['admin-actionable-counts']];
+export function invalidateActionBadges(qc: { invalidateQueries: (o: { queryKey: readonly unknown[] }) => unknown }): void {
+  for (const k of ACTION_BADGE_KEYS) qc.invalidateQueries({ queryKey: k });
+}
+
 export function useAdminActionableCounts() {
   return useQuery({
     queryKey: ['admin-actionable-counts'],

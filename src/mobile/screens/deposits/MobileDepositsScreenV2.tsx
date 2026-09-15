@@ -7,6 +7,7 @@
 // (famille/période/tri), chips statut, infinite scroll, SLA.
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useDepositStats } from '@/hooks/useAdminDeposits';
 import { usePaginatedAdminDeposits, type DepositFilters } from '@/hooks/usePaginatedDeposits';
@@ -106,21 +107,27 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
     // Note: DepositFilters supporte method (string unique) — on filtre par famille côté client
     // Pas besoin d'envoyer le filtre méthode au serveur ici
 
+    // Famille filtrée côté serveur : filtrée côté client, une première page
+    // sans Wave affichait « Aucun dépôt » alors que la suite en contenait.
+    if (familyFilter !== 'all') params.methods = FAMILY_TO_METHODS[familyFilter] ?? [];
+
     if (dateFrom) params.dateFrom = dateFrom;
     if (dateTo) params.dateTo = dateTo;
 
     params.sortField = 'created_at';
-    params.sortAscending = false;
+    // La file « À traiter » se lit comme une file : le plus ancien en tête.
+    params.sortAscending = statusFilter === 'to_process';
 
     const hasFilters = params.status || params.statuses || params.dateFrom || params.dateTo;
     const isDefault = !hasFilters;
     if (isDefault) return undefined;
     return params;
-  }, [statusFilter, dateFrom, dateTo]);
+  }, [statusFilter, familyFilter, dateFrom, dateTo]);
 
   const {
     data,
     isLoading,
+    isError,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -137,11 +144,6 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
   // Filtrage côté client : recherche + famille
   const filteredDeposits = useMemo(() => {
     let list = allDeposits;
-    // Filtre famille côté client
-    if (familyFilter !== 'all') {
-      const methods = FAMILY_TO_METHODS[familyFilter] || [];
-      list = list.filter((d) => methods.includes(d.method));
-    }
     // Recherche
     if (debouncedSearch) {
       const search = debouncedSearch.toLowerCase();
@@ -155,7 +157,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
       });
     }
     return list;
-  }, [allDeposits, debouncedSearch, familyFilter]);
+  }, [allDeposits, debouncedSearch]);
 
   const counts = useMemo(() => {
     if (stats) {
@@ -324,6 +326,8 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
         {/* ── Liste dépôts ───────────────────────────────────── */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
+        ) : isError ? (
+          <QueryError what="les dépôts" onRetry={() => { void refetch(); }} />
         ) : filteredDeposits.length > 0 ? (
           <div className="space-y-2.5">
             {filteredDeposits.map((deposit) => {
@@ -374,7 +378,7 @@ export function MobileDepositsScreenV2({ embedded = false }: { embedded?: boolea
           <div className="flex flex-col items-center justify-center py-14 text-center">
             <Holder icon={FileText} size="lg" />
             <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>Aucun dépôt trouvé</p>
-            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>
               {statusFilter !== 'all' || hasActiveFilters
                 ? 'Essayez de modifier vos filtres'
                 : 'Les dépôts apparaîtront ici'}

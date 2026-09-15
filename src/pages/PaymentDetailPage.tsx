@@ -161,9 +161,9 @@ export default function PaymentDetailPage() {
           >
             <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
           </button>
-          <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>
+          <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>
             {payment.reference}
-          </span>
+          </h1>
         </div>
 
         <div className="space-y-5 px-4 pb-8 pt-3">
@@ -192,7 +192,7 @@ export default function PaymentDetailPage() {
               <button
                 onClick={goToEditBeneficiary}
                 className={cn(
-                  'mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]',
+                  'mt-3 flex min-h-11 w-full items-center justify-center gap-2 text-[14px] font-bold transition active:scale-[0.99]',
                   PRIMARY_PILL,
                 )}
               >

@@ -8,6 +8,7 @@
 // export PDF batch (colonnes LEGACY/EXTENDED + signature QR).
 // ============================================================
 import { useState, useMemo, useCallback } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { BzDateRangeField } from '@/mobile/components/BzDateRangeField';
 import { useTranslation } from 'react-i18next';
 import { usePaginatedAdminPayments, usePaymentStats, type PaymentFilters } from '@/hooks/usePaginatedPayments';
@@ -105,6 +106,7 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
   const {
     data,
     isLoading,
+    isError,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -390,6 +392,8 @@ export function MobilePaymentsScreen({ embedded = false }: { embedded?: boolean 
         {/* ── Liste paiements ────────────────────────────────── */}
         {isLoading ? (
           <SkeletonListScreen count={4} />
+        ) : isError ? (
+          <QueryError what="les paiements" onRetry={() => { void refetch(); }} />
         ) : filteredPayments.length > 0 ? (
           <div className="space-y-2.5">
             {filteredPayments.map((payment) => {

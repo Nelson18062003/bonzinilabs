@@ -39,7 +39,7 @@ export function RateConfigTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E] dark:text-[#E3E3E3]" />
       </div>
     );
   }
@@ -175,7 +175,7 @@ export function RateConfigTab() {
       <PrimaryPill
         onClick={handleSave}
         loading={saving}
-        className="w-full py-[15px] text-[16px] bg-[#E8B931] text-white dark:bg-[#E8B931] dark:text-white"
+        className="w-full py-[15px] text-[16px] bg-[#E8B931] text-[#401B01] dark:bg-[#E8B931] dark:text-[#401B01]"
       >
         Sauvegarder la configuration
       </PrimaryPill>

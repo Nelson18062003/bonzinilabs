@@ -19,7 +19,7 @@ export function KpiRow({ columns = 4, children, className }: KpiRowProps) {
   }[columns];
 
   return (
-    <div className={cn('grid grid-cols-2 gap-3', desktop, className)}>
+    <div className={cn('grid grid-cols-1 min-[360px]:grid-cols-2 gap-3', desktop, className)}>
       {children}
     </div>
   );

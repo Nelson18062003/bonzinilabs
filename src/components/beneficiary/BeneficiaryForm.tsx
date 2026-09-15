@@ -188,8 +188,8 @@ export function BeneficiaryForm({
 
       {/* Alias — the hero field, required for every mode */}
       <div>
-        <label className={labelCls}>{t('beneficiaries.fields.alias')} *</label>
-        <input
+        <label htmlFor="bf-1" className={labelCls}>{t('beneficiaries.fields.alias')} *</label>
+        <input id="bf-1"
           type="text"
           value={values.alias}
           onChange={(e) => set('alias', e.target.value)}
@@ -243,8 +243,8 @@ export function BeneficiaryForm({
 
       {/* Holder name (all modes) */}
       <div>
-        <label className={labelCls}>{t('beneficiaries.fields.name')} *</label>
-        <input
+        <label htmlFor="bf-3" className={labelCls}>{t('beneficiaries.fields.name')} *</label>
+        <input id="bf-3"
           type="text"
           value={values.name}
           onChange={(e) => set('name', e.target.value)}
@@ -276,8 +276,8 @@ export function BeneficiaryForm({
             </div>
           </div>
           <div>
-            <label className={labelCls}>{t('beneficiaries.fields.identifier')}</label>
-            <input
+            <label htmlFor="bf-5" className={labelCls}>{t('beneficiaries.fields.identifier')}</label>
+            <input id="bf-5"
               type={values.identifier_type === 'email' ? 'email' : values.identifier_type === 'phone' ? 'tel' : 'text'}
               value={values.identifier}
               onChange={(e) => set('identifier', e.target.value)}
@@ -292,8 +292,8 @@ export function BeneficiaryForm({
       {isBank && (
         <>
           <div>
-            <label className={labelCls}>{t('beneficiaries.fields.bankName')} *</label>
-            <input
+            <label htmlFor="bf-6" className={labelCls}>{t('beneficiaries.fields.bankName')} *</label>
+            <input id="bf-6"
               type="text"
               value={values.bank_name}
               onChange={(e) => set('bank_name', e.target.value)}
@@ -302,8 +302,8 @@ export function BeneficiaryForm({
             {fieldError('bank_name')}
           </div>
           <div>
-            <label className={labelCls}>{t('beneficiaries.fields.bankAccount')} *</label>
-            <input
+            <label htmlFor="bf-7" className={labelCls}>{t('beneficiaries.fields.bankAccount')} *</label>
+            <input id="bf-7"
               type="text"
               inputMode="numeric"
               value={values.bank_account}
@@ -313,8 +313,8 @@ export function BeneficiaryForm({
             {fieldError('bank_account')}
           </div>
           <div>
-            <label className={labelCls}>{t('beneficiaries.fields.bankExtra')}</label>
-            <input
+            <label htmlFor="bf-8" className={labelCls}>{t('beneficiaries.fields.bankExtra')}</label>
+            <input id="bf-8"
               type="text"
               value={values.bank_extra}
               onChange={(e) => set('bank_extra', e.target.value)}
@@ -327,8 +327,8 @@ export function BeneficiaryForm({
       {/* Cash: phone required */}
       {isCash && (
         <div>
-          <label className={labelCls}>{t('beneficiaries.fields.phone')} *</label>
-          <input
+          <label htmlFor="bf-9" className={labelCls}>{t('beneficiaries.fields.phone')} *</label>
+          <input id="bf-9"
             type="tel"
             value={values.phone}
             onChange={(e) => set('phone', e.target.value)}
@@ -342,8 +342,8 @@ export function BeneficiaryForm({
       {/* Email (optional) for alipay/wechat/cash */}
       {!isBank && (
         <div>
-          <label className={labelCls}>{t('beneficiaries.fields.email')}</label>
-          <input
+          <label htmlFor="bf-10" className={labelCls}>{t('beneficiaries.fields.email')}</label>
+          <input id="bf-10"
             type="email"
             value={values.email}
             onChange={(e) => set('email', e.target.value)}
@@ -374,8 +374,8 @@ export function BeneficiaryForm({
 
       {/* Notes */}
       <div>
-        <label className={labelCls}>{t('beneficiaries.fields.notes')}</label>
-        <textarea
+        <label htmlFor="bf-12" className={labelCls}>{t('beneficiaries.fields.notes')}</label>
+        <textarea id="bf-12"
           value={values.notes}
           onChange={(e) => set('notes', e.target.value)}
           rows={2}

@@ -17,7 +17,7 @@ const NotFound = () => {
       <div className="text-center">
         <h1 className={cn('mb-3 text-[44px] font-black leading-none', TEXT.strong)}>{t('notFound.title')}</h1>
         <p className={cn('mb-5 text-[15px]', TEXT.muted)}>{t('notFound.message')}</p>
-        <a href="/" className="text-[14px] font-bold text-[#5B4CC4] underline underline-offset-4 transition hover:opacity-80 dark:text-[#B5AAF0]">
+        <a href="/" className="inline-flex min-h-11 items-center text-[16px] font-bold text-[#5B4CC4] underline underline-offset-4 transition hover:opacity-80 dark:text-[#B5AAF0]">
           {t('notFound.backHome')}
         </a>
       </div>

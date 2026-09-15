@@ -251,7 +251,9 @@
   "blockAccess": "Block access",
   "restoreAccess": "Restore access",
   "changeMyPassword": "Change my password",
-  "resetPassword": "Reset password",
+  "resetPassword": {
+    "linkExpired": "Invalid or expired link. Please use “Forgot password” again."
+  },
   "generateNewPassword": "Generate new password",
   "generateTempPassword": "Generate a temporary password",
   "editAdmin": "Edit admin",
@@ -448,5 +450,18 @@
   "shippingSettingsRowHint": "Sea cargo (warehouse), air cargo (office), phone, WeChat, WhatsApp, email — printed on the shipping label",
   "assistant": "Mola",
   "cargo": "Cargo",
-  "navOperations": "Operations"
+  "navOperations": "Operations",
+  "pasteHint": "Ctrl+V to paste a screenshot · JPG, PNG, WebP or PDF · 10 MB max",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "otpCode": "Verification code",
+  "phoneField": {
+    "searchCountry": "Search a country...",
+    "noResult": "No result"
+  },
+  "queryError": {
+    "title": "Could not load {{what}}.",
+    "hint": "Check your connection, then try again."
+  },
+  "retry": "Retry"
 }

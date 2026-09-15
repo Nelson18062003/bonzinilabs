@@ -11,13 +11,24 @@
          masks real translation bugs. -->
     <meta name="google" content="notranslate" />
     <link rel="manifest" href="/manifest-client.json" />
+    <!-- Trois PWA sur un seul index.html : l'admin (/m) et l'agent cash (/a)
+         ont leur propre manifeste (nom, start_url, scope). Sans ce choix, un
+         admin qui installe l'app depuis /m obtenait « Bonzini » démarrant sur
+         /wallet. Le lien est réécrit avant tout prompt d'installation. -->
+    <script>
+      (function () {
+        var p = location.pathname;
+        var m = p === '/m' || p.indexOf('/m/') === 0 ? '/manifest-admin.json' : p === '/a' || p.indexOf('/a/') === 0 ? '/manifest-agent.json' : null;
+        if (m) { var l = document.querySelector('link[rel="manifest"]'); if (l) l.setAttribute('href', m); }
+      })();
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     <!-- Non-blocking font load: page renders immediately, fonts swap in when ready -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet" /></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..900;1,9..40,400..900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..900;1,9..40,400..900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..900;1,9..40,400..900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet" /></noscript>
 
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/jpeg" href="/assets/bonzini-logo.jpg" />

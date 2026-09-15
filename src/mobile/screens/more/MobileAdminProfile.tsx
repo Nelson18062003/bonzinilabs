@@ -114,7 +114,7 @@ export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = 
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="mt-3 text-[14px] font-semibold text-[#1E1E1E] disabled:opacity-50 dark:text-[#F5F5F5]"
+            className="mt-1 min-h-11 px-3 text-[16px] font-semibold text-[#1E1E1E] disabled:opacity-50 dark:text-[#F5F5F5]"
           >
             {uploading ? 'Téléchargement…' : 'Changer la photo'}
           </button>

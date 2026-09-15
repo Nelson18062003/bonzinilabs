@@ -13,6 +13,7 @@ import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownload
 import { formatCurrencyRMB } from '@/lib/formatters';
 import { CheckCircle2, ArrowLeft, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import { SURFACE, TEXT, Holder, Amount, SoftPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 
 export function AgentCashSuccess() {
@@ -21,15 +22,7 @@ export function AgentCashSuccess() {
   const { t } = useLanguage();
   const { data: payment, isLoading } = useAgentCashPaymentDetail(paymentId);
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   if (isLoading) {
     return (
@@ -74,7 +67,7 @@ export function AgentCashSuccess() {
           {/* Signature confirmation */}
           {payment.cash_signature_url && (
             <div className="mx-auto mt-4 w-full max-w-xs rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
-              <p className={cn('mb-2 text-center text-xs font-medium', TEXT.muted)}>
+              <p className={cn('mb-2 text-center text-[14px] font-medium', TEXT.muted)}>
                 {t('beneficiary_signature') || 'Signature du bénéficiaire'}
               </p>
               <img
@@ -84,7 +77,7 @@ export function AgentCashSuccess() {
                 style={{ maxHeight: '100px', objectFit: 'contain' }}
               />
               {payment.cash_signed_by_name && (
-                <p className={cn('mt-1 text-center text-xs', TEXT.muted)}>
+                <p className={cn('mt-1 text-center text-[14px]', TEXT.muted)}>
                   {payment.cash_signed_by_name}
                 </p>
               )}

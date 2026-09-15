@@ -27,6 +27,9 @@ export function AgentCashLogin() {
   const navigate = useNavigate();
   const { login, isLoading: authLoading } = useAdminAuth();
   const { t, language, setLanguage } = useLanguage();
+  // La langue vient du contexte i18n : « fr » est possible. Un ternaire
+  // en/zh affichait « 继续 » à un opérateur francophone.
+  const pick = (en: string, zh: string, fr: string) => (language === 'en' ? en : language === 'zh' ? zh : fr);
 
   const [step, setStep] = useState<0 | 1>(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -55,7 +58,7 @@ export function AgentCashLogin() {
     e.preventDefault();
     setEmailError('');
     if (!isEmailValid) {
-      setEmailError(language === 'en' ? 'Please enter a valid email' : '请输入有效的邮箱地址');
+      setEmailError(pick('Please enter a valid email', '请输入有效的邮箱地址', 'Entrez une adresse e-mail valide'));
       return;
     }
     setDirection('forward');
@@ -70,7 +73,7 @@ export function AgentCashLogin() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        toast.success(language === 'en' ? 'Login successful' : '登录成功');
+        toast.success(pick('Login successful', '登录成功', 'Connexion réussie'));
         setIsFadingOut(true);
         setTimeout(() => navigate('/a'), 300);
       } else {
@@ -102,7 +105,7 @@ export function AgentCashLogin() {
       {/* Language toggle - top right */}
       <button
         onClick={toggleLanguage}
-        className="absolute top-6 right-4 z-20 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
+        className="absolute top-6 right-4 z-20 min-h-11 px-4 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
       >
         {language === 'en' ? '中文' : 'EN'}
       </button>
@@ -172,7 +175,7 @@ export function AgentCashLogin() {
                 style={{ animationDelay: '240ms', animationFillMode: 'both' }}
               >
                 <PrimaryPill type="submit" disabled={!email} className="w-full">
-                  {language === 'en' ? 'Continue' : '继续'}
+                  {pick('Continue', '继续', 'Continuer')}
                 </PrimaryPill>
               </div>
             </form>
@@ -180,7 +183,7 @@ export function AgentCashLogin() {
             <form onSubmit={handlePasswordSubmit} className="max-w-sm mx-auto w-full">
               <div className="text-center mb-8">
                 <h1 className={cn('text-2xl font-bold mb-1', TEXT.strong)}>
-                  {language === 'en' ? 'Hello,' : '你好，'}
+                  {pick('Hello,', '你好，', 'Bonjour,')}
                 </h1>
                 <p className={cn('text-sm', TEXT.muted)}>{maskEmail(email)}</p>
               </div>

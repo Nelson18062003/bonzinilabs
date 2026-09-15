@@ -43,7 +43,8 @@
       "paidOn": "付款于 {{date}}",
       "rejected": "付款已拒绝",
       "cancelled": "付款已取消"
-    }
+    },
+    "loadWhat": "您的付款"
   },
   "status": {
     "created": "已创建",
@@ -179,7 +180,12 @@
       "amountDebited": "扣款金额",
       "newBalance": "新余额",
       "debitNotice": "确认后将立即从您的余额扣款。"
-    }
+    },
+    "rateDependsOnMethod": "今日汇率取决于所选方式。",
+    "balanceAfterPayment": "付款后余额",
+    "minMaxCaption": "最高 50 000 000 XAF",
+    "all": "全部",
+    "rateAppliedTitle": "适用今日汇率"
   },
   "detail": {
     "title": "付款详情",
@@ -215,7 +221,13 @@
     "enlarge": "放大",
     "cashPickupPresentQr": "在Bonzini办公室领取 — 请出示上方QR码。",
     "addBeneficiaryPrompt": "请补充收款人信息，以便Bonzini为您处理付款。",
-    "documents": "文档",
+    "documents": {
+      "title": "凭证与详情",
+      "paymentProof": "付款凭证",
+      "addedByBonzini": "由Bonzini添加 · 点击放大",
+      "paidOn": "付款于",
+      "processedOn": "处理于"
+    },
     "noDocuments": "暂无文档。",
     "bonziniProofs": "Bonzini凭证 ({{count}})",
     "bonziniProofsDescription": "Bonzini在结算供应商后发送的凭证。",
@@ -262,13 +274,6 @@
         "bonziniSettling": "Bonzini 正在为您结算供应商",
         "inProgress": "进行中…"
       }
-    },
-    "documents": {
-      "title": "凭证与详情",
-      "paymentProof": "付款凭证",
-      "addedByBonzini": "由Bonzini添加 · 点击放大",
-      "paidOn": "付款于",
-      "processedOn": "处理于"
     },
     "fields": {
       "name": "姓名",
@@ -334,6 +339,18 @@
       "completeLater": "您稍后可以补充这些信息。",
       "receiptDownloaded": "收据已下载。",
       "receiptError": "下载失败。"
+    },
+    "gallery": {
+      "cannotPreview": "无法预览此文件",
+      "addedByBonzini": "由 Bonzini 添加",
+      "addedByYou": "由您添加"
+    },
+    "upload": {
+      "title": "付款说明",
+      "hint": "添加图片或文件，告诉 Bonzini 向何处以及如何付款。",
+      "drop": "将文件拖到此处",
+      "browse": "或点击浏览",
+      "formats": "支持格式：JPG、PNG、PDF • 每个文件最大 10 MB"
     }
   },
   "rejectionReasons": {
@@ -435,6 +452,7 @@
     "remainingAfter": "剩余余额",
     "createBatch": "创建批次",
     "errAmount": "请输入有效金额",
+    "errAmountCap": "金额超过 {{cap}}",
     "errChannel": "请添加二维码、ID、电话或邮箱",
     "errName": "需要收款人姓名",
     "errBank": "需要银行名称",
@@ -447,5 +465,13 @@
     "channelsHint": "选择一种或多种方式（至少一种）。",
     "idPlaceholder": "供应商的支付宝 / 微信 ID",
     "close": "关闭"
+  },
+  "lifecycle": {
+    "paid": "已付款",
+    "refused": "已拒绝",
+    "cancelled": "已取消",
+    "toPresent": "待出示",
+    "toComplete": "待补充",
+    "inProgress": "进行中"
   }
 }

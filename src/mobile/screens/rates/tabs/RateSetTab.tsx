@@ -173,14 +173,14 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       {/* ── 1. ÉTAT — taux actuellement actifs ── */}
       {currentRate && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs</span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone="success" label="En ligne" />
-              {activeSince && <span className={cn('text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
+              {activeSince && <span className={cn('whitespace-nowrap text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-3 min-[360px]:grid-cols-4 min-[360px]:gap-2">
             {PAYMENT_METHODS.map((pm) => {
               const v = currentRate[`rate_${pm.key}` as keyof DailyRate] as number | undefined;
               return (
@@ -198,8 +198,8 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
 
       {/* ── 1.5. SUGGESTION AUTO — Binance P2P live ── */}
       <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E8B931]/15">
               <Sparkles className="h-4 w-4 text-[#975102] dark:text-[#E8B931]" />
             </span>
@@ -216,7 +216,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
             type="button"
             onClick={() => computeSuggestion.mutate()}
             disabled={computeSuggestion.isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E8B931] px-3 py-2.5 text-[16px] font-bold text-white transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#E8B931] px-3 py-2.5 text-[16px] font-bold text-[#401B01] transition-colors disabled:opacity-60"
           >
             {computeSuggestion.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -233,7 +233,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
           </div>
         ) : (
           <>
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-[#FFF1C2] px-3.5 py-3 dark:bg-[#E8B931]/10">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#FFF1C2] px-3.5 py-3 dark:bg-[#E8B931]/10">
               <div className="min-w-0">
                 <div className="text-[16px] font-bold text-[#975102] dark:text-[#E8B931]">
                   Taux suggéré · 1M XAF
@@ -245,13 +245,13 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
               <button
                 type="button"
                 onClick={handleUseSuggestion}
-                className="shrink-0 rounded-lg bg-[#E8B931] px-3.5 py-2.5 text-[16px] font-bold text-white"
+                className="w-full min-h-11 rounded-lg bg-[#E8B931] px-3.5 py-2.5 text-[16px] font-bold text-[#401B01] min-[360px]:w-auto"
               >
                 Pré-remplir
               </button>
             </div>
 
-            <div className="mt-2.5 grid grid-cols-2 gap-2 text-[16px]">
+            <div className="mt-2.5 grid grid-cols-1 gap-2 text-[16px] min-[360px]:grid-cols-2">
               <div className={cn('rounded-lg px-3 py-2', SURFACE.card)}>
                 <div className={cn('text-[16px] font-bold', TEXT.muted)}>
                   CMR · max + {latestSuggestion.cmr_margin_xaf} XAF
@@ -302,7 +302,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
                 key={d.key}
                 onClick={() => switchDirection(d.key)}
                 className={cn(
-                  'flex-1 rounded-lg py-2.5 text-[16px] font-semibold transition-colors',
+                  'min-h-11 rounded-lg px-2 py-2.5 text-[16px] font-semibold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : TEXT.muted,
                 )}
               >
@@ -330,7 +330,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
                 variant="decimal"
                 value={rates[pm.key]}
                 onChange={(e) => setRates({ ...rates, [pm.key]: e.target.value })}
-                wrapperClassName="w-[128px]"
+                wrapperClassName="w-[104px]"
                 controlClassName="h-12 text-right text-[20px] font-bold tabular-nums"
                 aria-label={`Taux ${pm.label}`}
               />
@@ -349,7 +349,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         <p className={cn('mb-2.5 px-1 text-[16px] font-bold', TEXT.muted)}>
           Prise d'effet
         </p>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
             { key: 'now' as const, label: 'Maintenant' },
             { key: 'today' as const, label: "Aujourd'hui" },

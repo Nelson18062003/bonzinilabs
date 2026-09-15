@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import i18n from '@/i18n';
@@ -219,19 +219,19 @@ export function useClient(userId: string) {
 /**
  * Fetch client ledger entries
  */
-export function useClientLedger(userId: string, filters?: LedgerFilters) {
-  return useQuery({
-    queryKey: ['client-ledger', userId, filters],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
-    enabled: !!userId,
-    queryFn: async () => {
+const LEDGER_PAGE = 100;
+
+/**
+ * Une page du grand livre d'un client (tri du plus récent au plus ancien),
+ * avec le nom de l'admin à l'origine de chaque écriture.
+ */
+async function fetchLedgerEntries(userId: string, filters: LedgerFilters | undefined, from: number, to: number): Promise<LedgerEntry[]> {
       let query = supabaseAdmin
         .from('ledger_entries')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(1000);
+        .range(from, to);
 
       // Apply entry type filter
       if (filters?.entryType && filters.entryType !== 'all') {
@@ -283,18 +283,65 @@ export function useClientLedger(userId: string, filters?: LedgerFilters) {
           : undefined,
         createdAt: new Date(entry.created_at!),
       })) as LedgerEntry[];
+}
+
+/**
+ * Les écritures récentes d'un client (une page) — pour la fiche : dernier
+ * mouvement, aperçu. Pour tout l'historique, `useClientLedgerPaged`.
+ */
+export function useClientLedger(userId: string, filters?: LedgerFilters) {
+  return useQuery({
+    queryKey: ['client-ledger', userId, filters],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    enabled: !!userId,
+    queryFn: () => fetchLedgerEntries(userId, filters, 0, LEDGER_PAGE - 1),
+  });
+}
+
+/**
+ * Tout l'historique d'un client, page par page (100 écritures), sans
+ * plafond : avant, `.limit(1000)` rendait les écritures anciennes
+ * invisibles sans le dire (F-030).
+ */
+export function useClientLedgerPaged(userId: string, filters?: LedgerFilters) {
+  const q = useInfiniteQuery({
+    queryKey: ['client-ledger', 'paged', userId, filters],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    enabled: !!userId,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => fetchLedgerEntries(userId, filters, pageParam, pageParam + LEDGER_PAGE - 1),
+    getNextPageParam: (last, pages) => (last.length < LEDGER_PAGE ? undefined : pages.length * LEDGER_PAGE),
+  });
+  return {
+    data: q.data?.pages.flat(),
+    isLoading: q.isLoading,
+    refetch: q.refetch,
+    hasNextPage: q.hasNextPage ?? false,
+    fetchNextPage: q.fetchNextPage,
+    isFetchingNextPage: q.isFetchingNextPage,
+  };
+}
+
+/** Le nombre total d'écritures d'un client (pour « Voir tout (N) », le relevé). */
+export function useClientLedgerCount(userId: string) {
+  return useQuery({
+    queryKey: ['client-ledger', 'count', userId],
+    staleTime: STALE_TIME,
+    gcTime: CACHE_TIME,
+    enabled: !!userId,
+    queryFn: async () => {
+      const { count, error } = await supabaseAdmin
+        .from('ledger_entries')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 }
 
-// ============================================
-// MUTATION HOOKS
-// ============================================
-
-/**
- * Create a new client via RPC (server-side, no email rate limits)
- * The RPC inserts directly into auth.users + profiles + wallets
- */
 export function useCreateClient() {
   const queryClient = useQueryClient();
 

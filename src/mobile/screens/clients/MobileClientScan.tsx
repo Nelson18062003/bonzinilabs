@@ -138,7 +138,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader title="Scanner un client" subtitle="QR de l’étiquette colis · code de virement" showBack backTo="/m/clients" />
+      <MobileHeader title="Scanner un client" subtitle="QR de l’étiquette ou code BZ-…" showBack backTo="/m/clients" />
 
       <div className={cn('space-y-4 px-4 pb-24 pt-4', desktop && 'mx-auto max-w-[560px]')}>
         {!desktop && (
@@ -167,7 +167,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
           </Card>
         )}
 
-        <p className={cn('px-1 pt-1 text-[14px] font-semibold uppercase tracking-wider', TEXT.muted)}>Saisie manuelle</p>
+        <p className={cn('px-1 pt-1 text-[16px] font-semibold', TEXT.strong)}>Saisie manuelle</p>
 
         <Card className="space-y-3">
           <p className={cn('text-[16px]', TEXT.muted)}>
@@ -188,7 +188,7 @@ export function MobileClientScan({ desktop = false }: { desktop?: boolean }) {
                 if (e.key === 'Enter') submitManual();
               }}
             />
-            <PrimaryPill onClick={submitManual} disabled={!manual.trim() || resolving} loading={resolving} className="shrink-0 px-4">
+            <PrimaryPill onClick={submitManual} disabled={!manual.trim() || resolving} loading={resolving} ariaLabel="Rechercher" className="shrink-0 px-4">
               <Search className="h-4 w-4" />
             </PrimaryPill>
           </div>

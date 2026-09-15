@@ -104,7 +104,7 @@ const ProfilePage = () => {
             <MenuRow icon={Shield} label={t('profile.security')} desc={t('profile.securityDesc')} onClick={comingSoon} />
             <MenuRow icon={Smartphone} label={t('profile.devices')} desc={t('profile.devicesDesc')} onClick={comingSoon} />
             <MenuRow icon={FileText} label={t('profile.documents')} desc={t('profile.documentsDesc')} onClick={comingSoon} />
-            <MenuRow icon={HelpCircle} label={t('profile.helpSupport')} desc={t('profile.helpSupportDesc')} onClick={comingSoon} last />
+            <MenuRow icon={HelpCircle} label={t('profile.helpSupport')} desc={t('profile.helpSupportDesc')} onClick={() => navigate('/support')} last />
           </div>
         </section>
 

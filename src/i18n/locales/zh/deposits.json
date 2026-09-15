@@ -250,11 +250,19 @@
     "deleteProofDesc": "请指定删除原因。此操作不可逆。",
     "specifyReason": "指定原因...",
     "cancel": "取消",
-    "delete": "删除"
+    "delete": "删除",
+    "reference": "参考号",
+    "creditedAt": "入账日期",
+    "addYourProof": "请添加您的付款凭证",
+    "amountCredited": "已入账金额",
+    "amountDeposit": "充值金额",
+    "amountToPay": "应付金额",
+    "amountDeclared": "申报金额"
   },
   "new": {
     "amountToDeposit": "充值金额",
     "minimumAmount": "最低金额：50,000 XAF",
+    "maximumAmount": "最高金额：50,000,000 XAF",
     "continue": "继续",
     "back": "返回",
     "howToDeposit": "您想如何充值？",
@@ -334,7 +342,9 @@
       "waveInstr3": "输入号码：{{phone}}",
       "waveInstr4": "输入金额：{{amount}}",
       "waveInstr5": "确认转账"
-    }
+    },
+    "balance": "余额",
+    "newBalance": "充值后余额"
   },
   "countdown": {
     "expired": "截止期限已过",
@@ -349,5 +359,29 @@
     "criticalBannerWarning": "警告：截止期限即将到期！",
     "warningBannerMessage": "请尽快发送您的凭证",
     "normalBannerMessage": "进行充值并发送凭证"
+  },
+  "searchPlaceholder": "搜索（参考号、方式…）",
+  "list": {
+    "emptyFilter": "此筛选条件下没有存款。",
+    "tabs": {
+      "all": "全部",
+      "todo": "待处理",
+      "progress": "进行中",
+      "done": "已完成"
+    },
+    "proofMissing": "缺少付款凭证",
+    "toCorrect": "需要修正",
+    "balance": "余额",
+    "addProof": "添加凭证",
+    "loadWhat": "您的充值"
+  },
+  "lifecycle": {
+    "awaitingProof": "待上传凭证",
+    "toCorrect": "需要修正",
+    "verifying": "审核中",
+    "credited": "已入账",
+    "rejected": "已拒绝",
+    "cancelled": "已取消",
+    "inProgress": "进行中"
   }
 }

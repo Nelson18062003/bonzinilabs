@@ -109,7 +109,7 @@ const DepositDetailPage = () => {
       >
         <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</span>
+      <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>{title}</h1>
     </div>
   );
 
@@ -238,7 +238,7 @@ const DepositDetailPage = () => {
             <div className="rounded-[22px] bg-[#FBE7E7] p-4 dark:bg-[#3A2526]">
               <div className="flex items-center justify-between gap-2">
                 <p className="px-1 text-[13px] font-semibold" style={{ color: LIFECYCLE_COLOR.todo }}>
-                  Ajoutez votre preuve de versement
+                  {t('detail.addYourProof')}
                 </p>
                 <CountdownTimer createdAt={deposit.created_at} compact />
               </div>
@@ -247,7 +247,7 @@ const DepositDetailPage = () => {
                   onClick={() => uploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                   className={cn('mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-[13px] font-bold transition active:scale-[0.99]', PRIMARY_PILL)}
                 >
-                  Ajouter la preuve <ArrowRight className="h-4 w-4" />
+                  {t('list.addProof')} <ArrowRight className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -273,7 +273,7 @@ const DepositDetailPage = () => {
             </div>
 
             <div className={cn('mt-5 text-[13px] font-semibold', TEXT.muted)}>
-              {isValidated ? 'Montant crédité sur votre solde' : lc.kind === 'failed' ? 'Montant du dépôt' : 'Montant à verser'}
+              {isValidated ? t('detail.amountCredited') : lc.kind === 'failed' ? t('detail.amountDeposit') : canUploadProof ? t('detail.amountToPay') : t('detail.amountDeclared')}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               {isValidated && <span className="text-[34px] font-black" style={{ color: LIFECYCLE_COLOR.done }}>+</span>}
@@ -318,8 +318,10 @@ const DepositDetailPage = () => {
             </div>
           )}
 
-          {/* Coordonnées Bonzini — où verser (repli si terminal) */}
-          {!isTerminal ? (
+          {/* Coordonnées Bonzini — où verser. En évidence tant que le client doit
+              encore verser ; repliées dès que la preuve est envoyée (sinon l'écran
+              invite à payer une seconde fois pendant la vérification). */}
+          {canUploadProof ? (
             <DepositInstructions deposit={deposit} />
           ) : (
             <div>
@@ -366,7 +368,9 @@ const DepositDetailPage = () => {
                         </div>
                         {canDeleteProofs && (
                           <button
-                            className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/50"
+                            type="button"
+                            aria-label="Supprimer cette preuve"
+                            className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center"
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeletingProofId(proof.id);
@@ -374,7 +378,7 @@ const DepositDetailPage = () => {
                               setCustomDeleteReason('');
                             }}
                           >
-                            <Trash2 className="h-3 w-3 text-white" />
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50"><Trash2 className="h-3 w-3 text-white" /></span>
                           </button>
                         )}
                       </div>
@@ -412,7 +416,7 @@ const DepositDetailPage = () => {
               {deposit.agency_name && <DetailRow label={t('detail.agency')} value={deposit.agency_name} />}
               <DetailRow label={t('detail.date')} value={safeFormatDate(deposit.created_at) || '-'} />
               {isValidated && deposit.validated_at && (
-                <DetailRow label="Crédité le" value={safeFormatDate(deposit.validated_at) || '-'} last />
+                <DetailRow label={t('detail.creditedAt', { defaultValue: 'Crédité le' })} value={safeFormatDate(deposit.validated_at) || '-'} last />
               )}
             </div>
           </section>

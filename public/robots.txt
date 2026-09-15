@@ -12,3 +12,8 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+# Les interfaces internes (admin, agent cash) n'ont rien à faire dans un index.
+User-agent: *
+Disallow: /m
+Disallow: /a

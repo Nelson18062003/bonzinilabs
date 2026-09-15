@@ -9,7 +9,7 @@
 // ============================================================
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { FileDown, Loader2, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PaymentProofGallery } from '@/components/payment/PaymentProofGallery';
@@ -113,12 +113,12 @@ export function PaymentDocumentsSection({
           <MetaRow label={t('detail.method')} value={methodLabel} />
           <MetaRow
             label={t('detail.createdOn')}
-            value={format(new Date(payment.created_at), 'd MMM yyyy, HH:mm', { locale: fr })}
+            value={format(new Date(payment.created_at), 'PP, HH:mm', { locale: dateLocale() })}
           />
           {payment.processed_at && (
             <MetaRow
               label={payment.status === 'completed' ? t('detail.documents.paidOn') : t('detail.documents.processedOn')}
-              value={format(new Date(payment.processed_at), 'd MMM yyyy, HH:mm', { locale: fr })}
+              value={format(new Date(payment.processed_at), 'PP, HH:mm', { locale: dateLocale() })}
             />
           )}
         </div>

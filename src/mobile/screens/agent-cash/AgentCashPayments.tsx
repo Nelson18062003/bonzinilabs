@@ -15,6 +15,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatDate } from '@/lib/formatters';
 import { LogOut, ChevronRight, Banknote, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import {
   SURFACE,
   TEXT,
@@ -57,12 +58,7 @@ export function AgentCashPayments() {
     setLanguage(language === 'en' ? 'zh' : 'en');
   };
 
-  const getBeneficiaryName = (payment: CashPayment) => {
-    if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-      return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-    }
-    return payment.beneficiary_name || '—';
-  };
+  const getBeneficiaryName = (payment: CashPayment) => cashBeneficiaryName(payment);
 
   const getClientName = (payment: CashPayment) => {
     if (payment.profile) {
@@ -86,16 +82,16 @@ export function AgentCashPayments() {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleLanguage}
-              className={cn('px-2 py-1 rounded-md text-xs font-medium transition-colors hover:text-foreground', TEXT.muted)}
+              className={cn('min-h-11 rounded-lg px-3 text-[14px] font-semibold transition-colors hover:text-foreground', TEXT.muted)}
             >
               {language === 'en' ? '中文' : 'EN'}
             </button>
             <button
               onClick={handleLogout}
-              className={cn('w-8 h-8 flex items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
+              className={cn('flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
               aria-label={t('logout')}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
         }
@@ -162,7 +158,7 @@ export function AgentCashPayments() {
                   <div>
                     <Row label={t('beneficiary')} value={getBeneficiaryName(payment)} />
                     <Row label={t('client')} value={getClientName(payment)} />
-                    <Row label={t('reference')} value={<span className="font-mono text-xs">{payment.reference}</span>} />
+                    <Row label={t('reference')} value={<span className="font-mono text-[14px]">{payment.reference}</span>} />
                     <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />
                   </div>
                 </Card>

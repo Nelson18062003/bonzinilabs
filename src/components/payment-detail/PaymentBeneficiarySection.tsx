@@ -127,7 +127,7 @@ export function PaymentBeneficiarySection({ payment, onEdit, onViewQr }: Props) 
         ) : canEdit && hasBeneficiaryInfo && payment.method !== 'cash' ? (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 text-[12px] font-bold text-[#5B4CC4] transition-transform active:scale-95 dark:text-[#B5AAF0]"
+            className="flex min-h-11 items-center gap-1 text-[13px] font-bold text-[#5B4CC4] transition-transform active:scale-95 dark:text-[#B5AAF0]"
           >
             <Edit2 className="h-3.5 w-3.5" />
             {t('detail.edit')}

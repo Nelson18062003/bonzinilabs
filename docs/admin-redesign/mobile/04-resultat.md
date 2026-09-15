@@ -408,3 +408,320 @@ fichier). Les clés `warehouse` / `office` de `platform_settings` ne changent pa
   au rythme des images — fin du rechargement d'onglet iPhone sur un gros colisage.
 - `crypto.randomUUID` → `uid()` (repli iOS < 15.4) : le bouton Envoyer de Mola
   ne peut plus mourir en silence.
+
+## Passe 17 — 14 septembre, soir : l'étiquette colis est DESSINÉE
+
+Retour fondateur (test sur iPhone) : dans l'image exportée, tout se chevauche
+(« DELIVER TO » sur deux lignes, l'adresse sur elle-même, le fournisseur
+écrasé) ; et « partager le PDF » remet un lien `blob:` au lieu d'un fichier.
+
+**Cause** : l'étiquette était un bloc HTML rasterisé (html-to-image). Sur le
+téléphone, l'image partait sans les polices web ; des polices système plus
+larges entraient dans des lignes de hauteur FIXE. Et le bloc débordait déjà
+de ~10 % sur desktop (sections « écrasées »).
+
+**Refonte** (`src/lib/shippingLabelCanvas.ts`) :
+- `layoutLabel()` : un PLAN pur — curseur vertical, chaque texte MESURÉ
+  (retour à la ligne pour l'adresse, rétrécissement 13,5 → 10,5 px puis « … »
+  seulement en dernier recours), champs longs (WhatsApp, e-mails, société,
+  fournisseur) sur leur propre ligne, section 5 ancrée en bas, la section
+  fournisseur prend l'espace restant. 11 tests, dont un « pire cas » avec une
+  police large et des valeurs très longues : aucun texte ne dépasse sa
+  largeur, aucun filet à moins de 12 px d'un autre.
+- `paintLabel()` : la peinture sur canvas, avec les polices de la page si
+  elles sont chargées (DM Sans, Noto SC), sinon celles du système — mesurées.
+- L'aperçu est l'image exacte qui part (×2) ; l'export est peint à ×3.
+- Sorties : de vrais FICHIERS. Sur téléphone, `navigator.share({ files })`
+  pour l'image ET le PDF (WhatsApp, WeChat, Fichiers…) ; sinon téléchargement
+  par URL d'objet révoquée. Plus jamais de `blob:` dans un onglet.
+- `ShippingLabel.tsx` (DOM) supprimé ; composeur desktop et feuille mobile
+  branchés sur `useShippingLabel()`.
+
+## Passe 18 — 14 septembre, nuit : le client et son cargo se répondent
+
+- **Fiche client → « Son conteneur / Ses N conteneurs »** : la flotte (déjà en
+  cache pour le badge de l'onglet) filtrée sur `client_id`, une ligne par
+  boîte (numéro, phrase d'arrivée, état), qui ouvre le dossier. Section absente
+  quand il n'y a rien à dire. Geste « Suivre un conteneur » dans « Les gestes »
+  (réservé à `canViewCargo`).
+- **Dossier cargo → « Le client »** : l'identifiant `BZ-…` en toutes lettres et
+  le bouton « Étiquette colis pour son fournisseur » (même feuille que la fiche
+  client). `useCargoClient` lit désormais `customer_code`.
+- **Étiquette** : le QR est peint dès que son canvas est monté (ref-fonction) et
+  vit hors de la feuille basse — sinon, feuille ouverte après le montage, l'image
+  partait sans QR.
+- Scanner un client : sous-titre qui tient sur une ligne.
+
+## Passe 19 — 14 septembre, nuit : boucle d'audit, tour 1 (base, sécurité, qualité)
+
+Six agents en lecture seule (sécurité, base de données, responsive/UX,
+fonctionnel, performance, qualité). Corrigé dès le premier tour :
+- **Temps réel** : les six tables `cargo_*` invalident le préfixe `['cargo']`
+  (elles n'étaient pas abonnées : le cron `cargo-sync` écrivait sans que
+  l'app le voie) ; migration `20260914090000` : index `client_id` /
+  `bl_number` + tables ajoutées à la publication `supabase_realtime`.
+- **Types** : les trois RPC cargo (`cargo_fleet_status`, `cargo_set_freight_paid`,
+  `cargo_set_telex`) ajoutées à `types.ts` (à regénérer par `/gen-types` quand
+  le projet est joignable).
+- **Filtres PostgREST** : `useCargoClientOptions` efface `, ( ) % \` avant
+  `.or()` ; le résolveur cargo de Mola (`resolveRef`, service-role) ne garde
+  que `[A-Za-z0-9]` pour la référence et assainit le libellé client.
+- **`platform_settings`** : lecture limitée aux clés publiques (`key IN
+  ('shipping')`) — migration `20260914090500`, reportée dans le consolidé
+  identifiant-client.
+- **Edge functions mortes** `create-admin`, `create-agent`, `create-client` :
+  retirées du dépôt — elles écrivaient dans `profiles` (supprimée en février),
+  n'avaient pas de garde `is_disabled`, et l'app ne les appelle plus. **À
+  dé-déployer** : `npx supabase functions delete create-admin` (× 3).
+- `uid()` : plus de repli `Math.random` (nom de fichier de stockage).
+- Qualité : `TONE_OF` unique dans `palette.ts` ; `useLabelExport()` partagé
+  par le composeur et la feuille ; `fitOnPage()` pur et testé (13 tests).
+
+**Décision à prendre (non modifié)** : dans `admin-assistant`, la LECTURE est
+ouverte à tout rôle par choix documenté (« Mola AI-native ») et s'exécute en
+service-role — un `cash_agent` peut donc lire la trésorerie via Mola. La règle
+`security.md` dit l'inverse. Une ligne suffit à rétablir la garde :
+`READ_TOOLS.filter((t) => t.always || perms[t.permission])`.
+
+## Passe 20 — boucle d'audit, tour 1 (fonctionnel, performance)
+
+**Argent** (migration `20260914091000`, consolidé section 10) : un dépôt
+`cancelled` / `cancelled_by_admin` ne peut plus être validé ni refusé ; un
+paiement `rejected` / `cancelled_by_admin` (déjà remboursé) ne peut plus être
+« refusé » — c'était un second remboursement. Les écrans verrouillent les
+mêmes statuts (`isLocked`).
+
+**Cohérence** : la liste et la carte cargo lisent désormais les pièces de
+toute la flotte (`useCargoFleetDocuments`) — elles disaient « B/L manquant »
+quand le dossier le voyait classé. Les badges d'action (onglets, cloche) sont
+invalidés après chaque geste d'argent ; la fiche paiement admin se rafraîchit
+après une signature cash.
+
+**Étiquette** : export ×3 pré-peint (le partage iOS reste dans le geste) ;
+presse-papiers avec repli téléchargement ; aperçu remis à zéro au changement.
+
+**Cargo** : fin de franchise lue à midi (plus de « en retard » un jour trop
+tôt à l'ouest de Greenwich) ; « 0 jour » au singulier.
+
+**i18n** : `resetPassword` en objet en/zh (le lien expiré s'affichait en
+français) ; 17 clés zh manquantes ajoutées ; deux textes en dur de l'app
+client passés par `t()`.
+
+**Performance** (mesuré sur `dist/m/index.html`) : JS au premier chargement
+**4 782 kB → 1 168 kB** (−75 %). Chunks PDF/graphiques laissés au découpage
+naturel (ils étaient tirés par des aides partagées), règle `react/` resserrée
+(elle attrapait lucide-react et qrcode.react), V1 du formulaire de dépôt
+(`import * as Icons`, 508 kB, non routée) supprimée, page d'accueil publique
+en lazy, mascotte en WebP (315 kB → 8 kB dans la barre), polices : DM Sans en
+un fichier variable, Syne (jamais utilisée) retirée, feuille non bloquante sur
+l'entrée admin. Plus de remontage entre Dépôts et Paiements (même écran),
+tally cargo mémorisé, images d'export sans cache-bust.
+
+## Passe 21 — boucle d'audit, tour 1 (responsive, UI/UX)
+
+Audit à 320 / 390 / 430 px et en sombre, 25 routes. Corrigé :
+- **Kit** : `Button` md à 44 px (`min-h-11`), peut passer à la ligne et ne
+  déborde plus de son parent ; `Chip`, `Segmented`, `TextInput`, action de
+  section à 44 px ; rouge « danger » lisible en sombre (`#FCB3AD`).
+- **En-tête** : plus de `truncate` (titre et sous-titre passent à la ligne),
+  sous-titre à 16 px, hauteur qui suit.
+- **Barre d'onglets** : « Opérations » tient à 320 px (12 px sous 360 px).
+- **Nouveau paiement / dépôt** : l'encre d'accent devient `var(--ink)` (suit le
+  thème — compteur, barre d'étapes, anneaux invisibles en sombre) ; noms et
+  téléphones sans troncature.
+- **Taux** : encre sombre sur amber (1,8:1 → 7:1), unités lisibles, en-tête
+  qui passe à la ligne, « Prise d'effet » en grille 2×2, simulateur en 2
+  colonnes sous 360 px, historique sans troncature.
+- **Dossier cargo** : ronds d'en-tête lisibles en sombre ; parcours lisible à
+  320 px ; puces du coût à quai à 44 px, texte qui passe à la ligne.
+- **Fiche client** : numéro de conteneur entier, pastille sous la phrase ;
+  identifiant BZ entier à 320 px. Réglages d'expédition en une colonne sous
+  360 px. Sélecteur de période du tableau de bord au kit. Carte : zoom 44 px,
+  légende 16 px. « Saisie manuelle » sans capitales. Placeholder court.
+Sonde `tools/_w320` (jetable) : 0 débordement de document, 0 troncature, 0
+erreur JS sur 22 routes à 320 et 390 px (les seuls dépassements restants sont
+des rangées de puces qui défilent horizontalement, volontaires).
+
+## Passe 22 — boucle d'audit, tour 2 (contre-vérification)
+
+**Régression attrapée avant mise en ligne** : la migration des statuts
+terminaux (`20260914091000`) reprenait le texte des fonctions de
+`20260831160000`, mais deux migrations postérieures les avaient corrigées
+« en place » (`replace()` sur `pg_get_functiondef`) : le verrou `FOR UPDATE`
+sur le paiement (`20260831200000`) et « montant crédité > 0 »
+(`20260831220000`). Une redéfinition complète les effaçait en silence —
+deux `reject` concurrents auraient remboursé deux fois. Réintégrés dans la
+migration et le consolidé ; nouveau test `moneyRpcGuards` : toute
+redéfinition postérieure de `process_payment` / `validate_deposit` /
+`reject_deposit` doit reconduire ces correctifs.
+- Étiquette : le pré-rendu ×3 (canvas de ~20 Mo) n'est plus lancé qu'à
+  l'ouverture de la feuille (`active`), pas à chaque fiche client ouverte.
+- Fiche client et légende de la carte desktop : `alertLevel` avec les pièces,
+  comme la liste et le dossier.
+Vérifié propre par l'agent : idempotence des trois migrations, portée RLS de
+`platform_settings` (seul lecteur : `shipping`), préfixe temps réel cargo,
+absence de cycle d'import des badges, découpage des chunks (aucun PDF /
+graphique au premier chargement des trois entrées), Suspense au-dessus de la
+page d'accueil lazy, `MobileOperationsScreen` lit `tab` à chaque rendu,
+kit 44 px sans parent à hauteur fixe, en-tête à 320 px, `uid()` jamais au
+chargement de module, `resetPassword` sans consommateur chaîne.
+
+## Passe 23 — boucle d'audit, tour 2 (responsive, contre-vérification)
+
+Huit finitions : ligne e-mail des réglages d'expédition en `col-span-full`
+(la grille à une colonne la cassait à 320 px) ; nouveau paiement : le solde
+sous le nom (à côté, il coupait les noms) ; parcours : étiquettes 14 px sans
+coupure de mot ; en-têtes de graphiques : la barre d'outils descend sous le
+titre sur mobile ; KPI sur une ligne ; montant du simulateur à 32 px (la règle
+globale `input { font-size: 16px !important }` l'écrasait) ; « Pré-remplir »
+sous le taux suggéré à 320 px ; copie du B/L en cible de 44 px.
+Propre à 320 / 390 / 430 / sombre (agent) : Opérations, nouveau dépôt,
+clients, fiche, scan, flotte, dossier, papiers, coût à quai, carte.
+
+## Passe 24 — boucle d'audit, tour 3 (fin de boucle)
+
+Le tour 3 n'a plus trouvé que des finitions : KPI du tableau de bord en une
+colonne sous 360 px (le chiffre débordait de sa carte), étiquettes du
+parcours à 14 px seulement à partir de 360 px, boutons info / export /
+granularité et copie du numéro de conteneur à 44 px. Scripts de capture
+jetables retirés du dépôt (`tools/_*.tmp.*` ignorés). Vérifié par capture
+(320 px, sombre) : rien à signaler. **Boucle arrêtée** : trois tours, 6 + 2 +
+1 agents, 624 tests verts.
+
+**Bilan chiffré (version en ligne 3063bad → branche)** : JS au premier
+chargement 4 690 → 1 168 kB ; mascotte 315 → 8 kB ; cibles tactiles 40 → 44
+px ; 0 débordement / troncature sur 22 écrans à 320 et 390 px ; 2 failles
+d'argent fermées (dépôt annulé validable, paiement clos « refusable ») ; temps
+réel réparé (jeton) et étendu au cargo ; étiquette colis dessinée (aucun
+chevauchement, fichier partagé natif) ; 601 → 624 tests.
+
+## Passe 25 — critique UX (une décision, l'âge réel, le vocabulaire de « Plus »)
+
+Suite à la critique évaluative de l'application : **une seule action
+principale par fiche**. Sur le dépôt, « Valider le dépôt » reste le seul
+bouton plein ; « Marquer « en vérification » » devient discret, avec la
+phrase qui dit à quoi il sert (le client le voit, les collègues savent qu'on
+s'en occupe) ; « Refuser » reste en texte rouge. **L'urgence dit l'âge réel** :
+« Ce dépôt attend depuis 4 jours » / « Ce paiement attend depuis 24 heures »
+(`sinceSentence`, heures sous 48 h, jours au-delà) au lieu d'une phrase fixe.
+La file « À traiter » se lit **du plus ancien au plus récent**. Sur le
+paiement, l'alerte distingue la facture du client (reçue) de la preuve
+manquante de l'opérateur. Le bouton d'en-tête « Relevé » devient « Reçu ».
+L'écran « Plus » parle français : « Tableau de bord », « Messages des
+clients », « Réponses toutes faites », « Suggestions aux nouveaux clients »,
+et la trésorerie explique ce qu'elle contient. Le champ de recherche du
+nouveau dépôt ne prend plus le focus tout seul (le clavier n'apparaît plus
+avant qu'on l'ait demandé). 624 tests verts, build propre.
+
+## Passe 26 — la barre de décision collante
+
+Sur les fiches dépôt et paiement, dès que le bouton principal de « La
+décision » quitte l'écran (on lit la preuve, on ouvre « Le détail » ou
+« Le suivi »), le même bouton réapparaît en bas, sous le pouce : « Valider le
+dépôt », « Commencer le paiement » ou « Valider le paiement ». Une seule
+action, jamais deux : la barre ne redonne pas une décision, elle rapproche
+celle que l'écran propose déjà. Elle se range tant que le bouton se voit
+(au moins à moitié, hors de l'en-tête collant — `useOnScreen`), sous les
+feuilles basses, et avec le clavier (`html.kb-open`). Elle glisse depuis le
+bas en 18/100 s, sans mouvement si l'appareil le demande, respecte la zone
+de sécurité de l'iPhone, et une cale de sa hauteur est posée en fin de page
+pour que la dernière ligne reste lisible. Vérifié par capture à 390 et 320
+px, clair et sombre. 628 tests verts (4 nouveaux sur le hook), build propre.
+
+## Passe 27 — voir où écrire, atteindre au clavier
+
+Le bord des champs passe de #D9D9D9 (1,3:1, invisible au soleil) à #949494
+en clair et #6E6E6E en sombre (3:1, le minimum WCAG pour un composant) :
+nouveau jeton `SURFACE.field`, porté par `TextInput`, la nouvelle primitive
+`TextArea` du kit (qui remplace cinq `<textarea>` bruts des fiches dépôt et
+paiement), la recherche du nouveau dépôt, les sélecteurs de création de
+client et le composeur de Mola. Un anneau de focus commun (`FOCUS_RING`,
+visible seulement au clavier) sur Button, ListRow, Chip, Segmented et Fold.
+Sur la fiche paiement, le nom du client reste en ligne dans la phrase mais
+sa zone tactile atteint 44 px (padding vertical d'un élément en ligne).
+628 tests verts, build propre.
+
+## Passe 28 — un seul chiffre pour « ce qui attend »
+
+Le badge « Opérations » de la barre comptait les paiements en cours mais
+pas les dépôts à corriger ; le hub Opérations faisait l'inverse (dépôts à
+traiter + à corriger, paiements sans « en cours »). Un opérateur pouvait
+lire 12 sur la barre et 5 + 3 sur l'écran. Désormais une seule liste
+(`src/lib/actionable.ts`) définit ce qui attend un opérateur — dépôt :
+preuve envoyée ou en vérification ; paiement : prêt, espèces scannées ou en
+cours — et le hub lit les mêmes compteurs que le badge : Dépôts + Paiements
+= badge, et dans chaque liste « À traiter » (+ « En cours » pour les
+paiements) = le segment. Un test de parité fige l'accord avec les filtres
+des listes. 630 tests verts, build propre.
+
+## Passe 29 — chasse aux bugs et revue sécurité (trois agents), correctifs
+
+**Sécurité.** `process_payment` lisait le portefeuille sans verrou avant
+d'écrire `balance_before` dans le grand livre : nouvelle migration
+`20260914093000` (redéfinition complète avec `FOR UPDATE` sur `wallets`,
+reportée en place et dans le fichier consolidé, aiguille ajoutée au test de
+non-régression). Le QR du bénéficiaire passe par `validateUploadFile`. La
+fiche dépôt est gardée par `canProcessDeposits` comme la fiche paiement.
+
+**Bugs.** Nouveau paiement : changer de client ou de mode remet le
+bénéficiaire à zéro (le paiement pouvait partir avec le bénéficiaire d'un
+autre client) ; taux personnalisé vidé → taux du jour, jamais 11 530, et
+« Suivant » bloqué ; un bénéficiaire créé au carnet n'est pas recréé au
+second essai. Fiche dépôt : le montant à confirmer n'est plus écrasé par une
+mise à jour de la ligne pendant la saisie ; « Dépôt rejeté » en vert, pas en
+rouge ; journal d'audit non bloquant à la création (plus de doublon au second
+essai). Statuts terminaux : une seule liste (`src/lib/terminalStatuses.ts`)
+pour le collage de preuve, le QR cash, le verrou des fiches et l'urgence —
+plus de « Il faut le traiter » sur un dépôt annulé ou à corriger, plus de
+preuve collée sur une ligne annulée. Temps réel : les clés tapées à la main
+(`admin-deposit-proofs`, `deposit-stats`, `client-ledger`…) et les badges
+sont rafraîchis par radical de table ; le canal client ne meurt plus au
+rafraîchissement du jeton. Liste des dépôts : famille filtrée côté serveur
+(une première page sans Wave affichait « Aucun dépôt »). Nouveau dépôt :
+identifiant client inconnu → retour au choix du client. Fiche client :
+presse-papiers refusé signalé.
+
+**Qualité.** Fiche client sans requêtes cargo hors droit ; écrans dépôts V1
+(1 703 lignes mortes) supprimés. 632 tests verts, build propre.
+
+## Passe 30 — audit en direct des écrans jamais capturés (Plus, support, trésorerie)
+
+Vingt-deux écrans de plus capturés à 390 et 320 px. **Bugs réels** :
+vingt traductions françaises coupées à l'apostrophe dans `common.json`
+depuis des mois (« Thème de l », « Bloquer l », « Créer l », « Erreur lors
+de l », « Aucun élément en attente d »…) — restaurées en entier ; l'écran
+« Statistiques support » plantait (`undefined.map`) et affichait
+« undefined » — tableaux et compteurs gardés. **Cibles et tailles** : puces de
+filtre à 44 px (kit `Chip`) sur Support, Administrateurs, Historique et
+Statistiques ; bascule de thème à 44 px avec libellés (« Clair / Sombre /
+Auto »), sans déborder à 320 px ; œil du mot de passe, « Changer la photo »,
+« + » des réponses, retour du paiement groupé, curseur des étages 3D, zoom de
+la carte à 44 px ; kit trésorerie à 14 px minimum, sous-titres entiers ;
+tableau de bord : montants qui ne débordent plus de leur tuile ; identifiant
+client à 20 px sous 360 px ; placeholders avec points de suspension. **Mots** :
+« Super admin / Opérations / Agent cash », « Mes conversations »,
+« Conversations ouvertes », « Temps de réponse moyen », « Qui répond le
+plus », « Aucune action trouvée », « Coût moyen d'achat USDT », « Analyse »,
+« Historique des opérations », « Visuel des soldes », « Solde : … XAF » dans
+le paiement groupé. **320 px** : carte « Taux actifs » en 2 × 2, soldes de
+trésorerie empilés, frise du trajet à 14 px, référence des notifications
+jamais coupée au milieu, lien du client et téléphone en zone tactile de 44 px
+sans gonfler l'interligne. 632 tests verts, build propre.
+
+## Passe 31 — chasse par motifs et derniers écrans (agent cash, formulaires)
+
+L'espace agent cash affichait « 继续 » à un opérateur francophone : la
+langue du contexte peut être « fr », les ternaires en/zh tombaient sur le
+chinois — remplacés par un choix à trois langues. Rôles en français
+(« Super admin », « Agent cash »). Indications et erreurs des formulaires à
+14 px minimum ; réglages d'expédition : numéros sur toute la largeur (ils
+étaient coupés dans deux colonnes). Paiement groupé plafonné à 50 M avec la
+même garde d'entier que le paiement simple. Réponses toutes faites et
+suggestions : confirmation de suppression en feuille basse au lieu du
+`confirm()` natif du navigateur, icônes à 44 px. Création de client :
+e-mail vérifié avant `auth.signUp`, téléphone à 8 chiffres minimum. Copie
+du mot de passe : refus du presse-papiers signalé (client, admin, fiche
+admin) ; nouveau mot de passe sans rejet non géré. Carte : points des ports
+avec zone tactile de 32 px ; curseur des étages 3D à 44 px.
+**Bilan de la passe complète (30 et 31)** : 0 plantage, 0 débordement sur
+les 43 écrans capturés à 390 et 320 px, clair et sombre ; 632 tests verts.

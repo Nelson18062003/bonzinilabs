@@ -4,9 +4,10 @@
 // type, non-lu = pleine opacité + point lilas, lu = estompé). Logique
 // 100% PRÉSERVÉE (marquer lu / tout marquer, navigation au clic).
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { ArrowLeft, Bell, CheckCircle2, XCircle, AlertCircle, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,7 @@ const TONE: Record<string, { box: string; Icon: typeof Bell }> = {
 const NotificationsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation('client');
-  const { data: notifications, isLoading, error } = useMyNotifications();
+  const { data: notifications, isLoading, error, refetch } = useMyNotifications();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
 
@@ -49,17 +50,17 @@ const NotificationsPage = () => {
     <div className="flex items-center gap-3 px-4 pb-1 pt-4">
       <button
         onClick={() => navigate(-1)}
-        aria-label={t('notifications.title')}
+        aria-label={t('myCode.back', { defaultValue: 'Retour' })}
         className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition active:scale-95', SURFACE.card, SURFACE.shadow)}
       >
         <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
       </button>
-      <span className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('notifications.title')}</span>
+      <h1 className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('notifications.title')}</h1>
       {hasUnread && (
         <button
           onClick={() => markAllAsRead.mutate()}
           disabled={markAllAsRead.isPending}
-          className="flex shrink-0 items-center gap-1 text-[12px] font-bold text-[#5B4CC4] active:opacity-70 disabled:opacity-50 dark:text-[#B5AAF0]"
+          className="flex min-h-11 shrink-0 items-center gap-1 text-[13px] font-bold text-[#5B4CC4] active:opacity-70 disabled:opacity-50 dark:text-[#B5AAF0]"
         >
           <CheckCheck className="h-4 w-4" />
           {t('notifications.markAllRead')}
@@ -79,9 +80,7 @@ const NotificationsPage = () => {
               <div key={i} className={cn('h-20 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))
           ) : error ? (
-            <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
-              <p className="text-[14px] text-[#C0504D] dark:text-[#E79A9A]">{t('notifications.loadError')}</p>
-            </div>
+            <QueryError what={t('notifications.loadWhat', { defaultValue: 'vos notifications' })} onRetry={() => { void refetch(); }} />
           ) : notifications && notifications.length > 0 ? (
             notifications.map((n) => {
               const tone = TONE[getNotificationStyle(n.type).icon] ?? TONE.bell;
@@ -103,7 +102,7 @@ const NotificationsPage = () => {
                     <div className={cn('text-[14px] font-bold', TEXT.strong)}>{n.title}</div>
                     <div className={cn('mt-0.5 line-clamp-2 text-[13px]', TEXT.muted)}>{n.message}</div>
                     <div className={cn('mt-1.5 text-[11px]', TEXT.muted)}>
-                      {format(new Date(n.created_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
+                      {format(new Date(n.created_at), 'PP · HH:mm', { locale: dateLocale() })}
                     </div>
                   </div>
                   {!n.is_read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: LILAC }} />}

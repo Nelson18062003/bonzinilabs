@@ -10,6 +10,7 @@
  * Une entrée peut répondre à plusieurs routes (`match`) : Opérations est
  * active sur /m/ops, /m/deposits et /m/payments.
  */
+import { useMemo } from 'react';
 import { Link, matchPath, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bot, Ship, ArrowLeftRight, Users, MoreHorizontal, type LucideIcon } from 'lucide-react';
@@ -37,10 +38,10 @@ export function MobileTabBar({ className }: { className?: string }) {
   const { data: counts } = useAdminActionableCounts();
   const ops = (counts?.deposits ?? 0) + (counts?.payments ?? 0);
   const { data: cargo } = useCargoShipments();
-  const late = cargo ? alertTally(cargo).late : 0;
+  const late = useMemo(() => (cargo ? alertTally(cargo).late : 0), [cargo]);
 
   const entries: Entry[] = [
-    { to: '/m/assistant', match: ['/m/assistant'], icon: Bot, iconSrc: '/assets/mola-mascot.png', label: t('assistant', { defaultValue: 'Mola' }) },
+    { to: '/m/assistant', match: ['/m/assistant'], icon: Bot, iconSrc: '/assets/mola-mascot-160.webp', label: t('assistant', { defaultValue: 'Mola' }) },
     ...(hasPermission('canViewCargo')
       ? [{ to: '/m/cargo', match: ['/m/cargo/*'], icon: Ship, label: t('cargo', { defaultValue: 'Cargo' }), badge: late } satisfies Entry]
       : []),
@@ -95,7 +96,7 @@ export function MobileTabBar({ className }: { className?: string }) {
                   </span>
                 )}
               </span>
-              <span className={cn('max-w-full whitespace-nowrap text-[14px] leading-none tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
+              <span className={cn('max-w-full whitespace-nowrap text-[12px] leading-none tracking-[-0.02em] min-[360px]:text-[13px] min-[360px]:tracking-[-0.02em] min-[400px]:text-[14px] min-[400px]:tracking-[-0.01em]', active ? 'font-semibold' : 'font-medium')}>{e.label}</span>
             </Link>
           );
         })}

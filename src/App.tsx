@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
 import "./i18n"; // Initialize i18n before anything renders
-import LandingPage from "./pages/LandingPage";
 import { useCaptureUtm } from "@/hooks/useUtmTracking";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
@@ -44,7 +43,8 @@ const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
-// LandingPage is eagerly loaded (first route, no lazy delay)
+// La page d'accueil publique ne pèse plus sur l'app admin : chargée à la demande.
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────

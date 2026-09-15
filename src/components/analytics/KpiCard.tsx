@@ -29,6 +29,8 @@ export interface KpiCardProps {
   icon?: React.ReactNode;
   /** When true, shows a skeleton shimmer instead of the value. */
   loading?: boolean;
+  /** La requête a échoué : on montre un tiret, jamais un 0 qui ressemble à une vraie valeur. */
+  error?: boolean;
   className?: string;
   /**
    * Subtle colour hint on the icon badge and value. Defaults to 'neutral'
@@ -61,6 +63,7 @@ export function KpiCard({
   description,
   icon,
   loading,
+  error,
   className,
   accent = 'neutral',
 }: KpiCardProps) {
@@ -81,7 +84,7 @@ export function KpiCard({
                   <button
                     type="button"
                     aria-label="Définition de la métrique"
-                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground max-lg:-mt-2 max-lg:flex max-lg:h-10 max-lg:w-10 max-lg:items-center max-lg:justify-center max-lg:text-muted-foreground"
+                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground max-lg:-mt-2 max-lg:flex max-lg:h-11 max-lg:w-11 max-lg:items-center max-lg:justify-center max-lg:text-muted-foreground"
                   >
                     <Info className="h-3.5 w-3.5 max-lg:h-5 max-lg:w-5" />
                   </button>
@@ -100,9 +103,11 @@ export function KpiCard({
 
           {loading ? (
             <div className="h-7 w-28 animate-pulse rounded bg-muted" />
+          ) : error ? (
+            <p className={cn('text-[16px] min-[400px]:text-[18px] md:text-2xl font-extrabold leading-tight', TEXT.muted)} title="Données indisponibles">—</p>
           ) : (
             <p
-              className={cn('text-xl md:text-2xl font-extrabold tabular-nums leading-tight break-words', TEXT.strong)}
+              className={cn('min-w-0 whitespace-nowrap text-[16px] min-[400px]:text-[18px] md:text-2xl font-extrabold tabular-nums leading-tight', TEXT.strong)}
               title={typeof value === 'string' ? value : undefined}
             >
               {value}
@@ -110,8 +115,10 @@ export function KpiCard({
           )}
 
           <div className="flex items-center gap-2 flex-wrap">
-            {delta !== undefined ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
-            {secondary ? (
+            {delta !== undefined && !error ? <TrendBadge delta={delta ?? null} invertColor={invertColor} /> : null}
+            {error ? (
+              <p className={cn('text-[11px] max-lg:text-[16px] md:text-xs leading-snug', TEXT.muted)}>Données indisponibles</p>
+            ) : secondary ? (
               <p className={cn('text-[11px] max-lg:text-[16px] md:text-xs tabular-nums leading-snug', TEXT.muted)}>
                 {secondary}
               </p>

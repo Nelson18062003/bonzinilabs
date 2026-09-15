@@ -10,35 +10,37 @@
  * Le numéro de boîte n'apparaît que si le client a plusieurs boîtes.
  */
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoShipments } from '@/hooks/useCargo';
-import { ALERT, ALERT_ORDER, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
+import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
+import { ALERT, ALERT_ORDER, TONE_OF, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence, delaySentence, nextActionSentence, plural, uncap } from '@/lib/cargo/plain';
 import { nextSteps } from '@/lib/cargo/todo';
 import { bestEta } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput, type Tone } from '@/mobile/designKit';
+import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput } from '@/mobile/designKit';
 
 /** Au-delà, les filtres ne suffisent plus : un champ de recherche apparaît. */
 const SEARCH_FROM = 8;
 /** La section qui règle chaque chose à faire (même table que le dossier). */
 const TODO_SECTION: Record<string, string> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
 
-const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
-  const { data, isLoading } = useCargoShipments();
+  const { data, isLoading, isError, refetch } = useCargoShipments();
+  const { data: docsBy } = useCargoFleetDocuments();
   const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
   const [query, setQuery] = useState('');
   const [weekOpen, setWeekOpen] = useState(false);
 
   const all = useMemo(() => data ?? [], [data]);
-  const tally = useMemo(() => alertTally(all), [all]);
+  const allDocs = useMemo(() => Object.values(docsBy ?? {}).flat(), [docsBy]);
+  const tally = useMemo(() => alertTally(all, allDocs), [all, allDocs]);
   // Trois cartes « PRC » identiques ne se distinguent pas : quand un client a
   // plusieurs boîtes, on écrit le numéro de boîte sous son nom.
   const dupes = useMemo(() => {
@@ -47,17 +49,17 @@ export function MobileCargoScreen() {
     return n;
   }, [all]);
   // Ce qui presse cette semaine, toutes boîtes confondues : les choses « à faire maintenant ».
-  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all]);
+  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s, docsBy?.[s.id]).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all, docsBy]);
   const rows = useMemo(() => {
     const q = query.trim().toUpperCase();
-    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s) === filter))
+    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s, docsBy?.[s.id]) === filter))
       .filter((s) => !q || s.client_label.toUpperCase().includes(q) || s.container_number.includes(q) || (s.bl_number ?? '').toUpperCase().includes(q) || (s.vessel_name ?? '').toUpperCase().includes(q));
     return [...list].sort((a, b) => {
-      const d = ALERT[alertLevel(b)].rank - ALERT[alertLevel(a)].rank;
+      const d = ALERT[alertLevel(b, docsBy?.[b.id])].rank - ALERT[alertLevel(a, docsBy?.[a.id])].rank;
       if (d !== 0) return d;
       return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
     });
-  }, [all, filter, query]);
+  }, [all, filter, query, docsBy]);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -85,7 +87,7 @@ export function MobileCargoScreen() {
               aria-pressed={active}
               onClick={() => setFilter(active && k !== 'all' ? 'all' : (k as AlertLevel | 'all'))}
               className={cn(
-                'inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[16px] font-semibold transition-colors',
+                'inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[16px] font-semibold transition-colors',
                 active ? 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]',
               )}
             >
@@ -132,10 +134,11 @@ export function MobileCargoScreen() {
 
       <div className="space-y-3 px-4 pt-3">
         {isLoading && <ScreenLoader />}
+        {isError && !isLoading && <QueryError what="la flotte" onRetry={() => { void refetch(); }} />}
         {rows.map((s) => {
-          const level = alertLevel(s);
+          const level = alertLevel(s, docsBy?.[s.id]);
           const delay = delaySentence(s);
-          const next = nextActionSentence(s);
+          const next = nextActionSentence(s, docsBy?.[s.id]);
           return (
             <button
               key={s.id}
@@ -158,7 +161,7 @@ export function MobileCargoScreen() {
           );
         })}
 
-        {!isLoading && rows.length === 0 && (
+        {!isLoading && !isError && rows.length === 0 && (
           <div className="flex flex-col items-center py-12 text-center">
             <p className={cn(TYPE.lead, TEXT.strong)}>{query ? 'Aucun conteneur ne correspond' : filter === 'all' ? 'Aucun conteneur suivi' : 'Aucun conteneur dans cet état'}</p>
             <p className={cn('mt-2 max-w-xs text-[16px]', TEXT.muted)}>

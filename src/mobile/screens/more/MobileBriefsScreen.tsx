@@ -111,7 +111,7 @@ export function MobileBriefsScreen({ desktop = false }: { desktop?: boolean } = 
             </div>
           ) : !loadingMacro ? (
             <div className="text-[14px] text-muted-foreground py-4 text-center">
-              Aucun snapshot. Lance fetch-macro pour démarrer.
+              Aucune donnée macro pour l'instant : la collecte automatique alimente cet écran toutes les 15 minutes.
             </div>
           ) : null}
         </div>

@@ -7,7 +7,7 @@ export function Pick<T extends string>({ options, value, onChange, label }: { op
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
         <button key={o} type="button" onClick={() => onChange(o)} aria-pressed={o === value}
-          className={cn('h-10 px-3 text-[16px] font-medium', o === value ? PRIMARY_PILL : SOFT_PILL)}>
+          className={cn('min-h-11 max-w-full px-3 py-2 text-left text-[16px] font-medium leading-snug', o === value ? PRIMARY_PILL : SOFT_PILL)}>
           {label(o)}
         </button>
       ))}

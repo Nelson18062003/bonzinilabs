@@ -296,7 +296,7 @@ export function PhoneNumberInput({
       </div>
 
       {showValidity && touched && (
-        <p className={cn('text-[12px]', complete ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-500')}>
+        <p className={cn('text-[14px]', complete ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-500')}>
           {complete
             ? `Numéro valide · ${toE164(value)}`
             : `Numéro incomplet pour ${countryName(value.country)}`}

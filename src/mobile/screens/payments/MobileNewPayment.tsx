@@ -27,7 +27,7 @@ import {
   type Beneficiary,
 } from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
@@ -57,7 +57,7 @@ import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
-const VIOLET = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
+const VIOLET = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
 const FALLBACK_RATE = 11530;
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -194,6 +194,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // Carnet du client (Lot 4): onglet "enregistré" vs "nouveau", + sélection.
   const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
   const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
+  // Bénéficiaire déjà ajouté au carnet lors d'une tentative précédente : un
+  // second essai (paiement en échec) ne le recrée pas en double.
+  const carnetIdRef = useRef<string | null>(null);
   const [saveToCarnet, setSaveToCarnet] = useState(true);
   const createBeneficiary = useAdminCreateBeneficiary();
 
@@ -245,7 +248,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // ── Calculs ───────────────────────────────────────────────────
   const clientBalance = client ? (walletsMap.get(client.user_id) ?? 0) : 0;
   const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
-  const rate = useCustomRate ? (parseInt(customRateStr) || FALLBACK_RATE) : baseRate;
+  // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
+  // sur la constante de secours (le paiement partait à 11 530).
+  const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
+  const customRateValid = !useCustomRate || parseInt(customRateStr) > 0;
   const raw = parseInt(rawAmount) || 0;
   const xaf = inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate);
   const cny = inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw;
@@ -275,14 +281,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
 
   const hasEnoughBalance = xaf <= clientBalance;
-  // Same 50 M ceiling the client-facing wizard enforces — the admin form had
-  // only a floor, so an extra zero passed straight through to the wallet debit.
+  // Pas de plafond : entier positif, dans la limite du solde du client.
   const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
-  const amountOverCap = xaf > MAX_AMOUNT_XAF;
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
-    step === 3 ? (amountValid && hasEnoughBalance) :
+    step === 3 ? (amountValid && hasEnoughBalance && customRateValid) :
     step === 4 ? benef4Valid :
     true;
 
@@ -292,7 +296,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setUseCustomDate(false); setCustomDateStr('');
-    setBenef(BENEF0); setSkipBenef(false);
+    setBenef(BENEF0); setSkipBenef(false); carnetIdRef.current = null;
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     removeQr(); setDone(null);
   }
@@ -318,6 +322,18 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     });
   }, []);
 
+  // Changer de client ou de mode invalide le bénéficiaire choisi : il vient du
+  // carnet de CE client pour CE mode. Sans cela « Suivant » restait actif et
+  // le paiement partait avec le bénéficiaire d'un autre client.
+  const chooseClient = (c: NonNullable<typeof client>) => {
+    if (c.user_id !== client?.user_id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    setClient(c);
+  };
+  const chooseMode = (m: NonNullable<typeof mode>) => {
+    if (m.id !== mode?.id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    setMode(m);
+  };
+
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
     if (!client || !mode || !dbMode) return;
@@ -326,7 +342,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       toast.error(
         amountValid
           ? 'Solde insuffisant pour ce paiement.'
-          : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`,
+          : 'Montant invalide.',
       );
       return;
     }
@@ -387,7 +403,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         const resolvedName = autoName ?? (benef.name || undefined);
 
         // Save to the CLIENT's carnet (unless cash+self — that's the client).
-        if (saveToCarnet && !isCashSelf && benef.name.trim()) {
+        if (carnetIdRef.current) {
+          beneficiaryId = carnetIdRef.current;
+        } else if (saveToCarnet && !isCashSelf && benef.name.trim()) {
           try {
             const created = await createBeneficiary.mutateAsync({
               client_id: client.user_id,
@@ -403,6 +421,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               qr_code_file: qrFile || undefined,
             });
             beneficiaryId = created.id;
+            carnetIdRef.current = created.id;
           } catch {
             // Non-silent (hook toasts); the payment still proceeds.
           }
@@ -511,14 +530,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             <ChevronLeft className="h-6 w-6" />
           </button>
           <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau paiement</span>
-          <span className="text-[16px] font-bold" style={{ color: VIOLET }}>{step}/5</span>
+          <span className={cn('text-[16px] font-bold', TEXT.strong)}>{step}/5</span>
         </div>
         <div className="flex gap-1 pb-3">
           {[1, 2, 3, 4, 5].map((n) => (
             <div
               key={n}
               className="h-[3px] flex-1 rounded-full transition-colors"
-              style={{ background: step >= n ? VIOLET : 'rgba(0,0,0,0.08)' }}
+              style={{ background: step >= n ? VIOLET : 'rgba(128,128,128,0.25)' }}
             />
           ))}
         </div>
@@ -561,7 +580,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 return (
                   <button
                     key={c.user_id}
-                    onClick={() => setClient(c)}
+                    onClick={() => chooseClient(c)}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
@@ -571,21 +590,18 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   >
                     <div
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                      style={{ background: `${VIOLET}14`, color: VIOLET }}
+                      style={{ background: 'rgba(128,128,128,0.16)' }}
                     >
                       {ini}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{name}</div>
-                      <div className={cn('truncate text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      <div className={cn('text-[16px] font-bold leading-snug', TEXT.strong)}>{name}</div>
+                      <div className={cn('text-[16px]', TEXT.muted)}>{c.phone ?? '—'}</div>
+                      {/* Le solde sous le nom : à côté, il coupait les noms en deux sur un petit écran. */}
+                      <div className={cn('text-[16px] font-bold tabular-nums', bal !== null && bal > 0 ? TEXT.strong : TEXT.muted)}>
+                        {bal !== null ? `Solde : ${fmt(bal)} XAF` : 'Solde inconnu'}
+                      </div>
                     </div>
-                    {bal !== null ? (
-                      <span className={cn('shrink-0 text-[16px] font-bold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
-                        {fmt(bal)} XAF
-                      </span>
-                    ) : (
-                      <span className={cn('shrink-0 text-[16px]', TEXT.muted)}>—</span>
-                    )}
                   </button>
                 );
               })}
@@ -610,7 +626,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 return (
                   <button
                     key={m.id}
-                    onClick={() => setMode(m)}
+                    onClick={() => chooseMode(m)}
                     className={cn(
                       'flex w-full items-center gap-3.5 rounded-lg p-4 text-left transition active:scale-[0.99]',
                       SURFACE.card,
@@ -814,11 +830,6 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             />
 
             {/* Alertes montant */}
-            {amountOverCap && (
-              <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
-                Maximum : {MAX_AMOUNT_XAF_LABEL} XAF par paiement
-              </div>
-            )}
             {xaf > clientBalance && xaf > 0 && (
               <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 Solde insuffisant ({fmt(clientBalance)} XAF)
@@ -904,7 +915,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                             >
                               <div
                                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                                style={{ background: `${VIOLET}14`, color: VIOLET }}
+                                style={{ background: 'rgba(128,128,128,0.16)' }}
                               >
                                 {(b.alias || b.name)[0]?.toUpperCase()}
                               </div>
@@ -970,7 +981,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   <Card className="flex items-center gap-3">
                     <div
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                      style={{ background: `${VIOLET}14`, color: VIOLET }}
+                      style={{ background: 'rgba(128,128,128,0.16)' }}
                     >
                       {getInitials(client.first_name ?? '', client.last_name ?? '')}
                     </div>
@@ -1012,7 +1023,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                     {/* QR Code upload */}
                     <FormField label={<>QR Code {mode.name}<Opt /></>}>
                       {qrPreview ? (
-                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
+                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: 'inset 0 0 0 2px rgba(128,128,128,0.35)' }}>
                           <img
                             src={qrPreview}
                             alt="QR code"

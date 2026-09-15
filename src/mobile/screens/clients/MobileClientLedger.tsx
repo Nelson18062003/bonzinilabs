@@ -10,7 +10,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useClientLedger } from '@/hooks/useClientManagement';
+import { useClient, useClientLedgerPaged } from '@/hooks/useClientManagement';
+import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
 import { formatXAF } from '@/lib/formatters';
 import { whenSentence } from '@/lib/plainTime';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,7 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
   const [filter, setFilter] = useState<LedgerEntryType | 'all'>('all');
 
   const { data: client, isLoading: clientLoading, refetch: refetchClient } = useClient(clientId || '');
-  const { data: entries, isLoading: entriesLoading, refetch: refetchEntries } = useClientLedger(
+  const { data: entries, isLoading: entriesLoading, refetch: refetchEntries, hasNextPage, fetchNextPage, isFetchingNextPage } = useClientLedgerPaged(
     clientId || '',
     { entryType: filter !== 'all' ? filter : undefined },
   );
@@ -106,6 +107,8 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
             {filter === 'all' ? "Aucun mouvement pour l'instant." : 'Aucun mouvement de ce genre.'}
           </Line>
         )}
+        {/* Page suivante à l'approche du bas : plus de plafond à 1 000 écritures. */}
+        <InfiniteScrollTrigger onLoadMore={() => { void fetchNextPage(); }} hasNextPage={hasNextPage} isFetchingNextPage={isFetchingNextPage} />
       </PullToRefresh>
     </div>
   );

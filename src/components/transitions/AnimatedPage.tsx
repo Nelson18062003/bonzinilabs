@@ -16,7 +16,7 @@ export function AnimatedPage({ children, className }: AnimatedPageProps) {
 
   return (
     <div
-      key={location.pathname}
+      key={location.pathname.replace(/^\/m\/(deposits|payments)$/, '/m/ops')}
       className={cn('animate-fade-in', className)}
     >
       {children}

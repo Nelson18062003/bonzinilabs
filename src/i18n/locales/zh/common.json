@@ -251,7 +251,9 @@
   "blockAccess": "禁止访问",
   "restoreAccess": "恢复访问",
   "changeMyPassword": "修改我的密码",
-  "resetPassword": "重置密码",
+  "resetPassword": {
+    "linkExpired": "链接无效或已过期。请重新使用“忘记密码”。"
+  },
   "generateNewPassword": "生成新密码",
   "generateTempPassword": "生成临时密码",
   "editAdmin": "编辑管理员",
@@ -448,5 +450,18 @@
   "shippingSettingsRowHint": "海运（仓库）、空运（办公室）、电话、微信、WhatsApp、邮箱 — 打印在发货标签上",
   "assistant": "Mola",
   "cargo": "货运",
-  "navOperations": "业务"
+  "navOperations": "业务",
+  "pasteHint": "Ctrl+V 粘贴截图 · JPG、PNG、WebP 或 PDF · 最大 10 MB",
+  "showPassword": "显示密码",
+  "hidePassword": "隐藏密码",
+  "otpCode": "验证码",
+  "phoneField": {
+    "searchCountry": "搜索国家...",
+    "noResult": "无结果"
+  },
+  "queryError": {
+    "title": "无法加载{{what}}。",
+    "hint": "请检查网络连接后重试。"
+  },
+  "retry": "重试"
 }

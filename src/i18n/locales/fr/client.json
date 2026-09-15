@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "Bonjour",
+    "afternoon": "Bon après-midi",
+    "evening": "Bonsoir",
+    "withName": "{{prefix}}, {{name}} !",
+    "welcomeLast": "Bienvenue, {{name}} 👋",
+    "anonymous": "{{prefix}} 👋 Bienvenue chez Bonzini"
+  },
   "wallet": {
     "availableBalance": "Solde disponible",
     "hideBalance": "Masquer le solde",
@@ -42,7 +50,8 @@
       "adjustmentCredit": "Ajustement Crédit",
       "operation": "Opération"
     },
-    "search": "Rechercher une opération…"
+    "search": "Rechercher une opération…",
+    "loadWhat": "votre historique"
   },
   "profile": {
     "title": "Profil",
@@ -52,7 +61,7 @@
     "security": "Sécurité",
     "securityDesc": "Mot de passe, 2FA",
     "devices": "Appareils connectés",
-    "devicesDesc": "2 appareils",
+    "devicesDesc": "Bientôt disponible",
     "language": "Langue",
     "languageDesc": "Français",
     "documents": "Documents",
@@ -125,14 +134,16 @@
       "emailInvalid": "Email invalide",
       "tooLong": "Texte trop long",
       "invalid": "Informations invalides"
-    }
+    },
+    "loadWhat": "vos bénéficiaires"
   },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Tout lire",
     "loadError": "Erreur lors du chargement des notifications",
     "noNotifications": "Aucune notification pour le moment",
-    "noNotificationsHint": "Vous serez notifié lorsque vos dépôts seront validés"
+    "noNotificationsHint": "Vous serez notifié lorsque vos dépôts seront validés",
+    "loadWhat": "vos notifications"
   },
   "notFound": {
     "title": "404",
@@ -189,7 +200,22 @@
       "min": "Min",
       "avg": "Moy",
       "max": "Max"
-    }
+    },
+    "notConfigured": "Taux non configurés",
+    "details": "Détails →",
+    "swapDirection": "Inverser le sens de conversion",
+    "updatedToday": "Mis à jour aujourd'hui à {{time}}",
+    "updatedOn": "Mis à jour le {{date}} à {{time}}",
+    "countries": {
+      "cameroun": "Cameroun",
+      "gabon": "Gabon",
+      "tchad": "Tchad",
+      "rca": "Centrafrique",
+      "congo": "Congo",
+      "guinee": "Guinée Équatoriale"
+    },
+    "cardTitle": "Taux du jour",
+    "loadWhat": "les taux du jour"
   },
   "myCode": {
     "cardTitle": "Mon identifiant client",
@@ -225,6 +251,7 @@
     "supplierEmail": "E-mail",
     "copyImage": "Copier l’image",
     "downloadImage": "Télécharger l’image",
-    "imageCopied": "Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail"
+    "imageCopied": "Image copiée — collez-la dans WeChat, WhatsApp ou un e-mail",
+    "sharePdf": "Partager le PDF"
   }
 }

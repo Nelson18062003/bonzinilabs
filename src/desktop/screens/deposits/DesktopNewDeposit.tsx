@@ -38,7 +38,7 @@ import {
   omMerchantInfo,
   mtnMerchantInfo,
 } from '@/data/depositMethodsData';
-import { MIN_DEPOSIT_XAF, MAX_AMOUNT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { formatCurrency } from '@/lib/formatters';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { matchesClientSearch } from '@/lib/clientSearch';
@@ -326,7 +326,7 @@ export function DesktopNewDeposit() {
       return;
     }
     if (!amountValid) {
-      toast.error(`Montant invalide — entre ${fmt(MIN_DEPOSIT_XAF)} et ${fmt(MAX_AMOUNT_XAF)} XAF`);
+      toast.error(`Montant invalide — minimum ${fmt(MIN_DEPOSIT_XAF)} XAF`);
       return;
     }
     // Re-vérifié ici (pas seulement dans le champ) : la page peut rester
@@ -446,7 +446,7 @@ export function DesktopNewDeposit() {
                   )}
                 </div>
               </FormField>
-              <FormField label="Montant (XAF)" hint={`Min ${fmt(MIN_DEPOSIT_XAF)} · Max ${fmt(MAX_AMOUNT_XAF)}`}>
+              <FormField label="Montant (XAF)" hint={`Min ${fmt(MIN_DEPOSIT_XAF)}`}>
                 <TextInput
                   inputMode="numeric"
                   placeholder="0"

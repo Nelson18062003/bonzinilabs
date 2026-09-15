@@ -247,6 +247,7 @@ function DashboardBody() {
           hint={`${formatInteger(payments.data?.current.opCount ?? 0)} opérations`}
           delta={compare ? delta(paymentsXAF, payments.data?.previous?.totalXAF) : undefined}
           loading={payments.isLoading}
+          error={payments.isError}
         />
         <StatCard
           label="Dépôts validés"
@@ -254,6 +255,7 @@ function DashboardBody() {
           hint={`${formatInteger(deposits.data?.current.opCount ?? 0)} dépôts`}
           delta={compare ? delta(depositsXAF, deposits.data?.previous?.totalXAF) : undefined}
           loading={deposits.isLoading}
+          error={deposits.isError}
         />
         <StatCard
           label="Flux net"
@@ -261,6 +263,7 @@ function DashboardBody() {
           hint={net >= 0 ? "Plus d'entrées que de sorties" : 'Plus de sorties que d’entrées'}
           delta={compare ? delta(net, netPrevious) : undefined}
           loading={payments.isLoading || deposits.isLoading}
+          error={payments.isError || deposits.isError}
           tone={net >= 0 ? 'positive' : 'negative'}
         />
         <StatCard
@@ -268,6 +271,7 @@ function DashboardBody() {
           value={formatCurrencyFull(exposure.data?.totalXAF ?? 0, 'XAF')}
           hint={`${formatInteger(exposure.data?.clientsWithBalance ?? 0)} clients · hors filtre période`}
           loading={exposure.isLoading}
+          error={exposure.isError}
         />
       </div>
 
@@ -280,18 +284,21 @@ function DashboardBody() {
           hint={`${formatInteger(growth.data?.totalAtEnd ?? 0)} clients au total`}
           delta={compare ? growth.data?.trendPct : undefined}
           loading={growth.isLoading}
+          error={growth.isError}
         />
         <StatCard
           label="Clients actifs"
           value={formatInteger(funnel.data?.clientsWithPayment ?? 0)}
           hint="au moins un paiement exécuté sur la période"
           loading={funnel.isLoading}
+          error={funnel.isError}
         />
         <StatCard
           label="Conversion dépôt → paiement"
           value={formatPercent(funnel.data?.depositToPaymentRate ?? 0)}
           hint={`${formatInteger(funnel.data?.clientsWithDeposit ?? 0)} ont déposé · ${formatInteger(funnel.data?.clientsWithPayment ?? 0)} ont payé`}
           loading={funnel.isLoading}
+          error={funnel.isError}
         />
         <StatCard
           label="Délai de validation (médiane)"
@@ -302,6 +309,7 @@ function DashboardBody() {
               : 'aucun dépôt validé sur la période'
           }
           loading={processing.isLoading}
+          error={processing.isError}
         />
       </div>
 

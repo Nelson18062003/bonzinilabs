@@ -3030,6 +3030,18 @@ export type Database = {
         Args: { p_ref: string }
         Returns: { carrier: string; reference_type: string }[]
       }
+      cargo_fleet_status: {
+        Args: { p_client?: string }
+        Returns: Json
+      }
+      cargo_set_freight_paid: {
+        Args: { p_shipment_id: string; p_paid?: boolean }
+        Returns: Json
+      }
+      cargo_set_telex: {
+        Args: { p_shipment_id: string; p_received?: boolean }
+        Returns: Json
+      }
       find_client_by_customer_code: {
         Args: { p_code: string }
         Returns: Json

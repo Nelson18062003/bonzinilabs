@@ -1,5 +1,5 @@
 {
-  "name": "Bonzini",
+  "name": "Bonzini Labs",
   "short_name": "Bonzini",
   "description": "Payez vos fournisseurs chinois en XAF",
   "start_url": "/wallet",
@@ -22,6 +22,8 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance"],
+  "categories": [
+    "finance"
+  ],
   "lang": "fr"
 }

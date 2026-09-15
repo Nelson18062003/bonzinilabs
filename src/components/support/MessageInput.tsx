@@ -311,7 +311,7 @@ export function MessageInput({
 
         {/* Zone centrale : soit textarea (idle), soit voice recorder inline (recording) */}
         {!isRecording ? (
-          <div className="flex flex-1 items-end rounded-full bg-muted pl-3 pr-1.5 min-h-[40px]">
+          <div className="flex flex-1 items-end rounded-full bg-muted pl-3 pr-1.5 min-h-11">
             {/* eslint-disable-next-line no-restricted-syntax */}
             <textarea
               value={text}

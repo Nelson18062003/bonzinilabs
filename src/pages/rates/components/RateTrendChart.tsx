@@ -60,7 +60,7 @@ export function RateTrendChart() {
             <button
               key={p.key}
               onClick={() => setPeriod(p.key)}
-              className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors', period === p.key ? 'bg-[#8B5CF6] text-white' : SURFACE.holder)}
+              className={cn('min-h-10 rounded-full px-3 text-[13px] font-bold transition-colors', period === p.key ? 'bg-[#8B5CF6] text-white' : SURFACE.holder)}
             >
               {p.label}
             </button>

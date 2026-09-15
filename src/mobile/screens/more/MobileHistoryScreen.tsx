@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -16,7 +17,7 @@ import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatDate } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, type Tone, Card, Avatar, StatusPill, TextInput, Holder, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
+import { SURFACE, TEXT, type Tone, Card, Avatar, StatusPill, TextInput, Holder, Chip } from '@/mobile/designKit';
 
 const FILTERS = [
   { value: 'all', label: 'Tous' },
@@ -28,7 +29,7 @@ const FILTERS = [
 
 export function MobileHistoryScreen() {
   const { t } = useTranslation('common');
-  const { data: logs, isLoading, refetch } = useAdminAuditLogs();
+  const { data: logs, isLoading, isError, refetch } = useAdminAuditLogs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [typeFilter, setTypeFilter] = useState('all');
@@ -92,16 +93,7 @@ export function MobileHistoryScreen() {
           {/* Filter chips */}
           <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setTypeFilter(filter.value)}
-                className={cn(
-                  'whitespace-nowrap px-4 py-2 text-[14px] font-semibold transition-colors',
-                  typeFilter === filter.value ? TOGGLE_ON : TOGGLE_OFF,
-                )}
-              >
-                {filter.label}
-              </button>
+              <Chip key={filter.value} label={filter.label} active={typeFilter === filter.value} onClick={() => setTypeFilter(filter.value)} />
             ))}
           </div>
         </div>
@@ -110,6 +102,8 @@ export function MobileHistoryScreen() {
         <div className="px-4 pb-5">
           {isLoading ? (
             <SkeletonListScreen count={8} />
+          ) : isError ? (
+            <QueryError what="l'historique" onRetry={() => { void refetch(); }} />
           ) : filteredLogs.length > 0 ? (
             <div className="space-y-2">
               {filteredLogs.map((log) => {
@@ -148,7 +142,7 @@ export function MobileHistoryScreen() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Holder icon={History} size="lg" />
-              <p className={cn('mt-4', TEXT.muted)}>{t('noLogsFound', { defaultValue: 'Aucun log trouvé' })}</p>
+              <p className={cn('mt-4', TEXT.muted)}>{t('noLogsFound', { defaultValue: 'Aucune action trouvée' })}</p>
             </div>
           )}
         </div>

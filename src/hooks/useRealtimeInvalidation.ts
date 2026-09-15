@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase, supabaseAdmin } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { ACTION_BADGE_KEYS } from '@/hooks/useAdminNotifications';
 import {
   depositKeys,
   paymentKeys,
@@ -40,6 +41,7 @@ import {
 // Every table the app touches → the query key prefixes that depend on it.
 // Keep prefixes only (not full keyed queries) so prefix-matching invalidation
 // catches every descendant key without us enumerating them.
+const CARGO_KEY = ['cargo'] as const;
 const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
   deposits:                [depositKeys.all, dashboardKeys.all],
   deposit_proofs:          [depositKeys.all],
@@ -55,10 +57,36 @@ const TABLE_INVALIDATIONS: Record<string, ReadonlyArray<readonly unknown[]>> = {
   rate_adjustments:        [rateKeys.all],
   user_roles:              [adminKeys.all],
   admin_audit_logs:        [adminKeys.all],
+  // Cargo : tout est sous le préfixe ['cargo', …] (useCargo.ts). Le cron
+  // cargo-sync et un second admin écrivent ces tables sans passer par l'app.
+  cargo_shipments:         [CARGO_KEY],
+  cargo_events:            [CARGO_KEY],
+  cargo_costs:             [CARGO_KEY],
+  cargo_packages:          [CARGO_KEY],
+  cargo_documents:         [CARGO_KEY],
+  cargo_lookups:           [CARGO_KEY],
 };
 
 // Tables the CLIENT app cares about (subset — RLS hides the rest anyway,
 // but narrower subscriptions save bandwidth and RLS eval cost on the server).
+/** Radicaux des clés tapées à la main que chaque table doit rafraîchir. */
+const TABLE_STEMS: Record<string, readonly string[]> = {
+  deposits:                ['deposit'],
+  deposit_proofs:          ['deposit'],
+  deposit_timeline_events: ['deposit'],
+  payments:                ['payment'],
+  payment_proofs:          ['payment'],
+  payment_timeline_events: ['payment'],
+  wallets:                 ['wallet', 'client'],
+  ledger_entries:          ['ledger', 'wallet', 'client'],
+  clients:                 ['client'],
+  beneficiaries:           ['benef'],
+  daily_rates:             ['rate'],
+  rate_adjustments:        ['rate'],
+  user_roles:              ['admin'],
+  notifications:           ['notification'], // my-notifications · unread-notification-count
+};
+
 const CLIENT_TABLES = [
   'deposits',
   'deposit_proofs',
@@ -93,14 +121,21 @@ function subscribeTables(
         for (const key of prefixes) {
           queryClient.invalidateQueries({ queryKey: key as readonly unknown[] });
         }
-        // Back-compat: older hooks still use hand-typed 'admin-*' / 'my-*'
-        // keys that predate the factories. Catch them by table-name heuristic
-        // so the global safety net covers the legacy surface too.
-        queryClient.invalidateQueries({ queryKey: [`admin-${table}`] });
-        queryClient.invalidateQueries({ queryKey: [`my-${table}`] });
-        const singular = table.replace(/s$/, '').replace(/_events$/, '');
-        queryClient.invalidateQueries({ queryKey: [`admin-${singular}`] });
-        queryClient.invalidateQueries({ queryKey: [`my-${singular}`] });
+        // Clés « historiques » tapées à la main ('admin-deposits-paginated',
+        // 'admin-deposit-proofs', 'deposit-stats', 'client-ledger', …) : elles
+        // ne descendent pas des fabriques. On invalide toute query dont le
+        // premier segment contient le radical de la table — c'est le filet
+        // qui manquait : la preuve envoyée par le client n'apparaissait pas
+        // sur la fiche admin ouverte, ni dans la file « À traiter ».
+        const stems = TABLE_STEMS[table] ?? [];
+        if (stems.length) {
+          queryClient.invalidateQueries({
+            predicate: (q) => typeof q.queryKey[0] === 'string' && stems.some((st) => (q.queryKey[0] as string).includes(st)),
+          });
+        }
+        if (table === 'deposits' || table === 'payments') {
+          for (const k of ACTION_BADGE_KEYS) queryClient.invalidateQueries({ queryKey: k });
+        }
       },
     );
   });
@@ -113,11 +148,15 @@ export function useClientRealtimeInvalidation() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  // Dépend de l'identifiant, pas de l'objet `user` (recréé à chaque
+  // TOKEN_REFRESHED) ; nom de canal unique pour que le retrait asynchrone de
+  // l'ancien canal ne tue pas le nouveau — même correctif que côté admin.
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     const channel = subscribeTables(
       supabase,
-      `client-realtime-${user.id}`,
+      `client-realtime-${userId}:${Date.now()}`,
       CLIENT_TABLES,
       queryClient,
     );
@@ -125,13 +164,13 @@ export function useClientRealtimeInvalidation() {
     channel.on(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       'postgres_changes' as any,
-      { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+      { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
       () => queryClient.invalidateQueries({ queryKey: notificationKeys.all }),
     );
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [userId, queryClient]);
 }
 
 export function useAdminRealtimeInvalidation() {

@@ -97,3 +97,34 @@ describe('SÉCURITÉ — aucune migration ultérieure ne redéfinit une RPC arge
     ).toEqual([]);
   });
 });
+
+describe('SÉCURITÉ — une redéfinition complète reconduit les correctifs appliqués « en place »', () => {
+  // 20260831200000 (FOR UPDATE sur le paiement) et 20260831220000 (montant
+  // crédité > 0) ont patché le corps VIVANT des fonctions via replace() sur
+  // pg_get_functiondef. Un CREATE OR REPLACE écrit à partir du dernier
+  // fichier « complet » les efface en silence — c'est arrivé le 14/09.
+  const REQUIRED: Record<string, string[]> = {
+    process_payment: ['WHERE id = p_payment_id FOR UPDATE', 'WHERE user_id = v_payment.user_id FOR UPDATE'],
+    validate_deposit: ['v_credit_amount IS NULL OR v_credit_amount <= 0', 'FOR UPDATE'],
+    reject_deposit: ['FOR UPDATE'],
+    // 20260831200000 (verrou + écriture relative) et 20260831220000 (montant > 0)
+    // ont aussi patché les ajustements de portefeuille en place.
+    create_wallet_adjustment: ['FOR UPDATE'],
+    admin_adjust_wallet: ['p_amount <= 0'],
+    // 20260914120000 : plus de plafond, mais le montant reste strictement positif.
+    admin_correct_payment: ['p_amount_xaf <= 0', 'FOR UPDATE'],
+  };
+  const later = migrationFiles().filter((f) => f > '20260831220000');
+
+  it.each(Object.entries(REQUIRED))('%s : toute redéfinition postérieure garde les correctifs', (fn, needles) => {
+    const offenders = later.flatMap((file) => {
+      const content = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
+      const idx = content.indexOf(`CREATE OR REPLACE FUNCTION public.${fn}(`);
+      if (idx === -1) return [];
+      const end = content.indexOf('$function$;', idx);
+      const body = content.slice(idx, end === -1 ? undefined : end);
+      return needles.filter((n) => !body.includes(n)).map((n) => `${file} sans « ${n} »`);
+    });
+    expect(offenders).toEqual([]);
+  });
+});

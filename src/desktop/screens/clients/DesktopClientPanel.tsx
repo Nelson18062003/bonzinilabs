@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   useClient,
   useClientLedger,
+  useClientLedgerCount,
   useResetClientPassword,
   useUpdateClient,
   useCreateAdjustment,
@@ -203,6 +204,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId);
   const { data: ledgerEntries } = useClientLedger(clientId);
+  const { data: ledgerTotal } = useClientLedgerCount(clientId);
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
 
@@ -678,7 +680,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
                 onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
                 className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400"
               >
-                Voir tout ({ledgerEntries?.length ?? 0})
+                Voir tout ({ledgerTotal ?? ledgerEntries?.length ?? 0})
               </button>
             }
           >

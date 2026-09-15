@@ -138,11 +138,11 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
 };
 
 export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
-  super_admin: 'Super Admin',
+  super_admin: 'Super admin',
   ops: 'Opérations',
   support: 'Support',
   customer_success: 'Chargé de clientèle',
-  cash_agent: 'Agent Cash',
+  cash_agent: 'Agent cash',
   treasurer: 'Trésorier',
 };
 

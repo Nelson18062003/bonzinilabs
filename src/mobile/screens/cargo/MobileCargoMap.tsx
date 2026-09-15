@@ -10,22 +10,22 @@ import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoShipments, useCargoVesselPositions } from '@/hooks/useCargo';
+import { useCargoShipments, useCargoFleetDocuments, useCargoVesselPositions } from '@/hooks/useCargo';
 import { CargoMap } from '@/components/cargo/CargoMap';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { LIVE_STATUS_LABEL, vesselLiveStatus } from '@/lib/cargo/geo';
-import { ALERT, alertLevel, type AlertLevel } from '@/lib/cargo/palette';
+import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
 import { agoSentence, arrivalSentence } from '@/lib/cargo/plain';
 import { cn } from '@/lib/utils';
-import { TEXT, BottomSheet, ListRow, StatusPill, type Tone } from '@/mobile/designKit';
+import { TEXT, BottomSheet, ListRow, StatusPill } from '@/mobile/designKit';
 
-const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export function MobileCargoMap() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { data: shipments } = useCargoShipments();
+  const { data: docsBy } = useCargoFleetDocuments();
   const { data: positions } = useCargoVesselPositions();
   // « Voir sur la carte » depuis un dossier arrive avec ?vessel=<IMO> : la feuille du navire s'ouvre d'elle-même.
   const [selected, setSelected] = useState<string | null>(params.get('vessel'));
@@ -65,7 +65,7 @@ export function MobileCargoMap() {
             </p>
             <div className="-mx-2">
               {vessel.shipments.map((s) => {
-                const level = alertLevel(s);
+                const level = alertLevel(s, docsBy?.[s.id]);
                 return (
                   <ListRow
                     key={s.id}

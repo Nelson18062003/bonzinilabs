@@ -86,7 +86,7 @@ export function MobileTreasuryHome() {
         {/* Soldes */}
         <section>
           <SectionTitle>Soldes</SectionTitle>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-3">
             <CurrencyCard label="XAF" amount={totals.XAF?.total ?? 0} unit="XAF" accountCount={totals.XAF?.count ?? 0} tone="violet" />
             <CurrencyCard label="USDT" amount={totals.USDT?.total ?? 0} unit="USDT" accountCount={totals.USDT?.count ?? 0} tone="amber" warning={stockNegative} />
             <CurrencyCard label="CNY" amount={totals.CNY?.total ?? 0} unit="CNY" accountCount={totals.CNY?.count ?? 0} tone="orange" />
@@ -105,7 +105,7 @@ export function MobileTreasuryHome() {
         <section className={cn(SOFT_CARD, 'flex items-center gap-3.5 p-4')}>
           <IconChip icon={TrendingUp} tone="amber" size="lg" />
           <div className="min-w-0">
-            <div className="text-[14px] font-bold text-muted-foreground">WAC USDT courant</div>
+            <div className="text-[14px] font-bold text-muted-foreground">Coût moyen d'achat USDT (WAC)</div>
             <div className="text-2xl font-bold leading-tight tracking-tight tabular-nums text-foreground">
               {formatNumber(wac, 4)} <span className="text-sm font-semibold text-muted-foreground">XAF/USDT</span>
             </div>
@@ -116,9 +116,9 @@ export function MobileTreasuryHome() {
         <section>
           <SectionTitle>Analyse</SectionTitle>
           <div className="space-y-2.5">
-            <ActionTile icon={BarChart3} label="Dashboard analytique" description="Volumes, taux moyens, bénéfice, top contreparties" onClick={() => navigate('/m/more/treasury/dashboard')} tone="violet" />
-            <ActionTile icon={History} label="Historique opérations" description="Toutes les opérations + annulation" onClick={() => navigate('/m/more/treasury/operations')} tone="neutral" />
-            <ActionTile icon={ImageIcon} label="Dashboard soldes (PNG/PDF)" description="Générer le visuel des soldes par compte" onClick={() => navigate('/m/more/treasury/balance-dashboard')} tone="orange" />
+            <ActionTile icon={BarChart3} label="Analyse" description="Volumes, taux moyens, bénéfice, principales contreparties" onClick={() => navigate('/m/more/treasury/dashboard')} tone="violet" />
+            <ActionTile icon={History} label="Historique des opérations" description="Toutes les opérations, avec annulation" onClick={() => navigate('/m/more/treasury/operations')} tone="neutral" />
+            <ActionTile icon={ImageIcon} label="Visuel des soldes" description="Une image ou un PDF des soldes par compte, à partager" onClick={() => navigate('/m/more/treasury/balance-dashboard')} tone="orange" />
           </div>
         </section>
 

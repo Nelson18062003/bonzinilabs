@@ -65,7 +65,7 @@ function SwitchPill({ label, onClick }: { label: string; onClick: () => void }) 
       type="button"
       onClick={onClick}
       className={cn(
-        'flex items-center gap-1 rounded-full px-3.5 py-2 text-[13px] font-bold transition active:scale-95',
+        'flex min-h-11 items-center gap-1 rounded-full px-4 text-[14px] font-bold transition active:scale-95',
         SURFACE.card,
         SURFACE.shadow,
         TEXT.strong,
@@ -575,7 +575,7 @@ export default function AuthPage() {
                 >
                   <div className="flex items-center gap-3 my-5">
                     <Separator className="flex-1" />
-                    <span className={cn('text-[12px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
+                    <span className={cn('text-[13px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
                     <Separator className="flex-1" />
                   </div>
                   <GoogleButton
@@ -583,7 +583,7 @@ export default function AuthPage() {
                     loading={googleLoading}
                     label={t('login.continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
                   />
-                  <p className={cn('mt-5 text-center text-[11px]', TEXT.muted)}>{t('login.socialProof')}</p>
+                  <p className={cn('mt-5 text-center text-[13px]', TEXT.muted)}>{t('login.socialProof')}</p>
                 </div>
               </form>
             ) : (
@@ -976,7 +976,7 @@ export default function AuthPage() {
                   {/* Social login Google — raccourci d'inscription */}
                   <div className="flex items-center gap-3 my-1">
                     <Separator className="flex-1" />
-                    <span className={cn('text-[12px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
+                    <span className={cn('text-[13px]', TEXT.muted)}>{t('login.or', { defaultValue: 'ou' })}</span>
                     <Separator className="flex-1" />
                   </div>
                   <GoogleButton

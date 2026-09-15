@@ -79,7 +79,7 @@ export function RateHeroCard({
         ¥1 = {formatNumber(reverseRate)} XAF · {formatRelativeDate(activeRate.effective_at)}
       </div>
       <div className="mt-3 flex gap-2">
-        <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>{currentCountry.flag} {currentCountry.label}</span>
+        <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>{currentCountry.flag} {t(`rates.countries.${currentCountry.key}`, { defaultValue: currentCountry.label })}</span>
         <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>{currentPm.label}</span>
       </div>
     </div>

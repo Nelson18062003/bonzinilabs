@@ -5,28 +5,21 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
-  MAX_AMOUNT_XAF,
   MIN_PAYMENT_XAF,
   MIN_DEPOSIT_XAF,
   isValidXafAmount,
   xafAmountError,
 } from '@/lib/amountLimits';
-import { MAX_AMOUNT_XAF as SCHEMA_MAX, MIN_AMOUNT_XAF as SCHEMA_MIN } from '@/components/payment-form/paymentSchemas';
+import { MIN_AMOUNT_XAF as SCHEMA_MIN } from '@/components/payment-form/paymentSchemas';
 
 describe('isValidXafAmount', () => {
   it('accepts an ordinary amount', () => {
     expect(isValidXafAmount(3_500_000, MIN_PAYMENT_XAF)).toBe(true);
   });
 
-  it('accepts exactly the ceiling but not one past it', () => {
-    expect(isValidXafAmount(MAX_AMOUNT_XAF)).toBe(true);
-    expect(isValidXafAmount(MAX_AMOUNT_XAF + 1)).toBe(false);
-  });
-
-  it('rejects the classic fat-finger extra zero', () => {
-    expect(isValidXafAmount(3_500_000, MIN_PAYMENT_XAF)).toBe(true);
-    expect(isValidXafAmount(35_000_000, MIN_PAYMENT_XAF)).toBe(true);
-    expect(isValidXafAmount(350_000_000, MIN_PAYMENT_XAF)).toBe(false);
+  it('has no business ceiling: a 133 500 000 XAF deposit is valid', () => {
+    expect(isValidXafAmount(133_500_000, MIN_DEPOSIT_XAF)).toBe(true);
+    expect(isValidXafAmount(350_000_000, MIN_PAYMENT_XAF)).toBe(true);
   });
 
   it('rejects zero, negatives and fractions', () => {
@@ -57,12 +50,6 @@ describe('xafAmountError', () => {
     expect(xafAmountError(3_500_000, MIN_PAYMENT_XAF)).toBeNull();
   });
 
-  it('explains an over-cap amount instead of failing silently', () => {
-    const message = xafAmountError(MAX_AMOUNT_XAF + 1, MIN_PAYMENT_XAF);
-    expect(message).toContain('maximum');
-    expect(message).toContain('50');
-  });
-
   it('explains an under-floor amount', () => {
     expect(xafAmountError(500, MIN_DEPOSIT_XAF)).toContain('minimum');
   });
@@ -74,7 +61,6 @@ describe('xafAmountError', () => {
 
 describe('single source of truth', () => {
   it('the client-side zod schemas read the same constants as the admin wizards', () => {
-    expect(SCHEMA_MAX).toBe(MAX_AMOUNT_XAF);
     expect(SCHEMA_MIN).toBe(MIN_PAYMENT_XAF);
   });
 });

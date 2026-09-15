@@ -128,7 +128,7 @@ function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPositi
         </Button>
       )}
       {live && (
-        <a href={live} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-transparent text-[16px] font-medium text-[#303030] active:bg-[#F5F5F5] dark:text-[#E3E3E3] dark:active:bg-[#383838]">
+        <a href={live} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-transparent text-[16px] font-medium text-[#303030] active:bg-[#F5F5F5] dark:text-[#E3E3E3] dark:active:bg-[#383838]">
           Voir la position en direct sur MarineTraffic <ExternalLink className="h-4 w-4" />
         </a>
       )}
@@ -253,7 +253,7 @@ export function MobileCargoDossier() {
             {/* Les deux numéros qu'on recopie dans WhatsApp ou au transitaire : un tap les copie. */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <button type="button" onClick={() => copyToClipboard(s.container_number, 'Numéro de conteneur')} aria-label={`Copier le numéro ${s.container_number}`}
-                className={cn('-ml-1 inline-flex h-10 items-center gap-2 rounded-lg px-1 tabular-nums active:bg-[#F5F5F5] dark:active:bg-[#383838]', TYPE.lead, TEXT.strong)}>
+                className={cn('-ml-1 inline-flex min-h-11 items-center gap-2 rounded-lg px-1 tabular-nums active:bg-[#F5F5F5] dark:active:bg-[#383838]', TYPE.lead, TEXT.strong)}>
                 {s.container_number}
                 <Copy className={cn('h-5 w-5', TEXT.muted)} />
               </button>
@@ -262,7 +262,7 @@ export function MobileCargoDossier() {
             <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
               {CARRIER_LABEL[s.carrier] ?? s.carrier}, bill of lading{' '}
               <button type="button" onClick={() => copyToClipboard(s.bl_number, 'Bill of lading')} aria-label={`Copier le bill of lading ${s.bl_number}`}
-                className={cn('inline-flex items-center gap-1 rounded-md tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
+                className={cn('-my-2 inline-flex min-h-11 items-center gap-1 rounded-md px-1 tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
                 {s.bl_number}
               </button>.
             </p>

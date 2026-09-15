@@ -16,6 +16,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
 import { Banknote, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import { toast } from 'sonner';
 import {
   SURFACE,
@@ -38,15 +39,7 @@ export function AgentCashPaymentDetail() {
   const { data: payment, isLoading, error } = useAgentCashPaymentDetail(paymentId);
   const scanMutation = useAgentScanCashPayment();
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   const getClientName = () => {
     try {
@@ -140,7 +133,7 @@ export function AgentCashPaymentDetail() {
 
         {/* Beneficiary info */}
         <Card className="animate-slide-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
-          <h3 className={cn('mb-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+          <h3 className={cn('mb-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('beneficiary_info')}
           </h3>
           <Row label={t('beneficiary')} value={getBeneficiaryName()} />
@@ -150,11 +143,11 @@ export function AgentCashPaymentDetail() {
 
         {/* Client info */}
         <Card className="animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
-          <h3 className={cn('mb-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
+          <h3 className={cn('mb-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
             {t('client_info')}
           </h3>
           <Row label={t('client')} value={getClientName()} />
-          <Row label={t('reference')} value={<span className="font-mono text-xs">{payment.reference || '—'}</span>} />
+          <Row label={t('reference')} value={<span className="font-mono text-[14px]">{payment.reference || '—'}</span>} />
           {payment.created_at && <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />}
         </Card>
 
@@ -177,7 +170,7 @@ export function AgentCashPaymentDetail() {
             {/* Signature image */}
             {payment.cash_signature_url && (
               <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
-                <p className={cn('mb-2 text-xs font-medium', TEXT.muted)}>
+                <p className={cn('mb-2 text-[14px] font-medium', TEXT.muted)}>
                   {t('beneficiary_signature') || 'Signature du bénéficiaire'}
                 </p>
                 <img
@@ -225,7 +218,7 @@ export function AgentCashPaymentDetail() {
                 <CheckCircle2 className="h-5 w-5" />
                 {t('confirm_payment') || 'Confirmer le paiement'}
               </PrimaryPill>
-              <p className={cn('text-center text-xs', TEXT.muted)}>
+              <p className={cn('text-center text-[14px]', TEXT.muted)}>
                 {t('qr_already_scanned_continue') || 'QR déjà scanné — continuez vers la confirmation'}
               </p>
             </div>

@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "withName": "{{prefix}}, {{name}}!",
+    "welcomeLast": "Welcome, {{name}} 👋",
+    "anonymous": "{{prefix}} 👋 Welcome to Bonzini"
+  },
   "wallet": {
     "availableBalance": "Available balance",
     "hideBalance": "Hide balance",
@@ -42,7 +50,8 @@
       "adjustmentCredit": "Credit adjustment",
       "operation": "Operation"
     },
-    "search": "Search an operation…"
+    "search": "Search an operation…",
+    "loadWhat": "your history"
   },
   "profile": {
     "title": "Profile",
@@ -52,7 +61,7 @@
     "security": "Security",
     "securityDesc": "Password, 2FA",
     "devices": "Connected devices",
-    "devicesDesc": "2 devices",
+    "devicesDesc": "Coming soon",
     "language": "Language",
     "languageDesc": "English",
     "documents": "Documents",
@@ -125,14 +134,16 @@
       "emailInvalid": "Invalid email",
       "tooLong": "Text too long",
       "invalid": "Invalid details"
-    }
+    },
+    "loadWhat": "your beneficiaries"
   },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "loadError": "Error loading notifications",
     "noNotifications": "No notifications yet",
-    "noNotificationsHint": "You'll be notified when your deposits are validated"
+    "noNotificationsHint": "You'll be notified when your deposits are validated",
+    "loadWhat": "your notifications"
   },
   "notFound": {
     "title": "404",
@@ -189,7 +200,22 @@
       "min": "Min",
       "avg": "Avg",
       "max": "Max"
-    }
+    },
+    "notConfigured": "Rates not set",
+    "details": "Details →",
+    "swapDirection": "Swap conversion direction",
+    "updatedToday": "Updated today at {{time}}",
+    "updatedOn": "Updated on {{date}} at {{time}}",
+    "countries": {
+      "cameroun": "Cameroon",
+      "gabon": "Gabon",
+      "tchad": "Chad",
+      "rca": "Central African Republic",
+      "congo": "Congo",
+      "guinee": "Equatorial Guinea"
+    },
+    "cardTitle": "Today's rate",
+    "loadWhat": "today's rates"
   },
   "myCode": {
     "cardTitle": "My customer ID",
@@ -225,6 +251,7 @@
     "supplierEmail": "Email",
     "copyImage": "Copy image",
     "downloadImage": "Download image",
-    "imageCopied": "Image copied — paste it into WeChat, WhatsApp or an email"
+    "imageCopied": "Image copied — paste it into WeChat, WhatsApp or an email",
+    "sharePdf": "Share the PDF"
   }
 }

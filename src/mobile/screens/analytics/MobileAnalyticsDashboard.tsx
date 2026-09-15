@@ -297,6 +297,7 @@ function DashboardBody() {
             secondary={`${formatInteger(payments.data?.current.opCount)} opérations · ${formatCurrency(payments.data?.current.totalRMB ?? 0, 'CNY')}`}
             delta={range.compareToPrevious ? tpvDelta : undefined}
             loading={payments.isLoading}
+            error={payments.isError}
             description="Somme des paiements au statut 'completed' sur la période. Exclut explicitement les paiements en cours (processing, ready_for_payment)."
           />
           <KpiCard
@@ -307,6 +308,7 @@ function DashboardBody() {
             secondary={`${formatInteger(deposits.data?.current.opCount)} dépôts`}
             delta={range.compareToPrevious ? depositsDelta : undefined}
             loading={deposits.isLoading}
+            error={deposits.isError}
             description="Somme des dépôts au statut 'validated' sur la période."
           />
           <KpiCard
@@ -316,6 +318,7 @@ function DashboardBody() {
             secondary={netCurrent >= 0 ? "Plus d'entrées que de sorties" : 'Plus de sorties que d\'entrées'}
             delta={range.compareToPrevious ? netDelta : undefined}
             loading={payments.isLoading || deposits.isLoading}
+            error={payments.isError || deposits.isError}
             description="Dépôts validés − Paiements exécutés sur la période."
           />
           <KpiCard
@@ -325,6 +328,7 @@ function DashboardBody() {
             value={formatCurrency(avgTicketCurrent, 'XAF', { compact: true })}
             delta={range.compareToPrevious ? avgTicketDelta : undefined}
             loading={payments.isLoading}
+            error={payments.isError}
             description="Montant moyen par paiement exécuté (total XAF / nombre d'opérations completed)."
           />
         </KpiRow>
@@ -339,6 +343,7 @@ function DashboardBody() {
             value={formatCurrency(walletExposure.data?.totalXAF ?? 0, 'XAF', { compact: true })}
             secondary={`${formatInteger(walletExposure.data?.clientsWithBalance ?? 0)} clients · indépendant du filtre période`}
             loading={walletExposure.isLoading}
+            error={walletExposure.isError}
             description="Somme totale XAF encore dans les wallets clients (non dépensée). Indique ton engagement financier envers les clients à l'instant T — indépendant de la période sélectionnée."
           />
           <KpiCard
@@ -346,6 +351,7 @@ function DashboardBody() {
             label="Solde moyen par client (snapshot)"
             value={formatCurrency(walletExposure.data?.avgBalancePerClient ?? 0, 'XAF', { compact: true })}
             loading={walletExposure.isLoading}
+            error={walletExposure.isError}
             description="Exposition totale / nombre de clients avec un solde strictement positif. Snapshot actuel — indépendant du filtre période."
           />
           <KpiCard
@@ -362,6 +368,7 @@ function DashboardBody() {
                 : undefined
             }
             loading={walletExposure.isLoading}
+            error={walletExposure.isError}
             description="Part des 10 plus gros soldes dans l'exposition totale. Plus élevé = plus de risque de concentration (un gros retrait aurait un impact disproportionné). Snapshot actuel — indépendant du filtre période."
           />
           <KpiCard
@@ -378,6 +385,7 @@ function DashboardBody() {
                 : 'Sorties > entrées'
             }
             loading={payments.isLoading || deposits.isLoading}
+            error={payments.isError || deposits.isError}
             description="Dépôts validés / Paiements exécutés sur la période. >1 = ton encours augmente, <1 = tu consommes les wallets."
           />
         </KpiRow>
@@ -391,6 +399,7 @@ function DashboardBody() {
             value={formatInteger(funnel.data?.clientsWithPayment)}
             secondary={`${formatInteger(funnel.data?.clientsTotal)} clients au total`}
             loading={funnel.isLoading}
+            error={funnel.isError}
             description="Nombre de clients ayant eu au moins un paiement exécuté pendant la période."
           />
           <KpiCard
@@ -399,6 +408,7 @@ function DashboardBody() {
             value={formatPercent(funnel.data?.depositToPaymentRate ?? 0)}
             secondary={`${formatInteger(funnel.data?.clientsWithDeposit)} ont déposé · ${formatInteger(funnel.data?.clientsWithPayment)} ont payé`}
             loading={funnel.isLoading}
+            error={funnel.isError}
             description="Part des clients qui ont payé parmi ceux qui ont déposé sur la période. Proxy de l'utilité du solde chargé."
           />
           <KpiCard
@@ -408,6 +418,7 @@ function DashboardBody() {
             value={formatPercent(validationRate)}
             secondary={`${formatInteger(statusSummary.data?.validated.count ?? 0)} validés · ${formatInteger(statusSummary.data?.rejected.count ?? 0)} rejetés`}
             loading={statusSummary.isLoading}
+            error={statusSummary.isError}
             description="validated / (validated + rejected). Exclut les dépôts en attente — ils ne sont pas encore tranchés."
           />
         </KpiRow>
@@ -675,6 +686,7 @@ function DashboardBody() {
                 : undefined
             }
             loading={processing.isLoading}
+            error={processing.isError}
             description="Temps médian entre la création d'un dépôt et sa validation. Plus fiable que la moyenne (moins sensible aux outliers). P90 = 90% des dépôts sont validés en moins."
           />
           <KpiCard
@@ -684,6 +696,7 @@ function DashboardBody() {
             value={formatInteger(statusSummary.data?.rejected.count ?? 0)}
             secondary={formatCurrencyFull(statusSummary.data?.rejected.amountXAF ?? 0, 'XAF')}
             loading={statusSummary.isLoading}
+            error={statusSummary.isError}
             invertColor
             description="Dépôts explicitement rejetés sur la période. Pour les raisons détaillées, consulter l'écran Dépôts."
           />
@@ -696,6 +709,7 @@ function DashboardBody() {
             )}
             secondary={`${formatInteger(statusSummary.data?.pendingProof.count ?? 0)} preuve à envoyer · ${formatInteger(statusSummary.data?.pendingReview.count ?? 0)} en revue admin`}
             loading={statusSummary.isLoading}
+            error={statusSummary.isError}
             description="Dépôts pas encore tranchés : soit en attente de preuve (client), soit en revue (admin)."
           />
         </div>

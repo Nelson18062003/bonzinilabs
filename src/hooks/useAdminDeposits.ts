@@ -2,6 +2,7 @@
 // ADMIN-SIDE DEPOSIT HOOKS (from scratch)
 // CRITICAL: Uses `supabaseAdmin` (admin session, storageKey: bonzini-admin-auth)
 // ============================================================
+import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { rpcArgs } from '@/integrations/supabase/rpcArgs';
@@ -248,6 +249,7 @@ export function useValidateDeposit() {
       // Only refetch what can't be computed locally
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(i18n.t('hooks.validateDeposit.success', { ns: 'common', defaultValue: `Dépôt validé ! Wallet crédité de ${formatCurrency(data.amount_credited || 0)}`, amount: formatCurrency(data.amount_credited || 0) }));
     },
@@ -311,7 +313,8 @@ export function useRejectDeposit() {
 
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
-      toast.error(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
+      invalidateActionBadges(queryClient);
+      toast.success(i18n.t('hooks.rejectDeposit.success', { ns: 'common', defaultValue: 'Dépôt rejeté' }));
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -360,6 +363,7 @@ export function useStartDepositReview() {
 
       queryClient.invalidateQueries({ queryKey: ['admin-deposit-timeline', depositId] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -446,7 +450,9 @@ export function useAdminCreateDeposit() {
         }
       }
 
-      await supabaseAdmin.from('admin_audit_logs').insert({
+      // Le dépôt existe déjà : un journal d'audit en échec ne doit pas faire
+      // passer la création pour ratée (et provoquer un doublon au second essai).
+      const audit = await supabaseAdmin.from('admin_audit_logs').insert({
         admin_user_id: admin.id,
         action_type: 'create_deposit_for_client',
         target_type: 'deposit',
@@ -458,12 +464,14 @@ export function useAdminCreateDeposit() {
           proofs_count: data.proofFiles?.length || 0,
         },
       });
+      if (audit.error) console.error('[Create] audit log:', audit.error);
 
       return { id: depositId, reference: response.reference };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       toast.success(i18n.t('hooks.adminCreateDeposit.success', { ns: 'common', defaultValue: 'Dépôt créé avec succès' }));
     },
@@ -656,6 +664,7 @@ export function useCancelDeposit() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-deposits'] });
       queryClient.invalidateQueries({ queryKey: ['deposit-stats'] });
+      invalidateActionBadges(queryClient);
       queryClient.invalidateQueries({ queryKey: ['client-ledger'] });
       queryClient.invalidateQueries({ queryKey: ['all-wallets'] });
       toast.success(i18n.t('hooks.adminCancelDeposit.success', { ns: 'common', defaultValue: 'Dépôt annulé' }));

@@ -17,7 +17,7 @@ export function ResponseTimeBadge({ className, compact = false }: ResponseTimeBa
       <div
         className={cn(
           'inline-flex items-center gap-1.5 rounded-full bg-[#EAE7FA] text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]',
-          compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs',
+          compact ? 'px-2 py-0.5 text-[12px]' : 'px-2.5 py-1 text-[13px]',
           className
         )}
       >
@@ -41,7 +41,7 @@ export function ResponseTimeBadge({ className, compact = false }: ResponseTimeBa
     <div
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full bg-[#EAE7FA] font-medium text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]',
-        compact ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs',
+        compact ? 'px-2 py-0.5 text-[12px]' : 'px-2.5 py-1 text-[13px]',
         className
       )}
       title={t('responseTime.label')}

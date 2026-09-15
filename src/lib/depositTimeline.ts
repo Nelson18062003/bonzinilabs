@@ -3,6 +3,7 @@
 // Method-aware, event-based timeline with 4 steps
 // ============================================================
 import { parseISO, isValid, format } from 'date-fns';
+import { isTerminalDeposit, DEPOSIT_WAITING_ON_CLIENT } from '@/lib/terminalStatuses';
 import { fr } from 'date-fns/locale';
 import type { DepositTimelineEvent } from '@/types/deposit';
 import {
@@ -251,7 +252,8 @@ export type SlaLevel = 'fresh' | 'aging' | 'overdue';
  * - overdue: > 8 hours
  */
 export function getDepositSlaLevel(createdAt: string, status: string): SlaLevel | null {
-  if (['validated', 'rejected', 'cancelled'].includes(status)) return null;
+  // Terminé, annulé par un admin, ou entre les mains du client : pas d'urgence.
+  if (isTerminalDeposit(status) || (DEPOSIT_WAITING_ON_CLIENT as string[]).includes(status)) return null;
   const hoursAgo = (Date.now() - new Date(createdAt).getTime()) / 3_600_000;
   if (hoursAgo < 2) return 'fresh';
   if (hoursAgo < 8) return 'aging';

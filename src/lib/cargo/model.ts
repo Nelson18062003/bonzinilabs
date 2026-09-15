@@ -64,7 +64,7 @@ export const DOCUMENT_KIND_LABEL: Record<string, string> = {
 
 /* ── Dates ────────────────────────────────────────────────────────────── */
 
-function fromDate(d: string | null): Date | null {
+export function fromDate(d: string | null): Date | null {
   return d ? new Date(d + 'T12:00:00') : null;
 }
 

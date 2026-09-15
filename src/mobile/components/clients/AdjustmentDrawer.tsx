@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCreateAdjustment } from '@/hooks/useClientManagement';
 import { formatCurrency } from '@/lib/formatters';
+import { isValidXafAmount } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
 import { AmountField, TextArea } from '@/components/form';
 import {
@@ -45,7 +46,8 @@ export function AdjustmentDrawer({
   const amount = amountNumber ?? 0;
   const isDebit = type === 'DEBIT';
   const isInsufficientBalance = isDebit && amount > currentBalance;
-  const isValid = amount > 0 && reason.trim().length > 0 && !isInsufficientBalance;
+  // Même garde d'entier que dépôts et paiements ; pas de plafond.
+  const isValid = isValidXafAmount(amount) && reason.trim().length > 0 && !isInsufficientBalance;
 
   const handleSubmit = async () => {
     // isPending : un double-tap pendant la mutation créerait deux ajustements.
