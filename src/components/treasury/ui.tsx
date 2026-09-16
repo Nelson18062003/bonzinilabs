@@ -96,9 +96,9 @@ export function SectionTitle({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between px-1">
-      <h2 className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">{children}</h2>
+      <h2 className="text-[14px] font-bold uppercase tracking-wider text-muted-foreground">{children}</h2>
       {action && (
-        <button onClick={action.onClick} className="text-[12px] font-semibold text-bonzini-violet active:opacity-70">
+        <button onClick={action.onClick} className="min-h-11 px-2 text-[14px] font-semibold text-bonzini-violet active:opacity-70">
           {action.label}
         </button>
       )}
@@ -124,8 +124,8 @@ export function ActionTile({
     <button onClick={onClick} className={cn(SOFT_CARD, 'flex w-full items-center gap-3.5 p-4 text-left outline-none transition active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]')}>
       <IconChip icon={icon} tone={tone} />
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-semibold text-foreground">{label}</div>
-        {description && <div className="truncate text-[12px] text-muted-foreground">{description}</div>}
+        <div className="text-[16px] font-semibold text-foreground">{label}</div>
+        {description && <div className="text-[14px] leading-snug text-muted-foreground">{description}</div>}
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
     </button>
@@ -134,7 +134,7 @@ export function ActionTile({
 
 /** Consistent field label. */
 export function FieldLabel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <label className={cn('mb-1.5 block text-[13px] font-semibold text-foreground', className)}>{children}</label>;
+  return <label className={cn('mb-1.5 block text-[14px] font-semibold text-foreground', className)}>{children}</label>;
 }
 
 /** Soft chip — the single chip language for filters/toggles/tabs. */
@@ -153,7 +153,7 @@ export function Pill({
     <button
       onClick={onClick}
       className={cn(
-        'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-colors',
+        'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition-colors',
         active ? PRIMARY_PILL : SOFT_PILL,
         className,
       )}

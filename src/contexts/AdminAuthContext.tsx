@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { authenticateWithPasskey } from '@/lib/passkey';
@@ -138,11 +138,11 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
 };
 
 export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
-  super_admin: 'Super Admin',
+  super_admin: 'Super admin',
   ops: 'Opérations',
   support: 'Support',
   customer_success: 'Chargé de clientèle',
-  cash_agent: 'Agent Cash',
+  cash_agent: 'Agent cash',
   treasurer: 'Trésorier',
 };
 
@@ -212,6 +212,8 @@ function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Pro
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+  useEffect(() => { sessionRef.current = session; }, [session]);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastEmail, setLastEmail] = useState<string | null>(() => readLastEmail());
@@ -297,7 +299,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
     // Filet de sécurité : au pire, on débloque l'écran après 8s (puis l'app
     // redirigera vers /m/login si la session n'a pas pu être chargée).
-    const safety = setTimeout(() => setIsLoading(false), 8000);
+    // Mais PAS quand la session est connue et que seul le rôle tarde (réseau
+    // lent) : l'écran repartirait vers /m/login avec un admin connecté. Le
+    // chargement du rôle a son propre délai (fetchAdminData, 10 s).
+    const safety = setTimeout(() => { if (!sessionRef.current) setIsLoading(false); }, 8000);
 
     return () => {
       clearTimeout(safety);

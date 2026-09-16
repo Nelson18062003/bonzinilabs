@@ -9,6 +9,7 @@
  * Deux modes : `full` (page Carte : cartes navire/port, couches, globe) et
  * `mini` (dossier : un navire, cadrage serré, pas d'étiquettes).
  */
+import { useCargoFleetDocuments } from '@/hooks/useCargo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { AttributionControl, Layer, Marker, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -182,7 +183,9 @@ export function CargoMap({
 
   const C = mapInk(dark);
   const selectedVessel = vessels.find((v) => v.position.vessel_imo === selectedVesselImo) ?? null;
-  const tally = useMemo(() => alertTally(shipments), [shipments]);
+  const { data: docsBy } = useCargoFleetDocuments();
+  const allDocs = useMemo(() => Object.values(docsBy ?? {}).flat(), [docsBy]);
+  const tally = useMemo(() => alertTally(shipments, allDocs), [shipments, allDocs]);
 
   // L'eau est repeinte à chaque chargement de style — donc aussi au basculement
   // clair/sombre, qui recharge le style et perdrait la peinture sans cela.

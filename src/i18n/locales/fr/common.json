@@ -55,14 +55,14 @@
   "all": "Tous",
   "allTab": "Tout",
   "allUpToDate": "Tout est à jour",
-  "appTheme": "Thème de l",
+  "appTheme": "Thème de l'application",
   "appearance": "Apparence",
   "applyNewRate": "Appliquer le nouveau taux",
   "assignedRole": "Rôle attribué",
   "availableBalance": "Solde disponible",
   "backToList": "Retour à la liste",
   "balance": "Solde",
-  "blockAccess": "Bloquer l",
+  "blockAccess": "Bloquer l'accès",
   "cannotDeleteClientPendingPayments": "Impossible de supprimer un client ayant des paiements en cours",
   "cannotDeleteClientPositiveBalance": "Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)",
   "changeMyPassword": "Changer mon mot de passe",
@@ -80,10 +80,10 @@
   "confirmReactivateAdmin": "Voulez-vous vraiment réactiver ${admin.firstName} ${admin.lastName} ? Cet admin pourra à nouveau se connecter.",
   "confirmation": "Confirmation",
   "connecting": "Connexion...",
-  "copyPasswordOtherMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l",
+  "copyPasswordOtherMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée à l'administrateur.",
   "copyPasswordSelfMessage": "Voici votre nouveau mot de passe. Copiez-le avant de fermer cette fenêtre.",
   "country": "Pays",
-  "createAdmin": "Créer l",
+  "createAdmin": "Créer l'administrateur",
   "createClient": "Créer un client",
   "createNewDeposit": "Créer un nouveau dépôt",
   "createTheClient": "Créer le client",
@@ -105,8 +105,8 @@
   "depositsWillAppearHere": "Les dépôts apparaîtront ici",
   "disabled": "Désactivé",
   "disabledUsers": "Désactivés",
-  "downloadHistory": "Télécharger l",
-  "editAdmin": "Modifier l",
+  "downloadHistory": "Télécharger l'historique",
+  "editAdmin": "Modifier l'administrateur",
   "editProfile": "Modifier le profil",
   "editRate": "Modifier le taux",
   "emailAddress": "Adresse email",
@@ -117,7 +117,7 @@
   "everythingCorrect": "Tout est correct ?",
   "exchangeRate": "Taux de change",
   "exportDownloaded": "Export de ${entries.length} paiement(s) téléchargé",
-  "exportError": "Erreur lors de l",
+  "exportError": "Erreur lors de l'export",
   "exportPDFStatement": "Exporter relevé PDF",
   "firstName": "Prénom",
   "firstNameLastNameCompany": "Prénom, nom et entreprise",
@@ -183,11 +183,11 @@
       "error": "Erreur de calcul"
     },
     "cancelDeposit": {
-      "error": "Erreur lors de l",
+      "error": "Erreur lors de l'annulation",
       "success": "Dépôt annulé avec succès"
     },
     "cancelPayment": {
-      "error": "Erreur lors de l",
+      "error": "Erreur lors de l'annulation",
       "success": "Paiement annulé"
     },
     "confirmCashPayment": {
@@ -197,16 +197,16 @@
     "createAdjustment": {
       "credited": "crédité",
       "debited": "débité",
-      "error": "Erreur lors de l",
+      "error": "Erreur lors de l'ajustement",
       "success": "Portefeuille ${action} avec succès"
     },
     "createAdmin": {
       "error": "Erreur lors de la création",
-      "errorFull": "Erreur lors de la création de l",
+      "errorFull": "Erreur lors de la création de l'administrateur",
       "success": "Admin créé avec succès"
     },
     "createBeneficiary": {
-      "error": "Erreur lors de l",
+      "error": "Erreur lors de l'ajout du bénéficiaire",
       "success": "Bénéficiaire ajouté"
     },
     "createClient": {
@@ -214,7 +214,7 @@
       "success": "Client créé avec succès"
     },
     "createDailyRates": {
-      "error": "Erreur lors de l",
+      "error": "Erreur lors de l'application des taux",
       "success": "Nouveaux taux appliqués",
       "unknownError": "Erreur inconnue"
     },
@@ -235,7 +235,7 @@
       "success": "Preuve supprimée"
     },
     "exchangeRates": {
-      "addError": "Erreur lors de l",
+      "addError": "Erreur lors de l'ajout du taux",
       "added": "Taux de change ajouté",
       "deleteError": "Erreur lors de la suppression du taux",
       "deleted": "Taux de change supprimé",
@@ -308,7 +308,7 @@
       "unknownError": "Erreur inconnue"
     },
     "uploadMultiple": {
-      "allFailed": "Échec de l",
+      "allFailed": "Échec de l'envoi : {{files}}",
       "partialSuccess": "${data.uploadedCount} preuve(s) envoyée(s), ${data.failedFiles.length} échec(s)",
       "success": "${data.uploadedCount} preuve(s) envoyée(s) avec succès"
     },
@@ -354,7 +354,7 @@
   "noMovementsToExport": "Aucun mouvement à exporter",
   "noPaymentFound": "Aucun paiement trouvé",
   "noPaymentsToExport": "Aucun paiement en cours à exporter",
-  "noPendingItems": "Aucun élément en attente d",
+  "noPendingItems": "Aucun élément en attente d'action",
   "noProofsFound": "Aucun justificatif trouvé",
   "noRatesForPeriod": "Aucun taux pour cette période",
   "notProvided": "Non renseigné",
@@ -390,9 +390,9 @@
   "resetPasswordClientMessage": "Un nouveau mot de passe temporaire sera généré pour",
   "resetPasswordClientSuffix": "Vous devrez le transmettre manuellement au client.",
   "resetPasswordOtherMessage": "Un nouveau mot de passe temporaire sera généré pour",
-  "resetPasswordOtherMessageSuffix": "Vous devrez le transmettre manuellement à l",
+  "resetPasswordOtherMessageSuffix": "Vous devrez le transmettre manuellement à l'administrateur.",
   "resetPasswordSelfMessage": "Un nouveau mot de passe sera généré pour votre compte. Vous devrez vous reconnecter avec ce nouveau mot de passe.",
-  "restoreAccess": "Restaurer l",
+  "restoreAccess": "Restaurer l'accès",
   "role": "Rôle",
   "roleSelection": "Sélection du rôle",
   "saveChanges": "Enregistrer les modifications",
@@ -406,7 +406,7 @@
   "signIn": "Se connecter",
   "statementGenerationError": "Erreur lors de la génération du relevé",
   "suspendedStatus": "Suspendu",
-  "systemModeNote": "Le mode Système s",
+  "systemModeNote": "Le mode Système s'adapte automatiquement aux préférences de votre appareil.",
   "tempPasswordClientMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.",
   "temporaryPassword": "Mot de passe temporaire",
   "theAdmin": "l",
@@ -415,7 +415,7 @@
   "totalDeposits": "Total dépôts",
   "totalPayments": "Total paiements",
   "tryModifyingFilters": "Essayez de modifier vos filtres",
-  "verifyBeforeCreating": "Vérifiez les informations avant de créer l",
+  "verifyBeforeCreating": "Vérifiez les informations avant de créer l'administrateur",
   "verifyBeforeCreatingAccount": "Vérifiez avant de créer le compte",
   "viewAdminProfile": "Voir le profil admin",
   "viewAll": "Voir tous",
@@ -441,7 +441,27 @@
   "processing": "En cours…",
   "debit": "Débit",
   "home": "Accueil",
+  "searchByNamePhoneCode": "Nom, téléphone, identifiant BZ-…",
+  "scanCustomerCode": "Scanner un identifiant client",
+  "shippingLabelAction": "Étiquette colis",
+  "shippingLabelActionDesc": "Sea cargo ou air cargo · image ou PDF à imprimer",
+  "shippingSettings": "Expédition",
+  "shippingSettingsRow": "Adresses en Chine et coordonnées",
+  "shippingSettingsRowHint": "Sea cargo (entrepôt), air cargo (bureau), téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis",
   "assistant": "Mola",
   "cargo": "Cargo",
-  "navOperations": "Opérations"
+  "navOperations": "Opérations",
+  "pasteHint": "Ctrl+V pour coller une capture · JPG, PNG, WebP ou PDF · 10 Mo max",
+  "showPassword": "Afficher le mot de passe",
+  "hidePassword": "Masquer le mot de passe",
+  "otpCode": "Code de vérification",
+  "phoneField": {
+    "searchCountry": "Rechercher un pays...",
+    "noResult": "Aucun résultat"
+  },
+  "queryError": {
+    "title": "Impossible de charger {{what}}.",
+    "hint": "Vérifiez votre connexion, puis réessayez."
+  },
+  "retry": "Réessayer"
 }

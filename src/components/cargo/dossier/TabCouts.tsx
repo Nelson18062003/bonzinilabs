@@ -5,6 +5,7 @@
  * DEVISE : convertir au taux du jour donnerait un chiffre faux le lendemain.
  */
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { DateField, NumberField, TextField } from '@/components/form';
 import { useAddCargoCost, useCargoCosts, useDeleteCargoCost, useUpdateCargoCost } from '@/hooks/useCargo';
@@ -17,6 +18,7 @@ import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog, SecLabel, Th, Td } from '@
 const CURRENCIES = ['XAF', 'USD', 'EUR', 'CNY'] as const;
 
 export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; canManage: boolean }) {
+  const navigate = useNavigate();
   const { data: costs } = useCargoCosts(s.id);
   const add = useAddCargoCost();
   const update = useUpdateCargoCost();
@@ -143,6 +145,9 @@ export function TabCouts({ shipment: s, canManage }: { shipment: CargoShipment; 
             Le devis du transitaire ne couvre que le fret. Les surestaries, le stockage et la douane s'y ajoutent après
             l'arrivée : c'est l'écart entre cette ligne et le total ci-dessus.
           </p>
+          <button type="button" onClick={() => navigate(`/m/cargo/cout?shipment=${s.id}`)} className={cn('mt-3 inline-flex h-8 items-center px-3 text-[12px] max-lg:text-[14px] font-semibold', SOFT_PILL)}>
+            Estimer le coût à quai →
+          </button>
         </Section>
       </div>
 

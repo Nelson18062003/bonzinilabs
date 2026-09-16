@@ -7,7 +7,9 @@
 // Logique 100% préservée : validate/reject/start-review, upload &
 //   suppression de preuves, suppression dépôt, timeline, PDF reçu.
 // ============================================================
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useOnScreen } from '@/hooks/useOnScreen';
+import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useAdminDepositDetail,
@@ -29,9 +31,10 @@ import {
 } from '@/types/deposit';
 import { buildDepositTimelineSteps, getStepColors, getDepositSlaLevel } from '@/lib/depositTimeline';
 import { formatCurrency } from '@/lib/formatters';
-import { whenSentence } from '@/lib/plainTime';
+import { whenSentence, sinceSentence } from '@/lib/plainTime';
 import { MIN_DEPOSIT_XAF, isValidXafAmount, xafAmountError } from '@/lib/amountLimits';
 import { cn } from '@/lib/utils';
+import { isTerminalDeposit } from '@/lib/terminalStatuses';
 import {
   SURFACE,
   TEXT,
@@ -50,6 +53,7 @@ import {
   BottomSheet,
   FormField,
   TextInput,
+  TextArea,
 } from '@/mobile/designKit';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -147,8 +151,11 @@ function DetailHeader({ title, onBack, right }: { title: string; onBack: () => v
 export function MobileDepositDetailV2() {
   const { depositId } = useParams<{ depositId: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAdminAuth();
+  const { currentUser, hasPermission } = useAdminAuth();
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  // Le serveur refuse déjà (admin_has_permission 'canProcessDeposits') ;
+  // l'UI ne montre pas un bouton qui mène à « Accès non autorisé ».
+  const canProcess = hasPermission('canProcessDeposits');
 
   const { data: deposit, isLoading } = useAdminDepositDetail(depositId);
   const { data: proofs } = useAdminDepositProofs(depositId);
@@ -194,13 +201,12 @@ export function MobileDepositDetailV2() {
   const [showDetail, setShowDetail] = useState(false);
   const [showSuivi, setShowSuivi] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  // Le bouton « Valider le dépôt » est-il à l'écran ? (barre collante)
+  const decision = useOnScreen();
 
-  // Initialize confirmed amount when deposit loads
-  useEffect(() => {
-    if (deposit) {
-      setConfirmedAmount(deposit.amount_xaf.toString());
-    }
-  }, [deposit]);
+  // (Le montant à confirmer est posé à l'ouverture de la feuille, dans
+  // openValidate — pas dans un effet sur `deposit`, qui écrasait la saisie
+  // de l'opérateur dès que la ligne bougeait ailleurs.)
 
   const timelineSteps = buildDepositTimelineSteps(
     deposit?.status || 'created',
@@ -276,7 +282,7 @@ export function MobileDepositDetailV2() {
 
   // Ctrl+V anywhere on the fiche stages a proof — and opens the sheet if it is
   // still closed, so a pasted screenshot is never silently swallowed.
-  const canPasteProof = !!deposit && !['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const canPasteProof = !!deposit && !isTerminalDeposit(deposit.status);
   usePasteFiles({
     onFiles: useCallback(
       (files: File[]) => {
@@ -379,7 +385,7 @@ export function MobileDepositDetailV2() {
         <DepositReceiptPDF data={receiptData} />,
         `recu_depot_${deposit.reference}_${clientName.replace(/\s+/g, '_')}.pdf`,
       );
-      toast.success('Relevé téléchargé');
+      toast.success('Reçu téléchargé');
     } catch (error) {
       console.error('Error generating deposit PDF:', error);
       toast.error('Erreur lors de la génération du PDF');
@@ -416,10 +422,18 @@ export function MobileDepositDetailV2() {
   const clientName = deposit.profiles
     ? `${deposit.profiles.first_name} ${deposit.profiles.last_name}`
     : 'Client inconnu';
-  const isLocked = ['validated', 'rejected', 'cancelled'].includes(deposit.status);
+  const isLocked = isTerminalDeposit(deposit.status);
   const canStartReview = deposit.status === 'proof_submitted';
   const hasProofs = proofs && proofs.length > 0;
-  const canAddProof = !isLocked;
+  const canAddProof = canProcess && !isLocked;
+  // Barre de décision collante : tant que « Valider le dépôt » se voit, elle
+  // reste rangée ; elle se range aussi sous les feuilles basses.
+  const sheetOpen = showValidateConfirm || showRejectSheet || showUploadSheet || !!showDeleteProofSheet || showDeleteDepositSheet || !!viewingProof;
+  const dockShown = canProcess && !isLocked && !decision.onScreen && !sheetOpen;
+  const openValidate = () => {
+    setConfirmedAmount(deposit.amount_xaf.toString());
+    setShowValidateConfirm(true);
+  };
   const confirmedAmountNum = Number(confirmedAmount) || 0;
   const confirmedAmountValid = isValidXafAmount(confirmedAmountNum, MIN_DEPOSIT_XAF);
   const amountDiffers = confirmedAmountNum !== deposit.amount_xaf && confirmedAmountNum > 0;
@@ -444,14 +458,14 @@ export function MobileDepositDetailV2() {
 
   return (
     <div className={cn('flex min-h-full flex-col pb-6', SURFACE.canvas)}>
-      {/* ── En-tête : ← Dépôt + [Relevé] ──────────────────── */}
+      {/* ── En-tête : ← Dépôt + [Reçu] ──────────────────── */}
       <DetailHeader
         title="Dépôt"
         onBack={() => navigate('/m/deposits')}
         right={
           <Button variant="neutral" onClick={handleDownloadReceipt} loading={isGeneratingPDF}>
             <Download />
-            Relevé
+            Reçu
           </Button>
         }
       />
@@ -479,8 +493,8 @@ export function MobileDepositDetailV2() {
           {deposit.status === 'rejected' && deposit.rejection_reason && (
             <Line tone="bad">Refusé : {deposit.rejection_reason}</Line>
           )}
-          {slaLevel === 'overdue' && <Line tone="bad">Ce dépôt attend depuis plus de 8 heures. Il faut le traiter.</Line>}
-          {slaLevel === 'aging' && <Line tone="warn">Ce dépôt attend depuis plus de 2 heures.</Line>}
+          {slaLevel === 'overdue' && <Line tone="bad">Ce dépôt attend {sinceSentence(deposit.created_at)}. Il faut le traiter.</Line>}
+          {slaLevel === 'aging' && <Line tone="warn">Ce dépôt attend {sinceSentence(deposit.created_at)}.</Line>}
           {wallet && (
             <Line>
               Solde du client : <b className={cn('tabular-nums', TEXT.strong)}>{fmt(wallet.balance_xaf)} XAF</b>.
@@ -552,7 +566,7 @@ export function MobileDepositDetailV2() {
                           href={signedUrl ?? undefined}
                           download={proof.file_name}
                           className={cn(
-                            'inline-flex h-10 items-center justify-center gap-2 px-3 text-[16px] font-medium no-underline [&_svg]:h-5 [&_svg]:w-5',
+                            'inline-flex min-h-11 items-center justify-center gap-2 px-3 text-[16px] font-medium no-underline [&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0',
                             signedUrl ? SOFT_PILL : cn(DISABLED_PILL, 'pointer-events-none'),
                           )}
                         >
@@ -587,6 +601,7 @@ export function MobileDepositDetailV2() {
         {/* ── La décision ───────────────────────────────────── */}
         <section className="space-y-2">
           <SectionTitle>La décision</SectionTitle>
+          {!isLocked && !canProcess && <Line>Vous n'avez pas le droit de traiter les dépôts.</Line>}
           {isLocked ? (
             <Line>
               {deposit.status === 'validated'
@@ -596,28 +611,29 @@ export function MobileDepositDetailV2() {
                   : 'Ce dépôt a été annulé.'}{' '}
               Il n'y a plus rien à faire.
             </Line>
-          ) : (
+          ) : canProcess ? (
             <>
-              {canStartReview && (
-                <Button className="w-full" onClick={handleStartReview} loading={startReview.isPending}>
-                  Commencer la vérification
+              {/* Une seule action principale : valider. Le marquage « en vérification »
+                  est un geste secondaire, expliqué — deux boutons noirs côte à côte
+                  redonnaient à l'opérateur une décision que l'écran doit prendre. */}
+              <div ref={decision.ref}>
+                <Button className="w-full" onClick={openValidate}>
+                  Valider le dépôt
                 </Button>
+              </div>
+              {canStartReview && (
+                <>
+                  <Button className="w-full" variant="subtle" onClick={handleStartReview} loading={startReview.isPending}>
+                    Marquer « en vérification »
+                  </Button>
+                  <Line className={TEXT.muted}>Le client voit « en vérification » et vos collègues savent que vous vous en occupez.</Line>
+                </>
               )}
-              <Button
-                className="w-full"
-                variant={canStartReview ? 'neutral' : 'primary'}
-                onClick={() => {
-                  setConfirmedAmount(deposit.amount_xaf.toString());
-                  setShowValidateConfirm(true);
-                }}
-              >
-                Valider le dépôt
-              </Button>
               <Button className="w-full" variant="dangerSubtle" onClick={() => setShowRejectSheet(true)}>
                 Refuser le dépôt
               </Button>
             </>
-          )}
+          ) : null}
           {isSuperAdmin && (
             <Button className="w-full" variant="subtle" onClick={() => setShowDeleteDepositSheet(true)}>
               <Trash2 />
@@ -673,6 +689,12 @@ export function MobileDepositDetailV2() {
         </Fold>
       </div>
 
+      <DecisionDock show={dockShown}>
+        <Button className="w-full" onClick={openValidate}>
+          Valider le dépôt
+        </Button>
+      </DecisionDock>
+
       {/* ── BottomSheet validation ────────────────────────── */}
       <BottomSheet open={showValidateConfirm} onClose={() => setShowValidateConfirm(false)} title="Valider ce dépôt">
         <div className="space-y-4">
@@ -713,13 +735,12 @@ export function MobileDepositDetailV2() {
             )}
           </div>
           <FormField label="Note interne (optionnel)">
-            <textarea
+            <TextArea
               value={adminComment}
               onChange={(e) => setAdminComment(e.target.value)}
               enterKeyHint="done"
               rows={2}
               placeholder="Commentaire visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <button
@@ -799,23 +820,21 @@ export function MobileDepositDetailV2() {
           <FormField
             label={<>Message client <span className="text-[#900B09]">*</span></>}
           >
-            <textarea
+            <TextArea
               value={clientMessage}
               onChange={(e) => setClientMessage(e.target.value)}
               rows={2}
               placeholder="Expliquez au client pourquoi son dépôt est refusé..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
             <p className={cn('mt-1 text-[16px]', TEXT.muted)}>Ce message sera visible par le client</p>
           </FormField>
           <FormField label="Note interne (optionnel)">
-            <textarea
+            <TextArea
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
               enterKeyHint="done"
               rows={2}
               placeholder="Note visible uniquement par les admins..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           </FormField>
           <div className="flex gap-2">
@@ -893,12 +912,11 @@ export function MobileDepositDetailV2() {
             ))}
           </div>
           {deleteProofReason === 'Autre' && (
-            <textarea
+            <TextArea
               value={customDeleteReason}
               onChange={(e) => setCustomDeleteReason(e.target.value)}
               rows={2}
               placeholder="Précisez le motif..."
-              className={cn('w-full resize-none rounded-lg p-3 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
             />
           )}
           <div className="flex gap-2">

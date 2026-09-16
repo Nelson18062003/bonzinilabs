@@ -29,7 +29,7 @@ export function ClientTabBar({ items, className }: LiquidTabBarProps) {
               key={item.to}
               to={item.to}
               aria-current={active ? 'page' : undefined}
-              className="relative flex flex-1 flex-col items-center gap-1 rounded-2xl py-0.5 outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]"
+              className="relative flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl px-0.5 py-0.5 outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-[#C9C2F0] dark:focus-visible:ring-[#4A4660]"
             >
               {/* Indicateur actif : pastille lilas derrière l'icône (icône blanche). */}
               <span
@@ -43,7 +43,7 @@ export function ClientTabBar({ items, className }: LiquidTabBarProps) {
                   strokeWidth={active ? 2.4 : 2}
                 />
               </span>
-              <span className={cn('text-[10px] font-bold leading-none transition-colors', active ? TEXT.strong : TEXT.muted)}>
+              <span className={cn('max-w-full whitespace-nowrap text-[10px] font-bold leading-none tracking-[-0.01em] transition-colors', active ? TEXT.strong : TEXT.muted)}>
                 {item.label}
               </span>
               {badge > 0 && (

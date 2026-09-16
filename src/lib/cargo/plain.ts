@@ -17,8 +17,11 @@ import { nextSteps } from '@/lib/cargo/todo';
 /** « 11 octobre » — le jour et le mois en toutes lettres, sans l'année. */
 export const fmtDayLong = (d: Date | null | undefined): string | null => (d ? format(d, 'd MMMM', { locale: fr }) : null);
 
+/** Une phrase en milieu de phrase : seule la première lettre baisse (« arrive à Kribi… »). */
+export const uncap = (t: string): string => t.charAt(0).toLowerCase() + t.slice(1);
+
 /** « 1 jour » / « 14 jours ». */
-export const plural = (n: number, one: string, many: string = one + 's'): string => `${n} ${Math.abs(n) === 1 ? one : many}`;
+export const plural = (n: number, one: string, many: string = one + 's'): string => `${n} ${Math.abs(n) <= 1 ? one : many}`;
 
 /** « Arrive à Kribi le 11 octobre, dans 28 jours ». */
 export function arrivalSentence(s: CargoShipment, now = new Date()): string {

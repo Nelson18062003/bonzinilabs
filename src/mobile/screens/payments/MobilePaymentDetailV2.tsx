@@ -9,6 +9,8 @@
 //   complete, annulation, taux XAF/CNY, relevé PDF.
 // ============================================================
 import { useState, useRef, useMemo, useCallback } from 'react';
+import { useOnScreen } from '@/hooks/useOnScreen';
+import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -34,7 +36,9 @@ import {
   PAYMENT_REJECTION_REASONS,
 } from '@/types/payment';
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
-import { cn } from '@/lib/utils';
+import { cn, validateUploadFile } from '@/lib/utils';
+import { isTerminalPayment } from '@/lib/terminalStatuses';
+import { paymentMainAction } from '@/lib/paymentActions';
 import {
   SURFACE,
   TEXT,
@@ -51,11 +55,13 @@ import {
   BottomSheet,
   FormField,
   TextInput,
+  TextArea,
+  FOCUS_RING,
 } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
-import { whenSentence } from '@/lib/plainTime';
+import { whenSentence, sinceSentence } from '@/lib/plainTime';
 import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
@@ -131,22 +137,6 @@ function CopyRow({ label, value, mono, multiline }: { label: string; value: stri
 }
 
 // ── Textarea au gabarit kit ──────────────────────────────────
-function KitTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const { className, ...rest } = props;
-  return (
-    <textarea
-      className={cn(
-        'w-full resize-none rounded-lg p-3 text-[16px] outline-none transition',
-        SURFACE.card,
-        SURFACE.shadow,
-        TEXT.strong,
-        'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 export function MobilePaymentDetail() {
@@ -171,6 +161,10 @@ export function MobilePaymentDetail() {
   const confirmCash              = useAgentConfirmCashPayment();
 
   // ── Derived proof lists ───────────────────────────────────
+  const clientProofs = useMemo(
+    () => proofs?.filter(p => p.uploaded_by_type !== 'admin') ?? [],
+    [proofs],
+  );
   const adminProofs = useMemo(
     () => proofs?.filter(p => p.uploaded_by_type === 'admin') ?? [],
     [proofs],
@@ -192,6 +186,8 @@ export function MobilePaymentDetail() {
   const [fullscreenProof,     setFullscreenProof]      = useState<string | null>(null);
   const [isGeneratingPDF,     setIsGeneratingPDF]      = useState(false);
   const [showDetail,          setShowDetail]           = useState(false);
+  // Le bouton principal de « La décision » est-il à l'écran ? (barre collante)
+  const decision = useOnScreen();
 
   // ── Reject drawer ────────────────────────────────────────
   const [rejectionCategory, setRejectionCategory] = useState('');
@@ -247,7 +243,7 @@ export function MobilePaymentDetail() {
         : isCompleteOpen
           ? 'complete'
           : hasPermission('canProcessPayments') &&
-              !['completed', 'rejected'].includes(payment.status) &&
+              !isTerminalPayment(payment.status) &&
               payment.method !== 'cash'
             ? 'proof'
             : null;
@@ -401,6 +397,10 @@ export function MobilePaymentDetail() {
     try {
       if (completeProofFile) {
         await adminProofUpload.mutateAsync({ paymentId, file: completeProofFile });
+        // La preuve est en base : un second essai (si le RPC échoue) ne la
+        // renvoie pas en double.
+        setCompleteProofFile(null);
+        setCompleteProofPreview(null);
       }
       await processPayment.mutateAsync({ paymentId, action: 'complete' });
       setIsCompleteOpen(false);
@@ -569,11 +569,14 @@ export function MobilePaymentDetail() {
 
   // Permissions
   const canProcess           = hasPermission('canProcessPayments');
-  const isLocked             = ['completed', 'rejected'].includes(payment.status);
+  const isLocked             = isTerminalPayment(payment.status);
   const isCash               = payment.method === 'cash';
-  const canStartProcessing   = canProcess && ['ready_for_payment', 'cash_scanned'].includes(payment.status);
-  const canComplete          = canProcess && payment.status === 'processing';
-  const canReject            = canProcess && !['completed', 'rejected'].includes(payment.status);
+  // Aligné sur ce que process_payment accepte (src/lib/paymentActions.ts) :
+  // un cash scanné se termine par la signature, pas par « Commencer ».
+  const mainKind             = paymentMainAction(payment.status, canProcess);
+  const canStartProcessing   = mainKind === 'start_processing';
+  const canComplete          = mainKind === 'complete';
+  const canReject            = canProcess && !isLocked;
   const canDelete            = isSuperAdmin;
   const canEditBeneficiary   = canProcess && !isLocked &&
     ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status);
@@ -601,6 +604,11 @@ export function MobilePaymentDetail() {
     : canComplete
     ? { label: 'Valider le paiement', icon: <CheckCircle />, onClick: () => setIsCompleteOpen(true) }
     : null;
+
+  // Barre de décision collante : tant que le bouton principal se voit, elle
+  // reste rangée ; elle se range aussi sous les feuilles basses.
+  const sheetOpen = isRejectOpen || isCompleteOpen || isDeletePaymentOpen || !!proofToDelete || !!fullscreenProof;
+  const dockShown = !!mainAction && !decision.onScreen && !sheetOpen;
 
   const cashPhone = (payment as { cash_beneficiary_phone?: string | null }).cash_beneficiary_phone;
   const signatureUrl = (payment as { cash_signature_url?: string | null }).cash_signature_url;
@@ -653,7 +661,7 @@ export function MobilePaymentDetail() {
               </p>
               <Line>
                 Demandé par{' '}
-                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn('font-semibold underline decoration-[#B3B3B3] underline-offset-4', TEXT.strong)}>
+                <button type="button" onClick={() => navigate(`/m/clients/${payment.user_id}`)} className={cn("relative font-semibold underline decoration-[#B3B3B3] underline-offset-4 before:absolute before:-inset-y-3 before:-inset-x-1 before:content-['']", FOCUS_RING, TEXT.strong)}>
                   {clientName}
                 </button>
                 , via {methodLabel}, {whenSentence(payment.created_at)}.
@@ -664,14 +672,18 @@ export function MobilePaymentDetail() {
             Soit <b className={cn('tabular-nums', TEXT.strong)}>{formatNumber(payment.amount_xaf)} XAF</b>, au taux de 1 million XAF = ¥{formatNumber(rateInt)}.
           </Line>
           {payment.status === 'rejected' && payment.rejection_reason && <Line tone="bad">Refusé : {payment.rejection_reason}</Line>}
-          {slaLevel === 'overdue' && <Line tone="bad">Ce paiement attend depuis plus de 12 heures. Il faut le traiter.</Line>}
-          {slaLevel === 'aging' && <Line tone="warn">Ce paiement attend depuis plus de 4 heures.</Line>}
+          {slaLevel === 'overdue' && <Line tone="bad">Ce paiement attend {sinceSentence(payment.created_at)}. Il faut le traiter.</Line>}
+          {slaLevel === 'aging' && <Line tone="warn">Ce paiement attend {sinceSentence(payment.created_at)}.</Line>}
           {missingBeneficiary && <Line tone="warn">Il manque les coordonnées du bénéficiaire : on ne peut pas payer sans.</Line>}
-          {missingAdminProof && <Line tone="warn">Ajoutez la preuve du paiement avant de valider.</Line>}
+          {missingAdminProof && (
+            <Line tone="warn">
+              {clientProofs.length > 0 ? 'Le client a envoyé sa facture. ' : ''}Il manque votre preuve de paiement (la capture Alipay, WeChat ou banque) avant de valider.
+            </Line>
+          )}
         </section>
 
         {/* ── QR Code cash (cash_pending / cash_scanned) ────── */}
-        {isCash && !['completed', 'rejected'].includes(payment.status) && (
+        {isCash && !isTerminalPayment(payment.status) && (
           <CashQRCode
             paymentId={payment.id}
             paymentReference={payment.reference}
@@ -781,6 +793,9 @@ export function MobilePaymentDetail() {
                       if (!file || !paymentId) return;
                       setIsUploadingQr(true);
                       try {
+                        // Le bucket refuse déjà les mauvais types et > 10 Mo,
+                        // mais avec une erreur opaque : on le dit clairement ici.
+                        validateUploadFile(file);
                         const compressed = await compressImage(file);
                         const filePath = `beneficiary/${paymentId}/${Date.now()}_${compressed.name}`;
                         const { error } = await supabaseAdmin.storage
@@ -793,8 +808,8 @@ export function MobilePaymentDetail() {
                           beneficiaryInfo: { beneficiary_qr_code_url: qrUrl },
                         });
                         toast.success('QR code mis à jour');
-                      } catch {
-                        toast.error('Erreur lors de l\'upload du QR code');
+                      } catch (err) {
+                        toast.error(err instanceof Error && err.message ? err.message : 'Erreur lors de l\'upload du QR code');
                       } finally {
                         setIsUploadingQr(false);
                         if (qrInputRef.current) qrInputRef.current.value = '';
@@ -872,7 +887,7 @@ export function MobilePaymentDetail() {
                     />
                   </FormField>
                   <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
-                    <KitTextarea
+                    <TextArea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
@@ -919,7 +934,7 @@ export function MobilePaymentDetail() {
                     />
                   </FormField>
                   <FormField label={<>Notes <span className={cn('font-normal', TEXT.muted)}>(optionnel)</span></>}>
-                    <KitTextarea
+                    <TextArea
                       value={beneficiaryForm.beneficiary_notes}
                       onChange={e => setBeneficiaryForm(f => ({ ...f, beneficiary_notes: e.target.value }))}
                       placeholder="Instructions supplémentaires…"
@@ -1078,17 +1093,19 @@ export function MobilePaymentDetail() {
           <SectionTitle>La décision</SectionTitle>
           {isLocked && (
             <Line>
-              {payment.status === 'completed' ? 'Ce paiement est effectué.' : 'Ce paiement a été refusé.'} Il n'y a plus rien à faire.
+              {payment.status === 'completed' ? 'Ce paiement est effectué.' : payment.status === 'rejected' ? 'Ce paiement a été refusé.' : 'Ce paiement a été annulé.'} Il n'y a plus rien à faire.
             </Line>
           )}
           {!isLocked && !mainAction && !canReject && (
             <Line>{canProcess ? 'Rien à décider pour le moment.' : "Vous n'avez pas le droit de traiter les paiements."}</Line>
           )}
           {mainAction && (
-            <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
-              {mainAction.icon}
-              {mainAction.label}
-            </Button>
+            <div ref={decision.ref}>
+              <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
+                {mainAction.icon}
+                {mainAction.label}
+              </Button>
+            </div>
           )}
           {canReject && (
             <Button className="w-full" variant="dangerSubtle" onClick={() => setIsRejectOpen(true)}>
@@ -1114,6 +1131,15 @@ export function MobilePaymentDetail() {
             ))}
           </div>
         </Fold>
+
+        {mainAction && (
+          <DecisionDock show={dockShown}>
+            <Button className="w-full" onClick={mainAction.onClick} loading={processPayment.isPending}>
+              {mainAction.icon}
+              {mainAction.label}
+            </Button>
+          </DecisionDock>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════
@@ -1160,7 +1186,7 @@ export function MobilePaymentDetail() {
             </div>
           </div>
           <FormField label={<>Message au client <span className="text-[#900B09]">*</span></>}>
-            <KitTextarea
+            <TextArea
               placeholder="Expliquez pourquoi le paiement est rejeté..."
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}

@@ -18,7 +18,7 @@ import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useAdminClientBeneficiaries, useAdminClientBeneficiaryNames, useAdminCreateBeneficiary, type Beneficiary } from '@/hooks/useBeneficiaries';
 import { getBaseRate } from '@/lib/rateCalculation';
-import { MAX_AMOUNT_XAF_LABEL, MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
@@ -226,7 +226,7 @@ export function DesktopNewPayment() {
   const submit = useCallback(async () => {
     if (!client || !mode || !dbMode || rate == null) return;
     if (!amountValid || !hasEnoughBalance) {
-      toast.error(amountValid ? 'Solde insuffisant pour ce paiement.' : `Montant invalide — maximum ${MAX_AMOUNT_XAF_LABEL} XAF.`);
+      toast.error(amountValid ? 'Solde insuffisant pour ce paiement.' : 'Montant invalide.');
       return;
     }
     const opDate = resolveOperationDate(useCustomDate, customDateStr);

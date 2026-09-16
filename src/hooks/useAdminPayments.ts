@@ -416,6 +416,7 @@ export function useAdminUpdateBeneficiaryInfo() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', variables.paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       toast.success(i18n.t('hooks.adminUpdateBeneficiary.infoUpdated', { ns: 'common', defaultValue: 'Informations mises à jour' }));
     },

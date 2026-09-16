@@ -3,30 +3,78 @@
 // Uses supabaseAdmin (admin session)
 // ============================================================
 import { useQuery } from '@tanstack/react-query';
+import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/actionable';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG } from '@/lib/constants';
-import type { Enums } from '@/integrations/supabase/types';
 import i18n from '@/i18n';
+import { alertLevel } from '@/lib/cargo/palette';
+import { arrivalSentence, delaySentence } from '@/lib/cargo/plain';
+import { daysUntilArrival } from '@/lib/cargo/model';
+import type { CargoShipment } from '@/lib/cargo/model';
 
 export type AdminNotificationType =
   | 'deposit_needs_review'
   | 'deposit_needs_correction'
   | 'payment_ready'
-  | 'payment_processing';
+  | 'payment_processing'
+  | 'cargo_late'
+  | 'cargo_arriving';
 
 export interface AdminNotification {
   id: string;
   type: AdminNotificationType;
   title: string;
   subtitle: string;
-  amount: number;
-  currency: 'XAF' | 'RMB';
+  /** Absent pour un conteneur : il n'y a pas de montant à montrer. */
+  amount?: number;
+  currency?: 'XAF' | 'RMB';
   createdAt: string;
   targetPath: string;
 }
 
-const ACTIONABLE_DEPOSIT_STATUSES: Enums<'deposit_status'>[] = ['proof_submitted', 'admin_review'];
-const ACTIONABLE_PAYMENT_STATUSES: Enums<'payment_status'>[] = ['ready_for_payment', 'cash_scanned', 'processing'];
+/**
+ * Cargo : une boîte mérite une notification quand elle est en retard (l'app
+ * la classe « late ») ou quand elle arrive sous 7 jours — c'est là que le
+ * fret, le télex et le BESC doivent être réglés. RLS ne renvoie les lignes
+ * qu'aux rôles qui ont canViewCargo : les autres ne voient rien de plus.
+ */
+const CARGO_ARRIVING_DAYS = 7;
+
+async function fetchCargoAlerts(): Promise<CargoShipment[]> {
+  const { data, error } = await supabaseAdmin
+    .from('cargo_shipments')
+    .select('*')
+    .neq('status', 'DELIVERED')
+    .limit(200);
+  if (error) return [];
+  return (data ?? []) as CargoShipment[];
+}
+
+function cargoAlertKind(s: CargoShipment): 'cargo_late' | 'cargo_arriving' | null {
+  if (alertLevel(s) === 'late') return 'cargo_late';
+  const days = daysUntilArrival(s);
+  if (days != null && days >= 0 && days <= CARGO_ARRIVING_DAYS) return 'cargo_arriving';
+  return null;
+}
+
+function cargoNotifications(shipments: CargoShipment[]): AdminNotification[] {
+  const out: AdminNotification[] = [];
+  for (const s of shipments) {
+    const kind = cargoAlertKind(s);
+    if (!kind) continue;
+    const delay = delaySentence(s);
+    out.push({
+      id: `cargo-${s.id}`,
+      type: kind,
+      title: kind === 'cargo_late' ? `Conteneur de ${s.client_label} en retard` : `Conteneur de ${s.client_label} arrive bientôt`,
+      subtitle: `${arrivalSentence(s)}.${delay ? ` ${delay}.` : ''}`,
+      createdAt: s.last_event_at ?? s.updated_at,
+      targetPath: `/m/cargo/${s.id}`,
+    });
+  }
+  return out;
+}
+
 
 /**
  * Fetches all actionable items for the admin notification center.
@@ -37,7 +85,7 @@ export function useAdminNotifications() {
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
     gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
-      const [depositsRes, paymentsRes] = await Promise.all([
+      const [depositsRes, paymentsRes, cargo] = await Promise.all([
         supabaseAdmin
           .from('deposits')
           .select('id, user_id, status, amount_xaf, reference, created_at')
@@ -50,6 +98,7 @@ export function useAdminNotifications() {
           .in('status', ACTIONABLE_PAYMENT_STATUSES)
           .order('created_at', { ascending: false })
           .limit(50),
+        fetchCargoAlerts(),
       ]);
 
       if (depositsRes.error) throw depositsRes.error;
@@ -105,7 +154,7 @@ export function useAdminNotifications() {
         targetPath: `/m/payments/${p.id}`,
       }));
 
-      return [...depositNotifications, ...paymentNotifications]
+      return [...depositNotifications, ...paymentNotifications, ...cargoNotifications(cargo)]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
   });
@@ -120,7 +169,7 @@ export function useAdminNotificationCount() {
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
     gcTime: CACHE_CONFIG.GC_TIME,
     queryFn: async () => {
-      const [depositsRes, paymentsRes] = await Promise.all([
+      const [depositsRes, paymentsRes, cargo] = await Promise.all([
         supabaseAdmin
           .from('deposits')
           .select('id', { count: 'exact', head: true })
@@ -129,9 +178,10 @@ export function useAdminNotificationCount() {
           .from('payments')
           .select('id', { count: 'exact', head: true })
           .in('status', ACTIONABLE_PAYMENT_STATUSES),
+        fetchCargoAlerts(),
       ]);
 
-      return (depositsRes.count || 0) + (paymentsRes.count || 0);
+      return (depositsRes.count || 0) + (paymentsRes.count || 0) + cargo.filter((s) => cargoAlertKind(s) !== null).length;
     },
   });
 }
@@ -139,6 +189,12 @@ export function useAdminNotificationCount() {
 /**
  * Split counts of actionable deposits and payments
  */
+/** Les compteurs à rafraîchir après tout geste d'argent (badges des onglets, cloche). */
+export const ACTION_BADGE_KEYS: ReadonlyArray<readonly string[]> = [['admin-notification-count'], ['admin-notifications'], ['admin-actionable-counts']];
+export function invalidateActionBadges(qc: { invalidateQueries: (o: { queryKey: readonly unknown[] }) => unknown }): void {
+  for (const k of ACTION_BADGE_KEYS) qc.invalidateQueries({ queryKey: k });
+}
+
 export function useAdminActionableCounts() {
   return useQuery({
     queryKey: ['admin-actionable-counts'],

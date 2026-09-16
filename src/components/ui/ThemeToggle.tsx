@@ -18,15 +18,15 @@ export function ThemeToggle({ className }: { className?: string }) {
           key={value}
           onClick={() => setTheme(value)}
           className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+            'flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-[14px] font-bold transition-all min-[360px]:text-[16px]',
             theme === value
               ? 'bg-white text-[#1B1A24] shadow-sm dark:bg-[#46415C] dark:text-[#F2F1F7]'
               : 'text-[#8E8BA0] hover:text-[#1B1A24] dark:text-[#9B98AD] dark:hover:text-[#F2F1F7]'
           )}
           title={label}
         >
-          <Icon className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{label}</span>
+          <Icon className="h-4 w-4 shrink-0" />
+          <span>{label}</span>
         </button>
       ))}
     </div>

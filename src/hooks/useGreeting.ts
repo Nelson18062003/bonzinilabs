@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface GreetingInput {
   firstName?: string | null;
@@ -30,52 +31,39 @@ function formatName(name: string | null | undefined): string | null {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 }
 
-/**
- * Gets the time-based greeting prefix
- * - 05:00-11:59 → "Bonjour"
- * - 12:00-17:59 → "Bon après-midi"
- * - 18:00-04:59 → "Bonsoir"
- */
-function getTimeBasedGreeting(): { prefix: string; timeOfDay: 'morning' | 'afternoon' | 'evening' } {
+/** Moment de la journée : 05:00-11:59 matin · 12:00-17:59 après-midi · sinon soir. */
+function getTimeOfDay(): 'morning' | 'afternoon' | 'evening' {
   const hour = new Date().getHours();
-  
-  if (hour >= 5 && hour < 12) {
-    return { prefix: 'Bonjour', timeOfDay: 'morning' };
-  } else if (hour >= 12 && hour < 18) {
-    return { prefix: 'Bon après-midi', timeOfDay: 'afternoon' };
-  } else {
-    return { prefix: 'Bonsoir', timeOfDay: 'evening' };
-  }
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 18) return 'afternoon';
+  return 'evening';
 }
 
 /**
- * Hook that generates a personalized greeting based on time of day and user name
- * 
- * Acceptance criteria handled:
- * - US1: Time-based greeting (Bonjour/Bon après-midi/Bonsoir)
- * - US2: Display firstName if available
- * - US3: Fallback cases for missing/invalid names
- * - US4: Computed synchronously for immediate display
+ * Salutation personnalisée selon l'heure et le nom, dans la langue de
+ * l'interface (les textes vivent dans client.json → `greeting.*`).
+ * - prénom valide → « Bonjour, Vincent ! »
+ * - nom seul → « Bienvenue, Innova Store 👋 »
+ * - rien → « Bonjour 👋 Bienvenue chez Bonzini »
  */
 export function useGreeting({ firstName, lastName }: GreetingInput): GreetingResult {
+  const { t, i18n } = useTranslation('client');
   return useMemo(() => {
-    const { prefix, timeOfDay } = getTimeBasedGreeting();
+    const timeOfDay = getTimeOfDay();
+    const prefix = t(`greeting.${timeOfDay}`);
     const formattedFirstName = formatName(firstName);
     const formattedLastName = formatName(lastName);
-    
+
     let greeting: string;
-    
     if (formattedFirstName) {
-      // US2: Has valid firstName → "Bonjour, Vincent !"
-      greeting = `${prefix}, ${formattedFirstName} !`;
+      greeting = t('greeting.withName', { prefix, name: formattedFirstName });
     } else if (formattedLastName) {
-      // US3 fallback: No firstName but has lastName → "Bienvenue, Innova Store 👋"
-      greeting = `Bienvenue, ${formattedLastName} 👋`;
+      greeting = t('greeting.welcomeLast', { name: formattedLastName });
     } else {
-      // US3 fallback: No name at all → "Bonjour 👋 Bienvenue chez Bonzini"
-      greeting = `${prefix} 👋 Bienvenue chez Bonzini`;
+      greeting = t('greeting.anonymous', { prefix });
     }
-    
     return { greeting, timeOfDay };
-  }, [firstName, lastName]);
+    // i18n.language : recalcul au changement de langue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstName, lastName, t, i18n.language]);
 }

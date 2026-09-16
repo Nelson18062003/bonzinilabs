@@ -73,7 +73,7 @@ export function RateHistoryCard({ rate, previousRate, isLast }: RateHistoryCardP
               </span>
             )}
           </div>
-          <div className={cn('mt-0.5 truncate text-[16px] tabular-nums', TEXT.muted)}>
+          <div className={cn('mt-0.5 break-words text-[16px] tabular-nums', TEXT.muted)}>
             ¥ {PAYMENT_METHODS.map((pm) => rateValues[pm.key].toLocaleString('fr-FR')).join(' · ')}
           </div>
         </div>

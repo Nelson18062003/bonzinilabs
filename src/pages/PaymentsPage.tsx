@@ -8,10 +8,11 @@
 // (pas de numérotation). Logique 100% PRÉSERVÉE : useMyPayments, nav.
 // ============================================================
 import { useMemo, useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { format, isAfter, startOfMonth, subWeeks } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { Send, Search, ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -46,7 +47,7 @@ function statusHint(payment: Payment, kind: LifecycleKind, t: TFunction): string
   if (kind === 'progress') return t('list.statusHint.progress');
   if (kind === 'done')
     return t('list.statusHint.paidOn', {
-      date: format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: fr }),
+      date: format(new Date(payment.updated_at ?? payment.created_at), 'd MMM', { locale: dateLocale() }),
     });
   if (payment.status === 'rejected') return t('list.statusHint.rejected');
   if (payment.status === 'cancelled_by_admin') return t('list.statusHint.cancelled');
@@ -70,7 +71,7 @@ function Progress({ step, color }: { step: number; color: string }) {
 const PaymentsPage = () => {
   const { t } = useTranslation('payments');
   const navigate = useNavigate();
-  const { data: payments, isLoading } = useMyPayments();
+  const { data: payments, isLoading, isError, refetch } = useMyPayments();
   const { data: ratesData } = useClientRates();
 
   const [search, setSearch] = useState('');
@@ -136,7 +137,7 @@ const PaymentsPage = () => {
             <div className={cn('text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</div>
             {dayRate ? (
               <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
-                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">¥{formatNumber(dayRate)}</span> / 1 000 000 XAF
+                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">¥{formatNumber(dayRate)}</span> / <span className="whitespace-nowrap">1 000 000 XAF</span>
               </div>
             ) : null}
           </div>
@@ -144,7 +145,7 @@ const PaymentsPage = () => {
         </button>
 
         {/* Recherche */}
-        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3 focus-within:ring-2 focus-within:ring-[#8B5CF6]/60', SURFACE.card, SURFACE.shadow)}>
           <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
           {/* Pilule de recherche douce : input nu volontaire à 16px (≥16 → pas d'auto-zoom iOS). */}
           {/* eslint-disable-next-line no-restricted-syntax */}
@@ -166,7 +167,7 @@ const PaymentsPage = () => {
                 key={tb.key}
                 onClick={() => setTab(tb.key)}
                 className={cn(
-                  'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                  'flex shrink-0 items-center gap-1.5 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                   active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
                 )}
               >
@@ -180,7 +181,7 @@ const PaymentsPage = () => {
           <div className="mx-1 h-5 w-px shrink-0 bg-black/[0.08] dark:bg-white/[0.10]" />
           <button
             onClick={cyclePeriod}
-            className={cn('flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.muted)}
+            className={cn('flex shrink-0 items-center gap-1.5 min-h-10 rounded-full px-3.5 text-[13px] font-bold', SURFACE.card, SURFACE.shadow, TEXT.muted)}
           >
             {t(`list.periods.${period}`)} <ChevronDown className="h-3.5 w-3.5" />
           </button>
@@ -193,6 +194,8 @@ const PaymentsPage = () => {
               <div key={i} className={cn('h-[112px] animate-pulse rounded-[22px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what={t('list.loadWhat')} onRetry={() => { void refetch(); }} />
         ) : !payments || payments.length === 0 ? (
           <div className={cn('mt-4 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
@@ -228,11 +231,11 @@ const PaymentsPage = () => {
                   <div className="flex items-center gap-3">
                     <PaymentMethodLogo method={p.method as 'alipay' | 'wechat' | 'bank_transfer' | 'cash'} size={44} />
                     <div className="min-w-0 flex-1">
-                      <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{name}</div>
+                      <div className={cn('break-words text-[16px] font-bold leading-snug', TEXT.strong)}>{name}</div>
                       {todo ? (
-                        <div className="mt-0.5 truncate text-[12px] font-semibold" style={{ color }}>{statusHint(p, lc.kind, t)}</div>
+                        <div className="mt-0.5 break-words text-[12px] font-semibold leading-snug" style={{ color }}>{statusHint(p, lc.kind, t)}</div>
                       ) : (
-                        <div className={cn('mt-0.5 truncate text-[12px] tabular-nums', TEXT.muted)}>
+                        <div className={cn('mt-0.5 break-words text-[12px] tabular-nums leading-snug', TEXT.muted)}>
                           ¥ {formatYuan(p.amount_rmb)} · −{formatNumber(p.amount_xaf)} XAF
                         </div>
                       )}
@@ -244,7 +247,7 @@ const PaymentsPage = () => {
                   <div className="mt-3.5"><Progress step={lc.step} color={color} /></div>
                   <div className="mt-2 flex items-center justify-between">
                     <span className={cn('truncate text-[12px]', todo ? 'font-semibold' : TEXT.muted)} style={todo ? { color } : undefined}>
-                      {p.reference} · {todo ? t('list.toComplete') : format(new Date(p.created_at), 'd MMM yyyy', { locale: fr })}
+                      {p.reference} · {todo ? t('list.toComplete') : format(new Date(p.created_at), 'PP', { locale: dateLocale() })}
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0" style={{ color: todo ? color : undefined }} />
                   </div>

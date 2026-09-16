@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +30,7 @@ import { formatDuration } from '@/lib/voice-recording';
 import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
-import { SURFACE, TEXT, Card, StatCard, Holder, ScreenLoader, TOGGLE_ON, TOGGLE_OFF } from '@/mobile/designKit';
+import { SURFACE, TEXT, Card, StatCard, Holder, ScreenLoader, Chip } from '@/mobile/designKit';
 
 type Period = 7 | 14 | 30;
 
@@ -55,7 +56,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
   const { hasPermission } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
   const [period, setPeriod] = useState<Period>(7);
-  const { data: stats, isLoading } = useChatAdminStats(period);
+  const { data: stats, isLoading, isError, refetch } = useChatAdminStats(period);
   const [locale, setLocale] = useState<Locale | undefined>(undefined);
 
   useEffect(() => {
@@ -79,14 +80,14 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
 
   // Format les données pour recharts
   const dailyChartData =
-    stats?.daily_volume.map((d) => ({
+    (stats?.daily_volume ?? []).map((d) => ({
       day: d.day,
       dayLabel: format(parseISO(d.day), 'EEE d', locale ? { locale } : undefined),
       Client: d.client_count,
       Bonzini: d.admin_count,
     })) ?? [];
 
-  const bucketsChartData = stats
+  const bucketsChartData = stats?.response_buckets
     ? [
         { bucket: t('admin.bucketUnder1Min'), count: stats.response_buckets.under_1min, color: VIOLET },
         { bucket: t('admin.bucket1to5'), count: stats.response_buckets.one_to_five, color: VIOLET },
@@ -96,7 +97,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
     : [];
 
   const topAdminsChartData =
-    stats?.per_admin.slice(0, 5).map((a) => ({
+    (stats?.per_admin ?? []).slice(0, 5).map((a) => ({
       name: `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() || 'Admin',
       replies: a.replies_count,
       avgSeconds: a.avg_response_seconds,
@@ -125,21 +126,14 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
       <div className={desktop ? '' : 'px-4 pt-4'}>
         <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-1">
           {periodFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setPeriod(filter.value)}
-              className={cn(
-                'whitespace-nowrap rounded-lg px-4 py-2 text-[14px] font-semibold transition-colors',
-                period === filter.value ? TOGGLE_ON : TOGGLE_OFF,
-              )}
-            >
-              {filter.label}
-            </button>
+            <Chip key={filter.value} label={filter.label} active={period === filter.value} onClick={() => setPeriod(filter.value)} />
           ))}
         </div>
       </div>
 
-      {isLoading || !stats ? (
+      {isError ? (
+        <div className="p-4"><QueryError what="les statistiques" onRetry={() => { void refetch(); }} /></div>
+      ) : isLoading || !stats ? (
         <ScreenLoader />
       ) : (
         <div className="space-y-4 p-4">
@@ -149,27 +143,27 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
               icon={Inbox}
               tone="info"
               label={t('admin.statsOpenConvs')}
-              value={String(stats.open_conversations)}
+              value={String(stats.open_conversations ?? 0)}
             />
             <StatCard
               icon={MessageSquare}
               tone="neutral"
               label={t('admin.statsTotalMessages')}
-              value={String(stats.total_messages)}
+              value={String(stats.total_messages ?? 0)}
             />
             <StatCard
               icon={Users}
               tone="pending"
               label={t('admin.statsUnassigned')}
-              value={String(stats.unassigned_open)}
+              value={String(stats.unassigned_open ?? 0)}
             />
             <StatCard
               icon={Timer}
               tone="info"
               label={t('admin.statsAvgResponse')}
-              value={stats.avg_response_seconds_global > 0 ? formatDuration(stats.avg_response_seconds_global) : '—'}
+              value={(stats.avg_response_seconds_global ?? 0) > 0 ? formatDuration(stats.avg_response_seconds_global) : '—'}
               hint={
-                stats.median_response_seconds_global > 0
+                (stats.median_response_seconds_global ?? 0) > 0
                   ? `${t('admin.statsMedian')} ${formatDuration(stats.median_response_seconds_global)}`
                   : undefined
               }
@@ -184,7 +178,7 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
                 <XAxis dataKey="dayLabel" tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} />
                 <YAxis tick={AXIS_TICK} axisLine={{ stroke: AXIS_LINE }} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
                 <Line type="monotone" dataKey="Client" stroke={ORANGE} strokeWidth={2.5} dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="Bonzini" stroke={VIOLET} strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
@@ -252,11 +246,11 @@ export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolea
           </ChartCard>
 
           {/* Détail per-admin (cards) */}
-          {stats.per_admin.length > 0 && (
+          {(stats.per_admin ?? []).length > 0 && (
             <Card>
               <h3 className={cn('mb-3 text-[14px] font-bold', TEXT.strong)}>{t('admin.statsPerAdmin')}</h3>
               <div className="space-y-0.5">
-                {stats.per_admin.map((a) => {
+                {(stats.per_admin ?? []).map((a) => {
                   const name = `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() || 'Admin';
                   return (
                     <div key={a.admin_user_id} className="flex items-center justify-between py-2.5">

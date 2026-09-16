@@ -120,7 +120,7 @@ export function MobileMoreScreen() {
           <Card className="space-y-0.5 p-2">
             <MenuRow
               icon={BarChart3}
-              label="Dashboard"
+              label="Tableau de bord"
               description={t('reportsAndKPIs', { defaultValue: 'Rapports et indicateurs clés' })}
               onClick={() => navigate('/m/dashboard')}
             />
@@ -134,7 +134,7 @@ export function MobileMoreScreen() {
               <MenuRow
                 icon={Coins}
                 label="Trésorerie"
-                description="Achats/ventes USDT, soldes, inventaire"
+                description="Achats et ventes de dollars numériques, soldes"
                 onClick={() => navigate('/m/more/treasury')}
               />
             )}
@@ -167,7 +167,7 @@ export function MobileMoreScreen() {
             <MenuRow
               icon={Newspaper}
               label="Veille macro"
-              description="Macro, news Iran, posts Trump, prédictions IA"
+              description="Actualité économique et prévisions"
               onClick={() => navigate('/m/more/briefs')}
             />
           </Card>
@@ -180,21 +180,21 @@ export function MobileMoreScreen() {
             <Card className="space-y-0.5 p-2">
               <MenuRow
                 icon={MessageCircle}
-                label="Support chat"
+                label="Messages des clients"
                 description="Conversations avec les clients"
                 onClick={() => navigate('/m/support')}
                 badge={supportUnreadTotal > 0 ? String(supportUnreadTotal) : undefined}
               />
               <MenuRow
                 icon={MessageSquareQuote}
-                label="Templates support"
-                description="Réponses pré-enregistrées avec variables"
+                label="Réponses toutes faites"
+                description="Les phrases qu'on réutilise dans les messages"
                 onClick={() => navigate('/m/more/canned-responses')}
               />
               <MenuRow
                 icon={Sparkles}
-                label="Quick replies clients"
-                description="Suggestions affichées aux nouveaux clients"
+                label="Suggestions aux nouveaux clients"
+                description="Ce qu'on propose à un client qui vient d'arriver"
                 onClick={() => navigate('/m/more/quick-replies')}
               />
             </Card>

@@ -16,12 +16,22 @@
  */
 export * from '../contexts/AdminAuthContext';
 
+// Rôle simulé : `localStorage.screenshot-role` (posé par le harnais via
+// ROLE=cash_agent) — la chaîne agent cash n'accepte que ce rôle-là.
+function mockRole(): 'super_admin' | 'cash_agent' {
+  try {
+    return localStorage.getItem('screenshot-role') === 'cash_agent' ? 'cash_agent' : 'super_admin';
+  } catch {
+    return 'super_admin';
+  }
+}
+
 export const useAdminAuth = () => ({
   currentUser: {
     id: 'screenshot-admin',
     email: 'demo@bonzinilabs.test',
     name: 'Demo Admin',
-    role: 'super_admin' as const,
+    role: mockRole(),
   },
   isLoading: false,
   // Le shell desktop (AdminRouteWrapper → ProtectedAdminRoute) redirige vers

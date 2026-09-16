@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MAX_AMOUNT_XAF,
   MIN_AMOUNT_XAF,
   deriveIdentifierType,
   makeAmountStepSchema,
@@ -56,10 +55,10 @@ describe('makeAmountStepSchema', () => {
     }
   });
 
-  it('rejects an amount above MAX_AMOUNT_XAF', () => {
+  it('has no ceiling: a very large amount passes when the balance covers it', () => {
     const big = makeAmountStepSchema({ walletBalanceXaf: Number.MAX_SAFE_INTEGER });
-    const result = big.safeParse({ amountXAF: MAX_AMOUNT_XAF + 1 });
-    expect(result.success).toBe(false);
+    const result = big.safeParse({ amountXAF: 350_000_000 });
+    expect(result.success).toBe(true);
   });
 
   it('rejects amounts above the wallet balance with insufficientBalance', () => {

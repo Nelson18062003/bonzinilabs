@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { QueryError } from '@/components/ui/QueryError';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import type { AdminNotificationType } from '@/hooks/useAdminNotifications';
@@ -15,6 +16,7 @@ import {
   AlertCircle,
   Clock,
   Bell,
+  Ship,
 } from 'lucide-react';
 import { SURFACE, TEXT, type Tone, Holder, SectionTitle } from '@/mobile/designKit';
 
@@ -24,6 +26,8 @@ const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone
   deposit_needs_correction: { icon: AlertCircle, tone: 'pending' },
   payment_ready: { icon: ArrowUpFromLine, tone: 'info' },
   payment_processing: { icon: Clock, tone: 'info' },
+  cargo_late: { icon: Ship, tone: 'danger' },
+  cargo_arriving: { icon: Ship, tone: 'pending' },
 };
 
 function formatRelativeDate(dateStr: string) {
@@ -35,7 +39,7 @@ function formatRelativeDate(dateStr: string) {
 
 export function MobileNotificationsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
-  const { data: notifications, isLoading, refetch } = useAdminNotifications();
+  const { data: notifications, isLoading, isError, refetch } = useAdminNotifications();
   const navigate = useNavigate();
 
   // Group by date
@@ -58,7 +62,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
       {desktop ? (
         <header className="mb-5">
           <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>Notifications</h2>
-          <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('actionablePending', { defaultValue: "Éléments en attente d'action" })}</p>
+          <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{t('actionablePending', { defaultValue: "Éléments en attente d'action" })}</p>
         </header>
       ) : (
         <MobileHeader title="Notifications" backTo="/m/more" showBack />
@@ -67,6 +71,8 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
       <PullToRefresh onRefresh={refetch} className={desktop ? 'space-y-6' : cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}>
         {isLoading ? (
           <SkeletonListScreen count={6} />
+        ) : isError ? (
+          <QueryError what="les notifications" onRetry={() => { void refetch(); }} />
         ) : groupKeys.length > 0 ? (
           <div className="space-y-6">
             {groupKeys.map((dateKey) => (
@@ -86,16 +92,21 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>{notif.title}</p>
-                                <p className={cn('mt-0.5 truncate text-[14px]', TEXT.muted)}>
-                                  {notif.subtitle}
+                                <p className={cn('break-words text-[16px] font-semibold leading-snug', TEXT.strong)}>{notif.title}</p>
+                                <p className={cn('mt-0.5 break-words text-[16px] leading-snug', TEXT.muted)}>
+                                  {/* « Nom — BZ-DP-… » : la référence reste entière sur sa ligne. */}
+                                  {notif.subtitle?.includes(' — ')
+                                    ? <>{notif.subtitle.split(' — ')[0]} — <span className="whitespace-nowrap">{notif.subtitle.split(' — ').slice(1).join(' — ')}</span></>
+                                    : notif.subtitle}
                                 </p>
                               </div>
-                              <p className={cn('shrink-0 text-[14px] font-bold tabular-nums', TEXT.strong)}>
-                                {formatXAF(notif.amount)}
-                              </p>
+                              {notif.amount != null && (
+                                <p className={cn('shrink-0 text-[16px] font-bold tabular-nums', TEXT.strong)}>
+                                  {formatXAF(notif.amount)}
+                                </p>
+                              )}
                             </div>
-                            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
+                            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>
                               {formatRelativeDate(notif.createdAt)}
                             </p>
                           </div>
@@ -111,7 +122,7 @@ export function MobileNotificationsScreen({ desktop = false }: { desktop?: boole
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Holder icon={Bell} size="lg" />
             <p className={cn('mt-4 font-semibold', TEXT.strong)}>{t('allUpToDate', { defaultValue: 'Tout est à jour' })}</p>
-            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>
               {t('noPendingItems', { defaultValue: "Aucun élément en attente d'action" })}
             </p>
           </div>

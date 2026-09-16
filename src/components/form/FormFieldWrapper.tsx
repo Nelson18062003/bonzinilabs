@@ -78,11 +78,11 @@ export function FormFieldWrapper({
         : children}
 
       {hasError && errorMessage ? (
-        <p id={errorId} role="alert" className="text-xs font-medium text-destructive">
+        <p id={errorId} role="alert" className="text-[14px] font-medium text-destructive">
           {errorMessage}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-xs text-muted-foreground">
+        <p id={hintId} className="text-[14px] text-muted-foreground">
           {hint}
         </p>
       ) : null}

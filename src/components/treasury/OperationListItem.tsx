@@ -55,27 +55,27 @@ export function OperationListItem({
         <div className="flex items-center gap-1.5">
           <span className="truncate text-[14px] font-semibold text-foreground">{name}</span>
           {voided && (
-            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[12px] font-bold uppercase text-muted-foreground">
               Annulée
             </span>
           )}
         </div>
-        <div className="truncate text-[11px] text-muted-foreground">
+        <div className="truncate text-[13px] text-muted-foreground">
           {fmtDate(op.occurred_at)}
           {accountLabel ? ` · ${accountLabel}` : ''}
         </div>
 
         {/* Conversion — prominent, one line */}
-        <div className="mt-1 text-[13px] font-bold tabular-nums text-foreground">
+        <div className="mt-1 text-[14px] font-bold tabular-nums text-foreground">
           {nf(from.v, from.d)}
-          <span className="ml-0.5 text-[11px] font-medium text-muted-foreground">{from.u}</span>
+          <span className="ml-0.5 text-[13px] font-medium text-muted-foreground">{from.u}</span>
           <span className="mx-1 font-normal text-muted-foreground">→</span>
           {nf(to.v, to.d)}
-          <span className="ml-0.5 text-[11px] font-medium text-muted-foreground">{to.u}</span>
+          <span className="ml-0.5 text-[13px] font-medium text-muted-foreground">{to.u}</span>
         </div>
 
         {/* Rate — secondary, muted, own line (never orphaned) */}
-        <div className="text-[11px] tabular-nums text-muted-foreground">
+        <div className="text-[13px] tabular-nums text-muted-foreground">
           @ {nf(Number(op.implicit_rate), 4)} {rateUnit}
         </div>
       </button>
@@ -84,7 +84,7 @@ export function OperationListItem({
         <button
           onClick={onDelete}
           aria-label="Supprimer"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-600 hover:bg-red-500/10 dark:text-red-400"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-red-600 hover:bg-red-500/10 dark:text-red-400"
         >
           <Trash2 className="h-4 w-4" />
         </button>

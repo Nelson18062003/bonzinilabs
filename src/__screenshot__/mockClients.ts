@@ -9,6 +9,7 @@ import type { LedgerEntry } from '@/types/admin';
 const mk = (id: string, first: string, last: string, phone: string, company: string, balance: number, dep: number, pay: number, created: string, status = 'ACTIVE', email = '') => ({
   id, firstName: first, lastName: last, phone, email, companyName: company, country: 'Cameroun', city: 'Douala', avatarUrl: null,
   createdAt: created, updatedAt: created, walletId: 'w-' + id, walletBalance: balance, totalDeposits: dep, totalPayments: pay,
+  customerCode: 'BZ-' + String(135190 + id.charCodeAt(1) * 7).slice(0, 6),
   status, utmSource: null as string | null, utmMedium: null as string | null, utmCampaign: null as string | null, lastLedgerEntry: null as LedgerEntry | null,
 });
 
@@ -39,3 +40,5 @@ const ok = <T,>(data: T) => ({ data, isLoading: false, isError: false, error: nu
 export const useClients = () => ok(CLIENTS);
 export const useClient = (id: string) => ok(CLIENTS.find((c) => c.id === id) ?? null);
 export const useClientLedger = (id: string) => ok(id === 'u5' ? LEDGER : []);
+export const useClientLedgerPaged = (id: string) => ({ ...ok(id === 'u5' ? LEDGER : []), hasNextPage: false, fetchNextPage: async () => undefined, isFetchingNextPage: false });
+export const useClientLedgerCount = (id: string) => ok(id === 'u5' ? LEDGER.length : 0);

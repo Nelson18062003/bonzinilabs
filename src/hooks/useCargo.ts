@@ -16,9 +16,10 @@ function assertOk(data: unknown): Record<string, unknown> {
 
 /* ── Flotte ─────────────────────────────────────────────────────────────── */
 
-export function useCargoShipments() {
+export function useCargoShipments(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ['cargo', 'shipments'],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('cargo_shipments')
@@ -386,7 +387,7 @@ export function useCargoClient(clientId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('clients')
-        .select('id, first_name, last_name, company_name, phone, email, city, country, kyc_verified')
+        .select('id, first_name, last_name, company_name, phone, email, city, country, kyc_verified, customer_code')
         .eq('id', clientId!)
         .maybeSingle();
       if (error) throw error;
@@ -402,7 +403,10 @@ export function useCargoClientOptions(search: string) {
     queryKey: ['cargo', 'client-options', search],
     queryFn: async () => {
       let q = supabaseAdmin.from('clients').select('id, first_name, last_name, company_name').limit(20);
-      if (search.trim()) q = q.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,company_name.ilike.%${search}%`);
+      // `,` `(` `)` `%` `\` sont la grammaire du filtre PostgREST : tapés dans la
+      // recherche, ils cassaient (ou réécrivaient) la requête. On les efface.
+      const needle = search.replace(/[,()%\\]/g, ' ').trim();
+      if (needle) q = q.or(`first_name.ilike.%${needle}%,last_name.ilike.%${needle}%,company_name.ilike.%${needle}%`);
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
@@ -414,6 +418,26 @@ export function useCargoClientOptions(search: string) {
 /* ── Documents ──────────────────────────────────────────────────────────── */
 
 const BUCKET = 'cargo-documents';
+
+/**
+ * Les pièces de TOUTE la flotte, groupées par conteneur — pour que la liste,
+ * la carte et le dossier calculent le même « à faire » (sans elles, la liste
+ * croyait le B/L manquant alors que le dossier le voyait classé).
+ */
+export function useCargoFleetDocuments(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['cargo', 'documents', 'fleet'],
+    enabled: options.enabled ?? true,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('cargo_documents').select('*').limit(3000);
+      if (error) throw error;
+      const by: Record<string, CargoDocument[]> = {};
+      for (const d of (data ?? []) as CargoDocument[]) (by[d.shipment_id] ??= []).push(d);
+      return by;
+    },
+    staleTime: 60_000,
+  });
+}
 
 export function useCargoDocuments(shipmentId: string | null) {
   return useQuery({

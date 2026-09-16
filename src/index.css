@@ -2,7 +2,7 @@
    style : DM Sans ne couvre aucun idéogramme, et les cotations comme les reçus
    affichent du chinois (« 报价单 », le nom du bénéficiaire). Sans elle, ces
    caractères sortent en tofu. */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..900;1,9..40,400..900&family=Noto+Sans+SC:wght@400;700;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,6 +15,9 @@
        fallbacks used before the JS runs (or without the VisualViewport API). */
     --vvh: 100dvh;
     --vvt: 0px;
+    --vvk: 0px;
+    /* L'encre d'accent des formulaires mobiles (anneaux, barres d'étapes) : suit le thème. */
+    --ink: #2C2C2C;
 
     /* Bonzini Brand Colors */
     --bonzini-purple: 258 100% 60%;
@@ -99,6 +102,7 @@
   }
 
   .dark {
+    --ink: #E3E3E3;
     --background: 222 47% 6%;
     --foreground: 210 40% 98%;
     
@@ -179,6 +183,15 @@
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
+  }
+
+  /* Clavier ouvert (html.kb-open, posé par useVisibleViewportSync) : la barre
+     d'onglets s'efface. Sur iOS elle serait sous le clavier de toute façon ;
+     sur Android (layout viewport réduit) elle viendrait s'intercaler entre le
+     champ de saisie et le clavier. */
+  html.kb-open .mobile-tab-bar,
+  html.kb-open .decision-dock {
+    display: none;
   }
 
   /* Samsung/iOS: prevent auto-zoom on input focus (requires font-size >= 16px).
@@ -859,7 +872,7 @@
   }
 
   .liquid-tab-label {
-    @apply text-[10px] font-medium leading-none;
+    @apply text-[12px] font-semibold leading-none;
   }
 
   .liquid-tab-icon {
@@ -1490,6 +1503,13 @@
   border: 1.5px solid hsl(var(--card));
   cursor: pointer;
 }
+/* Le point reste discret (8 px) mais la zone qui répond au doigt fait 32 px. */
+.cargo-port::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+}
 .cargo-port.has-arrivals { width: 11px; height: 11px; background: hsl(var(--foreground)); }
 /* Pastilles de statut dans les listes et légendes */
 .cargo-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; background: hsl(var(--foreground)); border: 2px solid hsl(var(--card)); box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.5); vertical-align: middle; }
@@ -1511,6 +1531,7 @@
 .maplibregl-popup-close-button:hover { background: transparent; color: hsl(var(--foreground)); }
 .maplibregl-ctrl-group { background: hsl(var(--card)); box-shadow: none; border: 1px solid hsl(var(--border)); border-radius: 8px; overflow: hidden; }
 .maplibregl-ctrl-group button + button { border-top-color: hsl(var(--border)); }
+.maplibregl-ctrl-group button { width: 44px; height: 44px; }
 .dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
 .maplibregl-ctrl-attrib { background: hsl(var(--card) / 0.85); color: hsl(var(--muted-foreground)); font-size: 10px; border-radius: 6px 0 0 0; }
 .maplibregl-ctrl-attrib a { color: hsl(var(--muted-foreground)); }
@@ -1523,7 +1544,9 @@
 .cargo-popup__k { margin-top: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
 @media (max-width: 1023px) {
   /* Mobile : la carte se lit aussi au soleil — étiquettes 14 px, encre foncée. */
-  .cargo-ship__label, .cargo-port__label, .cargo-legend { font-size: 14px; }
+  .cargo-ship__label, .cargo-port__label { font-size: 14px; }
+  .cargo-legend { font-size: 16px; }
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
   .cargo-ship__label em { font-size: 13px; }
   .cargo-port__label { color: hsl(var(--foreground)); }
   .cargo-popup__k { font-size: 12px; }
@@ -1559,7 +1582,7 @@
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
   color: hsl(var(--muted-foreground));
-  font: 500 12px/1 "DM Sans", system-ui, sans-serif;
+  font: 500 14px/1 "DM Sans", system-ui, sans-serif;
   cursor: pointer;
 }
 .c3d-bar button:hover { color: hsl(var(--foreground)); }
@@ -1575,7 +1598,7 @@
   font: 500 12px/1 "DM Sans", system-ui, sans-serif;
   color: hsl(var(--muted-foreground));
 }
-.c3d-layers input { width: 96px; accent-color: hsl(var(--foreground)); }
+.c3d-layers input { width: 120px; height: 44px; accent-color: hsl(var(--foreground)); }
 .c3d-layers b { color: hsl(var(--foreground)); font-variant-numeric: tabular-nums; }
 
 /* La scène. `perspective` ici et nulle part ailleurs : c'est l'œil. */
@@ -1600,7 +1623,7 @@
   .c3d-stage { height: 300px; }
   .c3d-bar button, .c3d-layers { font-size: 16px; }
   .c3d-bar button { height: 40px; padding: 0 12px; border-radius: 8px; color: hsl(var(--foreground)); }
-  .c3d-layers input { width: 120px; height: 24px; }
+  .c3d-layers input { width: 120px; height: 44px; }
 }
 
 .c3d-world,

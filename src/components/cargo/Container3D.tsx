@@ -81,6 +81,9 @@ function Cuboid({
   );
 }
 
+/** Plafond de pavés dessinés — au-delà, la scène devient un tas de calques GPU. */
+const MAX_DRAWN = 160;
+
 export function Container3D({
   iso, packages, dark, hoveredPackageId = null, onHoverPackage, className,
 }: {
@@ -123,14 +126,27 @@ export function Container3D({
     drag.current = { x: e.clientX, y: e.clientY, yaw, pitch };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   };
+  // Le glisser ne re-rend la scène qu'une fois par image (rAF) : chaque
+  // pixel de pointeur déclenchait un rendu complet de tous les pavés — sur un
+  // téléphone, des centaines de faces 3D à recomposer par événement.
+  const moveRaf = useRef(0);
+  const movePos = useRef({ x: 0, y: 0 });
   const onMove = (e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
-    setYaw(d.yaw + (e.clientX - d.x) * 0.4);
-    // Tirer vers le bas fait descendre la caméra, comme dans un visualiseur 3D.
-    setPitch(Math.max(-12, Math.min(89, d.pitch - (e.clientY - d.y) * 0.3)));
+    if (!drag.current) return;
+    movePos.current = { x: e.clientX, y: e.clientY };
+    if (moveRaf.current) return;
+    moveRaf.current = requestAnimationFrame(() => {
+      moveRaf.current = 0;
+      const d = drag.current;
+      if (!d) return;
+      const { x, y } = movePos.current;
+      setYaw(d.yaw + (x - d.x) * 0.4);
+      // Tirer vers le bas fait descendre la caméra, comme dans un visualiseur 3D.
+      setPitch(Math.max(-12, Math.min(89, d.pitch - (y - d.y) * 0.3)));
+    });
   };
   const onUp = () => { drag.current = null; };
+  useEffect(() => () => { if (moveRaf.current) cancelAnimationFrame(moveRaf.current); }, []);
 
   // La molette approche la caisse, et ne fait pas défiler la page sous le
   // curseur — sinon on perd la vue dès qu'on essaie de zoomer.
@@ -156,7 +172,13 @@ export function Container3D({
   // un 40 pieds paraissait deux fois trop large — invisible de trois-quarts,
   // flagrant en vue de dessus (rapport 3,2 au lieu de 5,1).
   const scale = ((stageWidth * 0.9) / (dims.length * 0.85 + dims.width * 0.6)) * zoom;
-  const visible: PlacedBox[] = upTo == null ? plan.boxes : plan.boxes.filter((b) => b.layer <= upTo);
+  // Chaque pavé, c'est six faces en 3D, donc six calques GPU dans WebKit. Un
+  // colisage réel (plusieurs centaines de cartons) faisait recharger l'onglet
+  // sur iPhone (« A problem repeatedly occurred »). On dessine au plus
+  // MAX_DRAWN pavés, les premiers posés ; le reste est dit en toutes lettres.
+  const stacked: PlacedBox[] = upTo == null ? plan.boxes : plan.boxes.filter((b) => b.layer <= upTo);
+  const visible = stacked.length > MAX_DRAWN ? stacked.slice(0, MAX_DRAWN) : stacked;
+  const hidden = stacked.length - visible.length;
   const shellColor = dark ? '#5f6b78' : '#9fb0c0';
 
   return (
@@ -177,6 +199,7 @@ export function Container3D({
             <label className="c3d-layers">
               Étages
               <input
+                className="h-11"
                 type="range" min={0} max={plan.layers - 1}
                 value={upTo ?? plan.layers - 1}
                 onChange={(e) => {
@@ -200,6 +223,11 @@ export function Container3D({
         role="img"
         aria-label={`Conteneur ${plan.isoLabel}, ${plan.boxes.length} colis, rempli à ${Math.round(plan.fill * 100)} pour cent du volume`}
       >
+        {hidden > 0 && (
+          <p className="c3d-hint" style={{ position: 'absolute', left: 8, top: 8, zIndex: 2, margin: 0 }}>
+            {visible.length} colis dessinés sur {stacked.length} — les autres comptent dans le remplissage.
+          </p>
+        )}
         <div
           className="c3d-world"
           style={{ transform: `rotateX(${-pitch}deg) rotateY(${yaw}deg) scale3d(${scale}, ${scale}, ${scale})` }}
@@ -237,7 +265,8 @@ export function Container3D({
       </div>
 
       <p className="c3d-hint">
-        Glisser pour tourner · molette pour approcher · « Étages » retire les couches du haut pour voir dessous.
+        <span className="max-lg:hidden">Glisser pour tourner · molette pour approcher · « Étages » retire les couches du haut pour voir dessous.</span>
+        <span className="lg:hidden">Glissez pour tourner la boîte. « Étages » retire les couches du haut pour voir dessous.</span>
       </p>
     </div>
   );

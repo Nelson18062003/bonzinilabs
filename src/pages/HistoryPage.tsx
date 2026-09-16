@@ -5,9 +5,10 @@
 // isDebitOperation (tous types), filtre, groupement, libellés, relevé.
 // ============================================================
 import { useState } from 'react';
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { dateLocale } from '@/lib/dateLocale';
 import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -32,7 +33,7 @@ const HistoryPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [search, setSearch] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const { data: operations, isLoading } = useMyWalletOperations();
+  const { data: operations, isLoading, isError, refetch } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
   // ── Crédit / débit (tous types) — LOGIQUE PRÉSERVÉE ───────────
@@ -139,7 +140,7 @@ const HistoryPage = () => {
         </div>
 
         {/* Recherche */}
-        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3 focus-within:ring-2 focus-within:ring-[#8B5CF6]/60', SURFACE.card, SURFACE.shadow)}>
           <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
           {/* input nu volontaire 16px (anti auto-zoom iOS) */}
           {/* eslint-disable-next-line no-restricted-syntax */}
@@ -159,7 +160,7 @@ const HistoryPage = () => {
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                 filter === f.value ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
@@ -175,11 +176,13 @@ const HistoryPage = () => {
               <div key={i} className={cn('h-16 animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what={t('history.loadWhat')} onRetry={() => { void refetch(); }} />
         ) : Object.entries(groupedOperations).length > 0 ? (
           Object.entries(groupedOperations).map(([date, ops]) => (
             <section key={date} className="animate-slide-up">
               <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>
-                {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
+                {format(new Date(date), 'EEEE d MMMM', { locale: dateLocale() })}
               </h2>
               <div className="space-y-2.5">
                 {ops.map((op) => {
@@ -197,8 +200,8 @@ const HistoryPage = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={cn('truncate text-[14px] font-bold', TEXT.strong)}>{getOperationLabel(op)}</p>
-                        {op.description && <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>{op.description}</p>}
+                        <p className={cn('break-words text-[14px] font-bold leading-snug', TEXT.strong)}>{getOperationLabel(op)}</p>
+                        {op.description && <p className={cn('mt-0.5 break-words text-[12px] leading-snug', TEXT.muted)}>{op.description}</p>}
                       </div>
                       <div className={cn('shrink-0 text-right text-[14px] font-black tabular-nums', isDebit && TEXT.strong)} style={isDebit ? undefined : { color: GREEN }}>
                         {isDebit ? '−' : '+'} {formatNumber(Math.abs(op.amount_xaf))}

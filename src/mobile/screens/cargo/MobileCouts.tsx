@@ -8,29 +8,19 @@
  * convertir au taux du jour donnerait un chiffre faux le lendemain.
  */
 import { useMemo, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Calculator, Plus, Trash2 } from 'lucide-react';
 import { useAddCargoCost, useCargoCosts, useDeleteCargoCost, useUpdateCargoCost } from '@/hooks/useCargo';
 import { COST_KINDS, COST_KIND_LABEL, fmtDay, fmtMoney, fmtUsd } from '@/lib/cargo/model';
 import type { CargoCost, CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
-import { TEXT, SURFACE, PRIMARY_PILL, SOFT_PILL, BottomSheet, Button, FormField, Line, StatusPill, TextInput } from '@/mobile/designKit';
+import { TEXT, SURFACE, BottomSheet, Button, FormField, Line, StatusPill, TextInput } from '@/mobile/designKit';
+import { Pick } from './Pick';
 
 const CURRENCIES = ['XAF', 'USD', 'EUR', 'CNY'] as const;
 
-function Pick<T extends string>({ options, value, onChange, label }: { options: readonly T[]; value: T; onChange: (v: T) => void; label: (v: T) => string }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button key={o} type="button" onClick={() => onChange(o)} aria-pressed={o === value}
-          className={cn('h-10 px-3 text-[16px] font-medium', o === value ? PRIMARY_PILL : SOFT_PILL)}>
-          {label(o)}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function MobileCouts({ shipment: s, canManage }: { shipment: CargoShipment; canManage: boolean }) {
+  const navigate = useNavigate();
   const { data: costs } = useCargoCosts(s.id);
   const add = useAddCargoCost();
   const update = useUpdateCargoCost();
@@ -105,6 +95,10 @@ export function MobileCouts({ shipment: s, canManage }: { shipment: CargoShipmen
           Ajouter un coût
         </Button>
       )}
+      <Button variant="subtle" className="w-full" onClick={() => navigate(`/m/cargo/cout?shipment=${s.id}`)}>
+        <Calculator />
+        Estimer ce que la sortie va coûter
+      </Button>
 
       {list.length > 0 && (
         <ul className={cn('divide-y', SURFACE.divider)}>

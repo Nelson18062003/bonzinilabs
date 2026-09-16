@@ -48,7 +48,7 @@ export function ChartCard({
 }: ChartCardProps) {
   return (
     <div className={cn('overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow, className)}>
-      <div className="flex flex-row items-start justify-between gap-3 space-y-0 p-4 pb-2">
+      <div className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0 p-4 pb-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-1.5">
             <h3 className={cn('text-sm max-lg:text-[16px] font-bold tracking-normal leading-snug line-clamp-2 max-lg:line-clamp-none break-words', TEXT.strong)}>
@@ -60,7 +60,7 @@ export function ChartCard({
                   <button
                     type="button"
                     aria-label="Définition de la métrique"
-                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground max-lg:-mt-2 max-lg:flex max-lg:h-10 max-lg:w-10 max-lg:items-center max-lg:justify-center max-lg:text-muted-foreground"
+                    className="mt-0.5 flex-shrink-0 text-muted-foreground/60 hover:text-muted-foreground max-lg:-mt-2 max-lg:flex max-lg:h-11 max-lg:w-11 max-lg:items-center max-lg:justify-center max-lg:text-muted-foreground"
                   >
                     <Info className="h-3.5 w-3.5 max-lg:h-5 max-lg:w-5" />
                   </button>
@@ -82,14 +82,17 @@ export function ChartCard({
             </p>
           ) : null}
         </div>
-        {toolbar ? <div className="flex-shrink-0">{toolbar}</div> : null}
+        {toolbar ? <div className="flex-shrink-0 max-lg:basis-full">{toolbar}</div> : null}
       </div>
 
       <div className="p-4 pt-2">
         {error ? (
           <div className={cn('flex items-center gap-2 rounded-xl px-3 py-2 text-xs max-lg:text-[14px]', TONE_PILL.danger)}>
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <span>{typeof error === 'string' ? error : error.message}</span>
+            <span>
+              Impossible de charger ce graphique.
+              <span className="ml-1 opacity-70">({typeof error === 'string' ? error : error.message})</span>
+            </span>
           </div>
         ) : empty ? (
           <div className={cn('flex min-h-[160px] items-center justify-center text-sm', TEXT.muted)}>

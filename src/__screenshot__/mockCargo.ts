@@ -15,7 +15,7 @@ const base = {
 
 const SHIPMENTS: CargoShipment[] = [
   { ...base, id: '1', client_label: 'PRC', carrier: 'CMA_CGM', bl_number: 'GGZ3133535', container_number: 'CMAU6126032', container_iso: null, pol_name: null, pol_unlocode: null, pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: '2026-08-04', eta_promised: '2026-09-17', etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 6650, status: 'UNKNOWN', last_event_at: null, last_event_label: null, last_synced_at: null },
-  { ...base, id: '2', client_label: 'GAUSS', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
+  { ...base, id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
   { ...base, id: '3', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275558999', container_number: 'MRKU4617437', etd_promised: '2026-08-23', eta_promised: '2026-10-05', etd_actual: '2026-08-24T02:26:00Z', eta_carrier: '2026-10-15T01:00:00Z', vessel_name: 'CMA CGM CEDRUS', vessel_imo: '9938121', vessel_mmsi: '256615000', voyage: '633W', freight_usd: 5950, status: 'AT_SEA', last_event_at: '2026-08-24T02:26:00Z' },
   { ...base, id: '4', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275926835', container_number: 'MRSU7972968', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5650, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
   { ...base, id: '5', client_label: 'DJIANI', carrier: 'MAERSK', bl_number: '275926916', container_number: 'CAJU5023560', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5750, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
@@ -99,7 +99,8 @@ export const useDeleteCargoPackage = noop;
 export const useAddCargoCost = noop;
 export const useUpdateCargoCost = noop;
 export const useDeleteCargoCost = noop;
-export const useCargoClient = () => ok(null);
+export const useCargoClient = (id: string | null) => ok(id === 'u5' ? { id: 'u5', first_name: 'Fatou', last_name: 'Ndiaye', company_name: 'Ndiaye & Fils', phone: '+237 690 55 66 77', email: 'fatou@ndiaye-fils.cm', city: 'Douala', country: 'Cameroun', kyc_verified: true, customer_code: 'BZ-135561' } : null);
+export const useCargoFleetDocuments = () => ok({} as Record<string, never[]>);
 export const useCargoClientOptions = () => ok([] as { id: string; first_name: string; last_name: string; company_name: string | null }[]);
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;

@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "早上好",
+    "afternoon": "下午好",
+    "evening": "晚上好",
+    "withName": "{{prefix}}，{{name}}！",
+    "welcomeLast": "欢迎，{{name}} 👋",
+    "anonymous": "{{prefix}} 👋 欢迎来到 Bonzini"
+  },
   "wallet": {
     "availableBalance": "可用余额",
     "hideBalance": "隐藏余额",
@@ -7,7 +15,12 @@
     "retryLater": "请稍后重试",
     "recentOperations": "最近操作",
     "viewAll": "查看全部",
-    "operation": "操作"
+    "operation": "操作",
+    "homeSubtitle": "这是您的 Bonzini 账户",
+    "dailyRate": "今日汇率",
+    "viewRates": "查看汇率",
+    "ratePer": "每 1 000 000 XAF",
+    "noOperations": "暂无操作。"
   },
   "quickActions": {
     "deposit": "充值",
@@ -36,7 +49,9 @@
       "adjustmentDebit": "调整出账",
       "adjustmentCredit": "调整入账",
       "operation": "操作"
-    }
+    },
+    "search": "搜索一笔操作…",
+    "loadWhat": "您的历史记录"
   },
   "profile": {
     "title": "个人资料",
@@ -46,7 +61,7 @@
     "security": "安全",
     "securityDesc": "密码、2FA",
     "devices": "已连接设备",
-    "devicesDesc": "2台设备",
+    "devicesDesc": "即将推出",
     "language": "语言",
     "languageDesc": "中文",
     "documents": "文件",
@@ -57,7 +72,10 @@
     "appearanceDesc": "应用主题",
     "logout": "退出登录",
     "version": "Bonzini v1.0.0 • 在喀麦隆用 💜 制作",
-    "comingSoon": "功能即将推出"
+    "comingSoon": "功能即将推出",
+    "customerCode": "我的客户编号",
+    "sectionAccount": "账户",
+    "sectionPreferences": "偏好设置"
   },
   "beneficiaries": {
     "title": "收款人",
@@ -116,14 +134,16 @@
       "emailInvalid": "邮箱无效",
       "tooLong": "文本过长",
       "invalid": "信息无效"
-    }
+    },
+    "loadWhat": "您的收款人"
   },
   "notifications": {
     "title": "通知",
     "markAllRead": "全部已读",
     "loadError": "加载通知时出错",
     "noNotifications": "暂无通知",
-    "noNotificationsHint": "您的充值被验证后会收到通知"
+    "noNotificationsHint": "您的充值被验证后会收到通知",
+    "loadWhat": "您的通知"
   },
   "notFound": {
     "title": "404",
@@ -180,6 +200,58 @@
       "min": "最低",
       "avg": "平均",
       "max": "最高"
-    }
+    },
+    "notConfigured": "汇率未设置",
+    "details": "详情 →",
+    "swapDirection": "切换换算方向",
+    "updatedToday": "今日 {{time}} 更新",
+    "updatedOn": "{{date}} {{time}} 更新",
+    "countries": {
+      "cameroun": "喀麦隆",
+      "gabon": "加蓬",
+      "tchad": "乍得",
+      "rca": "中非",
+      "congo": "刚果",
+      "guinee": "赤道几内亚"
+    },
+    "cardTitle": "今日汇率",
+    "loadWhat": "今日汇率"
+  },
+  "myCode": {
+    "cardTitle": "我的客户编号",
+    "cardHint": "银行转账 · 包裹二维码标签",
+    "title": "我的客户编号",
+    "label": "客户编号",
+    "back": "返回",
+    "copy": "复制编号",
+    "copied": "编号已复制",
+    "copyFailed": "无法复制",
+    "bankTitle": "您的银行转账",
+    "bankBody": "每次银行转账或存款时，请在附言（备注）中填写此编号。您的账户将即时入账，无需查找。",
+    "bankMotif": "转账附言",
+    "cargoTitle": "您从中国发出的包裹",
+    "cargoBody": "将此标签发送给您的供应商：贴在每个纸箱上。到达我们仓库后，扫一下码即可将包裹关联到您的账户。",
+    "shareLabel": "分享图片",
+    "downloadPdf": "可打印 PDF",
+    "labelDownloaded": "标签已下载",
+    "labelError": "无法生成标签",
+    "footnote": "此编号是永久的：即使您更改了个人信息，它也不会改变。",
+    "dest": {
+      "warehouse": "海运",
+      "office": "空运"
+    },
+    "destHintWarehouse": "海运。供应商送到我们位于广州的仓库。",
+    "destHintOffice": "空运。供应商送到我们位于广州的办公室。",
+    "destUnavailable": "地址更新中，标签即将可用。",
+    "supplierTitle": "供应商（可选）",
+    "supplierName": "名称",
+    "supplierPhone": "电话",
+    "supplierAddress": "地址（中国）",
+    "supplierHint": "可选：此处填写的内容会印在标签上。",
+    "supplierEmail": "邮箱",
+    "copyImage": "复制图片",
+    "downloadImage": "下载图片",
+    "imageCopied": "图片已复制 — 可粘贴到微信、WhatsApp 或邮件",
+    "sharePdf": "分享 PDF"
   }
 }

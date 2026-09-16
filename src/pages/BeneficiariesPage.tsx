@@ -5,6 +5,7 @@
 // confirmé. « Supprimer » = archiver (snapshot : les paiements passés ne
 // sont jamais affectés). Logique 100% PRÉSERVÉE.
 // ============================================================
+import { QueryError } from '@/components/ui/QueryError';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Search, User, Pencil, Trash2, ArrowLeft, Check, Loader2 } from 'lucide-react';
@@ -59,7 +60,7 @@ const BeneficiariesPage = () => {
   const [modeFilter, setModeFilter] = useState<BeneficiaryMode | 'all'>('all');
   const [confirmArchive, setConfirmArchive] = useState<Beneficiary | null>(null);
 
-  const { data: beneficiaries, isLoading } = useBeneficiaries();
+  const { data: beneficiaries, isLoading, isError, refetch } = useBeneficiaries();
   const createBeneficiary = useCreateBeneficiary();
   const updateBeneficiary = useUpdateBeneficiary();
   const archiveBeneficiary = useArchiveBeneficiary();
@@ -150,7 +151,7 @@ const BeneficiariesPage = () => {
         </div>
 
         {/* Recherche */}
-        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3', SURFACE.card, SURFACE.shadow)}>
+        <label className={cn('flex items-center gap-2.5 rounded-full px-4 py-3 focus-within:ring-2 focus-within:ring-[#8B5CF6]/60', SURFACE.card, SURFACE.shadow)}>
           <Search className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
           {/* input nu volontaire 16px (anti auto-zoom iOS) */}
           {/* eslint-disable-next-line no-restricted-syntax */}
@@ -168,7 +169,7 @@ const BeneficiariesPage = () => {
           <button
             onClick={() => setModeFilter('all')}
             className={cn(
-              'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+              'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
               modeFilter === 'all' ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
             )}
           >
@@ -179,7 +180,7 @@ const BeneficiariesPage = () => {
               key={m}
               onClick={() => setModeFilter(m)}
               className={cn(
-                'shrink-0 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                'shrink-0 min-h-10 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                 modeFilter === m ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
@@ -195,6 +196,8 @@ const BeneficiariesPage = () => {
               <div key={i} className={cn('h-[72px] animate-pulse rounded-[18px]', SURFACE.card, SURFACE.shadow)} />
             ))}
           </div>
+        ) : isError ? (
+          <QueryError what={t('beneficiaries.loadWhat', { defaultValue: 'vos bénéficiaires' })} onRetry={() => { void refetch(); }} />
         ) : filtered.length === 0 ? (
           <div className={cn('mt-2 rounded-[24px] p-10 text-center', SURFACE.card, SURFACE.shadow)}>
             <div className={cn('mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full', SURFACE.holder)}>
@@ -202,7 +205,7 @@ const BeneficiariesPage = () => {
             </div>
             <p className={cn('text-[15px] font-bold', TEXT.strong)}>{t('beneficiaries.noBeneficiary')}</p>
             <p className={cn('mt-1 text-[13px]', TEXT.muted)}>{t('beneficiaries.emptyHint')}</p>
-            <button onClick={() => setView({ kind: 'add' })} className="mt-4 text-[14px] font-bold text-[#5B4CC4] dark:text-[#B5AAF0]">
+            <button onClick={() => setView({ kind: 'add' })} className="mt-3 inline-flex min-h-11 items-center text-[14px] font-bold text-[#5B4CC4] dark:text-[#B5AAF0]">
               {t('beneficiaries.add')}
             </button>
           </div>

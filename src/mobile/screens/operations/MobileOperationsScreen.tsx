@@ -15,8 +15,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpFromLine, FileDown, Layers, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useDepositStats } from '@/hooks/useAdminDeposits';
-import { usePaymentStats } from '@/hooks/usePaginatedPayments';
+import { useAdminActionableCounts } from '@/hooks/useAdminNotifications';
 import { exportPendingPaymentsPDF } from '@/lib/exportPendingPaymentsPDF';
 import { MobileDepositsScreenV2 } from '@/mobile/screens/deposits/MobileDepositsScreenV2';
 import { MobilePaymentsScreen } from '@/mobile/screens/payments/MobilePaymentsScreen';
@@ -33,10 +32,11 @@ export function MobileOperationsScreen({ tab = 'deposits' }: { tab?: OpsTab }) {
   const navigate = useNavigate();
   const [sheet, setSheet] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const { data: dep } = useDepositStats();
-  const { data: pay } = usePaymentStats();
-  const depCount = (dep?.to_process ?? 0) + (dep?.pending_correction ?? 0);
-  const payCount = pay?.toProcess ?? 0;
+  // Les mêmes chiffres que le badge « Opérations » de la barre : ce qui
+  // attend un opérateur (src/lib/actionable.ts). Dépôts + Paiements = badge.
+  const { data: counts } = useAdminActionableCounts();
+  const depCount = counts?.deposits ?? 0;
+  const payCount = counts?.payments ?? 0;
 
   const go = (t: OpsTab) => navigate(t === 'deposits' ? '/m/deposits' : '/m/payments', { replace: true });
 

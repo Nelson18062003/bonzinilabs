@@ -15,6 +15,7 @@ import type { CargoShipment } from '@/lib/cargo/model';
 import { copyToClipboard } from '@/lib/clipboard';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, DANGER_SOFT_PILL, Holder, RefChip, StatusPill, CenterDialog } from '@/desktop/designKit';
+import { BottomSheet as MobileSheet, Button as MobileButton, Line as MobileLine } from '@/mobile/designKit';
 
 function CopyBtn({ value, label }: { value: string; label: string }) {
   return (
@@ -49,7 +50,7 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {compact ? (
-        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn('h-11 w-11 rounded-full', sync.isPending && '[&_svg]:animate-spin')} />
+        <Holder icon={sync.isPending ? Loader2 : RefreshCw} size="md" onClick={() => sync.mutate()} ariaLabel="Rafraîchir auprès de l'armateur" className={cn('h-11 w-11 rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]', sync.isPending && '[&_svg]:animate-spin')} />
       ) : (
         <button
           type="button"
@@ -60,7 +61,34 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
           <RefreshCw className={cn('h-3.5 w-3.5', sync.isPending && 'animate-spin')} /> Rafraîchir
         </button>
       )}
-      {canManage && (
+      {canManage && compact && (
+        <>
+          <Holder icon={MoreHorizontal} size="md" onClick={() => setMenuOpen(true)} ariaLabel="Plus d'actions" className="h-11 w-11 rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]" />
+          {/* Mobile : une feuille basse, réduite à ce que les sections ne couvrent pas déjà
+              (le fret et le télex se basculent dans « L'argent », le navire dans « Où est le conteneur »). */}
+          <MobileSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Ce conteneur">
+            <div className="flex flex-col gap-2">
+              {/* Le navire se renseigne dans « Où est le conteneur », là où on lit qu'il manque. */}
+              <MobileButton variant="dangerSubtle" className="w-full" onClick={() => { setMenuOpen(false); setConfirmRemove(true); }}>
+                <Trash2 /> Retirer de la flotte
+              </MobileButton>
+            </div>
+          </MobileSheet>
+          <MobileSheet open={confirmRemove} onClose={() => setConfirmRemove(false)} title="Retirer ce conteneur ?">
+            <div className="space-y-4">
+              <MobileLine>
+                <b className={TEXT.strong}>{s.container_number}</b> ({s.client_label}) disparaîtra de la flotte avec ses jalons, ses papiers et ses coûts.
+                On pourra le retrouver en cherchant sa référence à nouveau.
+              </MobileLine>
+              <div className="flex gap-2">
+                <MobileButton variant="neutral" className="flex-1" onClick={() => setConfirmRemove(false)}>Garder</MobileButton>
+                <MobileButton variant="danger" className="flex-1" onClick={doRemove} loading={remove.isPending}>Retirer</MobileButton>
+              </div>
+            </div>
+          </MobileSheet>
+        </>
+      )}
+      {canManage && !compact && (
         <div className="relative">
           <Holder icon={MoreHorizontal} size={compact ? 'md' : 'sm'} onClick={() => setMenuOpen((v) => !v)} ariaLabel="Plus d'actions" className={cn(compact && 'h-11 w-11 rounded-full')} />
           {menuOpen && (
@@ -84,7 +112,7 @@ export function DossierActions({ shipment: s, onRemoved, compact = false }: { sh
 
       <CargoVesselDialog shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />
       <CenterDialog
-        open={confirmRemove}
+        open={confirmRemove && !compact}
         onClose={() => setConfirmRemove(false)}
         onConfirm={doRemove}
         title="Retirer ce conteneur de la flotte ?"

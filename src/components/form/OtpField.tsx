@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { BaseFieldProps } from './shared';
@@ -38,6 +39,7 @@ export function OtpField({
   autoComplete = 'one-time-code',
   name,
 }: OtpFieldProps) {
+  const { t } = useTranslation('common');
   const reactId = React.useId();
   const id = idProp ?? reactId;
   const hasError = Boolean(error);
@@ -104,7 +106,7 @@ export function OtpField({
       <div
         className="flex w-full items-center justify-center gap-1.5 sm:gap-2"
         role="group"
-        aria-label={typeof label === 'string' ? label : 'Code de vérification'}
+        aria-label={typeof label === 'string' ? label : t('otpCode')}
       >
         {digits.map((digit, i) => (
           <input

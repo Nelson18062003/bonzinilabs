@@ -25,11 +25,11 @@ export function CountrySelector({ selectedCountry, onCountryChange }: CountrySel
               key={c.key}
               onClick={() => onCountryChange(c.key)}
               className={cn(
-                'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-colors',
+                'flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold transition-colors',
                 active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
-              <span>{c.flag}</span> {c.label}
+              <span>{c.flag}</span> {t(`rates.countries.${c.key}`, { defaultValue: c.label })}
             </button>
           );
         })}

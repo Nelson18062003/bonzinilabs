@@ -47,6 +47,8 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(fun
       <div className={cn('relative', className)}>
         <textarea
           ref={ref}
+          id={id}
+          aria-invalid={hasError || undefined}
           rows={rows}
           maxLength={maxLength}
           value={value}
@@ -69,7 +71,7 @@ export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(fun
         {showCounter && maxLength ? (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute bottom-2 right-3 text-[10px] text-muted-foreground"
+            className="pointer-events-none absolute bottom-2 right-3 text-[12px] text-muted-foreground"
           >
             {length ?? 0}/{maxLength}
           </div>

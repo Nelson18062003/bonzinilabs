@@ -45,7 +45,6 @@ import type {
 type Step = 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
 
 const MIN_DEPOSIT_XAF = 50_000;
-const MAX_DEPOSIT_XAF = 50_000_000;
 
 const PHASES = ['Montant', 'Méthode', 'Confirmation'];
 const phaseOf = (s: Step): number => (s === 'amount' ? 0 : s === 'recap' ? 2 : 1);
@@ -65,7 +64,8 @@ const NewDepositPage = () => {
   const [selectedAgency, setSelectedAgency] = useState<AgencyOption | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const parsedAmount = Math.min(parseInt(amount) || 0, MAX_DEPOSIT_XAF);
+  // Pas de plafond sur un dépôt : seul le minimum s'applique.
+  const parsedAmount = parseInt(amount) || 0;
   const newBalance = (wallet?.balance_xaf ?? 0) + parsedAmount;
 
   const handleCopy = async (text: string, field: string) => {
@@ -345,7 +345,7 @@ const NewDepositPage = () => {
               <span className={cn('text-[12px] font-medium', TEXT.muted)}>{t('new.amountToDeposit')}</span>
               {wallet ? (
                 <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold tabular-nums', SURFACE.holder)}>
-                  Solde · {formatNumber(wallet.balance_xaf)} XAF
+                  {t('new.balance')} · {formatNumber(wallet.balance_xaf)} XAF
                 </span>
               ) : null}
             </div>
@@ -364,7 +364,7 @@ const NewDepositPage = () => {
             </div>
             {parsedAmount > 0 && (
               <div className="mt-4 rounded-2xl bg-[#EDEAFA] p-4 dark:bg-[#2F2C3D]">
-                <div className={cn('text-[12px]', TEXT.muted)}>Nouveau solde après dépôt</div>
+                <div className={cn('text-[12px]', TEXT.muted)}>{t('new.newBalance')}</div>
                 <div className={cn('mt-0.5 text-[24px] font-black tabular-nums', TEXT.strong)}>
                   {formatNumber(newBalance)} <span className="text-[14px]" style={{ color: '#E8932A' }}>XAF</span>
                 </div>
@@ -390,7 +390,7 @@ const NewDepositPage = () => {
             })}
           </div>
 
-          <p className={cn('px-1 text-center text-[11px]', TEXT.muted)}>{t('new.minimumAmount')}</p>
+          <p className={cn('px-1 text-center text-[13px]', TEXT.muted)}>{t('new.minimumAmount')}</p>
         </div>
       );
     }
@@ -547,7 +547,7 @@ const NewDepositPage = () => {
     return null;
   };
 
-  const amountValid = parsedAmount >= MIN_DEPOSIT_XAF;
+  const amountValid = Number.isSafeInteger(parsedAmount) && parsedAmount >= MIN_DEPOSIT_XAF;
 
   return (
     <MobileLayout showNav={false} showHeader={false}>
@@ -562,7 +562,7 @@ const NewDepositPage = () => {
             >
               <ArrowLeft className={cn('h-5 w-5', TEXT.strong)} />
             </button>
-            <span className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newDeposit')}</span>
+            <h1 className={cn('truncate text-[17px] font-black', TEXT.strong)}>{t('newDeposit')}</h1>
           </div>
         )}
 

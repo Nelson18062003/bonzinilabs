@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useResetClientPassword, useClientLedger, useUpdateClient } from '@/hooks/useClientManagement';
+import { useClient, useResetClientPassword, useClientLedger, useClientLedgerCount, useUpdateClient } from '@/hooks/useClientManagement';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -30,9 +30,18 @@ import {
   Pencil,
   Trash2,
   Users,
+  Tag,
+  Ship,
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
+import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
+import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
+import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
+import { arrivalSentence } from '@/lib/cargo/plain';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
@@ -48,6 +57,7 @@ import {
   SectionTitle,
   Line,
   StatusPill,
+  ListRow,
   Holder,
   BottomSheet,
   FormField,
@@ -121,10 +131,15 @@ export function MobileClientDetail() {
 
   const [isStatementGenerating, setIsStatementGenerating] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
+  const { data: ledgerTotal } = useClientLedgerCount(clientId || '');
 
   // Adjustment drawer state
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
+
+  // Étiquette colis (feuille)
+  const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
 
   // Password reset drawer state
   const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
@@ -133,6 +148,13 @@ export function MobileClientDetail() {
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   const canManageUsers = hasPermission('canManageUsers');
+  const canViewCargo = hasPermission('canViewCargo');
+  // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
+  // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
+  // toute la flotte pèsent jusqu'à 3 000 lignes).
+  const { data: fleet } = useCargoShipments({ enabled: canViewCargo });
+  const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
+  const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
 
   // Edit client drawer state
@@ -281,18 +303,26 @@ export function MobileClientDetail() {
 
   const handleResetPassword = async () => {
     if (!client) return;
-    const result = await resetPasswordMutation.mutateAsync(client.id);
-    if (result.tempPassword) {
-      setNewPassword(result.tempPassword);
-      setResetDrawerOpen(false);
-      setPasswordResultDrawerOpen(true);
+    try {
+      const result = await resetPasswordMutation.mutateAsync(client.id);
+      if (result.tempPassword) {
+        setNewPassword(result.tempPassword);
+        setResetDrawerOpen(false);
+        setPasswordResultDrawerOpen(true);
+      }
+    } catch {
+      // Le hook affiche déjà l'erreur ; on évite un rejet non géré.
     }
   };
 
   const handleCopyPassword = async () => {
-    await navigator.clipboard.writeText(newPassword);
-    setPasswordCopied(true);
-    setTimeout(() => setPasswordCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
+    }
   };
 
   if (isLoading) {
@@ -322,7 +352,7 @@ export function MobileClientDetail() {
   const statusLabel = t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status });
   const since = format(new Date(client.createdAt), 'd MMMM yyyy', { locale: fr });
   const place = [client.city, client.country].filter(Boolean).join(', ');
-  const ledgerCount = ledgerEntries?.length ?? 0;
+  const ledgerCount = ledgerTotal ?? ledgerEntries?.length ?? 0;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -337,14 +367,14 @@ export function MobileClientDetail() {
             </div>
             <div className="min-w-0 flex-1 space-y-2">
               <StatusPill tone={clientStatusTone(client.status)} label={statusLabel} />
-              <h1 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h1>
+              <h2 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h2>
               {client.companyName && <Line>{client.companyName}</Line>}
             </div>
           </div>
           {client.phone ? (
             <Line>
               Téléphone :{' '}
-              <a href={`tel:${client.phone}`} className={cn('font-semibold underline decoration-[#B3B3B3] underline-offset-4', TEXT.strong)}>
+              <a href={`tel:${client.phone}`} className={cn("relative font-semibold underline decoration-[#B3B3B3] underline-offset-4 before:absolute before:-inset-y-3 before:-inset-x-1 before:content-['']", TEXT.strong)}>
                 {client.phone}
               </a>
               .
@@ -359,6 +389,22 @@ export function MobileClientDetail() {
             <Line>Venu par {client.utmSource}{client.utmCampaign ? ` (campagne ${client.utmCampaign})` : ''}.</Line>
           )}
         </section>
+
+        {/* ── Le colis — le geste le plus fréquent, donc tout en haut ── */}
+        {client.customerCode && (
+          <Card className="space-y-3">
+            <Line>
+              Son fournisseur colle <b className={TEXT.strong}>l'étiquette colis</b> sur chaque carton. Sea cargo ou air cargo, en image ou en PDF.
+            </Line>
+            <Button className="h-12 w-full text-[16px]" onClick={() => setLabelOpen(true)}>
+              <Tag />
+              Étiquette colis
+            </Button>
+          </Card>
+        )}
+
+        {/* Identifiant client — virement bancaire + étiquette colis */}
+        <CustomerCodeCard code={client.customerCode} />
 
         {/* ── L'argent ──────────────────────────────────────── */}
         <section>
@@ -392,6 +438,28 @@ export function MobileClientDetail() {
           </Card>
         </section>
 
+        {/* ── Ses conteneurs (Cargo) ────────────────────────── */}
+        {containers.length > 0 && (
+          <section>
+            <SectionTitle action={{ label: 'Cargo', onClick: () => navigate('/m/cargo') }}>
+              {containers.length > 1 ? `Ses ${containers.length} conteneurs` : 'Son conteneur'}
+            </SectionTitle>
+            <Card className="py-0">
+              {containers.map((c) => {
+                const level = alertLevel(c, docsBy?.[c.id]);
+                return (
+                  <ListRow
+                    key={c.id}
+                    title={<span className="whitespace-nowrap tabular-nums">{c.container_number || c.bl_number || 'Conteneur'}</span>}
+                    subtitle={<><span className="block">{arrivalSentence(c)}</span><StatusPill className="mt-1.5" tone={TONE_OF[level]} label={ALERT[level].label} /></>}
+                    onClick={() => navigate(`/m/cargo/${c.id}`)}
+                  />
+                );
+              })}
+            </Card>
+          </section>
+        )}
+
         {/* ── Les gestes ────────────────────────────────────── */}
         <section>
           <SectionTitle>Les gestes</SectionTitle>
@@ -403,6 +471,15 @@ export function MobileClientDetail() {
               description="Le client a versé de l'argent."
               onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
             />
+            {canViewCargo && (
+              <ActionRow
+                icon={Ship}
+                tone="info"
+                label="Suivre un conteneur"
+                description="Un numéro de conteneur ou de bill of lading."
+                onClick={() => navigate('/m/cargo/track')}
+              />
+            )}
             <ActionRow
               icon={Users}
               tone="info"
@@ -449,6 +526,20 @@ export function MobileClientDetail() {
           </Card>
         </section>
       </div>
+
+      {/* Étiquette colis — feuille mobile dédiée (mode rapide, sans bloc fournisseur) */}
+      <MobileShippingLabelSheet
+        open={labelOpen}
+        onClose={() => setLabelOpen(false)}
+        code={client.customerCode}
+        clientName={fullName}
+        clientPhone={client.phone}
+        clientEmail={client.email}
+        companyName={client.companyName}
+        clientCity={client.city}
+        clientCountry={client.country}
+        settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+      />
 
       {/* Adjustment Drawer */}
       <AdjustmentDrawer

@@ -44,6 +44,14 @@ inconnu est signalé comme tel.
 Les modules 1 et 2 n'ont pas encore été repris ici ; ils existent dans
 l'historique de conversation. À rédiger au format de ce dossier.
 
+## Feuille de route opérationnelle
+
+Avant les modules 14 à 18, une synthèse pratique a été écrite pour les conteneurs
+en cours : **[`../feuille-de-route-bout-en-bout.md`](../feuille-de-route-bout-en-bout.md)**
+— les 7 phases, les documents à exiger à chaque étape (dont les 8 pièces à
+réclamer à l'empotage), et l'écart entre ce que couvre la plateforme et la
+réalité du terrain.
+
 ## Ressources liées
 
 - `../Bonzini-Cargo-Manuel-Chine-Cameroun.pdf` — le manuel de référence (54 p.)

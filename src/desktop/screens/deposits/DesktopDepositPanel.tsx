@@ -464,7 +464,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                   <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', TEXT.muted)}>
                     {proof?.uploaded_by_type === 'admin' ? 'Admin' : 'Client'}
                     {proof && ` · ${absShort(proof.uploaded_at)}`}
-                    <button type="button" disabled={proofIndex <= 0} onClick={() => setProofIndex((i) => i - 1)} className="disabled:opacity-30">
+                    <button type="button" disabled={proofIndex <= 0} onClick={() => setProofIndex((i) => i - 1)} aria-label="Preuve précédente" className="disabled:opacity-30">
                       <ChevronLeft className="ml-1 h-3 w-3" />
                     </button>
                     {proofIndex + 1}/{proofs.length}
@@ -472,6 +472,7 @@ export function DesktopDepositPanel({ depositId }: { depositId: string }) {
                       type="button"
                       disabled={proofIndex >= proofs.length - 1}
                       onClick={() => setProofIndex((i) => i + 1)}
+                      aria-label="Preuve suivante"
                       className="disabled:opacity-30"
                     >
                       <ChevronRight className="h-3 w-3" />

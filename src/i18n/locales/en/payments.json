@@ -43,7 +43,8 @@
       "paidOn": "Paid on {{date}}",
       "rejected": "Payment rejected",
       "cancelled": "Payment cancelled"
-    }
+    },
+    "loadWhat": "your payments"
   },
   "status": {
     "created": "Created",
@@ -183,7 +184,8 @@
     },
     "rateDependsOnMethod": "The day rate depends on the chosen method.",
     "balanceAfterPayment": "Balance after payment",
-    "minMaxCaption": "Maximum 50,000,000 XAF"
+    "minMaxCaption": "Maximum 50,000,000 XAF",
+    "rateAppliedTitle": "Today's rate applied"
   },
   "detail": {
     "title": "Payment detail",
@@ -219,7 +221,13 @@
     "enlarge": "Enlarge",
     "cashPickupPresentQr": "Pickup at the Bonzini office — present the QR above.",
     "addBeneficiaryPrompt": "Add the beneficiary details so Bonzini can settle your payment.",
-    "documents": "Documents",
+    "documents": {
+      "title": "Proof & details",
+      "paymentProof": "Payment proof",
+      "addedByBonzini": "Added by Bonzini · tap to enlarge",
+      "paidOn": "Paid on",
+      "processedOn": "Processed on"
+    },
     "noDocuments": "No documents yet.",
     "bonziniProofs": "Bonzini proofs ({{count}})",
     "bonziniProofsDescription": "Receipts sent by Bonzini after settling your supplier.",
@@ -266,13 +274,6 @@
         "bonziniSettling": "Bonzini is settling your supplier",
         "inProgress": "In progress…"
       }
-    },
-    "documents": {
-      "title": "Proof & details",
-      "paymentProof": "Payment proof",
-      "addedByBonzini": "Added by Bonzini · tap to enlarge",
-      "paidOn": "Paid on",
-      "processedOn": "Processed on"
     },
     "fields": {
       "name": "Name",
@@ -338,6 +339,18 @@
       "completeLater": "You'll be able to complete this information later.",
       "receiptDownloaded": "Receipt downloaded.",
       "receiptError": "Failed to download."
+    },
+    "gallery": {
+      "cannotPreview": "This file cannot be previewed",
+      "addedByBonzini": "Added by Bonzini",
+      "addedByYou": "Added by you"
+    },
+    "upload": {
+      "title": "Payment instructions",
+      "hint": "Add images or documents to tell Bonzini where and how to make the payment.",
+      "drop": "Drop your files here",
+      "browse": "or click to browse",
+      "formats": "Accepted formats: JPG, PNG, PDF • Max 10 MB per file"
     }
   },
   "rejectionReasons": {
@@ -439,6 +452,7 @@
     "remainingAfter": "Remaining balance",
     "createBatch": "Create the batch",
     "errAmount": "Enter a valid amount",
+    "errAmountCap": "Amount exceeds {{cap}}",
     "errChannel": "Add a QR, an ID, a phone or an email",
     "errName": "Beneficiary name required",
     "errBank": "Bank required",
@@ -451,5 +465,13 @@
     "channelsHint": "Choose one or more channels (at least one).",
     "idPlaceholder": "Supplier's Alipay / WeChat ID",
     "close": "Close"
+  },
+  "lifecycle": {
+    "paid": "Paid",
+    "refused": "Refused",
+    "cancelled": "Cancelled",
+    "toPresent": "To present",
+    "toComplete": "To complete",
+    "inProgress": "In progress"
   }
 }

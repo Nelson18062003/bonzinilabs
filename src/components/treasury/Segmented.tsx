@@ -35,12 +35,12 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             aria-pressed={active}
             className={cn(
-              'flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-1 py-2 text-center transition-colors',
+              'flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-1 py-1.5 text-center transition-colors',
               active ? 'bg-card text-foreground ring-1 ring-border' : 'text-muted-foreground active:bg-card/40',
             )}
           >
-            <span className="w-full truncate text-[12px] font-semibold leading-tight">{o.label}</span>
-            {o.hint && <span className="mt-0.5 truncate text-[10px] font-normal leading-tight text-muted-foreground">{o.hint}</span>}
+            <span className="w-full truncate text-[14px] font-semibold leading-tight">{o.label}</span>
+            {o.hint && <span className="mt-0.5 truncate text-[12px] font-normal leading-tight text-muted-foreground">{o.hint}</span>}
           </button>
         );
       })}

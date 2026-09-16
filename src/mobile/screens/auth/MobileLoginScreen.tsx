@@ -134,7 +134,15 @@ export function MobileLoginScreen() {
     loginWithGoogle,
     lastEmail,
     isLoading: authLoading,
+    isAuthenticated,
   } = useAdminAuth();
+
+  // Déjà connecté (rôle arrivé après un réseau lent, retour arrière, lien
+  // ouvert alors qu'une session vit) : on ne reste pas sur l'écran de
+  // connexion, on entre.
+  useEffect(() => {
+    if (isAuthenticated) navigate('/m', { replace: true });
+  }, [isAuthenticated, navigate]);
 
   const [step, setStep] = useState<Step>('email');
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');

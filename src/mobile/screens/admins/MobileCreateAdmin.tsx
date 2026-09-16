@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useCreateAdmin } from '@/hooks/useAdminManagement';
@@ -112,9 +113,13 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
   };
 
   const handleCopyPassword = async () => {
-    await navigator.clipboard.writeText(tempPassword);
-    setPasswordCopied(true);
-    setTimeout(() => setPasswordCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch {
+      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
+    }
   };
 
   const required = <span className="text-[#FE560D]">*</span>;
@@ -125,7 +130,7 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
       <div className={desktop ? 'mx-auto max-w-xl' : cn('flex min-h-screen flex-col', SURFACE.canvas)}>
         {desktop ? (
           <header className="mb-6">
-            <h2 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h2>
+            <h1 className={cn('text-[24px] font-bold tracking-tight', TEXT.strong)}>{t('newAdmin', { defaultValue: 'Nouvel admin' })}</h1>
           </header>
         ) : (
           <MobileHeader title={t('newAdmin', { defaultValue: 'Nouvel admin' })} />
@@ -193,9 +198,9 @@ export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {
           >
             ‹
           </button>
-          <span className={cn('text-[16px] font-bold', TEXT.strong)}>
+          <h1 className={cn('text-[16px] font-bold', TEXT.strong)}>
             {t('newAdmin', { defaultValue: 'Nouvel admin' })}
-          </span>
+          </h1>
         </div>
 
         {/* Progress bar — 3 segments */}

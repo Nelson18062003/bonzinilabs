@@ -1085,6 +1085,7 @@ export type Database = {
           company_name: string | null
           country: string | null
           created_at: string
+          customer_code: string
           date_of_birth: string | null
           email: string | null
           first_name: string
@@ -1116,6 +1117,7 @@ export type Database = {
           company_name?: string | null
           country?: string | null
           created_at?: string
+          customer_code?: string
           date_of_birth?: string | null
           email?: string | null
           first_name: string
@@ -1147,6 +1149,7 @@ export type Database = {
           company_name?: string | null
           country?: string | null
           created_at?: string
+          customer_code?: string
           date_of_birth?: string | null
           email?: string | null
           first_name?: string
@@ -1975,6 +1978,27 @@ export type Database = {
           phone_country?: string | null
           phone_e164?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -3006,6 +3030,22 @@ export type Database = {
         Args: { p_ref: string }
         Returns: { carrier: string; reference_type: string }[]
       }
+      cargo_fleet_status: {
+        Args: { p_client?: string }
+        Returns: Json
+      }
+      cargo_set_freight_paid: {
+        Args: { p_shipment_id: string; p_paid?: boolean }
+        Returns: Json
+      }
+      cargo_set_telex: {
+        Args: { p_shipment_id: string; p_received?: boolean }
+        Returns: Json
+      }
+      find_client_by_customer_code: {
+        Args: { p_code: string }
+        Returns: Json
+      }
       remove_cargo_shipment: {
         Args: { p_id: string }
         Returns: Json
@@ -3665,6 +3705,10 @@ export type Database = {
           p_beneficiary_qr_code_url?: string
           p_payment_id: string
         }
+        Returns: Json
+      }
+      update_platform_setting: {
+        Args: { p_key: string; p_value: Json }
         Returns: Json
       }
       update_rate_adjustment: {

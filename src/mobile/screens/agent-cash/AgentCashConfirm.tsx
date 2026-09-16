@@ -18,6 +18,7 @@ import { Check, Eraser, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import SignaturePad from 'react-signature-canvas';
 import { cn } from '@/lib/utils';
+import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import {
   SURFACE,
   TEXT,
@@ -40,15 +41,7 @@ export function AgentCashConfirm() {
   const [signatureEmpty, setSignatureEmpty] = useState(true);
   const sigCanvas = useRef<SignaturePad>(null);
 
-  const getBeneficiaryName = () => {
-    try {
-      if (!payment) return '—';
-      if (payment.cash_beneficiary_first_name && payment.cash_beneficiary_last_name) {
-        return `${payment.cash_beneficiary_first_name} ${payment.cash_beneficiary_last_name}`;
-      }
-      return payment.beneficiary_name || '—';
-    } catch { return '—'; }
-  };
+  const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   const handleClearSignature = () => {
     sigCanvas.current?.clear();
@@ -117,7 +110,7 @@ export function AgentCashConfirm() {
         <Card className="animate-slide-up p-5 text-center" style={{ animationFillMode: 'both' }}>
           <Amount value={formatCurrencyRMB(typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0)} size="lg" />
           <p className={cn('mt-1 text-sm', TEXT.muted)}>→ {getBeneficiaryName()}</p>
-          <p className={cn('mt-1 font-mono text-xs', TEXT.muted)}>{payment.reference || '—'}</p>
+          <p className={cn('mt-1 font-mono text-[14px]', TEXT.muted)}>{payment.reference || '—'}</p>
         </Card>
 
         {/* Cash handed checkbox */}
@@ -136,7 +129,7 @@ export function AgentCashConfirm() {
             >
               {cashHanded && <Check className="h-4 w-4" />}
             </span>
-            <span className={cn('flex-1 text-[14px] font-medium', TEXT.strong)}>{t('cash_handed')}</span>
+            <span className={cn('flex-1 text-[16px] font-medium', TEXT.strong)}>{t('cash_handed')}</span>
           </Card>
           <input
             type="checkbox"
@@ -162,7 +155,7 @@ export function AgentCashConfirm() {
         >
           <div className="flex items-center justify-between gap-3">
             <h3 className={cn('text-sm font-semibold', TEXT.strong)}>{t('signature_required')}</h3>
-            <p className={cn('text-xs', TEXT.muted)}>{t('signature_instruction')}</p>
+            <p className={cn('text-[14px]', TEXT.muted)}>{t('signature_instruction')}</p>
           </div>
 
           <div className="relative overflow-hidden rounded-xl bg-white ring-1 ring-black/[0.06] dark:ring-white/10">

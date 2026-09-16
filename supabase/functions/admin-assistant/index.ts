@@ -289,6 +289,13 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   chat: [
     { capability: "gérer les réponses pré-enregistrées et les réponses rapides", tool: null, note: "via find_capability + do_capability (admin_*_canned_response / admin_*_quick_reply), super_admin" },
   ],
+  cargo: [
+    { capability: "où en est un conteneur / la flotte : arrivée, retard, fret, télex, prochaine chose à faire", tool: null, note: "via find_capability → cargo_fleet_status (lecture, p_client = client, n° de conteneur ou B/L) ; ou query_database sur cargo_shipments" },
+    { capability: "suivre une référence chez l'armateur (B/L, booking, conteneur) et l'ajouter à la flotte", tool: null, note: "via do_capability (request_cargo_lookup puis add_cargo_shipment / create_cargo_shipment_manual), permission canViewCargo / canManageCargo" },
+    { capability: "marquer le fret payé, le télex reçu", tool: null, note: "via do_capability (cargo_set_freight_paid / cargo_set_telex) — la référence peut être le n° de conteneur, le B/L ou le nom du client ; confirmation requise" },
+    { capability: "retirer un conteneur de la flotte, relancer la synchro armateur", tool: null, note: "via do_capability (remove_cargo_shipment / request_cargo_sync)" },
+    { capability: "papiers, douane, coûts, colis d'un conteneur", tool: null, note: "lecture via query_database (cargo_documents, cargo_costs, cargo_packages, cargo_events) ; l'écriture passe par l'écran Cargo" },
+  ],
 };
 
 // Savoir métier détaillé — indexable en mémoire sémantique (reindex_knowledge) → récupéré just-in-time.
@@ -299,6 +306,7 @@ const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
   { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
   { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
   { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
+  { scope: "cargo", content: "Bonzini Cargo suit les conteneurs des clients de la Chine (Nansha, Shenzhen…) vers Douala ou Kribi. Un dossier (cargo_shipments) porte un client (client_label, libellé libre du transitaire, éventuellement rattaché à un vrai client via client_id), un n° de conteneur, un bill of lading, l'armateur (MAERSK en direct, CMA CGM/MSC/COSCO à la main), deux dates d'arrivée (eta_promised = promise du transitaire, eta_carrier = annoncée par l'armateur ; l'écart = le retard), le fret dû au transitaire (freight_usd) et deux drapeaux : freight_paid (fret payé) et telex_released (télex release reçu — sans lui la boîte reste au port). Statuts : UNKNOWN (armateur muet), BOOKED, AT_ORIGIN, AT_SEA, ARRIVED, DELIVERED. Après l'arrivée au Cameroun : avis d'arrivée, BESC, déclaration en douane (customs_cleared_at), bon à enlever (delivery_order_at), sortie du port (gate_out_at), restitution du vide (empty_returned_at) ; free_time_ends_on = fin de franchise, au-delà les surestaries courent. L'ordre des choses à faire : régler le fret, obtenir le télex, classer B/L et facture, vérifier le BESC, prévenir le client d'un report." },
 ];
 
 const READ_TOOLS: ReadTool[] = [
@@ -1312,6 +1320,9 @@ const READ_TOOLS: ReadTool[] = [
       "- treasury_accounts(id, code, label, currency, kind), treasury_account_balances(label, code, currency, balance)\n" +
       "- treasury_ledger_entries(account_id, currency, amount, entry_kind, occurred_at)\n" +
       "- admin_audit_logs(admin_user_id, action_type, target_type, created_at)\n" +
+      "- cargo_shipments(id, client_label, client_id, container_number, bl_number, carrier, status, pol_name, pod_name, vessel_name, voyage, etd_promised, etd_actual, eta_promised, eta_carrier, freight_usd, freight_paid, telex_released, free_time_ends_on, arrival_notice_at, customs_cleared_at, delivery_order_at, gate_out_at, empty_returned_at, goods_description, packages_count, gross_weight_kg, last_event_label, last_event_at, notes)\n" +
+      "- cargo_events(shipment_id, event_code, event_time, location_name, vessel_name), cargo_documents(shipment_id, kind, file_name, created_at), cargo_costs(shipment_id, kind, amount, currency, paid, incurred_on), cargo_packages(shipment_id, label, kind, qty, length_cm, width_cm, height_cm, weight_kg)\n" +
+      "- cargo_vessel_positions(vessel_imo, vessel_name, latitude, longitude, speed_kn, destination, eta, reported_at)\n" +
       "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
     input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
     execute: async (admin, { sql, __allowed_tables }, userClient) => {
@@ -1634,6 +1645,28 @@ async function resolveRef(admin: AnyClient, type: string, value: unknown): Promi
     if (clients.length === 0) return { ok: false, error: `Client « ${v} » introuvable.` };
     if (clients.length > 1) return { ok: false, error: `Plusieurs clients « ${v} » : ${clients.map((c: AnyClient) => `${c.first_name} ${c.last_name}`).join(", ")}. Précise.` };
     return { ok: true, id: clients[0].user_id };
+  }
+  if (type === "cargo") {
+    // Un conteneur se nomme par son numéro (MIEU3611115), son B/L (274428633) ou le client (GAUSS).
+    // Assaini AVANT d'entrer dans la grammaire du filtre PostgREST (`,` `(` `)`
+    // `.` `*` y sont des opérateurs) : un numéro de conteneur ou de B/L n'est
+    // fait que de lettres et de chiffres.
+    const ref = v.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const label = v.replace(/[,():*%\\]/g, " ").trim();
+    if (!ref && !label) return { ok: false, error: `Référence cargo vide.` };
+    const exact = ref
+      ? await admin.from("cargo_shipments").select("id, container_number, client_label")
+        .or(`container_number.eq.${ref},bl_number.eq.${ref}`).limit(5)
+      : { data: [] };
+    const rows = (exact.data ?? []) as Array<{ id: string; container_number: string; client_label: string }>;
+    if (rows.length === 1) return { ok: true, id: rows[0].id };
+    if (rows.length > 1) return { ok: false, error: `Plusieurs conteneurs pour « ${v} » : ${rows.map((r) => `${r.container_number} (${r.client_label})`).join(", ")}. Précise le numéro de conteneur.` };
+    const byClient = await admin.from("cargo_shipments").select("id, container_number, client_label, status")
+      .ilike("client_label", `%${label}%`).neq("status", "DELIVERED").limit(5);
+    const c = (byClient.data ?? []) as Array<{ id: string; container_number: string; client_label: string }>;
+    if (c.length === 1) return { ok: true, id: c[0].id };
+    if (c.length > 1) return { ok: false, error: `${c[0].client_label} a plusieurs conteneurs en cours : ${c.map((r) => r.container_number).join(", ")}. Précise le numéro de conteneur.` };
+    return { ok: false, error: `Conteneur « ${v} » introuvable (numéro de conteneur, bill of lading ou client).` };
   }
   return { ok: false, error: `Type de référence inconnu : ${type}.` };
 }

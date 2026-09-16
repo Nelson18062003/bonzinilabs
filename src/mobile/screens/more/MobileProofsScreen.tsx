@@ -1,3 +1,4 @@
+import { QueryError } from '@/components/ui/QueryError';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -44,7 +45,7 @@ function ProofThumb({ url, alt, fallback }: { url: string | null | undefined; al
 
 export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
-  const { data: proofs, isLoading, refetch } = useAdminProofs();
+  const { data: proofs, isLoading, isError, refetch } = useAdminProofs();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   type Proof = NonNullable<typeof proofs>[number];
@@ -114,6 +115,10 @@ export function MobileProofsScreen({ desktop = false }: { desktop?: boolean } = 
         {isLoading ? (
           <div className={desktop ? 'pb-6' : 'px-4 pb-6'}>
             <SkeletonListScreen count={4} />
+          </div>
+        ) : isError ? (
+          <div className={desktop ? 'pb-6' : 'px-4 pb-6'}>
+            <QueryError what="les justificatifs" onRetry={() => { void refetch(); }} />
           </div>
         ) : (
           <div className={desktop ? 'pb-6' : 'px-4 pb-6'}>

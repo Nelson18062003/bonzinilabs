@@ -76,10 +76,10 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#D9D9D9] bg-white px-3 text-[16px] font-medium text-[#1E1E1E] dark:border-[#444444] dark:bg-[#2C2C2C] dark:text-[#F5F5F5]"
         >
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span className="truncate max-w-[200px]">{label}</span>
+          <span className="whitespace-nowrap">{label}</span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>

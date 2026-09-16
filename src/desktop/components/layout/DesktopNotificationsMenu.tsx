@@ -9,7 +9,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2 } from 'lucide-react';
+import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2, Ship } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAdminNotifications, type AdminNotificationType } from '@/hooks/useAdminNotifications';
@@ -22,6 +22,8 @@ const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone
   deposit_needs_correction: { icon: AlertCircle, tone: 'pending' },
   payment_ready: { icon: ArrowUpFromLine, tone: 'info' },
   payment_processing: { icon: Clock, tone: 'info' },
+  cargo_late: { icon: Ship, tone: 'danger' },
+  cargo_arriving: { icon: Ship, tone: 'pending' },
 };
 
 function relTime(dateStr: string) {
@@ -113,7 +115,7 @@ export function DesktopNotificationsMenu() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <p className={cn('truncate text-[13px] font-semibold', TEXT.strong)}>{n.title}</p>
-                            <p className={cn('shrink-0 text-[13px] font-bold tabular-nums', TEXT.strong)}>{formatXAF(n.amount)}</p>
+                            {n.amount != null && <p className={cn('shrink-0 text-[13px] font-bold tabular-nums', TEXT.strong)}>{formatXAF(n.amount)}</p>}
                           </div>
                           <p className={cn('mt-0.5 truncate text-[12px]', TEXT.muted)}>{n.subtitle}</p>
                           <p className={cn('mt-0.5 text-[10px]', TEXT.muted)}>{relTime(n.createdAt)}</p>

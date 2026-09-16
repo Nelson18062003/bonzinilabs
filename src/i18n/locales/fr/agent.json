@@ -1,6 +1,7 @@
 {
-  "cash_payments": "Paiements en especes",
+  "cash_payments": "Paiements en espèces",
   "scanner": "Scanner",
+  "tab_payments": "Paiements",
   "logout": "D\u00e9connexion",
   "to_pay": "\u00c0 payer",
   "paid": "Pay\u00e9",

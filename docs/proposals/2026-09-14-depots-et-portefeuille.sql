@@ -1,0 +1,50 @@
+-- PROPOSITION (non appliquée) — audit produit, itérations 2 « Dépôts » et 3 « Portefeuille »
+-- Findings F-025 (P1), F-026 (P2) du registre docs/registre-findings.md.
+--
+-- F-025 — create_client_deposit ne lie pas p_user_id à l'appelant.
+--   Preuve : les deux définitions (20260105122508…sql et 20260819110000_deposit_desired_date.sql)
+--   ne contiennent ni `p_user_id <> auth.uid()` ni `admin_has_permission` (grep vide) ; seule la
+--   date antidatée est gardée par `is_admin`. L'app client appelle bien avec son propre id
+--   (src/hooks/useDeposits.ts:134), mais un client authentifié peut, par PostgREST, déclarer un
+--   dépôt sur le compte d'un AUTRE client (bruit dans la file « À traiter », confusion à la
+--   validation). Pas de gain d'argent direct pour l'attaquant (le crédit va à la victime après
+--   validation d'une preuve), d'où P1 et non P0.
+--   Règle : .claude/rules/security.md « Paramètre p_user_id : le lier à auth.uid(), sauf si
+--   l'appelant a la permission staff correspondante ».
+--
+-- F-026 — "Admins can update deposits" (20251231174812…sql:33) : UPDATE `USING (is_admin(auth.uid()))`
+--   sans WITH CHECK ni borne de colonnes ⇒ tout membre du staff (support, trésorier…) peut changer
+--   statut ou montant d'un dépôt en direct, hors RPC. Aucune écriture directe dans le code
+--   (grep `supabaseAdmin.from('deposits').update` vide) : la policy ne sert à rien de légitime.
+--
+-- Correction proposée : redéfinition COMPLÈTE de create_client_deposit (à partir de
+-- 20260819110000, inchangée sauf la garde ci-dessous, à insérer juste après BEGIN) :
+--
+--   IF p_user_id IS DISTINCT FROM auth.uid()
+--      AND NOT public.admin_has_permission(auth.uid(), 'canProcessDeposits') THEN
+--     RETURN json_build_object('success', false, 'error', 'Vous ne pouvez déclarer un dépôt que sur votre propre compte');
+--   END IF;
+--   -- et remplacer `IF NOT public.is_admin(auth.uid())` (date antidatée) par
+--   -- `IF NOT public.admin_has_permission(auth.uid(), 'canProcessDeposits')`.
+--
+-- puis :
+begin;
+drop policy if exists "Admins can update deposits" on public.deposits;
+commit;
+--
+-- Après application : ajouter `create_client_deposit: ['IS DISTINCT FROM auth.uid()']` à REQUIRED
+-- dans src/tests/security/moneyRpcGuards.test.ts pour qu'une redéfinition ultérieure ne perde pas la garde.
+--
+-- Note (F-028, pas de migration nécessaire) : admin_adjust_wallet et create_wallet_adjustment sont
+-- corrigés EN PLACE par 20260831200000 (FOR UPDATE, écriture relative) et 20260831220000
+-- (p_amount <= 0) ; les définitions complètes du dépôt (20260831160000) ne portent pas ces
+-- correctifs. Le test moneyRpcGuards.test.ts exige désormais ces aiguilles dans toute
+-- redéfinition postérieure. Toute future migration qui recopie 20260831160000 telle quelle
+-- réintroduirait le crédit par montant négatif.
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VÉRIFIÉ LOCALEMENT le 14 sept. 2026 (docs/proposals/verif/guards_test.sql) :
+--   F-033 : solde 1 213 450 → refusé ; solde 0 + paiement en cours → refusé ; solde 0 sans
+--           opération → supprimé. F-025 : dépôt sur le compte d'un autre → refusé ; sur son
+--           propre compte → accepté ; par un admin canProcessDeposits pour autrui → accepté.
+-- ─────────────────────────────────────────────────────────────────────────

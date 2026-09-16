@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 // ============================================================
 // Cycle de vie d'un DÉPÔT (client) — source unique pour la liste +
 // la fiche refondues (jumeau de paymentLifecycle). Mappe le statut
@@ -52,24 +53,25 @@ export function depositLifecycle(status: string): DepositLifecycle {
 
 /** Libellé court de la pastille — UNIQUE pour la liste ET la fiche. */
 export function depositStatusLabel(status: string): string {
+  const k = (key: string) => i18n.t(`lifecycle.${key}`, { ns: 'deposits' });
   switch (status) {
     case 'created':
     case 'awaiting_proof':
-      return 'Preuve en attente';
+      return k('awaitingProof');
     case 'pending_correction':
-      return 'À corriger';
+      return k('toCorrect');
     case 'proof_submitted':
     case 'admin_review':
-      return 'En vérification';
+      return k('verifying');
     case 'validated':
-      return 'Crédité';
+      return k('credited');
     case 'rejected':
-      return 'Rejeté';
+      return k('rejected');
     case 'cancelled':
     case 'cancelled_by_admin':
-      return 'Annulé';
+      return k('cancelled');
     default:
-      return 'En cours';
+      return k('inProgress');
   }
 }
 

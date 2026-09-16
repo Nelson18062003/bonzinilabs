@@ -1,4 +1,12 @@
 {
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "withName": "{{prefix}}, {{name}}!",
+    "welcomeLast": "Welcome, {{name}} 👋",
+    "anonymous": "{{prefix}} 👋 Welcome to Bonzini"
+  },
   "wallet": {
     "availableBalance": "Available balance",
     "hideBalance": "Hide balance",
@@ -42,7 +50,8 @@
       "adjustmentCredit": "Credit adjustment",
       "operation": "Operation"
     },
-    "search": "Search an operation…"
+    "search": "Search an operation…",
+    "loadWhat": "your history"
   },
   "profile": {
     "title": "Profile",
@@ -52,7 +61,7 @@
     "security": "Security",
     "securityDesc": "Password, 2FA",
     "devices": "Connected devices",
-    "devicesDesc": "2 devices",
+    "devicesDesc": "Coming soon",
     "language": "Language",
     "languageDesc": "English",
     "documents": "Documents",
@@ -65,7 +74,8 @@
     "version": "Bonzini v1.0.0 • Made with 💜 in Cameroon",
     "comingSoon": "Feature coming soon",
     "sectionAccount": "Account",
-    "sectionPreferences": "Preferences"
+    "sectionPreferences": "Preferences",
+    "customerCode": "My customer ID"
   },
   "beneficiaries": {
     "title": "Beneficiaries",
@@ -124,14 +134,16 @@
       "emailInvalid": "Invalid email",
       "tooLong": "Text too long",
       "invalid": "Invalid details"
-    }
+    },
+    "loadWhat": "your beneficiaries"
   },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "loadError": "Error loading notifications",
     "noNotifications": "No notifications yet",
-    "noNotificationsHint": "You'll be notified when your deposits are validated"
+    "noNotificationsHint": "You'll be notified when your deposits are validated",
+    "loadWhat": "your notifications"
   },
   "notFound": {
     "title": "404",
@@ -188,6 +200,58 @@
       "min": "Min",
       "avg": "Avg",
       "max": "Max"
-    }
+    },
+    "notConfigured": "Rates not set",
+    "details": "Details →",
+    "swapDirection": "Swap conversion direction",
+    "updatedToday": "Updated today at {{time}}",
+    "updatedOn": "Updated on {{date}} at {{time}}",
+    "countries": {
+      "cameroun": "Cameroon",
+      "gabon": "Gabon",
+      "tchad": "Chad",
+      "rca": "Central African Republic",
+      "congo": "Congo",
+      "guinee": "Equatorial Guinea"
+    },
+    "cardTitle": "Today's rate",
+    "loadWhat": "today's rates"
+  },
+  "myCode": {
+    "cardTitle": "My customer ID",
+    "cardHint": "Bank transfers · parcel QR label",
+    "title": "My customer ID",
+    "label": "Customer ID",
+    "back": "Back",
+    "copy": "Copy ID",
+    "copied": "ID copied",
+    "copyFailed": "Could not copy",
+    "bankTitle": "Your bank transfers",
+    "bankBody": "Write this ID in the reference (memo) of every bank transfer or deposit. Your account is credited without any lookup delay.",
+    "bankMotif": "Transfer reference",
+    "cargoTitle": "Your parcels from China",
+    "cargoBody": "Send this label to your supplier: they stick it on every carton. On arrival at our warehouse, one scan links your parcels to your account.",
+    "shareLabel": "Share image",
+    "downloadPdf": "Printable PDF",
+    "labelDownloaded": "Label downloaded",
+    "labelError": "Could not generate the label",
+    "footnote": "This ID is permanent: it never changes, even if you update your details.",
+    "dest": {
+      "warehouse": "Sea cargo",
+      "office": "Air cargo"
+    },
+    "destHintWarehouse": "By sea. The supplier delivers to our Guangzhou warehouse.",
+    "destHintOffice": "By air. The supplier delivers to our Guangzhou office.",
+    "destUnavailable": "Address being updated — the label will be available very soon.",
+    "supplierTitle": "Supplier (optional)",
+    "supplierName": "Name",
+    "supplierPhone": "Phone",
+    "supplierAddress": "Address (in China)",
+    "supplierHint": "Optional: what you type here is printed on the label.",
+    "supplierEmail": "Email",
+    "copyImage": "Copy image",
+    "downloadImage": "Download image",
+    "imageCopied": "Image copied — paste it into WeChat, WhatsApp or an email",
+    "sharePdf": "Share the PDF"
   }
 }

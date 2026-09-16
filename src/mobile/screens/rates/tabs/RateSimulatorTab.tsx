@@ -132,7 +132,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#1E1E1E] dark:text-[#E3E3E3]" />
       </div>
     );
   }
@@ -185,7 +185,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
               onChange={handleAmountChange}
               placeholder={inputCurrency === 'xaf' ? '500 000' : '5 000'}
               className={cn(
-                'min-w-0 flex-1 bg-transparent text-[32px] font-bold leading-none tabular-nums outline-none',
+                'h-11 min-w-0 flex-1 bg-transparent !text-[32px] font-bold leading-none tabular-nums outline-none',
                 'placeholder:text-[#B3B3B3] dark:placeholder:text-[#757575]',
                 TEXT.strong,
               )}
@@ -197,7 +197,7 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
         </div>
 
         {/* Méthodes — grille 4, tuile active remplie (lilas) */}
-        <div className="mt-4 grid grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-2 min-[360px]:grid-cols-4 gap-2">
           {PAYMENT_METHODS.map((pm) => {
             const active = method === pm.key;
             return (

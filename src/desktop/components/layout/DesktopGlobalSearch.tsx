@@ -112,7 +112,9 @@ export function DesktopGlobalSearch() {
                         <Avatar name={c.name} tone="info" size="sm" />
                         <div className="min-w-0 flex-1">
                           <p className={cn('truncate text-[13.5px] font-semibold', TEXT.strong)}>{c.name}</p>
-                          {c.phone && <p className={cn('truncate text-[11.5px]', TEXT.muted)}>{c.phone}</p>}
+                          <p className={cn('truncate text-[11.5px] tabular-nums', TEXT.muted)}>
+                            {[c.customerCode, c.phone].filter(Boolean).join(' · ')}
+                          </p>
                         </div>
                       </button>
                     ))}

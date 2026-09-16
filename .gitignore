@@ -41,3 +41,4 @@ shots/
 qa-shots/
 playwright-report/
 test-results/
+tools/_*.tmp.*

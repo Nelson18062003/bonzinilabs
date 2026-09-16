@@ -46,6 +46,11 @@ export const PhoneField = React.forwardRef<HTMLInputElement, PhoneFieldProps>(fu
   const id = idProp ?? reactId;
   const hasError = Boolean(error);
   const keyboard = KEYBOARD.tel;
+  // Un numéro déjà saisi avec son indicatif (« +86 138… ») n'a pas besoin de
+  // l'affichette « +86 » devant : on la montre seulement si la valeur ne
+  // commence pas par « + ».
+  const valueStr = typeof rest.value === 'string' ? rest.value : '';
+  const shownDialCode = dialCode && !valueStr.trim().startsWith('+') ? dialCode : '';
 
   return (
     <FormFieldWrapper
@@ -58,7 +63,7 @@ export const PhoneField = React.forwardRef<HTMLInputElement, PhoneFieldProps>(fu
       labelClassName={labelClassName}
     >
       <div className={cn('flex', className)}>
-        {dialCode ? <LeftAddon>{dialCode}</LeftAddon> : null}
+        {shownDialCode ? <LeftAddon>{shownDialCode}</LeftAddon> : null}
         <input
           ref={ref}
           type="tel"
@@ -70,7 +75,7 @@ export const PhoneField = React.forwardRef<HTMLInputElement, PhoneFieldProps>(fu
           placeholder={placeholder}
           className={cn(
             fieldControlVariants({ size, invalid: hasError }),
-            dialCode && 'rounded-l-none',
+            shownDialCode && 'rounded-l-none',
             'tabular-nums',
             controlClassName,
           )}

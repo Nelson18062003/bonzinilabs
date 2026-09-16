@@ -38,7 +38,7 @@ import {
   omMerchantInfo,
   mtnMerchantInfo,
 } from '@/data/depositMethodsData';
-import { MIN_DEPOSIT_XAF, MAX_AMOUNT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { formatCurrency } from '@/lib/formatters';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { matchesClientSearch } from '@/lib/clientSearch';
@@ -285,7 +285,7 @@ export function DesktopNewDeposit() {
     const s = clientSearch.trim();
     const list = s
       ? clients.filter((c) =>
-          matchesClientSearch({ firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '' }, s),
+          matchesClientSearch({ firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '', customerCode: c.customer_code }, s),
         )
       : clients;
     return list.slice(0, 8);
@@ -326,7 +326,7 @@ export function DesktopNewDeposit() {
       return;
     }
     if (!amountValid) {
-      toast.error(`Montant invalide — entre ${fmt(MIN_DEPOSIT_XAF)} et ${fmt(MAX_AMOUNT_XAF)} XAF`);
+      toast.error(`Montant invalide — minimum ${fmt(MIN_DEPOSIT_XAF)} XAF`);
       return;
     }
     // Re-vérifié ici (pas seulement dans le champ) : la page peut rester
@@ -416,7 +416,7 @@ export function DesktopNewDeposit() {
                   </button>
                   {clientOpen && (
                     <div className={cn('absolute left-0 right-0 top-[calc(100%+6px)] z-40 rounded-2xl p-2', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
-                      <SearchField value={clientSearch} onChange={setClientSearch} placeholder="Nom ou téléphone…" />
+                      <SearchField value={clientSearch} onChange={setClientSearch} placeholder="Nom, téléphone ou identifiant BZ-…" />
                       <div className="mt-1.5 max-h-[240px] overflow-y-auto">
                         {filteredClients.map((c) => (
                           <button
@@ -434,7 +434,7 @@ export function DesktopNewDeposit() {
                               <span className={cn('block truncate text-[13px] font-bold', TEXT.strong)}>
                                 {c.first_name} {c.last_name}
                               </span>
-                              <span className={cn('block truncate text-[11px] tabular-nums', TEXT.muted)}>{c.phone ?? '—'}</span>
+                              <span className={cn('block truncate text-[11px] tabular-nums', TEXT.muted)}>{[c.customer_code, c.phone].filter(Boolean).join(' · ') || '—'}</span>
                             </span>
                           </button>
                         ))}
@@ -446,7 +446,7 @@ export function DesktopNewDeposit() {
                   )}
                 </div>
               </FormField>
-              <FormField label="Montant (XAF)" hint={`Min ${fmt(MIN_DEPOSIT_XAF)} · Max ${fmt(MAX_AMOUNT_XAF)}`}>
+              <FormField label="Montant (XAF)" hint={`Min ${fmt(MIN_DEPOSIT_XAF)}`}>
                 <TextInput
                   inputMode="numeric"
                   placeholder="0"

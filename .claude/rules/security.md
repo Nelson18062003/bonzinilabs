@@ -6,7 +6,7 @@
 - File uploads: always use `validateUploadFile()` — validates MIME type AND enforces 10MB max
 
 ## Amount Validation (financial safety)
-- Maximum: 50,000,000 XAF on all payment and deposit forms — hard cap
+- **Aucun plafond** sur les dépôts, paiements et ajustements (décision du 14/09/2026 : des dépôts réels dépassent 100 M XAF). Ce qui reste : montant entier `> 0`, minimum, `Number.isSafeInteger`.
 - Always verify `Number.isSafeInteger(amount)` before any financial calculation
 - Applied in: `NewPaymentPage`, `NewDepositPage`
 
@@ -54,9 +54,10 @@ laisse le client garder le remboursement ET l'opération « exécutée ».
 **Montants** : exiger explicitement `> 0`. Un montant négatif inverse
 l'opération sans que le libellé le montre (`admin_adjust_wallet` en
 `debit` avec `-1 000 000` **créditait** en journalisant `ADMIN_DEBIT`).
-En revanche, **pas de plafond serveur arbitraire** : le plafond de 50 M
-des formulaires est un garde-fou de saisie, et un dépôt réel de
-133 500 000 XAF existe en base.
+En revanche, **pas de plafond, ni serveur ni formulaire** (décision du
+14/09/2026) : un dépôt réel de 133 500 000 XAF existe en base. Les gardes
+restantes sont techniques (`isValidXafAmount` : entier, `> 0`, minimum,
+`Number.isSafeInteger`) ; côté paiement, le solde du client borne le montant.
 
 **Paramètre `p_user_id`** : un identifiant passé en paramètre n'est pas une
 autorisation. Le lier à `auth.uid()`, sauf si l'appelant a la permission
@@ -94,5 +95,4 @@ When implementing new endpoints, mutations, or forms, check for:
 - `src/components/MobileCreateAdmin.tsx` — `hasPermission('canManageUsers')` guard
 - `src/components/AgentCashRouteWrapper.tsx` — no super_admin bypass
 - `src/lib/utils.ts` — `validateUploadFile()` function
-- `src/pages/NewPaymentPage.tsx` — 50M XAF cap + isSafeInteger check
-- `src/pages/NewDepositPage.tsx` — 50M XAF cap + isSafeInteger check
+- `src/lib/amountLimits.ts` — gardes de montant partagées (entier, minimum, isSafeInteger), sans plafond

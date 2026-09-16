@@ -14,10 +14,15 @@ interface MobileAppShellProps {
 /**
  * Coquille des écrans admin mobiles : canvas du kit (blanc), barre du bas
  * plate, et le dégagement exact pour qu'aucun contenu ne passe dessous.
+ *
+ * `min-h-[100dvh]` et non `min-h-screen` (100vh) : sur iOS, 100vh est le grand
+ * viewport (barres repliées) — le document dépasse alors l'écran visible et
+ * Safari le fait défiler à l'ouverture du clavier, même verrouillé
+ * (`html.viewport-locked`). Avec la hauteur visible, il n'y a rien à défiler.
  */
 export function MobileAppShell({ children, showTabBar = true, className }: MobileAppShellProps) {
   return (
-    <div className={cn('flex min-h-screen w-full flex-col', SURFACE.canvas, 'max-w-lg md:max-w-2xl mx-auto', className)}>
+    <div className={cn('flex min-h-[100dvh] w-full flex-col', SURFACE.canvas, 'max-w-lg md:max-w-2xl mx-auto', className)}>
       <main
         className="flex-1"
         style={{

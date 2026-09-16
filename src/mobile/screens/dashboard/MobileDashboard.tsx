@@ -13,6 +13,7 @@
  * PullToRefresh are all preserved; only the presentation changed.
  */
 
+import { QueryError } from '@/components/ui/QueryError';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -68,7 +69,7 @@ export function MobileDashboard() {
     lastName: currentUser?.lastName,
   });
 
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useDashboardStats();
   const { data: depositStats } = useDepositStats();
   const { data: paymentStats } = usePaymentStats();
   const { data: activeDailyRate } = useActiveDailyRate();
@@ -115,6 +116,9 @@ export function MobileDashboard() {
         className="space-y-6 px-4 pb-24"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1.25rem)' }}
       >
+        {statsError && (
+          <QueryError what="les chiffres du tableau de bord" onRetry={() => { void refetchStats(); }} />
+        )}
         {/* ── 1. GREETING ── */}
         <header className="flex items-start justify-between gap-3 px-1">
           <div className="min-w-0">

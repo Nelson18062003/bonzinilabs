@@ -7,6 +7,7 @@
 // SPECS palette (Alipay blue / WeChat green / Virement violet / Cash red).
 // ============================================================
 
+import i18n from '@/i18n';
 import {
   PAYMENT_METHOD_ICONS,
   PAYMENT_METHOD_LABELS,
@@ -26,8 +27,9 @@ export const BENEFICIARY_MODE_COLORS: Record<BeneficiaryMode, string> = {
   cash: '#dc2626',
 };
 
+/** Libellé du mode dans la langue de l'interface (payments.json → method.*), repli sur la carte française. */
 export function modeLabel(mode: PaymentMethod): string {
-  return PAYMENT_METHOD_LABELS[mode];
+  return i18n.t(`method.${mode}`, { ns: 'payments', defaultValue: PAYMENT_METHOD_LABELS[mode] });
 }
 
 export function modeIcon(mode: PaymentMethod): string {

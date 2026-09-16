@@ -27,13 +27,17 @@
  * clair (ΔE 13.6) et orange contre rouge en sombre (ΔE 7.2). Trois niveaux
  * passent partout — et trois suffisent à un opérateur.
  */
+import type { Tone } from '@/mobile/designKit/tokens';
 import { differenceInCalendarDays } from 'date-fns';
-import { bestEta, etaSlipDays } from '@/lib/cargo/model';
+import { bestEta, etaSlipDays, fromDate } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment } from '@/lib/cargo/model';
 import { todoCounts } from '@/lib/cargo/todo';
 
 /** L'état d'un conteneur, tel qu'il se lit sur la carte. */
 export type AlertLevel = 'late' | 'watch' | 'ok' | 'done';
+
+/** Le ton du kit mobile pour chaque niveau — une seule table pour toute l'app. */
+export const TONE_OF: Record<AlertLevel, Tone> = { late: 'danger', watch: 'pending', ok: 'success', done: 'neutral' };
 
 export interface AlertMeta {
   /** Ce qu'on écrit à côté du point — la couleur ne suffit jamais. */
@@ -90,8 +94,9 @@ export function alertLevel(s: CargoShipment, docs?: CargoDocument[], now = new D
   const days = eta ? differenceInCalendarDays(eta, now) : null;
 
   // Franchise dépassée et boîte encore au port : les surestaries courent déjà.
-  if (s.free_time_ends_on && !s.gate_out_at) {
-    const left = differenceInCalendarDays(new Date(s.free_time_ends_on), now);
+  const freeEnd = fromDate(s.free_time_ends_on);
+  if (freeEnd && !s.gate_out_at) {
+    const left = differenceInCalendarDays(freeEnd, now);
     if (left < 0) return 'late';
     if (left <= 3) return 'watch';
   }

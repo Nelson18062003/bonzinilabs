@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   useClient,
   useClientLedger,
+  useClientLedgerCount,
   useResetClientPassword,
   useUpdateClient,
   useCreateAdjustment,
@@ -41,6 +42,7 @@ import {
   TEXT,
   TONE_HOLDER,
   PRIMARY_PILL,
+  VIOLET_PILL,
   clientStatusTone,
   Avatar,
   Amount,
@@ -55,6 +57,11 @@ import {
   CenterDialog,
   absShort,
 } from '@/desktop/designKit';
+import { QRCodeSVG } from 'qrcode.react';
+import { customerQrPayload } from '@/lib/customerCode';
+import { ShippingLabelComposer } from '@/components/customer-code/ShippingLabelComposer';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
   AlertTriangle,
   ArrowDownCircle,
@@ -69,6 +76,7 @@ import {
   Minus,
   Pencil,
   Plus,
+  Tag,
   Trash2,
   Users,
   X,
@@ -196,6 +204,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId);
   const { data: ledgerEntries } = useClientLedger(clientId);
+  const { data: ledgerTotal } = useClientLedgerCount(clientId);
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
 
@@ -234,6 +243,21 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteChecking, setDeleteChecking] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
+  const { data: shipping } = useAdminShippingSettings();
+
+  const copyCustomerCode = async () => {
+    if (!client?.customerCode) return;
+    try {
+      await navigator.clipboard.writeText(client.customerCode);
+      setCodeCopied(true);
+      toast.success('Identifiant copié');
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      toast.error('Copie impossible');
+    }
+  };
 
   // `client.id` est le user_id (voir la construction de l'objet client).
   const { data: clientPhones } = useClientPhones(client?.id);
@@ -447,7 +471,8 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <StatusPill tone={clientStatusTone(client.status)} label={STATUS_LABEL[client.status] ?? client.status} />
           </div>
           <div className={cn('truncate text-[11px] tabular-nums', TEXT.muted)}>
-            {client.phone || '—'}
+            <span className={cn('font-bold', TEXT.body)}>{client.customerCode}</span>
+            {client.phone ? ` · ${client.phone}` : ''}
             {client.companyName ? ` · ${client.companyName}` : ''}
           </div>
         </div>
@@ -544,6 +569,51 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           </div>
         </div>
 
+        {/* Identifiant client — ce qu'on compare au libellé d'un virement, et
+            ce que le fournisseur colle sur les cartons. */}
+        <div className="flex items-center gap-3.5 rounded-2xl px-4 py-3 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
+          <div className="shrink-0 rounded-xl bg-white p-1.5 ring-1 ring-black/[0.06]">
+            <QRCodeSVG value={customerQrPayload(client.customerCode)} size={56} level="M" marginSize={0} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Identifiant client</div>
+            <div className={cn('mt-0.5 text-[20px] font-black leading-none tracking-[0.04em] tabular-nums', TEXT.strong)}>{client.customerCode}</div>
+            <div className={cn('mt-1 text-[11.5px]', TEXT.muted)}>Libellé de virement · étiquette colis (QR)</div>
+          </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-1.5">
+            <button
+              type="button"
+              onClick={copyCustomerCode}
+              className={cn('flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', codeCopied ? TONE_HOLDER.success : SURFACE.holder)}
+            >
+              {codeCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {codeCopied ? 'Copié' : 'Copier'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLabelOpen(true)}
+              className={cn('flex items-center justify-center gap-1 rounded-md px-3 py-1.5 text-[12px] font-bold', VIOLET_PILL)}
+            >
+              <Tag className="h-3.5 w-3.5" /> Étiquette colis
+            </button>
+          </div>
+        </div>
+
+        <CenterDialog open={labelOpen} onClose={() => setLabelOpen(false)} title="Étiquette colis" width={960}>
+          <ShippingLabelComposer
+            code={client.customerCode}
+            clientName={name}
+            clientPhone={client.phone}
+            clientEmail={client.email}
+            companyName={client.companyName}
+            clientCity={client.city}
+            clientCountry={client.country}
+            settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
+            mode="admin"
+            layout="split"
+          />
+        </CenterDialog>
+
         {/* Grille de faits */}
         <div className="rounded-2xl px-4 pb-3 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
           <SecLabel
@@ -610,7 +680,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
                 onClick={() => navigate(`/m/clients/${client.id}/ledger`)}
                 className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400"
               >
-                Voir tout ({ledgerEntries?.length ?? 0})
+                Voir tout ({ledgerTotal ?? ledgerEntries?.length ?? 0})
               </button>
             }
           >

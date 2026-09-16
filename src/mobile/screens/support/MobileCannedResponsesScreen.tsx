@@ -35,6 +35,7 @@ import {
   SoftPill,
   BottomSheet,
   ScreenLoader,
+  Button,
 } from '@/mobile/designKit';
 
 // Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
@@ -56,6 +57,7 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
   const create = useCreateCannedResponse();
   const update = useUpdateCannedResponse();
   const del = useDeleteCannedResponse();
+  const [toDelete, setToDelete] = useState<string | null>(null);
   const reorder = useReorderCannedResponses();
 
   const [editing, setEditing] = useState<ChatCannedResponse | null>(null);
@@ -105,10 +107,10 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
               <button
                 type="button"
                 onClick={() => setCreating(true)}
-                className={cn('flex h-9 w-9 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
+                className={cn('flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95', PRIMARY_PILL)}
                 aria-label={t('templates.create')}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </button>
             ) : undefined
           }
@@ -135,28 +137,23 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
         ) : (
           (templates ?? []).map((tpl, idx) => (
             <Card key={tpl.id}>
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <p className={cn('text-[14px] font-bold', TEXT.strong)}>{tpl.label}</p>
+              <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                <p className={cn('text-[16px] font-bold', TEXT.strong)}>{tpl.label}</p>
                 {isSuperAdmin && (
-                  <div className="flex gap-1">
-                    <Holder icon={ArrowUp} size="sm" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn('h-7 w-7', idx === 0 && 'pointer-events-none opacity-30')} />
-                    <Holder icon={ArrowDown} size="sm" onClick={idx === (templates ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn('h-7 w-7', idx === (templates ?? []).length - 1 && 'pointer-events-none opacity-30')} />
-                    <Holder icon={Edit3} size="sm" onClick={() => setEditing(tpl)} className="h-7 w-7" />
+                  <div className="flex flex-wrap gap-1">
+                    <Holder icon={ArrowUp} size="md" onClick={idx === 0 ? undefined : () => move(idx, 'up')} className={cn(idx === 0 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={ArrowDown} size="md" onClick={idx === (templates ?? []).length - 1 ? undefined : () => move(idx, 'down')} className={cn(idx === (templates ?? []).length - 1 && 'pointer-events-none opacity-30')} />
+                    <Holder icon={Edit3} size="md" onClick={() => setEditing(tpl)} />
                     <Holder
                       icon={Trash2}
                       tone="danger"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm(t('templates.confirmDelete'))) {
-                          del.mutate(tpl.id);
-                        }
-                      }}
-                      className="h-7 w-7"
+                      size="md"
+                      onClick={() => setToDelete(tpl.id)}
                     />
                   </div>
                 )}
               </div>
-              <p className={cn('whitespace-pre-wrap text-[14px]', TEXT.muted)}>{tpl.content}</p>
+              <p className={cn('whitespace-pre-wrap text-[16px]', TEXT.muted)}>{tpl.content}</p>
               {/\{\{[a-z_]+\}\}/i.test(tpl.content) && (
                 <p className="mt-2 flex items-center gap-1 text-[14px] font-semibold text-[#682D03] dark:text-[#FFF1C2]">
                   <Sparkles className="h-2.5 w-2.5" />
@@ -193,6 +190,14 @@ export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boo
           }}
         />
       )}
+
+      <BottomSheet open={toDelete != null} onClose={() => setToDelete(null)} title={t('templates.confirmDelete')}>
+        <p className={cn('text-[16px]', TEXT.muted)}>Cette réponse ne sera plus proposée. Ce geste ne se défait pas.</p>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <Button variant="neutral" onClick={() => setToDelete(null)}>Garder</Button>
+          <Button variant="danger" loading={del.isPending} onClick={() => { if (toDelete) del.mutate(toDelete, { onSettled: () => setToDelete(null) }); }}>Supprimer</Button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

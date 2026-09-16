@@ -13,11 +13,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAllClients, useAdminCreateDeposit } from '@/hooks/useAdminDeposits';
 import { useCountUp } from '@/hooks/useCountUp';
 import { formatCurrency } from '@/lib/formatters';
-import { MAX_AMOUNT_XAF, MAX_AMOUNT_XAF_LABEL, MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
+import { MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
 import { cn } from '@/lib/utils';
+import { matchesClientSearch } from '@/lib/clientSearch';
 import { toast } from 'sonner';
 import {
   SUB_METHOD_TO_DB_METHOD,
@@ -76,7 +77,7 @@ const FAMILIES_CONF: Record<string, { letter: string; bg: string; dark?: boolean
 };
 
 // Vert d'action = marque Dépôts (cohérent liste/détail).
-const GREEN = '#2C2C2C'; // l'accent du kit : l'encre, pas la couleur de module
+const GREEN = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
 
 // ── Types ──────────────────────────────────────────────────
 type Step = 'client' | 'amount' | 'family' | 'submethod' | 'bank' | 'agency' | 'recap' | 'creating';
@@ -159,10 +160,8 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
   const [createdDepositId, setCreatedDepositId] = useState<string | null>(null);
 
   const amountNum = parseInt(amount) || 0;
-  // The admin wizard had no ceiling at all while the client form capped at 50 M:
-  // one stray zero here credited a wallet 10x over with nothing to catch it.
+  // Pas de plafond sur un dépôt : entier positif au-dessus du minimum.
   const amountValid = isValidXafAmount(amountNum, MIN_DEPOSIT_XAF);
-  const amountOverCap = amountNum > MAX_AMOUNT_XAF;
   const animatedAmount = useCountUp(amountNum, { enabled: amountNum > 0 });
 
   const totalSteps = getTotalSteps(selectedFamily);
@@ -173,17 +172,23 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
     if (preselectedClientId && clients && !selectedClient) {
       const client = clients.find((c) => c.user_id === preselectedClientId);
       if (client) setSelectedClient(client);
+      // Identifiant inconnu : on repart du choix du client plutôt que
+      // d'aller jusqu'au récapitulatif sans client.
+      else setStep('client');
     }
   }, [preselectedClientId, clients, selectedClient]);
 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
     if (!clientSearch.trim()) return clients.slice(0, 20);
-    const search = clientSearch.toLowerCase();
+    // Même recherche que la liste clients : nom, téléphone et identifiant
+    // BZ-… — c'est le code lu sur le relevé bancaire qui amène ici.
     return clients
       .filter((c) =>
-        `${c.first_name} ${c.last_name}`.toLowerCase().includes(search) ||
-        c.phone?.includes(search),
+        matchesClientSearch(
+          { firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '', customerCode: c.customer_code },
+          clientSearch,
+        ),
       )
       .slice(0, 20);
   }, [clients, clientSearch]);
@@ -301,7 +306,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
     }
     // Re-check at the call site: the CTA guard is UI, this one protects the RPC.
     if (!amountValid) {
-      toast.error(`Montant invalide — entre ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} et ${MAX_AMOUNT_XAF_LABEL} XAF.`);
+      toast.error(`Montant invalide — minimum ${MIN_DEPOSIT_XAF.toLocaleString('fr-FR')} XAF.`);
       return;
     }
     const opDate = resolveOperationDate(useCustomDate, customDateStr);
@@ -527,7 +532,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           )}
           <span className={cn('flex-1 text-[16px] font-bold', TEXT.strong)}>Nouveau dépôt</span>
           {step !== 'creating' && (
-            <span className="text-[16px] font-bold" style={{ color: GREEN }}>
+            <span className={cn('text-[16px] font-bold', TEXT.strong)}>
               {currentStepNum}/{totalSteps}
             </span>
           )}
@@ -538,7 +543,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               <div
                 key={i}
                 className="h-[3px] flex-1 rounded-full transition-colors"
-                style={{ background: currentStepNum >= i + 1 ? GREEN : 'rgba(0,0,0,0.08)' }}
+                style={{ background: currentStepNum >= i + 1 ? GREEN : 'rgba(128,128,128,0.25)' }}
               />
             ))}
           </div>
@@ -554,11 +559,10 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
             <div className="relative mb-3">
               <Search className={cn('pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
               <input
-                className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.shadow, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
-                placeholder="Nom ou téléphone..."
+                className={cn('h-12 w-full rounded-lg pl-10 pr-10 text-[16px] outline-none transition', SURFACE.card, SURFACE.field, TEXT.strong, 'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]')}
+                placeholder="Nom, téléphone ou BZ-…"
                 value={clientSearch}
                 onChange={(e) => setClientSearch(e.target.value)}
-                autoFocus
               />
               {clientSearch && (
                 <button
@@ -600,7 +604,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                         <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>
                           {client.first_name} {client.last_name}
                         </div>
-                        {client.phone && <div className={cn('truncate text-[16px]', TEXT.muted)}>{client.phone}</div>}
+                        <div className={cn('truncate text-[16px] tabular-nums', TEXT.muted)}>{[client.customer_code, client.phone].filter(Boolean).join(' · ')}</div>
                       </div>
                       <ArrowRight className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
                     </button>
@@ -666,15 +670,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
               onChange={setCustomDateStr}
               accent={GREEN}
             />
-            {amountOverCap && (
-              <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#C00F0C] bg-[#FDD3D0] p-3 dark:bg-[#900B09]">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#900B09] dark:text-[#FDD3D0]" />
-                <p className="text-[16px] font-semibold text-[#900B09] dark:text-[#FDD3D0]">
-                  Montant maximum : {MAX_AMOUNT_XAF_LABEL} XAF par dépôt.
-                </p>
-              </div>
-            )}
-            {!amountOverCap && amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
+            {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (
               <div className="mt-3 flex items-start gap-2 rounded-r-2xl border-l-4 border-[#E8B931] bg-[#FFF1C2] p-3 dark:bg-[#522504]">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#682D03] dark:text-[#FFF1C2]" />
                 <p className="text-[16px] text-[#682D03] dark:text-[#FFF1C2]">
@@ -915,7 +911,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                 <div className={cn(infoLineCls, 'mt-1 border-t border-black/[0.06] dark:border-white/[0.06]')}>
                   <span className={cn('text-[16px]', TEXT.muted)}>Montant à envoyer</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[16px] font-bold" style={{ color: GREEN }}>{fmt(amountNum)} XAF</span>
+                    <span className={cn('text-[16px] font-bold', TEXT.strong)}>{fmt(amountNum)} XAF</span>
                     <CopyBtn text={`${fmt(amountNum)} XAF`} fieldKey="amount" copiedField={copiedField} onCopy={handleCopy} />
                   </div>
                 </div>
@@ -929,7 +925,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
                     <li key={index} className="flex items-start gap-2.5">
                       <span
                         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[16px] font-bold"
-                        style={{ background: `${GREEN}1A`, color: GREEN }}
+                        style={{ background: 'rgba(128,128,128,0.16)', color: GREEN }}
                       >
                         {index + 1}
                       </span>

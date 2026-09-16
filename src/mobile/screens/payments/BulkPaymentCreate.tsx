@@ -14,6 +14,7 @@
 // du data layer (qr_code_files), et la validation par méthode (spec.ts).
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { uid } from '@/lib/uid';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -39,6 +40,7 @@ import {
 import { formatXAF, formatYuan } from '@/lib/formatters';
 import { toStoredPath } from '@/lib/signedUrls';
 import { validateUploadFile, cn } from '@/lib/utils';
+import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 import type { PaymentMethodKey } from '@/types/rates';
@@ -216,7 +218,8 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
   const benefErrors = validateBeneficiaryInput(editorBenef);
   const benefComplete = isBeneficiaryComplete(editorBenef);
-  const amountValid = eXaf >= 1 && eCny >= 1;
+  // Même garde d'entier que le paiement simple ; pas de plafond.
+  const amountValid = isValidXafAmount(eXaf, MIN_PAYMENT_XAF) && eCny >= 1;
   const editorValid = amountValid && benefComplete;
 
   function errMsg(): string | null {
@@ -315,7 +318,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   function commitLine() {
     if (!editorValid) { setTriedCommit(true); return; }
     const draft: DraftLine = {
-      id: editingId ?? crypto.randomUUID(),
+      id: editingId ?? uid(),
       method: eMethod, xaf: eXaf, cny: eCny, rate: eRate, rateIsCustom: eCustomRate,
       alias: eAlias.trim() || eName.trim(), name: eName.trim(),
       identifierType: eIdType, identifier: eIdentifier.trim(),
@@ -402,7 +405,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
       <div className={cn('mx-auto w-full max-w-3xl px-4 pb-44', desktop ? 'pt-8' : 'pt-6')}>
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
-          <Holder icon={ChevronLeft} size="sm" onClick={() => navigate('/m/payments')} ariaLabel={t('bulk.back', { defaultValue: 'Retour' })} />
+          <Holder icon={ChevronLeft} size="md" onClick={() => navigate('/m/payments')} ariaLabel={t('bulk.back', { defaultValue: 'Retour' })} />
           <div>
             <h1 className={cn('text-[20px] font-bold tracking-tight', TEXT.strong)}>{t('bulk.title', { defaultValue: 'Paiement groupé' })}</h1>
             <p className={cn('text-[14px]', TEXT.muted)}>{t('bulk.subtitle', { defaultValue: 'Plusieurs bénéficiaires, un seul client, payés ensemble' })}</p>
@@ -426,20 +429,20 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
           <Card className="mb-6">
             <div className="relative mb-3">
               <Search className={cn('pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-              <TextInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('bulk.searchClient', { defaultValue: 'Rechercher un client (nom, téléphone)…' })} className="pl-9" />
+              <TextInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('bulk.searchClient', { defaultValue: 'Nom ou téléphone' })} className="pl-9" />
             </div>
             <div className="max-h-72 space-y-1.5 overflow-y-auto">
               {filtered.slice(0, 40).map((c) => (
                 <button key={c.user_id} type="button" onClick={() => { setClient(c); setSearch(''); }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
                   <Avatar name={`${c.first_name ?? ''} ${c.last_name ?? ''}`} size="sm" tone="info" />
                   <div className="min-w-0 flex-1">
-                    <p className={cn('truncate text-[14px] font-semibold', TEXT.strong)}>{c.first_name} {c.last_name}</p>
-                    {c.phone && <p className={cn('truncate text-[14px]', TEXT.muted)}>{c.phone}</p>}
+                    <p className={cn('break-words text-[16px] font-semibold', TEXT.strong)}>{c.first_name} {c.last_name}</p>
+                    {c.phone && <p className={cn('text-[16px]', TEXT.muted)}>{c.phone}</p>}
+                    <p className={cn('text-[16px]', TEXT.muted)}>Solde : <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(walletsMap.get(c.user_id) ?? 0)} XAF</b></p>
                   </div>
-                  <span className={cn('shrink-0 text-[14px] font-bold tabular-nums', TEXT.muted)}>{formatXAF(walletsMap.get(c.user_id) ?? 0)}</span>
                 </button>
               ))}
-              {filtered.length === 0 && <p className={cn('px-2 py-8 text-center text-[14px]', TEXT.muted)}>{t('bulk.noClientFound', { defaultValue: 'Aucun client trouvé.' })}</p>}
+              {filtered.length === 0 && <p className={cn('px-2 py-8 text-center text-[16px]', TEXT.muted)}>{t('bulk.noClientFound', { defaultValue: 'Aucun client trouvé.' })}</p>}
             </div>
           </Card>
         )}
@@ -480,7 +483,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         <Holder icon={Pencil} size="sm" onClick={() => openEdit(l)} ariaLabel={t('detail.edit', { defaultValue: 'Modifier' })} />
-                        <Holder icon={Copy} size="sm" onClick={() => setLines((p) => [...p, { ...l, id: crypto.randomUUID(), beneficiaryId: undefined, saveToCarnet: false }])} ariaLabel={t('bulk.duplicate', { defaultValue: 'Dupliquer' })} />
+                        <Holder icon={Copy} size="sm" onClick={() => setLines((p) => [...p, { ...l, id: uid(), beneficiaryId: undefined, saveToCarnet: false }])} ariaLabel={t('bulk.duplicate', { defaultValue: 'Dupliquer' })} />
                         <Holder icon={Trash2} size="sm" tone="danger" onClick={() => setLines((p) => p.filter((x) => x.id !== l.id))} ariaLabel={t('bulk.remove', { defaultValue: 'Retirer' })} />
                       </div>
                     </Card>

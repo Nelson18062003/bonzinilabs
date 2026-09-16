@@ -48,7 +48,7 @@ function LinkButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      className="mt-2 inline-flex items-center gap-1 text-[14px] font-semibold text-bonzini-violet active:opacity-70"
+      className="mt-1 inline-flex min-h-11 items-center gap-1 text-[14px] font-semibold text-bonzini-violet active:opacity-70"
     >
       {children}
     </button>

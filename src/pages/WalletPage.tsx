@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
+import { CustomerIdCard } from '@/components/wallet/CustomerIdCard';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
@@ -57,11 +58,14 @@ const WalletPage = () => {
         {/* Actions rapides */}
         <QuickActions />
 
+        {/* Identifiant client — libellé de virement + étiquette colis */}
+        <CustomerIdCard code={profile?.customer_code} />
+
         {/* Taux du jour */}
         <section>
           <div className="mb-2 flex items-center justify-between px-1">
             <h2 className={cn('text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('wallet.dailyRate', { defaultValue: 'Taux du jour' })}</h2>
-            <button onClick={() => navigate('/rates')} className="text-[12px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
+            <button onClick={() => navigate('/rates')} className="inline-flex min-h-11 items-center text-[13px] font-bold text-[#5B4CC4] active:opacity-70 dark:text-[#B5AAF0]">
               {t('wallet.viewRates', { defaultValue: 'Voir les taux' })}
             </button>
           </div>
