@@ -241,7 +241,13 @@ Déclarer `870194.00.1100` sur un tracteur de 51,5 kW serait une **fausse décla
 sous-position** : ce n'est pas un libellé qu'on choisit, c'est une tranche de puissance
 qu'on constate.
 
-### 8.3 À faire vérifier sur la machine
+### 8.3 ✅ Confirmé le 17/09/2026 — le tracteur ne dépasse pas 51 kW
+
+Le COO confirme la puissance. La déduction ci-dessus est exacte, la tranche 37–75 kW
+est établie, et `870194.00.1100` est **exclu sur le fait**. Seul `870190.11.0000`
+reste possible. Le paragraphe ci-dessous ne vaut plus que pour la pièce justificative.
+
+### 8.4 La plaque constructeur, comme pièce du dossier
 
 La puissance ci-dessus est déduite de la désignation commerciale « 704 » et de fiches
 constructeurs de modèles homonymes — **pas** de la plaque de notre exemplaire. Un relevé

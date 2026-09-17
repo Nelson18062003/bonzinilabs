@@ -364,3 +364,27 @@ Cette piste, ouverte au §7, est **abandonnée**. Deux raisons :
 `870190.11.0000` est meilleure sur les deux plans : elle est **écrite dans la loi**, et
 elle **ne dépend d'aucune puissance**. La question de la puissance moteur ne se pose
 donc plus. Le point 9 de la liste « Points à éclaircir » du README est sans objet.
+
+---
+
+# 13. ✅ 17/09/2026 — puissance confirmée, le code est arrêté
+
+**Confirmation de Nelson Soh, COO : le tracteur ne dépasse pas 51 kW.**
+
+La déduction du 12/09, faite à partir de la désignation commerciale « 704 » (70 ch,
+4 roues motrices, ≈ 51,5 kW), est donc exacte. La machine est dans la tranche
+**37–75 kW**.
+
+| Code | Statut, définitif |
+|---|---|
+| **`870190.11.0000`** | ✅ **Le code à demander.** Seule ligne agricole disponible sous 75 kW, et seul code tracteur inscrit à l'annexe 1 du CGI — donc le seul qui ouvre l'exonération de TVA de l'article 128-6a |
+| `870193.00.1000` | tranche exacte, mais **aucune qualification agricole** — c'est le code SGS actuel, celui qu'on conteste |
+| `870194.00.1100` | ❌ **exclu sur le fait** — exige > 75 kW. Le poser serait une **fausse déclaration de sous-position** |
+| `870195.00.1100` | ❌ exclu — exige > 130 kW |
+
+Le retrait du §12, jusqu'ici fondé sur un raisonnement, est désormais fondé sur la
+**donnée constatée**. La question de la puissance est close.
+
+**Ce que ça débloque :** la demande de révision à la SGS (action n° 2 du §11) peut
+être écrite sans réserve. La plaque constructeur reste à photographier — non plus pour
+trancher, mais comme **pièce justificative à joindre à cette demande**.
