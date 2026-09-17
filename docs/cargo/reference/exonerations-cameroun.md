@@ -272,3 +272,103 @@ constitue la pièce à joindre à toute demande de révision.
   `CLR_0052`, `CLR_0053`, `COL_0044`, `CLR_0058` — <https://ept.camcis.cm/ept>
 - Fiches constructeurs tracteurs 704 (70 ch, 4RM, 51,5 kW) —
   <https://b2brazil.com/hotsite/shandongsadinheavy/sadin-sd704-904-tractor>
+
+---
+
+# 9. Addendum du 17/09/2026 — comment on prouve qu'un bien est agricole
+
+> Ajouté après une objection de Nelson Soh, COO, qui était fondée : j'avais écrit que
+> « l'exonération est déclenchée par le code inscrit à l'annexe 1 ». **C'est trop
+> rigide.** Voici la version exacte.
+
+## 9.1 Ce que l'annexe est réellement — son titre et ses colonnes
+
+Relevé mot pour mot dans le CGI édition 2024 :
+
+> **« ANNEXES DU TITRE I :
+> Liste des équipements et matériels de l'agriculture, de l'élevage et de la pêche
+> exonérés de la TVA »**
+>
+> | **Position tarifaire** | **Identification du Produit** |
+
+Deux faits que ce simple en-tête établit :
+
+1. **L'objet exonéré est un *produit***, pas un numéro. La liste s'intitule « liste des
+   équipements et matériels », et la seconde colonne s'appelle **« Identification du
+   Produit »**. Le code sert à **localiser** le produit dans le tarif.
+2. La première colonne s'appelle **« Position tarifaire »** — pas « ligne tarifaire à
+   12 chiffres ».
+
+## 9.2 La preuve par la granularité des entrées
+
+L'annexe **mélange trois niveaux de précision**, ce qui serait impossible si seul un code
+complet comptait :
+
+| Entrée réelle de l'annexe | Niveau |
+|---|---|
+| `870190 11 000` — Tracteurs agricole à roues… | **12 chiffres** — une ligne précise |
+| `120911 00 000 à 120999 00 000` — Semences | **une plage** de codes |
+| `310100 10 000 à 3105590 00 000` — Engrais | **une plage** |
+| `820110 00 000 à 820190 00 000` — Petits matériels agricoles | **une plage** |
+| **`3808`** — Herbicides, insecticides, nématoïdes et fongicides à usage agricole | **4 chiffres** — toute la position |
+| **`8433`** — Égreneuses… | **4 chiffres** — toute la position |
+
+**Quand l'annexe écrit `3808` tout court, elle exonère toute la position.** Le législateur
+raisonne donc bien par **produit**, en utilisant le niveau de code qui lui suffit.
+
+## 9.3 La nuance exacte, à retenir
+
+> **En droit,** l'exonération porte sur le **produit** décrit — « les tracteurs agricoles
+> à roues à moteur à explosion ou à combustion interne ». Un tracteur agricole de 51 kW
+> **est** ce produit, quel que soit le code sous lequel on le déclare.
+>
+> **En pratique,** la douane liquide à partir du **code inscrit sur la déclaration**.
+> Donc le code qui reprend **mot pour mot** le libellé de l'annexe rend l'exonération
+> **automatique**, et tout autre code la transforme en **argument à défendre**.
+
+Ce n'est pas la même chose que « seul le code compte ». C'est : *le bon code supprime la
+discussion ; un autre code l'ouvre.*
+
+## 9.4 🔑 Le mécanisme officiel pour faire trancher — la décision anticipée
+
+C'est la réponse à « comment on prouve que c'est agricole, et à qui on le demande ».
+
+**Code des douanes CEMAC, révision de 2019, Section 5, article 75** — verbatim :
+
+> « **1.** Les autorités douanières rendent, **sur demande écrite**, des **décisions
+> anticipées** pour l'application de la législation douanière.
+>
+> **2.** L'expression « décision anticipée » s'entend d'une **décision écrite** communiquée
+> par la douane au requérant **avant l'importation** d'une marchandise visée par la
+> demande qui indique **le traitement que la douane accordera à la marchandise au moment
+> de l'importation** en ce qui concerne notamment :
+> − a) **le classement tarifaire de la marchandise** ;
+> − b) l'origine de la marchandise. »
+
+Alinéa 3 : la douane ne peut refuser que si la question est déjà devant un organisme
+gouvernemental ou une autorité judiciaire à l'initiative du requérant.
+
+Alinéa 4 : « **Les modalités pratiques** régissant la décision anticipée **sont fixées par
+la législation nationale** » — 🔵 c'est la partie camerounaise que je n'ai pas trouvée,
+et à faire préciser par Citra.
+
+## 9.5 Qui décide vraiment — la liste, une fois pour toutes
+
+| Acteur | Ce qu'il peut faire sur le classement |
+|---|---|
+| **La douane camerounaise (DGD)** | 🟢 **Elle seule tranche.** Et elle **doit** répondre par écrit à une demande de décision anticipée (art. 75) |
+| **La SGS** | 🟠 elle **propose** un classement dans le RVC. Ce n'est pas une décision, c'est un rapport |
+| **Le commissionnaire agréé** | 🟠 il **inscrit** le code sur la déclaration. Il n'a aucun pouvoir de décision |
+| **La CNCC** | ❌ **aucun rôle** — elle gère le BESC |
+| **Le MINADER** | ❌ aucun rôle dans la chaîne du CGI pour ce cas |
+| **La DGI (impôts)** | 🟠 interprète le CGI, mais ne liquide pas à l'import |
+
+## 9.6 Ce que ça change pour Bonzini à l'échelle
+
+Une décision anticipée est **écrite, préalable, et opposable**. Donc :
+
+> **Une seule demande, une seule fois, et le classement du tracteur agricole est réglé
+> pour tous les conteneurs suivants.**
+
+C'est exactement l'outil d'un playbook industrialisé : on ne rediscute pas le code à
+chaque import, on produit la décision.
