@@ -109,7 +109,7 @@ describe('layoutLabel — rien ne se chevauche, rien ne déborde', () => {
     expect(icons(air).every((i) => i.icon === 'plane')).toBe(true);
     expect(sea.some((o) => o.kind === 'stripes')).toBe(false);
     expect(air.some((o) => o.kind === 'stripes')).toBe(true);
-    const banner = (ops: Op[]) => ops.find((o): o is Extract<Op, { kind: 'rect' }> => o.kind === 'rect' && o.y === 14 && o.h === 54)?.color;
+    const banner = (ops: Op[]) => ops.find((o): o is Extract<Op, { kind: 'rect' }> => o.kind === 'rect' && o.y === 14 && o.x === 14 && o.h > 50)?.color;
     expect(banner(sea)).not.toBe(banner(air));
     // Le nom du mode, en très gros, en tête
     expect(texts(sea).some((t) => t.row === 'banner-en' && t.text === 'SEA CARGO')).toBe(true);

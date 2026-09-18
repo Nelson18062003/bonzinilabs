@@ -69,7 +69,7 @@ const CX0 = X0 + PX, CX1 = X1 - PX; // colonne de contenu
 const CW = CX1 - CX0;         // 544
 const KEY_COL = 130;          // largeur de la colonne d'intitulés
 const KEY_COL_2 = 112;        // idem, second champ d'une ligne double
-const ROW_H = 28;
+const ROW_H = 26;
 const BAND_H = 22;
 const RULE = 2;
 
@@ -79,23 +79,30 @@ export type Op =
   | { kind: 'line'; x1: number; y1: number; x2: number; y2: number; color: string; width: number }
   | { kind: 'text'; text: string; x: number; y: number; font: string; color: string; align: 'left' | 'right' | 'center'; maxWidth: number; row?: string }
   | { kind: 'qr'; x: number; y: number; size: number }
-  /** Pictogramme du mode (bateau, avion) : tracé lucide sur grille 24, mis à l'échelle. */
+  /** Pictogramme du mode (bateau, avion) : silhouette PLEINE, mise à l'échelle. */
   | { kind: 'icon'; icon: DestinationIcon; x: number; y: number; size: number; color: string }
   /** Hachures diagonales : le signal qui survit à l'impression en noir et blanc. */
   | { kind: 'stripes'; x: number; y: number; w: number; h: number; color: string; bg: string };
 
-/** Les tracés (lucide `ship` / `plane`, grille 24 × 24, trait 2), repris tels quels. */
-export const ICON_PATHS: Record<DestinationIcon, string[]> = {
-  ship: [
-    'M12 10.189V14',
-    'M12 2v3',
-    'M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6',
-    'M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76',
-    'M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1',
-  ],
-  plane: [
-    'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
-  ],
+/**
+ * Les silhouettes, PLEINES — pas des traits : à 64 px sur le bandeau, on
+ * reconnaît le bateau et l'avion de loin, et encore sur une photocopie en
+ * noir et blanc, là où la couleur ne dit plus rien. Grille 256 × 256.
+ *   • ship : un cargo porte-conteneurs vu de côté — coque, passerelle et
+ *     cheminée à l'arrière, deux rangées de conteneurs, l'eau dessous.
+ *     Dessiné ici (les bibliothèques d'icônes n'ont que des barques).
+ *   • plane : l'avion vu de dessus — Phosphor Icons « Airplane », fill (MIT).
+ * Les mêmes formes servent dans l'app (DestinationMark).
+ */
+export const ICON_PATHS: Record<DestinationIcon, { grid: number; d: string }> = {
+  ship: { grid: 256, d: [
+    'M8 138H248L222 196H34Z',                    // coque, étrave et poupe inclinées
+    'M26 90H74V138H26Z', 'M38 66H62V90H38Z',     // passerelle, cheminée
+    'M84 108H130V138H84Z', 'M136 108H182V138H136Z', 'M188 108H234V138H188Z', // conteneurs, rang du bas
+    'M100 78H146V108H100Z', 'M152 78H198V108H152Z',                          // rang du haut
+    'M4 212H72V222H4Z', 'M88 212H156V222H88Z', 'M172 212H252V222H172Z',       // l'eau
+  ].join(' ') },
+  plane: { grid: 256, d: 'M240,136v32a8,8,0,0,1-8,8,7.61,7.61,0,0,1-1.57-.16L156,161v23.73l17.66,17.65A8,8,0,0,1,176,208v24a8,8,0,0,1-11,7.43l-37-14.81L91,239.43A8,8,0,0,1,80,232V208a8,8,0,0,1,2.34-5.66L100,184.69V161L25.57,175.84A7.61,7.61,0,0,1,24,176a8,8,0,0,1-8-8V136a8,8,0,0,1,4.42-7.16L100,89.06V44a28,28,0,0,1,56,0V89.06l79.58,39.78A8,8,0,0,1,240,136Z' },
 };
 
 export type Measure = (text: string, font: string) => number;
@@ -222,7 +229,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     let rightW = 0;
     if (right) {
       const fr = f(900, 11, FONT_ZH_DISPLAY);
-      const ICON = 13, PAD = 8;
+      const ICON = 15, PAD = 8;
       rightW = PAD + ICON + 5 + measure(right, fr) + PAD;
       rect(CX1 - rightW, y + 3, rightW, BAND_H - 6, theme.color, 3);
       ops.push({ kind: 'icon', icon: theme.icon, x: CX1 - rightW + PAD, y: cy - ICON / 2, size: ICON, color: WHITE });
@@ -238,24 +245,25 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   rect(0, 0, LABEL_W, LABEL_H, WHITE);
   let y = X0;
 
-  // 0 · Bandeau : LE MODE D'ENVOI d'abord (pictogramme + nom, en très gros,
-  //     aux couleurs du mode), puis ce que c'est et quoi en faire. Le liseré du
-  //     bas est uni (bateau) ou hachuré (avion) : sur une photocopie en noir
-  //     et blanc, c'est ce qui reste pour les distinguer — avec le pictogramme.
-  const BANNER_H = 54, STRIP_H = 8;
+  // 0 · Bandeau : LE MODE D'ENVOI d'abord — la silhouette du bateau ou de
+  //     l'avion, GRANDE (64 px, pleine), et le nom en très gros — puis ce que
+  //     c'est et quoi en faire. Le liseré du bas est uni (bateau) ou hachuré
+  //     (avion). Tout cela reste lisible sans la couleur : sur une photocopie,
+  //     un bateau blanc sur fond sombre reste un bateau.
+  const BANNER_H = 94, STRIP_H = 8;
   rect(X0, y, X1 - X0, BANNER_H, theme.color);
   if (theme.stripes) ops.push({ kind: 'stripes', x: X0, y: y + BANNER_H - STRIP_H, w: X1 - X0, h: STRIP_H, color: WHITE, bg: theme.dark });
   else rect(X0, y + BANNER_H - STRIP_H, X1 - X0, STRIP_H, theme.dark);
   {
     const cy = y + (BANNER_H - STRIP_H) / 2;
-    const ICON = 30;
+    const ICON = 64;
     ops.push({ kind: 'icon', icon: theme.icon, x: CX0, y: cy - ICON / 2, size: ICON, color: WHITE });
-    let x = CX0 + ICON + 10;
-    x += text(tag.zh, x, cy, f(900, 26, FONT_ZH_DISPLAY), WHITE, 90, 'left', 'banner-zh') + 8;
-    x += text(tag.en.toUpperCase(), x, cy + 1, f(900, 15, FONT_LATIN), WHITE, 150, 'left', 'banner-en') + 14;
+    let x = CX0 + ICON + 14;
+    x += text(tag.zh, x, cy, f(900, 40, FONT_ZH_DISPLAY), WHITE, 100, 'left', 'banner-zh') + 10;
+    x += text(tag.en.toUpperCase(), x, cy + 3, f(900, 22, FONT_LATIN), WHITE, 170, 'left', 'banner-en') + 16;
     const rw = CX1 - x;
-    text('发货标签 · 请打印，并贴在每一个纸箱上', CX1, cy - 8, f(900, 12, FONT_ZH_DISPLAY), WHITE, rw, 'right');
-    text('Shipping label · print it and stick it on every carton', CX1, cy + 8, f(700, 9, FONT_LATIN), 'rgba(255,255,255,0.88)', rw, 'right');
+    text('发货标签 · 请打印，并贴在每一个纸箱上', CX1, cy - 9, f(900, 12, FONT_ZH_DISPLAY), WHITE, rw, 'right');
+    text('Shipping label · print and stick on every carton', CX1, cy + 9, f(700, 9, FONT_LATIN), 'rgba(255,255,255,0.88)', rw, 'right');
   }
   y += BANNER_H;
 
@@ -266,10 +274,10 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     const zhLines = wrapText(loc.addressZh, CW, fzh, measure, 3);
     const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 2) : [];
     const ZH_LH = 29, EN_LH = 13;
-    const blockH = 9 + zhLines.length * ZH_LH + (enLines.length ? 3 + enLines.length * EN_LH : 0) + 8;
+    const blockH = 8 + zhLines.length * ZH_LH + (enLines.length ? 3 + enLines.length * EN_LH : 0) + 6;
     // Un dos de couleur le long de l'adresse : le mode, encore, là où l'œil va.
     rect(X0, y, 6, blockH, theme.color);
-    let ly = y + 9;
+    let ly = y + 8;
     for (const l of zhLines) { text(l, CX0, ly + ZH_LH / 2, fzh, INK, CW, 'left', `addr@${ly}`); ly += ZH_LH; }
     if (enLines.length) { ly += 3; for (const l of enLines) { text(l, CX0, ly + EN_LH / 2, fen, MUTED, CW, 'left', `addr@${ly}`); ly += EN_LH; } }
     hair(y + blockH);
@@ -284,7 +292,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   rule(y); y += RULE;
   y = band(y, '2', '客户编号', 'Customer ID');
   {
-    const QR_BLOCK = 200, QR = 186, LEFT_W = 230;
+    const QR_BLOCK = 196, QR = 186, LEFT_W = 230;
     ops.push({ kind: 'qr', x: X0 + (LEFT_W - QR) / 2, y: y + (QR_BLOCK - QR) / 2, size: QR });
     ops.push({ kind: 'line', x1: X0 + LEFT_W, y1: y, x2: X0 + LEFT_W, y2: y + QR_BLOCK, color: HAIR, width: 1 });
     const rx = X0 + LEFT_W + PX, rw = CX1 - rx;
@@ -308,7 +316,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   y = row1(y, ROW_H, '邮箱', 'Email', d.clientEmail || '—');
 
   // 5 (réservé) + pied : ancrés en bas, on connaît leur hauteur
-  const WH_ROW_H = 34, FOOT_H = 20;
+  const WH_ROW_H = 30, FOOT_H = 18;
   const bottomBlock = RULE + BAND_H + WH_ROW_H + RULE + FOOT_H;
   const Y1 = LABEL_H - M; // même marge en bas qu'en haut
   const bottomTop = Y1 - bottomBlock;
@@ -318,7 +326,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   y = band(y, '4', '供货商 / 发件人', 'Supplier · Sender');
   {
     const rows = 6;
-    const rh = Math.max(26, Math.min(40, Math.floor((bottomTop - y) / rows)));
+    const rh = Math.max(24, Math.min(40, Math.floor((bottomTop - y) / rows)));
     const s = d.supplier ?? {};
     y = row1(y, rh, '供货商', 'Supplier', s.name);
     y = row1(y, rh, '电话', 'Tel', s.phone);
@@ -419,17 +427,15 @@ export function paintLabel(ctx: CanvasRenderingContext2D, ops: Op[], qr: CanvasI
   }
 }
 
-/** Le pictogramme : les tracés lucide (grille 24) mis à l'échelle, trait rond. */
+/** Le pictogramme : la silhouette pleine, mise à l'échelle depuis sa grille. */
 function paintIcon(ctx: CanvasRenderingContext2D, op: Extract<Op, { kind: 'icon' }>): void {
   if (typeof Path2D === 'undefined') return;
+  const { grid, d } = ICON_PATHS[op.icon];
   ctx.save();
   ctx.translate(op.x, op.y);
-  ctx.scale(op.size / 24, op.size / 24);
-  ctx.strokeStyle = op.color;
-  ctx.lineWidth = 2.25;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (const d of ICON_PATHS[op.icon]) ctx.stroke(new Path2D(d));
+  ctx.scale(op.size / grid, op.size / grid);
+  ctx.fillStyle = op.color;
+  ctx.fill(new Path2D(d));
   ctx.restore();
 }
 
