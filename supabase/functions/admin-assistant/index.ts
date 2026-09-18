@@ -2049,7 +2049,7 @@ const WRITE_TOOLS: WriteTool[] = [
   {
     name: "set_daily_rate",
     permission: "canManageRates",
-    description: "Définir le taux du jour (en CNY ¥ pour 1 000 000 XAF), par mode. Désactive l'ancien taux. ⚠️ S'applique à TOUS les nouveaux paiements. Requiert les 4 taux: rate_cash, rate_alipay, rate_wechat, rate_virement.",
+    description: "Définir le taux du jour de RÉFÉRENCE (Cameroun), en CNY ¥ pour 1 000 000 XAF, par mode. Désactive l'ancien taux. ⚠️ S'applique à TOUS les nouveaux paiements ; les taux des autres pays (Gabon…) en sont dérivés via leur écart (update_rate_adjustment). Requiert les 4 taux: rate_cash, rate_alipay, rate_wechat, rate_virement.",
     input_schema: { type: "object", properties: { rate_cash: { type: "number" }, rate_alipay: { type: "number" }, rate_wechat: { type: "number" }, rate_virement: { type: "number" } }, required: ["rate_cash", "rate_alipay", "rate_wechat", "rate_virement"] },
     prepare: (_admin, a) => {
       const keys = ["rate_cash", "rate_alipay", "rate_wechat", "rate_virement"];

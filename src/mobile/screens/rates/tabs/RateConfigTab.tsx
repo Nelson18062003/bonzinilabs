@@ -14,6 +14,7 @@ import { TextField } from '@/components/form';
 import { parseDecimal } from '@/lib/decimalInput';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
 import { COUNTRIES, TIERS } from '@/types/rates';
+import { CountryFlag } from '@/components/form/CountryFlag';
 import type { RateAdjustment } from '@/types/rates';
 import { toast } from 'sonner';
 import { SURFACE, TEXT, PrimaryPill, StatusPill, ScreenError } from '@/mobile/designKit';
@@ -89,7 +90,7 @@ export function RateConfigTab() {
     }
   };
 
-  const renderAdjustmentRow = (adj: RateAdjustment, meta: { label: string; shortLabel?: string }) => (
+  const renderAdjustmentRow = (adj: RateAdjustment, meta: { label: string; shortLabel?: string; iso?: string | null }) => (
     <div
       key={adj.id}
       className={cn(
@@ -98,6 +99,7 @@ export function RateConfigTab() {
       )}
     >
       <div className="flex items-center gap-2">
+        {meta.iso && <CountryFlag iso={meta.iso} size={22} />}
         <div>
           <span className={cn('text-[16px] font-semibold', TEXT.strong)}>
             {meta.shortLabel || meta.label}
@@ -144,7 +146,7 @@ export function RateConfigTab() {
         </div>
         <div className="space-y-2">
           {countryAdjs.map((adj) =>
-            renderAdjustmentRow(adj, { label: getCountryMeta(adj.key).label }),
+            renderAdjustmentRow(adj, { label: getCountryMeta(adj.key).label, iso: (getCountryMeta(adj.key) as { iso?: string }).iso ?? null }),
           )}
         </div>
       </div>

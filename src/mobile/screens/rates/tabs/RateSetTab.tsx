@@ -174,7 +174,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       {currentRate && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs</span>
+            <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs · Cameroun (réf.)</span>
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone="success" label="En ligne" />
               {activeSince && <span className={cn('whitespace-nowrap text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}

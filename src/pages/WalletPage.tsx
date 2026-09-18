@@ -18,14 +18,16 @@ import { useMyWallet, useMyWalletOperations } from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useClientRates } from '@/hooks/useDailyRates';
 import { formatNumber } from '@/lib/formatters';
+import { countrySheetFor, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { SURFACE, TEXT } from '@/mobile/designKit';
-import type { DailyRate } from '@/types/rates';
+import type { PaymentMethodKey } from '@/types/rates';
 
-const RATE_ROWS: { method: 'alipay' | 'wechat' | 'bank_transfer' | 'cash'; label: string; key: keyof Pick<DailyRate, 'rate_alipay' | 'rate_wechat' | 'rate_virement' | 'rate_cash'> }[] = [
-  { method: 'alipay', label: 'Alipay', key: 'rate_alipay' },
-  { method: 'wechat', label: 'WeChat', key: 'rate_wechat' },
-  { method: 'bank_transfer', label: 'Virement', key: 'rate_virement' },
-  { method: 'cash', label: 'Cash', key: 'rate_cash' },
+const RATE_ROWS: { method: 'alipay' | 'wechat' | 'bank_transfer' | 'cash'; label: string; key: PaymentMethodKey }[] = [
+  { method: 'alipay', label: 'Alipay', key: 'alipay' },
+  { method: 'wechat', label: 'WeChat', key: 'wechat' },
+  { method: 'bank_transfer', label: 'Virement', key: 'virement' },
+  { method: 'cash', label: 'Cash', key: 'cash' },
 ];
 
 const WalletPage = () => {
@@ -37,6 +39,9 @@ const WalletPage = () => {
   const { data: clientRatesData, isLoading: rateLoading } = useClientRates();
 
   const rate = clientRatesData?.activeRate;
+  // Les taux DU PAYS du client (Gabon −1 %…), dérivés de la référence Cameroun.
+  const sheet = countrySheetFor(rate, clientRatesData?.adjustments, clientCountryToRateKey(profile?.country));
+  const derived = sheet && !sheet.isReference ? sheet : null;
 
   return (
     <MobileLayout>
@@ -83,12 +88,13 @@ const WalletPage = () => {
                     <PaymentMethodLogo method={r.method} size={34} />
                     <span className={cn('flex-1 text-[14px] font-bold', TEXT.strong)}>{r.label}</span>
                     <span className={cn('text-[14px] font-black tabular-nums', TEXT.strong)}>
-                      {formatNumber(rate[r.key])} <span className="text-[12px] font-bold text-[#E8932A]">¥</span>
+                      {formatNumber(Math.round((sheet?.rates ?? { cash: rate.rate_cash, alipay: rate.rate_alipay, wechat: rate.rate_wechat, virement: rate.rate_virement })[r.key]))} <span className="text-[12px] font-bold text-[#E8932A]">¥</span>
                     </span>
                   </div>
                 ))}
                 <div className={cn('px-3 pb-1 pt-2 text-[11px]', TEXT.muted)}>
                   {t('wallet.ratePer', { defaultValue: 'Pour 1 000 000 XAF' })}
+                  {derived && <> · {t(`rates.countries.${derived.key}`, { defaultValue: derived.label })} ({formatCountryPct(derived.percentage)})</>}
                 </div>
               </>
             )}

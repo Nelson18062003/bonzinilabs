@@ -93,6 +93,20 @@ export function buildCountryRateSheets(
   });
 }
 
+/**
+ * La fiche d'UN pays (clé `rate_adjustments`), ou la référence si la clé est
+ * inconnue / les ajustements absents. Pour les écrans client : un client
+ * gabonais voit ses taux, pas ceux du Cameroun.
+ */
+export function countrySheetFor(
+  rate: DailyRate | null | undefined,
+  adjustments: readonly RateAdjustment[] | undefined,
+  key: string | null | undefined,
+): CountryRateSheet | null {
+  const sheets = buildCountryRateSheets(rate, adjustments ?? []);
+  return sheets.find((s) => s.key === key) ?? sheets.find((s) => s.isReference) ?? null;
+}
+
 /** Forme attendue par le flyer (`RateFlyer`) — même ordre de lignes. */
 export function toFlyerRates(rates: MethodRates): { alipay: number; wechat: number; bank: number; cash: number } {
   return { alipay: rates.alipay, wechat: rates.wechat, bank: rates.virement, cash: rates.cash };
