@@ -21,8 +21,8 @@ import {
   fromE164,
   callingCode,
   formatE164ForDisplay,
-  PHONE_COUNTRY_GROUPS,
 } from '@/components/form/PhoneNumberInput';
+import { COUNTRY_ISOS, countryName } from '@/data/countries';
 
 describe('Formatage au fil de la frappe', () => {
   it('groupe un numéro camerounais', () => {
@@ -106,16 +106,20 @@ describe('Liste des pays', () => {
     expect(callingCode('CF')).toBe('+236');
   });
 
-  it('aucun pays en double entre les groupes', () => {
-    const all = PHONE_COUNTRY_GROUPS.flatMap((g) => g.countries.map((c) => c.iso));
-    expect(new Set(all).size).toBe(all.length);
+  it('tous les pays du monde sont proposés, sans doublon', () => {
+    expect(COUNTRY_ISOS.length).toBeGreaterThan(200);
+    expect(new Set(COUNTRY_ISOS).size).toBe(COUNTRY_ISOS.length);
+    // Le cas qui a déclenché la refonte : un client de Sierra Leone.
+    expect(COUNTRY_ISOS).toContain('SL');
+    expect(callingCode('SL')).toBe('+232');
   });
 
-  it('tout pays proposé a un indicatif calculable', () => {
-    for (const group of PHONE_COUNTRY_GROUPS) {
-      for (const c of group.countries) {
-        expect(() => callingCode(c.iso), `indicatif introuvable : ${c.iso}`).not.toThrow();
-      }
+  it('tout pays proposé a un indicatif calculable et un nom en trois langues', () => {
+    for (const iso of COUNTRY_ISOS) {
+      expect(() => callingCode(iso), `indicatif introuvable : ${iso}`).not.toThrow();
+      expect(countryName(iso, 'fr')).not.toBe('');
+      expect(countryName(iso, 'en')).not.toBe(iso);
+      expect(countryName(iso, 'zh')).not.toBe(iso);
     }
   });
 

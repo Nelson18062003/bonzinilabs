@@ -7,134 +7,32 @@
  * ajoute le choix du pays, le formatage pendant la frappe et la validation,
  * pour les cas où le numéro vient d'où il veut.
  *
- * Ce que remplaçait ce composant, dans le formulaire « Nouveau client » :
+ * Le pays se choisit dans `CountryCombobox` : TOUS les pays du monde, avec
+ * leur drapeau (SVG, lisible sous Windows) et une recherche par nom, code
+ * ISO ou indicatif. L'ancienne liste restreinte à 43 pays classés par zone
+ * a disparu : un client de Sierra Leone existe, il doit pouvoir être saisi.
  *
- *   · un `<select>` NATIF pour l'indicatif, sans `appearance-none` ni
- *     chevron, à côté d'un champ « Pays » qui, lui, en avait un — deux
- *     listes déroulantes voisines qui ne se ressemblaient pas, et dont une
- *     seule montrait qu'elle était déroulable ;
- *   · un drapeau en emoji qui, faute de police correspondante sur le poste,
- *     s'affichait « CN » — les deux lettres de l'indicateur régional — au
- *     lieu de 🇨🇳. D'où l'étrange « CN +86 » à l'écran. Aucun drapeau ici :
- *     le code ISO et le nom du pays se lisent partout, sur tout poste ;
- *   · AUCUN formatage ni validation. « 6 99 00 00 00 », « 00237699… » et
- *     « 699000000 » entraient tous les trois en base tels quels, et
- *     partaient ensuite en échec silencieux à l'envoi WhatsApp.
- *
- * Ici, `libphonenumber-js` — déjà une dépendance du projet — fait le travail
- * qu'il fait bien : `AsYouType` formate pendant la frappe selon le pays
- * choisi, `isValidPhoneNumber` valide la longueur ET le préfixe opérateur du
- * pays, et la valeur remontée est en E.164, le seul format que les
- * passerelles acceptent sans réinterpréter.
+ * `libphonenumber-js` fait le travail qu'il fait bien : `AsYouType` formate
+ * pendant la frappe selon le pays choisi, `isValidPhoneNumber` valide la
+ * longueur ET le préfixe opérateur du pays, et la valeur remontée est en
+ * E.164, le seul format que les passerelles acceptent sans réinterpréter.
  */
-import { AsYouType, isValidPhoneNumber, parsePhoneNumberFromString, getCountryCallingCode } from 'libphonenumber-js';
+import { useTranslation } from 'react-i18next';
+import {
+  AsYouType,
+  getExampleNumber,
+  isValidPhoneNumber,
+  parsePhoneNumberFromString,
+} from 'libphonenumber-js';
+import examples from 'libphonenumber-js/mobile/examples';
 import type { CountryCode } from 'libphonenumber-js';
 import { cn } from '@/lib/utils';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-/* ── Pays proposés ───────────────────────────────────────────────────
- *
- * Liste RESTREINTE et ordonnée par pertinence métier, pas les 250 pays que
- * connaît la bibliothèque : les clients sont des importateurs africains,
- * leurs fournisseurs sont chinois. L'indicatif n'est jamais écrit à la main
- * ci-dessous — il est DÉRIVÉ du code ISO par la bibliothèque, donc il ne
- * peut pas dériver de la réalité (le code en dur « +236 » pour la RCA était
- * juste, mais rien ne le garantissait). */
-
-interface CountryGroup {
-  label: string;
-  countries: { iso: CountryCode; name: string }[];
-}
-
-export const PHONE_COUNTRY_GROUPS: CountryGroup[] = [
-  {
-    label: 'Zone CEMAC',
-    countries: [
-      { iso: 'CM', name: 'Cameroun' },
-      { iso: 'GA', name: 'Gabon' },
-      { iso: 'TD', name: 'Tchad' },
-      { iso: 'CF', name: 'République centrafricaine' },
-      { iso: 'CG', name: 'Congo-Brazzaville' },
-      { iso: 'GQ', name: 'Guinée équatoriale' },
-    ],
-  },
-  {
-    label: "Afrique de l'Ouest",
-    countries: [
-      { iso: 'CI', name: "Côte d'Ivoire" },
-      { iso: 'SN', name: 'Sénégal' },
-      { iso: 'ML', name: 'Mali' },
-      { iso: 'BF', name: 'Burkina Faso' },
-      { iso: 'TG', name: 'Togo' },
-      { iso: 'BJ', name: 'Bénin' },
-      { iso: 'NE', name: 'Niger' },
-      { iso: 'GN', name: 'Guinée' },
-      { iso: 'NG', name: 'Nigeria' },
-      { iso: 'GH', name: 'Ghana' },
-    ],
-  },
-  {
-    label: 'Afrique centrale et de l’Est',
-    countries: [
-      { iso: 'CD', name: 'RD Congo' },
-      { iso: 'RW', name: 'Rwanda' },
-      { iso: 'BI', name: 'Burundi' },
-      { iso: 'AO', name: 'Angola' },
-      { iso: 'KE', name: 'Kenya' },
-      { iso: 'TZ', name: 'Tanzanie' },
-      { iso: 'UG', name: 'Ouganda' },
-      { iso: 'ET', name: 'Éthiopie' },
-    ],
-  },
-  {
-    label: 'Afrique du Nord et australe',
-    countries: [
-      { iso: 'MA', name: 'Maroc' },
-      { iso: 'TN', name: 'Tunisie' },
-      { iso: 'DZ', name: 'Algérie' },
-      { iso: 'ZA', name: 'Afrique du Sud' },
-    ],
-  },
-  {
-    label: 'Asie et Moyen-Orient',
-    countries: [
-      { iso: 'CN', name: 'Chine' },
-      { iso: 'HK', name: 'Hong Kong' },
-      { iso: 'AE', name: 'Émirats arabes unis' },
-      { iso: 'SA', name: 'Arabie saoudite' },
-      { iso: 'TR', name: 'Turquie' },
-      { iso: 'IN', name: 'Inde' },
-    ],
-  },
-  {
-    label: 'Europe et Amérique',
-    countries: [
-      { iso: 'FR', name: 'France' },
-      { iso: 'BE', name: 'Belgique' },
-      { iso: 'CH', name: 'Suisse' },
-      { iso: 'GB', name: 'Royaume-Uni' },
-      { iso: 'DE', name: 'Allemagne' },
-      { iso: 'ES', name: 'Espagne' },
-      { iso: 'IT', name: 'Italie' },
-      { iso: 'LU', name: 'Luxembourg' },
-      { iso: 'US', name: 'États-Unis / Canada' },
-    ],
-  },
-];
-
-const ALL_COUNTRIES = PHONE_COUNTRY_GROUPS.flatMap((g) => g.countries);
+import { countryDialCode, countryName, toCountryLang, type CountryIso } from '@/data/countries';
+import { CountryCombobox } from './CountryCombobox';
 
 /** « +237 » — dérivé, jamais écrit à la main. */
 export function callingCode(iso: CountryCode): string {
-  return `+${getCountryCallingCode(iso)}`;
+  return countryDialCode(iso);
 }
 
 /* ── Valeur ──────────────────────────────────────────────────────────── */
@@ -205,6 +103,21 @@ export function formatE164ForDisplay(e164: string | null | undefined): string {
   }
 }
 
+/**
+ * Un exemple de la BONNE longueur pour le pays choisi, tiré des exemples de
+ * numéros mobiles de la bibliothèque : le placeholder « 6XX XXX XXX » était
+ * figé sur le Cameroun et devenait faux dès qu'on changeait d'indicatif.
+ */
+export function examplePlaceholder(iso: CountryCode): string {
+  try {
+    const example = getExampleNumber(iso, examples);
+    if (example) return formatNational(example.nationalNumber, iso);
+  } catch {
+    /* pays sans exemple connu */
+  }
+  return '';
+}
+
 /* ── Composant ───────────────────────────────────────────────────────── */
 
 interface Props {
@@ -216,7 +129,12 @@ interface Props {
   disabled?: boolean;
   /** Affiche l'état de validité sous le champ (dès que l'on a saisi). */
   showValidity?: boolean;
+  /** Force l'état d'erreur (bord rouge) — ex. numéro déjà pris. */
+  invalid?: boolean;
   className?: string;
+  /** Classes communes au bouton d'indicatif et au champ (hauteur, rayon). */
+  controlClassName?: string;
+  autoFocus?: boolean;
   'aria-label'?: string;
 }
 
@@ -227,67 +145,57 @@ export function PhoneNumberInput({
   placeholder,
   disabled,
   showValidity = true,
+  invalid,
   className,
+  controlClassName,
+  autoFocus,
   'aria-label': ariaLabel,
 }: Props) {
+  const { t, i18n } = useTranslation('common');
+  const lang = toCountryLang(i18n.language);
   const digits = value.national.replace(/\D/g, '');
   const complete = isPhoneComplete(value);
   const touched = digits.length > 0;
+  const showWarn = touched && !complete;
 
-  const handleCountry = (iso: string) => {
-    const country = iso as CountryCode;
+  const handleCountry = (iso: CountryIso) => {
     // Reformater les chiffres déjà saisis selon le NOUVEAU pays plutôt que
     // de vider le champ : l'opérateur qui se trompe d'indicatif ne doit pas
     // ressaisir le numéro.
-    onChange({ country, national: formatNational(value.national, country) });
+    onChange({ country: iso, national: formatNational(value.national, iso) });
   };
 
   return (
     <div className={cn('space-y-1.5', className)}>
       <div className="flex gap-2">
-        <Select value={value.country} onValueChange={handleCountry} disabled={disabled}>
-          {/* Le chevron vient de `SelectTrigger` : même composant, donc même
-              affordance que le champ « Pays » juste en dessous. */}
-          <SelectTrigger className="h-12 w-[132px] shrink-0 rounded-2xl" aria-label="Indicatif pays">
-            <SelectValue>
-              <span className="flex items-baseline gap-1.5">
-                <span className="text-[11px] font-semibold text-muted-foreground">{value.country}</span>
-                <span className="tabular-nums">{callingCode(value.country)}</span>
-              </span>
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="max-h-[320px]">
-            {PHONE_COUNTRY_GROUPS.map((group) => (
-              <SelectGroup key={group.label}>
-                <SelectLabel className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  {group.label}
-                </SelectLabel>
-                {group.countries.map((c) => (
-                  <SelectItem key={c.iso} value={c.iso}>
-                    <span className="flex w-full items-baseline gap-2">
-                      <span className="tabular-nums text-muted-foreground">{callingCode(c.iso)}</span>
-                      <span>{c.name}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-
+        <CountryCombobox
+          variant="dial"
+          value={value.country}
+          onChange={handleCountry}
+          disabled={disabled}
+          invalid={invalid}
+          className={controlClassName}
+        />
         <input
           id={id}
           type="tel"
           inputMode="tel"
           autoComplete="tel-national"
-          aria-label={ariaLabel}
-          aria-invalid={touched && !complete}
+          autoFocus={autoFocus}
+          aria-label={ariaLabel ?? t('phone')}
+          aria-invalid={invalid || showWarn}
           disabled={disabled}
           className={cn(
-            'h-12 flex-1 rounded-2xl border bg-card px-4 text-[14px] tabular-nums outline-none transition',
-            'focus:ring-2 focus:ring-ring',
-            touched && !complete ? 'border-amber-400 dark:border-amber-600' : 'border-border',
-            disabled && 'cursor-not-allowed opacity-60',
+            'h-11 min-w-0 flex-1 rounded-lg border bg-white px-3 text-[16px] tabular-nums text-[#1E1E1E] outline-none transition-colors',
+            'placeholder:text-[#B3B3B3] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C]',
+            'dark:bg-[#2C2C2C] dark:text-[#F5F5F5] dark:placeholder:text-[#757575] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]',
+            'disabled:cursor-not-allowed disabled:border-[#B3B3B3] disabled:bg-[#D9D9D9] disabled:text-[#B3B3B3]',
+            invalid
+              ? 'border-[#EC221F]'
+              : showWarn
+                ? 'border-[#E8B931]'
+                : 'border-[#949494] dark:border-[#6E6E6E]',
+            controlClassName,
           )}
           placeholder={placeholder ?? examplePlaceholder(value.country)}
           value={value.national}
@@ -296,33 +204,12 @@ export function PhoneNumberInput({
       </div>
 
       {showValidity && touched && (
-        <p className={cn('text-[14px]', complete ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-500')}>
+        <p className={cn('text-[14px]', complete ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#975102] dark:text-[#E8B931]')}>
           {complete
-            ? `Numéro valide · ${toE164(value)}`
-            : `Numéro incomplet pour ${countryName(value.country)}`}
+            ? t('phoneField.valid', { number: toE164(value) })
+            : t('phoneField.incompleteFor', { country: countryName(value.country, lang) })}
         </p>
       )}
     </div>
   );
-}
-
-function countryName(iso: CountryCode): string {
-  return ALL_COUNTRIES.find((c) => c.iso === iso)?.name ?? iso;
-}
-
-/**
- * Un exemple de la BONNE longueur pour le pays choisi, construit depuis la
- * bibliothèque : le placeholder « 6XX XXX XXX » était figé sur le Cameroun
- * et devenait faux dès qu'on changeait d'indicatif.
- */
-function examplePlaceholder(iso: CountryCode): string {
-  const samples: Partial<Record<CountryCode, string>> = {
-    CM: '699000000',
-    CN: '13022045608',
-    FR: '612345678',
-    US: '2015550123',
-  };
-  const sample = samples[iso];
-  if (sample) return formatNational(sample, iso);
-  return 'Numéro national';
 }
