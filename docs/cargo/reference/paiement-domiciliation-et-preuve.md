@@ -85,6 +85,120 @@ agréé du pays de l'importateur »*. L'exception ne ferme donc rien.
 
 ---
 
+## 3 bis. 🔧 CORRECTION — qui constate l'infraction, et pourquoi « ça passe »
+
+**Objection de Nelson Soh (18/09/2026) :** *« On a importé plusieurs conteneurs cette
+année sans que cette case ait été remplie. Ça passait. On sortait nos conteneurs du
+port, et on n'a jamais eu d'amende là-dessus. »*
+
+**Cette observation est exacte, et le texte lui-même l'explique. Mon cadrage du §3 était
+faux.**
+
+### Ce que j'avais écrit, et pourquoi c'était trompeur
+
+J'ai présenté « amende encourue ≈ 14 347 852 XAF » dans un tableau, à côté des droits
+réellement liquidés. Cela donnait l'impression d'une **dette** ou d'une facture imminente.
+**Ce n'en est pas une.** C'est une **exposition maximale théorique**, et je n'avais pas
+vérifié qui déclenche cette sanction ni comment. Je l'ai fait depuis.
+
+### Ce que dit le texte sur la constatation
+
+> **Art. 118** — *« Le constat des infractions commises par **les intermédiaires agréés**
+> est établi par le Ministère chargé des Finances, la BEAC ou la COBAC pour ce qui
+> concerne leurs domaines de compétence respectifs. »*
+> **Art. 119** — *« Le constat des infractions commises par **les autres contrevenants**
+> est établi par le **Ministère chargé des Finances**. »*
+
+> **Art. 120** — *« **Lorsque l'infraction est commise ou constatée aux frontières
+> douanières**, le constat de l'infraction doit être fait par écrit […] »*
+> **Art. 121** — *« L'**agent de douane** est chargé de percevoir les amendes portant sur
+> les infractions **commises ou constatées aux frontières douanières** […] »*
+
+Et ce que sont les infractions « aux frontières douanières » au sens de ce Titre :
+
+> **Art. 116/117** — *« La déclaration des **valeurs et moyens de paiement** exportés /
+> importés se fait aux frontières douanières, au moment de leur exportation /
+> importation. »*
+
+### La conclusion, et elle est nette
+
+**Une non-domiciliation n'est pas une infraction constatée au portail du port.** L'agent
+des douanes de Kribi n'a pas mandat de la constater : sa compétence de perception
+(art. 121) porte sur les infractions *commises ou constatées aux frontières douanières*,
+c'est-à-dire, dans ce Titre, les mouvements de valeurs et moyens de paiement (art. 116
+et 117). La non-domiciliation, elle, relève de l'**art. 119** : constat par le
+**Ministère chargé des Finances**, dans le cadre d'un contrôle administratif.
+
+**C'est exactement pour ça que des milliers de conteneurs sortent chaque année avec une
+case 23 vide sans que personne ne paie rien.** Ce n'est pas une tolérance officieuse :
+c'est la conséquence directe de la répartition des compétences écrite dans le texte.
+
+### Ce qui, en revanche, reste exact
+
+Le Règlement est directement applicable, et l'annexe des sanctions en fait partie :
+
+> **Art. 127** — *« Les annexes ci-jointes **font partie intégrante** du présent
+> Règlement. »*
+> **Art. 128** — *« Le présent Règlement est **obligatoire dans tous ses éléments et
+> directement applicable** dans tout État membre. »*
+
+Donc l'obligation de l'art. 38 existe, la sanction de l'Annexe III existe, et elles sont
+en vigueur. **Ce qui n'existe pas, c'est un mécanisme qui les déclenche automatiquement
+au passage du conteneur.**
+
+**Le mot juste est « risque dormant », pas « amende due ».** J'aurais dû l'écrire ainsi.
+
+### Ce qui coûte réellement de l'argent à Bonzini — et ce n'est pas l'amende
+
+Voilà le lien que j'aurais dû mettre en avant dès le départ :
+
+**La case 23 vide ne produit pas une amende. Elle produit un motif de doute.**
+
+> **Art. 42.2 (Code des douanes)** — *« […] lorsque l'administration des douanes a des
+> **raisons de douter** de la véracité ou de l'exactitude des renseignements […] »*
+
+Un dossier sans domiciliation, avec un fret à 0,000 et une assurance à 0,000, donne au
+vérificateur le motif dont il a besoin pour quitter la valeur déclarée. **C'est ça qui a
+fait passer la Toyota Fortuner de ~10 000 000 à 13 855 066 XAF — soit 2 311 829 XAF de
+droits et taxes en trop.**
+
+| | Statut réel |
+|---|---|
+| Amende de 50 % (art. 38) | **risque dormant** — constat par le MINFI, quasi jamais déclenché à l'import courant |
+| **Sur-évaluation par manque de dossier** | **coût réel, déjà payé, à chaque conteneur** |
+
+L'argument n'est donc pas « vous risquez 14 millions ». Il est : **vous payez déjà
+2,3 millions de trop sur un seul article, et la case 23 fait partie de ce qui le permet.**
+
+### Une nuance structurelle, pas un oubli de forme
+
+Il faut aussi dire pourquoi cette case est vide : **le système de domiciliation suppose
+que l'importateur règle son fournisseur étranger par une banque.** Bonzini ne le fait pas
+— le règlement passe par le rail USDT. **Aucune banque n'a donc jamais eu de raison
+d'ouvrir un dossier.** La case 23 vide n'est pas une négligence du déclarant : c'est la
+conséquence mécanique du rail de paiement.
+
+### La limite honnête de l'argument « tellement de gens font ça »
+
+Il est vrai, et il tient tant que l'entreprise reste petite. Un opérateur à 1-3
+conteneurs par an n'est pas un sujet pour un contrôle MINFI. Un opérateur à 50
+conteneurs, avec une plateforme, des statistiques et une ambition affichée, est visible.
+**Le risque dormant ne change pas de nature quand on grandit : il change de probabilité.**
+C'est un arbitrage de calendrier, pas un impératif immédiat — et c'est à Nelson de le
+faire, pas à moi.
+
+### 🔵 Ce que je n'ai toujours pas vérifié
+
+- **Art. 126** : *« Les seuils prévus aux articles 17, 18, 32, **38**, 41, 42 […] sont des
+  **seuils minima** ; ils peuvent […] être **revus à la hausse** par des dispositions
+  nationales, après avis de la Banque Centrale. »* → **le Cameroun a-t-il relevé le seuil
+  de 5 millions ?** Non vérifié.
+- Existe-t-il une instruction MINFI ou DGD camerounaise rendant la case 23 obligatoire ou
+  facultative dans CAMCIS ? Non vérifié.
+- Fréquence réelle des contrôles de change du MINFI sur les importateurs. Non vérifié.
+
+---
+
 ## 4. La chaîne décrite par Nelson est exacte — et le formulaire BEAC le confirme
 
 Chaîne proposée : **proforma → dossier d'importation à la banque → paiement →
