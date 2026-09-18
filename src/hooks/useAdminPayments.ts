@@ -161,21 +161,27 @@ export function useCancelPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (paymentId: string) => {
+    // Motif : obligatoire côté serveur pour un paiement déjà effectué,
+    // conservé sur la ligne (`cancelled_reason`) et dans la timeline.
+    mutationFn: async (input: string | { paymentId: string; reason?: string }) => {
+      const paymentId = typeof input === 'string' ? input : input.paymentId;
+      const reason = typeof input === 'string' ? undefined : input.reason?.trim() || undefined;
       const { data, error } = await supabaseAdmin.rpc('cancel_payment', {
         p_payment_id: paymentId,
+        p_reason: reason,
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string };
+      const result = data as { success: boolean; error?: string; was_completed?: boolean };
       if (!result.success) {
         throw new Error(result.error || i18n.t('hooks.cancelPayment.error', { ns: 'common', defaultValue: "Erreur lors de l'annulation" }));
       }
 
       return result;
     },
-    onSuccess: (_data, paymentId) => {
+    onSuccess: (_data, input) => {
+      const paymentId = typeof input === 'string' ? input : input.paymentId;
       queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment', paymentId] });
       queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', paymentId] });
@@ -229,10 +235,11 @@ export function useDeletePaymentProof() {
   });
 }
 
-// Correct a payment's amounts/rate after the fact (super admin only — the RPC
-// enforces it). Any status, including completed. When the payment still holds
-// its debit, the RPC adjusts the wallet and writes an ADMIN_DEBIT/ADMIN_CREDIT
-// ledger entry so reconciliation stays exact.
+// Correct a payment's amounts/rate. Any agent with canProcessPayments while the
+// payment is still open; super admin only once it is closed (the RPC enforces
+// both). When the payment still holds its debit, the RPC adjusts the wallet
+// (down to the client's authorised overdraft) and writes an
+// ADMIN_DEBIT/ADMIN_CREDIT ledger entry so reconciliation stays exact.
 export function useAdminCorrectPayment() {
   const queryClient = useQueryClient();
 

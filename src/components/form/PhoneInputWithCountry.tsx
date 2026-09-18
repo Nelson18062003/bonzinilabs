@@ -1,9 +1,15 @@
+/**
+ * Champ téléphone à valeur canonique (« +237691234567 » ou `null`) — utilisé
+ * par la trésorerie (contreparties, ventes, achats). Façade au-dessus de
+ * `PhoneNumberInput` : tous les pays, drapeaux, formatage et validation.
+ */
 import * as React from 'react';
-import { cn } from '@/lib/utils';
-import { COUNTRY_CODES, joinPhone, splitPhone } from '@/data/countryCodes';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { FormFieldWrapper } from './FormFieldWrapper';
-import { fieldControlVariants } from './shared';
 import type { BaseFieldProps } from './shared';
+import { PhoneNumberInput, fromE164, formatNational, toE164, type PhoneValue } from './PhoneNumberInput';
+import { COUNTRY_ISOS, countryDialCode, type CountryIso } from '@/data/countries';
+import { splitPhone } from '@/data/countryCodes';
 
 interface PhoneInputWithCountryProps extends Omit<BaseFieldProps, 'size'> {
   /** Canonical E.164-ish phone (e.g. "+237691234567"). null/empty for unset. */
@@ -15,11 +21,35 @@ interface PhoneInputWithCountryProps extends Omit<BaseFieldProps, 'size'> {
   size?: 'sm' | 'md' | 'lg';
 }
 
-/**
- * Phone input with an inline country-code picker. Internal state tracks
- * the dial code (selected via dropdown) and the local digits separately;
- * the canonical "+237691234567" string is emitted to the parent.
- */
+function isoForDialCode(dialCode: string): CountryIso {
+  const found = COUNTRY_ISOS.find((iso) => countryDialCode(iso) === dialCode);
+  // « +1 » vaut pour plusieurs pays : le premier de la bibliothèque (US) fait foi.
+  return found ?? 'CM';
+}
+
+function fromValue(value: string | null | undefined, defaultIso: CountryIso): PhoneValue {
+  if (!value) return { country: defaultIso, national: '' };
+  const strict = fromE164(value);
+  if (strict.national) return strict;
+  // Valeur incomplète : retrouver l'indicatif puis formater le reste.
+  try {
+    const parsed = parsePhoneNumberFromString(value);
+    if (parsed?.country) return { country: parsed.country, national: formatNational(parsed.nationalNumber, parsed.country) };
+  } catch {
+    /* on retombe sur l'indicatif le plus long */
+  }
+  const { dialCode, local } = splitPhone(value, countryDialCode(defaultIso));
+  const iso = isoForDialCode(dialCode);
+  return { country: iso, national: formatNational(local, iso) };
+}
+
+/** Canonique quand le numéro est valide ; concaténation brute sinon (jamais vide → null). */
+function toValue(value: PhoneValue): string | null {
+  const digits = value.national.replace(/\D/g, '');
+  if (!digits) return null;
+  return toE164(value) ?? `${countryDialCode(value.country)}${digits}`;
+}
+
 export function PhoneInputWithCountry({
   label,
   hint,
@@ -31,37 +61,29 @@ export function PhoneInputWithCountry({
   value,
   onValueChange,
   defaultDialCode = '+237',
-  placeholder = '6XX XX XX XX',
+  placeholder,
 }: PhoneInputWithCountryProps) {
   const reactId = React.useId();
-  const initial = React.useMemo(() => splitPhone(value, defaultDialCode), [value, defaultDialCode]);
-  const [dialCode, setDialCode] = React.useState(initial.dialCode);
-  const [local, setLocal] = React.useState(initial.local);
+  const defaultIso = React.useMemo(() => isoForDialCode(defaultDialCode), [defaultDialCode]);
+  const [phone, setPhone] = React.useState<PhoneValue>(() => fromValue(value, defaultIso));
+  const lastEmitted = React.useRef<string | null>(value ?? null);
 
   // Sync from external value (form.reset).
   React.useEffect(() => {
-    const next = splitPhone(value, defaultDialCode);
-    setDialCode(next.dialCode);
-    setLocal(next.local);
-  }, [value, defaultDialCode]);
+    const next = value ?? null;
+    if (next === lastEmitted.current) return;
+    lastEmitted.current = next;
+    setPhone(fromValue(next, defaultIso));
+  }, [value, defaultIso]);
 
-  const emit = (nextDial: string, nextLocal: string) => {
-    if (!onValueChange) return;
-    onValueChange(joinPhone(nextDial, nextLocal));
+  const handleChange = (next: PhoneValue) => {
+    setPhone(next);
+    const emitted = toValue(next);
+    lastEmitted.current = emitted;
+    onValueChange?.(emitted);
   };
 
-  const handleDialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDialCode(e.target.value);
-    emit(e.target.value, local);
-  };
-
-  const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digitsOnly = e.target.value.replace(/\D/g, '');
-    setLocal(digitsOnly);
-    emit(dialCode, digitsOnly);
-  };
-
-  const hasError = Boolean(error);
+  const control = size === 'lg' ? 'h-12 rounded-md' : size === 'sm' ? 'h-9 rounded-md text-[14px]' : 'h-11 md:h-10 rounded-md';
 
   return (
     <FormFieldWrapper
@@ -73,35 +95,15 @@ export function PhoneInputWithCountry({
       wrapperClassName={wrapperClassName}
       labelClassName={labelClassName}
     >
-      <div className="flex gap-2">
-        <select
-          value={dialCode}
-          onChange={handleDialChange}
-          className={cn(
-            fieldControlVariants({ size, invalid: hasError }),
-            'w-[110px] flex-shrink-0 px-2 font-semibold',
-          )}
-          aria-label="Code pays"
-        >
-          {COUNTRY_CODES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.flag} {c.code}
-            </option>
-          ))}
-        </select>
-        <input
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel-national"
-          value={local}
-          onChange={handleLocalChange}
-          placeholder={placeholder}
-          className={cn(
-            fieldControlVariants({ size, invalid: hasError }),
-            'flex-1 tabular-nums tracking-wide',
-          )}
-        />
-      </div>
+      <PhoneNumberInput
+        id={reactId}
+        value={phone}
+        onChange={handleChange}
+        placeholder={placeholder}
+        invalid={Boolean(error)}
+        showValidity={false}
+        controlClassName={control}
+      />
     </FormFieldWrapper>
   );
 }

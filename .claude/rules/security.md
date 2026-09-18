@@ -31,7 +31,7 @@ END IF;
 Correspondances : dépôts → `canProcessDeposits` · paiements →
 `canProcessPayments` · ajustements de portefeuille → `canAdjustWallets` ·
 clients/admins → `canManageUsers` · taux → `canManageRates` · trésorerie →
-`canManageTreasury`.
+`canManageTreasury` · découvert client → `canGrantOverdraft` (super_admin).
 
 Si vous ajoutez un rôle ou une permission, mettez à jour **les deux**
 matrices : le test `src/tests/security/rolePermissionParity.test.ts` échoue
@@ -58,6 +58,17 @@ En revanche, **pas de plafond, ni serveur ni formulaire** (décision du
 14/09/2026) : un dépôt réel de 133 500 000 XAF existe en base. Les gardes
 restantes sont techniques (`isValidXafAmount` : entier, `> 0`, minimum,
 `Number.isSafeInteger`) ; côté paiement, le solde du client borne le montant.
+
+**Découvert (18/09/2026)** : le plancher d'un débit n'est plus `0` mais
+`-wallets.overdraft_limit_xaf` (contrainte `wallets_balance_floor_check`).
+Seul le super admin pose ce plafond (`admin_set_wallet_overdraft`,
+`canGrantOverdraft`) et seules les actions de l'ÉQUIPE le consomment
+(`create_admin_payment`, `create_payment_batch`, `admin_adjust_wallet`,
+`create_wallet_adjustment`, `admin_correct_payment`, `cancel_deposit`).
+`create_payment` (client, app) reste borné par le solde positif. Toute
+nouvelle RPC qui débite un portefeuille doit comparer à
+`-COALESCE(v_wallet.overdraft_limit_xaf, 0)`, jamais à `0`. Côté front,
+`src/lib/overdraft.ts` (`availableXaf`) est la seule arithmétique admise.
 
 **Paramètre `p_user_id`** : un identifiant passé en paramètre n'est pas une
 autorisation. Le lier à `auth.uid()`, sauf si l'appelant a la permission

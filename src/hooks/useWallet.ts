@@ -6,6 +6,8 @@ export interface Wallet {
   id: string;
   user_id: string;
   balance_xaf: number;
+  /** Découvert autorisé par l'équipe (0 = aucun). */
+  overdraft_limit_xaf?: number;
   created_at: string;
   updated_at: string;
 }
@@ -36,7 +38,7 @@ export function useMyWallet() {
 
       const { data, error } = await supabase
         .from('wallets')
-        .select('id, user_id, balance_xaf, created_at, updated_at')
+        .select('id, user_id, balance_xaf, overdraft_limit_xaf, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -186,6 +188,100 @@ export function useWalletOperations(walletId: string | undefined) {
     },
     enabled: !!walletId,
   });
+}
+
+// ─── Relevé PDF (app client) — lecture sur une période, sans plafond ─────────
+
+const LEDGER_SELECT =
+  'id, wallet_id, entry_type, amount_xaf, balance_before, balance_after, reference_id, reference_type, description, created_by_admin_id, created_at';
+
+type LedgerRow = {
+  id: string;
+  wallet_id: string;
+  entry_type: string;
+  amount_xaf: number;
+  balance_before: number;
+  balance_after: number;
+  reference_id: string | null;
+  reference_type: string | null;
+  description: string | null;
+  created_by_admin_id: string | null;
+  created_at: string;
+};
+
+/** Même mappage ligne → WalletOperation que `useMyWalletOperations`. */
+function toWalletOperation(entry: LedgerRow): WalletOperation {
+  return {
+    id: entry.id,
+    wallet_id: entry.wallet_id,
+    operation_type: entry.entry_type,
+    amount_xaf: entry.amount_xaf,
+    balance_before: entry.balance_before,
+    balance_after: entry.balance_after,
+    reference_id: entry.reference_id,
+    reference_type: entry.reference_type,
+    description: entry.description,
+    performed_by: entry.created_by_admin_id,
+    created_at: entry.created_at,
+  };
+}
+
+/** L'identifiant du portefeuille de l'utilisateur connecté, ou `null`. */
+async function getMyWalletId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: wallet, error } = await supabase
+    .from('wallets')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) throw error;
+  return wallet?.id ?? null;
+}
+
+const STATEMENT_PAGE = 1000;
+
+/**
+ * TOUTES les écritures du client connecté sur une période (`null` = tout
+ * l'historique), par paquets de 1000 — le relevé n'est plus coupé à 100.
+ */
+export async function fetchMyLedgerInRange(range: { from: Date; to: Date } | null): Promise<WalletOperation[]> {
+  const walletId = await getMyWalletId();
+  if (!walletId) return [];
+  const all: WalletOperation[] = [];
+  for (let offset = 0; ; offset += STATEMENT_PAGE) {
+    let query = supabase
+      .from('ledger_entries')
+      .select(LEDGER_SELECT)
+      .eq('wallet_id', walletId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + STATEMENT_PAGE - 1);
+    if (range) {
+      query = query.gte('created_at', range.from.toISOString()).lte('created_at', range.to.toISOString());
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    const page = (data || []) as LedgerRow[];
+    all.push(...page.map(toWalletOperation));
+    if (page.length < STATEMENT_PAGE) break;
+  }
+  return all;
+}
+
+/** La dernière écriture strictement avant `date` (solde d'ouverture d'une période vide). */
+export async function fetchMyLastLedgerEntryBefore(date: Date): Promise<WalletOperation | null> {
+  const walletId = await getMyWalletId();
+  if (!walletId) return null;
+  const { data, error } = await supabase
+    .from('ledger_entries')
+    .select(LEDGER_SELECT)
+    .eq('wallet_id', walletId)
+    .lt('created_at', date.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toWalletOperation(data as LedgerRow) : null;
 }
 
 // (useExchangeRate retiré — table exchange_rates supprimée ; les RMB viennent de daily_rates.)

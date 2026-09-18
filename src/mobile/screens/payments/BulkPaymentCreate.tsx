@@ -131,12 +131,12 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
   const methodLabel = (m: PaymentMethodKey) => t(`method.${dbMethod(m)}`, { defaultValue: PAYMENT_METHOD[m].label });
 
-  const { data: walletsMap = new Map<string, number>() } = useQuery({
+  const { data: walletsMap = new Map<string, { balance: number; overdraft: number }>() } = useQuery({
     queryKey: ['all-wallets-for-bulk-payment'],
     queryFn: async () => {
-      const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf');
+      const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf, overdraft_limit_xaf');
       if (error) throw error;
-      return new Map((data ?? []).map((w) => [w.user_id, w.balance_xaf as number]));
+      return new Map((data ?? []).map((w) => [w.user_id, { balance: w.balance_xaf as number, overdraft: (w.overdraft_limit_xaf as number) ?? 0 }]));
     },
     staleTime: 30_000,
   });
@@ -181,11 +181,14 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
   const { data: carnet = [] } = useAdminClientBeneficiaries(client?.user_id);
 
-  const clientBalance = client ? walletsMap.get(client.user_id) ?? 0 : 0;
+  const clientBalance = client ? walletsMap.get(client.user_id)?.balance ?? 0 : 0;
+  const clientOverdraft = client ? walletsMap.get(client.user_id)?.overdraft ?? 0 : 0;
+  // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé.
+  const clientAvailable = clientBalance + clientOverdraft;
   const totalXaf = lines.reduce((s, l) => s + l.xaf, 0);
   const totalCny = lines.reduce((s, l) => s + l.cny, 0);
-  const remaining = clientBalance - totalXaf;
-  const overBudget = totalXaf > clientBalance;
+  const remaining = clientAvailable - totalXaf;
+  const overBudget = totalXaf > clientAvailable;
 
   // Live conversion (mirrors MobileNewPayment).
   const eBaseRate = rateData ? getBaseRate(rateData, eMethod) : FALLBACK_RATE;
@@ -420,7 +423,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             <div className="min-w-0 flex-1">
               <p className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{client.first_name} {client.last_name}</p>
               <p className={cn('flex items-center gap-1.5 text-[14px]', TEXT.muted)}>
-                <Wallet className="h-3.5 w-3.5" /> {t('form.balance', { defaultValue: 'Solde' })} {formatXAF(clientBalance)}
+                <Wallet className="h-3.5 w-3.5" /> {t('form.balance', { defaultValue: 'Solde' })} {formatXAF(clientBalance)}{clientOverdraft > 0 ? ` · ${t('bulk.availableWithOverdraft', { amount: formatXAF(clientAvailable), defaultValue: `disponible ${formatXAF(clientAvailable)} (découvert compris)` })}` : ''}
               </p>
             </div>
             <SoftPill onClick={() => { setClient(null); setLines([]); }} className="px-4 py-2 text-[14px]">{t('bulk.change', { defaultValue: 'Changer' })}</SoftPill>
@@ -438,7 +441,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
                   <div className="min-w-0 flex-1">
                     <p className={cn('break-words text-[16px] font-semibold', TEXT.strong)}>{c.first_name} {c.last_name}</p>
                     {c.phone && <p className={cn('text-[16px]', TEXT.muted)}>{c.phone}</p>}
-                    <p className={cn('text-[16px]', TEXT.muted)}>Solde : <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(walletsMap.get(c.user_id) ?? 0)} XAF</b></p>
+                    <p className={cn('text-[16px]', TEXT.muted)}>Solde : <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(walletsMap.get(c.user_id)?.balance ?? 0)} XAF</b></p>
                   </div>
                 </button>
               ))}

@@ -310,6 +310,25 @@
   "cannotDeleteClientPendingPayments": "无法删除有待处理付款的客户",
   "noMovementsToExport": "没有可导出的交易记录",
   "statementGenerationError": "生成对账单时出错",
+  "statementPeriod": {
+    "title": "账户对账单",
+    "hint": "选择要覆盖的期间。PDF 会显示期初余额、交易明细和期末余额。",
+    "customPlaceholder": "开始日期 → 结束日期",
+    "pickDates": "请选择开始日期和结束日期。",
+    "generate": "生成 PDF",
+    "generating": "正在准备对账单…",
+    "presets": {
+      "today": "今天",
+      "last_7_days": "最近 7 天",
+      "last_14_days": "最近 14 天",
+      "last_30_days": "最近 30 天",
+      "last_90_days": "最近 3 个月",
+      "this_month": "本月",
+      "last_month": "上月",
+      "all_time": "全部历史",
+      "custom": "自定义"
+    }
+  },
   "clientDetail": "客户详情",
   "clientNotFound": "未找到客户",
   "clientProfile": "客户资料",
@@ -457,11 +476,73 @@
   "otpCode": "验证码",
   "phoneField": {
     "searchCountry": "搜索国家...",
-    "noResult": "无结果"
+    "noResult": "无结果",
+    "valid": "号码有效 · {{number}}",
+    "incompleteFor": "{{country}}的号码不完整"
   },
   "queryError": {
     "title": "无法加载{{what}}。",
     "hint": "请检查网络连接后重试。"
   },
-  "retry": "重试"
+  "retry": "重试",
+  "countryPicker": {
+    "choose": "选择国家",
+    "search": "搜索国家、代码或区号…",
+    "noResult": "没有匹配的国家",
+    "frequent": "常用",
+    "all": "所有国家",
+    "dialCode": "区号",
+    "country": "国家",
+    "clear": "清除",
+    "close": "关闭"
+  },
+  "clientForm": {
+    "optional": "选填",
+    "subtitle": "身份、联系方式与所在地",
+    "identity": "身份",
+    "identityHint": "客户的名、姓和公司。",
+    "contact": "联系方式",
+    "contactHint": "WhatsApp 号码将收到临时密码。",
+    "location": "所在地",
+    "locationHint": "国家默认跟随区号，可手动更改。",
+    "whatsapp": "WhatsApp",
+    "otherNumber": "号码 {{n}}",
+    "remove": "移除",
+    "removeNumber": "移除此号码",
+    "labelPlaceholder": "备注：MTN、办公室、中国…",
+    "numberLabel": "号码备注",
+    "addNumber": "添加另一个号码",
+    "primaryReceivesPassword": "第一个号码为主号码，将收到密码。",
+    "emailInvalid": "此电子邮箱地址似乎不完整。",
+    "summaryClient": "客户",
+    "passwordWillBeSent": "系统将生成临时密码，客户首次登录时必须修改。",
+    "canLogin": "{{name}} 现在可以登录了。",
+    "copyPassword": "复制密码",
+    "copyFailed": "复制失败：请选中密码并手动复制。",
+    "passwordOnce": "此密码不会再次显示，请通过 WhatsApp 发送给客户。",
+    "sendOnWhatsapp": "通过 WhatsApp 发送 · {{number}}",
+    "extraPhonesFailed": "其他号码未能保存。客户已用主号码创建，请在客户资料中添加其他号码。",
+    "whatsappMessage": "您好 {{name}}，您的 Bonzini Labs 账户已就绪。临时密码：{{password}}。首次登录时需要修改密码。"
+  },
+  "overdraft": {
+    "title": "授权透支",
+    "currentBalance": "当前余额",
+    "currentLimit": "授权透支额度",
+    "none": "无",
+    "newLimit": "新的透支上限",
+    "customLimit": "自定义金额 (XAF)",
+    "belowUsed": "客户已使用 {{amount}} 透支：上限不能低于该金额。",
+    "floorHint": "团队可将该客户余额扣至 {{amount}}。",
+    "reason": "原因",
+    "reasonPlaceholder": "例如：紧急供应商发票，计划30日结清…",
+    "warning": "仅团队可将 {{name}} 的余额扣至负数。透支会在客户资料、对账单和应用中以红色显示。",
+    "grant": "授权透支",
+    "update": "保存新上限",
+    "remove": "取消透支",
+    "granted": "透支已授权",
+    "removed": "透支已取消",
+    "error": "无法修改透支",
+    "availableWithOverdraft": "含透支可用：{{amount}}（授权 {{limit}}）",
+    "willOverdraw": "客户将进入透支：操作后余额 {{amount}}。"
+  }
 }

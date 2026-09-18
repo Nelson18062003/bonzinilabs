@@ -1,90 +1,92 @@
+/**
+ * Champ téléphone de l'app client (inscription, onboarding) et des fiches
+ * client admin — version « tous les pays ».
+ *
+ * L'ancien composant portait sa propre liste de 34 pays, des masques de
+ * saisie écrits à la main (« # ## ## ## ##») et des drapeaux emoji invisibles
+ * sous Windows. Il devient une façade au-dessus de `PhoneNumberInput` :
+ * même API (`value` = chaîne « +237699… » émise à chaque frappe,
+ * `onCountryChange`, `selectedCountryName`), mais 245 pays, drapeaux SVG,
+ * formatage et validation par libphonenumber.
+ *
+ * `COUNTRIES` et `Country` restent exportés pour les écrans qui listent les
+ * pays eux-mêmes ; `name` est le libellé FRANÇAIS (celui que la base
+ * stocke), `flag` un emoji de repli.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, Phone } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  countryLabelFr,
+  flagEmoji,
+  isoFromCountryLabel,
+  listCountries,
+  type CountryIso,
+} from '@/data/countries';
+import { PhoneNumberInput, EMPTY_PHONE, fromE164, formatNational, type PhoneValue } from '@/components/form/PhoneNumberInput';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 
 export interface Country {
+  iso: CountryIso;
+  /** Libellé français — celui que `clients.country` stocke. */
   name: string;
   flag: string;
+  /** Sans le « + » (compatibilité avec l'ancien composant). */
   dialCode: string;
-  phoneFormat: string;
-  maxDigits: number;
 }
 
-export const COUNTRIES: Country[] = [
-  // Afrique
-  { name: 'Cameroun', flag: '🇨🇲', dialCode: '237', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Gabon', flag: '🇬🇦', dialCode: '241', phoneFormat: '# ## ## ##', maxDigits: 7 },
-  { name: 'Tchad', flag: '🇹🇩', dialCode: '235', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Centrafrique', flag: '🇨🇫', dialCode: '236', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Congo', flag: '🇨🇬', dialCode: '242', phoneFormat: '## ### ####', maxDigits: 9 },
-  { name: 'Guinée Équatoriale', flag: '🇬🇶', dialCode: '240', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'RD Congo', flag: '🇨🇩', dialCode: '243', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: "Côte d'Ivoire", flag: '🇨🇮', dialCode: '225', phoneFormat: '## ## ## ## ##', maxDigits: 10 },
-  { name: 'Sénégal', flag: '🇸🇳', dialCode: '221', phoneFormat: '## ### ## ##', maxDigits: 9 },
-  { name: 'Mali', flag: '🇲🇱', dialCode: '223', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Burkina Faso', flag: '🇧🇫', dialCode: '226', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Niger', flag: '🇳🇪', dialCode: '227', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Togo', flag: '🇹🇬', dialCode: '228', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Bénin', flag: '🇧🇯', dialCode: '229', phoneFormat: '## ## ## ##', maxDigits: 8 },
-  { name: 'Guinée', flag: '🇬🇳', dialCode: '224', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Ghana', flag: '🇬🇭', dialCode: '233', phoneFormat: '## ### ####', maxDigits: 9 },
-  { name: 'Maroc', flag: '🇲🇦', dialCode: '212', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Algérie', flag: '🇩🇿', dialCode: '213', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Tunisie', flag: '🇹🇳', dialCode: '216', phoneFormat: '## ### ###', maxDigits: 8 },
-  { name: 'Cap-Vert', flag: '🇨🇻', dialCode: '238', phoneFormat: '### ## ##', maxDigits: 7 },
-  // Europe
-  { name: 'France', flag: '🇫🇷', dialCode: '33', phoneFormat: '# ## ## ## ##', maxDigits: 9 },
-  { name: 'Belgique', flag: '🇧🇪', dialCode: '32', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Suisse', flag: '🇨🇭', dialCode: '41', phoneFormat: '## ### ## ##', maxDigits: 9 },
-  { name: 'Allemagne', flag: '🇩🇪', dialCode: '49', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Royaume-Uni', flag: '🇬🇧', dialCode: '44', phoneFormat: '#### ### ###', maxDigits: 10 },
-  { name: 'Italie', flag: '🇮🇹', dialCode: '39', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Espagne', flag: '🇪🇸', dialCode: '34', phoneFormat: '### ## ## ##', maxDigits: 9 },
-  { name: 'Portugal', flag: '🇵🇹', dialCode: '351', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'Pologne', flag: '🇵🇱', dialCode: '48', phoneFormat: '### ### ###', maxDigits: 9 },
-  { name: 'Roumanie', flag: '🇷🇴', dialCode: '40', phoneFormat: '### ### ###', maxDigits: 9 },
-  // Autres
-  { name: 'Chine', flag: '🇨🇳', dialCode: '86', phoneFormat: '### #### ####', maxDigits: 11 },
-  { name: 'USA', flag: '🇺🇸', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Canada', flag: '🇨🇦', dialCode: '1', phoneFormat: '### ### ####', maxDigits: 10 },
-  { name: 'Brésil', flag: '🇧🇷', dialCode: '55', phoneFormat: '## ##### ####', maxDigits: 11 },
-];
+/** Tous les pays, triés par nom français. */
+export const COUNTRIES: Country[] = listCountries('fr').map((c) => ({
+  iso: c.iso,
+  name: c.nameFr,
+  flag: flagEmoji(c.iso),
+  dialCode: c.dialCode.slice(1),
+}));
 
-function formatPhoneDisplay(digits: string, format: string): string {
+function toCountry(iso: CountryIso): Country {
+  return COUNTRIES.find((c) => c.iso === iso) ?? { iso, name: countryLabelFr(iso), flag: flagEmoji(iso), dialCode: '' };
+}
+
+/** « +237699000000 » ou, si incomplet, l'indicatif suivi des chiffres saisis. */
+function toRawValue(value: PhoneValue): string {
+  const digits = value.national.replace(/\D/g, '');
   if (!digits) return '';
-  let result = '';
-  let digitIndex = 0;
-  for (let i = 0; i < format.length && digitIndex < digits.length; i++) {
-    if (format[i] === '#') {
-      result += digits[digitIndex];
-      digitIndex++;
-    } else {
-      result += format[i];
-      // If the next format char is # and we still have digits, continue
-      // Otherwise we added a space at the end, which is fine
-    }
+  try {
+    const parsed = parsePhoneNumberFromString(digits, value.country);
+    if (parsed?.isValid()) return parsed.number;
+  } catch {
+    /* incomplet : on émet la concaténation brute, comme avant */
   }
-  return result;
+  return `+${toCountry(value.country).dialCode}${digits}`;
 }
 
-function getPlaceholder(format: string): string {
-  let digit = 1;
-  let result = '';
-  for (const ch of format) {
-    if (ch === '#') {
-      result += String(digit % 10);
-      digit++;
-    } else {
-      result += ch;
+function fromRawValue(raw: string, fallbackCountry: CountryIso): PhoneValue {
+  if (!raw) return { country: fallbackCountry, national: '' };
+  const strict = fromE164(raw);
+  if (strict.national) return strict;
+  // Valeur incomplète « +2376990 » : retrouver le pays par son indicatif —
+  // SEULEMENT si la valeur annonce un indicatif (« + » ou « 00 »). Un numéro
+  // local historique « 677889900 » commence par 677 : sans cette garde, il
+  // s'ouvrait en Îles Salomon (+677) et repartait faux au premier caractère.
+  const trimmed = raw.trim();
+  const international = trimmed.startsWith('+') || trimmed.startsWith('00');
+  const digitsOnly = (trimmed.startsWith('00') ? trimmed.slice(2) : trimmed).replace(/\D/g, '');
+  if (international) {
+    const match = [...COUNTRIES]
+      .filter((c) => c.dialCode && digitsOnly.startsWith(c.dialCode))
+      .sort((a, b) => b.dialCode.length - a.dialCode.length)[0];
+    if (match) {
+      return { country: match.iso, national: formatNational(digitsOnly.slice(match.dialCode.length), match.iso) };
     }
   }
-  return result;
+  return { country: fallbackCountry, national: formatNational(digitsOnly, fallbackCountry) };
 }
 
 interface PhoneCountryInputProps {
   value: string;
   onChange: (val: string) => void;
+  /** Libellé de pays (français ou autre) imposé de l'extérieur. */
   selectedCountryName?: string;
   onCountryChange?: (country: Country) => void;
   error?: string;
@@ -92,6 +94,8 @@ interface PhoneCountryInputProps {
   autoFocus?: boolean;
   /** Masque le libellé interne (ex. l'onboarding fournit le sien). */
   hideLabel?: boolean;
+  /** Classes du bouton d'indicatif et du champ (hauteur, rayon). */
+  controlClassName?: string;
 }
 
 export function PhoneCountryInput({
@@ -103,181 +107,61 @@ export function PhoneCountryInput({
   disabled,
   autoFocus,
   hideLabel,
+  controlClassName,
 }: PhoneCountryInputProps) {
   const { t } = useTranslation('common');
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
-  const [localNumber, setLocalNumber] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [phone, setPhone] = useState<PhoneValue>(() => fromRawValue(value, EMPTY_PHONE.country));
+  const lastEmitted = useRef(value);
 
-  // Sync localNumber from external value on first load
+  // Valeur externe modifiée ailleurs que par nous (reset de formulaire).
   useEffect(() => {
-    if (value && value.startsWith('+')) {
-      const matched = COUNTRIES.find(c => value.startsWith('+' + c.dialCode));
-      if (matched) {
-        setSelectedCountry(matched);
-        const rawDigits = value.slice(matched.dialCode.length + 1);
-        setLocalNumber(formatPhoneDisplay(rawDigits, matched.phoneFormat));
-      }
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (value === lastEmitted.current) return;
+    lastEmitted.current = value;
+    setPhone(fromRawValue(value, phone.country));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
-  // Sync country from external selectedCountryName prop
+  // Pays imposé par le champ « Pays » du formulaire.
   useEffect(() => {
-    if (selectedCountryName) {
-      const matched = COUNTRIES.find(c => c.name === selectedCountryName);
-      if (matched && matched.name !== selectedCountry.name) {
-        setSelectedCountry(matched);
-        const digits = localNumber.replace(/\D/g, '');
-        const truncated = digits.slice(0, matched.maxDigits);
-        const formatted = formatPhoneDisplay(truncated, matched.phoneFormat);
-        setLocalNumber(formatted);
-        onChange('+' + matched.dialCode + truncated);
-      }
-    }
-  }, [selectedCountryName]); // eslint-disable-line react-hooks/exhaustive-deps
+    const iso = isoFromCountryLabel(selectedCountryName);
+    if (!iso || iso === phone.country) return;
+    const next = { country: iso, national: formatNational(phone.national, iso) };
+    setPhone(next);
+    const raw = toRawValue(next);
+    lastEmitted.current = raw;
+    onChange(raw);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCountryName]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-        setSearch('');
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Focus search when dropdown opens
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => searchRef.current?.focus(), 50);
-    }
-  }, [isOpen]);
-
-  const handleCountrySelect = (country: Country) => {
-    setSelectedCountry(country);
-    setIsOpen(false);
-    setSearch('');
-    const digits = localNumber.replace(/\D/g, '').slice(0, country.maxDigits);
-    const formatted = formatPhoneDisplay(digits, country.phoneFormat);
-    setLocalNumber(formatted);
-    onChange('+' + country.dialCode + digits);
-    onCountryChange?.(country);
+  const handleChange = (next: PhoneValue) => {
+    const countryChanged = next.country !== phone.country;
+    setPhone(next);
+    const raw = toRawValue(next);
+    lastEmitted.current = raw;
+    onChange(raw);
+    if (countryChanged) onCountryChange?.(toCountry(next.country));
   };
 
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const digits = raw.replace(/\D/g, '').slice(0, selectedCountry.maxDigits);
-    const formatted = formatPhoneDisplay(digits, selectedCountry.phoneFormat);
-    setLocalNumber(formatted);
-    onChange('+' + selectedCountry.dialCode + digits);
-  };
-
-  const filtered = search.trim()
-    ? COUNTRIES.filter(c =>
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.dialCode.includes(search)
-      )
-    : COUNTRIES;
-
-  const isFocused = isOpen;
-  const hasError = !!error;
+  const errorText = useMemo(() => error?.trim() || '', [error]);
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Label (masquable : l'onboarding fournit son propre libellé) */}
+    <div className="w-full">
       {!hideLabel && (
         <label className="mb-1.5 flex items-center gap-2 text-[13px] font-semibold text-[#1B1A24] dark:text-[#F2F1F7]">
-          <Phone className="w-4 h-4" />
+          <Phone className="h-4 w-4" />
           {t('phone')} *
         </label>
       )}
-
-      {/* Input container */}
-      <div
-        className={cn(
-          'flex items-center rounded-xl border bg-card transition-all',
-          isFocused ? 'border-[#8B5CF6] ring-2 ring-[#C9C2F0] dark:ring-[#4A4660]' : 'border-border',
-          hasError ? 'border-[#C0504D] ring-2 ring-[#C0504D]/25' : '',
-          disabled ? 'opacity-50 cursor-not-allowed' : '',
-        )}
-      >
-        {/* Country code button */}
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setIsOpen(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-3 border-r border-border text-sm font-medium whitespace-nowrap hover:bg-muted/40 transition-colors rounded-l-xl flex-shrink-0"
-        >
-          <span className="text-base">{selectedCountry.flag}</span>
-          <span className="text-[#1B1A24] dark:text-[#F2F1F7]">+{selectedCountry.dialCode}</span>
-          <ChevronDown className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform', isOpen && 'rotate-180')} />
-        </button>
-
-        {/* Phone number input */}
-        <input
-          type="tel"
-          value={localNumber}
-          onChange={handleNumberChange}
-          onFocus={() => !isOpen && undefined}
-          placeholder={`Ex: ${getPlaceholder(selectedCountry.phoneFormat)}`}
-          disabled={disabled}
-          autoFocus={autoFocus}
-          className="flex-1 bg-transparent px-3 py-3 text-sm text-foreground placeholder:text-[#9B98AD] outline-none min-w-0"
-        />
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <p className="mt-1 text-xs text-[#C0504D] dark:text-[#E79A9A]">{error}</p>
-      )}
-
-      {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute left-0 right-0 z-50 mt-1 overflow-hidden rounded-2xl bg-card shadow-[0_12px_40px_-12px_rgba(46,32,92,0.28)] ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
-          {/* Search */}
-          <div className="p-2 border-b border-border">
-            <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
-              <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-              <input
-                ref={searchRef}
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder={t('phoneField.searchCountry')}
-                className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/50"
-              />
-            </div>
-          </div>
-
-          {/* Country list */}
-          <div className="max-h-52 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t('phoneField.noResult')}</p>
-            ) : (
-              filtered.map(country => (
-                <button
-                  key={`${country.dialCode}-${country.name}`}
-                  type="button"
-                  onClick={() => handleCountrySelect(country)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-muted/40 transition-colors',
-                    selectedCountry.name === country.name && 'bg-[#EEE9FB] font-medium text-[#5B4CC4] dark:bg-[#272252] dark:text-[#B5AAF0]',
-                  )}
-                >
-                  <span className="text-base">{country.flag}</span>
-                  <span className="flex-1">{country.name}</span>
-                  <span className="text-muted-foreground text-xs">+{country.dialCode}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      <PhoneNumberInput
+        value={phone}
+        onChange={handleChange}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        invalid={Boolean(errorText)}
+        showValidity={!errorText}
+        controlClassName={cn('h-12 rounded-2xl', controlClassName)}
+      />
+      {errorText && <p className="mt-1 text-xs text-[#C0504D] dark:text-[#E79A9A]">{errorText}</p>}
     </div>
   );
 }

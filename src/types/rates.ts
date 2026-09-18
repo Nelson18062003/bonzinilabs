@@ -44,14 +44,19 @@ export const PAYMENT_METHODS = [
   { key: 'virement' as const, label: 'Virement', icon: '\u{1F3E6}', color: '#8b5cf6', chartColor: '#8b5cf6' },
 ] as const;
 
+// `iso` = code alpha-2 : sert au drapeau SVG (<CountryFlag />) — l'emoji
+// `flag` reste pour les libellés texte (WhatsApp, cotation), Windows ne sachant
+// pas l'afficher dans l'UI.
 export const COUNTRIES = [
-  { key: 'cameroun' as const, label: 'Cameroun', flag: '\u{1F1E8}\u{1F1F2}' },
-  { key: 'gabon' as const, label: 'Gabon', flag: '\u{1F1EC}\u{1F1E6}' },
-  { key: 'tchad' as const, label: 'Tchad', flag: '\u{1F1F9}\u{1F1E9}' },
-  { key: 'rca' as const, label: 'Centrafrique', flag: '\u{1F1E8}\u{1F1EB}' },
-  { key: 'congo' as const, label: 'Congo', flag: '\u{1F1E8}\u{1F1EC}' },
-  { key: 'guinee' as const, label: 'Guin\u{00E9}e \u{00C9}quatoriale', flag: '\u{1F1EC}\u{1F1F6}' },
+  { key: 'cameroun' as const, label: 'Cameroun', iso: 'CM', flag: '\u{1F1E8}\u{1F1F2}' },
+  { key: 'gabon' as const, label: 'Gabon', iso: 'GA', flag: '\u{1F1EC}\u{1F1E6}' },
+  { key: 'tchad' as const, label: 'Tchad', iso: 'TD', flag: '\u{1F1F9}\u{1F1E9}' },
+  { key: 'rca' as const, label: 'Centrafrique', iso: 'CF', flag: '\u{1F1E8}\u{1F1EB}' },
+  { key: 'congo' as const, label: 'Congo', iso: 'CG', flag: '\u{1F1E8}\u{1F1EC}' },
+  { key: 'guinee' as const, label: 'Guin\u{00E9}e \u{00C9}quatoriale', iso: 'GQ', flag: '\u{1F1EC}\u{1F1F6}' },
 ] as const;
+
+export type RateCountryKey = (typeof COUNTRIES)[number]['key'];
 
 export const TIERS = [
   { key: 't3' as const, label: '\u{2265} 1 000 000 XAF', shortLabel: '\u{2265}1M', min: 1_000_000 },

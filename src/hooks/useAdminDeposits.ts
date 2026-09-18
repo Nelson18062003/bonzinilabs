@@ -177,7 +177,7 @@ export function useAllClients() {
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('clients')
-        .select('user_id, first_name, last_name, phone, company_name, customer_code')
+        .select('user_id, first_name, last_name, phone, company_name, customer_code, country')
         .order('first_name', { ascending: true });
       if (error) throw error;
       return data || [];

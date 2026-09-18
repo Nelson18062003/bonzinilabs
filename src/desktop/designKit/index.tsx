@@ -601,7 +601,8 @@ export function CenterDialog({
       ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onCloseRef.current();
+        // Un Échap déjà consommé par une couche imbriquée (sélecteur de pays) ne ferme pas la fenêtre.
+        if (!e.defaultPrevented) onCloseRef.current();
         return;
       }
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && onConfirmRef.current) {

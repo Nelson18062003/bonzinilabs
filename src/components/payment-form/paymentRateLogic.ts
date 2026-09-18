@@ -4,6 +4,8 @@
 // logic is unit-testable and decoupled from the UI components.
 // ============================================================
 import { calculateFinalRate, getBaseRate } from '@/lib/rateCalculation';
+import { countryNameToIso } from '@/lib/phone';
+import { COUNTRIES } from '@/types/rates';
 import type { DailyRate, PaymentMethodKey } from '@/types/rates';
 import type { Currency, PaymentMethodType } from './types';
 
@@ -23,17 +25,22 @@ interface RatesInput {
 }
 
 const FALLBACK_RATE = 0.01167;
-const COUNTRY_MAP: Record<string, string> = {
-  Cameroun: 'cameroun', cameroun: 'cameroun',
-  Gabon: 'gabon', gabon: 'gabon',
-  Tchad: 'tchad', tchad: 'tchad',
-  Centrafrique: 'rca', RCA: 'rca', rca: 'rca',
-  Congo: 'congo', congo: 'congo',
-  'Guinée Équatoriale': 'guinee', guinee: 'guinee',
-};
 
+/**
+ * Pays du client (`clients.country`, libellé libre : « Gabon », « GA »,
+ * « République centrafricaine », « RCA »…) → clé `rate_adjustments`. Une clé
+ * déjà valide passe telle quelle ; tout libellé connu du sélecteur mondial
+ * est résolu par son code ISO ; le reste vaut la référence (Cameroun).
+ */
 export function clientCountryToRateKey(country: string | null | undefined): string {
-  return COUNTRY_MAP[country || ''] ?? 'cameroun';
+  const raw = (country ?? '').trim();
+  if (!raw) return 'cameroun';
+  const lower = raw.toLowerCase();
+  const byKey = COUNTRIES.find((c) => c.key === lower);
+  if (byKey) return byKey.key;
+  const iso = countryNameToIso(raw);
+  const byIso = iso ? COUNTRIES.find((c) => c.iso === iso) : undefined;
+  return byIso?.key ?? 'cameroun';
 }
 
 export function toRateKey(method: PaymentMethodType | null): PaymentMethodKey {

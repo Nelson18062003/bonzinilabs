@@ -5,6 +5,7 @@
 // pas d'onglets. Rendu réel et complet en composant les vrais blocs
 // déjà migrés sur le kit :
 //   · Définir les taux du jour (RateSetTab — saisie + prise d'effet + publier + flyer)
+//   · Taux par pays (CountryRatesCard — Gabon & co. dérivés du Cameroun, flyer par pays)
 //   · Simulateur (RateSimulatorTab)
 //   · Historique (RateHistoryTab) + graphique d'évolution (repli)
 //   · Ajustements pays & tranches (RateConfigTab — repli, usage avancé)
@@ -19,6 +20,7 @@ import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
 import { SURFACE, TEXT, SOFT_PILL, BottomSheet } from '@/mobile/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { CountryRatesCard } from '@/components/rates/CountryRatesCard';
 import { RateSetTab } from './tabs/RateSetTab';
 import { RateChartTab } from './tabs/RateChartTab';
 import { RateHistoryTab } from './tabs/RateHistoryTab';
@@ -60,13 +62,10 @@ export function MobileRatesScreen() {
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
 
   const [flyerOpen, setFlyerOpen] = useState(false);
-  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les clients.
-  const flyerRates = {
-    alipay: activeRate?.rate_alipay || 0,
-    wechat: activeRate?.rate_wechat || 0,
-    bank: activeRate?.rate_virement || 0,
-    cash: activeRate?.rate_cash || 0,
-  };
+  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les
+  // clients ; `flyerCountry` = pays présélectionné (depuis « Taux par pays »).
+  const [flyerCountry, setFlyerCountry] = useState<string | null>(null);
+  const openFlyer = (country: string | null) => { setFlyerCountry(country); setFlyerOpen(true); };
 
   const handleRefresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
@@ -83,6 +82,17 @@ export function MobileRatesScreen() {
           <section>
             <Caption>Définir les taux du jour</Caption>
             <RateSetTab currentRate={activeRate} />
+          </section>
+
+          {/* ── Taux par pays — Gabon & co., dérivés du Cameroun ── */}
+          <section>
+            <Caption>Taux par pays</Caption>
+            <CountryRatesCard
+              activeRate={activeRate}
+              adjustments={adjustments}
+              isLoading={adjLoading}
+              onOpenFlyer={(key) => openFlyer(key)}
+            />
           </section>
 
           {/* ── Simulateur ── */}
@@ -115,7 +125,7 @@ export function MobileRatesScreen() {
 
           {/* ── Flyer du jour — pilule en bas, fidèle à la maquette validée ── */}
           <button
-            onClick={() => setFlyerOpen(true)}
+            onClick={() => openFlyer(null)}
             className={cn('flex w-full items-center justify-center gap-1.5 py-[14px] text-[16px] font-semibold', SOFT_PILL)}
           >
             Voir le flyer du jour <ChevronRight className="h-4 w-4" />
@@ -124,7 +134,7 @@ export function MobileRatesScreen() {
       </PullToRefresh>
 
       <BottomSheet open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour">
-        <RateFlyerSheet rates={flyerRates} />
+        <RateFlyerSheet activeRate={activeRate} adjustments={adjustments} initialCountry={flyerCountry} />
       </BottomSheet>
     </div>
   );

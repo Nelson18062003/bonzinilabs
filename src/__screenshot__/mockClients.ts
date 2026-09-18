@@ -11,6 +11,7 @@ const mk = (id: string, first: string, last: string, phone: string, company: str
   createdAt: created, updatedAt: created, walletId: 'w-' + id, walletBalance: balance, totalDeposits: dep, totalPayments: pay,
   customerCode: 'BZ-' + String(135190 + id.charCodeAt(1) * 7).slice(0, 6),
   status, utmSource: null as string | null, utmMedium: null as string | null, utmCampaign: null as string | null, lastLedgerEntry: null as LedgerEntry | null,
+  walletOverdraftLimit: 0, walletOverdraftNote: null as string | null,
 });
 
 const CLIENTS = [
@@ -32,6 +33,12 @@ const LEDGER: LedgerEntry[] = [
   entry('l3', 'PAYMENT_RESERVED', -2_602_000, 4_442_000, 'Paiement BZ-PY-260901-0160 (Virement)', '2026-09-01T09:00:00Z'),
 ];
 CLIENTS[4].lastLedgerEntry = LEDGER[0];
+// u5 : découvert autorisé, non utilisé. u6 : en découvert (solde négatif).
+CLIENTS[4].walletOverdraftLimit = 2_000_000;
+CLIENTS[4].walletOverdraftNote = 'Facture Yite urgente, régularisation le 30/09';
+CLIENTS[5].walletBalance = -350_000;
+CLIENTS[5].walletOverdraftLimit = 1_000_000;
+CLIENTS[5].walletOverdraftNote = 'Client historique, conteneur en route';
 CLIENTS[4].utmSource = 'facebook';
 CLIENTS[4].utmCampaign = 'rentree-2026';
 
