@@ -17,10 +17,14 @@
 //
 // Cinq sections, dans le vocabulaire du bon de réception de l'entrepôt :
 //   0 bandeau · 1 收件地址 · 2 客户编号 (QR) · 3 客户 · 4 供货商 · 5 仓库填写
-// Une destination par étiquette : Sea cargo (entrepôt) ou Air cargo (bureau).
+// Une destination par étiquette : Sea cargo (entrepôt) ou Air cargo (bureau) —
+// et chaque mode a SON identité (DESTINATION_THEME) : bateau bleu au bandeau
+// uni, avion rouge-orange au bandeau hachuré. Les deux étiquettes portaient
+// les mêmes mots dans le même noir, et un client a envoyé la mauvaise ; ici
+// le mode se voit de loin, en couleur comme sur une photocopie.
 // Taille logique 600 × 950 ; peinte à ×2 (aperçu) ou ×3 (export, ~220 dpi A4).
 // ============================================================
-import { customerQrPayload, DESTINATION_LABEL, type ShippingDestination, type ShippingSettings } from '@/lib/customerCode';
+import { customerQrPayload, DESTINATION_LABEL, DESTINATION_THEME, type DestinationIcon, type ShippingDestination, type ShippingSettings } from '@/lib/customerCode';
 
 export const LABEL_W = 600;
 export const LABEL_H = 950;
@@ -74,7 +78,25 @@ export type Op =
   | { kind: 'rect'; x: number; y: number; w: number; h: number; color: string; radius?: number }
   | { kind: 'line'; x1: number; y1: number; x2: number; y2: number; color: string; width: number }
   | { kind: 'text'; text: string; x: number; y: number; font: string; color: string; align: 'left' | 'right' | 'center'; maxWidth: number; row?: string }
-  | { kind: 'qr'; x: number; y: number; size: number };
+  | { kind: 'qr'; x: number; y: number; size: number }
+  /** Pictogramme du mode (bateau, avion) : tracé lucide sur grille 24, mis à l'échelle. */
+  | { kind: 'icon'; icon: DestinationIcon; x: number; y: number; size: number; color: string }
+  /** Hachures diagonales : le signal qui survit à l'impression en noir et blanc. */
+  | { kind: 'stripes'; x: number; y: number; w: number; h: number; color: string; bg: string };
+
+/** Les tracés (lucide `ship` / `plane`, grille 24 × 24, trait 2), repris tels quels. */
+export const ICON_PATHS: Record<DestinationIcon, string[]> = {
+  ship: [
+    'M12 10.189V14',
+    'M12 2v3',
+    'M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6',
+    'M19.38 20A11.6 11.6 0 0 0 21 14l-8.188-3.639a2 2 0 0 0-1.624 0L3 14a11.6 11.6 0 0 0 2.81 7.76',
+    'M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1s1.2 1 2.5 1c2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1',
+  ],
+  plane: [
+    'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+  ],
+};
 
 export type Measure = (text: string, font: string) => number;
 
@@ -133,6 +155,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   const ops: Op[] = [];
   const loc = d.settings[d.destination];
   const tag = DESTINATION_LABEL[d.destination];
+  const theme = DESTINATION_THEME[d.destination];
   const company = d.settings.company;
   const ourCompany = [company.nameZh.trim(), company.nameEn.trim()].filter(Boolean).join(' ');
   const finalDestination = [d.clientCity, d.clientCountry].filter((v) => v && v.trim()).join(', ');
@@ -185,9 +208,13 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     hair(y + h);
     return y + h;
   };
-  /** Bande de titre : numéro · chinois · anglais, et parfois une étiquette à droite. */
+  /**
+   * Bande de titre : numéro · chinois · anglais — et, pour la section de
+   * l'adresse, la pastille du mode à droite (pictogramme + nom, aux couleurs
+   * du mode) sur un fond teinté.
+   */
   const band = (y: number, n: string, zh: string, en: string, right?: string) => {
-    rect(X0, y, X1 - X0, BAND_H, BAND);
+    rect(X0, y, X1 - X0, BAND_H, right ? theme.tint : BAND);
     const cy = y + BAND_H / 2;
     let x = CX0;
     x += text(n, x, cy, f(900, 10.5, FONT_LATIN), MUTED, 30) + 7;
@@ -195,9 +222,11 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     let rightW = 0;
     if (right) {
       const fr = f(900, 11, FONT_ZH_DISPLAY);
-      rightW = measure(right, fr) + 16;
-      rect(CX1 - rightW, y + 4, rightW, BAND_H - 8, INK, 3);
-      text(right, CX1 - rightW / 2, cy, fr, WHITE, rightW - 8, 'center');
+      const ICON = 13, PAD = 8;
+      rightW = PAD + ICON + 5 + measure(right, fr) + PAD;
+      rect(CX1 - rightW, y + 3, rightW, BAND_H - 6, theme.color, 3);
+      ops.push({ kind: 'icon', icon: theme.icon, x: CX1 - rightW + PAD, y: cy - ICON / 2, size: ICON, color: WHITE });
+      text(right, CX1 - rightW + PAD + ICON + 5, cy, fr, WHITE, rightW - 2 * PAD - ICON - 5);
       rightW += 10;
     }
     text(en.toUpperCase(), x, cy, f(800, 9.5, FONT_LATIN), MUTED, CX1 - rightW - x);
@@ -209,16 +238,24 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   rect(0, 0, LABEL_W, LABEL_H, WHITE);
   let y = X0;
 
-  // 0 · Bandeau : ce que c'est, quoi en faire
-  const BANNER_H = 40;
-  rect(X0, y, X1 - X0, BANNER_H, INK);
+  // 0 · Bandeau : LE MODE D'ENVOI d'abord (pictogramme + nom, en très gros,
+  //     aux couleurs du mode), puis ce que c'est et quoi en faire. Le liseré du
+  //     bas est uni (bateau) ou hachuré (avion) : sur une photocopie en noir
+  //     et blanc, c'est ce qui reste pour les distinguer — avec le pictogramme.
+  const BANNER_H = 54, STRIP_H = 8;
+  rect(X0, y, X1 - X0, BANNER_H, theme.color);
+  if (theme.stripes) ops.push({ kind: 'stripes', x: X0, y: y + BANNER_H - STRIP_H, w: X1 - X0, h: STRIP_H, color: WHITE, bg: theme.dark });
+  else rect(X0, y + BANNER_H - STRIP_H, X1 - X0, STRIP_H, theme.dark);
   {
-    const cy = y + BANNER_H / 2;
-    let x = CX0;
-    x += text('发货标签', x, cy, f(900, 18, FONT_ZH_DISPLAY), WHITE, 120) + 8;
-    text('SHIPPING LABEL', x, cy, f(800, 10, FONT_LATIN), 'rgba(255,255,255,0.85)', 120);
-    text('请打印，并贴在每一个纸箱上', CX1, cy - 8, f(900, 13, FONT_ZH_DISPLAY), WHITE, 300, 'right');
-    text('Print this label and stick it on every carton', CX1, cy + 9, f(700, 9.5, FONT_LATIN), 'rgba(255,255,255,0.85)', 300, 'right');
+    const cy = y + (BANNER_H - STRIP_H) / 2;
+    const ICON = 30;
+    ops.push({ kind: 'icon', icon: theme.icon, x: CX0, y: cy - ICON / 2, size: ICON, color: WHITE });
+    let x = CX0 + ICON + 10;
+    x += text(tag.zh, x, cy, f(900, 26, FONT_ZH_DISPLAY), WHITE, 90, 'left', 'banner-zh') + 8;
+    x += text(tag.en.toUpperCase(), x, cy + 1, f(900, 15, FONT_LATIN), WHITE, 150, 'left', 'banner-en') + 14;
+    const rw = CX1 - x;
+    text('发货标签 · 请打印，并贴在每一个纸箱上', CX1, cy - 8, f(900, 12, FONT_ZH_DISPLAY), WHITE, rw, 'right');
+    text('Shipping label · print it and stick it on every carton', CX1, cy + 8, f(700, 9, FONT_LATIN), 'rgba(255,255,255,0.88)', rw, 'right');
   }
   y += BANNER_H;
 
@@ -230,6 +267,8 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 2) : [];
     const ZH_LH = 29, EN_LH = 13;
     const blockH = 9 + zhLines.length * ZH_LH + (enLines.length ? 3 + enLines.length * EN_LH : 0) + 8;
+    // Un dos de couleur le long de l'adresse : le mode, encore, là où l'œil va.
+    rect(X0, y, 6, blockH, theme.color);
     let ly = y + 9;
     for (const l of zhLines) { text(l, CX0, ly + ZH_LH / 2, fzh, INK, CW, 'left', `addr@${ly}`); ly += ZH_LH; }
     if (enLines.length) { ly += 3; for (const l of enLines) { text(l, CX0, ly + EN_LH / 2, fen, MUTED, CW, 'left', `addr@${ly}`); ly += EN_LH; } }
@@ -245,7 +284,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   rule(y); y += RULE;
   y = band(y, '2', '客户编号', 'Customer ID');
   {
-    const QR_BLOCK = 210, QR = 186, LEFT_W = 230;
+    const QR_BLOCK = 200, QR = 186, LEFT_W = 230;
     ops.push({ kind: 'qr', x: X0 + (LEFT_W - QR) / 2, y: y + (QR_BLOCK - QR) / 2, size: QR });
     ops.push({ kind: 'line', x1: X0 + LEFT_W, y1: y, x2: X0 + LEFT_W, y2: y + QR_BLOCK, color: HAIR, width: 1 });
     const rx = X0 + LEFT_W + PX, rw = CX1 - rx;
@@ -307,15 +346,16 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   {
     const cy = y + FOOT_H / 2;
     const codeW = text(d.code, CX1, cy, f(700, 11.5, FONT_LATIN), INK, 160, 'right', 'foot');
-    text(`${company.nameEn || 'Bonzini'} · 客户编号 · Customer ID`, CX0, cy, f(700, 10, FONT_ZH), MUTED, CW - codeW - 12, 'left', 'foot');
+    text(`${company.nameEn || 'Bonzini'} · ${tag.zh} ${tag.en} · 客户编号 · Customer ID`, CX0, cy, f(700, 10, FONT_ZH), MUTED, CW - codeW - 12, 'left', 'foot');
   }
   y += FOOT_H;
 
-  // Le cadre, par-dessus tout
-  ops.push({ kind: 'line', x1: X0, y1: X0, x2: X1, y2: X0, color: INK, width: RULE });
-  ops.push({ kind: 'line', x1: X0, y1: y, x2: X1, y2: y, color: INK, width: RULE });
-  ops.push({ kind: 'line', x1: X0, y1: X0, x2: X0, y2: y, color: INK, width: RULE });
-  ops.push({ kind: 'line', x1: X1, y1: X0, x2: X1, y2: y, color: INK, width: RULE });
+  // Le cadre, par-dessus tout — aux couleurs du mode, un peu plus épais
+  const FRAME = 3;
+  ops.push({ kind: 'line', x1: X0, y1: X0, x2: X1, y2: X0, color: theme.color, width: FRAME });
+  ops.push({ kind: 'line', x1: X0, y1: y, x2: X1, y2: y, color: theme.color, width: FRAME });
+  ops.push({ kind: 'line', x1: X0, y1: X0, x2: X0, y2: y, color: theme.color, width: FRAME });
+  ops.push({ kind: 'line', x1: X1, y1: X0, x2: X1, y2: y, color: theme.color, width: FRAME });
   return ops;
 }
 
@@ -371,8 +411,42 @@ export function paintLabel(ctx: CanvasRenderingContext2D, ops: Op[], qr: CanvasI
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(qr, op.x, op.y, op.size, op.size);
       ctx.imageSmoothingEnabled = prev;
+    } else if (op.kind === 'icon') {
+      paintIcon(ctx, op);
+    } else if (op.kind === 'stripes') {
+      paintStripes(ctx, op);
     }
   }
+}
+
+/** Le pictogramme : les tracés lucide (grille 24) mis à l'échelle, trait rond. */
+function paintIcon(ctx: CanvasRenderingContext2D, op: Extract<Op, { kind: 'icon' }>): void {
+  if (typeof Path2D === 'undefined') return;
+  ctx.save();
+  ctx.translate(op.x, op.y);
+  ctx.scale(op.size / 24, op.size / 24);
+  ctx.strokeStyle = op.color;
+  ctx.lineWidth = 2.25;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const d of ICON_PATHS[op.icon]) ctx.stroke(new Path2D(d));
+  ctx.restore();
+}
+
+/** Hachures à 45°, blanches sur la teinte sombre : lisibles même en noir et blanc. */
+function paintStripes(ctx: CanvasRenderingContext2D, op: Extract<Op, { kind: 'stripes' }>): void {
+  ctx.save();
+  ctx.fillStyle = op.bg;
+  ctx.fillRect(op.x, op.y, op.w, op.h);
+  ctx.beginPath(); ctx.rect(op.x, op.y, op.w, op.h); ctx.clip();
+  ctx.strokeStyle = op.color;
+  ctx.lineWidth = op.h * 0.55;
+  ctx.lineCap = 'butt';
+  const step = op.h * 1.6;
+  for (let x = op.x - op.h; x < op.x + op.w + op.h; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, op.y + op.h); ctx.lineTo(x + op.h, op.y); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /**

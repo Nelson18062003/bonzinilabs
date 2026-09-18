@@ -112,6 +112,34 @@ export const DESTINATION_HINT_FR: Record<ShippingDestination, string> = {
   office: 'Par avion. Le fournisseur livre à notre bureau de Guangzhou.',
 };
 
+/**
+ * L'IDENTITÉ VISUELLE de chaque mode — pour que personne ne confonde les deux
+ * étiquettes (elles portaient les mêmes mots, dans les mêmes couleurs, et un
+ * client a envoyé la mauvaise à son fournisseur). Trois signaux, cumulés :
+ *   • un pictogramme : bateau (海运) / avion (空运) — lisible sans savoir lire ;
+ *   • une couleur : bleu océan / rouge-orange — chaque écran, chaque aperçu ;
+ *   • une TEXTURE : bandeau uni pour le bateau, hachures diagonales pour
+ *     l'avion — parce que l'imprimante de l'usine est souvent en noir et
+ *     blanc, et que deux gris ne se distinguent pas.
+ * Le canvas de l'étiquette et les sélecteurs de l'app lisent la même table.
+ */
+export type DestinationIcon = 'ship' | 'plane';
+export interface DestinationTheme {
+  /** Couleur principale (bandeau, pastille, cadre). */
+  color: string;
+  /** Même teinte, plus sombre (bas du bandeau, texte sur fond clair). */
+  dark: string;
+  /** Fond très clair de la même teinte (sélecteur actif, encart). */
+  tint: string;
+  icon: DestinationIcon;
+  /** Hachures sur le bandeau — le signal qui survit au noir et blanc. */
+  stripes: boolean;
+}
+export const DESTINATION_THEME: Record<ShippingDestination, DestinationTheme> = {
+  warehouse: { color: '#0B5FA5', dark: '#083F70', tint: '#E6F0FA', icon: 'ship', stripes: false },
+  office: { color: '#D8471B', dark: '#9A3012', tint: '#FCEAE3', icon: 'plane', stripes: true },
+};
+
 /** Le mot qui va dans le nom du fichier exporté. */
 export const DESTINATION_SLUG: Record<ShippingDestination, string> = {
   warehouse: 'sea-cargo',
