@@ -4,7 +4,8 @@
 //
 // Design = maquette validée (langage Ofspace) : surface douce, cartes blanches,
 // gros chiffres lisibles, VRAIS logos (Alipay/WeChat/WhatsApp), Cash = ¥ rouge,
-// logo Bonzini. Aucun dégradé arc-en-ciel.
+// logo Bonzini. Aucun dégradé arc-en-ciel. Marges verticales calées pour que tout
+// (mention légale comprise) tienne dans les 2560 px — même réglage que RateFlyer.tsx.
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import satori from "npm:satori@0.10.11";
 import { Resvg, initWasm } from "npm:@resvg/resvg-wasm@2.6.0";
@@ -181,7 +182,7 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
     ),
 
     // Date + heure
-    h("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", borderTop: `3px solid ${hairline}`, paddingTop: 48, marginTop: 56 } },
+    h("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", borderTop: `3px solid ${hairline}`, paddingTop: 40, marginTop: 40 } },
       h("div", { style: { display: "flex", flexDirection: "column" } },
         h("div", { style: { fontSize: 72, fontWeight: 800, color: text, letterSpacing: -1, lineHeight: 1.1 } }, frDate),
         h("div", { style: { fontSize: 44, color: muted, marginTop: 10, fontFamily: "Noto Sans SC" } }, cnDate),
@@ -193,7 +194,7 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
     ),
 
     // Contexte
-    h("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 52 } },
+    h("div", { style: { display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 36 } },
       h("div", { style: { display: "flex", flexDirection: "column" } },
         h("div", { style: { fontSize: 50, fontWeight: 600, color: muted } }, "Pour"),
         h("div", { style: { display: "flex", alignItems: "flex-end", marginTop: 4 } },
@@ -205,9 +206,9 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
     ),
 
     // Lignes de taux
-    h("div", { style: { display: "flex", flexDirection: "column", gap: 36, marginTop: 48 } },
+    h("div", { style: { display: "flex", flexDirection: "column", gap: 28, marginTop: 36 } },
       ...rows.map((r) =>
-        h("div", { style: { display: "flex", alignItems: "center", gap: 48, backgroundColor: card, border: cardBorder, borderRadius: 56, padding: "44px 56px" } },
+        h("div", { style: { display: "flex", alignItems: "center", gap: 48, backgroundColor: card, border: cardBorder, borderRadius: 56, padding: "38px 56px" } },
           tile(r.key),
           h("div", { style: { display: "flex", flexDirection: "column", flex: 1 } },
             h("div", { style: { fontSize: 108, fontWeight: 800, color: text, letterSpacing: -1, lineHeight: 1 } }, r.name),
@@ -222,7 +223,7 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
     ),
 
     // Footer
-    h("div", { style: { display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-end", borderTop: `3px solid ${hairline}`, paddingTop: 44, marginTop: 52 } },
+    h("div", { style: { display: "flex", flexDirection: "column", flex: 1, justifyContent: "flex-end", borderTop: `3px solid ${hairline}`, paddingTop: 40, marginTop: 44 } },
       h("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" } },
         h("div", { style: { fontSize: 84, fontWeight: 800, color: text, letterSpacing: -1 } }, "bonzinilabs.com"),
         h("div", { style: { display: "flex", alignItems: "center", gap: 64 } },
@@ -230,7 +231,7 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
           contact("#07C160", "中国 · WhatsApp / 微信", "+86 131 3849 5598", true),
         ),
       ),
-      h("div", { style: { fontSize: 34, color: muted, marginTop: 40, lineHeight: 1.5 } }, "Taux indicatifs, susceptibles de varier sans préavis. · 显示汇率仅供参考，可能随时变动。"),
+      h("div", { style: { fontSize: 34, color: muted, marginTop: 32, lineHeight: 1.5 } }, "Taux indicatifs, susceptibles de varier sans préavis. · 显示汇率仅供参考，可能随时变动。"),
     ),
   );
 }

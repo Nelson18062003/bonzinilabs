@@ -46,6 +46,14 @@ jobs:
         run: echo "::warning::SUPABASE_DB_PASSWORD non configuré — migrations NON appliquées automatiquement. Ajoute le secret pour activer l'auto-migration."
 
       # ── Edge Functions ──────────────────────────────────────────
+      # generate-flyer : public (verify_jwt = false, cf. supabase/config.toml) —
+      # le flyer du jour, Cameroun ou par pays (Gabon…), appelé par Mola et l'app.
+      - name: Déployer la fonction generate-flyer
+        run: |
+          supabase functions deploy generate-flyer \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
       - name: Déployer la fonction admin-assistant
         run: |
           supabase functions deploy admin-assistant \
