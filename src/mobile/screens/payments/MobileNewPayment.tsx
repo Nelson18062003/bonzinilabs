@@ -257,7 +257,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
   // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
   const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
-  const countryRate = clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments);
+  // Jamais d'écart pays sur la constante de secours : elle n'est pas un taux publié.
+  const countryRate = rateData && mode ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
   const baseRate = countryRate ? countryRate.rate : refRate;
   // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
   // sur la constante de secours (le paiement partait à 11 530).
@@ -1186,7 +1187,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
                   ? { l: 'Email', v: selectedBenef?.email || benef.email }
                   : null,
-                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : ''}` },
+                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : countryRate ? ` (${countryRate.label} ${formatCountryPct(countryRate.percentage)})` : ''}` },
                 useCustomDate && customDateStr
                   ? { l: 'Date', v: new Date(customDateStr).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
                   : null,

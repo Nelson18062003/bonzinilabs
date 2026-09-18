@@ -870,7 +870,9 @@ const READ_TOOLS: ReadTool[] = [
         if (adjErr) return { error: adjErr.message };
         if (!adj) return { error: `Pays inconnu : ${wantedKey}. Clés possibles : gabon, tchad, rca, congo, guinee (ou rien pour le Cameroun).` };
         if (!adj.is_reference) {
-          country = { key: adj.key, label: adj.label || adj.key, percentage: Number(adj.percentage) || 0 };
+          // Libellés accentués (la base stocke « Guinee Equatoriale ») : ce texte part sur le flyer.
+          const LABELS: Record<string, string> = { gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
+          country = { key: adj.key, label: LABELS[adj.key] || adj.label || adj.key, percentage: Number(adj.percentage) || 0 };
           factor = 1 + country.percentage / 100;
         }
       }
@@ -903,7 +905,7 @@ const READ_TOOLS: ReadTool[] = [
       return {
         success: true,
         rates,
-        country: country ? { key: country.key, label: country.label, adjustment_pct: country.percentage } : "cameroun (référence)",
+        country: country ? { key: country.key, label: country.label, adjustment_pct: country.percentage } : `${wantedKey || "cameroun"} (référence)`,
         __image: { url: signed.data.signedUrl, name: title, kind: "image" },
         message: country
           ? `Flyer ${country.label} généré (taux Cameroun ${country.percentage > 0 ? "+" : ""}${country.percentage} %) et affiché dans le chat.`

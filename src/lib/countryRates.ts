@@ -81,7 +81,9 @@ export function buildCountryRateSheets(
     const pct = a.is_reference ? 0 : Number(a.percentage) || 0;
     return {
       key: a.key,
-      label: a.label || meta.label,
+      // La constante d'abord : la base stocke « Guinee Equatoriale » sans accents,
+      // et ce libellé finit sur un flyer partagé aux clients.
+      label: meta.iso ? meta.label : (a.label || meta.label),
       iso: meta.iso,
       percentage: pct,
       isReference: a.is_reference,
@@ -110,9 +112,11 @@ export function countryFileSlug(key: string, isReference: boolean): string | und
 }
 
 /**
- * Taux du jour applicable à un client, en entier « ¥ pour 1 M XAF » (les
- * écrans de paiement admin travaillent en entiers). `null` quand le pays est
- * la référence ou inconnu : l'appelant garde alors le taux de base.
+ * Taux du jour applicable à un client, en entier « ¥ pour 1 M XAF » : les
+ * écrans de paiement admin saisissent et stockent des entiers (`parseInt`),
+ * comme le flyer les affiche — l'écart avec le taux à deux décimales de la
+ * RPC (≤ 0,5 ¥ par million) est assumé. `null` quand le pays est la
+ * référence ou inconnu : l'appelant garde alors le taux de base.
  */
 export function clientCountryRate(
   base: number,
@@ -128,6 +132,6 @@ export function clientCountryRate(
     rate: Math.round(calculateFinalRate(base, pct, 1_000_000, []).finalRate),
     percentage: pct,
     key: adj.key,
-    label: adj.label || countryMeta(adj.key).label,
+    label: countryMeta(adj.key).iso ? countryMeta(adj.key).label : (adj.label || adj.key),
   };
 }

@@ -177,7 +177,7 @@ function buildElement(rates: Rates, isDark: boolean, country?: string): El {
           h("div", { style: { fontSize: 36, fontWeight: 600, color: muted, letterSpacing: 8, marginTop: 8 } }, "PAIEMENTS VERS LA CHINE"),
         ),
       ),
-      h("div", { style: { display: "flex", backgroundColor: pillBg, color: pillText, borderRadius: 80, padding: "28px 52px", fontSize: 50, fontWeight: 700 } }, country ? `Taux du jour · ${country}` : "Taux du jour"),
+      h("div", { style: { display: "flex", backgroundColor: pillBg, color: pillText, borderRadius: 80, padding: country ? "28px 44px" : "28px 52px", fontSize: 50, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 } }, country ? `Taux du jour · ${country}` : "Taux du jour"),
     ),
 
     // Date + heure
