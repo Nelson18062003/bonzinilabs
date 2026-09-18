@@ -277,7 +277,7 @@ export function MobileClientDetail() {
         .map((entry) => buildMovementFromLedgerEntry(entry));
       if (query === null && movements.length === 0) {
         toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
-        return;
+        return false;
       }
       const lastBefore = query && movements.length === 0
         ? await fetchLastLedgerEntryBefore(client.id, query.from)
@@ -295,9 +295,11 @@ export function MobileClientDetail() {
         movements,
         lastBalanceBefore: lastBefore?.balanceAfter ?? null,
       });
+      return true;
     } catch (err) {
       console.error('Error generating statement:', err);
       toast.error(t('statementGenerationError', { defaultValue: 'Erreur lors de la génération du relevé' }));
+      return false;
     } finally {
       setIsStatementGenerating(false);
     }

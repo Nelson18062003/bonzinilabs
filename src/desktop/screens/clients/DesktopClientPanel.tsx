@@ -382,7 +382,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   // les écritures de cette période (plus de plafond à 100), et le solde
   // d'ouverture vient de la dernière écriture avant la période si elle est vide.
   const downloadStatement = async (range: StatementRange) => {
-    if (!client || isGeneratingPDF) return;
+    if (!client || isGeneratingPDF) return false;
     setIsGeneratingPDF(true);
     try {
       const query = statementQueryRange(range);
@@ -393,7 +393,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         .map((entry) => buildMovementFromLedgerEntry(entry));
       if (query === null && movements.length === 0) {
         toast.error('Aucun mouvement à exporter');
-        return;
+        return false;
       }
       const lastBefore = query && movements.length === 0
         ? await fetchLastLedgerEntryBefore(client.id, query.from)
@@ -410,9 +410,11 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         movements,
         lastBalanceBefore: lastBefore?.balanceAfter ?? null,
       });
+      return true;
     } catch (err) {
       console.error('Error generating statement:', err);
       toast.error('Erreur lors de la génération du relevé');
+      return false;
     } finally {
       setIsGeneratingPDF(false);
     }

@@ -34,9 +34,10 @@ describe('modification des montants', () => {
     expect(canEditPaymentAmounts('completed', true, false)).toBe(false);
     expect(canEditPaymentAmounts('completed', true, true)).toBe(true);
   });
-  it('le bénéficiaire ne se modifie que tant que le paiement n’est pas parti, jamais en cash', () => {
+  it('le bénéficiaire se modifie tant que le paiement n’est pas clos, jamais en cash', () => {
     expect(canEditPaymentBeneficiary('waiting_beneficiary_info', 'alipay', true)).toBe(true);
-    expect(canEditPaymentBeneficiary('processing', 'alipay', true)).toBe(false);
+    expect(canEditPaymentBeneficiary('processing', 'alipay', true)).toBe(true);
+    expect(canEditPaymentBeneficiary('completed', 'alipay', true)).toBe(false);
     expect(canEditPaymentBeneficiary('created', 'cash', true)).toBe(false);
   });
 });

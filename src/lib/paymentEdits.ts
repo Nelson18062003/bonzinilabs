@@ -13,8 +13,6 @@ export const REFUNDED_PAYMENT_STATUSES: readonly PaymentStatus[] = ['rejected', 
 /** Statuts clos : effectué, refusé, annulé. */
 export const CLOSED_PAYMENT_STATUSES: readonly PaymentStatus[] = ['completed', 'rejected', 'cancelled_by_admin'];
 
-/** Le bénéficiaire ne se modifie que tant que le paiement n'est pas parti. */
-export const BENEFICIARY_EDITABLE_STATUSES: readonly PaymentStatus[] = ['created', 'waiting_beneficiary_info', 'ready_for_payment'];
 
 export function isRefundedPayment(status: string): boolean {
   return (REFUNDED_PAYMENT_STATUSES as readonly string[]).includes(status);
@@ -43,9 +41,15 @@ export function canEditPaymentAmounts(status: string, canProcess: boolean, isSup
   return canProcess;
 }
 
+/**
+ * Bénéficiaire : tant que le paiement n'est pas clos (miroir de
+ * `admin_update_payment_beneficiary`, qui ne refuse que effectué / refusé /
+ * annulé). Un compte bancaire faux se corrige aussi pendant « en cours ».
+ * Jamais en cash : le bénéficiaire est celui qui signe.
+ */
 export function canEditPaymentBeneficiary(status: string, method: string, canProcess: boolean): boolean {
   if (method === 'cash') return false;
-  return canProcess && (BENEFICIARY_EDITABLE_STATUSES as readonly string[]).includes(status);
+  return canProcess && !isClosedPayment(status);
 }
 
 /**

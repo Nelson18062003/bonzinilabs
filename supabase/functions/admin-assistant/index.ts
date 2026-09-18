@@ -578,13 +578,16 @@ const READ_TOOLS: ReadTool[] = [
       if (error) return { error: error.message };
       if (!client) return { found: false };
       const uid = client.user_id;
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", uid).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf, overdraft_note").eq("user_id", uid).maybeSingle();
       const { count: depCount } = await admin.from("deposits").select("id", { count: "exact", head: true }).eq("user_id", uid);
       const { count: payCount } = await admin.from("payments").select("id", { count: "exact", head: true }).eq("user_id", uid);
       return {
         found: true, client,
         wallet_balance_xaf: wallet?.balance_xaf ?? 0,
         wallet_balance_formatted: fmtXAF(wallet?.balance_xaf ?? 0),
+        overdraft_limit_xaf: wallet?.overdraft_limit_xaf ?? 0,
+        overdraft_used_xaf: Math.max(0, -Number(wallet?.balance_xaf ?? 0)),
+        overdraft_note: wallet?.overdraft_note ?? null,
         deposits_count: depCount ?? 0, payments_count: payCount ?? 0,
       };
     },
@@ -595,10 +598,15 @@ const READ_TOOLS: ReadTool[] = [
     description: "Solde du portefeuille (wallet) d'un client à partir de son user_id.",
     input_schema: { type: "object", properties: { client_user_id: { type: "string" } }, required: ["client_user_id"] },
     execute: async (admin, { client_user_id }) => {
-      const { data, error } = await admin.from("wallets").select("balance_xaf, user_id").eq("user_id", client_user_id).maybeSingle();
+      const { data, error } = await admin.from("wallets").select("balance_xaf, user_id, overdraft_limit_xaf").eq("user_id", client_user_id).maybeSingle();
       if (error) return { error: error.message };
       if (!data) return { found: false };
-      return { found: true, balance_xaf: data.balance_xaf, balance_formatted: fmtXAF(data.balance_xaf) };
+      const overdraft = Number(data.overdraft_limit_xaf ?? 0);
+      return {
+        found: true, balance_xaf: data.balance_xaf, balance_formatted: fmtXAF(data.balance_xaf),
+        overdraft_limit_xaf: overdraft, overdraft_used_xaf: Math.max(0, -Number(data.balance_xaf)),
+        available_for_team_xaf: Number(data.balance_xaf) + overdraft,
+      };
     },
   },
   {
@@ -1086,13 +1094,14 @@ const READ_TOOLS: ReadTool[] = [
       const n = clamp(limit, 5, 15);
       const { data: client } = await admin.from("clients").select("first_name, last_name, phone, country, kyc_verified").eq("user_id", client_user_id).maybeSingle();
       if (!client) return { found: false };
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", client_user_id).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf").eq("user_id", client_user_id).maybeSingle();
       const { data: deposits } = await admin.from("deposits").select("reference, amount_xaf, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
       const { data: payments } = await admin.from("payments").select("reference, amount_xaf, amount_rmb, method, status, created_at").eq("user_id", client_user_id).order("created_at", { ascending: false }).limit(n);
       const { data: beneficiaries } = await admin.from("beneficiaries").select("alias, name, payment_method").eq("client_id", client_user_id).limit(n);
       return {
         found: true, client,
         wallet_balance_xaf: wallet?.balance_xaf ?? 0, wallet_balance_formatted: fmtXAF(wallet?.balance_xaf ?? 0),
+        overdraft_limit_xaf: wallet?.overdraft_limit_xaf ?? 0,
         deposits: deposits ?? [], payments: payments ?? [], beneficiaries: beneficiaries ?? [],
       };
     },
@@ -1307,7 +1316,7 @@ const READ_TOOLS: ReadTool[] = [
       "Outil PUISSANT de requête LIBRE en LECTURE SEULE. Écris une requête SQL SELECT (PostgreSQL) pour répondre à TOUTE question sur les données quand aucun autre outil ne convient — agrégations, regroupements, jointures, comptages par période, etc. UNIQUEMENT des SELECT (aucune modification possible, c'est bloqué côté serveur). Résultat limité à 1000 lignes.\n" +
       "Tables principales (colonnes utiles) :\n" +
       "- clients(user_id, first_name, last_name, phone, company_name, country, city, kyc_verified, status, created_at)\n" +
-      "- wallets(user_id, balance_xaf, updated_at)\n" +
+      "- wallets(user_id, balance_xaf, overdraft_limit_xaf, updated_at) — le solde peut être négatif jusqu'à -overdraft_limit_xaf (découvert autorisé par le super admin)\n" +
       "- deposits(reference, user_id, amount_xaf, confirmed_amount_xaf, method, status, bank_name, agency_name, created_at, validated_at)\n" +
       "- payments(reference, user_id, amount_xaf, amount_rmb, exchange_rate, method, status, beneficiary_name, created_at, processed_at)\n" +
       "- ledger_entries(user_id, entry_type, amount_xaf, balance_after, description, created_at)\n" +

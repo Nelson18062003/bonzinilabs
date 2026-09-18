@@ -1090,7 +1090,7 @@ REVOKE ALL ON FUNCTION public.cancel_payment(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.cancel_payment(uuid, text) TO authenticated;
 
 COMMENT ON FUNCTION public.cancel_payment(uuid, text) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canProcessPayments","confirm":true,"danger":true,"label":"Annuler un paiement, même effectué (rembourse ; p_reason: motif)","resolve":{"p_payment_id":"payment"},"tool":"cancel_payment"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageUsers","confirm":true,"danger":true,"label":"Annuler un paiement, même effectué (rembourse ; p_reason: motif)","resolve":{"p_payment_id":"payment"},"tool":"cancel_payment"}';
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 2. admin_correct_payment — montants / taux, ouvert aux paiements en cours

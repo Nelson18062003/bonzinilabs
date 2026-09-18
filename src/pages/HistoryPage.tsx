@@ -103,7 +103,7 @@ const HistoryPage = () => {
         .map((op) => buildMovementFromWalletOp(op));
       if (query === null && movements.length === 0) {
         toast.error(t('history.noMovements'));
-        return;
+        return false;
       }
       const lastBefore = query && movements.length === 0
         ? await fetchMyLastLedgerEntryBefore(query.from)
@@ -116,9 +116,11 @@ const HistoryPage = () => {
         movements,
         lastBalanceBefore: lastBefore?.balance_after ?? null,
       });
+      return true;
     } catch (err) {
       console.error('Error generating statement:', err);
       toast.error(t('history.statementError'));
+      return false;
     } finally {
       setIsGenerating(false);
     }

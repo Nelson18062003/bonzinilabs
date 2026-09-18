@@ -65,13 +65,20 @@ function fromRawValue(raw: string, fallbackCountry: CountryIso): PhoneValue {
   if (!raw) return { country: fallbackCountry, national: '' };
   const strict = fromE164(raw);
   if (strict.national) return strict;
-  // Valeur incomplète « +2376990 » : retrouver le pays par son indicatif.
-  const digitsOnly = raw.replace(/\D/g, '');
-  const match = [...COUNTRIES]
-    .filter((c) => c.dialCode && digitsOnly.startsWith(c.dialCode))
-    .sort((a, b) => b.dialCode.length - a.dialCode.length)[0];
-  if (match) {
-    return { country: match.iso, national: formatNational(digitsOnly.slice(match.dialCode.length), match.iso) };
+  // Valeur incomplète « +2376990 » : retrouver le pays par son indicatif —
+  // SEULEMENT si la valeur annonce un indicatif (« + » ou « 00 »). Un numéro
+  // local historique « 677889900 » commence par 677 : sans cette garde, il
+  // s'ouvrait en Îles Salomon (+677) et repartait faux au premier caractère.
+  const trimmed = raw.trim();
+  const international = trimmed.startsWith('+') || trimmed.startsWith('00');
+  const digitsOnly = (trimmed.startsWith('00') ? trimmed.slice(2) : trimmed).replace(/\D/g, '');
+  if (international) {
+    const match = [...COUNTRIES]
+      .filter((c) => c.dialCode && digitsOnly.startsWith(c.dialCode))
+      .sort((a, b) => b.dialCode.length - a.dialCode.length)[0];
+    if (match) {
+      return { country: match.iso, national: formatNational(digitsOnly.slice(match.dialCode.length), match.iso) };
+    }
   }
   return { country: fallbackCountry, national: formatNational(digitsOnly, fallbackCountry) };
 }

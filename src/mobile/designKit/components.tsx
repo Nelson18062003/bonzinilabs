@@ -495,7 +495,8 @@ export function BottomSheet({
         ) ?? [],
       ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onCloseRef.current(); return; }
+      // Un Échap déjà consommé par une couche imbriquée (sélecteur de pays) ne ferme pas la feuille.
+      if (e.key === 'Escape') { if (!e.defaultPrevented) onCloseRef.current(); return; }
       if (e.key !== 'Tab') return;
       const list = focusables();
       if (list.length === 0) return;

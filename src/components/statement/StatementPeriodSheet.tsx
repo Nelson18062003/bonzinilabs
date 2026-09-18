@@ -26,8 +26,8 @@ import {
 export interface StatementPeriodSheetProps {
   open: boolean;
   onClose: () => void;
-  /** Reçoit la période résolue ; la feuille se ferme quand la promesse aboutit. */
-  onGenerate: (range: StatementRange) => Promise<void>;
+  /** Reçoit la période résolue ; la feuille se ferme si le PDF est parti (`false` = rien généré, on reste). */
+  onGenerate: (range: StatementRange) => Promise<boolean | void>;
   isGenerating: boolean;
   /** Couleur d'accent du calendrier (défaut : violet Bonzini). */
   accent?: string;
@@ -55,8 +55,8 @@ export function StatementPeriodSheet({
 
   const generate = async () => {
     if (!range || isGenerating) return;
-    await onGenerate(range);
-    onClose();
+    const done = await onGenerate(range);
+    if (done !== false) onClose();
   };
 
   return (

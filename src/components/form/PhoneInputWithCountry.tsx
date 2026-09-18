@@ -4,11 +4,12 @@
  * `PhoneNumberInput` : tous les pays, drapeaux, formatage et validation.
  */
 import * as React from 'react';
-import { parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { FormFieldWrapper } from './FormFieldWrapper';
 import type { BaseFieldProps } from './shared';
 import { PhoneNumberInput, fromE164, formatNational, toE164, type PhoneValue } from './PhoneNumberInput';
 import { COUNTRY_ISOS, countryDialCode, type CountryIso } from '@/data/countries';
+import { splitPhone } from '@/data/countryCodes';
 
 interface PhoneInputWithCountryProps extends Omit<BaseFieldProps, 'size'> {
   /** Canonical E.164-ish phone (e.g. "+237691234567"). null/empty for unset. */
@@ -33,11 +34,13 @@ function fromValue(value: string | null | undefined, defaultIso: CountryIso): Ph
   // Valeur incomplète : retrouver l'indicatif puis formater le reste.
   try {
     const parsed = parsePhoneNumberFromString(value);
-    const iso = (parsed?.country as CountryCode | undefined) ?? defaultIso;
-    return { country: iso, national: formatNational(parsed?.nationalNumber ?? value, iso) };
+    if (parsed?.country) return { country: parsed.country, national: formatNational(parsed.nationalNumber, parsed.country) };
   } catch {
-    return { country: defaultIso, national: formatNational(value, defaultIso) };
+    /* on retombe sur l'indicatif le plus long */
   }
+  const { dialCode, local } = splitPhone(value, countryDialCode(defaultIso));
+  const iso = isoForDialCode(dialCode);
+  return { country: iso, national: formatNational(local, iso) };
 }
 
 /** Canonique quand le numéro est valide ; concaténation brute sinon (jamais vide → null). */

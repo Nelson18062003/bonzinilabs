@@ -70,6 +70,16 @@ export function CountryCombobox({
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Sur grand écran, la recherche prend le focus dès l'ouverture : on tape
+  // « sierra » sans cliquer. Sur téléphone, non — le clavier couvrirait la
+  // liste ; l'opérateur touche le champ s'il veut chercher.
+  React.useEffect(() => {
+    if (!open || isMobile) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 30);
+    return () => window.clearTimeout(id);
+  }, [open, isMobile]);
 
   const selected = findCountry(value, lang);
   const results = React.useMemo(() => searchCountries(query, lang), [query, lang]);
@@ -125,13 +135,20 @@ export function CountryCombobox({
       loop
       className="flex h-full min-h-0 flex-col"
       onKeyDown={(e) => {
-        if (e.key === 'Escape') close();
+        // Échap ferme LE SÉLECTEUR, pas la feuille ou la fenêtre qui l'héberge
+        // (BottomSheet / CenterDialog écoutent Échap sur window et ignorent
+        // un événement déjà consommé).
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.nativeEvent.stopImmediatePropagation();
+          close();
+        }
       }}
     >
       <div className="flex items-center gap-2 border-b border-[#D9D9D9] px-3 dark:border-[#444444]">
         <Search className="h-4 w-4 shrink-0 text-[#757575]" />
         <CommandPrimitive.Input
-          autoFocus={!isMobile}
+          ref={inputRef}
           value={query}
           onValueChange={setQuery}
           placeholder={t('countryPicker.search')}
@@ -171,9 +188,18 @@ export function CountryCombobox({
           <DialogPrimitive.Portal>
             <DialogPrimitive.Overlay className="fixed inset-0 z-[70] bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
             <DialogPrimitive.Content
-              className="fixed inset-x-0 bottom-0 z-[71] flex h-[82dvh] flex-col rounded-t-2xl border-t border-[#D9D9D9] bg-white pb-[env(safe-area-inset-bottom)] outline-none data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-4 dark:border-[#444444] dark:bg-[#2C2C2C]"
+              // Ancré sur la zone VISIBLE (--vvt / --vvh, cf. BottomSheet) : quand
+              // le clavier s'ouvre sur la recherche, la liste reste au-dessus de lui.
+              className="fixed inset-x-0 z-[71] flex flex-col justify-end outline-none"
+              style={{ top: 'var(--vvt, 0px)', height: 'var(--vvh, 100dvh)' }}
               aria-label={t('countryPicker.country')}
+              onEscapeKeyDown={(e) => { e.preventDefault(); close(); }}
+              // Pas de focus automatique : Radix viserait la croix, qui
+              // s'allumerait d'un anneau de focus sans qu'on ait rien fait ;
+              // le clavier, lui, ne doit s'ouvrir que si l'on touche la recherche.
+              onOpenAutoFocus={(e) => e.preventDefault()}
             >
+              <div className="flex h-[82%] flex-col rounded-t-2xl border-t border-[#D9D9D9] bg-white pb-[env(safe-area-inset-bottom)] data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-4 dark:border-[#444444] dark:bg-[#2C2C2C]">
               <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9] dark:bg-[#444444]" />
               <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-3">
                 <DialogPrimitive.Title className="text-[20px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">
@@ -187,6 +213,7 @@ export function CountryCombobox({
                 </DialogPrimitive.Close>
               </div>
               {list}
+              </div>
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
@@ -202,6 +229,7 @@ export function CountryCombobox({
         sideOffset={6}
         className="z-[80] flex h-[380px] w-[360px] flex-col overflow-hidden rounded-xl border-[#D9D9D9] bg-white p-0 shadow-[0_16px_48px_-16px_rgba(0,0,0,0.25)] dark:border-[#444444] dark:bg-[#2C2C2C]"
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { e.preventDefault(); close(); }}
       >
         {list}
       </PopoverContent>
