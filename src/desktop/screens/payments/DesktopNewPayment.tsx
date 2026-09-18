@@ -13,7 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useActiveDailyRate } from '@/hooks/useDailyRates';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useAdminClientBeneficiaries, useAdminClientBeneficiaryNames, useAdminCreateBeneficiary, type Beneficiary } from '@/hooks/useBeneficiaries';
@@ -79,6 +81,7 @@ export function DesktopNewPayment() {
 
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
+  const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
   const createBeneficiary = useAdminCreateBeneficiary();
 
@@ -141,7 +144,12 @@ export function DesktopNewPayment() {
   // ── Money math ──────────────────────────────────────────────────────────
   // Aucun taux « sorti de nulle part » : tant que la destination n'est pas
   // choisie (et sans taux perso), il n'y a PAS de taux ni de conversion.
-  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
+  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
+  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  const countryRate = refRate != null ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
+  const baseRate = countryRate ? countryRate.rate : refRate;
   const fallbackActive = !!mode && !useCustomRate && baseRate == null;
   const rate: number | null = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
   const hasRate = rate != null && rate > 0;
@@ -507,8 +515,15 @@ export function DesktopNewPayment() {
                   <>Choisissez la destination — le taux du jour de la méthode s'appliquera.</>
                 ) : (
                   <>
-                    {useCustomRate ? 'Taux personnalisé' : fallbackActive ? 'Taux de secours' : `Taux du jour ${mode?.name}`} :{' '}
+                    {useCustomRate
+                      ? 'Taux personnalisé'
+                      : fallbackActive
+                        ? 'Taux de secours'
+                        : countryRate
+                          ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}`
+                          : `Taux du jour ${mode?.name}`} :{' '}
                     <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
+                    {!useCustomRate && countryRate && refRate != null && <span className="ml-1.5">· Cameroun ¥{fmt(refRate)}</span>}
                     {useCustomRate && (
                       <span className="ml-1.5 rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
                         perso

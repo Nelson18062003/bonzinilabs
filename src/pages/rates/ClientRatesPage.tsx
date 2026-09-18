@@ -5,7 +5,7 @@
 // Calculs 100% PRÉSERVÉS (useClientRates, calculateFinalRate, etc.).
 // ============================================================
 import { QueryError } from '@/components/ui/QueryError';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 import { useClientRates } from '@/hooks/useDailyRates';
+import { useMyProfile } from '@/hooks/useProfile';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import type { PaymentMethodKey } from '@/types/rates';
 
 import { RateHeroCard } from './components/RateHeroCard';
@@ -29,7 +31,15 @@ export function ClientRatesPage() {
   const { data, isLoading, isError, refetch } = useClientRates();
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethodKey>('cash');
+  // Le pays du client (profil) est présélectionné dès qu'il est connu — un
+  // client gabonais voit SES taux d'abord ; il reste libre d'en changer.
+  const { data: profile } = useMyProfile();
   const [selectedCountry, setSelectedCountry] = useState('cameroun');
+  const [countryTouched, setCountryTouched] = useState(false);
+  useEffect(() => {
+    if (countryTouched || !profile?.country) return;
+    setSelectedCountry(clientCountryToRateKey(profile.country));
+  }, [profile?.country, countryTouched]);
   const [amount, setAmount] = useState('1000000');
 
   const numAmount = parseFloat(amount) || 0;
@@ -85,7 +95,7 @@ export function ClientRatesPage() {
             adjustments={adjustments}
             selectedMethod={selectedMethod}
             selectedCountry={selectedCountry}
-            onCountryChange={setSelectedCountry}
+            onCountryChange={(c) => { setCountryTouched(true); setSelectedCountry(c); }}
           />
           <PaymentMethodSelector
             activeRate={activeRate}

@@ -4,10 +4,19 @@
 //
 // Design = maquette validée (langage Ofspace) : surface douce, cartes blanches,
 // gros chiffres, VRAIS logos (Alipay/WeChat/WhatsApp), Cash = ¥ rouge, logo
-// Bonzini, zéro dégradé arc-en-ciel.
+// Bonzini, zéro dégradé arc-en-ciel. Les marges verticales sont calées pour
+// que tout (mention légale comprise) tienne dans les 2560 px du canevas.
 import { useEffect, useState } from 'react';
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
+import { flagUrl } from '@/components/form/CountryFlag';
+
+export interface RateFlyerCountry {
+  /** Libellé imprimé sur le flyer (« Gabon »). */
+  label: string;
+  /** Code alpha-2 pour le drapeau SVG ; sans lui, le libellé seul. */
+  iso?: string | null;
+}
 
 export interface RateFlyerProps {
   alipay: number;
@@ -15,6 +24,12 @@ export interface RateFlyerProps {
   bank: number;
   cash: number;
   theme?: 'dark' | 'light';
+  /**
+   * Pays dont ce sont les taux. Absent = flyer de référence (Cameroun),
+   * inchangé. Présent = la pilule d'en-tête devient « 🇬🇦 Taux du jour · Gabon »
+   * — même hauteur, rien d'autre ne bouge.
+   */
+  country?: RateFlyerCountry | null;
 }
 
 // 11530 → "11 530" (espace ordinaire, chasse fixe via tabular-nums).
@@ -26,7 +41,7 @@ const FR_DAYS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 
 const FR_MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 const CN_DAYS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
 
-export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFlyerProps) {
+export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark', country = null }: RateFlyerProps) {
   const [time, setTime] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -86,13 +101,16 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFl
             <div style={{ fontSize: 36, fontWeight: 600, color: muted, letterSpacing: 8, marginTop: 8 }}>PAIEMENTS VERS LA CHINE</div>
           </div>
         </div>
-        <div style={{ backgroundColor: isDark ? '#F1EEF8' : '#1A1726', color: isDark ? '#1A1726' : '#FFFFFF', borderRadius: 80, padding: '28px 52px', fontSize: 50, fontWeight: 700 }}>
-          Taux du jour
+        <div style={{ display: 'flex', alignItems: 'center', gap: 26, backgroundColor: isDark ? '#F1EEF8' : '#1A1726', color: isDark ? '#1A1726' : '#FFFFFF', borderRadius: 80, padding: country ? '22px 52px 22px 30px' : '28px 52px', fontSize: 50, fontWeight: 700, whiteSpace: 'nowrap' }}>
+          {country && flagUrl(country.iso) && (
+            <img src={flagUrl(country.iso)} alt="" width={84} height={63} style={{ borderRadius: 14, flexShrink: 0 }} />
+          )}
+          <span>Taux du jour{country ? ` · ${country.label}` : ''}</span>
         </div>
       </div>
 
       {/* Date + heure */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', borderTop: `3px solid ${hairline}`, paddingTop: 48, marginTop: 56, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', borderTop: `3px solid ${hairline}`, paddingTop: 44, marginTop: 48, flexShrink: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: 72, fontWeight: 800, color: text, letterSpacing: -1, lineHeight: 1.1 }}>{frDate}</div>
           <div style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: 44, color: muted, marginTop: 10 }}>{cnDate}</div>
@@ -104,7 +122,7 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFl
       </div>
 
       {/* Contexte */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 52, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 44, flexShrink: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: 50, fontWeight: 600, color: muted }}>Pour</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 18, marginTop: 4 }}>
@@ -116,7 +134,7 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFl
       </div>
 
       {/* Lignes de taux */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 36, marginTop: 48, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 30, marginTop: 40, flexShrink: 0 }}>
         {rows.map((r) => (
           <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: 48, backgroundColor: card, borderRadius: 56, padding: '44px 56px', boxShadow: cardShadow }}>
             {tile(r.key)}
@@ -133,7 +151,7 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFl
       </div>
 
       {/* Footer */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'flex-end', borderTop: `3px solid ${hairline}`, paddingTop: 44, marginTop: 52 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'flex-end', borderTop: `3px solid ${hairline}`, paddingTop: 40, marginTop: 44 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 84, fontWeight: 800, color: text, letterSpacing: -1 }}>bonzinilabs.com</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 64 }}>
@@ -153,7 +171,7 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark' }: RateFl
             </div>
           </div>
         </div>
-        <div style={{ fontSize: 34, color: muted, opacity: 0.7, lineHeight: 1.5, marginTop: 40 }}>
+        <div style={{ fontSize: 34, color: muted, opacity: 0.7, lineHeight: 1.5, marginTop: 32 }}>
           Taux indicatifs, susceptibles de varier sans préavis. · 显示汇率仅供参考，可能随时变动。
         </div>
       </div>

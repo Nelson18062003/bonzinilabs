@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { COUNTRIES } from '@/types/rates';
+import { CountryFlag } from '@/components/form/CountryFlag';
 import type { DailyRate, RateAdjustment, PaymentMethodKey } from '@/types/rates';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 
@@ -29,7 +30,7 @@ export function CountrySelector({ selectedCountry, onCountryChange }: CountrySel
                 active ? 'bg-[#8B5CF6] text-white' : cn(SURFACE.card, SURFACE.shadow, TEXT.muted),
               )}
             >
-              <span>{c.flag}</span> {t(`rates.countries.${c.key}`, { defaultValue: c.label })}
+              <CountryFlag iso={c.iso} size={18} /> {t(`rates.countries.${c.key}`, { defaultValue: c.label })}
             </button>
           );
         })}

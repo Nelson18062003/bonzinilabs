@@ -109,6 +109,19 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/deposits';
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
+import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { useActiveDailyRate as useMockActiveRate, useRateAdjustments as useMockAdjustments } from '@/hooks/useDailyRates';
+
+// Flyer réglé sur un pays dérivé (Gabon) — hooks aliasés sur les fixtures.
+function FlyerGabon() {
+  const { data: rate } = useMockActiveRate();
+  const { data: adjustments } = useMockAdjustments();
+  return (
+    <div style={{ width: 560, padding: 16 }}>
+      <RateFlyerSheet activeRate={rate} adjustments={adjustments} initialCountry="gabon" />
+    </div>
+  );
+}
 import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
 
 // `path` (optional) renders the component inside a matching <Route> so
@@ -130,6 +143,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-dashboard': { Comp: ShippedAnalytics, route: '/m/dashboard' },
   'real-client-new': { Comp: ShippedCreateClient, route: '/m/clients/new' },
   // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
+  'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
+  'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
   'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
   'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },

@@ -109,7 +109,9 @@ function svg(width: number, height: number, d: string, fill: string): El {
   return h("svg", { width, height, viewBox: "0 0 24 24" }, h("path", { d, fill }));
 }
 
-function buildElement(rates: Rates, isDark: boolean): El {
+// `country` = pays d'un flyer DÉRIVÉ (« Gabon ») : la pilule d'en-tête devient
+// « Taux du jour · Gabon ». Absent = flyer de référence (Cameroun), inchangé.
+function buildElement(rates: Rates, isDark: boolean, country?: string): El {
   const now = new Date();
   const gz  = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
   const hh  = gz.getHours().toString().padStart(2, "0");
@@ -175,7 +177,7 @@ function buildElement(rates: Rates, isDark: boolean): El {
           h("div", { style: { fontSize: 36, fontWeight: 600, color: muted, letterSpacing: 8, marginTop: 8 } }, "PAIEMENTS VERS LA CHINE"),
         ),
       ),
-      h("div", { style: { display: "flex", backgroundColor: pillBg, color: pillText, borderRadius: 80, padding: "28px 52px", fontSize: 50, fontWeight: 700 } }, "Taux du jour"),
+      h("div", { style: { display: "flex", backgroundColor: pillBg, color: pillText, borderRadius: 80, padding: "28px 52px", fontSize: 50, fontWeight: 700 } }, country ? `Taux du jour · ${country}` : "Taux du jour"),
     ),
 
     // Date + heure
@@ -240,8 +242,10 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json() as { rates: Rates; dark?: boolean; theme?: string };
+    const body = await req.json() as { rates: Rates; dark?: boolean; theme?: string; country?: string; country_slug?: string };
     const { rates, dark, theme } = body;
+    const country = typeof body.country === "string" && body.country.trim() ? body.country.trim().slice(0, 40) : undefined;
+    const countrySlug = typeof body.country_slug === "string" ? body.country_slug.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 32) : "";
 
     // Accepte dark (legacy) ou theme ('dark'|'light')
     const isDark = theme === "light" ? false : (dark !== false);
@@ -260,7 +264,7 @@ serve(async (req) => {
     }
 
     const fonts   = await getFonts();
-    const element = buildElement(rates, isDark);
+    const element = buildElement(rates, isDark, country);
 
     // Étape 1 : Satori génère le SVG (texte converti en chemins vectoriels)
     const svgOut = await satori(element, { width: 2150, height: 2560, fonts });
@@ -271,7 +275,7 @@ serve(async (req) => {
     const pngBuffer = resvg.render().asPng();
 
     const date     = new Date().toISOString().slice(0, 10);
-    const filename = `bonzini_taux_${date}.png`;
+    const filename = countrySlug ? `bonzini_taux_${countrySlug}_${date}.png` : `bonzini_taux_${date}.png`;
 
     return new Response(pngBuffer, {
       headers: {

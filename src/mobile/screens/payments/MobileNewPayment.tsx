@@ -16,7 +16,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useActiveDailyRate } from '@/hooks/useDailyRates';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -156,6 +158,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // ── Data ─────────────────────────────────────────────────────
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
+  const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
 
   // Tous les wallets en une seule requête admin
@@ -250,7 +253,12 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const clientOverdraft = client ? (walletsMap.get(client.user_id)?.overdraft ?? 0) : 0;
   // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé par le super admin.
   const clientAvailable = clientBalance + clientOverdraft;
-  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
+  // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
+  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
+  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
+  const countryRate = clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments);
+  const baseRate = countryRate ? countryRate.rate : refRate;
   // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
   // sur la constante de secours (le paiement partait à 11 530).
   const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
@@ -792,7 +800,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   <div className={cn('text-[16px] font-bold', TEXT.strong)}>Taux personnalisé</div>
                   {!useCustomRate && (
                     <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>
-                      Taux du jour : 1M XAF = ¥{fmt(baseRate)}
+                      {countryRate
+                        ? <>Taux {countryRate.label} ({formatCountryPct(countryRate.percentage)}) : 1M XAF = ¥{fmt(baseRate)} · Cameroun ¥{fmt(refRate)}</>
+                        : <>Taux du jour : 1M XAF = ¥{fmt(baseRate)}</>}
                     </div>
                   )}
                 </div>

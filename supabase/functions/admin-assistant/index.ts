@@ -277,7 +277,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   taux: [
     { capability: "définir les 4 taux du jour", tool: "set_daily_rate" },
     { capability: "modifier un ajustement de taux par pays/palier (%)", tool: "set_rate_adjustment", note: "super_admin" },
-    { capability: "générer le flyer du taux", tool: "generate_rate_flyer" },
+    { capability: "générer le flyer du taux (Cameroun, ou un autre pays : Gabon… via country_key)", tool: "generate_rate_flyer" },
   ],
   tresorerie: [
     { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
@@ -302,7 +302,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
 const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
   { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
   { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Pas de montant minimum. Méthodes : alipay, wechat, bank_transfer, cash." },
-  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Des ajustements en pourcentage par pays et par palier affinent le taux final. Un paiement utilise le taux du jour, ou un taux personnalisé si l'admin en fixe un." },
+  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Le Cameroun est la RÉFÉRENCE : ce sont ses taux qui sont publiés. Chaque autre pays (Gabon, Tchad, RCA, Congo, Guinée équatoriale) a un écart en pourcentage (rate_adjustments, type country, ex. Gabon −1 %) appliqué en facteur aux quatre taux publiés : ses taux sont dérivés, jamais saisis à part. Les paliers de montant (< 400 000, 400 000–999 999, ≥ 1 000 000 XAF) ajoutent un second pourcentage ; le flyer et « Taux par pays » montrent le palier ≥ 1 M. Un paiement utilise le taux du jour du pays du client, ou un taux personnalisé si l'admin en fixe un." },
   { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
   { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
   { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
@@ -850,9 +850,9 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "generate_rate_flyer",
     permission: "canViewPayments",
-    description: "Générer le FLYER (image PNG) du taux du jour, prêt à partager. Utilise le taux actif. Optionnel: dark (true pour la version sombre). L'image est renvoyée directement dans le chat, téléchargeable.",
-    input_schema: { type: "object", properties: { dark: { type: "boolean" } } },
-    execute: async (admin, { dark }) => {
+    description: "Générer le FLYER (image PNG) du taux du jour, prêt à partager. Utilise le taux actif (référence Cameroun). Optionnel: country_key (gabon, tchad, rca, congo, guinee) pour le flyer d'un AUTRE pays — ses taux sont dérivés automatiquement de la référence via l'ajustement pays (ex. Gabon −1 %), pour 1 000 000 XAF. Optionnel: dark (true pour la version sombre). L'image est renvoyée directement dans le chat, téléchargeable.",
+    input_schema: { type: "object", properties: { dark: { type: "boolean" }, country_key: { type: "string", description: "Clé pays (rate_adjustments) : gabon, tchad, rca, congo, guinee. Absent = Cameroun (référence)." } } },
+    execute: async (admin, { dark, country_key }) => {
       // 1) Taux du jour actif
       const { data: rate, error } = await admin.from("daily_rates")
         .select("rate_cash, rate_alipay, rate_wechat, rate_virement")
@@ -860,30 +860,55 @@ const READ_TOOLS: ReadTool[] = [
       if (error) return { error: error.message };
       if (!rate) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
 
+      // 1b) Pays dérivé : base × (1 + écart %), même formule que calculate_final_rate (palier ≥ 1 M = 0 %).
+      let country: { key: string; label: string; percentage: number } | null = null;
+      let factor = 1;
+      const wantedKey = typeof country_key === "string" ? country_key.trim().toLowerCase() : "";
+      if (wantedKey && wantedKey !== "cameroun") {
+        const { data: adj, error: adjErr } = await admin.from("rate_adjustments")
+          .select("key, label, percentage, is_reference").eq("type", "country").eq("key", wantedKey).maybeSingle();
+        if (adjErr) return { error: adjErr.message };
+        if (!adj) return { error: `Pays inconnu : ${wantedKey}. Clés possibles : gabon, tchad, rca, congo, guinee (ou rien pour le Cameroun).` };
+        if (!adj.is_reference) {
+          country = { key: adj.key, label: adj.label || adj.key, percentage: Number(adj.percentage) || 0 };
+          factor = 1 + country.percentage / 100;
+        }
+      }
+      const derive = (v: unknown) => Math.round(Number(v) * factor * 100) / 100;
+
       // 2) Appel de l'Edge Function generate-flyer (PNG). rates attendu: {alipay, wechat, bank, cash}
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const rates = { alipay: Number(rate.rate_alipay), wechat: Number(rate.rate_wechat), bank: Number(rate.rate_virement), cash: Number(rate.rate_cash) };
+      const rates = { alipay: derive(rate.rate_alipay), wechat: derive(rate.rate_wechat), bank: derive(rate.rate_virement), cash: derive(rate.rate_cash) };
       let pngBytes: Uint8Array;
       try {
         const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
-          body: JSON.stringify({ rates, dark: dark === true }),
+          body: JSON.stringify({ rates, dark: dark === true, country: country?.label, country_slug: country?.key }),
         });
         if (!res.ok) return { error: `Génération du flyer échouée (${res.status}).` };
         pngBytes = new Uint8Array(await res.arrayBuffer());
       } catch (e) { return { error: `Génération du flyer: ${String((e as Error)?.message ?? e)}` }; }
 
       // 3) Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
-      const path = `flyers/${Date.now()}-taux.png`;
+      const path = country ? `flyers/${Date.now()}-taux-${country.key}.png` : `flyers/${Date.now()}-taux.png`;
       const up = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, pngBytes, { contentType: "image/png", upsert: true });
       if (up.error) return { error: `Stockage du flyer: ${up.error.message}` };
       const signed = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 3600);
       if (signed.error || !signed.data?.signedUrl) return { error: "URL du flyer indisponible." };
 
       // __image renvoie l'image au chat ; le texte sert au modèle.
-      return { success: true, rates, __image: { url: signed.data.signedUrl, name: "Flyer taux du jour", kind: "image" }, message: "Flyer du taux du jour généré et affiché dans le chat." };
+      const title = country ? `Flyer taux du jour · ${country.label}` : "Flyer taux du jour";
+      return {
+        success: true,
+        rates,
+        country: country ? { key: country.key, label: country.label, adjustment_pct: country.percentage } : "cameroun (référence)",
+        __image: { url: signed.data.signedUrl, name: title, kind: "image" },
+        message: country
+          ? `Flyer ${country.label} généré (taux Cameroun ${country.percentage > 0 ? "+" : ""}${country.percentage} %) et affiché dans le chat.`
+          : "Flyer du taux du jour généré et affiché dans le chat.",
+      };
     },
   },
   {

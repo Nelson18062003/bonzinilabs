@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { TextField } from '@/components/form';
 import { parseDecimal } from '@/lib/decimalInput';
 import { PAYMENT_METHODS, COUNTRIES } from '@/types/rates';
+import { CountryFlag } from '@/components/form/CountryFlag';
 import type { PaymentMethodKey, RateAdjustment, DailyRate } from '@/types/rates';
 import { calculateFinalRate, getBaseRate, convertCNYtoXAF } from '@/lib/rateCalculation';
 import { formatNumber } from '@/lib/formatters';
@@ -287,7 +288,12 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
 
           <div className="flex flex-wrap gap-1.5">
             {COUNTRIES.map((c) => (
-              <Chip key={c.key} label={c.label} active={country === c.key} onClick={() => setCountry(c.key)} />
+              <Chip
+                key={c.key}
+                label={<span className="inline-flex items-center gap-1.5"><CountryFlag iso={c.iso} size={16} />{c.label}</span>}
+                active={country === c.key}
+                onClick={() => setCountry(c.key)}
+              />
             ))}
           </div>
 
