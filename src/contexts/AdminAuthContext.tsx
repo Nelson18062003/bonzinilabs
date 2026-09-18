@@ -36,6 +36,8 @@ export interface RolePermission {
   canViewCargo: boolean;
   /** Éditer un dossier cargo (paiement du fret, télex, notes). */
   canManageCargo: boolean;
+  /** Autoriser un solde négatif (découvert) sur le portefeuille d'un client. Super admin seul. */
+  canGrantOverdraft: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -54,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: true,
     canViewCargo: true,
     canManageCargo: true,
+    canGrantOverdraft: true,
   },
   ops: {
     canViewClients: true,
@@ -70,6 +73,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: true,
     canViewCargo: true,
     canManageCargo: true,
+    canGrantOverdraft: false,
   },
   support: {
     canViewClients: true,
@@ -86,6 +90,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: true,
     canViewCargo: true,
     canManageCargo: false,
+    canGrantOverdraft: false,
   },
   customer_success: {
     canViewClients: true,
@@ -102,6 +107,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: true,
     canViewCargo: true,
     canManageCargo: false,
+    canGrantOverdraft: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -118,6 +124,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: false,
     canViewCargo: false,
     canManageCargo: false,
+    canGrantOverdraft: false,
   },
   treasurer: {
     canViewClients: false,
@@ -134,6 +141,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canAccessSupportChat: false,
     canViewCargo: false,
     canManageCargo: false,
+    canGrantOverdraft: false,
   },
 };
 

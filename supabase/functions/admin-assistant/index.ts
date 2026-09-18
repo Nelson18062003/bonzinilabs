@@ -98,14 +98,14 @@ type PermKey =
   | "canViewPayments" | "canProcessPayments"
   | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury"
   | "canManageTreasury" | "canAccessSupportChat"
-  | "canViewCargo" | "canManageCargo";
+  | "canViewCargo" | "canManageCargo" | "canGrantOverdraft";
 const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
-  super_admin:       { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: true , canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: true , canViewCargo: true , canManageCargo: true },
-  ops:               { canViewClients: true , canEditClients: false, canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: true },
-  support:           { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: false, canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false },
-  customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false },
-  cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false },
-  treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false },
+  super_admin:       { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: true , canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: true , canViewCargo: true , canManageCargo: true , canGrantOverdraft: true  },
+  ops:               { canViewClients: true , canEditClients: false, canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: true, canGrantOverdraft: false },
+  support:           { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: false, canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false },
+  customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false },
+  cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false },
+  treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false },
 };
 
 function json(body: Record<string, unknown>, status = 200) {
@@ -267,7 +267,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   paiements: [
     { capability: "créer un paiement au taux du jour OU à un taux personnalisé", tool: "create_payment", note: "exchange_rate optionnel = taux personnalisé, comme l'écran admin" },
     { capability: "compléter le bénéficiaire d'UN paiement", tool: "update_payment_beneficiary" },
-    { capability: "annuler un paiement non finalisé (rembourse)", tool: "cancel_payment", note: "super_admin" },
+    { capability: "annuler un paiement, même effectué (rembourse, motif)", tool: "cancel_payment", note: "super_admin" },
     { capability: "enregistrer / modifier / archiver un bénéficiaire RÉUTILISABLE", tool: "create_beneficiary / update_beneficiary / archive_beneficiary" },
     { capability: "AFFICHER la preuve image d'un paiement (QR Alipay/WeChat, reçu) dans le chat", tool: "show_payment_proof" },
     { capability: "AFFICHER le QR code d'un bénéficiaire dans le chat", tool: "show_beneficiary_qr" },
@@ -1877,9 +1877,11 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
       const countryKey = (a.country_key || "cameroun").toLowerCase();
       // Vérifier le solde du client
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
-      if (Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
+      // Plancher = solde + découvert autorisé par le super admin (la RPC le re-vérifie sous verrou).
+      const overdraft = Number(wallet.overdraft_limit_xaf ?? 0);
+      if (Number(wallet.balance_xaf) + overdraft < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(Number(wallet.balance_xaf) + overdraft)} disponible${overdraft > 0 ? ", découvert compris" : ""}).` };
       // Taux : personnalisé si l'admin le fournit (parité avec l'écran admin MobileNewPayment),
       // sinon taux du jour calculé côté base (jamais inventé par l'IA).
       // Le taux du jour est calculé DANS TOUS LES CAS : il sert de référence pour vérifier
@@ -1987,8 +1989,8 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "cancel_payment",
     permission: "canProcessPayments",
     superAdminOnly: true,
-    description: "Annuler un paiement non finalisé (par référence ou payment_id) → REMBOURSE le wallet du client. Réservé au super_admin (vérifié côté serveur).",
-    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" } } },
+    description: "Annuler un paiement (par référence ou payment_id), même déjà effectué → REMBOURSE le wallet du client. Motif obligatoire pour un paiement effectué. Réservé au super_admin (vérifié côté serveur).",
+    input_schema: { type: "object", properties: { reference: { type: "string" }, payment_id: { type: "string" }, reason: { type: "string", description: "Motif de l'annulation (obligatoire si le paiement est effectué)" } } },
     prepare: async (admin, a) => {
       let q = admin.from("payments").select("id, reference, amount_xaf, status");
       if (a.payment_id) q = q.eq("id", a.payment_id);
@@ -1996,7 +1998,11 @@ const WRITE_TOOLS: WriteTool[] = [
       else return { ok: false, error: "Fournir reference ou payment_id." };
       const { data: pay } = await q.maybeSingle();
       if (!pay) return { ok: false, error: "Paiement introuvable." };
-      return { ok: true, args: { p_payment_id: pay.id }, summary: { title: "Annuler un paiement", subtitle: pay.reference, amount: fmtXAF(pay.amount_xaf), lines: [{ label: "Statut", value: pay.status }, { label: "Effet", value: "↩️ rembourse le wallet" }], confirmLabel: "Annuler & rembourser", danger: true } };
+      const reason = a.reason ? String(a.reason).trim() : "";
+      if (pay.status === "completed" && reason.length < 3) return { ok: false, error: "Ce paiement est déjà effectué : un motif d'annulation est obligatoire." };
+      const lines: Line[] = [{ label: "Statut", value: pay.status }, { label: "Effet", value: "↩️ rembourse le wallet" }];
+      if (reason) lines.push({ label: "Motif", value: reason });
+      return { ok: true, args: reason ? { p_payment_id: pay.id, p_reason: reason } : { p_payment_id: pay.id }, summary: { title: "Annuler un paiement", subtitle: pay.reference, amount: fmtXAF(pay.amount_xaf), lines, confirmLabel: "Annuler & rembourser", danger: true } };
     },
     execute: async (userClient, args) => {
       const { data, error } = await userClient.rpc("cancel_payment", args);
@@ -2044,9 +2050,10 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!amt) return { ok: false, error: "Montant invalide." };
       if (a.type !== "credit" && a.type !== "debit") return { ok: false, error: "type doit être 'credit' ou 'debit'." };
       if (!a.reason || String(a.reason).trim().length < 3) return { ok: false, error: "Motif obligatoire." };
-      const { data: wallet } = await admin.from("wallets").select("balance_xaf").eq("user_id", c.uid).maybeSingle();
+      const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
-      if (a.type === "debit" && Number(wallet.balance_xaf) < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(wallet.balance_xaf)} disponible).` };
+      const overdraft = Number(wallet.overdraft_limit_xaf ?? 0);
+      if (a.type === "debit" && Number(wallet.balance_xaf) + overdraft < amt) return { ok: false, error: `Solde insuffisant (${fmtXAF(Number(wallet.balance_xaf) + overdraft)} disponible${overdraft > 0 ? ", découvert compris" : ""}).` };
       const after = a.type === "credit" ? Number(wallet.balance_xaf) + amt : Number(wallet.balance_xaf) - amt;
       const lines: Line[] = [
         { label: "Client", value: c.name },

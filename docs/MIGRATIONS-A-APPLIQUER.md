@@ -5,6 +5,19 @@
 
 ## En attente
 
+### `migrations/20260918_consolidated.sql` (= `20260918100000_wallet_overdraft.sql` + `20260918110000_payment_cancel_reason_and_edit.sql`)
+**PR :** Découvert autorisé · relevé par période · annulation / modification de paiement · formulaire client
+**Contenu :**
+- `wallets.overdraft_limit_xaf` + contrainte `balance_xaf >= -overdraft_limit_xaf` ; `admin_set_wallet_overdraft`
+  (super admin, `canGrantOverdraft`) ; six RPC de débit redéfinies avec ce plancher.
+- `cancel_payment(uuid, text)` (motif, même paiement effectué) — l'ancienne `cancel_payment(uuid)` est supprimée ;
+  `admin_correct_payment` ouverte aux agents `canProcessPayments` sur un paiement en cours.
+- Testée sur un Postgres local (16 scénarios) et idempotente (deux exécutions successives).
+
+**Comment pousser :** coller `migrations/20260918_consolidated.sql` dans l'éditeur SQL, puis `/gen-types`
+et redéployer l'edge function `admin-assistant` (nouvelle permission dans sa matrice, outil `cancel_payment` avec motif).
+
+
 ### `20260607120000_mola_operations_radar_and_daily_digest.sql`
 **PR :** Mola — profondeur + radar partagé + digest auto
 **Contenu :**

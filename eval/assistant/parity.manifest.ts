@@ -85,7 +85,7 @@ export const WRITE_TOOL_PARITY: ParityEntry[] = [
     } },
   { tool: "update_payment_beneficiary", rpc: "admin_update_payment_beneficiary",
     exposes: ["p_payment_id", "p_beneficiary_name", "p_beneficiary_phone", "p_beneficiary_email", "p_beneficiary_identifier", "p_beneficiary_identifier_type", "p_beneficiary_bank_name", "p_beneficiary_bank_account", "p_beneficiary_bank_extra", "p_beneficiary_qr_code_url", "p_beneficiary_notes"], omits: {} },
-  { tool: "cancel_payment", rpc: "cancel_payment", exposes: ["p_payment_id"], omits: {} },
+  { tool: "cancel_payment", rpc: "cancel_payment", exposes: ["p_payment_id", "p_reason"], omits: {} },
   { tool: "set_daily_rate", rpc: "create_daily_rates",
     exposes: ["p_rate_cash", "p_rate_alipay", "p_rate_wechat", "p_rate_virement"],
     omits: { p_effective_at: "toujours 'maintenant' (pas de taux futur planifié)" } },
