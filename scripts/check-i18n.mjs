@@ -36,7 +36,7 @@ const REPORT_MD = join(REPORT_DIR, 'I18N_AUDIT.md');
 const LANGUAGES = ['fr', 'en', 'zh'];
 const NAMESPACES = [
   'common', 'landing', 'auth', 'formatters',
-  'agent', 'client', 'payments', 'deposits',
+  'agent', 'client', 'payments', 'deposits', 'support',
 ];
 const DEFAULT_NS = 'common';
 
