@@ -47,6 +47,12 @@ export interface LabelData {
   destination: ShippingDestination;
   settings: ShippingSettings;
   supplier?: LabelSupplierInfo;
+  /**
+   * Sans couleur : noir, blanc et gris seulement — la silhouette, le nom du
+   * mode, les hachures font tout le travail. Pour une imprimante d'usine en
+   * noir et blanc, ou pour juger l'étiquette telle qu'elle sortira.
+   */
+  mono?: boolean;
 }
 
 // ── Polices ──────────────────────────────────────────────────────────────
@@ -162,7 +168,9 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   const ops: Op[] = [];
   const loc = d.settings[d.destination];
   const tag = DESTINATION_LABEL[d.destination];
-  const theme = DESTINATION_THEME[d.destination];
+  const theme = d.mono
+    ? { ...DESTINATION_THEME[d.destination], color: INK, dark: '#000000', tint: BAND }
+    : DESTINATION_THEME[d.destination];
   const company = d.settings.company;
   const ourCompany = [company.nameZh.trim(), company.nameEn.trim()].filter(Boolean).join(' ');
   const finalDestination = [d.clientCity, d.clientCountry].filter((v) => v && v.trim()).join(', ');

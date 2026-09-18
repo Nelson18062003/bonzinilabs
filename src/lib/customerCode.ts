@@ -117,7 +117,7 @@ export const DESTINATION_HINT_FR: Record<ShippingDestination, string> = {
  * étiquettes (elles portaient les mêmes mots, dans les mêmes couleurs, et un
  * client a envoyé la mauvaise à son fournisseur). Trois signaux, cumulés :
  *   • un pictogramme : bateau (海运) / avion (空运) — lisible sans savoir lire ;
- *   • une couleur : bleu océan / rouge-orange — chaque écran, chaque aperçu ;
+ *   • une couleur : bleu océan / rouge — chaque écran, chaque aperçu ;
  *   • une TEXTURE : bandeau uni pour le bateau, hachures diagonales pour
  *     l'avion — parce que l'imprimante de l'usine est souvent en noir et
  *     blanc, et que deux gris ne se distinguent pas.
@@ -137,7 +137,7 @@ export interface DestinationTheme {
 }
 export const DESTINATION_THEME: Record<ShippingDestination, DestinationTheme> = {
   warehouse: { color: '#0B5FA5', dark: '#083F70', tint: '#E6F0FA', icon: 'ship', stripes: false },
-  office: { color: '#D8471B', dark: '#9A3012', tint: '#FCEAE3', icon: 'plane', stripes: true },
+  office: { color: '#C8102E', dark: '#8A0A1F', tint: '#FBE6EA', icon: 'plane', stripes: true },
 };
 
 /** Le mot qui va dans le nom du fichier exporté. */
