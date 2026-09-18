@@ -18,6 +18,9 @@ export interface StatementMovement {
   motif: string;
   debit: number;
   credit: number;
+  /** Solde AVANT le mouvement — sert à lire le solde d'ouverture. */
+  soldeAvant: number;
+  /** Solde APRÈS le mouvement. */
   solde: number;
 }
 
@@ -27,7 +30,12 @@ export interface StatementInput {
   clientEmail?: string;
   clientCountry?: string;
   clientRef?: string;
+  /** Triés du plus ancien au plus récent, bornés à la période. */
   movements: StatementMovement[];
+  /** Solde au début de la période (peut être négatif : découvert). */
+  openingBalance: number;
+  /** Solde à la fin de la période (= solde d'ouverture si aucun mouvement). */
+  closingBalance: number;
   periodFrom: string;
   periodTo: string;
   generatedAt: string;
@@ -271,7 +279,9 @@ const s = StyleSheet.create({
     marginBottom: 3,
   },
   summaryValue: {
-    fontSize: 20,
+    // 18 et non 20 : quatre cases au lieu de trois, chacune doit tenir
+    // « -133 500 000 » sur une ligne (≈ 175 pt utiles).
+    fontSize: 18,
     fontFamily: 'DM Sans',
     fontWeight: 900,
     letterSpacing: -0.5,
@@ -520,6 +530,8 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
     clientCountry,
     clientRef,
     movements,
+    openingBalance,
+    closingBalance,
     periodFrom,
     periodTo,
     generatedAt,
@@ -527,7 +539,11 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
 
   const totalCredits = movements.reduce((s, m) => s + m.credit, 0);
   const totalDebits  = movements.reduce((s, m) => s + m.debit,  0);
-  const soldeFinal   = movements.length > 0 ? movements[movements.length - 1].solde : 0;
+  // Un solde négatif (découvert) s'écrit avec son signe (fmtNum) et dans
+  // l'orange déjà réservé aux débits — jamais masqué.
+  const openingColor = openingBalance < 0 ? C.orange : C.text;
+  const closingColor = closingBalance < 0 ? C.orange : C.violet;
+  const totalsSoldeColor = closingBalance < 0 ? '#ff8a65' : C.white;
 
   const extraInfo = [clientCountry, clientRef].filter(Boolean).join(' · ');
 
@@ -581,6 +597,11 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
 
         {/* ═══ SUMMARY BOXES — page 1 only, no fixed ═══ */}
         <View style={s.summaryRow}>
+          <View style={[s.summaryBox, s.summaryBoxBorder, { backgroundColor: C.light }]}>
+            <Text style={s.summaryLabel}>Solde d'ouverture</Text>
+            <Text style={[s.summaryValue, { color: openingColor }]}>{fmtNum(openingBalance)}</Text>
+            <Text style={s.summarySub}>XAF</Text>
+          </View>
           <View style={[s.summaryBox, s.summaryBoxBorder, { backgroundColor: C.greenLight }]}>
             <Text style={s.summaryLabel}>Total dépôts</Text>
             <Text style={[s.summaryValue, { color: C.green }]}>+{fmtNum(totalCredits)}</Text>
@@ -592,8 +613,8 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
             <Text style={s.summarySub}>XAF</Text>
           </View>
           <View style={[s.summaryBox, { backgroundColor: C.violetLight }]}>
-            <Text style={s.summaryLabel}>Solde final</Text>
-            <Text style={[s.summaryValue, { color: C.violet }]}>{fmtNum(soldeFinal)}</Text>
+            <Text style={s.summaryLabel}>Solde de clôture</Text>
+            <Text style={[s.summaryValue, { color: closingColor }]}>{fmtNum(closingBalance)}</Text>
             <Text style={s.summarySub}>XAF</Text>
           </View>
         </View>
@@ -658,7 +679,7 @@ export function ClientStatementPDF({ data }: { data: StatementInput }) {
           <Text style={s.totalsLabel}>Totaux</Text>
           <Text style={s.totalsDebit}>-{fmtNum(totalDebits)}</Text>
           <Text style={s.totalsCredit}>+{fmtNum(totalCredits)}</Text>
-          <Text style={s.totalsSolde}>{fmtNum(soldeFinal)}</Text>
+          <Text style={[s.totalsSolde, { color: totalsSoldeColor }]}>{fmtNum(closingBalance)}</Text>
         </View>
 
         {/* ═══ FOOTER — fixed, absolutely positioned, repeats on every page ═══ */}

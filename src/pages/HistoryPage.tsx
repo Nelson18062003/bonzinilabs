@@ -13,16 +13,22 @@ import { ArrowDownLeft, ArrowUpRight, Filter, FileDown, Loader2, Search } from '
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
-import { useMyWalletOperations, WalletOperation } from '@/hooks/useWallet';
+import {
+  useMyWalletOperations,
+  fetchMyLedgerInRange,
+  fetchMyLastLedgerEntryBefore,
+  WalletOperation,
+} from '@/hooks/useWallet';
 import { useMyProfile } from '@/hooks/useProfile';
 import { formatNumber } from '@/lib/formatters';
 import { SURFACE, TEXT, SOFT_PILL } from '@/mobile/designKit';
 import {
-  generateClientStatement,
+  generateStatementForRange,
   buildMovementFromWalletOp,
   shouldIncludeWalletOp,
-  fmtDateLong,
 } from '@/lib/generateClientStatement';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
 
 type FilterType = 'all' | 'credits' | 'debits';
 
@@ -33,6 +39,7 @@ const HistoryPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [search, setSearch] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
   const { data: operations, isLoading, isError, refetch } = useMyWalletOperations();
   const { data: profile } = useMyProfile();
 
@@ -82,29 +89,32 @@ const HistoryPage = () => {
     }
   };
 
-  const handleDownloadStatement = async () => {
-    if (!operations?.length) {
-      toast.error(t('history.noMovements'));
-      return;
-    }
+  // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
+  // les écritures de cette période (la liste à l'écran, elle, reste à 100),
+  // et le solde d'ouverture vient de la dernière écriture avant la période
+  // si elle est vide.
+  const handleDownloadStatement = async (range: StatementRange) => {
     setIsGenerating(true);
     try {
-      const sorted = [...operations]
+      const query = statementQueryRange(range);
+      const entries = await fetchMyLedgerInRange(query);
+      const movements = entries
         .filter((op) => shouldIncludeWalletOp(op))
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      const movements = sorted.map((op) => buildMovementFromWalletOp(op));
+        .map((op) => buildMovementFromWalletOp(op));
+      if (query === null && movements.length === 0) {
+        toast.error(t('history.noMovements'));
+        return;
+      }
+      const lastBefore = query && movements.length === 0
+        ? await fetchMyLastLedgerEntryBefore(query.from)
+        : null;
       const clientName = profile ? `${profile.first_name} ${profile.last_name}` : 'Client';
 
-      await generateClientStatement({
-        clientName,
-        clientPhone: profile?.phone ?? undefined,
-        clientEmail: profile?.email ?? undefined,
+      await generateStatementForRange({
+        client: { name: clientName, phone: profile?.phone, email: profile?.email },
+        range: query,
         movements,
-        periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
-        periodTo: fmtDateLong(new Date().toISOString()),
-        generatedAt: new Date().toLocaleString('fr-FR', {
-          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        }),
+        lastBalanceBefore: lastBefore?.balance_after ?? null,
       });
     } catch (err) {
       console.error('Error generating statement:', err);
@@ -130,7 +140,7 @@ const HistoryPage = () => {
             <p className={cn('mt-0.5 text-[13px]', TEXT.muted)}>{t('history.subtitle')}</p>
           </div>
           <button
-            onClick={handleDownloadStatement}
+            onClick={() => setStatementOpen(true)}
             disabled={isGenerating || isLoading}
             className={cn('flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold transition active:scale-95 disabled:opacity-50', SOFT_PILL)}
           >
@@ -222,6 +232,14 @@ const HistoryPage = () => {
           </div>
         )}
       </div>
+
+      {/* Relevé de compte — choix de la période */}
+      <StatementPeriodSheet
+        open={statementOpen}
+        onClose={() => setStatementOpen(false)}
+        onGenerate={handleDownloadStatement}
+        isGenerating={isGenerating}
+      />
     </MobileLayout>
   );
 };
