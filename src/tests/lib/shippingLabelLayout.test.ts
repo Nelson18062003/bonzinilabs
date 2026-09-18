@@ -99,6 +99,22 @@ describe('layoutLabel — rien ne se chevauche, rien ne déborde', () => {
     expect(texts(layoutLabel(base, measure)).some((t) => t.text === '海运 · SEA CARGO')).toBe(true);
     expect(texts(layoutLabel({ ...base, destination: 'office' }, measure)).some((t) => t.text === '空运 · AIR CARGO')).toBe(true);
   });
+
+  it('chaque mode a son identité : pictogramme, couleur, et des hachures pour l’avion seulement', () => {
+    const sea = layoutLabel(base, measure);
+    const air = layoutLabel({ ...base, destination: 'office' }, measure);
+    const icons = (ops: Op[]) => ops.filter((o): o is Extract<Op, { kind: 'icon' }> => o.kind === 'icon');
+    expect(icons(sea).length).toBeGreaterThanOrEqual(2); // bandeau + pastille
+    expect(icons(sea).every((i) => i.icon === 'ship')).toBe(true);
+    expect(icons(air).every((i) => i.icon === 'plane')).toBe(true);
+    expect(sea.some((o) => o.kind === 'stripes')).toBe(false);
+    expect(air.some((o) => o.kind === 'stripes')).toBe(true);
+    const banner = (ops: Op[]) => ops.find((o): o is Extract<Op, { kind: 'rect' }> => o.kind === 'rect' && o.y === 14 && o.x === 14 && o.h > 50)?.color;
+    expect(banner(sea)).not.toBe(banner(air));
+    // Le nom du mode, en très gros, en tête
+    expect(texts(sea).some((t) => t.row === 'banner-en' && t.text === 'SEA CARGO')).toBe(true);
+    expect(texts(air).some((t) => t.row === 'banner-en' && t.text === 'AIR CARGO')).toBe(true);
+  });
 });
 
 describe('fitOnPage — l’étiquette sur une A4', () => {
