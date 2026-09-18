@@ -405,6 +405,25 @@
   "settings": "Paramètres",
   "signIn": "Se connecter",
   "statementGenerationError": "Erreur lors de la génération du relevé",
+  "statementPeriod": {
+    "title": "Relevé de compte",
+    "hint": "Choisissez la période à couvrir. Le PDF indique le solde d'ouverture, les mouvements et le solde de clôture.",
+    "customPlaceholder": "Date de début → date de fin",
+    "pickDates": "Choisissez une date de début et une date de fin.",
+    "generate": "Générer le PDF",
+    "generating": "Préparation du relevé…",
+    "presets": {
+      "today": "Aujourd'hui",
+      "last_7_days": "7 derniers jours",
+      "last_14_days": "14 derniers jours",
+      "last_30_days": "30 derniers jours",
+      "last_90_days": "3 derniers mois",
+      "this_month": "Ce mois-ci",
+      "last_month": "Mois dernier",
+      "all_time": "Tout l'historique",
+      "custom": "Personnalisé"
+    }
+  },
   "suspendedStatus": "Suspendu",
   "systemModeNote": "Le mode Système s'adapte automatiquement aux préférences de votre appareil.",
   "tempPasswordClientMessage": "Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.",
@@ -457,11 +476,73 @@
   "otpCode": "Code de vérification",
   "phoneField": {
     "searchCountry": "Rechercher un pays...",
-    "noResult": "Aucun résultat"
+    "noResult": "Aucun résultat",
+    "valid": "Numéro valide · {{number}}",
+    "incompleteFor": "Numéro incomplet pour {{country}}"
   },
   "queryError": {
     "title": "Impossible de charger {{what}}.",
     "hint": "Vérifiez votre connexion, puis réessayez."
   },
-  "retry": "Réessayer"
+  "retry": "Réessayer",
+  "countryPicker": {
+    "choose": "Choisir un pays",
+    "search": "Rechercher un pays, un code ou un indicatif…",
+    "noResult": "Aucun pays ne correspond",
+    "frequent": "Fréquents",
+    "all": "Tous les pays",
+    "dialCode": "Indicatif",
+    "country": "Pays",
+    "clear": "Effacer",
+    "close": "Fermer"
+  },
+  "clientForm": {
+    "optional": "optionnel",
+    "subtitle": "Identité, contact et localisation",
+    "identity": "Identité",
+    "identityHint": "Prénom, nom et entreprise du client.",
+    "contact": "Contact",
+    "contactHint": "Le numéro WhatsApp reçoit le mot de passe temporaire.",
+    "location": "Localisation",
+    "locationHint": "Le pays suit l'indicatif du numéro, sauf si vous le changez.",
+    "whatsapp": "WhatsApp",
+    "otherNumber": "Numéro {{n}}",
+    "remove": "Retirer",
+    "removeNumber": "Retirer ce numéro",
+    "labelPlaceholder": "Libellé : MTN, Bureau, Chine…",
+    "numberLabel": "Libellé du numéro",
+    "addNumber": "Ajouter un autre numéro",
+    "primaryReceivesPassword": "Le premier numéro est le principal : c'est lui qui recevra le mot de passe.",
+    "emailInvalid": "Cette adresse e-mail ne semble pas complète.",
+    "summaryClient": "Client",
+    "passwordWillBeSent": "Un mot de passe temporaire sera généré. Le client devra le changer à sa première connexion.",
+    "canLogin": "{{name}} peut maintenant se connecter.",
+    "copyPassword": "Copier le mot de passe",
+    "copyFailed": "Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.",
+    "passwordOnce": "Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.",
+    "sendOnWhatsapp": "Envoyer sur WhatsApp · {{number}}",
+    "extraPhonesFailed": "Les numéros supplémentaires n'ont pas pu être enregistrés. Le client existe avec son numéro principal — ajoutez les autres depuis sa fiche.",
+    "whatsappMessage": "Bonjour {{name}}, votre compte Bonzini Labs est prêt. Votre mot de passe temporaire : {{password}}. Vous devrez le changer à votre première connexion."
+  },
+  "overdraft": {
+    "title": "Découvert autorisé",
+    "currentBalance": "Solde actuel",
+    "currentLimit": "Découvert autorisé",
+    "none": "Aucun",
+    "newLimit": "Nouveau plafond de découvert",
+    "customLimit": "Montant libre (XAF)",
+    "belowUsed": "Le client utilise déjà {{amount}} de découvert : le plafond ne peut pas descendre en dessous.",
+    "floorHint": "L'équipe pourra débiter ce client jusqu'à un solde de {{amount}}.",
+    "reason": "Motif",
+    "reasonPlaceholder": "Ex. : facture fournisseur urgente, régularisation prévue le 30…",
+    "warning": "{{name}} pourra être débité au-delà de son solde par l'équipe uniquement. Le découvert apparaît en rouge sur sa fiche, son relevé et son application.",
+    "grant": "Autoriser le découvert",
+    "update": "Enregistrer le nouveau plafond",
+    "remove": "Retirer le découvert",
+    "granted": "Découvert autorisé",
+    "removed": "Découvert retiré",
+    "error": "Impossible de modifier le découvert",
+    "availableWithOverdraft": "Disponible avec découvert : {{amount}} (autorisé {{limit}})",
+    "willOverdraw": "Le client passe en découvert : solde après {{amount}}."
+  }
 }

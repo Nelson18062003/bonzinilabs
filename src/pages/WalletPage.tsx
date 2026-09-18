@@ -52,7 +52,7 @@ const WalletPage = () => {
         {walletLoading ? (
           <div className={cn('h-[150px] animate-pulse rounded-[26px] bg-[#1C1B22]/80')} />
         ) : (
-          <BalanceCard balanceXAF={wallet?.balance_xaf || 0} hasError={!walletLoading && !wallet} />
+          <BalanceCard balanceXAF={wallet?.balance_xaf || 0} overdraftLimitXAF={wallet?.overdraft_limit_xaf ?? 0} hasError={!walletLoading && !wallet} />
         )}
 
         {/* Actions rapides */}

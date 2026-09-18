@@ -114,6 +114,7 @@ export function useClients() {
         updatedAt: client.updated_at,
         walletId: walletMap.get(client.user_id)?.id || null,
         walletBalance: walletMap.get(client.user_id)?.balance_xaf || 0,
+        walletOverdraftLimit: walletMap.get(client.user_id)?.overdraft_limit_xaf ?? 0,
         totalDeposits: depositSums.get(client.user_id) || 0,
         totalPayments: paymentSums.get(client.user_id) || 0,
         status: (client.status as ClientStatus) || 'ACTIVE',
@@ -190,6 +191,8 @@ export function useClient(userId: string) {
         updatedAt: client.updated_at,
         walletId: wallet?.id || null,
         walletBalance: wallet?.balance_xaf || 0,
+        walletOverdraftLimit: wallet?.overdraft_limit_xaf ?? 0,
+        walletOverdraftNote: wallet?.overdraft_note ?? null,
         totalDeposits,
         totalPayments,
         // Le statut réel du client — l'ancien 'ACTIVE' codé en dur affichait
@@ -283,6 +286,60 @@ async function fetchLedgerEntries(userId: string, filters: LedgerFilters | undef
           : undefined,
         createdAt: new Date(entry.created_at!),
       })) as LedgerEntry[];
+}
+
+/** Taille de page du relevé : gros paquets, pas de plafond (on lit jusqu'à une page courte). */
+const STATEMENT_PAGE = 1000;
+
+/**
+ * TOUTES les écritures d'un client sur une période (`null` = tout
+ * l'historique), pour le relevé PDF. Le relevé se contentait de la première
+ * page de 100 lignes et coupait le reste en silence.
+ */
+export async function fetchLedgerEntriesInRange(
+  userId: string,
+  range: { from: Date; to: Date } | null,
+): Promise<LedgerEntry[]> {
+  const filters: LedgerFilters | undefined = range ? { dateFrom: range.from, dateTo: range.to } : undefined;
+  const all: LedgerEntry[] = [];
+  for (let offset = 0; ; offset += STATEMENT_PAGE) {
+    const page = await fetchLedgerEntries(userId, filters, offset, offset + STATEMENT_PAGE - 1);
+    all.push(...page);
+    if (page.length < STATEMENT_PAGE) break;
+  }
+  return all;
+}
+
+/**
+ * La dernière écriture STRICTEMENT avant `date` — son `balanceAfter` est le
+ * solde d'ouverture d'une période sans mouvement.
+ */
+export async function fetchLastLedgerEntryBefore(userId: string, date: Date): Promise<LedgerEntry | null> {
+  const { data, error } = await supabaseAdmin
+    .from('ledger_entries')
+    .select('*')
+    .eq('user_id', userId)
+    .lt('created_at', date.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    id: data.id,
+    walletId: data.wallet_id,
+    userId: data.user_id,
+    entryType: data.entry_type as LedgerEntryType,
+    amountXAF: data.amount_xaf,
+    balanceBefore: data.balance_before,
+    balanceAfter: data.balance_after,
+    referenceType: data.reference_type,
+    referenceId: data.reference_id,
+    description: data.description,
+    metadata: data.metadata,
+    createdByAdminId: data.created_by_admin_id,
+    createdAt: new Date(data.created_at!),
+  } as LedgerEntry;
 }
 
 /**
@@ -431,6 +488,45 @@ export function useUpdateClient() {
 /**
  * Create a wallet adjustment (credit or debit)
  */
+/**
+ * Découvert autorisé — super admin uniquement (`canGrantOverdraft`, vérifié
+ * côté serveur). `limitXaf = 0` retire l'autorisation.
+ */
+export function useSetWalletOverdraft() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { userId: string; limitXaf: number; reason: string }) => {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_set_wallet_overdraft', {
+        p_user_id: data.userId,
+        p_limit_xaf: data.limitXaf,
+        p_reason: data.reason || undefined,
+      });
+      if (error) throw new Error(error.message);
+      const rpcResult = result as { success?: boolean; error?: string; overdraft_limit_xaf?: number } | null;
+      if (!rpcResult?.success) {
+        throw new Error(rpcResult?.error || i18n.t('overdraft.error', { ns: 'common', defaultValue: 'Impossible de modifier le découvert' }));
+      }
+      return rpcResult;
+    },
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['client', variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['all-wallets-for-new-payment'] });
+      queryClient.invalidateQueries({ queryKey: ['all-wallets-for-bulk-payment'] });
+      toast.success(
+        (result?.overdraft_limit_xaf ?? 0) > 0
+          ? i18n.t('overdraft.granted', { ns: 'common', defaultValue: 'Découvert autorisé' })
+          : i18n.t('overdraft.removed', { ns: 'common', defaultValue: 'Découvert retiré' }),
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+}
+
 export function useCreateAdjustment() {
   const queryClient = useQueryClient();
 

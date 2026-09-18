@@ -46,6 +46,9 @@ export interface Client {
   totalDeposits: number;
   totalPayments: number;
   walletBalance: number;
+  /** Découvert autorisé par le super admin (0 = aucun). Le solde peut descendre jusqu'à -limite. */
+  walletOverdraftLimit?: number;
+  walletOverdraftNote?: string | null;
   lastDepositAt?: Date;
   lastPaymentAt?: Date;
   createdAt: Date;

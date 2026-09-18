@@ -20,7 +20,10 @@
     "dailyRate": "Today's rate",
     "viewRates": "View rates",
     "ratePer": "For 1,000,000 XAF",
-    "noOperations": "No operations yet."
+    "noOperations": "No operations yet.",
+    "overdrawnBalance": "Balance — overdrawn",
+    "overdraftUsed": "Overdraft used: {{amount}} XAF",
+    "overdraftAllowed": "Overdraft authorised by Bonzini: {{amount}} XAF"
   },
   "quickActions": {
     "deposit": "Deposit",
