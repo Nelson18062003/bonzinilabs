@@ -8,6 +8,7 @@ import type { DailyRate, RateAdjustment, PaymentMethodKey } from '@/types/rates'
 import { PAYMENT_METHODS, COUNTRIES } from '@/types/rates';
 import { calculateFinalRate, getBaseRate } from '@/lib/rateCalculation';
 import { SURFACE, TEXT } from '@/mobile/designKit';
+import { CountryFlag } from '@/components/form/CountryFlag';
 
 interface RateHeroCardProps {
   activeRate: DailyRate;
@@ -79,7 +80,7 @@ export function RateHeroCard({
         ¥1 = {formatNumber(reverseRate)} XAF · {formatRelativeDate(activeRate.effective_at)}
       </div>
       <div className="mt-3 flex gap-2">
-        <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>{currentCountry.flag} {t(`rates.countries.${currentCountry.key}`, { defaultValue: currentCountry.label })}</span>
+        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}><CountryFlag iso={currentCountry.iso} size={14} /> {t(`rates.countries.${currentCountry.key}`, { defaultValue: currentCountry.label })}</span>
         <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', SURFACE.holder)}>{currentPm.label}</span>
       </div>
     </div>

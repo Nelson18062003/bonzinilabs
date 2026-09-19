@@ -136,7 +136,7 @@ export function MobileClientsScreen() {
                             client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
                         />
                       </div>
-                      <p className={cn('text-[16px] leading-snug', TEXT.strong)}>Solde : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
+                      <p className={cn('text-[16px] leading-snug', (client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>{(client.walletBalance || 0) < 0 ? 'Découvert' : 'Solde'} : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
                       <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{[client.customerCode, client.phone].filter(Boolean).join(' · ')}</p>
                     </div>
                   </div>

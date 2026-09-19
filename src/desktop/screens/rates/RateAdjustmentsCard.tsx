@@ -14,6 +14,7 @@ import { TextField } from '@/components/form';
 import { parseDecimal } from '@/lib/decimalInput';
 import { useRateAdjustments, useUpdateRateAdjustment } from '@/hooks/useDailyRates';
 import { COUNTRIES, TIERS } from '@/types/rates';
+import { CountryFlag } from '@/components/form/CountryFlag';
 import type { RateAdjustment } from '@/types/rates';
 import { SURFACE, TEXT, Card, CardHeader, StatusPill, ScreenLoader, ScreenError } from '@/desktop/designKit';
 
@@ -98,9 +99,10 @@ export function RateAdjustmentsCard() {
   const countryAdjs = adjustments.filter((a) => a.type === 'country');
   const tierAdjs = adjustments.filter((a) => a.type === 'tier');
   const countryMeta = (key: string) => COUNTRIES.find((c) => c.key === key)?.label ?? key;
+  const countryIso = (key: string) => COUNTRIES.find((c) => c.key === key)?.iso ?? null;
   const tierMeta = (key: string) => TIERS.find((t) => t.key === key) ?? { shortLabel: key, label: key };
 
-  const row = (adj: RateAdjustment, label: string, sub?: string) => {
+  const row = (adj: RateAdjustment, label: string, sub?: string, iso?: string | null) => {
     const dirty = isDirty(adj, localValues[adj.id]);
     return (
       <div
@@ -113,6 +115,7 @@ export function RateAdjustmentsCard() {
       >
         <div className="min-w-0 leading-[15px]">
           <span className={cn('flex items-center gap-1.5 text-[12.5px] font-semibold', TEXT.strong)}>
+            {iso && <CountryFlag iso={iso} size={16} />}
             {label}
             {adj.is_reference && <StatusPill tone="success" label="REF" />}
           </span>
@@ -162,7 +165,7 @@ export function RateAdjustmentsCard() {
           <div className={cn('mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider', TEXT.muted)}>
             <Globe className="h-3 w-3" /> Pays — Cameroun = référence
           </div>
-          <div className="space-y-1.5">{countryAdjs.map((adj) => row(adj, countryMeta(adj.key)))}</div>
+          <div className="space-y-1.5">{countryAdjs.map((adj) => row(adj, countryMeta(adj.key), undefined, countryIso(adj.key)))}</div>
         </div>
         <div>
           <div className={cn('mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider', TEXT.muted)}>

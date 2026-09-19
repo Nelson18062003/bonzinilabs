@@ -13,7 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useActiveDailyRate } from '@/hooks/useDailyRates';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useAdminClientBeneficiaries, useAdminClientBeneficiaryNames, useAdminCreateBeneficiary, type Beneficiary } from '@/hooks/useBeneficiaries';
@@ -79,15 +81,16 @@ export function DesktopNewPayment() {
 
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
+  const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
   const createBeneficiary = useAdminCreateBeneficiary();
 
-  const { data: walletsMap = new Map<string, number>() } = useQuery({
+  const { data: walletsMap = new Map<string, { balance: number; overdraft: number }>() } = useQuery({
     queryKey: ['all-wallets-for-new-payment'],
     queryFn: async () => {
-      const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf');
+      const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf, overdraft_limit_xaf');
       if (error) throw error;
-      return new Map((data ?? []).map((w) => [w.user_id, w.balance_xaf as number]));
+      return new Map((data ?? []).map((w) => [w.user_id, { balance: w.balance_xaf as number, overdraft: (w.overdraft_limit_xaf as number) ?? 0 }]));
     },
     staleTime: 30_000,
   });
@@ -116,7 +119,10 @@ export function DesktopNewPayment() {
   const [qrPreview, setQrPreview] = useState<string | null>(null);
 
   const client = useMemo(() => clients.find((c) => c.user_id === clientId) ?? null, [clients, clientId]);
-  const clientBalance = client ? (walletsMap.get(client.user_id) ?? 0) : 0;
+  const clientBalance = client ? (walletsMap.get(client.user_id)?.balance ?? 0) : 0;
+  const clientOverdraft = client ? (walletsMap.get(client.user_id)?.overdraft ?? 0) : 0;
+  // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé par le super admin.
+  const clientAvailable = clientBalance + clientOverdraft;
 
   useEffect(() => {
     if (!clientOpen) return;
@@ -138,7 +144,12 @@ export function DesktopNewPayment() {
   // ── Money math ──────────────────────────────────────────────────────────
   // Aucun taux « sorti de nulle part » : tant que la destination n'est pas
   // choisie (et sans taux perso), il n'y a PAS de taux ni de conversion.
-  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
+  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
+  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  const countryRate = refRate != null ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
+  const baseRate = countryRate ? countryRate.rate : refRate;
   const fallbackActive = !!mode && !useCustomRate && baseRate == null;
   const rate: number | null = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
   const hasRate = rate != null && rate > 0;
@@ -212,7 +223,8 @@ export function DesktopNewPayment() {
 
   // ── Validation ──────────────────────────────────────────────────────────
   const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
-  const hasEnoughBalance = xaf <= clientBalance;
+  const hasEnoughBalance = xaf <= clientAvailable;
+  const willOverdraw = xaf > 0 && xaf > clientBalance && hasEnoughBalance;
   const benefValid = skipBenef
     ? true
     : benefTab === 'existing'
@@ -376,6 +388,7 @@ export function DesktopNewPayment() {
                   client ? (
                     <>
                       Solde : <b className={cn('tabular-nums', clientBalance > 0 ? TEXT.strong : 'text-destructive')}>{fmt(clientBalance)} XAF</b>
+                      {clientOverdraft > 0 && <> · découvert autorisé {fmt(clientOverdraft)} XAF · disponible <b className="tabular-nums">{fmt(clientAvailable)} XAF</b></>}
                     </>
                   ) : undefined
                 }
@@ -403,7 +416,7 @@ export function DesktopNewPayment() {
                       <SearchField value={clientSearch} onChange={setClientSearch} placeholder="Nom ou téléphone…" />
                       <div className="mt-1.5 max-h-[240px] overflow-y-auto">
                         {filteredClients.map((c) => {
-                          const bal = walletsMap.get(c.user_id);
+                          const bal = walletsMap.get(c.user_id)?.balance ?? null;
                           return (
                             <button
                               key={c.user_id}
@@ -467,10 +480,10 @@ export function DesktopNewPayment() {
                   {/* « Max » = tout le solde du client (équivalent du « Tout » mobile). */}
                   <button
                     type="button"
-                    disabled={!client || clientBalance <= 0}
+                    disabled={!client || clientAvailable <= 0}
                     onClick={() => {
                       setLastEdited('xaf');
-                      setRawXaf(String(clientBalance));
+                      setRawXaf(String(clientAvailable));
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold text-indigo-700 disabled:opacity-40 dark:bg-indigo-950/50 dark:text-indigo-400"
                   >
@@ -502,8 +515,15 @@ export function DesktopNewPayment() {
                   <>Choisissez la destination — le taux du jour de la méthode s'appliquera.</>
                 ) : (
                   <>
-                    {useCustomRate ? 'Taux personnalisé' : fallbackActive ? 'Taux de secours' : `Taux du jour ${mode?.name}`} :{' '}
+                    {useCustomRate
+                      ? 'Taux personnalisé'
+                      : fallbackActive
+                        ? 'Taux de secours'
+                        : countryRate
+                          ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}`
+                          : `Taux du jour ${mode?.name}`} :{' '}
                     <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
+                    {!useCustomRate && countryRate && refRate != null && <span className="ml-1.5">· Cameroun ¥{fmt(refRate)}</span>}
                     {useCustomRate && (
                       <span className="ml-1.5 rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
                         perso
@@ -553,8 +573,13 @@ export function DesktopNewPayment() {
               <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-destructive/10 p-3 dark:bg-destructive/10">
                 <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
                 <p className="text-[12.5px] font-semibold text-destructive">
-                  Solde insuffisant — disponible : {fmt(clientBalance)} XAF
+                  Solde insuffisant — disponible : {fmt(clientAvailable)} XAF{clientOverdraft > 0 ? ' (découvert compris)' : ''}
                 </p>
+              </div>
+            )}
+            {willOverdraw && (
+              <div className="mt-2.5 rounded-2xl bg-amber-50 p-3 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                Le client passe en découvert : solde après paiement {fmt(clientBalance - xaf)} XAF.
               </div>
             )}
           </Card>
@@ -786,7 +811,7 @@ export function DesktopNewPayment() {
             </div>
             <div className="flex justify-between gap-3">
               <span className={TEXT.muted}>Après débit</span>
-              <span className={cn('font-bold tabular-nums', xaf > 0 && hasEnoughBalance ? 'text-emerald-700 dark:text-emerald-400' : TEXT.muted)}>
+              <span className={cn('font-bold tabular-nums', xaf > 0 && hasEnoughBalance ? (willOverdraw ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400') : TEXT.muted)}>
                 {client && xaf > 0 && hasEnoughBalance ? `${fmt(clientBalance - xaf)} XAF` : '—'}
               </span>
             </div>

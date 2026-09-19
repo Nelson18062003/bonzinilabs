@@ -174,7 +174,7 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
       {currentRate && (
         <div className={cn('rounded-lg p-4', SURFACE.card, SURFACE.shadow)}>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-            <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs</span>
+            <span className={cn('text-[16px] font-bold', TEXT.muted)}>Taux actifs · Cameroun (réf.)</span>
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill tone="success" label="En ligne" />
               {activeSince && <span className={cn('whitespace-nowrap text-[16px]', TEXT.muted)}>depuis le {activeSince}</span>}
@@ -339,8 +339,9 @@ export function RateSetTab({ currentRate }: RateSetTabProps) {
         </div>
 
         <p className={cn('mt-2.5 px-1 text-[16px] leading-relaxed', TEXT.muted)}>
-          Taux de base (meilleur cas : Cameroun, ≥ 1M XAF). Les ajustements pays et
-          tranches s'appliquent automatiquement — voir Réglages.
+          Taux de référence (Cameroun, ≥ 1M XAF). Les taux des autres pays (Gabon…)
+          en sont dérivés automatiquement — voir « Taux par pays » ci-dessous ; les
+          tranches de montant, dans Réglages.
         </p>
       </div>
 

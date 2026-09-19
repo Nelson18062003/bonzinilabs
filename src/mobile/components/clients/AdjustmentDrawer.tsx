@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useCreateAdjustment } from '@/hooks/useClientManagement';
 import { formatCurrency } from '@/lib/formatters';
 import { isValidXafAmount } from '@/lib/amountLimits';
+import { availableXaf } from '@/lib/overdraft';
 import { cn } from '@/lib/utils';
 import { AmountField, TextArea } from '@/components/form';
 import {
@@ -26,6 +27,8 @@ interface AdjustmentDrawerProps {
   type: AdjustmentType;
   userId: string;
   currentBalance: number;
+  /** Découvert autorisé : un débit peut descendre jusqu'à -limite. */
+  overdraftLimit?: number;
   onSuccess?: () => void;
 }
 
@@ -35,6 +38,7 @@ export function AdjustmentDrawer({
   type,
   userId,
   currentBalance,
+  overdraftLimit = 0,
   onSuccess,
 }: AdjustmentDrawerProps) {
   const { t } = useTranslation('common');
@@ -45,7 +49,9 @@ export function AdjustmentDrawer({
 
   const amount = amountNumber ?? 0;
   const isDebit = type === 'DEBIT';
-  const isInsufficientBalance = isDebit && amount > currentBalance;
+  const available = availableXaf(currentBalance, overdraftLimit);
+  const isInsufficientBalance = isDebit && amount > available;
+  const willOverdraw = isDebit && amount > 0 && currentBalance - amount < 0;
   // Même garde d'entier que dépôts et paiements ; pas de plafond.
   const isValid = isValidXafAmount(amount) && reason.trim().length > 0 && !isInsufficientBalance;
 
@@ -100,7 +106,10 @@ export function AdjustmentDrawer({
         {/* Current Balance */}
         <div className={cn('rounded-lg p-3', SURFACE.canvas)}>
           <p className={cn('text-[14px]', TEXT.muted)}>{t('currentBalance', { defaultValue: 'Solde actuel' })}</p>
-          <Amount value={formatCurrency(currentBalance)} size="md" className="mt-0.5" />
+          <Amount value={formatCurrency(currentBalance)} size="md" className={cn('mt-0.5', currentBalance < 0 && 'text-[#C00F0C] dark:text-[#FCB3AD]')} />
+          {overdraftLimit > 0 && (
+            <p className={cn('mt-1 text-[14px]', TEXT.muted)}>{t('overdraft.availableWithOverdraft', { amount: formatCurrency(available), limit: formatCurrency(overdraftLimit) })}</p>
+          )}
         </div>
 
         {/* Amount Input */}
@@ -114,6 +123,9 @@ export function AdjustmentDrawer({
             enterKeyHint="next"
             error={isInsufficientBalance ? t('insufficientBalance', { defaultValue: 'Solde insuffisant' }) : undefined}
           />
+          {willOverdraw && !isInsufficientBalance && (
+            <p className="mt-2 text-[14px] font-semibold text-[#975102] dark:text-[#E8B931]">{t('overdraft.willOverdraw', { amount: formatCurrency(currentBalance - amount) })}</p>
+          )}
 
           {/* Balance preview */}
           {isDebit && amount > 0 && !isInsufficientBalance && (

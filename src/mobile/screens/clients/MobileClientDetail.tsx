@@ -2,7 +2,17 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useClient, useResetClientPassword, useClientLedger, useClientLedgerCount, useUpdateClient } from '@/hooks/useClientManagement';
+import {
+  useClient,
+  useResetClientPassword,
+  useClientLedger,
+  useClientLedgerCount,
+  useUpdateClient,
+  fetchLedgerEntriesInRange,
+  fetchLastLedgerEntryBefore,
+} from '@/hooks/useClientManagement';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -11,10 +21,9 @@ import { whenSentence } from '@/lib/plainTime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  generateClientStatement,
+  generateStatementForRange,
   buildMovementFromLedgerEntry,
   shouldIncludeLedgerEntry,
-  fmtDateLong,
 } from '@/lib/generateClientStatement';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +44,8 @@ import {
 } from 'lucide-react';
 import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
 import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
+import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
+import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
@@ -43,6 +54,8 @@ import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
+import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
 import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
@@ -130,6 +143,7 @@ export function MobileClientDetail() {
   const resetPasswordMutation = useResetClientPassword();
 
   const [isStatementGenerating, setIsStatementGenerating] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
   const { data: ledgerEntries } = useClientLedger(clientId || '');
   const { data: ledgerTotal } = useClientLedgerCount(clientId || '');
 
@@ -149,6 +163,8 @@ export function MobileClientDetail() {
 
   const canManageUsers = hasPermission('canManageUsers');
   const canViewCargo = hasPermission('canViewCargo');
+  const canGrantOverdraft = hasPermission('canGrantOverdraft');
+  const [overdraftOpen, setOverdraftOpen] = useState(false);
   // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
   // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
   // toute la flotte pèsent jusqu'à 3 000 lignes).
@@ -246,56 +262,44 @@ export function MobileClientDetail() {
     setAdjustmentOpen(true);
   };
 
-  const handleDownloadStatement = async () => {
+  // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
+  // les écritures de cette période (plus de plafond à 100), et le solde
+  // d'ouverture vient de la dernière écriture avant la période si elle est vide.
+  const handleDownloadStatement = async (range: StatementRange) => {
     if (!client) return;
-    if (!ledgerEntries?.length) {
-      toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
-      return;
-    }
     setIsStatementGenerating(true);
     try {
-      const sorted = [...ledgerEntries]
-        .filter(entry => shouldIncludeLedgerEntry({
-          id: entry.id,
-          entryType: entry.entryType,
-          amountXAF: entry.amountXAF,
-          balanceBefore: entry.balanceBefore,
-          balanceAfter: entry.balanceAfter,
-          description: entry.description,
-          createdAt: entry.createdAt,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          isTest: (entry as any).isTest,
-        }))
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      const movements = sorted.map(entry =>
-        buildMovementFromLedgerEntry({
-          id: entry.id,
-          entryType: entry.entryType,
-          amountXAF: entry.amountXAF,
-          balanceBefore: entry.balanceBefore,
-          balanceAfter: entry.balanceAfter,
-          referenceId: entry.referenceId,
-          referenceType: entry.referenceType,
-          description: entry.description,
-          createdAt: entry.createdAt,
-        })
-      );
+      const query = statementQueryRange(range);
+      const entries = await fetchLedgerEntriesInRange(client.id, query);
+      const movements = entries
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((entry) => shouldIncludeLedgerEntry({ ...entry, isTest: (entry as any).isTest }))
+        .map((entry) => buildMovementFromLedgerEntry(entry));
+      if (query === null && movements.length === 0) {
+        toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
+        return false;
+      }
+      const lastBefore = query && movements.length === 0
+        ? await fetchLastLedgerEntryBefore(client.id, query.from)
+        : null;
 
-      await generateClientStatement({
-        clientName: `${client.firstName} ${client.lastName}`,
-        clientPhone: client.phone ?? undefined,
-        clientEmail: client.email || undefined,
+      await generateStatementForRange({
+        client: {
+          name: `${client.firstName} ${client.lastName}`,
+          phone: client.phone,
+          email: client.email,
+          country: client.country,
+          ref: client.customerCode,
+        },
+        range: query,
         movements,
-        periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
-        periodTo: fmtDateLong(new Date().toISOString()),
-        generatedAt: new Date().toLocaleString('fr-FR', {
-          day: 'numeric', month: 'long', year: 'numeric',
-          hour: '2-digit', minute: '2-digit',
-        }),
+        lastBalanceBefore: lastBefore?.balanceAfter ?? null,
       });
+      return true;
     } catch (err) {
       console.error('Error generating statement:', err);
       toast.error(t('statementGenerationError', { defaultValue: 'Erreur lors de la génération du relevé' }));
+      return false;
     } finally {
       setIsStatementGenerating(false);
     }
@@ -412,9 +416,21 @@ export function MobileClientDetail() {
             L'argent
           </SectionTitle>
           <Card className="space-y-3">
-            <p className={cn('text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums', TEXT.strong)}>
+            <p className={cn('text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums', (client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>
               {formatXAF(client.walletBalance || 0)} XAF
             </p>
+            {(client.walletBalance || 0) < 0 && (
+              <Line tone="bad">
+                En découvert de {formatXAF(overdraftUsedXaf(client.walletBalance || 0))} XAF
+                {(client.walletOverdraftLimit ?? 0) > 0 ? ` sur ${formatXAF(client.walletOverdraftLimit ?? 0)} XAF autorisés.` : '.'}
+              </Line>
+            )}
+            {(client.walletOverdraftLimit ?? 0) > 0 && (client.walletBalance || 0) >= 0 && (
+              <Line>
+                Découvert autorisé : <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.walletOverdraftLimit ?? 0)} XAF</b>
+                {' '}— l'équipe peut débiter jusqu'à <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(availableXaf(client.walletBalance || 0, client.walletOverdraftLimit ?? 0))} XAF</b>.
+              </Line>
+            )}
             <Line>
               {client.lastLedgerEntry
                 ? `Dernier mouvement ${whenSentence(client.lastLedgerEntry.createdAt)}.`
@@ -434,6 +450,11 @@ export function MobileClientDetail() {
                 <Minus />
                 Retirer de l'argent
               </Button>
+              {canGrantOverdraft && (
+                <Button variant="subtle" className="w-full" onClick={() => setOverdraftOpen(true)}>
+                  {(client.walletOverdraftLimit ?? 0) > 0 ? 'Modifier le découvert autorisé' : 'Autoriser un découvert'}
+                </Button>
+              )}
             </div>
           </Card>
         </section>
@@ -490,8 +511,10 @@ export function MobileClientDetail() {
             <ActionRow
               icon={FileDown}
               label={isStatementGenerating ? 'Relevé en préparation…' : 'Télécharger le relevé'}
-              description={ledgerCount > 0 ? `Tout son historique en PDF : ${ledgerCount} ${ledgerCount > 1 ? 'opérations' : 'opération'}.` : 'Tout son historique en PDF.'}
-              onClick={handleDownloadStatement}
+              description={ledgerCount > 0
+                ? `Choisir une période et télécharger le PDF. ${ledgerCount} ${ledgerCount > 1 ? 'opérations' : 'opération'} au total.`
+                : 'Choisir une période et télécharger le PDF.'}
+              onClick={() => setStatementOpen(true)}
               disabled={isStatementGenerating}
               loading={isStatementGenerating}
             />
@@ -541,12 +564,26 @@ export function MobileClientDetail() {
         settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
       />
 
+      {canGrantOverdraft && (
+        <OverdraftDialog
+          open={overdraftOpen}
+          onClose={() => setOverdraftOpen(false)}
+          userId={client.id}
+          clientName={`${client.firstName} ${client.lastName}`}
+          currentBalance={client.walletBalance || 0}
+          currentLimit={client.walletOverdraftLimit ?? 0}
+          currentNote={client.walletOverdraftNote}
+          onSuccess={() => refetch()}
+        />
+      )}
+
       {/* Adjustment Drawer */}
       <AdjustmentDrawer
         open={adjustmentOpen}
         onOpenChange={setAdjustmentOpen}
         type={adjustmentType}
         userId={client.id}
+        overdraftLimit={client.walletOverdraftLimit ?? 0}
         currentBalance={client.walletBalance || 0}
         onSuccess={() => {
           refetch();
@@ -585,6 +622,14 @@ export function MobileClientDetail() {
                   hideLabel
                   value={editForm.phone}
                   onChange={(val) => setEditForm(f => ({ ...f, phone: val }))}
+                  controlClassName="h-11 rounded-lg"
+                />
+              ) : key === 'country' ? (
+                <CountryCombobox
+                  id="edit-country"
+                  variant="country"
+                  value={isoFromCountryLabel(editForm.country) ?? null}
+                  onChange={(iso) => setEditForm(f => ({ ...f, country: countryLabelFr(iso) }))}
                 />
               ) : (
                 <TextInput
@@ -693,6 +738,14 @@ export function MobileClientDetail() {
           </PrimaryPill>
         </div>
       </BottomSheet>
+
+      {/* Relevé de compte — choix de la période */}
+      <StatementPeriodSheet
+        open={statementOpen}
+        onClose={() => setStatementOpen(false)}
+        onGenerate={handleDownloadStatement}
+        isGenerating={isStatementGenerating}
+      />
     </div>
   );
 }

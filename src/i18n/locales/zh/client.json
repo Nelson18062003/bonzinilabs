@@ -20,7 +20,10 @@
     "dailyRate": "今日汇率",
     "viewRates": "查看汇率",
     "ratePer": "每 1 000 000 XAF",
-    "noOperations": "暂无操作。"
+    "noOperations": "暂无操作。",
+    "overdrawnBalance": "余额 — 透支中",
+    "overdraftUsed": "已用透支：{{amount}} XAF",
+    "overdraftAllowed": "Bonzini 授权透支：{{amount}} XAF"
   },
   "quickActions": {
     "deposit": "充值",

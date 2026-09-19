@@ -17,22 +17,29 @@ import {
   useResetClientPassword,
   useUpdateClient,
   useCreateAdjustment,
+  fetchLedgerEntriesInRange,
+  fetchLastLedgerEntryBefore,
 } from '@/hooks/useClientManagement';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { formatXAF, formatCurrency, formatDate } from '@/lib/formatters';
 import {
-  generateClientStatement,
+  generateStatementForRange,
   buildMovementFromLedgerEntry,
   shouldIncludeLedgerEntry,
-  fmtDateLong,
 } from '@/lib/generateClientStatement';
 import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
 import { normalizePhone } from '@/lib/phone';
+import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
+import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
 import { useClientPhones } from '@/hooks/useClientPhones';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
+import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
 import { AmountField, TextArea } from '@/components/form';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -97,6 +104,7 @@ function AdjustmentDialog({
   type,
   userId,
   currentBalance,
+  overdraftLimit = 0,
   onSuccess,
 }: {
   open: boolean;
@@ -104,6 +112,7 @@ function AdjustmentDialog({
   type: AdjustmentType;
   userId: string;
   currentBalance: number;
+  overdraftLimit?: number;
   onSuccess: () => void;
 }) {
   const [amountNumber, setAmountNumber] = useState<number | null>(null);
@@ -112,7 +121,9 @@ function AdjustmentDialog({
 
   const amount = amountNumber ?? 0;
   const isDebit = type === 'DEBIT';
-  const insufficient = isDebit && amount > currentBalance;
+  const available = availableXaf(currentBalance, overdraftLimit);
+  const insufficient = isDebit && amount > available;
+  const willOverdraw = isDebit && amount > 0 && currentBalance - amount < 0;
   const isValid = amount > 0 && reason.trim().length > 0 && !insufficient;
 
   const reset = () => {
@@ -163,7 +174,10 @@ function AdjustmentDialog({
       <div className="space-y-4">
         <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
           <p className={cn('text-[13px]', TEXT.muted)}>Solde actuel</p>
-          <Amount value={formatCurrency(currentBalance)} size="md" className="mt-0.5" />
+          <Amount value={formatCurrency(currentBalance)} size="md" className={cn('mt-0.5', currentBalance < 0 && 'text-[#C00F0C] dark:text-[#FCB3AD]')} />
+          {overdraftLimit > 0 && (
+            <p className={cn('mt-1 text-[12px]', TEXT.muted)}>Disponible avec découvert : {formatCurrency(available)} (découvert autorisé {formatCurrency(overdraftLimit)})</p>
+          )}
         </div>
         <div>
           <AmountField
@@ -175,8 +189,8 @@ function AdjustmentDialog({
             error={insufficient ? 'Solde insuffisant' : undefined}
           />
           {amount > 0 && !insufficient && (
-            <p className={cn('mt-2 text-[13px]', TEXT.muted)}>
-              Nouveau solde : {formatCurrency(isDebit ? currentBalance - amount : currentBalance + amount)}
+            <p className={cn('mt-2 text-[13px]', willOverdraw ? 'font-semibold text-[#975102] dark:text-[#E8B931]' : TEXT.muted)}>
+              Nouveau solde : {formatCurrency(isDebit ? currentBalance - amount : currentBalance + amount)}{willOverdraw ? ' — le client passe en découvert' : ''}
             </p>
           )}
         </div>
@@ -207,6 +221,8 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { data: ledgerTotal } = useClientLedgerCount(clientId);
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
+  const canGrantOverdraft = hasPermission('canGrantOverdraft');
+  const [overdraftOpen, setOverdraftOpen] = useState(false);
 
   const updateClient = useUpdateClient();
   const resetPassword = useResetClientPassword();
@@ -243,6 +259,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteChecking, setDeleteChecking] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [labelOpen, setLabelOpen] = useState(false);
   const { data: shipping } = useAdminShippingSettings();
@@ -361,56 +378,43 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
     }
   };
 
-  const downloadStatement = async () => {
-    if (!client || isGeneratingPDF) return;
-    if (!ledgerEntries?.length) {
-      toast.error('Aucun mouvement à exporter');
-      return;
-    }
+  // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
+  // les écritures de cette période (plus de plafond à 100), et le solde
+  // d'ouverture vient de la dernière écriture avant la période si elle est vide.
+  const downloadStatement = async (range: StatementRange) => {
+    if (!client || isGeneratingPDF) return false;
     setIsGeneratingPDF(true);
     try {
-      const sorted = [...ledgerEntries]
-        .filter((entry) =>
-          shouldIncludeLedgerEntry({
-            id: entry.id,
-            entryType: entry.entryType,
-            amountXAF: entry.amountXAF,
-            balanceBefore: entry.balanceBefore,
-            balanceAfter: entry.balanceAfter,
-            description: entry.description,
-            createdAt: entry.createdAt,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            isTest: (entry as any).isTest,
-          }),
-        )
-        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-      const movements = sorted.map((entry) =>
-        buildMovementFromLedgerEntry({
-          id: entry.id,
-          entryType: entry.entryType,
-          amountXAF: entry.amountXAF,
-          balanceBefore: entry.balanceBefore,
-          balanceAfter: entry.balanceAfter,
-          referenceId: entry.referenceId,
-          referenceType: entry.referenceType,
-          description: entry.description,
-          createdAt: entry.createdAt,
-        }),
-      );
-      await generateClientStatement({
-        clientName: `${client.firstName} ${client.lastName}`,
-        clientPhone: client.phone ?? undefined,
-        clientEmail: client.email || undefined,
+      const query = statementQueryRange(range);
+      const entries = await fetchLedgerEntriesInRange(client.id, query);
+      const movements = entries
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((entry) => shouldIncludeLedgerEntry({ ...entry, isTest: (entry as any).isTest }))
+        .map((entry) => buildMovementFromLedgerEntry(entry));
+      if (query === null && movements.length === 0) {
+        toast.error('Aucun mouvement à exporter');
+        return false;
+      }
+      const lastBefore = query && movements.length === 0
+        ? await fetchLastLedgerEntryBefore(client.id, query.from)
+        : null;
+      await generateStatementForRange({
+        client: {
+          name: `${client.firstName} ${client.lastName}`,
+          phone: client.phone,
+          email: client.email,
+          country: client.country,
+          ref: client.customerCode,
+        },
+        range: query,
         movements,
-        periodFrom: movements.length > 0 ? fmtDateLong(movements[0].date) : '—',
-        periodTo: fmtDateLong(new Date().toISOString()),
-        generatedAt: new Date().toLocaleString('fr-FR', {
-          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        }),
+        lastBalanceBefore: lastBefore?.balanceAfter ?? null,
       });
+      return true;
     } catch (err) {
       console.error('Error generating statement:', err);
       toast.error('Erreur lors de la génération du relevé');
+      return false;
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -519,10 +523,10 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               </button>
             }
           >
-            Solde disponible
+            {(client.walletBalance || 0) < 0 ? 'Solde — en découvert' : 'Solde disponible'}
           </SecLabel>
           <div className="mt-1.5 flex items-end justify-between gap-3">
-            <Amount value={formatXAF(client.walletBalance || 0)} unit="XAF" size="xl" />
+            <Amount value={formatXAF(client.walletBalance || 0)} unit="XAF" size="xl" className={(client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : undefined} />
             <div className="flex shrink-0 items-center gap-1.5 pb-0.5">
               <button
                 type="button"
@@ -544,6 +548,21 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <p className={cn('mt-1 text-[12px]', TEXT.muted)}>
               Dernier mouvement : {formatDate(client.lastLedgerEntry.createdAt)}
             </p>
+          )}
+          {/* Découvert : ce que l'équipe peut encore débiter, et qui l'a autorisé. */}
+          {((client.walletOverdraftLimit ?? 0) > 0 || (client.walletBalance || 0) < 0 || canGrantOverdraft) && (
+            <div className={cn('mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2', (client.walletBalance || 0) < 0 ? 'bg-[#FDD3D0]/60 dark:bg-[#900B09]/40' : SURFACE.card)}>
+              <p className={cn('text-[12.5px] font-semibold', (client.walletBalance || 0) < 0 ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
+                {(client.walletOverdraftLimit ?? 0) > 0
+                  ? `Découvert autorisé ${formatXAF(client.walletOverdraftLimit ?? 0)} XAF · utilisé ${formatXAF(overdraftUsedXaf(client.walletBalance || 0))} XAF · disponible ${formatXAF(availableXaf(client.walletBalance || 0, client.walletOverdraftLimit ?? 0))} XAF`
+                  : 'Aucun découvert autorisé'}
+              </p>
+              {canGrantOverdraft && (
+                <button type="button" onClick={() => setOverdraftOpen(true)} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
+                  {(client.walletOverdraftLimit ?? 0) > 0 ? 'Modifier →' : 'Autoriser un découvert →'}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -725,8 +744,9 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           </button>
           <button
             type="button"
-            onClick={downloadStatement}
+            onClick={() => setStatementOpen(true)}
             disabled={isGeneratingPDF}
+            title="Choisir une période et télécharger le PDF"
             className={cn('flex items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-semibold disabled:opacity-60', SURFACE.card, 'ring-1 ring-black/[0.07] dark:ring-white/[0.08]', TEXT.strong)}
           >
             {isGeneratingPDF ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
@@ -737,6 +757,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
 
       {/* ── Dialogues ───────────────────────────────────────────────────── */}
       <AdjustmentDialog
+        overdraftLimit={client.walletOverdraftLimit ?? 0}
         open={adjustmentType !== null}
         onClose={() => setAdjustmentType(null)}
         type={adjustmentType ?? 'CREDIT'}
@@ -747,6 +768,20 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           setAdjustmentType(null);
         }}
       />
+
+      {canGrantOverdraft && (
+        <OverdraftDialog
+          variant="dialog"
+          open={overdraftOpen}
+          onClose={() => setOverdraftOpen(false)}
+          userId={client.id}
+          clientName={`${client.firstName} ${client.lastName}`}
+          currentBalance={client.walletBalance || 0}
+          currentLimit={client.walletOverdraftLimit ?? 0}
+          currentNote={client.walletOverdraftNote}
+          onSuccess={() => refetch()}
+        />
+      )}
 
       {/* Modifier le profil */}
       <CenterDialog
@@ -775,7 +810,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           </FormField>
           <div className="col-span-2">
             <FormField label="Téléphone / WhatsApp" htmlFor="edit-phone">
-              <PhoneCountryInput hideLabel value={editForm.phone} onChange={(val) => setEditForm((f) => ({ ...f, phone: val }))} />
+              <PhoneCountryInput hideLabel value={editForm.phone} onChange={(val) => setEditForm((f) => ({ ...f, phone: val }))} controlClassName="h-11 rounded-lg" />
             </FormField>
           </div>
           <FormField label="Email" htmlFor="edit-email">
@@ -785,7 +820,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <TextInput id="edit-companyName" value={editForm.companyName} onChange={(e) => setEditForm((f) => ({ ...f, companyName: e.target.value }))} />
           </FormField>
           <FormField label="Pays" htmlFor="edit-country">
-            <TextInput id="edit-country" value={editForm.country} onChange={(e) => setEditForm((f) => ({ ...f, country: e.target.value }))} />
+            <CountryCombobox id="edit-country" variant="country" value={isoFromCountryLabel(editForm.country) ?? null} onChange={(iso) => setEditForm((f) => ({ ...f, country: countryLabelFr(iso) }))} />
           </FormField>
           <FormField label="Ville" htmlFor="edit-city">
             <TextInput id="edit-city" value={editForm.city} onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))} />
@@ -866,6 +901,14 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           transactions, relevés, etc.).
         </p>
       </CenterDialog>
+
+      {/* Relevé de compte — choix de la période */}
+      <StatementPeriodSheet
+        open={statementOpen}
+        onClose={() => setStatementOpen(false)}
+        onGenerate={downloadStatement}
+        isGenerating={isGeneratingPDF}
+      />
     </aside>
   );
 }

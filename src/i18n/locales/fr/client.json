@@ -20,7 +20,10 @@
     "dailyRate": "Taux du jour",
     "viewRates": "Voir les taux",
     "ratePer": "Pour 1 000 000 XAF",
-    "noOperations": "Aucune opération pour le moment."
+    "noOperations": "Aucune opération pour le moment.",
+    "overdrawnBalance": "Solde — en découvert",
+    "overdraftUsed": "Découvert utilisé : {{amount}} XAF",
+    "overdraftAllowed": "Découvert autorisé par Bonzini : {{amount}} XAF"
   },
   "quickActions": {
     "deposit": "Déposer",

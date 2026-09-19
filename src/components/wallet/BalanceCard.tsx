@@ -6,6 +6,8 @@ import { formatNumber } from '@/lib/formatters';
 
 interface BalanceCardProps {
   balanceXAF: number;
+  /** Découvert autorisé par Bonzini (0 = aucun). Un solde négatif s'affiche en découvert. */
+  overdraftLimitXAF?: number;
   /** Show loading state when balance is being refreshed */
   isRefreshing?: boolean;
   /** Error state - shows fallback UI */
@@ -16,7 +18,8 @@ interface BalanceCardProps {
 const CARD =
   'rounded-[26px] bg-[#1C1B22] p-6 shadow-[0_14px_40px_-16px_rgba(28,27,34,0.55)] dark:bg-[#211F2B] dark:ring-1 dark:ring-white/[0.06]';
 
-export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardProps) => {
+export const BalanceCard = ({ balanceXAF, overdraftLimitXAF = 0, isRefreshing, hasError }: BalanceCardProps) => {
+  const overdrawn = balanceXAF < 0;
   const { t } = useTranslation('client');
   const [showBalance, setShowBalance] = useState(true);
 
@@ -34,7 +37,7 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
     <div className={cn(CARD, 'animate-fade-in')}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium text-white/65">{t('wallet.availableBalance')}</span>
+          <span className="text-[13px] font-medium text-white/65">{overdrawn ? t('wallet.overdrawnBalance') : t('wallet.availableBalance')}</span>
           {isRefreshing && <RefreshCw className="h-3.5 w-3.5 animate-spin text-white/60" />}
         </div>
         <button
@@ -47,12 +50,24 @@ export const BalanceCard = ({ balanceXAF, isRefreshing, hasError }: BalanceCardP
       </div>
 
       {showBalance ? (
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="text-[44px] font-black leading-none tracking-tight tabular-nums text-white">
-            {formatNumber(balanceXAF)}
-          </span>
-          <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
-        </div>
+        <>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className={cn('text-[44px] font-black leading-none tracking-tight tabular-nums', overdrawn ? 'text-[#FF8A80]' : 'text-white')}>
+              {formatNumber(balanceXAF)}
+            </span>
+            <span className="text-[18px] font-extrabold text-[#E8932A]">XAF</span>
+          </div>
+          {overdrawn && (
+            <p className="mt-2 text-[13px] font-medium text-[#FFB4AB]">
+              {t('wallet.overdraftUsed', { amount: formatNumber(-balanceXAF) })}
+            </p>
+          )}
+          {overdraftLimitXAF > 0 && (
+            <p className="mt-1 text-[12px] text-white/55">
+              {t('wallet.overdraftAllowed', { amount: formatNumber(overdraftLimitXAF) })}
+            </p>
+          )}
+        </>
       ) : (
         <div className="mt-3 text-[40px] font-black leading-none text-white">• • • • •</div>
       )}

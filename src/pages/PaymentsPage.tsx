@@ -20,6 +20,9 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
 import { useMyPayments, type Payment } from '@/hooks/usePayments';
 import { useClientRates } from '@/hooks/useDailyRates';
+import { useMyProfile } from '@/hooks/useProfile';
+import { countrySheetFor } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { formatYuan, formatNumber } from '@/lib/formatters';
 import { SURFACE, TEXT, PrimaryPill } from '@/mobile/designKit';
 import {
@@ -78,7 +81,11 @@ const PaymentsPage = () => {
   const [tab, setTab] = useState<PaymentFilterTab>('all');
   const [period, setPeriod] = useState<Period>('all');
 
-  const dayRate = ratesData?.activeRate?.rate_cash;
+  const { data: profile } = useMyProfile();
+  // Taux cash DU PAYS du client (dérivé de la référence Cameroun).
+  const sheet = countrySheetFor(ratesData?.activeRate, ratesData?.adjustments, clientCountryToRateKey(profile?.country));
+  const dayRate = sheet ? Math.round(sheet.rates.cash) : ratesData?.activeRate?.rate_cash;
+  const dayRateCountry = sheet && !sheet.isReference ? t(`rates.countries.${sheet.key}`, { ns: 'client', defaultValue: sheet.label }) : null;
 
   // Compteurs (badges d'onglet) sur l'ensemble.
   const todoCount = useMemo(
@@ -137,7 +144,7 @@ const PaymentsPage = () => {
             <div className={cn('text-[17px] font-black', TEXT.strong)}>{t('newPayment')}</div>
             {dayRate ? (
               <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
-                {t('list.dayRate')} · <span className="font-bold text-[#E8932A]">¥{formatNumber(dayRate)}</span> / <span className="whitespace-nowrap">1 000 000 XAF</span>
+                {t('list.dayRate')}{dayRateCountry ? ` ${dayRateCountry}` : ''} · <span className="font-bold text-[#E8932A]">¥{formatNumber(dayRate)}</span> / <span className="whitespace-nowrap">1 000 000 XAF</span>
               </div>
             ) : null}
           </div>

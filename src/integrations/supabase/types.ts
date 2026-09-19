@@ -1797,6 +1797,9 @@ export type Database = {
           balance_after: number
           balance_before: number
           batch_id: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
           beneficiary_bank_account: string | null
           beneficiary_bank_extra: string | null
           beneficiary_bank_name: string | null
@@ -1842,6 +1845,9 @@ export type Database = {
           balance_after: number
           balance_before: number
           batch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -1887,6 +1893,9 @@ export type Database = {
           balance_after?: number
           balance_before?: number
           batch_id?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -2885,6 +2894,10 @@ export type Database = {
           balance_xaf: number
           created_at: string
           id: string
+          overdraft_limit_xaf: number
+          overdraft_note: string | null
+          overdraft_set_at: string | null
+          overdraft_set_by: string | null
           updated_at: string
           user_id: string
         }
@@ -2892,6 +2905,10 @@ export type Database = {
           balance_xaf?: number
           created_at?: string
           id?: string
+          overdraft_limit_xaf?: number
+          overdraft_note?: string | null
+          overdraft_set_at?: string | null
+          overdraft_set_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2899,6 +2916,10 @@ export type Database = {
           balance_xaf?: number
           created_at?: string
           id?: string
+          overdraft_limit_xaf?: number
+          overdraft_note?: string | null
+          overdraft_set_at?: string | null
+          overdraft_set_by?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -3156,6 +3177,10 @@ export type Database = {
         Args: { p_phones: Json; p_user_id: string }
         Returns: Json
       }
+      admin_set_wallet_overdraft: {
+        Args: { p_limit_xaf: number; p_reason?: string; p_user_id: string }
+        Returns: Json
+      }
       admin_setup_client: {
         Args: {
           p_city?: string
@@ -3240,7 +3265,10 @@ export type Database = {
       can_manage_rates: { Args: { p_user_id: string }; Returns: boolean }
       cancel_client_deposit: { Args: { p_deposit_id: string }; Returns: Json }
       cancel_deposit: { Args: { p_deposit_id: string }; Returns: Json }
-      cancel_payment: { Args: { p_payment_id: string }; Returns: Json }
+      cancel_payment: {
+        Args: { p_payment_id: string; p_reason?: string }
+        Returns: Json
+      }
       chat_avg_response_seconds_today: { Args: never; Returns: number }
       check_wallet_reconciliation: {
         Args: { p_user_id: string }

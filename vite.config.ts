@@ -30,6 +30,10 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    // Les drapeaux SVG (flag-icons, 245 fichiers, la plupart < 4 Ko) restent
+    // des fichiers séparés chargés à la demande : inlinés en base64, ils
+    // gonfleraient le bundle de ~400 Ko pour un sélecteur de pays.
+    assetsInlineLimit: (filePath) => (filePath.includes("flag-icons") ? false : undefined),
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, "index.html"),

@@ -21,6 +21,7 @@
 // ============================================================
 
 import { parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
+import { isoFromCountryLabel } from '@/data/countries';
 
 /** Format E.164 : « + », indicatif non nul, 8 à 15 chiffres au total. */
 const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
@@ -129,7 +130,10 @@ export function countryNameToIso(value: unknown): CountryCode | undefined {
 
   // « États-Unis / Canada » et consorts : on retient le premier segment.
   const firstSegment = normalizeKey(raw.split('/')[0] ?? '');
-  return COUNTRY_NAME_TO_ISO[firstSegment];
+  if (COUNTRY_NAME_TO_ISO[firstSegment]) return COUNTRY_NAME_TO_ISO[firstSegment];
+
+  // Tout autre libellé (fr / en / zh, 245 pays) : l'index de @/data/countries.
+  return isoFromCountryLabel(raw);
 }
 
 /** Contrôle de forme pur — n'atteste pas que le numéro existe. */

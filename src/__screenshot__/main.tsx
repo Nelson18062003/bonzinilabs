@@ -58,7 +58,7 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
-import { LabelWarehouse, LabelOffice, LabelComposer, LabelComposerDesktop, LabelSheetMobile } from './shippingLabel';
+import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
@@ -108,6 +108,20 @@ import {
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/deposits';
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
+import { MobilePaymentDetail } from '@/mobile/screens/payments';
+import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { useActiveDailyRate as useMockActiveRate, useRateAdjustments as useMockAdjustments } from '@/hooks/useDailyRates';
+
+// Flyer réglé sur un pays dérivé (Gabon) — hooks aliasés sur les fixtures.
+function FlyerGabon() {
+  const { data: rate } = useMockActiveRate();
+  const { data: adjustments } = useMockAdjustments();
+  return (
+    <div style={{ width: 560, padding: 16 }}>
+      <RateFlyerSheet activeRate={rate} adjustments={adjustments} initialCountry="gabon" />
+    </div>
+  );
+}
 import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
 
 // `path` (optional) renders the component inside a matching <Route> so
@@ -128,6 +142,16 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-rates': { Comp: ShippedRates, route: '/m/more/rates' },
   'real-dashboard': { Comp: ShippedAnalytics, route: '/m/dashboard' },
   'real-client-new': { Comp: ShippedCreateClient, route: '/m/clients/new' },
+  // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
+  'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
+  'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
+  'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
+  'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
+  'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },
+  'real-client-new-m': { Comp: MobileCreateClient, route: '/m/clients/new' },
+  'real-client-detail-m': { Comp: MobileClientDetail, route: '/m/clients/u5', path: '/m/clients/:clientId' },
+  'real-client-overdrawn-m': { Comp: MobileClientDetail, route: '/m/clients/u6', path: '/m/clients/:clientId' },
+  'real-clients-overdrawn': { Comp: ShippedClients, route: '/m/clients/u6', path: '/m/clients/:clientId' },
   'real-rates-publish': { Comp: ShippedRatesPublish, route: '/m/more/rates' },
   'real-rates-history': { Comp: ShippedRatesHistory, route: '/m/more/rates' },
   'real-rates-settings': { Comp: ShippedRatesSettings, route: '/m/more/rates' },
@@ -208,6 +232,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   flyer: { Comp: Flyer, route: '/' },
   'label-warehouse': { Comp: LabelWarehouse, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
+  'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },
+  'label-office-mono': { Comp: LabelOfficeMono, route: '/' },
   'label-composer': { Comp: LabelComposer, route: '/' },
   'label-sheet-mobile': { Comp: LabelSheetMobile, route: '/' },
   'shipping-settings': { Comp: MobileShippingSettings, route: '/m/more/shipping' },

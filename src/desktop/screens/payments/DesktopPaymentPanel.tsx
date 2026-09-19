@@ -34,6 +34,17 @@ import {
   type PaymentMethod,
 } from '@/types/payment';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
+import {
+  canCancelPayment,
+  cancelRequiresReason,
+  canEditPaymentAmounts,
+  canEditPaymentBeneficiary,
+  isClosedPayment,
+  normalizeRateInt,
+  rmbForXaf,
+  amountsCoherent,
+  walletDeltaForCorrection,
+} from '@/lib/paymentEdits';
 import { formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import {
@@ -44,6 +55,7 @@ import {
   StatusPill,
   Holder,
   TextInput,
+  TextArea,
   FormField,
   PrimaryPill,
   SoftPill,
@@ -197,6 +209,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [rejectReason, setRejectReason] = useState('');
   const [rejectComment, setRejectComment] = useState('');
   const [showCancel, setShowCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [showBenefEdit, setShowBenefEdit] = useState(false);
@@ -228,19 +241,21 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
 
   const canProcess = hasPermission('canProcessPayments');
   const status = payment?.status as PaymentStatus | undefined;
-  const isLocked = !payment || ['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
+  // Gardes dérivées de `paymentEdits.ts` — miroir des RPC, jamais de logique locale.
+  const isLocked = !payment || isClosedPayment(payment.status);
   // RPC-accurate: process_payment('start_processing') only accepts ready_for_payment.
   const canStart = canProcess && status === 'ready_for_payment';
   const canComplete = canProcess && status === 'processing';
   const canReject = canProcess && !isLocked && status !== 'cash_pending';
   const isCash = payment?.method === 'cash';
-  // Un admin corrige le bénéficiaire tant que le paiement n'est pas parti ;
-  // le super admin peut le corriger à tout moment, même sur un paiement effectué.
-  const canEditBeneficiary =
-    canProcess &&
-    !isCash &&
-    !!payment &&
-    (isSuperAdmin || (!isLocked && ['created', 'waiting_beneficiary_info', 'ready_for_payment'].includes(payment.status)));
+  // Bénéficiaire : tant que le paiement n'est pas parti, jamais en cash
+  // (admin_update_payment_beneficiary refuse un paiement clos, même au super admin).
+  const canEditBeneficiary = !!payment && canEditPaymentBeneficiary(payment.status, payment.method, canProcess);
+  // Montants / taux : tout agent habilité tant que c'est ouvert, super admin une fois clos.
+  const canEditAmounts = !!payment && canEditPaymentAmounts(payment.status, canProcess, isSuperAdmin);
+  // Annulation : tout paiement pas encore remboursé — y compris effectué (motif obligatoire).
+  const canCancel = !!payment && canCancelPayment(payment.status, isSuperAdmin);
+  const cancelNeedsReason = !!payment && cancelRequiresReason(payment.status);
 
   const adminProofs = (proofs ?? []).filter((p) => p.uploaded_by_type === 'admin');
   const clientProofs = (proofs ?? []).filter((p) => p.uploaded_by_type !== 'admin');
@@ -382,11 +397,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
 
   const openCorrect = useCallback(() => {
     if (!payment) return;
-    const rateInt0 = payment.exchange_rate
-      ? payment.exchange_rate < 1
-        ? Math.round(payment.exchange_rate * 1_000_000)
-        : Math.round(payment.exchange_rate)
-      : 0;
+    const rateInt0 = normalizeRateInt(payment.exchange_rate);
     setCorr({
       xaf: String(payment.amount_xaf ?? ''),
       rmb: String(payment.amount_rmb ?? ''),
@@ -405,8 +416,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       toast.error('Le motif de correction est obligatoire');
       return;
     }
-    if (!Number.isSafeInteger(newXaf) || newXaf <= 0 || newXaf > 50_000_000) {
-      toast.error('Montant XAF invalide (1 à 50 000 000)');
+    // Pas de plafond (décision du 14/09/2026) : entier, > 0, safe integer.
+    if (!Number.isSafeInteger(newXaf) || newXaf <= 0) {
+      toast.error('Montant XAF invalide');
       return;
     }
     if (!Number.isFinite(newRmb) || newRmb <= 0 || !Number.isSafeInteger(Math.round(newRmb))) {
@@ -417,11 +429,8 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       toast.error('Taux invalide');
       return;
     }
-    const oldRateInt = payment.exchange_rate
-      ? payment.exchange_rate < 1
-        ? Math.round(payment.exchange_rate * 1_000_000)
-        : Math.round(payment.exchange_rate)
-      : 0;
+    const oldRateInt = normalizeRateInt(payment.exchange_rate);
+    // Seuls les champs qui changent partent au serveur.
     const patch = {
       amountXaf: newXaf !== payment.amount_xaf ? newXaf : undefined,
       amountRmb: newRmb !== payment.amount_rmb ? newRmb : undefined,
@@ -431,11 +440,32 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       toast.error('Aucune valeur ne change');
       return;
     }
-    correctPayment.mutate(
-      { paymentId, reason: corr.reason.trim(), ...patch },
-      { onSuccess: () => setShowCorrect(false) },
-    );
+    correctPayment
+      .mutateAsync({ paymentId, reason: corr.reason.trim(), ...patch })
+      .then(() => setShowCorrect(false))
+      .catch(() => {});
   }, [payment, corr, correctPayment, paymentId]);
+
+  const closeCancel = useCallback(() => {
+    setShowCancel(false);
+    setCancelReason('');
+  }, []);
+
+  const submitCancel = useCallback(() => {
+    if (cancelNeedsReason && !cancelReason.trim()) {
+      toast.error("Le motif est obligatoire pour annuler un paiement effectué");
+      return;
+    }
+    cancelPayment.mutate(
+      { paymentId, reason: cancelReason.trim() || undefined },
+      {
+        onSuccess: () => {
+          setCancelReason('');
+          close();
+        },
+      },
+    );
+  }, [cancelNeedsReason, cancelReason, cancelPayment, paymentId, close]);
 
   const handleCashSignature = useCallback(
     async (signatureDataUrl: string) => {
@@ -567,11 +597,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const slaLevel = getPaymentSlaLevel(payment.created_at, payment.status);
   const methodColor = METHOD_COLOR[payment.method] ?? '#8B5CF6';
   const methodLabel = PAYMENT_METHOD_LABELS[payment.method as PaymentMethod] || payment.method;
-  const rateInt = payment.exchange_rate
-    ? payment.exchange_rate < 1
-      ? Math.round(payment.exchange_rate * 1_000_000)
-      : Math.round(payment.exchange_rate)
-    : 0;
+  const rateInt = normalizeRateInt(payment.exchange_rate);
   const isCashSelf = (payment as { cash_beneficiary_type?: string | null }).cash_beneficiary_type !== 'other';
   const cashBeneficiaryName =
     (payment as { cash_beneficiary_type?: string | null }).cash_beneficiary_type === 'other'
@@ -628,14 +654,19 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const stateFor = (s: PaymentStatus): 'completed' | 'current' | 'pending' =>
     payment.status === s ? 'current' : reached(s) ? 'completed' : 'pending';
 
-  // Aperçu vivant du dialogue de correction
+  // Aperçu vivant du dialogue de correction — règles partagées (paymentEdits.ts).
   const corrXafNum = parseInt(corr.xaf || '0', 10) || 0;
   const corrRmbNum = Number(corr.rmb || '0') || 0;
   const corrRateNum = parseInt(corr.rate || '0', 10) || 0;
-  const corrDelta = corrXafNum > 0 ? corrXafNum - payment.amount_xaf : 0;
-  const corrWalletTouched = !['rejected', 'cancelled_by_admin'].includes(payment.status);
-  const corrExpectedRmb = corrRateNum > 0 && corrXafNum > 0 ? (corrXafNum * corrRateNum) / 1_000_000 : 0;
-  const corrIncoherent = corrRmbNum > 0 && corrExpectedRmb > 0 && Math.abs(corrRmbNum - corrExpectedRmb) / corrExpectedRmb > 0.02;
+  const corrWalletDelta = walletDeltaForCorrection(payment.status, payment.amount_xaf, corrXafNum > 0 ? corrXafNum : payment.amount_xaf);
+  const corrExpectedRmb = corrRateNum > 0 && corrXafNum > 0 ? rmbForXaf(corrXafNum, corrRateNum) : 0;
+  const corrIncoherent = !amountsCoherent(corrXafNum, corrRmbNum, corrRateNum);
+  const corrIsClosed = isClosedPayment(payment.status);
+  const corrChanged =
+    (corrXafNum > 0 && corrXafNum !== payment.amount_xaf) ||
+    (corrRmbNum > 0 && corrRmbNum !== payment.amount_rmb) ||
+    (corrRateNum > 0 && corrRateNum !== rateInt);
+  const balanceAfterNegative = payment.balance_after != null && payment.balance_after < 0;
 
   // Preuves : useAdminPaymentProofs renvoie file_url DÉJÀ signé.
   const proof = allProofs[proofIndex];
@@ -695,19 +726,19 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                     </button>
                   </>
                 )}
-                {isSuperAdmin && (
+                {canEditAmounts && (
                   <button
                     type="button"
                     onClick={() => { setMenuOpen(false); openCorrect(); }}
                     className={cn('flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold', TEXT.strong, 'hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
                   >
-                    <Pencil className="h-3.5 w-3.5" /> Corriger montants / taux
+                    <Pencil className="h-3.5 w-3.5" /> {isLocked ? 'Corriger les montants / le taux' : 'Modifier les montants / le taux'}
                   </button>
                 )}
-                {isSuperAdmin && !isLocked && (
+                {canCancel && (
                   <button
                     type="button"
-                    onClick={() => { setMenuOpen(false); setShowCancel(true); }}
+                    onClick={() => { setMenuOpen(false); setCancelReason(''); setShowCancel(true); }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[13px] font-semibold text-destructive hover:bg-destructive/10 dark:text-destructive dark:hover:bg-destructive/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" /> Annuler le paiement
@@ -1099,9 +1130,27 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           />
           <KV k="Téléphone" v={payment.profiles?.phone || '—'} />
           <KV k="Créé le" v={format(new Date(payment.created_at), 'd MMM, HH:mm', { locale: fr })} />
-          <KV k="Solde après débit" v={payment.balance_after != null ? `${fmt(payment.balance_after)} XAF` : '—'} />
+          <KV
+            k="Solde après débit"
+            v={
+              payment.balance_after == null ? (
+                '—'
+              ) : balanceAfterNegative ? (
+                <span className="text-[#C00F0C] dark:text-[#FCB3AD]">−{fmt(payment.balance_after)} XAF (découvert)</span>
+              ) : (
+                `${fmt(payment.balance_after)} XAF`
+              )
+            }
+          />
           <KV k="Lot" v={(payment as { batch_id?: string | null }).batch_id ? 'Paiement groupé' : '—'} />
           <KV k="Traité par" v={payment.processed_at ? format(new Date(payment.processed_at), 'd MMM, HH:mm', { locale: fr }) : '—'} />
+          {payment.cancelled_reason && (
+            <KV
+              k="Motif d'annulation"
+              className="col-span-3"
+              v={<span className="whitespace-normal">{payment.cancelled_reason}</span>}
+            />
+          )}
         </div>
 
         {(payment as { rejection_reason?: string | null }).rejection_reason && (
@@ -1154,7 +1203,6 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       <input ref={replaceFileRef} type="file" accept={ACCEPT_UPLOAD} className="hidden" onChange={handleReplaceFileSelect} />
       <input ref={instructionInputRef} type="file" accept={ACCEPT_UPLOAD} multiple className="hidden" onChange={handleInstructionUpload} />
 
-      {/* ── Dialogue : corriger montants / taux (super admin) ───────────── */}
       {canSendInstruction && (
         <PaymentInstructionDialog
           open={showInstruction}
@@ -1163,11 +1211,12 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         />
       )}
 
+      {/* ── Dialogue : modifier / corriger montants & taux ──────────────── */}
       <CenterDialog
         open={showCorrect}
         onClose={() => setShowCorrect(false)}
         onConfirm={!correctPayment.isPending ? submitCorrection : undefined}
-        title={`Corriger le paiement ${payment.reference}`}
+        title={`${corrIsClosed ? 'Corriger' : 'Modifier'} le paiement ${payment.reference}`}
         width={560}
         footer={
           <>
@@ -1177,22 +1226,28 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             <PrimaryPill
               onClick={submitCorrection}
               loading={correctPayment.isPending}
-              disabled={!corr.reason.trim()}
+              disabled={!corr.reason.trim() || !corrChanged}
               className="flex-[1.4] bg-primary text-primary-foreground"
             >
-              Appliquer la correction
+              {corrIsClosed ? 'Appliquer la correction' : 'Enregistrer'}
             </PrimaryPill>
           </>
         }
       >
         <div className="space-y-4">
-          <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-            <p className="text-[12.5px] leading-[17px] text-amber-700 dark:text-amber-400">
-              Correction a posteriori ({statusConfig.label}). Le client verra les nouveaux montants ; le reçu PDF et la fiche se
-              régénèrent avec ces valeurs. Tout est tracé (journal d'audit + suivi du paiement).
+          {corrIsClosed ? (
+            <div className="flex items-start gap-2 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
+              <p className="text-[12.5px] leading-[17px] text-amber-700 dark:text-amber-400">
+                Correction a posteriori ({statusConfig.label}). Le client verra les nouveaux montants ; le reçu PDF et la fiche se
+                régénèrent avec ces valeurs. Tout est tracé (journal d'audit + suivi du paiement).
+              </p>
+            </div>
+          ) : (
+            <p className={cn('text-[12.5px] leading-[17px]', TEXT.muted)}>
+              Le client verra les nouveaux montants ; la fiche et le reçu se régénèrent. Tout est tracé (journal d'audit + suivi).
             </p>
-          </div>
+          )}
 
           <div className="grid grid-cols-3 gap-3">
             <FormField label="Client débité (XAF)">
@@ -1210,6 +1265,14 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                 onChange={(e) => setCorr({ ...corr, rmb: e.target.value.replace(/[^0-9.]/g, '') })}
                 className="h-10 font-bold tabular-nums"
               />
+              <button
+                type="button"
+                disabled={corrExpectedRmb <= 0}
+                onClick={() => setCorr({ ...corr, rmb: String(corrExpectedRmb) })}
+                className="mt-1 text-left text-[12px] font-semibold text-indigo-700 disabled:opacity-40 dark:text-indigo-400"
+              >
+                Recalculer ¥ depuis le taux
+              </button>
             </FormField>
             <FormField label="Taux (¥ / 1M XAF)">
               <TextInput
@@ -1221,23 +1284,21 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             </FormField>
           </div>
 
-          {corrDelta !== 0 && (
+          {corrWalletDelta.kind !== 'none' && (
             <div
               className={cn(
                 'rounded-2xl p-3 text-[12.5px] font-semibold',
-                corrWalletTouched
-                  ? corrDelta > 0
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
-                  : cn(SURFACE.canvas, TEXT.muted),
+                corrWalletDelta.kind === 'debit'
+                  ? 'bg-destructive/10 text-destructive'
+                  : corrWalletDelta.kind === 'credit'
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                    : cn(SURFACE.canvas, TEXT.muted),
               )}
             >
-              {corrWalletTouched ? (
-                corrDelta > 0 ? (
-                  <>Le wallet de {clientName} sera débité de {fmt(corrDelta)} XAF supplémentaires (écriture comptable ADMIN_DEBIT).</>
-                ) : (
-                  <>Le wallet de {clientName} sera recrédité de {fmt(-corrDelta)} XAF (écriture comptable ADMIN_CREDIT).</>
-                )
+              {corrWalletDelta.kind === 'debit' ? (
+                <>Le wallet de {clientName} sera débité de {fmt(corrWalletDelta.amount)} XAF supplémentaires (écriture comptable ADMIN_DEBIT).</>
+              ) : corrWalletDelta.kind === 'credit' ? (
+                <>Le wallet de {clientName} sera recrédité de {fmt(corrWalletDelta.amount)} XAF (écriture comptable ADMIN_CREDIT).</>
               ) : (
                 <>Paiement déjà remboursé ({statusConfig.label}) — la correction ne touche pas le wallet, seulement la fiche.</>
               )}
@@ -1251,13 +1312,12 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             </p>
           )}
 
-          <FormField label="Motif de la correction (obligatoire — journal d'audit)">
-            <textarea
+          <FormField label="Motif (obligatoire — journal d'audit)">
+            <TextArea
               value={corr.reason}
               onChange={(e) => setCorr({ ...corr, reason: e.target.value })}
               rows={2}
               placeholder="Ex. : erreur de saisie du taux à la création…"
-              className={cn('w-full resize-none rounded-2xl p-3 text-[14px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
             />
           </FormField>
         </div>
@@ -1567,25 +1627,52 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         </div>
       </CenterDialog>
 
-      {/* ── Dialogue : annuler (super admin) ────────────────────────────── */}
+      {/* ── Dialogue : annuler (super admin) — motif obligatoire si effectué ─ */}
       <CenterDialog
         open={showCancel}
-        onClose={() => setShowCancel(false)}
+        onClose={closeCancel}
+        onConfirm={!cancelPayment.isPending && (!cancelNeedsReason || !!cancelReason.trim()) ? submitCancel : undefined}
         title={`Annuler le paiement ${payment.reference} ?`}
         footer={
           <>
-            <SoftPill onClick={() => setShowCancel(false)} className="flex-1">
+            <SoftPill onClick={closeCancel} className="flex-1">
               Retour
             </SoftPill>
-            <PrimaryPill onClick={() => cancelPayment.mutate(paymentId, { onSuccess: close })} loading={cancelPayment.isPending} danger className="flex-[1.4]">
-              Confirmer l'annulation
+            <PrimaryPill
+              onClick={submitCancel}
+              loading={cancelPayment.isPending}
+              disabled={cancelNeedsReason && !cancelReason.trim()}
+              danger
+              className="flex-[1.4]"
+            >
+              Annuler et rembourser
             </PrimaryPill>
           </>
         }
       >
-        <p className={cn('text-[13px]', TEXT.muted)}>
-          Le paiement sera marqué annulé et le wallet de {clientName} remboursé de {fmt(payment.amount_xaf)} XAF.
-        </p>
+        <div className="space-y-4">
+          {cancelNeedsReason ? (
+            <div className="flex items-start gap-2 rounded-2xl bg-destructive/10 p-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              <p className="text-[12.5px] leading-[17px] text-destructive">
+                Ce paiement est marqué effectué : l'argent est normalement déjà parti chez le fournisseur. Annuler recrédite quand même{' '}
+                {fmt(payment.amount_xaf)} XAF au client.
+              </p>
+            </div>
+          ) : (
+            <p className={cn('text-[13px]', TEXT.muted)}>
+              Le paiement sera marqué annulé et le wallet de {clientName} remboursé de {fmt(payment.amount_xaf)} XAF.
+            </p>
+          )}
+          <FormField label={cancelNeedsReason ? 'Motif (obligatoire)' : 'Motif (optionnel)'}>
+            <TextArea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={2}
+              placeholder={cancelNeedsReason ? 'Ex. : fournisseur non payé, double saisie…' : 'Ex. : demande du client…'}
+            />
+          </FormField>
+        </div>
       </CenterDialog>
 
       {/* ── Visionneuse ─────────────────────────────────────────────────── */}

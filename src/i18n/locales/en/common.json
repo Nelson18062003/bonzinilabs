@@ -310,6 +310,25 @@
   "cannotDeleteClientPendingPayments": "Cannot delete a client with pending payments",
   "noMovementsToExport": "No movements to export",
   "statementGenerationError": "Error generating the statement",
+  "statementPeriod": {
+    "title": "Account statement",
+    "hint": "Choose the period to cover. The PDF shows the opening balance, the movements and the closing balance.",
+    "customPlaceholder": "Start date → end date",
+    "pickDates": "Choose a start date and an end date.",
+    "generate": "Generate the PDF",
+    "generating": "Preparing the statement…",
+    "presets": {
+      "today": "Today",
+      "last_7_days": "Last 7 days",
+      "last_14_days": "Last 14 days",
+      "last_30_days": "Last 30 days",
+      "last_90_days": "Last 3 months",
+      "this_month": "This month",
+      "last_month": "Last month",
+      "all_time": "All history",
+      "custom": "Custom"
+    }
+  },
   "clientDetail": "Client detail",
   "clientNotFound": "Client not found",
   "clientProfile": "Client profile",
@@ -457,11 +476,73 @@
   "otpCode": "Verification code",
   "phoneField": {
     "searchCountry": "Search a country...",
-    "noResult": "No result"
+    "noResult": "No result",
+    "valid": "Valid number · {{number}}",
+    "incompleteFor": "Incomplete number for {{country}}"
   },
   "queryError": {
     "title": "Could not load {{what}}.",
     "hint": "Check your connection, then try again."
   },
-  "retry": "Retry"
+  "retry": "Retry",
+  "countryPicker": {
+    "choose": "Choose a country",
+    "search": "Search a country, code or dial code…",
+    "noResult": "No matching country",
+    "frequent": "Frequent",
+    "all": "All countries",
+    "dialCode": "Dial code",
+    "country": "Country",
+    "clear": "Clear",
+    "close": "Close"
+  },
+  "clientForm": {
+    "optional": "optional",
+    "subtitle": "Identity, contact and location",
+    "identity": "Identity",
+    "identityHint": "The client's first name, last name and company.",
+    "contact": "Contact",
+    "contactHint": "The WhatsApp number receives the temporary password.",
+    "location": "Location",
+    "locationHint": "The country follows the dial code unless you change it.",
+    "whatsapp": "WhatsApp",
+    "otherNumber": "Number {{n}}",
+    "remove": "Remove",
+    "removeNumber": "Remove this number",
+    "labelPlaceholder": "Label: MTN, Office, China…",
+    "numberLabel": "Number label",
+    "addNumber": "Add another number",
+    "primaryReceivesPassword": "The first number is the main one: it receives the password.",
+    "emailInvalid": "This e-mail address looks incomplete.",
+    "summaryClient": "Client",
+    "passwordWillBeSent": "A temporary password will be generated. The client must change it at first login.",
+    "canLogin": "{{name}} can now sign in.",
+    "copyPassword": "Copy the password",
+    "copyFailed": "Copy failed: select the password and copy it by hand.",
+    "passwordOnce": "This password will not be shown again. Send it to the client on WhatsApp.",
+    "sendOnWhatsapp": "Send on WhatsApp · {{number}}",
+    "extraPhonesFailed": "The extra numbers could not be saved. The client exists with the main number — add the others from the client sheet.",
+    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login."
+  },
+  "overdraft": {
+    "title": "Authorised overdraft",
+    "currentBalance": "Current balance",
+    "currentLimit": "Authorised overdraft",
+    "none": "None",
+    "newLimit": "New overdraft limit",
+    "customLimit": "Custom amount (XAF)",
+    "belowUsed": "The client already uses {{amount}} of overdraft: the limit cannot go below that.",
+    "floorHint": "The team will be able to debit this client down to a balance of {{amount}}.",
+    "reason": "Reason",
+    "reasonPlaceholder": "E.g. urgent supplier invoice, settlement planned on the 30th…",
+    "warning": "{{name}} can be debited beyond the balance by the team only. The overdraft shows in red on the client sheet, statement and app.",
+    "grant": "Authorise the overdraft",
+    "update": "Save the new limit",
+    "remove": "Remove the overdraft",
+    "granted": "Overdraft authorised",
+    "removed": "Overdraft removed",
+    "error": "Could not update the overdraft",
+    "availableWithOverdraft": "Available with overdraft: {{amount}} (authorised {{limit}})",
+    "willOverdraw": "The client goes into overdraft: balance after {{amount}}."
+  }
 }

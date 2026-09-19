@@ -16,7 +16,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useActiveDailyRate } from '@/hooks/useDailyRates';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
 import { useCountUp } from '@/hooks/useCountUp';
@@ -156,17 +158,18 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // ── Data ─────────────────────────────────────────────────────
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
+  const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
 
   // Tous les wallets en une seule requête admin
-  const { data: walletsMap = new Map<string, number>() } = useQuery({
+  const { data: walletsMap = new Map<string, { balance: number; overdraft: number }>() } = useQuery({
     queryKey: ['all-wallets-for-new-payment'],
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('wallets')
-        .select('user_id, balance_xaf');
+        .select('user_id, balance_xaf, overdraft_limit_xaf');
       if (error) throw error;
-      return new Map((data ?? []).map((w) => [w.user_id, w.balance_xaf as number]));
+      return new Map((data ?? []).map((w) => [w.user_id, { balance: w.balance_xaf as number, overdraft: (w.overdraft_limit_xaf as number) ?? 0 }]));
     },
     staleTime: 30_000,
   });
@@ -246,8 +249,17 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const [done, setDone] = useState<{ paymentId: string; cny: number; xaf: number } | null>(null);
 
   // ── Calculs ───────────────────────────────────────────────────
-  const clientBalance = client ? (walletsMap.get(client.user_id) ?? 0) : 0;
-  const baseRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
+  const clientBalance = client ? (walletsMap.get(client.user_id)?.balance ?? 0) : 0;
+  const clientOverdraft = client ? (walletsMap.get(client.user_id)?.overdraft ?? 0) : 0;
+  // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé par le super admin.
+  const clientAvailable = clientBalance + clientOverdraft;
+  // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
+  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
+  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
+  // Jamais d'écart pays sur la constante de secours : elle n'est pas un taux publié.
+  const countryRate = rateData && mode ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
+  const baseRate = countryRate ? countryRate.rate : refRate;
   // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
   // sur la constante de secours (le paiement partait à 11 530).
   const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
@@ -280,7 +292,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         (mode?.id !== 'virement' ||
           (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
 
-  const hasEnoughBalance = xaf <= clientBalance;
+  const hasEnoughBalance = xaf <= clientAvailable;
+  const willOverdraw = xaf > 0 && xaf > clientBalance && hasEnoughBalance;
   // Pas de plafond : entier positif, dans la limite du solde du client.
   const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
   const canNext =
@@ -574,7 +587,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               {filtered.map((c) => {
                 const name = `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim();
                 const ini = getInitials(c.first_name ?? '', c.last_name ?? '');
-                const bal = walletsMap.get(c.user_id) ?? null;
+                const bal = walletsMap.get(c.user_id)?.balance ?? null;
                 const sel = client?.user_id === c.user_id;
 
                 return (
@@ -653,6 +666,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               <strong className={cn('font-bold', clientBalance > 0 ? TEXT.strong : 'text-[#900B09] dark:text-[#FDD3D0]')}>
                 {fmt(clientBalance)} XAF
               </strong>
+              {clientOverdraft > 0 && (
+                <span className="block text-[14px]">Découvert autorisé {fmt(clientOverdraft)} XAF · disponible {fmt(clientAvailable)} XAF</span>
+              )}
             </div>
 
             {/* Toggle XAF / ¥ */}
@@ -714,9 +730,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 <div>
                   <div className="text-[16px] font-bold text-[#900B09] dark:text-[#FDD3D0]">Solde insuffisant</div>
                   <div className={cn('text-[16px]', TEXT.muted)}>
-                    Solde disponible : {fmt(clientBalance)} XAF
+                    Disponible : {fmt(clientAvailable)} XAF{clientOverdraft > 0 ? ' (découvert compris)' : ''}
                   </div>
                 </div>
+              </div>
+            )}
+            {willOverdraw && (
+              <div className="mb-3 rounded-lg bg-[#FFF1C2] p-3 text-[16px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
+                <b>Le client passe en découvert.</b> Solde après ce paiement : {fmt(clientBalance - xaf)} XAF.
               </div>
             )}
 
@@ -746,7 +767,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 // "Tout" — solde complet du client converti dans la devise saisie.
                 // Pas de plafond admin (les paiements opérés par admin peuvent
                 // dépasser le cap client de 50M XAF).
-                const allXAF = clientBalance;
+                const allXAF = clientAvailable;
                 const allValue =
                   inputCurrency === 'xaf'
                     ? allXAF
@@ -780,7 +801,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   <div className={cn('text-[16px] font-bold', TEXT.strong)}>Taux personnalisé</div>
                   {!useCustomRate && (
                     <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>
-                      Taux du jour : 1M XAF = ¥{fmt(baseRate)}
+                      {countryRate
+                        ? <>Taux {countryRate.label} ({formatCountryPct(countryRate.percentage)}) : 1M XAF = ¥{fmt(baseRate)} · Cameroun ¥{fmt(refRate)}</>
+                        : <>Taux du jour : 1M XAF = ¥{fmt(baseRate)}</>}
                     </div>
                   )}
                 </div>
@@ -830,9 +853,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             />
 
             {/* Alertes montant */}
-            {xaf > clientBalance && xaf > 0 && (
+            {xaf > clientAvailable && xaf > 0 && (
               <div className="mt-2.5 rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
-                Solde insuffisant ({fmt(clientBalance)} XAF)
+                Solde insuffisant ({fmt(clientAvailable)} XAF disponibles)
               </div>
             )}
           </div>
@@ -1164,7 +1187,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
                   ? { l: 'Email', v: selectedBenef?.email || benef.email }
                   : null,
-                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : ''}` },
+                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : countryRate ? ` (${countryRate.label} ${formatCountryPct(countryRate.percentage)})` : ''}` },
                 useCustomDate && customDateStr
                   ? { l: 'Date', v: new Date(customDateStr).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
                   : null,
@@ -1181,9 +1204,14 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
             </Card>
 
             {/* Alerte solde insuffisant (récap) */}
-            {xaf > clientBalance && (
+            {xaf > clientAvailable && (
               <div className="rounded-lg bg-[#FDD3D0] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
-                Solde insuffisant ({fmt(clientBalance)} XAF disponibles)
+                Solde insuffisant ({fmt(clientAvailable)} XAF disponibles)
+              </div>
+            )}
+            {willOverdraw && (
+              <div className="rounded-lg bg-[#FFF1C2] px-3.5 py-2.5 text-center text-[16px] font-semibold text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
+                Découvert : solde après paiement {fmt(clientBalance - xaf)} XAF
               </div>
             )}
           </div>
