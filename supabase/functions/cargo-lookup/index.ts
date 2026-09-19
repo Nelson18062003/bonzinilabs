@@ -2,7 +2,8 @@
 // ============================================================
 // Bonzini Cargo — recherche libre d'une référence (B/L, booking, conteneur).
 //
-// Déclenchée par request_cargo_lookup (pg_net, Bearer service role). Lit la
+// Déclenchée par request_cargo_lookup (pg_net, Bearer service role — vérifié
+// par _shared/caller.ts, quelle que soit la forme de la clé). Lit la
 // ligne cargo_lookups, interroge l'armateur, écrit le résultat normalisé :
 //   { carrier, reference, bl_number, containers: [NormalizedContainer…] }
 // puis status = done | error. Le front sonde la ligne.
@@ -11,6 +12,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { containersIn, fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
+import { isServiceCaller } from "../_shared/caller.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -18,7 +20,7 @@ const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
 
 serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  if ((req.headers.get("Authorization") ?? "") !== `Bearer ${SERVICE_KEY}`) return new Response("Unauthorized", { status: 401 });
+  if (!(await isServiceCaller(req))) return new Response("Unauthorized", { status: 401 });
 
   const { lookup_id } = await req.json().catch(() => ({}));
   if (!lookup_id) return Response.json({ success: false, error: "lookup_id manquant" }, { status: 400 });
