@@ -32,12 +32,37 @@ const dep2 = {
   parcel_count: 10, total_weight_kg: 84, total_cbm: 0.62,
   parcels: Array.from({ length: 10 }, (_, i) => parcel(i + 1, 'RC-000122', { description: ['Chaussures, 40 paires', 'Tissus wax', 'Sacs à main, 30 pièces'][i % 3], weight_kg: 8.4 })),
 };
-const dep3 = { ...dep2, id: 'dep3', deposit_no: 'RC-000121', client: client2, brought_by: 'courier', parcel_count: 3, total_weight_kg: 21, total_cbm: 0.18, opened_at: today(13, 10), closed_at: today(13, 18), parcels: dep2.parcels.slice(0, 3) };
-const dep4 = { ...dep2, id: 'dep4', deposit_no: 'RC-000120', client: client3, brought_by: 'representative', representative_name: 'Paul Fotso', parcel_count: 2, total_weight_kg: 9, total_cbm: 0.05, opened_at: today(11, 47), closed_at: today(11, 52), parcels: dep2.parcels.slice(0, 2) };
+const dep3 = { ...dep2, id: 'dep3', deposit_no: 'RC-000121', client: client2, brought_by: 'courier', parcel_count: 3, total_weight_kg: 21, total_cbm: 0.18, opened_at: today(13, 10), closed_at: today(13, 18), parcels: dep2.parcels.slice(0, 3).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000121') })) };
+const dep4 = { ...dep2, id: 'dep4', deposit_no: 'RC-000120', client: client3, brought_by: 'representative', representative_name: 'Paul Fotso', parcel_count: 2, total_weight_kg: 9, total_cbm: 0.05, opened_at: today(11, 47), closed_at: today(11, 52), parcels: dep2.parcels.slice(0, 2).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000120') })) };
 const pend1 = { ...dep0, id: 'pend1', deposit_no: 'RC-000119', status: 'closed', closed_at: today(10, 24), opened_at: today(10, 20), parcel_count: 1, total_weight_kg: 12, total_cbm: 0.08, parcels: [parcel(1, 'RC-000119', { weight_kg: 12, length_cm: 50, width_cm: 40, height_cm: 40, cbm: 0.08, courier_waybill: 'SF2884193055221', description: 'Fournisseur Yiwu Hengda (sur le bordereau)' })] };
 const pend2 = { ...pend1, id: 'pend2', deposit_no: 'RC-000117', location: 'office', opened_at: '2026-09-19T08:05:00Z', closed_at: '2026-09-19T08:09:00Z', parcel_count: 1, total_weight_kg: 4, total_cbm: 0.024, parcels: [parcel(1, 'RC-000117', { weight_kg: 4, length_cm: 40, width_cm: 30, height_cm: 20, cbm: 0.024, courier_waybill: 'YTO7731002588108', description: null })] };
 
+// ── Côté admin : la réception dans Bonzini Cargo ──
+const shipment = {
+  id: 'ct1', client_label: 'Mbarga Import', client_id: 'c1', carrier: 'MAERSK', bl_number: 'MAEU 2261 8834', container_number: 'MSKU 482913-7', container_iso: '45G1',
+  pol_name: 'Guangzhou (Nansha)', pol_unlocode: 'CNNSA', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: '2026-09-28', eta_promised: '2026-11-05',
+  etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 3200, freight_paid: false, telex_released: false,
+  status: 'AT_ORIGIN', last_event_at: null, last_event_label: null, last_synced_at: null, sync_error: null, notes: null, goods_description: 'Chaussures, tissus, sacs', packages_count: 12, gross_weight_kg: 96,
+  created_at: '2026-09-18T02:00:00Z', updated_at: '2026-09-20T02:00:00Z',
+};
+const withDep = (p, d) => ({ ...p, deposit_id: d.id, deposit_no: d.deposit_no, location: d.location, opened_at: d.opened_at, client: d.client });
+const loadedParcels = dep3.parcels.map((p) => withDep({ ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number }, { ...dep3, client }));
+const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number } : p)) };
+
 const RPC = {
+  reception_overview: { success: true, by_receptionist: [
+    { received_by: 'demo', name: 'Kevin Nkolo', deposits: 26, parcels: 158, weight_kg: 1210, cbm: 9.1, pending: 2, incomplete: 3 },
+    { received_by: 'mei', name: 'Mei Lin', deposits: 12, parcels: 53, weight_kg: 430, cbm: 3.3, pending: 0, incomplete: 0 },
+  ], deposits: [pend1, dep2, dep3, dep4, pend2] },
+  reception_stock: { success: true, stats: { parcels: 31, clients: 4, weight_kg: 248, cbm: 1.84, pending: 2 }, by_client: [
+    { client, location: 'warehouse', parcels: 13, weight_kg: 110.7, cbm: 0.93, deposits: 2, last_at: today(14, 32) },
+    { client: client2, location: 'warehouse', parcels: 3, weight_kg: 21, cbm: 0.18, deposits: 1, last_at: today(13, 18) },
+    { client: client3, location: 'office', parcels: 2, weight_kg: 9, cbm: 0.05, deposits: 1, last_at: today(11, 52) },
+    { client: null, location: 'warehouse', parcels: 2, weight_kg: 16, cbm: 0.104, deposits: 2, last_at: today(10, 24) },
+  ] },
+  reception_client_deposits: { success: true, deposits: [dep2Loaded, { ...dep1, status: 'closed', closed_at: today(14, 10) }, { ...dep3, client, deposit_no: 'RC-000098', opened_at: '2026-09-02T03:10:00Z', closed_at: '2026-09-02T03:18:00Z', parcels: loadedParcels.map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000121', 'RC-000098') })) }] },
+  cargo_shipment_parcels: { success: true, parcels: loadedParcels },
+  reception_loadable_parcels: { success: true, client_user_id: 'u1', parcels: [...dep2.parcels.slice(4).map((p) => withDep(p, dep2)), ...dep1.parcels.map((p) => withDep(p, dep1))] },
   reception_my_day: { success: true, day: '2026-09-20', stats: { deposits: 6, parcels: 31, weight_kg: 248, cbm: 1.84, open: 1 }, pending: 2, deposits: [dep0, dep1, dep2, dep3, dep4] },
   reception_pending_deposits: { success: true, deposits: [pend1, pend2] },
   reception_search_clients: { success: true, clients: [client, { ...client, user_id: 'u9', customer_code: 'BZ-119042', first_name: 'Paul', last_name: 'Mbarga', phone: '+237 699 00 11 22', company_name: null, city: 'Yaoundé' }] },
@@ -61,6 +86,10 @@ if (process.env.FONTS_DIR) {
 }
 // Le générique d'abord : Playwright sert la DERNIÈRE route enregistrée qui correspond.
 await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+await ctx.route(/\/rest\/v1\/cargo_shipments/, (route) => {
+  const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? shipment : [shipment]) });
+});
 await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
   const name = /\/rpc\/(\w+)/.exec(route.request().url())?.[1];
   const body = route.request().postDataJSON?.() ?? {};

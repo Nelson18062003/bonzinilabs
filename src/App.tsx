@@ -113,6 +113,10 @@ const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").th
 const MobileCargoScreen = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoScreen })));
 const DesktopCargoScreen = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoScreen })));
 const MobileCargoDossier = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDossier })));
+const MobileCargoReception = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoReception })));
+const MobileCargoDepositDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDepositDetail })));
+const MobileCargoLoadParcels = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoLoadParcels })));
+const MobileClientParcels = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcels })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
 const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
 const MobileCargoCout = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoCout })));
@@ -255,6 +259,7 @@ const App = () => (
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
                 <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
@@ -283,6 +288,9 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception" element={<AdminRouteWrapper><MobileCargoReception /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false}><MobileCargoDepositDetail /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/:shipmentId/charger-colis" element={<AdminRouteWrapper showTabBar={false}><MobileCargoLoadParcels /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId/:tab" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />

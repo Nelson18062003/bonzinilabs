@@ -12,7 +12,9 @@
 import { useMemo, useState } from 'react';
 import { QueryError } from '@/components/ui/QueryError';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
+import { ChevronDown, ChevronRight, Map as MapIcon, PackageOpen, Search as SearchIcon } from 'lucide-react';
+import { useReceptionStock } from '@/hooks/useReception';
+import { formatCbm } from '@/lib/reception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
@@ -34,6 +36,7 @@ export function MobileCargoScreen() {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCargoShipments();
   const { data: docsBy } = useCargoFleetDocuments();
+  const { data: stock } = useReceptionStock();
   const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
   const [query, setQuery] = useState('');
   const [weekOpen, setWeekOpen] = useState(false);
@@ -75,6 +78,27 @@ export function MobileCargoScreen() {
           </>
         }
       />
+
+      {/* La réception : ce qui attend à l'entrepôt, avant la boîte. Le début de la chaîne. */}
+      {stock && (
+        <button
+          type="button"
+          onClick={() => navigate('/m/cargo/reception')}
+          className={cn('mx-4 mt-3 flex min-h-[72px] items-center gap-4 rounded-lg px-4 py-3 text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}
+        >
+          <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}><PackageOpen className="h-5 w-5" /></span>
+          <span className="min-w-0 flex-1">
+            <span className={cn('block', TYPE.lead, TEXT.strong)}>Réception des colis</span>
+            <span className={cn('block text-[16px] leading-snug tabular-nums', TEXT.muted)}>
+              {stock.stats.parcels > 0
+                ? `${plural(stock.stats.parcels, 'colis', 'colis')} à l'entrepôt · ${formatCbm(stock.stats.cbm)}${stock.stats.pending > 0 ? ` · ${stock.stats.pending} à attribuer` : ''}`
+                : 'Rien n\u2019attend à l\u2019entrepôt'}
+            </span>
+          </span>
+          {stock.stats.pending > 0 && <StatusPill tone="pending" label={String(stock.stats.pending)} />}
+          <ChevronRight className={cn('h-6 w-6 shrink-0', TEXT.muted)} />
+        </button>
+      )}
 
       {/* Les filtres : gros, à 40 px, avec le compte dans le mot. */}
       <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pt-3">

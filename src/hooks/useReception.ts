@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
-import type { BroughtBy, DayStats, Deposit, ParcelKind, ReceptionClient, ReceptionLocation } from '@/lib/reception';
+import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionLocation, ReceptionistRow, StockByClient, StockStats } from '@/lib/reception';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -179,5 +179,71 @@ export function useParcelPhotoUrl(path: string | null | undefined) {
     },
     enabled: !!path,
     staleTime: 50 * 60_000,
+  });
+}
+
+// ── Côté admin : la réception dans Bonzini Cargo ─────────────────────────
+
+/** Vue d'ensemble sur une période : par réceptionnaire, et la liste des dépôts. */
+export function useReceptionOverview(from: Date, to: Date) {
+  return useQuery({
+    queryKey: ['reception', 'overview', from.toISOString(), to.toISOString()],
+    queryFn: () => rpcJson<{ by_receptionist: ReceptionistRow[]; deposits: Deposit[] }>('reception_overview', { p_from: from.toISOString(), p_to: to.toISOString() }),
+    staleTime: 30_000,
+  });
+}
+
+/** Ce qui attend à l'entrepôt (ou au bureau) : reçu, pas encore chargé. */
+export function useReceptionStock(location?: ReceptionLocation | null) {
+  return useQuery({
+    queryKey: ['reception', 'stock', location ?? 'all'],
+    queryFn: () => rpcJson<{ stats: StockStats; by_client: StockByClient[] }>('reception_stock', { p_location: location ?? null }),
+    staleTime: 30_000,
+  });
+}
+
+/** Les colis reçus d'un client, tous ses dépôts. */
+export function useClientDeposits(userId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['reception', 'client', userId],
+    queryFn: () => rpcJson<{ deposits: Deposit[] }>('reception_client_deposits', { p_user_id: userId }).then((r) => r.deposits),
+    enabled: !!userId && enabled,
+  });
+}
+
+/** Les colis déjà chargés dans une boîte. */
+export function useShipmentParcels(shipmentId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['reception', 'shipment', shipmentId],
+    queryFn: () => rpcJson<{ parcels: ParcelWithDeposit[] }>('cargo_shipment_parcels', { p_shipment_id: shipmentId }).then((r) => r.parcels),
+    enabled: !!shipmentId,
+  });
+}
+
+/** Ce qu'on peut charger dans cette boîte. */
+export function useLoadableParcels(shipmentId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['reception', 'loadable', shipmentId],
+    queryFn: () => rpcJson<{ client_user_id: string | null; parcels: ParcelWithDeposit[] }>('reception_loadable_parcels', { p_shipment_id: shipmentId }),
+    enabled: !!shipmentId,
+  });
+}
+
+export function useLoadParcels() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { shipmentId: string; parcelIds: string[] }) =>
+      rpcJson<{ loaded: number; weight_kg: number; cbm: number }>('cargo_load_parcels', { p_shipment_id: input.shipmentId, p_parcel_ids: input.parcelIds }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reception'] }); qc.invalidateQueries({ queryKey: ['cargo'] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUnloadParcel() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (parcelId: string) => rpcJson<Record<string, never>>('cargo_unload_parcel', { p_parcel_id: parcelId }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reception'] }); qc.invalidateQueries({ queryKey: ['cargo'] }); },
+    onError: (e: Error) => toast.error(e.message),
   });
 }

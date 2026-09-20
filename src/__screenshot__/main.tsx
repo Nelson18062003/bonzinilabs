@@ -74,6 +74,8 @@ import {
   MobileChangePasswordScreen,
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
+import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels } from '@/mobile/screens/cargo';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
@@ -323,6 +325,14 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
   'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
   'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
+  // Admin — la réception dans Bonzini Cargo
+  'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
+  'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
+  'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
+  'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },
 };
 
 const params = new URLSearchParams(window.location.search);

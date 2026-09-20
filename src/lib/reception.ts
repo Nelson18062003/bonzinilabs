@@ -47,7 +47,44 @@ export interface Parcel {
   courier_waybill: string | null;
   photo_path: string | null;
   status: ParcelStatus;
+  /** La boîte (dossier Cargo) où le colis a été chargé — null tant qu'il attend à l'entrepôt. */
+  shipment_id?: string | null;
+  container_number?: string | null;
   created_at: string;
+}
+
+/** Un colis vu depuis le Cargo : avec son dépôt et son client. */
+export interface ParcelWithDeposit extends Parcel {
+  deposit_id: string;
+  deposit_no: string;
+  location?: ReceptionLocation;
+  opened_at?: string;
+  client: ReceptionClient | null;
+}
+
+/** Ce qui attend à l'entrepôt pour un client. */
+export interface StockByClient {
+  client: ReceptionClient | null;
+  location: ReceptionLocation;
+  parcels: number;
+  weight_kg: number;
+  cbm: number;
+  deposits: number;
+  last_at: string;
+}
+
+export interface StockStats { parcels: number; clients: number; weight_kg: number; cbm: number; pending: number }
+
+/** Le travail d'un réceptionnaire sur une période. */
+export interface ReceptionistRow {
+  received_by: string;
+  name: string | null;
+  deposits: number;
+  parcels: number;
+  weight_kg: number;
+  cbm: number;
+  pending: number;
+  incomplete: number;
 }
 
 export interface Deposit {

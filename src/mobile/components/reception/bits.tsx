@@ -4,7 +4,7 @@
 // ligne d'un colis, le libellé d'un mode d'arrivée ou d'un type de colis.
 // ============================================================
 import { Camera, Trash2 } from 'lucide-react';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { DESTINATION_THEME } from '@/lib/customerCode';
 import { ICON_PATHS } from '@/lib/shippingLabelCanvas';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,7 @@ export function LocationMark({ location, size = 28, className }: { location: Rec
 }
 
 export function useReceptionLabels() {
-  const { t } = useLanguage();
+  const { t } = useTranslation('agent');
   return {
     location: (l: ReceptionLocation) => (l === 'warehouse' ? t('rc_warehouse') : t('rc_office')),
     broughtBy: (b: BroughtBy) => t(`rc_by_${b}`),
@@ -45,7 +45,7 @@ export function formatDateTime(iso: string): string {
 
 /** Une ligne de dépôt dans une liste : qui, combien, quand, dans quel état. */
 export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: () => void }) {
-  const { t } = useLanguage();
+  const { t } = useTranslation('agent');
   const labels = useReceptionLabels();
   const name = deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');
   const st = labels.status(deposit);
@@ -80,7 +80,7 @@ function ParcelThumb({ path }: { path: string | null }) {
 
 /** Une ligne de colis : photo, numéro, description, poids × dimensions = volume. */
 export function ParcelRow({ parcel, onRemove }: { parcel: Parcel; onRemove?: () => void }) {
-  const { t } = useLanguage();
+  const { t } = useTranslation('agent');
   const labels = useReceptionLabels();
   const incomplete = isParcelIncomplete(parcel);
   return (

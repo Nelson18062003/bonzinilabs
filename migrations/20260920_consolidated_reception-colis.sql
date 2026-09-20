@@ -1,13 +1,13 @@
 -- ============================================================================
--- Réception des colis (réceptionnaire) — migration CONSOLIDÉE (Supabase / PostgreSQL)
+-- Réception des colis (réceptionnaire + intégration Bonzini Cargo) — migration CONSOLIDÉE (Supabase / PostgreSQL)
 -- Générée le 2026-09-20 depuis la branche claude/dazzling-keller-h53f6l
 --
 -- CE FICHIER SUFFIT pour ce lot : c'est la copie exacte de
 -- supabase/migrations/20260920100000_parcel_reception.sql. Il suppose que les
--- lots précédents (identifiant client, découvert) sont déjà passés. Ouvre le
--- SQL Editor du projet Bonzini « fmhsohrgbznqmcvqktjw », colle-le en entier,
--- exécute UNE fois. Idempotent : IF NOT EXISTS, CREATE OR REPLACE, DROP POLICY
--- IF EXISTS, ON CONFLICT DO NOTHING. Repasser le fichier est sans effet.
+-- lots précédents (identifiant client, cargo, découvert) sont déjà passés.
+-- Ouvre le SQL Editor du projet Bonzini « fmhsohrgbznqmcvqktjw », colle-le en
+-- entier, exécute UNE fois. Idempotent : IF NOT EXISTS, CREATE OR REPLACE,
+-- DROP POLICY IF EXISTS, ON CONFLICT DO NOTHING. Repasser le fichier est sans effet.
 -- ============================================================================
 
 -- ============================================================
@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS public.parcels (
   courier_waybill TEXT,
   -- Chemin dans le seau parcel-photos.
   photo_path      TEXT,
+  -- La boîte (dossier Cargo) dans laquelle le colis a été chargé — NULL tant qu'il attend à l'entrepôt.
+  shipment_id     UUID REFERENCES public.cargo_shipments(id) ON DELETE SET NULL,
   status          TEXT NOT NULL DEFAULT 'received' CHECK (status IN ('received','stored','loaded','shipped','arrived','delivered')),
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -135,6 +137,8 @@ CREATE TABLE IF NOT EXISTS public.parcels (
 );
 CREATE INDEX IF NOT EXISTS parcels_deposit_idx ON public.parcels (deposit_id, seq);
 CREATE INDEX IF NOT EXISTS parcels_waybill_idx ON public.parcels (courier_waybill) WHERE courier_waybill IS NOT NULL;
+CREATE INDEX IF NOT EXISTS parcels_shipment_idx ON public.parcels (shipment_id) WHERE shipment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS parcels_stock_idx ON public.parcels (status) WHERE shipment_id IS NULL;
 
 -- RLS : lecture par le staff habilité (réception ou cargo) et par le client
 -- pour ses propres dépôts ; AUCUNE écriture directe — tout passe par les RPC.
@@ -229,7 +233,9 @@ AS $fn$
         'id', p.id, 'seq', p.seq, 'parcel_no', p.parcel_no, 'kind', p.kind,
         'weight_kg', p.weight_kg, 'length_cm', p.length_cm, 'width_cm', p.width_cm, 'height_cm', p.height_cm,
         'cbm', p.cbm, 'description', p.description, 'courier_waybill', p.courier_waybill,
-        'photo_path', p.photo_path, 'status', p.status, 'created_at', p.created_at
+        'photo_path', p.photo_path, 'status', p.status, 'shipment_id', p.shipment_id,
+        'container_number', (SELECT cs.container_number FROM public.cargo_shipments cs WHERE cs.id = p.shipment_id),
+        'created_at', p.created_at
       ) ORDER BY p.seq)
       FROM public.parcels p WHERE p.deposit_id = d.id), '[]'::jsonb)
   )
@@ -661,3 +667,200 @@ BEGIN
   END IF;
 END
 $do$;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 7. Côté admin : la réception vit DANS Bonzini Cargo. Ce qui attend à
+--    l'entrepôt, les colis d'un client, et le chargement d'un colis reçu
+--    dans une boîte (dossier Cargo) — le colis suit ensuite la boîte.
+-- ─────────────────────────────────────────────────────────────────────────
+
+-- 7.1 Les colis d'un client, tous ses dépôts (fiche client → « Colis reçus »).
+CREATE OR REPLACE FUNCTION public.reception_client_deposits(p_user_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+BEGIN
+  IF NOT (public.admin_has_permission(auth.uid(), 'canViewCargo') OR public.admin_has_permission(auth.uid(), 'canViewClients') OR public.admin_has_permission(auth.uid(), 'canReceiveParcels')) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN jsonb_build_object('success', true, 'deposits', COALESCE((
+    SELECT jsonb_agg(public.reception_deposit_json(d.id) ORDER BY d.opened_at DESC)
+    FROM public.parcel_deposits d
+    WHERE d.client_user_id = p_user_id AND d.status <> 'cancelled'
+  ), '[]'::jsonb));
+END;
+$fn$;
+COMMENT ON FUNCTION public.reception_client_deposits(UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Les colis reçus d''un client (tous ses dépôts)","resolve":{"p_user_id":"client"}}';
+
+-- 7.2 Ce qui attend à l'entrepôt / au bureau : reçu, pas encore chargé, par client.
+CREATE OR REPLACE FUNCTION public.reception_stock(p_location TEXT DEFAULT NULL)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+BEGIN
+  IF NOT public.admin_has_permission(auth.uid(), 'canViewCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN (
+    WITH stock AS (
+      SELECT p.*, d.client_user_id, d.location, d.opened_at
+      FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+      WHERE p.shipment_id IS NULL AND p.status IN ('received','stored') AND d.status <> 'cancelled'
+        AND (p_location IS NULL OR d.location = p_location)
+    )
+    SELECT jsonb_build_object(
+      'success', true,
+      'stats', (SELECT jsonb_build_object(
+        'parcels', count(*), 'clients', count(DISTINCT client_user_id) FILTER (WHERE client_user_id IS NOT NULL),
+        'weight_kg', COALESCE(sum(weight_kg), 0), 'cbm', COALESCE(sum(cbm), 0),
+        'pending', count(*) FILTER (WHERE client_user_id IS NULL)) FROM stock),
+      'by_client', COALESCE((
+        SELECT jsonb_agg(row ORDER BY (row->>'last_at') DESC) FROM (
+          SELECT jsonb_build_object(
+            'client', public.reception_client_card(s.client_user_id),
+            'location', s.location,
+            'parcels', count(*), 'weight_kg', COALESCE(sum(s.weight_kg), 0), 'cbm', COALESCE(sum(s.cbm), 0),
+            'deposits', count(DISTINCT s.deposit_id), 'last_at', max(s.opened_at)
+          ) AS row
+          FROM stock s GROUP BY s.client_user_id, s.location
+        ) g), '[]'::jsonb)
+    )
+  );
+END;
+$fn$;
+COMMENT ON FUNCTION public.reception_stock(TEXT) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Ce qui attend à l''entrepôt ou au bureau, par client (colis reçus non chargés)"}';
+
+-- 7.3 Les colis déjà chargés dans une boîte.
+CREATE OR REPLACE FUNCTION public.cargo_shipment_parcels(p_shipment_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+BEGIN
+  IF NOT public.admin_has_permission(auth.uid(), 'canViewCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN jsonb_build_object('success', true, 'parcels', COALESCE((
+    SELECT jsonb_agg(jsonb_build_object(
+      'id', p.id, 'seq', p.seq, 'parcel_no', p.parcel_no, 'kind', p.kind, 'weight_kg', p.weight_kg,
+      'length_cm', p.length_cm, 'width_cm', p.width_cm, 'height_cm', p.height_cm, 'cbm', p.cbm,
+      'description', p.description, 'courier_waybill', p.courier_waybill, 'photo_path', p.photo_path,
+      'status', p.status, 'shipment_id', p.shipment_id, 'created_at', p.created_at,
+      'deposit_no', d.deposit_no, 'deposit_id', d.id, 'client', public.reception_client_card(d.client_user_id)
+    ) ORDER BY d.opened_at, p.seq)
+    FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+    WHERE p.shipment_id = p_shipment_id
+  ), '[]'::jsonb));
+END;
+$fn$;
+COMMENT ON FUNCTION public.cargo_shipment_parcels(UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Les colis reçus chargés dans une boîte (dossier Cargo)"}';
+
+-- 7.4 Ce qu'on peut charger dans cette boîte : les colis reçus du client de
+--     la boîte, pas encore chargés. Boîte sans client : tout ce qui attend.
+CREATE OR REPLACE FUNCTION public.reception_loadable_parcels(p_shipment_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_client_user UUID;
+BEGIN
+  IF NOT public.admin_has_permission(auth.uid(), 'canViewCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT c.user_id INTO v_client_user
+  FROM public.cargo_shipments cs LEFT JOIN public.clients c ON c.id = cs.client_id
+  WHERE cs.id = p_shipment_id;
+  RETURN jsonb_build_object('success', true, 'client_user_id', v_client_user, 'parcels', COALESCE((
+    SELECT jsonb_agg(jsonb_build_object(
+      'id', p.id, 'seq', p.seq, 'parcel_no', p.parcel_no, 'kind', p.kind, 'weight_kg', p.weight_kg,
+      'length_cm', p.length_cm, 'width_cm', p.width_cm, 'height_cm', p.height_cm, 'cbm', p.cbm,
+      'description', p.description, 'courier_waybill', p.courier_waybill, 'photo_path', p.photo_path,
+      'status', p.status, 'shipment_id', p.shipment_id, 'created_at', p.created_at,
+      'deposit_no', d.deposit_no, 'deposit_id', d.id, 'location', d.location, 'opened_at', d.opened_at,
+      'client', public.reception_client_card(d.client_user_id)
+    ) ORDER BY d.opened_at, p.seq)
+    FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+    WHERE p.shipment_id IS NULL AND p.status IN ('received','stored') AND d.status <> 'cancelled'
+      AND (v_client_user IS NULL OR d.client_user_id = v_client_user)
+  ), '[]'::jsonb));
+END;
+$fn$;
+COMMENT ON FUNCTION public.reception_loadable_parcels(UUID) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Les colis reçus qu''on peut charger dans une boîte"}';
+
+-- 7.5 Charger des colis reçus dans une boîte : ils suivent la boîte ensuite.
+CREATE OR REPLACE FUNCTION public.cargo_load_parcels(p_shipment_id UUID, p_parcel_ids UUID[])
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_n INTEGER; v_kg NUMERIC; v_cbm NUMERIC;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.cargo_shipments WHERE id = p_shipment_id) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Boîte introuvable');
+  END IF;
+  IF p_parcel_ids IS NULL OR array_length(p_parcel_ids, 1) IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Aucun colis choisi');
+  END IF;
+  -- Seuls les colis qui attendent : un colis déjà dans une boîte ne bouge pas d'ici.
+  WITH moved AS (
+    UPDATE public.parcels p
+       SET shipment_id = p_shipment_id, status = 'loaded', updated_at = now()
+     WHERE p.id = ANY(p_parcel_ids) AND p.shipment_id IS NULL AND p.status IN ('received','stored')
+     RETURNING p.weight_kg, p.cbm
+  )
+  SELECT count(*), COALESCE(sum(weight_kg), 0), COALESCE(sum(cbm), 0) INTO v_n, v_kg, v_cbm FROM moved;
+  IF v_n = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ces colis sont déjà chargés ou introuvables');
+  END IF;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'load_parcels', 'cargo_shipment', p_shipment_id,
+          jsonb_build_object('description', v_n || ' colis chargés (' || v_kg || ' kg, ' || v_cbm || ' m³)', 'parcel_ids', to_jsonb(p_parcel_ids), 'count', v_n, 'weight_kg', v_kg, 'cbm', v_cbm));
+  RETURN jsonb_build_object('success', true, 'loaded', v_n, 'weight_kg', v_kg, 'cbm', v_cbm);
+END;
+$fn$;
+COMMENT ON FUNCTION public.cargo_load_parcels(UUID, UUID[]) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Charger des colis reçus dans une boîte (dossier Cargo)"}';
+
+-- 7.6 Sortir un colis d'une boîte (erreur de chargement) : il retourne à l'entrepôt.
+CREATE OR REPLACE FUNCTION public.cargo_unload_parcel(p_parcel_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_par public.parcels;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_par FROM public.parcels WHERE id = p_parcel_id FOR UPDATE;
+  IF v_par.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Colis introuvable'); END IF;
+  IF v_par.status <> 'loaded' THEN RETURN jsonb_build_object('success', false, 'error', 'Ce colis n''est pas dans une boîte, ou la boîte est déjà partie'); END IF;
+  UPDATE public.parcels SET shipment_id = NULL, status = 'received', updated_at = now() WHERE id = v_par.id;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'unload_parcel', 'cargo_shipment', v_par.shipment_id, jsonb_build_object('description', 'Colis ' || v_par.parcel_no || ' sorti de la boîte', 'parcel_id', v_par.id));
+  RETURN jsonb_build_object('success', true);
+END;
+$fn$;
+COMMENT ON FUNCTION public.cargo_unload_parcel(UUID) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Sortir un colis d''une boîte (retour à l''entrepôt)"}';

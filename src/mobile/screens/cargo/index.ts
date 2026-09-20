@@ -3,3 +3,6 @@ export { MobileCargoDossier } from './MobileCargoDossier';
 export { MobileCargoTrack } from './MobileCargoTrack';
 export { MobileCargoMap } from './MobileCargoMap';
 export { MobileCargoCout } from './MobileCargoCout';
+export { MobileCargoReception } from './MobileCargoReception';
+export { MobileCargoDepositDetail } from './MobileCargoDepositDetail';
+export { MobileCargoLoadParcels } from './MobileCargoLoadParcels';

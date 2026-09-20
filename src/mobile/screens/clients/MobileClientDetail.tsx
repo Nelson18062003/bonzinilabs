@@ -49,6 +49,8 @@ import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
+import { useClientDeposits } from '@/hooks/useReception';
+import { formatCbm, formatKg } from '@/lib/reception';
 import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
@@ -169,6 +171,9 @@ export function MobileClientDetail() {
   // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
   // toute la flotte pèsent jusqu'à 3 000 lignes).
   const { data: fleet } = useCargoShipments({ enabled: canViewCargo });
+  const { data: clientDeposits } = useClientDeposits(clientId || undefined, canViewCargo);
+  const receivedParcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
+  const waitingParcels = receivedParcels.filter((p) => !p.shipment_id);
   const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
   const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
@@ -458,6 +463,22 @@ export function MobileClientDetail() {
             </div>
           </Card>
         </section>
+
+        {/* ── Ses colis reçus (Réception, dans Cargo) ─────────── */}
+        {canViewCargo && receivedParcels.length > 0 && (
+          <section>
+            <SectionTitle action={{ label: 'Tout voir', onClick: () => navigate(`/m/clients/${client.id}/parcels`) }}>
+              Ses colis reçus
+            </SectionTitle>
+            <Card className="py-0">
+              <ListRow
+                title={<span className="tabular-nums">{receivedParcels.length} colis · {formatKg(receivedParcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(receivedParcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}</span>}
+                subtitle={waitingParcels.length > 0 ? `${waitingParcels.length} à l'entrepôt, pas encore chargés` : 'Tout est chargé dans une boîte'}
+                onClick={() => navigate(`/m/clients/${client.id}/parcels`)}
+              />
+            </Card>
+          </section>
+        )}
 
         {/* ── Ses conteneurs (Cargo) ────────────────────────── */}
         {containers.length > 0 && (
