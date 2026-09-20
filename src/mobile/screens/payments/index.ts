@@ -1,5 +1,5 @@
 export { MobilePaymentsScreen } from './MobilePaymentsScreen';
-export { MobilePaymentDetail } from './MobilePaymentDetailV2';
+export { MobilePaymentDetail } from './MobilePaymentDetail';
 export { MobileNewPayment } from './MobileNewPayment';
 export { MobileBeneficiaryEdit } from './MobileBeneficiaryEdit';
 export { BulkPaymentCreate } from './BulkPaymentCreate';

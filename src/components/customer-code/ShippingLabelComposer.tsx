@@ -18,6 +18,7 @@ import {
   type ShippingSettings,
 } from '@/lib/customerCode';
 import type { LabelSupplierInfo } from '@/lib/shippingLabelCanvas';
+import { DestinationMark } from './DestinationMark';
 import { useShippingLabel, ShippingLabelPreview } from './useShippingLabel';
 import { canShareFiles } from './exportShippingLabel';
 import { useLabelExport, type LabelExportKind as Kind } from './useLabelExport';
@@ -75,7 +76,7 @@ export function ShippingLabelComposer({ code, clientName, clientPhone, clientEma
           onChange={setDestination}
           options={SHIPPING_DESTINATIONS.map((d) => ({
             value: d,
-            label: t(`myCode.dest.${d}`, { defaultValue: DESTINATION_LABEL[d].fr }),
+            label: <DestinationMark destination={d}>{t(`myCode.dest.${d}`, { defaultValue: DESTINATION_LABEL[d].fr })}</DestinationMark>,
           }))}
         />
         <p className={cn('mt-2 px-1 text-[14px] leading-snug', TEXT.muted)}>

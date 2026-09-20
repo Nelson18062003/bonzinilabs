@@ -14,8 +14,10 @@ import { jsPDF } from 'jspdf';
 export const FLYER_W = 2150;
 export const FLYER_H = 2560;
 
-function fileName(ext: string): string {
-  return `bonzini_taux_${new Date().toISOString().slice(0, 10)}.${ext}`;
+// `slug` = pays d'un flyer dérivé (« gabon ») ; absent pour la référence.
+function fileName(ext: string, slug?: string): string {
+  const date = new Date().toISOString().slice(0, 10);
+  return slug ? `bonzini_taux_${slug}_${date}.${ext}` : `bonzini_taux_${date}.${ext}`;
 }
 
 async function capturePng(node: HTMLElement): Promise<string> {
@@ -26,8 +28,8 @@ async function capturePng(node: HTMLElement): Promise<string> {
 // ── API publique ──────────────────────────────────────────────────────────
 // `node` = racine NON transformée du RateFlyer rendu (cf. RateFlyerSheet).
 
-export async function downloadFlyerPNG(node: HTMLElement): Promise<void> {
-  triggerDownload(await capturePng(node), fileName('png'));
+export async function downloadFlyerPNG(node: HTMLElement, slug?: string): Promise<void> {
+  triggerDownload(await capturePng(node), fileName('png', slug));
 }
 
 // Capture générique d'un nœud NON transformé en taille naturelle — même
@@ -42,9 +44,9 @@ export async function downloadNodePNG(
   triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1 }), name);
 }
 
-export async function downloadFlyerPDF(node: HTMLElement): Promise<void> {
+export async function downloadFlyerPDF(node: HTMLElement, slug?: string): Promise<void> {
   const dataUrl = await capturePng(node);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [FLYER_W, FLYER_H] });
   pdf.addImage(dataUrl, 'PNG', 0, 0, FLYER_W, FLYER_H, undefined, 'FAST');
-  pdf.save(fileName('pdf'));
+  pdf.save(fileName('pdf', slug));
 }

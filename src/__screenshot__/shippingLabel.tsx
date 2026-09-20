@@ -19,12 +19,14 @@ const props = {
 const supplier = { name: 'Yiwu Hengda Trading Co.', phone: '+86 137 0000 0000', email: 'sales@hengda-trading.cn', address: '浙江省义乌市国际商贸城三区 12345 号' };
 
 /** L'étiquette seule, à sa taille naturelle (600 px). */
-function Label({ destination, supplier: s }: { destination: ShippingDestination; supplier?: LabelSupplierInfo }) {
-  const { preview, qr } = useShippingLabel({ ...props, destination, supplier: s });
+function Label({ destination, supplier: s, mono }: { destination: ShippingDestination; supplier?: LabelSupplierInfo; mono?: boolean }) {
+  const { preview, qr } = useShippingLabel({ ...props, destination, supplier: s, mono });
   return <div style={{ width: 600, padding: 16, background: '#ECEAF7' }}>{qr}<ShippingLabelPreview src={preview} /></div>;
 }
 export const LabelWarehouse = () => <Label destination="warehouse" supplier={supplier} />;
 export const LabelOffice = () => <Label destination="office" />;
+export const LabelWarehouseMono = () => <Label destination="warehouse" supplier={supplier} mono />;
+export const LabelOfficeMono = () => <Label destination="office" mono />;
 
 // Le composeur (destination · fournisseur · aperçu · export), tel qu'il
 // s'affiche sur un téléphone.

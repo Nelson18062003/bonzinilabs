@@ -59,8 +59,9 @@ const BALANCE_OPTIONS = [
   { value: 'all', label: 'Tous' },
   { value: 'positive', label: 'Avec solde' },
   { value: 'zero', label: 'Solde nul' },
+  { value: 'overdrawn', label: 'En découvert' },
 ] as const;
-type BalanceFilter = (typeof BALANCE_OPTIONS)[number]['value'];
+type BalanceFilter = (typeof BALANCE_OPTIONS)[number]['value'] | 'overdrawn';
 
 // Tri : les en-têtes de colonnes et le menu « Trier » pilotent le même état.
 type SortKey = `${ClientSortField}-${'asc' | 'desc'}`;
@@ -111,6 +112,7 @@ export function DesktopClientsScreen() {
     if (statusFilter !== 'all') list = list.filter((c) => c.status === statusFilter);
     if (balanceFilter === 'positive') list = list.filter((c) => (c.walletBalance || 0) > 0);
     if (balanceFilter === 'zero') list = list.filter((c) => (c.walletBalance || 0) === 0);
+    if (balanceFilter === 'overdrawn') list = list.filter((c) => (c.walletBalance || 0) < 0);
     const q = searchQuery.trim();
     if (q) list = list.filter((c) => matchesClientSearch(c, q));
     return [...list].sort(compareClients(sortField, sortAscending));
@@ -285,7 +287,7 @@ export function DesktopClientsScreen() {
                             </Td>
                           )}
                           <Td align="right">
-                            <Amount value={formatXAF(client.walletBalance || 0)} size="md" className="!text-[15px]" />
+                            <Amount value={formatXAF(client.walletBalance || 0)} size="md" className={cn('!text-[15px]', (client.walletBalance || 0) < 0 && 'text-[#C00F0C] dark:text-[#FCB3AD]')} />
                           </Td>
                           {!compact && (
                             <Td align="right" className={cn('text-[13px] tabular-nums', TEXT.muted)}>

@@ -47,7 +47,7 @@ macro, messages clients, réponses toutes faites, suggestions, administrateurs, 
 | Mola (assistant) | `assistant/MobileAssistantScreen` | `useAdminAssistant` (SSE) | edge `admin-assistant` (outils découverts par étiquette `@mola` sur les RPC) ; `assistant_*`, `mola_*` |
 | Tableau de bord / analytics | `dashboard/*`, `analytics/*` | `hooks/analytics/*` | vues et RPC de stats ; edge `generate-report-pdf` |
 | Notifications / e-mail / SMS | `more/MobileNotificationsScreen` | `useAdminNotifications` (`src/lib/actionable.ts`) | `notifications`, `email_outbox`, `sms_outbox` ; edge `send-email`, `send-sms`, `notify-admin` |
-| Edge functions internes (cron / bot) | — | — | `send-brief`, `fetch-macro`, `predict-rate`, `monitor-rates`, `generate-report-pdf`, `generate-receipt`, `generate-flyer`, `telegram-bot`, `notify-admin-assignment` ; gardées : `passkey`, `send-email`, `send-sms`, `telnyx-webhook`, `resend-events`, `notify-admin`, `cargo-*`, `admin-assistant` |
+| Edge functions internes (cron / bot) | — | — | `send-brief`, `fetch-macro`, `predict-rate`, `monitor-rates`, `generate-report-pdf`, `generate-receipt`, `generate-flyer`, `telegram-bot`, `notify-admin-assignment` ; gardées : `passkey`, `send-email`, `send-sms`, `telnyx-webhook`, `resend-events`, `notify-admin`, `cargo-*` (via `_shared/caller.ts`, déployées le 19/09), `admin-assistant` |
 
 ## Statuts (source : `src/integrations/supabase/types.ts`)
 - Dépôt : created → awaiting_proof → proof_submitted → admin_review → validated | rejected | pending_correction ; cancelled, cancelled_by_admin.
@@ -81,4 +81,4 @@ macro, messages clients, réponses toutes faites, suggestions, administrateurs, 
 - Surfaces passées au harnais (captures 390 px, scan des cibles < 40 px, textes < 12 px, noms accessibles, h1, images sans alt, champs sans libellé) : admin mobile (≈ 45 écrans), agent cash (`ROLE=cash_agent`), app client (14 écrans en fr/en/zh), pages publiques, desktop admin (1280 px).
 - Parcours rejoués (Playwright, réseau simulé) : nouveau dépôt admin et client (plafond 50 M), nouveau paiement client (RPC `create_payment`), confirmation cash agent (signature + `confirm_cash_payment`), création de conversation et de bénéficiaire (bloquées par le harnais, pas par l'app).
 - Pannes simulées (`FAIL=` dans `tools/audit-*.mjs`) sur chaque table : états d'erreur réessayables partout côté client ; admin : support, stats, admins, historique, justificatifs, notifications, tableau de bord analytics.
-- Reste hors harnais : Mola (SSE), flux d'upload réels vers Storage, edge functions (revue statique seulement, cf. F-048 à F-052).
+- Reste hors harnais : Mola (SSE), flux d'upload réels vers Storage, edge functions (revue statique seulement, cf. F-048 à F-052 ; `cargo-*` rejouées en prod le 19/09, F-083).

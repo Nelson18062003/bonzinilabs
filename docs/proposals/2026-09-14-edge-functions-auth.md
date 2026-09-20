@@ -3,6 +3,14 @@
 Statut : **proposé, non appliqué** (flux d'autorisation → validation requise).
 Registre : F-048 à F-052.
 
+> Mise à jour 19/09 (F-083) : le helper `_shared/caller.ts` existe désormais et
+> est branché sur `cargo-lookup` / `cargo-sync` uniquement. Différence avec le
+> §1 ci-dessous : `isServiceCaller` est asynchrone et, si l'égalité avec
+> `SUPABASE_SERVICE_ROLE_KEY` échoue, valide le Bearer auprès de Supabase
+> (`GET /auth/v1/admin/users`, 200 seulement pour une clé service) — le runtime
+> injecte la nouvelle clé `sb_secret_…` alors que Vault garde le JWT historique.
+> Les gardes des autres fonctions (§2 à §6) restent à valider.
+
 ## Constat (preuves)
 
 La passerelle Supabase (`verify_jwt = true` par défaut) accepte **tout JWT

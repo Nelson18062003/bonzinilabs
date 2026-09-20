@@ -23,6 +23,7 @@ import {
   type ShippingDestination,
   type ShippingSettings,
 } from '@/lib/customerCode';
+import { DestinationMark } from '@/components/customer-code/DestinationMark';
 import { useShippingLabel, ShippingLabelPreview } from '@/components/customer-code/useShippingLabel';
 import { canShareFiles, labelFileName } from '@/components/customer-code/exportShippingLabel';
 import { useLabelExport } from '@/components/customer-code/useLabelExport';
@@ -64,7 +65,10 @@ export function MobileShippingLabelSheet({ open, onClose, code, clientName, clie
           <Segmented
             value={destination}
             onChange={setDestination}
-            options={SHIPPING_DESTINATIONS.map((d) => ({ value: d, label: DESTINATION_LABEL[d].fr }))}
+            options={SHIPPING_DESTINATIONS.map((d) => ({
+              value: d,
+              label: <DestinationMark destination={d}>{DESTINATION_LABEL[d].fr}</DestinationMark>,
+            }))}
           />
           <Line>{DESTINATION_HINT_FR[destination]}</Line>
           {!configured && <Line tone="warn">L'adresse de ce mode n'est pas encore renseignée dans Plus → Expédition.</Line>}

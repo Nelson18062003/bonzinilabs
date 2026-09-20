@@ -14,6 +14,7 @@ import { useState, useMemo } from 'react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PAYMENT_METHODS, COUNTRIES, MIN_AMOUNT_XAF } from '@/types/rates';
+import { CountryFlag } from '@/components/form/CountryFlag';
 import type { PaymentMethodKey, RateAdjustment, DailyRate, InputCurrency } from '@/types/rates';
 import { calculateFinalRate, getBaseRate, convertCNYtoXAF } from '@/lib/rateCalculation';
 import { formatNumber } from '@/lib/formatters';
@@ -228,10 +229,11 @@ export function RateSimulatorTab({ activeRate, adjustments, isLoading, isError }
                 key={c.key}
                 onClick={() => setCountry(c.key)}
                 className={cn(
-                  'shrink-0 rounded-lg px-3 py-2.5 text-[16px] font-semibold transition-colors',
+                  'inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2.5 text-[16px] font-semibold transition-colors',
                   active ? 'bg-[#2C2C2C] text-white' : cn(SURFACE.canvas, TEXT.muted),
                 )}
               >
+                <CountryFlag iso={c.iso} size={18} />
                 {c.label}
               </button>
             );

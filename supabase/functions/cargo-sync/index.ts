@@ -4,7 +4,8 @@
 //
 // Appelée toutes les heures par pg_cron (run_cargo_sync) et à la demande
 // depuis l'écran (request_cargo_sync). Elle ne fait confiance qu'au
-// service role : le porteur du Bearer DOIT être la clé service.
+// service role : le porteur du Bearer DOIT être une clé service du projet
+// (vérifié par _shared/caller.ts : clé du runtime ou validation auprès de Supabase).
 //
 // 1) Maersk — API publique Track & Trace (DCSA v2.2) :
 //    GET https://api.maersk.com/track-and-trace/public-events
@@ -26,6 +27,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
+import { isServiceCaller } from "../_shared/caller.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -157,8 +159,7 @@ async function syncPositions(sb: ReturnType<typeof createClient>, shipments: Shi
 
 serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${SERVICE_KEY}`) return new Response("Unauthorized", { status: 401 });
+  if (!(await isServiceCaller(req))) return new Response("Unauthorized", { status: 401 });
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb

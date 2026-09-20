@@ -8,7 +8,9 @@ import { LoginBackground } from '@/components/auth/LoginBackground';
 import { PremiumInput } from '@/components/auth/PremiumInput';
 import { ProgressDots } from '@/components/auth/ProgressDots';
 import { StepTransition } from '@/components/auth/StepTransition';
-import { PhoneCountryInput, COUNTRIES } from '@/components/auth/PhoneCountryInput';
+import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
+import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -997,24 +999,15 @@ export default function AuthPage() {
                       <Globe className="w-4 h-4" />
                       {t('signup.country')}
                     </label>
-                    <select
-                      value={country}
-                      onChange={e => { setCountry(e.target.value); setCountryError(''); }}
+                    <CountryCombobox
+                      variant="country"
+                      value={isoFromCountryLabel(country) ?? null}
+                      onChange={(iso) => { setCountry(countryLabelFr(iso)); setCountryError(''); }}
+                      placeholder={t('signup.selectCountry')}
                       disabled={isSubmitting}
-                      autoFocus
-                      className={cn(
-                        'w-full appearance-none rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
-                        SURFACE.card, SURFACE.shadow, TEXT.strong,
-                        countryError && 'ring-2 ring-[#C0504D]/40',
-                      )}
-                    >
-                      <option value="">{t('signup.selectCountry')}</option>
-                      {COUNTRIES.map(c => (
-                        <option key={`${c.dialCode}-${c.name}`} value={c.name}>
-                          {c.flag} {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      invalid={Boolean(countryError)}
+                      className={cn('h-12 rounded-2xl border-transparent text-sm', SURFACE.card, SURFACE.shadow, TEXT.strong)}
+                    />
                     {countryError && (
                       <p className="mt-1 text-xs text-[#C0504D] dark:text-[#E79A9A]">{countryError}</p>
                     )}

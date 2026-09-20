@@ -64,7 +64,7 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
         {client && (
           <Line>
             <b className={TEXT.strong}>{client.firstName} {client.lastName}</b>, solde aujourd'hui :{' '}
-            <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.walletBalance || 0)} XAF</b>.
+            <b className={cn('tabular-nums', (client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>{formatXAF(client.walletBalance || 0)} XAF</b>{(client.walletBalance || 0) < 0 ? ' (en découvert)' : ''}.
           </Line>
         )}
 
@@ -94,7 +94,7 @@ export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = 
                     </Line>
                     {entry.description && <Line className={cn('break-words', TEXT.muted)}>{cap(entry.description)}</Line>}
                     {!config.isInformational && (
-                      <Line className={TEXT.muted}>Solde après : <span className="tabular-nums">{formatXAF(entry.balanceAfter)} XAF</span>.</Line>
+                      <Line className={TEXT.muted}>Solde après : <span className={cn('tabular-nums', entry.balanceAfter < 0 && 'text-[#C00F0C] dark:text-[#FCB3AD]')}>{formatXAF(entry.balanceAfter)} XAF</span>{entry.balanceAfter < 0 ? ' (découvert)' : ''}.</Line>
                     )}
                     {entry.createdByAdminName && <Line className={TEXT.muted}>Par {entry.createdByAdminName}.</Line>}
                   </div>

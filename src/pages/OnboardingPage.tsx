@@ -10,8 +10,10 @@ import { useMyProfile } from '@/hooks/useProfile';
 import { useQueryClient } from '@tanstack/react-query';
 import { BonziniLogo } from '@/components/BonziniLogo';
 import { PremiumInput } from '@/components/auth/PremiumInput';
-import { PhoneCountryInput, COUNTRIES, type Country } from '@/components/auth/PhoneCountryInput';
-import { Loader2, Building, Briefcase, Globe, ChevronDown } from 'lucide-react';
+import { PhoneCountryInput, type Country } from '@/components/auth/PhoneCountryInput';
+import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
+import { Loader2, Building, Briefcase, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, PRIMARY_PILL } from '@/mobile/designKit';
 
@@ -125,27 +127,14 @@ export default function OnboardingPage() {
               <Globe className="h-4 w-4" />
               {t('onboarding.countryLabel')} <span className="text-[#C0504D]">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className={cn(
-                  'h-12 w-full appearance-none rounded-2xl px-4 pr-10 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#C9C2F0] dark:focus:ring-[#4A4660]',
-                  SURFACE.card,
-                  SURFACE.shadow,
-                  country ? TEXT.strong : 'text-[#9B98AD]',
-                  countryError && 'ring-2 ring-[#C0504D]/40',
-                )}
-              >
-                <option value="">{t('onboarding.selectCountry')}</option>
-                {COUNTRIES.map((c) => (
-                  <option key={`${c.name}-${c.dialCode}`} value={c.name}>
-                    {c.flag} {c.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className={cn('pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-            </div>
+            <CountryCombobox
+              variant="country"
+              value={isoFromCountryLabel(country) ?? null}
+              onChange={(iso) => setCountry(countryLabelFr(iso))}
+              placeholder={t('onboarding.selectCountry')}
+              invalid={Boolean(countryError)}
+              className={cn('h-12 rounded-2xl border-transparent text-[15px]', SURFACE.card, SURFACE.shadow)}
+            />
             {countryError && <p className="mt-1 text-xs text-[#C0504D]">{countryError}</p>}
           </div>
 

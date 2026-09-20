@@ -6,7 +6,8 @@
  * Le sélecteur de vue suit la fréquence réelle d'usage :
  *   · Simulateur (défaut) — coter un client WhatsApp : champs XAF⇅CNY liés
  *     + cotation de marque à partager (PNG / texte).
- *   · Publier — la saisie du jour, seule, centrée.
+ *   · Publier — la saisie du jour, centrée, puis les taux par pays (Gabon…)
+ *     dérivés du Cameroun, avec leur flyer.
  *   · Historique — tendance + table, la surveillance.
  *   · Réglages — ajustements pays & tranches.
  * Rien d'autre n'est affiché que la vue choisie. Le flyer reste accessible
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
 import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog } from '@/desktop/designKit';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { CountryRatesCard } from '@/components/rates/CountryRatesCard';
 import { RatePublishCard } from './RatePublishCard';
 import { RateQuoteSimulator } from './RateQuoteSimulator';
 import { DesktopRateHistory } from './DesktopRateHistory';
@@ -38,14 +40,10 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
   const [view, setView] = useState<RatesView>(initialView);
   const [flyerOpen, setFlyerOpen] = useState(false);
-
-  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les clients.
-  const flyerRates = {
-    alipay: activeRate?.rate_alipay || 0,
-    wechat: activeRate?.rate_wechat || 0,
-    bank: activeRate?.rate_virement || 0,
-    cash: activeRate?.rate_cash || 0,
-  };
+  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les
+  // clients ; `flyerCountry` = pays présélectionné (depuis « Taux par pays »).
+  const [flyerCountry, setFlyerCountry] = useState<string | null>(null);
+  const openFlyer = (country: string | null) => { setFlyerCountry(country); setFlyerOpen(true); };
 
   return (
     <div className="space-y-5">
@@ -60,7 +58,7 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
         </div>
         <button
           type="button"
-          onClick={() => setFlyerOpen(true)}
+          onClick={() => openFlyer(null)}
           className={cn('inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold', SOFT_PILL)}
         >
           Flyer du jour <ChevronRight className="h-4 w-4" />
@@ -95,8 +93,15 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
       )}
 
       {view === 'publish' && (
-        <div className="mx-auto max-w-[680px]">
+        <div className="mx-auto max-w-[680px] space-y-5">
           <RatePublishCard activeRate={activeRate} />
+          <CountryRatesCard
+            variant="desktop"
+            activeRate={activeRate}
+            adjustments={adjustments}
+            isLoading={adjLoading}
+            onOpenFlyer={(key) => openFlyer(key)}
+          />
         </div>
       )}
 
@@ -115,7 +120,7 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
 
       {/* ── Flyer WhatsApp ──────────────────────────────────────────────── */}
       <CenterDialog open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour" width={560}>
-        <RateFlyerSheet rates={flyerRates} />
+        <RateFlyerSheet activeRate={activeRate} adjustments={adjustments} initialCountry={flyerCountry} />
       </CenterDialog>
     </div>
   );
