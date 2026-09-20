@@ -1,279 +1,228 @@
-# Message au déclarant — revue complète de la DAU SDSD2-2026-IMP-020399-I
+# Message au déclarant — dossier tracteur et revue de la DAU
 
 > Destinataire : **M. Aoudou**, BNG TRANS SARL (agrément H0451)
 > Émetteur : Nelson Soh, COO — NORTON GAUSS BONZINI SARL
-> Objet : revue interne des deux versions de la déclaration du conteneur MRSU9909331
-> **À envoyer tel quel.** Ton de collaboration, pas d'accusation : on demande un avis technique.
+> **Version 2** — réécrite après clarification de la séquence réelle des événements.
+
+## Séquence réelle (contexte interne)
+
+1. Déclaration **initiale** : code `870193.00.1000` → **4 041 512 XAF** de droits et taxes.
+2. Nelson trouve le montant élevé, **appelle le déclarant** et soulève lui-même la piste
+   de l'exonération des tracteurs agricoles.
+3. Au téléphone, le déclarant confirme « c'est exonéré » **sans préciser de quoi**.
+4. Pendant l'échange, on constate que le tracteur fait ~51 kW et ne rentre pas dans la
+   tranche du code initial.
+5. Le déclarant pose alors `870194.00.9100` avec le code `E00` sur la déclaration
+   **définitive** → **92 658 XAF**. Sans vérifier la tranche de puissance.
+6. **Or 8701.94 vise 75-130 kW. Le tracteur n'y rentre pas davantage.**
+
+**Le message ci-dessous assume que Nelson a lui-même orienté la discussion.** Il ne
+reproche rien : il apporte le résultat des recherches faites depuis, et demande à
+corriger ensemble.
 
 ---
 
 ## MESSAGE
 
-**Objet : Conteneur MRSU9909331 / BL 271875389 — quelques points techniques à valider avec vous**
+**Objet : Tracteur du conteneur MRSU9909331 — suite de notre échange, et ce que j'ai trouvé depuis**
 
 Bonjour M. Aoudou,
 
 J'espère que vous allez bien.
 
-Nous avons entrepris de mieux maîtriser en interne la partie classement tarifaire et
-valeur en douane de nos opérations, afin d'être plus précis dans les informations que nous
-vous transmettons en amont. En relisant les deux versions de la déclaration du conteneur
-**MRSU9909331** (la version initiale et la version définitive
-`SDSD2-2026-IMP-020399-I` du 17/09/2026), plusieurs points nous ont interpellés.
+Je reviens vers vous au sujet du tracteur du conteneur **MRSU9909331**, après notre
+échange téléphonique.
 
-Je vous les soumets **pour avoir votre avis technique**, article par article. Certains
-viennent probablement d'informations incomplètes que nous vous avons nous-mêmes
-fournies — et dans ce cas, dites-le-nous franchement, c'est exactement ce que nous voulons
-corriger pour la suite.
+Je veux d'abord être clair sur un point : **c'est moi qui ai orienté la discussion vers
+l'exonération des tracteurs agricoles**, sur la base d'informations encore incomplètes de
+mon côté. Vous avez suivi cette piste de bonne foi. Depuis, j'ai continué à creuser, et
+j'ai trouvé des éléments que je préfère partager avec vous tout de suite plutôt que de les
+découvrir dans deux ans.
 
 ---
 
-### 1. Article 3 — le tracteur agricole : la tranche de puissance
+### 1. Ce que j'ai trouvé sur l'exonération
 
-C'est le point qui nous préoccupe le plus.
+Ma question de départ était simple : **exonéré de quoi exactement ?** Droits de douane,
+TVA, ou les deux ?
 
-Le code a changé entre les deux versions :
+J'ai trouvé la base dans le Code Général des Impôts :
 
-| Version | Code | Libellé du code |
+> **Article 122** — « **Les entreprises des secteurs de la production agricole, de
+> l'élevage et de la pêche**, bénéficient des avantages fiscaux ci-après : a. **En phase
+> d'investissement** : […] **exonération de la TVA** sur l'achat des pesticides, des engrais
+> et des intrants, ainsi que des **équipements et matériels de l'agriculture, de l'élevage
+> et de la pêche figurant à l'annexe du présent titre** […] »
+
+Et l'annexe correspondante s'intitule :
+
+> « **Liste des équipements et matériels de l'agriculture, de l'élevage et de la pêche
+> exonérés de la TVA** »
+
+**Ma lecture — et je vous demande de me corriger si je me trompe :**
+
+- l'exonération porte sur la **TVA**, pas sur le droit de douane
+- le droit de douane relève du TEC CEMAC, un texte distinct
+- l'avantage est ouvert aux **entreprises du secteur agricole en phase d'investissement**
+
+**Or NORTON GAUSS BONZINI SARL est une société de logistique et de paiement**, pas un
+producteur agricole.
+
+**Ma question :** est-ce que je lis mal ? Existe-t-il une autre base, ou une pratique
+administrative qui étend cette exonération à l'importateur quel qu'il soit dès lors que la
+marchandise figure à l'annexe ?
+
+---
+
+### 2. Ma question principale : sur quoi repose le code `E00` ?
+
+Sur la déclaration définitive, l'article 3 porte le code additionnel **`E00`**, et **toutes
+les lignes de taxation sont à zéro** — DDI, TVA, centimes additionnels, petites taxes.
+Seule la redevance informatique (`DEA`, 92 658 XAF) subsiste.
+
+Si l'exonération de l'article 122 ne porte que sur la TVA, **le droit de douane de 10 %
+(926 581 XAF) resterait dû.**
+
+**Questions :**
+1. Que recouvre exactement le code **`E00`** dans CAMCIS ?
+2. **Sur quel texte repose-t-il** — l'article 122 du CGI, ou autre chose ?
+3. Couvre-t-il réellement le droit de douane, ou seulement la TVA ?
+4. Faut-il une pièce justificative au dossier, ou s'applique-t-il d'office ?
+
+C'est le point que je souhaite comprendre en priorité, avant tout le reste.
+
+---
+
+### 3. La tranche de puissance — le point que nous avons manqué tous les deux
+
+Nous avons vu ensemble que le code initial ne convenait pas. Mais en vérifiant les
+libellés officiels après notre échange, je constate que **le nouveau code ne convient pas
+davantage** :
+
+| Version | Code | Libellé officiel du code |
 |---|---|---|
 | Initiale | `870193.00.1000` | « Autres tracteurs d'une puissance de moteur **excédant 37 kW mais n'excédant pas 75 kW**, neufs » |
 | Définitive | `870194.00.9100` | « Autres tracteurs d'une puissance de moteur **excédant 75 kW mais n'excédant pas 130 kW**, neufs » |
 
-**Or le tracteur GJ 704-E développe 51 kW.**
+**Le tracteur GJ 704-E développe environ 51 kW.**
 
-- 51 kW se situe bien dans la tranche **37-75 kW** (code initial)
-- 51 kW se situe **en dehors** de la tranche **75-130 kW** (code définitif)
+- 51 kW est **dans** la tranche 37-75 kW → le code initial couvrait la bonne tranche
+- 51 kW est **hors** de la tranche 75-130 kW → le code définitif la dépasse
 
-**Questions :**
-1. Qu'est-ce qui a motivé le passage de `870193` à `870194` ?
-2. Disposiez-vous d'une information de puissance différente de 51 kW ? Si oui, laquelle
-   et d'où venait-elle ?
-3. Les deux libellés se terminent par **« neufs »**, alors que la désignation commerciale
-   saisie indique **« USED, ANNEE 2014 »**. Comment cette contradiction est-elle traitée
-   en pratique ?
+Je reconnais que c'est en partie ma faute : je vous ai orienté vers l'exonération sans
+avoir vérifié la puissance réelle. **Mais le résultat est que nous sommes passés d'un code
+trop bas à un code trop haut, sans jamais toucher la bonne tranche.**
 
-**Et une question de fond :** nous avons relevé l'existence du code
-**`870190.11.0000` — « Tracteurs agricoles à roues »**, qui ne comporte **ni condition de
-puissance, ni condition de nouveauté**, et qui est par ailleurs le code tracteur repris à
-l'annexe 1 du Code Général des Impôts. **Vous semble-t-il défendable pour cette machine ?**
-
-**Enfin, un point sur lequel nous souhaitons votre franchise :** l'exonération `E00` a été
-accordée sur `870194.00.9100`. Si ce code ne correspond pas à la puissance réelle,
-sommes-nous exposés en cas de contrôle a posteriori ? **Préférez-vous que nous
-régularisions maintenant plutôt que d'attendre ?** Nous préférons traiter le sujet
-ouvertement.
+**Et un point présent sur les deux versions :** les deux libellés se terminent par
+**« neufs »**, alors que la désignation saisie indique **« USED, ANNEE 2014 »**. Comment
+cette contradiction se traite-t-elle en pratique ?
 
 ---
 
-### 2. Article 3 — l'identification de la machine
+### 4. La piste que je propose : `870190.11.0000`
 
-Sur la version **initiale**, le champ « VIN NUMBER » porte :
-`SDLMT20260418AG01`
+J'ai relevé l'existence du code :
 
-C'est **le numéro de la facture commerciale** reprise en case 44 de la déclaration, pas un
-numéro de châssis.
+> **`870190.11.0000` — « Tracteurs agricoles à roues »**
 
-Sur la version **définitive**, il porte : `24050226XXXXXXXXX` — un numéro **partiellement
+Ce code présente trois avantages à mes yeux :
+- **aucune condition de puissance** — donc pas de problème de tranche
+- **aucune condition de nouveauté** — donc compatible avec une machine usagée
+- c'est **le code tracteur repris à l'annexe du CGI** relative aux équipements agricoles
+
+**Ma question : ce classement vous paraît-il défendable pour cette machine ?** Et si oui,
+avec quel taux de droit de douane et quel traitement TVA ?
+
+---
+
+### 5. Ce que je veux savoir sur l'exposition
+
+Je préfère poser la question franchement.
+
+Si le code posé ne correspond pas à la puissance réelle de la machine, et si l'exonération
+appliquée est plus large que ce que le texte prévoit :
+
+1. **Quelle est notre exposition** en cas de contrôle a posteriori ?
+2. **Quel est le délai** pendant lequel la douane peut revenir sur ce dossier ?
+3. **Vaut-il mieux régulariser maintenant**, spontanément, plutôt qu'attendre ?
+4. **La mainlevée de cette déclaration a-t-elle été accordée ?**
+
+Je note que la désignation commerciale décrit honnêtement la machine
+(« AGRICULTURAL TRACTOR, GJ 704-E, 3500X1500X1500 MM, USED, ANNEE 2014 ») et que la
+puissance n'a jamais été déclarée. **Est-ce que cela change quelque chose à la
+qualification ?**
+
+---
+
+### 6. Deux détails sur l'identification de la machine
+
+**a)** Sur la déclaration **initiale**, le champ « VIN NUMBER » porte
+`SDLMT20260418AG01` — **qui est le numéro de la facture commerciale**, pas un numéro de
+châssis.
+
+**b)** Sur la déclaration **définitive**, il porte `24050226XXXXXXXXX` — **partiellement
 masqué par des X**.
 
-**Question :** disposons-nous du numéro de série réel et complet de la machine ? Si non,
-comment se le procurer auprès du fournisseur ? Nous voudrions que ce champ soit exact sur
-les prochaines opérations.
+Je vais demander le numéro de série complet au fournisseur. **De quoi avez-vous besoin
+exactement pour ce champ ?**
 
 ---
 
-### 3. Article 9 — « RÉGULATEUR » déclaré sous un code de réfrigérateur
+### 7. Pour les prochaines opérations
 
-Sur les deux versions, la marchandise est déclarée sous **`841821.00.0000`**, dont le
-libellé est :
+Au-delà de ce dossier, je voudrais mettre en place quelque chose de durable.
 
-> « Réfrigérateurs de type ménager, à équipement électrique ou autre, à compression »
+**a) Une fiche technique systématique.** Dites-moi **quelles informations vous devez
+recevoir de nous**, par type de marchandise, pour établir un classement juste du premier
+coup. Pour un engin, j'imagine : puissance en kW, état neuf/usagé, usage, numéro de série,
+poids, dimensions. **Complétez la liste** et nous la remplirons avant chaque expédition.
 
-Et la désignation commerciale saisie, sur la même page, est : **« REGULATEUR »**.
+**b) Une demande de décision anticipée.** Pour les tracteurs et engins agricoles que nous
+importerons régulièrement, **peut-on demander une décision anticipée de classement à la
+DGD** ? Cela nous donnerait un classement écrit et opposable, plutôt que de refaire ce
+débat à chaque conteneur. **Pouvez-vous nous accompagner sur cette démarche ?**
 
-Un régulateur ne produit pas de froid. Selon sa nature réelle, il nous semble relever :
+**c) Le tarif intégré.** Si vous pouvez l'éditer depuis CAMCIS, j'aimerais recevoir le
+tarif intégré des codes suivants, pour comprendre exactement quelles taxes chacun
+déclenche :
 
-| Si c'est… | Position | Taux DDI |
-|---|---|---|
-| un régulateur / stabilisateur de tension | **85.04** | 10 % |
-| un régulateur automatique, thermostat | **90.32** | 10 % |
-| un détendeur de pression (gaz) | **84.81** | 20 % |
-| *(déclaré actuellement)* | *84.18* | *30 %* |
-
-**Questions :**
-1. Ce classement vient-il d'une désignation imprécise de notre part ?
-2. Pour les prochaines expéditions, quelles caractéristiques devons-nous vous fournir pour
-   que vous puissiez trancher (fonction, puissance en kVA, tension, photo de la plaque
-   signalétique) ?
+`870190.11.0000` · `870193.00.1000` · `870194.00.9100`
 
 ---
 
-### 4. Article 8 — les chaises : position 94.01 ou 94.03 ?
+### 8. Quelques autres points, moins urgents
 
-Déclarées sous **`940370.00.0000`** — « Meubles en matières plastiques », avec un droit
-d'accises de 25 %.
+Je les liste pour ne pas y revenir plus tard. Nous pourrons les traiter à votre rythme.
 
-La désignation est **« CHAISE DE SALLE A MANGER »**.
-
-Or le Tarif sépare explicitement :
-- **94.01** — « **Sièges** (à l'exclusion de ceux du n° 94.02), même transformables en lits »
-- **94.03** — « **Autres** meubles »
-
-**Question :** une chaise étant un siège, la position 94.01 ne serait-elle pas la bonne au
-regard de la Règle Générale Interprétative 3 a) — la position la plus spécifique primant
-sur la position résiduelle ?
-
-Et si oui, **le droit d'accises de 25 % reste-t-il dû sur la position 94.01 ?**
-
----
-
-### 5. Articles 5 et 8 — le droit d'accises
-
-Les deux articles supportent un droit d'accises au taux général de **25 %** :
-
-| Art. | Code | Libellé | DAC |
-|---|---|---|---|
-| 5 | `481820.00.0000` | Mouchoirs, serviettes à démaquiller et essuie-mains | 25 % |
-| 8 | `940370.00.0000` | Meubles en matières plastiques | 25 % |
-
-En consultant l'annexe II du Code Général des Impôts (liste des produits soumis aux droits
-d'accises), nous y lisons :
-- **`4818.10`** — « les papiers hygiéniques importés »
-- **`9403.30`, `9403.50`, `9403.60`** — « les ouvrages et mobiliers **en bois** importés »
-
-**Question :** ces sous-positions ne sont pas exactement celles déclarées. Le tarif intégré
-CAMCIS rattache-t-il l'accise **au niveau de la position** (4818, 9403) plutôt que de la
-sous-position ? Ou bien la liste a-t-elle été élargie par une loi de finances postérieure ?
-
-**Si vous pouviez nous sortir le tarif intégré CAMCIS de ces deux codes, cela clarifierait
-définitivement le point.**
+- **Article 9** — « REGULATEUR » déclaré sous `841821.00.0000`, dont le libellé est
+  « Réfrigérateurs de type ménager ». S'agit-il d'une désignation imprécise de notre part ?
+- **Article 8** — chaises déclarées sous `940370` (« Meubles en matières plastiques »)
+  alors que la position 94.01 couvre les « Sièges ». Laquelle s'applique ?
+- **Article 10** — vêtements déclarés sous `630900` (« Articles de friperie »). S'agit-il
+  de vêtements neufs ou d'occasion ?
+- **Case 22** — l'assurance est à 0,000 alors que les conditions sont CFR, qui ne
+  comprennent pas l'assurance. **Une attestation d'assurance existe-t-elle pour ce
+  conteneur ?**
+- **Case 23** — le numéro de domiciliation est vide. Quelle est votre pratique, et
+  devons-nous en ouvrir une pour les prochains conteneurs ?
 
 ---
 
-### 6. Article 10 — « VÊTEMENTS » sous un code de friperie
+### En résumé, ce que je vous demande
 
-Déclarés sous **`630900.00.0000`** — « **Articles de friperie** », avec un droit d'accises
-de 12,5 %.
+1. **Sur quoi repose le code `E00`**, et couvre-t-il le droit de douane ou seulement la TVA ?
+2. **Votre avis sur `870190.11.0000`** pour cette machine
+3. **Notre exposition** et s'il faut régulariser
+4. **La mainlevée** a-t-elle été accordée ?
+5. **La liste des informations** que vous attendez de nous à l'avenir
+6. **Votre accompagnement** pour une décision anticipée
 
-La friperie désigne des vêtements **usagés**. La désignation saisie dit simplement
-« VETEMENTS ».
+Je tiens à redire que je ne vous reproche rien. **C'est moi qui ai lancé la piste de
+l'exonération**, et je préfère de loin qu'on remette ce dossier d'aplomb ensemble
+maintenant. Nous montons en compétence de notre côté précisément pour vous transmettre de
+meilleures informations en amont — cela devrait nous faire gagner du temps à tous les deux.
 
-**Question :** s'agit-il de vêtements neufs ou d'occasion ? S'ils sont neufs, ils
-relèveraient des chapitres 61 ou 62, qui ne figurent pas à l'annexe II — donc sans droit
-d'accises.
-
----
-
-### 7. Articles 1 et 2 — les deux véhicules
-
-**a) La cylindrée de la Yaris a changé de tranche entre les deux versions :**
-
-| Version | Code | Libellé |
-|---|---|---|
-| Initiale | `870322.10.9900` | « …cylindrée **excédant 1 000 cm³ mais n'excédant pas 1 500 cm³**… » |
-| Définitive | `870323.10.9900` | « …cylindrée **excédant 1 500 cm³ mais n'excédant pas 3 000 cm³**… » |
-
-Une seule des deux peut être exacte. **Quelle est la cylindrée retenue, et sur quelle pièce
-s'appuie-t-elle ?**
-
-**b) L'origine déclarée est « JP | Japon » pour les deux véhicules**, alors que les numéros
-de châssis semblent indiquer autre chose :
-
-| Véhicule | VIN | Première lettre |
-|---|---|---|
-| Yaris | `LVGCU9034AG042497` | **L** → Chine |
-| Fortuner | `MHFDX8FS1K0095342` | **M** → Thaïlande |
-
-**Question :** sur quelle pièce l'origine Japon est-elle fondée ? S'agit-il de l'origine
-(pays de fabrication) ou de la provenance (pays d'expédition) ?
-
-**c) Les poids déclarés ont changé entre les deux versions :**
-
-| Article | Version initiale | Version définitive |
-|---|---|---|
-| 1 — Yaris | 3 750 kg | 2 600 kg |
-| 2 — Fortuner | 4 750 kg | 2 750 kg |
-
-**Quelle est la source du poids retenu ?** (Une Yaris pèse environ 1 000 kg à vide.)
-
-**d) Le champ « Code Add. »** est passé de `000` à `A32` (article 1) et `A30` (article 2)
-entre les deux versions. Nous avons constaté que `A30` réduit plusieurs lignes à 70 % de
-leur montant. **Pourriez-vous nous expliquer ce que recouvre ce champ et selon quelle
-règle il est attribué ?** Nous aimerions pouvoir l'anticiper.
-
----
-
-### 8. Article 4 — les téléviseurs
-
-20 téléviseurs déclarés pour **800 000 XAF**, soit 40 000 XAF l'unité, pour un **poids
-total de 60 kg** (3 kg par téléviseur).
-
-**Ces deux chiffres vous paraissent-ils tenables en cas de contrôle de la valeur ?**
-
----
-
-### 9. Unités et quantités — plusieurs incohérences
-
-| Art. | Marchandise | Quantité déclarée | Unité | Poids net |
-|---|---|---|---|---|
-| 5 | Mouchoirs | 50 | **KGM (kilogramme)** | 20 kg |
-| 6 | Fenêtres coulissantes | 4 | **KGM (kilogramme)** | 70 kg |
-| 7 | Portes en aluminium | 2 | **KGM (kilogramme)** | 60 kg |
-| 10 | Vêtements | 8 | **KGM (kilogramme)** | 30 kg |
-
-Sur les articles 6 et 7, la quantité semble être un **nombre de pièces** (4 fenêtres, 2
-portes) alors que l'unité enregistrée est le **kilogramme**. Sur les articles 5 et 10, la
-quantité en kilogrammes ne correspond pas au poids net.
-
-**Question :** ces écarts ont-ils une incidence, ou s'agit-il d'un champ purement
-statistique ?
-
----
-
-### 10. Points sur l'ensemble de la déclaration
-
-**a) Case 22 — assurance : 0,000**
-
-Les conditions de livraison sont **CFR**, ce qui inclut le fret mais **pas l'assurance**.
-Or l'assurance des facultés à l'importation est obligatoire au Cameroun (loi n° 75-14 du
-8 décembre 1975).
-
-**Une attestation d'assurance a-t-elle été établie pour ce conteneur ?** Si oui, pourquoi
-la prime n'apparaît-elle pas en case 22 ? Si non, quelle est la marche à suivre ?
-
-**b) Case 23 — numéro de domiciliation : vide**
-
-La valeur en douane totale est de **28 695 705 XAF**.
-
-**Quelle est votre pratique sur ce point, et devons-nous ouvrir une domiciliation pour les
-prochains conteneurs ?**
-
-**c) Déclaration d'importation**
-
-Une seule DI (`SGS-31405-30_DICM02.pdf`) couvre les 10 articles. **Est-ce la pratique
-normale pour un groupage, ou faut-il une DI par nature de marchandise ?**
-
----
-
-### Ce que nous vous demandons
-
-1. **Votre avis technique** sur chacun des points ci-dessus, même bref
-2. **Le tarif intégré CAMCIS** des codes suivants, si vous pouvez l'éditer :
-   `870190.11.0000` · `870193.00.1000` · `870194.00.9100` · `841821.00.0000` ·
-   `850440.00.0000` · `940370.00.0000` · `940180.00.0000` · `481820.00.0000`
-3. **La liste exacte des informations** que vous attendez de nous, par type de marchandise,
-   pour établir un classement juste du premier coup
-4. **Votre avis sur le dossier tracteur** : faut-il régulariser, et si oui comment ?
-5. **La mainlevée de cette déclaration a-t-elle été accordée ?**
-
----
-
-Je tiens à préciser que cette démarche n'est pas une remise en cause de votre travail. Nous
-cherchons à monter en compétence de notre côté pour vous transmettre de meilleures
-informations en amont — c'est dans notre intérêt commun, et cela devrait aussi vous faire
-gagner du temps.
-
-Je reste disponible pour en discuter de vive voix si c'est plus simple.
+Je suis disponible quand vous voulez pour en parler de vive voix.
 
 Bien cordialement,
 
@@ -286,25 +235,59 @@ NIU M091712668533F
 
 ## Notes internes (à ne PAS envoyer)
 
-### Points volontairement omis du message
+### Le chiffrage à garder en tête
 
-| Point | Pourquoi je ne l'ai pas mis |
+| Scénario | Détail | Total |
+|---|---|---|
+| **A** — déclaration initiale, `870193`, aucune exonération | DDI 926 581 + TVA 1 799 883 + PCT 926 581 + CAC 179 988 + DEA 92 658 + petites 115 821 | **4 041 512** |
+| **B** — exonération **TVA seule** (art. 122), DDI maintenu | DDI 926 581 + DEA 92 658 + petites 115 821 | **≈ 1 135 060** |
+| **C** — ce qui a été liquidé, `870194` + `E00` | DEA seul | **92 658** |
+
+**Écart B − C ≈ 1 042 402 XAF.** C'est le montant à provisionner.
+
+### Base légale établie
+
+| Point | Source |
 |---|---|
-| Les chiffrages d'économie (307 078 XAF, etc.) | annoncer un manque à gagner met le déclarant sur la défensive. On veut son avis, pas sa justification |
-| L'amende de 50 % sur la non-domiciliation | pas son sujet — la constatation relève du MINFI, pas de la douane |
-| Le soupçon de sous-évaluation de la Fortuner | à traiter séparément, c'est un sujet de valeur et pas de classement |
-| La piste Citra | à ne pas mélanger avec une demande d'avis technique |
+| L'exonération porte sur la **TVA seule** | **CGI art. 122** + titre de l'annexe du Titre I |
+| Elle vise les **entreprises du secteur agricole en phase d'investissement** | **CGI art. 122**, chapeau |
+| Elle s'applique **d'office**, sans attestation | **CGI art. 128 ter** |
+| Le **droit de douane** relève du TEC CEMAC, pas du CGI | Introduction du Tarif des douanes |
+| Les tracteurs sont en **Catégorie II** (biens d'équipement) → **10 %** | Tarif CEMAC ; confirmé par la déclaration initiale |
+| La douane a **3 ans** pour réclamer les droits | **Code des douanes CEMAC art. 398** |
+| Fausse déclaration d'espèce → **amende = valeur des marchandises** | **art. 467.2** |
+| Fausses déclarations **ou manœuvres** pour obtenir une exonération → bien plus lourd | **art. 478.4** |
 
-### Niveaux de confiance de ma part
+### Ce qui protège Bonzini
 
-| Point | Confiance |
+- La désignation commerciale **décrit honnêtement la machine** (tracteur agricole, usagé,
+  2014). Aucune fausse énonciation sur la marchandise.
+- **La puissance n'a jamais été déclarée** — il n'y a donc pas de fausse affirmation sur
+  ce point, mais une absence.
+- **C'est Bonzini qui soulève l'anomalie**, de sa propre initiative.
+
+→ Cela oriente vers l'**art. 467.2** (erreur de classement) plutôt que vers l'art. 478.4
+(manœuvre). **L'écart entre les deux est considérable.**
+
+### Ce que je n'ai volontairement pas mis dans le message
+
+| Omis | Pourquoi |
 |---|---|
-| Tracteur : 51 kW hors de la tranche 75-130 kW | 🟢 **certain** — arithmétique simple sur le libellé officiel |
-| Tracteur : les deux codes disent « neufs », machine « USED » | 🟢 **certain** — lu sur les deux déclarations |
-| Régulateur ≠ réfrigérateur | 🟢 **certain** — deux chapitres différents |
-| Chaise = siège = 94.01 | 🟢 **certain** — RGI 3 a) |
-| VIN de l'ancienne DAU = n° de facture | 🟢 **certain** — chaîne identique à la case 44 |
-| Accises sur 4818.20 et 9403.70 | 🟠 **à vérifier** — CAMCIS les a appliquées, ma lecture de l'annexe II peut être trop littérale |
-| Yaris : cylindrée réelle | 🟠 **inconnue** — c'est une vraie question, pas une affirmation |
-| Origine JP vs VIN | 🟠 **indice fort, pas une preuve** — le WMI donne le pays de construction, pas forcément l'origine douanière |
-| Poids déclarés | 🔵 **anomalie de données**, sans incidence fiscale directe (tous les prélèvements sont ad valorem) |
+| Le chiffre de 1 042 402 XAF | on demande un avis, pas une justification chiffrée. Le sortir met le déclarant en position de défense |
+| Les articles 467.2 et 478.4 nommément | citer les articles de sanction à son prestataire est une menace implicite. La question « quelle est notre exposition ? » obtient la même information sans fermer la porte |
+| La condition de bénéficiaire (entreprise agricole) posée comme une conclusion | formulée comme une **question** : « est-ce que je lis mal ? ». S'il connaît une pratique contraire, il la donnera. S'il ne la connaît pas, il ira vérifier |
+| Citra | ne jamais mélanger une demande d'avis technique avec un signal de mise en concurrence |
+
+### Mon niveau de confiance
+
+| Point | |
+|---|---|
+| L'art. 122 n'exonère **que la TVA** | 🟢 **certain** — texte + titre de l'annexe, les deux concordent |
+| L'art. 122 vise les **entreprises agricoles** | 🟢 **certain** — c'est le chapeau de l'article |
+| 51 kW hors de la tranche 75-130 kW | 🟢 **certain** — arithmétique |
+| Les deux codes disent « neufs », machine « USED » | 🟢 **certain** — lu sur les deux déclarations |
+| Le VIN initial = n° de facture | 🟢 **certain** — chaîne identique à la case 44 |
+| Tracteurs = Catégorie II à 10 % | 🟢 **confirmé** par la déclaration initiale elle-même |
+| **Ce que recouvre `E00`** | 🔴 **inconnu** — c'est la vraie question du dossier |
+| Une pratique administrative étendrait-elle l'art. 122 ? | 🔵 **non vérifié** — posé comme question ouverte |
+| Puissance réelle exacte du GJ 704-E | 🔵 **non vérifiée** — « environ 51 kW » vient de Nelson, à confirmer par le fournisseur |
