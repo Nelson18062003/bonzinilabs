@@ -125,9 +125,14 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     await dims.nth(1).fill('60'); await dims.nth(2).fill('40'); await dims.nth(3).fill('40');
     await page.fill('#p-desc', 'Chaussures, 40 paires');
   }
+  if (screen === 'client-desk-panel') {
+    // Le panneau de la fiche client défile en interne : on amène le bloc « Colis reçus » à l'écran.
+    const block = page.getByText('Colis reçus', { exact: true }).first();
+    await block.scrollIntoViewIfNeeded().catch(() => {});
+  }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(700);
-  await page.screenshot({ path: join(OUT, `${screen}.png`), fullPage: !DESKTOP || screen.includes('reception') || screen.includes('chargement') || screen.includes('client-desk') });
+  await page.screenshot({ path: join(OUT, `${screen}.png`), fullPage: !DESKTOP || screen.includes('reception') || screen.includes('chargement') });
   console.log(screen, 'ok');
   await page.close();
 }
