@@ -8,7 +8,9 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronRight, Download, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
+import { ChevronRight, Download, Map as MapIcon, PackageOpen, Search as SearchIcon } from 'lucide-react';
+import { useReceptionStock } from '@/hooks/useReception';
+import { formatCbm } from '@/lib/reception';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -40,6 +42,7 @@ export function DesktopCargoScreen() {
   const navigate = useNavigate();
   const [openId, setOpenId] = useState<string | null>(null);
   const { data, isLoading } = useCargoShipments();
+  const { data: stock } = useReceptionStock();
   const [bucket, setBucket] = useState<Bucket>('all');
   const [search, setSearch] = useState('');
   const q = useDebouncedValue(search).trim().toLowerCase();
@@ -120,6 +123,27 @@ export function DesktopCargoScreen() {
           </button>
         </div>
       </header>
+
+      {/* ── La réception : le début de la chaîne, avant la boîte ─────────── */}
+      {stock && (
+        <button
+          type="button"
+          onClick={() => navigate('/m/cargo/reception')}
+          className={cn('mt-4 flex w-full items-center gap-4 rounded-[14px] px-5 py-3.5 text-left transition-colors hover:bg-muted/40', SURFACE.card, SURFACE.shadow)}
+        >
+          <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-md', SURFACE.holder)}><PackageOpen className="h-5 w-5" /></span>
+          <span className="min-w-0 flex-1">
+            <span className={cn('block text-[13px] font-bold', TEXT.strong)}>Réception des colis</span>
+            <span className={cn('block text-[12.5px] tabular-nums', TEXT.muted)}>
+              {stock.stats.parcels > 0
+                ? <><b className={TEXT.strong}>{stock.stats.parcels} colis</b> attendent à l'entrepôt · {formatCbm(stock.stats.cbm)} · {stock.stats.clients} client{stock.stats.clients > 1 ? 's' : ''}{stock.stats.pending > 0 ? <> · <span className="font-bold text-amber-700 dark:text-amber-400">{stock.stats.pending} à attribuer</span></> : null}</>
+                : "Rien n'attend à l'entrepôt"}
+            </span>
+          </span>
+          {stock.stats.pending > 0 && <StatusPill tone="pending" label={`${stock.stats.pending} à attribuer`} />}
+          <span className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}>Ouvrir la réception <ChevronRight className="h-4 w-4" /></span>
+        </button>
+      )}
 
       {/* ── Files + filtres — UNE ligne ─────────────────────────────────── */}
       <section className="mt-4 flex flex-wrap items-center gap-2">

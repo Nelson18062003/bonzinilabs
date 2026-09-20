@@ -36,6 +36,9 @@ import { normalizePhone } from '@/lib/phone';
 import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
 import { useClientPhones } from '@/hooks/useClientPhones';
+import { useClientDeposits } from '@/hooks/useReception';
+import { formatCbm, formatKg } from '@/lib/reception';
+import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
@@ -221,6 +224,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { data: ledgerTotal } = useClientLedgerCount(clientId);
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
+  const { data: clientDeposits } = useClientDeposits(clientId, hasPermission('canViewCargo'));
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
 
@@ -732,6 +736,46 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             </div>
           )}
         </div>
+
+        {/* Colis reçus — la réception, dans Cargo */}
+        {hasPermission('canViewCargo') && (clientDeposits?.length ?? 0) > 0 && (() => {
+          const parcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
+          const waiting = parcels.filter((p) => !p.shipment_id).length;
+          return (
+            <div className="rounded-2xl px-4 pb-2 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
+              <SecLabel
+                right={
+                  <button type="button" onClick={() => navigate(`/m/clients/${client.id}/parcels`)} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
+                    Voir tout ({clientDeposits?.length ?? 0})
+                  </button>
+                }
+              >
+                Colis reçus
+              </SecLabel>
+              <p className={cn('mt-1 text-[12.5px] tabular-nums', TEXT.body)}>
+                <b className={TEXT.strong}>{parcels.length} colis</b> · {formatKg(parcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(parcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}
+                {waiting > 0 ? <> · <span className="font-semibold text-emerald-700 dark:text-emerald-400">{waiting} à l'entrepôt</span></> : ' · tout est chargé'}
+              </p>
+              <div className="mt-1">
+                {(clientDeposits ?? []).slice(0, 3).map((d) => {
+                  const loaded = d.parcels.filter((p) => p.shipment_id);
+                  return (
+                    <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className="flex w-full items-center gap-2.5 border-t border-black/[0.04] py-2 text-left first:border-t-0 dark:border-white/[0.05]">
+                      <LocationMark location={d.location} size={26} />
+                      <div className="min-w-0 flex-1 leading-[16px]">
+                        <div className={cn('truncate font-mono text-[12.5px] font-semibold', TEXT.strong)}>{d.deposit_no} <span className={cn('font-sans font-normal', TEXT.muted)}>· {d.parcels.length} colis · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}</span></div>
+                        <div className={cn('truncate text-[11px]', TEXT.muted)}>{formatDateTime(d.closed_at ?? d.opened_at)}{d.received_by_name ? ` · reçu par ${d.received_by_name}` : ''}</div>
+                      </div>
+                      <span className={cn('shrink-0 text-[11.5px] font-semibold', loaded.length === d.parcels.length && d.parcels.length > 0 ? 'text-indigo-700 dark:text-indigo-400' : 'text-emerald-700 dark:text-emerald-400')}>
+                        {loaded.length === d.parcels.length && d.parcels.length > 0 ? `Chargé · ${loaded[0]?.container_number ?? 'boîte'}` : loaded.length > 0 ? `${loaded.length}/${d.parcels.length} chargés` : "À l'entrepôt"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Raccourcis */}
         <div className="grid grid-cols-2 gap-2">

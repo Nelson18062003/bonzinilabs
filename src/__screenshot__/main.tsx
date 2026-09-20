@@ -76,6 +76,8 @@ import {
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
 import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
 import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels } from '@/mobile/screens/cargo';
+import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception } from '@/desktop/screens/cargo';
+import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
@@ -333,6 +335,14 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
   'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },
+  // Admin DESKTOP — la réception dans Bonzini Cargo (1440×900, dans le shell)
+  'cargo-desk-home': { Comp: () => <DesktopAppShell><DesktopCargoScreen /></DesktopAppShell>, route: '/m/cargo' },
+  'cargo-desk-reception': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-deposit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-deposit-pending': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-chargement': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-desk-load': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement?charger=1', path: '/m/cargo/:shipmentId/:tab' },
+  'client-desk-panel': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
 };
 
 const params = new URLSearchParams(window.location.search);

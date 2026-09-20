@@ -5,6 +5,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { respond as adminRespond } from './adminFixtures.mjs';
 
 const OUT = process.argv[2] ?? 'tools/out/reception';
 const ONLY = process.argv.slice(3);
@@ -69,8 +70,12 @@ const RPC = {
   reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
 };
 
+// DESKTOP=1 : 1440×900, sans émulation mobile — pour les écrans admin desktop dans le shell.
+const DESKTOP = process.env.DESKTOP === '1';
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
+const ctx = await browser.newContext(DESKTOP
+  ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, ignoreHTTPSErrors: true }
+  : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
 await ctx.addInitScript(() => {
   try { localStorage.setItem('bonzini-reception-location', 'warehouse'); localStorage.setItem('bonzini-language', 'fr'); } catch { /* privé */ }
 });
@@ -85,7 +90,15 @@ if (process.env.FONTS_DIR) {
   await ctx.route(/fonts\.gstatic\.com/, (r) => { try { r.fulfill({ status: 200, contentType: 'font/woff2', body: readFileSync(fontFile(r.request().url())) }); } catch { r.fulfill({ status: 404, body: '' }); } });
 }
 // Le générique d'abord : Playwright sert la DERNIÈRE route enregistrée qui correspond.
-await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => {
+  // Le shell desktop (barre latérale, fiche client) lit les fixtures admin ; le reste reçoit [].
+  const req = r.request();
+  if (req.method() === 'OPTIONS' || req.method() === 'HEAD') return r.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'content-range': '0-0/0' }, body: '' });
+  let body = [];
+  try { body = adminRespond(req.url()) ?? []; } catch { body = []; }
+  if ((req.headers()['accept'] ?? '').includes('pgrst.object') && Array.isArray(body)) body = body[0] ?? null;
+  r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': `0-9/${Array.isArray(body) ? body.length : 1}` }, body: JSON.stringify(body) });
+});
 await ctx.route(/\/rest\/v1\/cargo_shipments/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
   route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? shipment : [shipment]) });
@@ -114,7 +127,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   }
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(700);
-  await page.screenshot({ path: join(OUT, `${screen}.png`), fullPage: true });
+  await page.screenshot({ path: join(OUT, `${screen}.png`), fullPage: !DESKTOP || screen.includes('reception') || screen.includes('chargement') || screen.includes('client-desk') });
   console.log(screen, 'ok');
   await page.close();
 }
