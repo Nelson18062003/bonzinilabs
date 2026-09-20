@@ -98,6 +98,18 @@ import {
   MobileQuickRepliesScreen,
 } from '@/mobile/screens/support';
 import {
+  ReceptionHome,
+  ReceptionIdentify,
+  ReceptionBroughtBy,
+  ReceptionNewClient,
+  ReceptionDeposit,
+  ReceptionParcel,
+  ReceptionDone,
+  ReceptionPending,
+  ReceptionLogin,
+} from '@/mobile/screens/reception';
+import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
+import {
   AgentCashLogin,
   AgentCashPayments,
   AgentCashScanner,
@@ -300,6 +312,17 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
   'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
   'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
+  // Réception des colis (réceptionnaire) — routes /r/*, fixtures dans tools/shoot-reception.mjs
+  'rc-login': { Comp: ReceptionLogin, route: '/r/login', wrap: 'lang' },
+  'rc-home': { Comp: () => <ReceptionShell><ReceptionHome /></ReceptionShell>, route: '/r', wrap: 'lang' },
+  'rc-identify': { Comp: ReceptionIdentify, route: '/r/new', wrap: 'lang' },
+  'rc-how': { Comp: ReceptionBroughtBy, route: '/r/new/how?client=u1&name=A%C3%AFcha%20Mbarga&code=BZ-482913', wrap: 'lang' },
+  'rc-client': { Comp: ReceptionNewClient, route: '/r/new/client', wrap: 'lang' },
+  'rc-deposit': { Comp: ReceptionDeposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-deposit-empty': { Comp: ReceptionDeposit, route: '/r/deposit/dep0', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
 };
 
 const params = new URLSearchParams(window.location.search);

@@ -3781,6 +3781,7 @@ export type Database = {
         | "customer_success"
         | "cash_agent"
         | "treasurer"
+        | "receptionist"
       deposit_method:
         | "bank_transfer"
         | "bank_cash"
@@ -3978,6 +3979,7 @@ export const Constants = {
         "customer_success",
         "cash_agent",
         "treasurer",
+        "receptionist",
       ],
       deposit_method: [
         "bank_transfer",

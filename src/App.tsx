@@ -143,6 +143,18 @@ const AgentCashPaymentDetail = lazy(() => import("./mobile/screens/agent-cash").
 const AgentCashConfirm = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashConfirm })));
 const AgentCashSuccess = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashSuccess })));
 
+// ── Lazy-loaded Reception Screens (réceptionnaire, /r) ──────
+import { ReceptionRouteWrapper } from "./mobile/components/reception/ReceptionRouteWrapper";
+const ReceptionLogin = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionLogin })));
+const ReceptionHome = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionHome })));
+const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionIdentify })));
+const ReceptionBroughtBy = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionBroughtBy })));
+const ReceptionNewClient = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionNewClient })));
+const ReceptionDeposit = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDeposit })));
+const ReceptionParcel = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionParcel })));
+const ReceptionDone = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDone })));
+const ReceptionPending = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPending })));
+
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
   import("./components/form/__showcase__/FormShowcase").then(m => ({ default: m.FormShowcase })),
@@ -304,6 +316,17 @@ const App = () => (
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />
+
+                {/* Réception des colis (réceptionnaire) */}
+                <Route path="/r/login" element={<ReceptionRouteWrapper requireAuth={false} showTabBar={false}><ReceptionLogin /></ReceptionRouteWrapper>} />
+                <Route path="/r" element={<ReceptionRouteWrapper><ReceptionHome /></ReceptionRouteWrapper>} />
+                <Route path="/r/new" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionIdentify /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/how" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionBroughtBy /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/parcel" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />
+                <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (
