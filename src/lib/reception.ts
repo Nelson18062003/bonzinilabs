@@ -152,6 +152,41 @@ export function isParcelIncomplete(p: Parcel): boolean {
   return p.weight_kg == null || p.cbm == null || !p.photo_path;
 }
 
+/** Le ton d'une pastille d'état, tel que les deux kits (mobile, desktop) le comprennent. */
+export type StageTone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
+
+/**
+ * Où en est un colis, en un mot, avec le numéro de sa boîte dès qu'il en a une.
+ * C'est la seule table de correspondance statut → libellé : la fiche client,
+ * le dépôt, le dossier Cargo et le panneau desktop la partagent. Le statut
+ * suit la boîte grâce au trigger `parcels_follow_shipment` (migration) :
+ * chargé → en mer → arrivé → livré, sans rien ressaisir.
+ */
+export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>): { tone: StageTone; label: string; inBox: boolean } {
+  const box = p.container_number ?? 'boîte';
+  switch (p.status) {
+    case 'loaded': return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
+    case 'shipped': return { tone: 'info', label: `En mer · ${box}`, inBox: true };
+    case 'arrived': return { tone: 'pending', label: `Arrivé · ${box}`, inBox: true };
+    case 'delivered': return { tone: 'success', label: `Livré · ${box}`, inBox: true };
+    default:
+      if (p.shipment_id) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
+      return isParcelIncomplete(p as Parcel) ? { tone: 'pending', label: 'Incomplet', inBox: false } : { tone: 'success', label: "À l'entrepôt", inBox: false };
+  }
+}
+
+/** L'état d'un dépôt entier, résumé depuis ses colis : tout chargé, en partie, ou encore à l'entrepôt. */
+export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>>): { tone: StageTone; label: string } {
+  const inBox = parcels.filter((p) => parcelStage(p).inBox);
+  if (parcels.length === 0) return { tone: 'neutral', label: 'Vide' };
+  if (inBox.length === parcels.length) {
+    const first = parcelStage(inBox[0]);
+    return { tone: first.tone, label: first.label };
+  }
+  if (inBox.length > 0) return { tone: 'info', label: `${inBox.length}/${parcels.length} chargés` };
+  return { tone: 'success', label: "À l'entrepôt" };
+}
+
 /** Le lieu du réceptionnaire, mémorisé sur l'appareil : on ne le redemande pas à chaque dépôt. */
 const LOCATION_KEY = 'bonzini-reception-location';
 export function readStoredLocation(): ReceptionLocation | null {

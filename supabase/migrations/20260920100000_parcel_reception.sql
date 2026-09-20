@@ -852,3 +852,131 @@ END;
 $fn$;
 COMMENT ON FUNCTION public.cargo_unload_parcel(UUID) IS
   '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Sortir un colis d''une boîte (retour à l''entrepôt)"}';
+
+-- ============================================================================
+-- 8. LA CHAÎNE : les colis suivent la boîte
+--    Un colis chargé dans un conteneur n'a plus d'état propre : quand la boîte
+--    part (AT_SEA), arrive (ARRIVED) ou est livrée (DELIVERED), ses colis
+--    passent à « en mer », « arrivé », « livré » — sans rien ressaisir. La
+--    synchro armateur (cargo-sync) écrit le statut du conteneur ; le trigger
+--    fait le reste. La contrainte garantit qu'un colis sans boîte n'est jamais
+--    « chargé », et qu'un colis dans une boîte n'est jamais « à l'entrepôt ».
+-- ============================================================================
+
+-- 8.1 Statut d'un colis d'après le statut de sa boîte (une seule table de correspondance).
+CREATE OR REPLACE FUNCTION public.parcel_status_for_shipment(p_shipment_status TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS $fn$
+  SELECT CASE p_shipment_status
+    WHEN 'AT_SEA'    THEN 'shipped'
+    WHEN 'ARRIVED'   THEN 'arrived'
+    WHEN 'DELIVERED' THEN 'delivered'
+    ELSE 'loaded'          -- BOOKED, AT_ORIGIN, UNKNOWN : la boîte est encore ici
+  END
+$fn$;
+
+-- 8.2 Cohérence colis ↔ boîte, au niveau de la table.
+DO $do$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'parcels_status_shipment_check') THEN
+    ALTER TABLE public.parcels ADD CONSTRAINT parcels_status_shipment_check CHECK (
+      (shipment_id IS NULL     AND status IN ('received','stored')) OR
+      (shipment_id IS NOT NULL AND status IN ('loaded','shipped','arrived','delivered'))
+    );
+  END IF;
+END
+$do$;
+
+-- 8.3 Le trigger : la boîte change de statut → ses colis suivent.
+CREATE OR REPLACE FUNCTION public.parcels_follow_shipment()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_status TEXT;
+BEGIN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  v_status := public.parcel_status_for_shipment(NEW.status);
+  UPDATE public.parcels
+     SET status = v_status, updated_at = now()
+   WHERE shipment_id = NEW.id AND status <> v_status;
+  RETURN NEW;
+END;
+$fn$;
+DROP TRIGGER IF EXISTS parcels_follow_shipment ON public.cargo_shipments;
+CREATE TRIGGER parcels_follow_shipment
+  AFTER UPDATE OF status ON public.cargo_shipments
+  FOR EACH ROW EXECUTE FUNCTION public.parcels_follow_shipment();
+
+-- 8.4 Charger dans une boîte déjà partie donne directement le bon statut.
+CREATE OR REPLACE FUNCTION public.cargo_load_parcels(p_shipment_id UUID, p_parcel_ids UUID[])
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_ship public.cargo_shipments;
+  v_status TEXT;
+  v_n INTEGER; v_kg NUMERIC; v_cbm NUMERIC;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_ship FROM public.cargo_shipments WHERE id = p_shipment_id FOR UPDATE;
+  IF v_ship.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Boîte introuvable');
+  END IF;
+  IF v_ship.status = 'DELIVERED' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Cette boîte est déjà livrée : on ne charge plus rien dedans');
+  END IF;
+  IF p_parcel_ids IS NULL OR array_length(p_parcel_ids, 1) IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Aucun colis choisi');
+  END IF;
+  v_status := public.parcel_status_for_shipment(v_ship.status);
+  -- Seuls les colis qui attendent : un colis déjà dans une boîte ne bouge pas d'ici.
+  WITH moved AS (
+    UPDATE public.parcels p
+       SET shipment_id = p_shipment_id, status = v_status, updated_at = now()
+     WHERE p.id = ANY(p_parcel_ids) AND p.shipment_id IS NULL AND p.status IN ('received','stored')
+     RETURNING p.weight_kg, p.cbm
+  )
+  SELECT count(*), COALESCE(sum(weight_kg), 0), COALESCE(sum(cbm), 0) INTO v_n, v_kg, v_cbm FROM moved;
+  IF v_n = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ces colis sont déjà chargés ou introuvables');
+  END IF;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'load_parcels', 'cargo_shipment', p_shipment_id,
+          jsonb_build_object('description', v_n || ' colis chargés dans ' || v_ship.container_number || ' (' || v_kg || ' kg, ' || v_cbm || ' m³)', 'parcel_ids', to_jsonb(p_parcel_ids), 'count', v_n, 'weight_kg', v_kg, 'cbm', v_cbm));
+  RETURN jsonb_build_object('success', true, 'loaded', v_n, 'weight_kg', v_kg, 'cbm', v_cbm, 'status', v_status);
+END;
+$fn$;
+COMMENT ON FUNCTION public.cargo_load_parcels(UUID, UUID[]) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Charger des colis reçus dans une boîte (dossier Cargo)"}';
+
+-- 8.5 Le compte « Cargo » en un appel : conteneurs suivis, colis qui attendent,
+--     dépôts à attribuer — ce que l'entrée du module affiche pour ses deux parties.
+CREATE OR REPLACE FUNCTION public.cargo_parts_summary()
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+  SELECT CASE WHEN NOT public.admin_has_permission(auth.uid(), 'canViewCargo')
+    THEN jsonb_build_object('success', false, 'error', 'Accès non autorisé')
+    ELSE jsonb_build_object(
+      'success', true,
+      'containers', (SELECT count(*) FROM public.cargo_shipments WHERE status <> 'DELIVERED'),
+      'containers_at_sea', (SELECT count(*) FROM public.cargo_shipments WHERE status = 'AT_SEA'),
+      'parcels_waiting', (SELECT count(*) FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id WHERE p.shipment_id IS NULL AND d.status <> 'cancelled'),
+      'deposits_pending', (SELECT count(*) FROM public.parcel_deposits WHERE client_user_id IS NULL AND status <> 'cancelled'),
+      'deposits_today', (SELECT count(*) FROM public.parcel_deposits WHERE status <> 'cancelled' AND (opened_at AT TIME ZONE 'Asia/Shanghai')::date = (now() AT TIME ZONE 'Asia/Shanghai')::date)
+    ) END
+$fn$;
+COMMENT ON FUNCTION public.cargo_parts_summary() IS
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Le résumé Cargo : conteneurs suivis, colis à l''entrepôt, dépôts à attribuer"}';

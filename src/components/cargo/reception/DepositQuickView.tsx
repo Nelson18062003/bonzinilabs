@@ -10,7 +10,7 @@ import { ArrowRight, Search, UserSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
-import { clientFullName, formatCbm, formatDims, formatKg, initials, isParcelIncomplete } from '@/lib/reception';
+import { clientFullName, formatCbm, formatDims, formatKg, initials, parcelStage } from '@/lib/reception';
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,7 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
 
   const name = d?.client ? clientFullName(d.client) : 'Client à attribuer';
   const st = d ? labels.status(d) : null;
-  const loaded = d?.parcels.filter((p) => p.shipment_id) ?? [];
+  const loaded = d?.parcels.filter((p) => parcelStage(p).inBox) ?? [];
 
   return (
     <CenterDialog
@@ -120,7 +120,7 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
               <Fact label="Total" value={`${d.parcels.length} colis`} hint={`${formatKg(d.total_weight_kg)} · ${formatCbm(d.total_cbm)}`} />
             </Facts>
           </Band>
-          <Band title="Les colis" meta={loaded.length > 0 ? `${d.parcels.length - loaded.length} à l'entrepôt · ${loaded.length} chargés` : `${d.parcels.length} à l'entrepôt`}>
+          <Band title="Les colis" meta={loaded.length > 0 ? `${d.parcels.length - loaded.length} à l'entrepôt · ${loaded.length} dans une boîte` : `${d.parcels.length} à l'entrepôt`}>
             <div className="-mx-5 max-h-[360px] overflow-auto">
               <table className="w-full text-left">
                 <thead>
@@ -145,15 +145,14 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
                       <Td align="right"><span className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>{formatDims(p)}</span></Td>
                       <Td align="right"><span className="text-[13px] tabular-nums">{formatCbm(p.cbm)}</span></Td>
                       <Td last>
-                        {p.shipment_id ? (
-                          <button type="button" onClick={() => { onClose(); navigate(`/m/cargo/${p.shipment_id}/chargement`); }}>
-                            <StatusPill tone="info" label={`Chargé · ${p.container_number ?? 'boîte'}`} />
-                          </button>
-                        ) : isParcelIncomplete(p) ? (
-                          <StatusPill tone="pending" label="Incomplet" />
-                        ) : (
-                          <StatusPill tone="success" label="À l'entrepôt" />
-                        )}
+                        {(() => {
+                          const st = parcelStage(p);
+                          return st.inBox && p.shipment_id ? (
+                            <button type="button" onClick={() => { onClose(); navigate(`/m/cargo/${p.shipment_id}/chargement`); }}>
+                              <StatusPill tone={st.tone} label={st.label} />
+                            </button>
+                          ) : <StatusPill tone={st.tone} label={st.label} />;
+                        })()}
                       </Td>
                     </tr>
                   ))}

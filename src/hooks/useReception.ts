@@ -247,3 +247,21 @@ export function useUnloadParcel() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── L'entrée du module Cargo : ses deux parties en chiffres ─────────────────
+export interface CargoPartsSummary {
+  containers: number;
+  containers_at_sea: number;
+  parcels_waiting: number;
+  deposits_pending: number;
+  deposits_today: number;
+}
+
+/** Container · Réception : les compteurs du sélecteur, en un seul appel (canViewCargo). */
+export function useCargoPartsSummary() {
+  return useQuery({
+    queryKey: ['cargo', 'parts'],
+    queryFn: () => rpcJson<CargoPartsSummary>('cargo_parts_summary'),
+    staleTime: 30_000,
+  });
+}

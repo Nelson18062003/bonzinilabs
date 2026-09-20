@@ -89,7 +89,7 @@ export function DesktopCargoMap() {
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <button type="button" onClick={() => navigate('/m/cargo')} className={cn('mb-1 inline-flex items-center gap-1 text-[12px] font-semibold', TEXT.muted)}>
-              <ArrowLeft className="h-3.5 w-3.5" /> Ma flotte
+              <ArrowLeft className="h-3.5 w-3.5" /> Container
             </button>
             <p className={cn('text-[15px] font-semibold', TEXT.body)}>
               {vessels.length} navire{vessels.length > 1 ? 's' : ''} · {rows.length} conteneur{rows.length > 1 ? 's' : ''}

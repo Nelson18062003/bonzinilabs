@@ -51,6 +51,7 @@ const loadedParcels = dep3.parcels.map((p) => withDep({ ...p, status: 'loaded', 
 const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number } : p)) };
 
 const RPC = {
+  cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
   reception_overview: { success: true, by_receptionist: [
     { received_by: 'demo', name: 'Kevin Nkolo', deposits: 26, parcels: 158, weight_kg: 1210, cbm: 9.1, pending: 2, incomplete: 3 },
     { received_by: 'mei', name: 'Mei Lin', deposits: 12, parcels: 53, weight_kg: 430, cbm: 3.3, pending: 0, incomplete: 0 },

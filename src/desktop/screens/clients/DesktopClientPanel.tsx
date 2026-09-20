@@ -37,7 +37,7 @@ import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
 import { useClientPhones } from '@/hooks/useClientPhones';
 import { useClientDeposits } from '@/hooks/useReception';
-import { formatCbm, formatKg } from '@/lib/reception';
+import { depositStage, formatCbm, formatKg } from '@/lib/reception';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
@@ -758,7 +758,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               </p>
               <div className="mt-1">
                 {(clientDeposits ?? []).slice(0, 3).map((d) => {
-                  const loaded = d.parcels.filter((p) => p.shipment_id);
+                  const st = depositStage(d.parcels);
                   return (
                     <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className="flex w-full items-center gap-2.5 border-t border-black/[0.04] py-2 text-left first:border-t-0 dark:border-white/[0.05]">
                       <LocationMark location={d.location} size={26} />
@@ -766,8 +766,8 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
                         <div className={cn('truncate font-mono text-[12.5px] font-semibold', TEXT.strong)}>{d.deposit_no} <span className={cn('font-sans font-normal', TEXT.muted)}>· {d.parcels.length} colis · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}</span></div>
                         <div className={cn('truncate text-[11px]', TEXT.muted)}>{formatDateTime(d.closed_at ?? d.opened_at)}{d.received_by_name ? ` · reçu par ${d.received_by_name}` : ''}</div>
                       </div>
-                      <span className={cn('shrink-0 text-[11.5px] font-semibold', loaded.length === d.parcels.length && d.parcels.length > 0 ? 'text-indigo-700 dark:text-indigo-400' : 'text-emerald-700 dark:text-emerald-400')}>
-                        {loaded.length === d.parcels.length && d.parcels.length > 0 ? `Chargé · ${loaded[0]?.container_number ?? 'boîte'}` : loaded.length > 0 ? `${loaded.length}/${d.parcels.length} chargés` : "À l'entrepôt"}
+                      <span className={cn('shrink-0 text-[11.5px] font-semibold', st.tone === 'success' ? 'text-emerald-700 dark:text-emerald-400' : st.tone === 'pending' ? 'text-amber-700 dark:text-amber-400' : 'text-indigo-700 dark:text-indigo-400')}>
+                        {st.label}
                       </span>
                     </button>
                   );

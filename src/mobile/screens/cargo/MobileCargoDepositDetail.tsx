@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
-import { clientFullName, formatCbm, formatKg, initials } from '@/lib/reception';
+import { clientFullName, formatCbm, formatKg, initials, parcelStage } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, Row, ScreenError, ScreenLoader, StatusPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, ParcelRow, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -79,7 +79,7 @@ export function MobileCargoDepositDetail() {
                 <ParcelRow parcel={p} />
                 {p.shipment_id && (
                   <button type="button" onClick={() => navigate(`/m/cargo/${p.shipment_id}/dedans`)} className="-mt-2 mb-3 inline-flex">
-                    <StatusPill tone="info" label={`Chargé · ${p.container_number ?? 'boîte'}`} className="h-7 text-[14px]" />
+                    <StatusPill tone={parcelStage(p).tone} label={parcelStage(p).label} className="h-7 text-[14px]" />
                   </button>
                 )}
               </div>

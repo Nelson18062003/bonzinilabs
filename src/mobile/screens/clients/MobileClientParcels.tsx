@@ -7,7 +7,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClientDeposits } from '@/hooks/useReception';
-import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
+import { clientFullName, depositStage, formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, ScreenLoader, StatCard, StatusPill } from '@/mobile/designKit';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
@@ -43,17 +43,12 @@ export function MobileClientParcels() {
           </Card>
         ) : (
           deposits.map((d) => {
-            const loaded = d.parcels.filter((p) => p.shipment_id);
-            const box = loaded[0]?.container_number;
+            const st = depositStage(d.parcels);
             return (
               <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className={cn('block w-full rounded-lg p-4 text-left', SURFACE.card, SURFACE.shadow)}>
                 <span className="flex flex-wrap items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-2 whitespace-nowrap"><LocationMark location={d.location} size={26} /><span className={cn('tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{d.deposit_no}</span></span>
-                  {loaded.length === d.parcels.length && d.parcels.length > 0
-                    ? <StatusPill tone="info" label={box ? `Chargé · ${box}` : 'Chargé'} className="h-7 text-[14px]" />
-                    : loaded.length > 0
-                      ? <StatusPill tone="info" label={`${loaded.length}/${d.parcels.length} chargés`} className="h-7 text-[14px]" />
-                      : <StatusPill tone="success" label="À l'entrepôt" className="h-7 text-[14px]" />}
+                  <StatusPill tone={st.tone} label={st.label} className="h-7 text-[14px]" />
                 </span>
                 <span className={cn('mt-2 block tabular-nums', TYPE.body, TEXT.strong)}>{d.parcels.length} colis · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}</span>
                 <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{formatDateTime(d.closed_at ?? d.opened_at)}{d.received_by_name ? ` · reçu par ${d.received_by_name}` : ''}</span>

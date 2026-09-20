@@ -1,7 +1,8 @@
 /**
- * Desktop admin — Cargo › Réception des colis : le workbench de l'entrepôt.
+ * Desktop admin — Cargo › Réception : la deuxième partie du module, le
+ * workbench de l'entrepôt (la barre d'onglets en haut ramène à Container).
  *
- * Même archétype que « Ma flotte » (02-foundation §2.A) : en-tête avec
+ * Même archétype que Container (02-foundation §2.A) : en-tête avec
  * compteurs, files en chips, table, et un dépôt qui s'ouvre en dialogue.
  * Trois choses, dans l'ordre où le fondateur les regarde :
  *   1. ce qui ATTEND à l'entrepôt et au bureau, par client — ce qu'il reste
@@ -13,6 +14,7 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ChevronRight, Download } from 'lucide-react';
+import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useReceptionOverview, useReceptionStock } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatKg, initials, type Deposit, type ReceptionLocation } from '@/lib/reception';
@@ -70,12 +72,12 @@ export function DesktopCargoReception() {
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col">
+      {/* ── Les deux parties du module : Container · Réception (ici) ────── */}
+      <DesktopCargoParts active="reception" className="mb-4" />
+
       {/* ── En-tête ─────────────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <button type="button" onClick={() => navigate('/m/cargo')} className={cn('mb-1 inline-flex items-center gap-1 text-[12px] font-semibold', TEXT.muted, 'hover:text-foreground')}>
-            Cargo <ChevronRight className="h-3.5 w-3.5" /> Réception des colis
-          </button>
           <p className={cn('text-[15px] font-semibold', TEXT.body)}>
             {stats ? (
               <>

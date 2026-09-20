@@ -1,7 +1,8 @@
 // ============================================================
-// Mobile admin — Cargo › Réception des colis.
+// Mobile admin — Cargo › Réception : la deuxième partie du module.
 //
-// La réception vit DANS Cargo : c'est le début de la chaîne, avant la boîte.
+// La réception vit DANS Cargo, à côté de Container : c'est le début de la
+// chaîne, avant la boîte. Le sélecteur en haut passe de l'une à l'autre.
 // Trois choses, dans l'ordre où le fondateur les regarde :
 //   1. ce qui ATTEND à l'entrepôt et au bureau (reçu, pas encore chargé),
 //      par client — c'est ce qu'il reste à mettre dans un conteneur ;
@@ -18,6 +19,7 @@ import { clientFullName, formatCbm, formatKg, initials, type ReceptionLocation }
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, ScreenLoader, Segmented, StatCard, StatusPill } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
+import { MobileCargoParts } from '@/components/cargo/CargoParts';
 
 type Period = 'today' | 'week' | 'month';
 const PERIOD_LABEL: Record<Period, string> = { today: "Aujourd'hui", week: '7 jours', month: '30 jours' };
@@ -51,7 +53,8 @@ export function MobileCargoReception() {
 
   return (
     <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-      <MobileHeader title="Réception des colis" subtitle={stats ? `${stats.parcels} colis à l'entrepôt · ${formatCbm(stats.cbm)}` : undefined} showBack backTo="/m/cargo" />
+      <MobileHeader title="Cargo" subtitle={stats ? `${stats.parcels} colis à l'entrepôt · ${formatCbm(stats.cbm)}${stats.pending > 0 ? ` · ${stats.pending} à attribuer` : ''}` : 'Réception des colis'} />
+      <MobileCargoParts active="reception" />
 
       <div className="space-y-6 px-4 pb-10 pt-4">
         {/* 1 · Ce qui attend */}
@@ -83,7 +86,7 @@ export function MobileCargoReception() {
                   <button
                     key={`${row.client?.user_id ?? 'none'}-${row.location}-${i}`}
                     type="button"
-                    onClick={() => row.client ? navigate(`/m/clients/${row.client.user_id}/parcels`) : navigate('/m/cargo/reception')}
+                    onClick={() => row.client ? navigate(`/m/clients/${row.client.user_id}/parcels`) : pendingDeposits[0] && navigate(`/m/cargo/reception/${pendingDeposits[0].id}`)}
                     className={cn('flex w-full items-center gap-4 border-b py-4 text-left last:border-b-0', SURFACE.divider)}
                   >
                     <Holder size="lg" tone={row.client ? 'neutral' : 'pending'}>{row.client ? initials(name) : '?'}</Holder>
