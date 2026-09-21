@@ -109,6 +109,19 @@ await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => {
   if ((req.headers()['accept'] ?? '').includes('pgrst.object') && Array.isArray(body)) body = body[0] ?? null;
   r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': `0-9/${Array.isArray(body) ? body.length : 1}` }, body: JSON.stringify(body) });
 });
+// Les réglages d'expédition RÉELS (copie de platform_settings.shipping, 21/09/2026) : l'étiquette capturée est celle que Tina reçoit.
+await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
+  const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
+  const row = { key: 'shipping', value: {
+    company: { email: 'contact@bonzinilabs.com', phone: '+8618667439286', nameEn: 'NORTON GAUSS BONZINI', nameZh: '诺顿·高斯·邦齐尼', wechat: '+8618667439286', whatsapp: '+8618667439286' },
+    warehouse: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
+      addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou City, Guangdong Province',
+      addressZh: '广东省广州市白云区石门街道云溪颂花园中心售楼部正对面铁皮仓库 Bonzini Trading Cargo' },
+    office: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
+      addressEn: '259, 2/F, Cameroon Building, No. 219 Guangyuan West Road, Guangzhou, China', addressZh: '广州市广园西路219号\n客麦隆大厦二楼 259' },
+  } };
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? row : [row]) });
+});
 await ctx.route(/\/rest\/v1\/cargo_shipments/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
   route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? shipment : [shipment]) });
