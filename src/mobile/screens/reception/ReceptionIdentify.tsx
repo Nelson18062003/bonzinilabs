@@ -1,22 +1,24 @@
 // ============================================================
-// RÉCEPTION — « À qui est ce colis ? » La caméra d'abord : le QR du client
-// (son app, une étiquette Bonzini) ou le bordereau du transporteur. Un code
-// client scanné va DROIT au client — le code est unique, il n'y a rien à
-// choisir. Puis une recherche par nom, téléphone ou code. Et deux sorties
-// honnêtes : créer le client, ou enregistrer sans savoir.
+// RÉCEPTION — Étape 1 : « Scannez le code du client ». Un écran, une
+// caméra, une question. Le QR du client (son app, une étiquette Bonzini) va
+// DROIT au client — le code est unique, rien à choisir. Deux sorties, en
+// dessous, pour les cas où il n'y a pas de QR : chercher par nom ou
+// téléphone (un autre écran), ou enregistrer sans connaître le client.
+// Un bordereau de transporteur scanné ici est gardé pour le premier colis.
 //
 // Avec `?assign=<dépôt>`, l'écran sert à attribuer un dépôt en attente.
 // ============================================================
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Barcode, Check, ChevronRight, HelpCircle, Search, UserPlus } from 'lucide-react';
+import { Barcode, Check, HelpCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, initials, parseScan, type ReceptionClient } from '@/lib/reception';
-import { UnknownCodeError, useAssignDeposit, useClientByCode, useReceptionSearch } from '@/hooks/useReception';
+import { clientFullName, parseScan, type ReceptionClient } from '@/lib/reception';
+import { UnknownCodeError, useAssignDeposit, useClientByCode } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Button, Card, Holder, TextInput } from '@/mobile/designKit';
+import { SURFACE, TYPE, Button } from '@/mobile/designKit';
+import { StepHeader } from '@/mobile/components/reception/bits';
 import { useQrScanner } from '@/mobile/components/reception/useQrScanner';
 import { readDraftWaybill, writeDraftWaybill } from './useReceptionLocation';
 
@@ -27,31 +29,33 @@ export function ReceptionIdentify() {
   const [params] = useSearchParams();
   const assignId = params.get('assign');
   const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
   const [waybill, setWaybill] = useState<string | null>(() => readDraftWaybill());
+  const [found, setFound] = useState<ReceptionClient | null>(null);
   const lockRef = useRef(false);
   const assign = useAssignDeposit();
   const byCode = useClientByCode();
-  const [found, setFound] = useState<ReceptionClient | null>(null);
+  const qs = assignId ? `?assign=${assignId}` : '';
 
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(query), 250);
-    return () => clearTimeout(id);
-  }, [query]);
-  const search = useReceptionSearch(debounced);
+  const pick = async (client: ReceptionClient) => {
+    scanner.stop();
+    if (assignId) {
+      const dep = await assign.mutateAsync({ depositId: assignId, clientUserId: client.user_id });
+      toast.success(t('rc_assigned'), { description: clientFullName(client) });
+      navigate(`/r/deposit/${dep.id}`, { replace: true });
+      return;
+    }
+    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`);
+  };
 
   const scanner = useQrScanner(SCANNER_ID, (text) => {
     if (lockRef.current) return;
     const res = parseScan(text);
     if (!res) return;
     if (res.kind === 'customer') {
-      // Un code, un client : on y va sans liste ni tap. Le verrou évite que la
-      // caméra relise le même QR dix fois par seconde pendant l'appel.
+      // Un code, un client : un instant vert avec le nom, puis on enchaîne.
       lockRef.current = true;
       void byCode.mutateAsync(res.code)
         .then((client) => {
-          // Un instant vert sur la caméra — le nom, le code — puis on enchaîne.
           try { navigator.vibrate?.(60); } catch { /* pas de vibreur */ }
           setFound(client);
           return new Promise<void>((r) => setTimeout(r, 700)).then(() => pick(client));
@@ -66,37 +70,14 @@ export function ReceptionIdentify() {
     }
   });
 
-  const goHow = (client: ReceptionClient | null) => {
-    scanner.stop();
-    const qs = client ? `?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}` : '';
-    navigate(`/r/new/how${qs}`);
-  };
-
-  const pick = async (client: ReceptionClient) => {
-    if (assignId) {
-      scanner.stop();
-      const dep = await assign.mutateAsync({ depositId: assignId, clientUserId: client.user_id });
-      toast.success(t('rc_assigned'), { description: clientFullName(client) });
-      navigate(`/r/deposit/${dep.id}`, { replace: true });
-      return;
-    }
-    goHow(client);
-  };
-
-  const results = search.data ?? [];
-  const searching = debounced.length >= 2;
-
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack backTo={assignId ? '/r/pending' : '/r'} />
 
-      <div className="flex-1 space-y-6 px-5 pb-10 pt-5">
-        <div>
-          <h1 className={cn(TYPE.title, TEXT.strong)}>{t('rc_who')}</h1>
-          <p className={cn('mt-2', TYPE.body, TEXT.muted)}>{t('rc_scan_hint')}</p>
-        </div>
+      <div className="flex-1 space-y-6 px-5 pb-10 pt-4">
+        <StepHeader step={1} total={3} title={t('rc_s1_title')} help={t('rc_s1_help')} />
 
-        {/* La caméra */}
+        {/* La caméra : carrée, grande, seule. */}
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
           <div id={SCANNER_ID} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
           {scanner.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{t('scanning')}</div>}
@@ -115,61 +96,19 @@ export function ReceptionIdentify() {
         </div>
 
         {waybill && (
-          <Card className="flex items-center gap-4">
-            <Holder icon={Barcode} tone="info" />
-            <span className="min-w-0 flex-1">
-              <span className={cn('block', TYPE.smallStrong, TEXT.muted)}>{t('rc_waybill_found')}</span>
-              <span className={cn('block truncate tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{waybill}</span>
-              <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{t('rc_waybill_kept')}</span>
-            </span>
-          </Card>
+          <p className={cn('flex items-center gap-2 tabular-nums', TYPE.small, 'text-[#02542D] dark:text-[#CFF7D3]')}>
+            <Barcode className="h-4 w-4 shrink-0" /> {t('rc_waybill_found')} · {waybill}
+          </p>
         )}
 
-        {/* La recherche */}
-        <div className="relative">
-          <Search className={cn('pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
-          <TextInput
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('rc_search_placeholder')}
-            className="h-14 pl-12 text-[17px]"
-            autoComplete="off"
-            inputMode="search"
-            aria-label={t('rc_search_placeholder')}
-          />
-        </div>
-
-        {searching && (
-          <Card className="py-0">
-            {search.isLoading ? (
-              <p className={cn('py-5 text-center', TYPE.body, TEXT.muted)}>…</p>
-            ) : results.length === 0 ? (
-              <p className={cn('py-5 text-center', TYPE.body, TEXT.muted)}>{t('rc_no_result')}</p>
-            ) : (
-              results.map((c) => {
-                const name = clientFullName(c);
-                return (
-                  <button key={c.user_id} type="button" onClick={() => void pick(c)} className={cn('flex w-full items-center gap-4 border-b py-4 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider)}>
-                    <Holder size="lg">{initials(name)}</Holder>
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block truncate', TYPE.bodyStrong, TEXT.strong)}>{name} <span className={cn('ml-1 tabular-nums', TYPE.small, TEXT.muted)}>{c.customer_code}</span></span>
-                      <span className={cn('mt-0.5 block truncate', TYPE.small, TEXT.muted)}>{[c.phone, c.city, c.company_name].filter(Boolean).join(' · ')}</span>
-                    </span>
-                    <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-                  </button>
-                );
-              })
-            )}
-          </Card>
-        )}
-
-        <div className="flex flex-col gap-3 pt-2">
-          <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => { scanner.stop(); navigate(`/r/new/client${assignId ? `?assign=${assignId}` : ''}`); }}>
-            <UserPlus /> {t('rc_new_client')}
+        {/* Pas de QR ? Deux sorties, grandes, l'une après l'autre. */}
+        <div className="flex flex-col gap-3">
+          <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => { scanner.stop(); navigate(`/r/new/search${qs}`); }}>
+            <Search /> {t('rc_s1_search')}
           </Button>
           {!assignId && (
-            <Button variant="subtle" className="h-14 w-full text-[16px]" onClick={() => goHow(null)}>
-              <HelpCircle /> {t('rc_dont_know')}
+            <Button variant="subtle" className="h-14 w-full text-[16px]" onClick={() => { scanner.stop(); navigate('/r/new/how'); }}>
+              <HelpCircle /> {t('rc_s1_unknown')}
             </Button>
           )}
         </div>

@@ -13,13 +13,15 @@ import { clientFullName, formatCbm, formatKg, initials } from '@/lib/reception';
 import { useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
-import { LocationMark, ParcelRow, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { useTranslation } from 'react-i18next';
 
 export function ReceptionDeposit() {
   const navigate = useNavigate();
   const { depositId } = useParams<{ depositId: string }>();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
+  const { t: ti } = useTranslation('agent');
   const { data: deposit, isLoading, error, refetch } = useReceptionDeposit(depositId);
   const remove = useRemoveParcel();
   const close = useCloseDeposit();
@@ -43,27 +45,21 @@ export function ReceptionDeposit() {
       <MobileHeader title={deposit.deposit_no} subtitle={labels.location(deposit.location)} showBack backTo="/r" />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        {/* Le client */}
-        <Card className="space-y-4">
-          {/* Le nom et l'état sur une ligne, les coordonnées sur toute la largeur en dessous : rien ne se tasse sur 320 px. */}
+        {editable && <StepHeader step={3} total={3} title={t('rc_s3_title')} help={t('rc_s3_help')} />}
+
+        {/* Le client, en une ligne — la fiche complète n'a rien à faire ici. */}
+        <Card className="space-y-3">
           <div className="flex items-center gap-3">
             <Holder size="lg" tone={deposit.client ? 'neutral' : 'pending'}>{deposit.client ? initials(name) : '?'}</Holder>
-            <span className={cn('min-w-0 flex-1 break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
-            {deposit.client && <StatusPill tone={st.tone} label={st.label} className="shrink-0" />}
-          </div>
-          <p className={cn('-mt-1 break-words tabular-nums', TYPE.small, TEXT.muted)}>
-            {deposit.client ? [deposit.client.customer_code, deposit.client.phone, deposit.client.city].filter(Boolean).join(' · ') : t('rc_pending')}
-          </p>
-          <div className={cn('flex items-center justify-between gap-3 border-t pt-4', SURFACE.divider, TYPE.body)}>
-            <span className={cn('shrink-0', TEXT.muted)}>{t('rc_brought_by')}</span>
-            <span className={cn('text-right font-semibold', TEXT.strong)}>
-              {labels.broughtBy(deposit.brought_by)}
-              {deposit.representative_name && <span className={cn('block font-normal', TYPE.small, TEXT.muted)}>{deposit.representative_name}{deposit.representative_phone ? ` · ${deposit.representative_phone}` : ''}</span>}
+            <span className="min-w-0 flex-1">
+              <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
+              <span className={cn('mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums', TYPE.small, TEXT.muted)}>
+                {deposit.client ? <span>{deposit.client.customer_code}</span> : <span>{t('rc_pending')}</span>}
+                <span>· {labels.broughtBy(deposit.brought_by)}{deposit.representative_name ? ` (${deposit.representative_name})` : ''}</span>
+                <span className="inline-flex items-center gap-1">· <LocationMark location={deposit.location} size={18} />{deposit.location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}</span>
+              </span>
             </span>
-          </div>
-          <div className={cn('flex items-center justify-between gap-3 border-t pt-4', SURFACE.divider, TYPE.body)}>
-            <span className={cn('shrink-0', TEXT.muted)}>{t('rc_mode')}</span>
-            <span className={cn('inline-flex items-center gap-2 text-right font-semibold', TEXT.strong)}><LocationMark location={deposit.location} size={24} />{labels.location(deposit.location)}</span>
+            {deposit.client && <StatusPill tone={st.tone} label={st.label} className="shrink-0" />}
           </div>
           {!deposit.client && (
             <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${deposit.id}`)}>
@@ -74,11 +70,10 @@ export function ReceptionDeposit() {
 
         {/* Les colis */}
         <section>
-          <div className="mb-1 flex items-baseline justify-between">
+          <div className="mb-3 flex items-baseline justify-between">
             <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_parcels')}</h2>
             <span className={cn('tabular-nums', TYPE.smallStrong, TEXT.muted)}>{deposit.parcels.length}</span>
           </div>
-          {deposit.parcels.length > 0 && <p className={cn('mb-3', TYPE.small, TEXT.muted)}>{t('rc_tap_to_edit')}</p>}
           {deposit.parcels.length === 0 ? (
             <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
               <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_no_parcel_yet')}</p>
@@ -95,16 +90,19 @@ export function ReceptionDeposit() {
 
       <div className={cn('shrink-0 space-y-3 border-t px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4', SURFACE.canvas, SURFACE.divider)}>
         {/* Le total sur deux lignes : l'étiquette, puis les chiffres — ça tient sur 320 px comme sur 430. */}
-        <div>
+        {deposit.parcels.length > 0 && <div>
           <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_total')}</span>
           <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>
             {labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
           </span>
-        </div>
+        </div>}
         {editable ? (
-          <div className="grid grid-cols-2 gap-3">
-            <PrimaryPill onClick={() => navigate(`/r/deposit/${deposit.id}/parcel`)} className="h-14 text-[17px]"><Plus /> {t('rc_add_short')}</PrimaryPill>
-            <SoftPill onClick={() => setConfirm(true)} disabled={deposit.parcels.length === 0} className="h-14 text-[17px]">{t('rc_finish_short')}</SoftPill>
+          <div className="space-y-3">
+            {/* Le geste principal, en pleine largeur ; « Terminer » n'apparaît qu'une fois qu'il y a quelque chose à terminer. */}
+            <PrimaryPill onClick={() => navigate(`/r/deposit/${deposit.id}/parcel`)} className="h-14 w-full text-[17px]"><Plus /> {t('rc_add_parcel')}</PrimaryPill>
+            {deposit.parcels.length > 0 && (
+              <SoftPill onClick={() => setConfirm(true)} className="h-14 w-full text-[17px]">{ti('rc_finish_n', { count: deposit.parcels.length })}</SoftPill>
+            )}
           </div>
         ) : (
           <PrimaryPill onClick={() => navigate(`/r/deposit/${deposit.id}/done`)} className="h-14 w-full text-[16px]">{t('rc_print_labels')}</PrimaryPill>

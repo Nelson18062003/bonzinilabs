@@ -121,20 +121,17 @@ await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
 });
 
-const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-edit', 'rc-done', 'rc-pending', 'rc-clients', 'rc-client-card'];
+const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-search', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-weight', 'rc-parcel-dims', 'rc-parcel-inside', 'rc-parcel-copies', 'rc-parcel-edit', 'rc-done', 'rc-pending', 'rc-clients', 'rc-client-card'];
 for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
-  if (screen === 'rc-identify') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
-  if (screen === 'rc-parcel') {
-    await page.fill('#p-weight', '8,4');
-    const dims = page.locator('input[inputmode="decimal"]');
-    await dims.nth(1).fill('60'); await dims.nth(2).fill('40'); await dims.nth(3).fill('40');
-    await page.fill('#p-desc', 'Chaussures, 40 paires');
-  }
+  if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
+  if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
+  if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
+  if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
     await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();

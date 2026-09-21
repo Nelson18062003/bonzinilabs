@@ -153,6 +153,7 @@ import { ReceptionRouteWrapper } from "./mobile/components/reception/ReceptionRo
 const ReceptionLogin = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionLogin })));
 const ReceptionHome = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionHome })));
 const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionIdentify })));
+const ReceptionSearch = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSearch })));
 const ReceptionBroughtBy = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionBroughtBy })));
 const ReceptionNewClient = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionNewClient })));
 const ReceptionDeposit = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDeposit })));
@@ -333,6 +334,7 @@ const App = () => (
                 <Route path="/r/login" element={<ReceptionRouteWrapper requireAuth={false} showTabBar={false}><ReceptionLogin /></ReceptionRouteWrapper>} />
                 <Route path="/r" element={<ReceptionRouteWrapper><ReceptionHome /></ReceptionRouteWrapper>} />
                 <Route path="/r/new" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionIdentify /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/search" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSearch /></ReceptionRouteWrapper>} />
                 <Route path="/r/new/how" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionBroughtBy /></ReceptionRouteWrapper>} />
                 <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
