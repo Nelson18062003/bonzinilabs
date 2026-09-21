@@ -5,7 +5,7 @@ import { authenticateWithPasskey } from '@/lib/passkey';
 import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -38,6 +38,10 @@ export interface RolePermission {
   canManageCargo: boolean;
   /** Autoriser un solde négatif (découvert) sur le portefeuille d'un client. Super admin seul. */
   canGrantOverdraft: boolean;
+  /** Réception des colis à Guangzhou : ouvrir un dépôt, enregistrer des colis (poids, dimensions, photo), l'attribuer à un client. */
+  canReceiveParcels: boolean;
+  /** Créer un client (le formulaire « Nouveau client ») — sans pouvoir le modifier ni voir son portefeuille. */
+  canRegisterClients: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -57,6 +61,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: true,
     canGrantOverdraft: true,
+    canReceiveParcels: true,
+    canRegisterClients: true,
   },
   ops: {
     canViewClients: true,
@@ -74,6 +80,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: true,
     canGrantOverdraft: false,
+    canReceiveParcels: true,
+    canRegisterClients: true,
   },
   support: {
     canViewClients: true,
@@ -91,6 +99,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: true,
   },
   customer_success: {
     canViewClients: true,
@@ -108,6 +118,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: true,
   },
   cash_agent: {
     canViewClients: false,
@@ -125,6 +137,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: false,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
   },
   treasurer: {
     canViewClients: false,
@@ -142,6 +156,33 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: false,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+  },
+  /**
+   * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
+   * la bonne étiquette sur le bon colis. Il cherche un client (identité
+   * seule), en crée un, enregistre des dépôts et des colis. Jamais un solde,
+   * un dépôt d'argent, un paiement, la trésorerie, les autres admins.
+   */
+  receptionist: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: true,
+    canRegisterClients: true,
   },
 };
 
@@ -152,6 +193,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   customer_success: 'Chargé de clientèle',
   cash_agent: 'Agent cash',
   treasurer: 'Trésorier',
+  receptionist: 'Réceptionnaire',
 };
 
 interface AdminAuthContextType {

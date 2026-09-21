@@ -1,0 +1,9 @@
+export { ReceptionHome } from './ReceptionHome';
+export { ReceptionIdentify } from './ReceptionIdentify';
+export { ReceptionBroughtBy } from './ReceptionBroughtBy';
+export { ReceptionNewClient } from './ReceptionNewClient';
+export { ReceptionDeposit } from './ReceptionDeposit';
+export { ReceptionParcel } from './ReceptionParcel';
+export { ReceptionDone } from './ReceptionDone';
+export { ReceptionPending } from './ReceptionPending';
+export { ReceptionLogin } from './ReceptionLogin';

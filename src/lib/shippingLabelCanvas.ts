@@ -47,6 +47,9 @@ export interface LabelData {
   destination: ShippingDestination;
   settings: ShippingSettings;
   supplier?: LabelSupplierInfo;
+  /** Imprimée à la réception : la date d'arrivée et « 3/10 » dans la case Carton no. */
+  shipDate?: string;
+  cartonNo?: string;
   /**
    * Sans couleur : noir, blanc et gris seulement — la silhouette, le nom du
    * mode, les hachures font tout le travail. Pour une imprimante d'usine en
@@ -341,7 +344,7 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
     y = row1(y, rh, '邮箱', 'Email', s.email);
     y = row1(y, rh, '地址', 'Address', s.address, false);
     y = row2(y, rh, ['货物品名', 'Goods', ''], ['货物数量(件)', 'Qty', '']);
-    y = row2(y, rh, ['发货日期', 'Ship date', ''], ['箱号', 'Carton no.', '']);
+    y = row2(y, rh, ['发货日期', 'Ship date', d.shipDate ?? ''], ['箱号', 'Carton no.', d.cartonNo ?? '']);
   }
 
   // 5 · Réservé à l'entrepôt — les colonnes du 三联单

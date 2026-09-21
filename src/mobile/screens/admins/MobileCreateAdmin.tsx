@@ -50,6 +50,11 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
     descriptionKey: 'roleTreasurerDesc',
     descriptionDefault: 'Trésorerie : achats/ventes USDT, contreparties, inventaire',
   },
+  {
+    role: 'receptionist',
+    descriptionKey: 'roleReceptionistDesc',
+    descriptionDefault: 'Réception des colis à Guangzhou : dépôts, colis, nouveaux clients. Aucun accès aux soldes ni aux paiements',
+  },
 ];
 
 export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {}) {

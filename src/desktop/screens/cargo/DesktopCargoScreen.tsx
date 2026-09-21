@@ -1,5 +1,7 @@
 /**
- * Desktop admin — Cargo, écran d'entrée : le workbench « Ma flotte ».
+ * Desktop admin — Cargo › Container : le workbench des boîtes.
+ * (L'autre partie du module, la Réception des colis, vit à /m/cargo/reception ;
+ * la barre d'onglets en haut passe de l'une à l'autre.)
  *
  * Archétype 02-foundation §2.A : en-tête (titre + compteurs + UN CTA), bandeau
  * de files (chips = filtres), barre de filtres sur une ligne, table triée par
@@ -9,6 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Download, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
+import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -102,6 +105,9 @@ export function DesktopCargoScreen() {
 
   return (
     <div className="flex min-h-[calc(100vh-120px)] flex-col">
+      {/* ── Les deux parties du module : Container (ici) · Réception ────── */}
+      <DesktopCargoParts active="container" className="mb-4" />
+
       {/* ── En-tête de page ─────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <p className={cn('text-[15px] font-semibold', TEXT.body)}>
@@ -140,7 +146,7 @@ export function DesktopCargoScreen() {
       {/* ── Table + panneau ─────────────────────────────────────────────── */}
       <div className="mt-4 flex min-h-0 flex-1 items-stretch gap-5">
         <Card className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-          <CardHeader title="Ma flotte" meta={sort.field === 'eta' ? `Triés par arrivée ${sort.asc ? 'la plus proche' : 'la plus lointaine'} d'abord` : `Triés par client (${sort.asc ? 'A→Z' : 'Z→A'})`} />
+          <CardHeader title="Container" meta={sort.field === 'eta' ? `Triés par arrivée ${sort.asc ? 'la plus proche' : 'la plus lointaine'} d'abord` : `Triés par client (${sort.asc ? 'A→Z' : 'Z→A'})`} />
           {isLoading ? (
             <ScreenLoader />
           ) : rows.length > 0 ? (

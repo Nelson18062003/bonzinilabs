@@ -31,6 +31,8 @@ export const useAdminAuth = () => ({
     id: 'screenshot-admin',
     email: 'demo@bonzinilabs.test',
     name: 'Demo Admin',
+    firstName: 'Kevin',
+    lastName: 'Nkolo',
     role: mockRole(),
   },
   isLoading: false,

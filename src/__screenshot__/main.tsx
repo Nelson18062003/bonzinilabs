@@ -74,6 +74,10 @@ import {
   MobileChangePasswordScreen,
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
+import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels } from '@/mobile/screens/cargo';
+import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception } from '@/desktop/screens/cargo';
+import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
@@ -97,6 +101,18 @@ import {
   MobileCannedResponsesScreen,
   MobileQuickRepliesScreen,
 } from '@/mobile/screens/support';
+import {
+  ReceptionHome,
+  ReceptionIdentify,
+  ReceptionBroughtBy,
+  ReceptionNewClient,
+  ReceptionDeposit,
+  ReceptionParcel,
+  ReceptionDone,
+  ReceptionPending,
+  ReceptionLogin,
+} from '@/mobile/screens/reception';
+import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import {
   AgentCashLogin,
   AgentCashPayments,
@@ -300,6 +316,33 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
   'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
   'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
+  // Réception des colis (réceptionnaire) — routes /r/*, fixtures dans tools/shoot-reception.mjs
+  'rc-login': { Comp: ReceptionLogin, route: '/r/login', wrap: 'lang' },
+  'rc-home': { Comp: () => <ReceptionShell><ReceptionHome /></ReceptionShell>, route: '/r', wrap: 'lang' },
+  'rc-identify': { Comp: ReceptionIdentify, route: '/r/new', wrap: 'lang' },
+  'rc-how': { Comp: ReceptionBroughtBy, route: '/r/new/how?client=u1&name=A%C3%AFcha%20Mbarga&code=BZ-482913', wrap: 'lang' },
+  'rc-client': { Comp: ReceptionNewClient, route: '/r/new/client', wrap: 'lang' },
+  'rc-deposit': { Comp: ReceptionDeposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-deposit-empty': { Comp: ReceptionDeposit, route: '/r/deposit/dep0', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
+  // Admin — la réception dans Bonzini Cargo
+  'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
+  'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
+  'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
+  'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },
+  // Admin DESKTOP — la réception dans Bonzini Cargo (1440×900, dans le shell)
+  'cargo-desk-home': { Comp: () => <DesktopAppShell><DesktopCargoScreen /></DesktopAppShell>, route: '/m/cargo' },
+  'cargo-desk-reception': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-deposit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-deposit-pending': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-chargement': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-desk-load': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement?charger=1', path: '/m/cargo/:shipmentId/:tab' },
+  'client-desk-panel': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
 };
 
 const params = new URLSearchParams(window.location.search);
