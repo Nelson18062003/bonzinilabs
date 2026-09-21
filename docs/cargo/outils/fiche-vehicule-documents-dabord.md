@@ -111,8 +111,8 @@ Ce que chaque document répond, question par question.
 | 6. personnes ou marchandises | carte grise (case J : M1 = voiture) |
 | 7. motorisation | carte grise (P.3) · photo du moteur |
 | 8. cylindrée en cm³ | **carte grise (P.1)** · photo du moteur · *absente du Title américain* |
-| 9. 2 roues motrices ou 4×4 | ❌ **aucun document ne le dit de façon fiable** — photo du badge arrière, ou on demande |
-| 10. numéro de châssis | carte grise (E) · plaque constructeur · facture · BL |
+| 9. 2 roues motrices ou 4×4 | ⚪ **ne change aucun montant** — utile pour déclarer, inutile pour estimer. Photo du badge arrière si besoin |
+| 10. numéro de châssis | ⚪ **n'entre dans aucun calcul** — case du formulaire de déclaration. Utile seulement comme source de secours quand la carte grise manque |
 | 11. poids | carte grise (G) · plaque constructeur · BL |
 | 12. pays de fabrication | **le châssis, 1er caractère** |
 
@@ -156,8 +156,10 @@ fabrication, son 10ᵉ l'année du modèle. Exemple réel : `LVGE656F2MG032343` 
 Une fois tous les documents reçus, il ne reste que ça. **De 27 questions à 6.**
 
 ### 1. Le véhicule est-il à deux roues motrices ou à quatre roues motrices ?
-Aucun papier ne le dit de manière fiable. Une photo du badge arrière (4WD / AWD)
-suffit, sinon on demande.
+⚪ **Pas pour l'estimation — pour la déclaration.** Toutes les sous-positions des
+voitures sont à 30 %, et le droit d'accises dépend de la cylindrée et de l'âge,
+pas de la transmission. Ça change le code, pas le montant. Une photo du badge
+arrière (4WD / AWD) suffit le moment venu.
 
 ### 2. Le véhicule a-t-il déjà été immatriculé quelque part ?
 « Neuf » dans la tête du client, c'est souvent « très peu roulé ». Or un véhicule
@@ -182,6 +184,82 @@ Bonzini, cette seule ligne valait **926 581 XAF ou 0 XAF** sur une marchandise d
 
 ### 6. Le véhicule est pour lui, ou pour la revente ?
 Pure intention. Aucun papier ne la contient.
+
+---
+
+# 🔴 DEUX LISTES À NE JAMAIS CONFONDRE
+
+C'est l'erreur la plus facile à commettre, et elle fait poser des questions inutiles
+à un client qui se lasse.
+
+| | À quoi elle sert | Ce qu'elle contient |
+|---|---|---|
+| **Liste A — ESTIMER** | sortir un montant | seulement ce qui entre dans une formule : **le code, la valeur, l'âge** |
+| **Liste B — DÉCLARER** | remplir le DAU au port | tout ce que le formulaire exige, y compris des cases purement identitaires |
+
+**Appartiennent à la liste B seule, donc inutiles pour estimer :**
+
+| Élément | Pourquoi il ne change rien |
+|---|---|
+| **le numéro de châssis** | case du formulaire. N'entre dans aucun calcul |
+| **2 roues motrices / 4×4** | toutes les voitures sont à 30 %, les accises suivent la cylindrée et l'âge |
+| **le poids** | case du formulaire |
+| **le nom du navire, le numéro de BL** | idem |
+
+Le châssis ne redevient utile pour estimer que dans **un seul cas** : quand la carte
+grise manque. Il donne alors le pays *(1ᵉʳ caractère)* et l'année *(10ᵉ)*. Avec la
+carte grise en main, il est redondant.
+
+---
+
+# 🔴 QUAND C'EST BONZINI QUI IMPORTE
+
+Cas standard de la ligne cargo : le client achète le véhicule, **mais c'est notre
+nom qui figure sur la déclaration**. Quatre questions disparaissent immédiatement.
+
+| Question de la fiche | Ce qu'elle devient |
+|---|---|
+| 24. a-t-il un NIU | **le nôtre** — connu |
+| 25. inscrit au fichier des importateurs | **le nôtre** — connu |
+| 26. régime fiscal | **le nôtre**, régime du réel → **le précompte tombe à 0** |
+| 22-23. assurance | **c'est nous qui la souscrivons** — on connaît le montant, ou on le fixe |
+
+Le fret aussi est connu : **c'est nous le transporteur.** On n'a pas à le demander.
+
+## Mais deux questions nouvelles apparaissent
+
+### ⚠️ Au nom de qui la facture du vendeur est-elle établie ?
+
+Si la facture est au nom du client et la déclaration au nom de Bonzini, la douane
+a devant elle **un importateur qui ne peut pas produire sa propre facture d'achat**.
+C'est précisément la difficulté documentée dans `qui-declare-groupage.md` : celui
+qui déclare sans se déclarer représentant est réputé agir en son nom propre, et on
+lui demande alors la preuve d'un achat qu'il n'a pas fait.
+
+À régler **avant** l'embarquement, pas au port.
+
+### ⚠️ Que devient le véhicule à l'arrivée ?
+
+Importé au nom de Bonzini, le véhicule est **à Bonzini** au regard de la douane et
+de l'immatriculation. Le remettre au client est une **cession**, avec ses
+conséquences : TVA collectée sur le prix de cession, et mutation de la carte grise
+camerounaise. Ce n'est pas un détail administratif, c'est une opération commerciale
+à part entière qui doit être prévue dans le prix annoncé au client.
+
+## Ce qui reste vraiment à demander dans ce cas
+
+| # | Question | Pourquoi |
+|---|---|---|
+| **1** | **Combien l'a-t-il payée, et dans quelle monnaie ?** | base de tout le calcul |
+| **2** | **Électrique, essence, diesel ou hybride ?** | détermine la famille du code |
+| **3** | **Si moteur à carburant : cylindrée en cm³ ?** | détermine le droit d'accises |
+| **4** | **Déjà immatriculée ? Depuis quelle date exactement ?** | détermine le droit d'accises |
+| **5** | **Le véhicule est dans quelle ville de Chine ?** | l'acheminement jusqu'au port est taxable lui aussi |
+
+Et **deux documents** : la facture d'achat, la carte grise *(ou le certificat de
+conformité si le véhicule est neuf)*.
+
+Rien d'autre.
 
 ---
 
