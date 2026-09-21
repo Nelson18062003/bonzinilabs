@@ -115,7 +115,7 @@ Sur une déclaration de Bonzini, une même marchandise de 9 265 805 XAF :
 | # | Document | Ce que c'est | Ce qu'il prouve |
 |---|---|---|---|
 | **1** | **La facture commerciale** *(ou la facture proforma si l'achat n'est pas encore fait)* | le papier du vendeur avec le prix | 🔴 **la seule pièce qui fixe la valeur taxable.** Aucune estimation de marché ne la remplace |
-| **2** | **La carte grise** *(si occasion)* **OU le certificat d'origine du véhicule** *(si neuf)* | le document officiel du véhicule | cylindrée · carburant · date de 1re mise en circulation · places · VIN |
+| **2** | **La carte grise** *(si le véhicule a déjà été immatriculé)* **OU le certificat de conformité** *(s'il est neuf)* | le document technique du véhicule | cylindrée · carburant · date · places |
 | **3** | **Le connaissement (BL)** | le titre de transport émis par l'armateur | qui reçoit la marchandise · le navire · les ports · les dates |
 | **4** | **La facture du transport** | ce que coûte le fret | **s'ajoute à la valeur taxable** — et doit être **détaillé**, pas globalisé |
 

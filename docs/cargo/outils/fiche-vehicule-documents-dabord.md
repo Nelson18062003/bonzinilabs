@@ -263,35 +263,88 @@ Rien d'autre.
 
 ---
 
+# 🔴 NEUF OU OCCASION : LE DOCUMENT RÉPOND TOUT SEUL
+
+**Ne pose jamais la question.** Une carte grise n'existe que si le véhicule a été
+immatriculé. Donc :
+
+| | |
+|---|---|
+| **il a une carte grise** | le véhicule a déjà roulé → **occasion** |
+| **il n'en a pas** | jamais immatriculé → **neuf** |
+
+Et chaque cas a son document technique, qui donne exactement les mêmes informations :
+
+| Situation | Le document | Ce qu'il donne |
+|---|---|---|
+| **Occasion** | **la carte grise** — Chine 行驶证 / 机动车登记证书 · Japon 車検証 · USA *Title* · Émirats *Mulkiya* | cylindrée · carburant · places · **date de 1re immatriculation** |
+| **Neuf** | **le certificat de conformité** — Chine **合格证** · Europe *COC* · USA *MCO / MSO* | cylindrée · carburant · places · **date de fabrication** · puissance · poids |
+
+⚠️ **Ne pas confondre avec le « certificat d'origine ».** Celui-là est un papier
+commercial qui atteste le pays de fabrication, pour la déclaration. **Il ne
+contient aucune donnée technique** et ne sert à rien pour estimer.
+
+💡 **Le certificat de conformité est plus riche que la carte grise.** Il porte en
+plus la puissance, le poids à vide et la date de sortie d'usine. Quand un client
+a les deux, c'est lui qu'on prend.
+
+---
+
+# 🔴 UNE QUESTION OUVERTE SUR LES VÉHICULES NEUFS
+
+Le droit d'accises sur les véhicules est bâti sur deux critères : **la cylindrée**
+et **l'âge**. Or les tranches d'âge connues commencent à « plus de 10 ans » ou
+« de 1 à 15 ans ». **Un véhicule neuf ne tombe dans aucune.**
+
+Deux lectures possibles, et l'écart est énorme :
+
+| Lecture | Taux | Total sur une valeur de 9 350 000 |
+|---|---|---|
+| le véhicule neuf ≥ 2 000 cm³ relève du **taux général** | 25 % | **9 871 555** *(105,6 %)* |
+| il relève du taux moyen, comme les véhicules de 1 à 15 ans | 12,5 % | **7 970 438** *(85,2 %)* |
+
+**Écart : 1 901 117 XAF sur une seule voiture.**
+
+🔴 **À poser au déclarant**, en même temps que la question des abattements et celle
+des véhicules électriques. Ce sont les trois inconnues qui pèsent le plus lourd.
+
+---
+
 # MESSAGE PRÊT À ENVOYER AU CLIENT
 
-**Court. Deux documents. Rien d'autre.** Un client répond à une demande simple,
-pas à un formulaire. Quand on demande deux choses, on demande deux choses — ne
-jamais doubler d'une liste de questions « au cas où », il ne saura plus quoi faire.
+**Complet, et sans question à poser.** Deux papiers, une branche selon que le
+véhicule a été immatriculé ou pas, et une phrase qui coupe l'excuse : *le vendeur
+les a forcément.*
 
-> Bonjour,
+> Salut,
 >
-> Pour la douane je peux vous faire une estimation. Il me faut juste deux papiers :
+> Pour la douane je peux te faire une estimation. Il me faut deux papiers — et le
+> vendeur les a forcément, une photo suffit.
 >
-> • la **facture d'achat** *(ou la proforma si l'achat n'est pas encore fait)*
-> • la **carte grise**
+> **1. La facture**
+> La facture d'achat si tu as déjà payé. Sinon la proforma.
 >
-> Une photo des deux suffit.
+> **2. Le papier technique de la voiture** — ça dépend d'une seule chose :
 >
-> Attention : le prix du transport que je vous ai donné ne comprend pas la douane.
-> Elle vient en plus, et elle se calcule sur la valeur du véhicule **+** le transport.
+> • **Si elle a déjà été immatriculée**, même quelques mois → **la carte grise**
+>   *(行驶证 ou 机动车登记证书)*
+> • **Si elle est neuve et n'a jamais eu de plaque** → **le certificat de
+>   conformité** *(合格证)*, le papier que le concessionnaire remet avec une
+>   voiture neuve
 >
-> Dès que j'ai les deux papiers je reviens vers vous avec l'estimation.
-
-**Si le client ne reconnaît pas « carte grise »** — à sortir seulement s'il demande,
-jamais dans le premier message :
-
-| Provenance | Nom local |
-|---|---|
-| Chine | 行驶证 · 机动车登记证书 · **合格证** *(véhicule neuf)* |
-| Japon | 車検証 |
-| États-Unis | Title |
-| Émirats | Mulkiya |
+> C'est ce papier-là qui me donne la cylindrée, le carburant et la date. C'est
+> exactement ce qui fait le montant.
+>
+> **Deux précisions :**
+>
+> Le prix du transport que je t'ai donné, c'est le transport seul. La douane vient
+> en plus, et elle se calcule sur la valeur de la voiture **+** le transport.
+>
+> Et dis-moi dans quelle ville se trouve la voiture. Si elle n'est pas déjà au
+> port, il faut l'y amener, et ça compte aussi dans le calcul.
+>
+> Dès que j'ai les deux photos je reviens vers toi. Ce sera une **estimation** :
+> c'est la douane qui fixe la valeur finale, pas nous.
 
 ---
 
