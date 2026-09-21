@@ -9,3 +9,4 @@ export { MobileAdminProfile } from './MobileAdminProfile';
 export { MobileBriefsScreen } from './MobileBriefsScreen';
 export { MobilePasskeysScreen } from './MobilePasskeysScreen';
 export { MobileChangePasswordScreen } from './MobileChangePasswordScreen';
+export { MobileCargoPricing } from './MobileCargoPricing';

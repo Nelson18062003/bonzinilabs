@@ -92,6 +92,7 @@ const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m =>
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
 const MobileShippingSettings = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileShippingSettings })));
+const MobileCargoPricing = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileCargoPricing })));
 const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobilePasskeysScreen })));
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
@@ -116,6 +117,7 @@ const MobileCargoDossier = lazy(() => import("./mobile/screens/cargo").then(m =>
 const MobileCargoReception = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoReception })));
 const MobileCargoDepositDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDepositDetail })));
 const MobileCargoLoadParcels = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoLoadParcels })));
+const MobileCargoQuote = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoQuote })));
 const MobileClientParcels = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcels })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
 const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
@@ -275,6 +277,7 @@ const App = () => (
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
+                <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
                 <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
@@ -293,6 +296,7 @@ const App = () => (
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception" element={<AdminRouteWrapper desktop={<DesktopCargoReception />}><MobileCargoReception /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId/devis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoQuote /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoDepositDetail /></AdminRouteWrapper>} />
                 {/* Sur desktop, le chargement se fait dans l'onglet Chargement du dossier (dialogue) : la route mobile y renvoie. */}
                 <Route path="/m/cargo/:shipmentId/charger-colis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoLoadParcels /></AdminRouteWrapper>} />

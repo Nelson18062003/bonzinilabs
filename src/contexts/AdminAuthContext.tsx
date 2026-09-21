@@ -42,6 +42,8 @@ export interface RolePermission {
   canReceiveParcels: boolean;
   /** Créer un client (le formulaire « Nouveau client ») — sans pouvoir le modifier ni voir son portefeuille. */
   canRegisterClients: boolean;
+  /** Fixer le prix des colis reçus (au kilo, au m³ ou montant fixe) et émettre le devis. Le réceptionnaire ne l'a jamais. */
+  canPriceParcels: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -63,6 +65,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: true,
     canReceiveParcels: true,
     canRegisterClients: true,
+    canPriceParcels: true,
   },
   ops: {
     canViewClients: true,
@@ -82,6 +85,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: true,
     canRegisterClients: true,
+    canPriceParcels: true,
   },
   support: {
     canViewClients: true,
@@ -101,6 +105,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: false,
     canRegisterClients: true,
+    canPriceParcels: false,
   },
   customer_success: {
     canViewClients: true,
@@ -120,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: false,
     canRegisterClients: true,
+    canPriceParcels: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -139,6 +145,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: false,
     canRegisterClients: false,
+    canPriceParcels: false,
   },
   treasurer: {
     canViewClients: false,
@@ -158,6 +165,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: false,
     canRegisterClients: false,
+    canPriceParcels: false,
   },
   /**
    * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
@@ -183,6 +191,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canGrantOverdraft: false,
     canReceiveParcels: true,
     canRegisterClients: true,
+    canPriceParcels: false,
   },
 };
 

@@ -50,6 +50,25 @@ const withDep = (p, d) => ({ ...p, deposit_id: d.id, deposit_no: d.deposit_no, l
 const loadedParcels = dep3.parcels.map((p) => withDep({ ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number }, { ...dep3, client }));
 const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number } : p)) };
 
+
+// ── Phase 1 : le devis d'un dépôt (prix par colis) ──
+const pricing = { success: true, air_per_kg_xaf: 6500, sea_per_cbm_xaf: 180000, currency: 'XAF' };
+const quoteLine = (p, i, o) => ({ id: `ql-${p.id}`, seq: i + 1, kind: 'parcel', label: p.parcel_no, basis: 'per_cbm', quantity: p.cbm, unit_price_xaf: 180000, amount_xaf: Math.round(p.cbm * 180000),
+  parcel_id: p.id, parcel_no: p.parcel_no, parcel_seq: p.seq, kind_of_parcel: p.kind, description: p.description, weight_kg: p.weight_kg, cbm: p.cbm, ...o });
+const quoteDep2 = {
+  id: 'q1', quote_no: 'DV-000031', deposit_id: 'dep2', status: 'draft', currency: 'XAF', amount_paid_xaf: 0, notes: null, sent_at: null,
+  created_at: today(14, 40), updated_at: today(14, 52), deposit_no: dep2.deposit_no, location: dep2.location, opened_at: dep2.opened_at, closed_at: dep2.closed_at, client: dep2.client,
+  lines: [
+    ...dep2.parcels.map((p, i) => quoteLine(p, i, i === 1 ? { basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 25000 } : i === 4 ? { basis: 'per_kg', quantity: p.weight_kg, unit_price_xaf: 6500, amount_xaf: Math.round(p.weight_kg * 6500) } : {})),
+    { id: 'ql-fee1', seq: 11, kind: 'fee', label: 'Emballage renforcé', basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 12000, parcel_id: null },
+    { id: 'ql-disc1', seq: 12, kind: 'discount', label: 'Geste commercial', basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: -10000, parcel_id: null },
+  ],
+};
+quoteDep2.total_xaf = quoteDep2.lines.reduce((t, l) => t + l.amount_xaf, 0);
+const quoteDep3 = { ...quoteDep2, id: 'q2', quote_no: 'DV-000030', deposit_id: 'dep3', status: 'sent', sent_at: today(13, 30), deposit_no: dep3.deposit_no, client: dep3.client, lines: dep3.parcels.map((p, i) => quoteLine(p, i)) };
+quoteDep3.total_xaf = quoteDep3.lines.reduce((t, l) => t + l.amount_xaf, 0);
+const QUOTES = { dep2: quoteDep2, dep3: quoteDep3 };
+const withQuote = (d) => { const q = QUOTES[d.id]; return q ? { ...d, quote_status: q.status, quote_no: q.quote_no, quote_total_xaf: q.total_xaf } : { ...d, quote_status: null, quote_no: null, quote_total_xaf: null }; };
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
   reception_recent_clients: { success: true, clients: [client, client2, client3] },
@@ -60,7 +79,7 @@ const RPC = {
   reception_overview: { success: true, by_receptionist: [
     { received_by: 'demo', name: 'Kevin Nkolo', deposits: 26, parcels: 158, weight_kg: 1210, cbm: 9.1, pending: 2, incomplete: 3 },
     { received_by: 'mei', name: 'Mei Lin', deposits: 12, parcels: 53, weight_kg: 430, cbm: 3.3, pending: 0, incomplete: 0 },
-  ], deposits: [pend1, dep2, dep3, dep4, pend2] },
+  ], deposits: [pend1, dep2, dep3, dep4, pend2].map(withQuote) },
   reception_stock: { success: true, stats: { parcels: 31, clients: 4, weight_kg: 248, cbm: 1.84, pending: 2 }, by_client: [
     { client, location: 'warehouse', parcels: 13, weight_kg: 110.7, cbm: 0.93, deposits: 2, last_at: today(14, 32) },
     { client: client2, location: 'warehouse', parcels: 3, weight_kg: 21, cbm: 0.18, deposits: 1, last_at: today(13, 18) },
@@ -73,6 +92,14 @@ const RPC = {
   reception_my_day: { success: true, day: '2026-09-20', stats: { deposits: 6, parcels: 31, weight_kg: 248, cbm: 1.84, open: 1 }, pending: 2, deposits: [dep0, dep1, dep2, dep3, dep4] },
   reception_pending_deposits: { success: true, deposits: [pend1, pend2] },
   reception_search_clients: { success: true, clients: [client, { ...client, user_id: 'u9', customer_code: 'BZ-119042', first_name: 'Paul', last_name: 'Mbarga', phone: '+237 699 00 11 22', company_name: null, city: 'Yaoundé' }] },
+  cargo_pricing_get: pricing,
+  cargo_pricing_set: (b) => ({ ...pricing, air_per_kg_xaf: b.p_air_per_kg_xaf, sea_per_cbm_xaf: b.p_sea_per_cbm_xaf }),
+  cargo_quote_get: (b) => ({ success: true, quote: QUOTES[b.p_deposit_id] ?? null }),
+  cargo_quote_ensure: (b) => ({ success: true, quote: QUOTES[b.p_deposit_id] ?? { ...quoteDep2, deposit_id: b.p_deposit_id } }),
+  cargo_quote_set_line: { success: true, quote: quoteDep2 },
+  cargo_quote_add_line: { success: true, quote: quoteDep2 },
+  cargo_quote_remove_line: { success: true, quote: quoteDep2 },
+  cargo_quote_send: { success: true, quote: { ...quoteDep2, status: 'sent', sent_at: today(15, 2) } },
   reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
 };
 

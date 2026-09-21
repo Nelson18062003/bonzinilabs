@@ -6,3 +6,4 @@ export { MobileCargoCout } from './MobileCargoCout';
 export { MobileCargoReception } from './MobileCargoReception';
 export { MobileCargoDepositDetail } from './MobileCargoDepositDetail';
 export { MobileCargoLoadParcels } from './MobileCargoLoadParcels';
+export { MobileCargoQuote } from './MobileCargoQuote';

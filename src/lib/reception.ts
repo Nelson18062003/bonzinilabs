@@ -106,6 +106,10 @@ export interface Deposit {
   total_cbm: number;
   notes: string | null;
   parcels: Parcel[];
+  /** Côté admin seulement (reception_overview) : l'état du devis du dépôt. */
+  quote_status?: 'draft' | 'sent' | 'paid' | 'invoiced' | null;
+  quote_no?: string | null;
+  quote_total_xaf?: number | null;
 }
 
 export interface DayStats {

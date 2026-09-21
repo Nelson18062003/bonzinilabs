@@ -21,6 +21,7 @@ import { clientFullName, formatCbm, formatKg, initials, type Deposit, type Recep
 import { exportToCSV } from '@/lib/exportCSV';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { DepositQuickView } from '@/components/cargo/reception/DepositQuickView';
+import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, Card, CardHeader, Chip, Holder, KV, ScreenLoader, StatusPill, Th, Td } from '@/desktop/designKit';
 
@@ -184,18 +185,18 @@ export function DesktopCargoReception() {
             {overview.isLoading ? <ScreenLoader /> : deposits.length === 0 ? (
               <p className={cn('px-5 py-8 text-center text-[13px]', TEXT.muted)}>Aucune réception sur cette période.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className={SURFACE.card}>
                   <tr>
                     <Th first>N°</Th>
                     <Th>Date</Th>
                     <Th>Client</Th>
-                    <Th>Apporté par</Th>
                     <Th align="right">Colis</Th>
                     <Th align="right">Poids</Th>
                     <Th align="right">Volume</Th>
-                    <Th>Reçu par</Th>
                     <Th>État</Th>
+                    <Th>Devis</Th>
                     <Th last className="w-[36px]" />
                   </tr>
                 </thead>
@@ -210,18 +211,25 @@ export function DesktopCargoReception() {
                           <div className={cn('text-[13px] font-semibold', d.client ? TEXT.strong : 'text-amber-700 dark:text-amber-400')}>{d.client ? clientFullName(d.client) : 'Client à attribuer'}</div>
                           {d.client && <div className={cn('font-mono text-[11.5px]', TEXT.muted)}>{d.client.customer_code}</div>}
                         </Td>
-                        <Td><span className="text-[12.5px]">{labels.broughtBy(d.brought_by)}</span></Td>
                         <Td align="right"><span className="text-[13px] font-semibold tabular-nums">{d.parcels.length}</span></Td>
                         <Td align="right"><span className="text-[13px] tabular-nums">{formatKg(d.total_weight_kg)}</span></Td>
                         <Td align="right"><span className="text-[13px] tabular-nums">{formatCbm(d.total_cbm)}</span></Td>
-                        <Td><span className="text-[12.5px]">{d.received_by_name ?? '—'}</span></Td>
                         <Td><StatusPill tone={st.tone} label={st.label} /></Td>
+                        <Td>
+                          {(() => { const q = quoteStatusMeta(d.quote_status); return (
+                            <span className="inline-flex flex-col items-start gap-0.5">
+                              <StatusPill tone={q.tone} label={q.short} />
+                              {d.quote_total_xaf != null && <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>{xaf(d.quote_total_xaf)}</span>}
+                            </span>
+                          ); })()}
+                        </Td>
                         <Td last><ChevronRight className={cn('h-4 w-4', TEXT.muted)} /></Td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </Card>
         </div>

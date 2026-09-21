@@ -75,7 +75,8 @@ import {
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
 import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
-import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels } from '@/mobile/screens/cargo';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote } from '@/mobile/screens/cargo';
+import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
 import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
@@ -343,6 +344,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
   'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-quote': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-quote-empty': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep4/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-pricing': { Comp: MobileCargoPricing, route: '/m/more/cargo-pricing' },
+  'cargo-pricing-desktop': { Comp: () => <MobileCargoPricing desktop />, route: '/m/more/cargo-pricing' },
   'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
   'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },

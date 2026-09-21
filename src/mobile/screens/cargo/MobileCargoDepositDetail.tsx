@@ -6,12 +6,14 @@
 // ============================================================
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Search, UserSearch } from 'lucide-react';
+import { ChevronRight, FileText, Search, UserSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatKg, initials, parcelStage } from '@/lib/reception';
+import { useCargoQuote } from '@/hooks/useCargoQuote';
+import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, Row, ScreenError, ScreenLoader, StatusPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, ParcelRow, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -28,6 +30,7 @@ export function MobileCargoDepositDetail() {
   useEffect(() => { const id = setTimeout(() => setDebounced(query), 250); return () => clearTimeout(id); }, [query]);
   const search = useReceptionSearch(assignOpen ? debounced : '');
   const assign = useAssignDeposit();
+  const { data: quote } = useCargoQuote(depositId);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -65,6 +68,21 @@ export function MobileCargoDepositDetail() {
             <Button variant="primary" className="h-12 w-full" onClick={() => setAssignOpen(true)}><UserSearch /> Attribuer à un client</Button>
           )}
         </Card>
+
+        {/* Le prix et le devis : posés ici, côté admin — jamais par le réceptionnaire. */}
+        {(() => { const qs = quoteStatusMeta(quote?.status); return (
+          <button type="button" onClick={() => navigate(`/m/cargo/reception/${deposit.id}/devis`)} className={cn('flex w-full items-center gap-4 rounded-lg p-4 text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
+            <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}><FileText className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className={cn(TYPE.bodyStrong, TEXT.strong)}>Prix et devis</span>
+                <StatusPill tone={qs.tone} label={qs.label} />
+              </span>
+              <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>{quote ? `${quote.quote_no} · ${xaf(quote.total_xaf)}` : hasPermission('canPriceParcels') ? 'Aucun prix posé : touchez pour chiffrer' : 'Aucun prix posé'}</span>
+            </span>
+            <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+          </button>
+        ); })()}
 
         <section>
           <div className="mb-3 flex items-baseline justify-between">
