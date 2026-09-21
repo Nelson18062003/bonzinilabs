@@ -52,6 +52,7 @@ const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...
 
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
+  reception_update_parcel: { success: true, deposit: dep1 },
   reception_client_by_code: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; return c ? { success: true, client: c } : { success: false, error: 'unknown_code', code: b.p_code }; },
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
   reception_overview: { success: true, by_receptionist: [
@@ -78,9 +79,11 @@ const DESKTOP = process.env.DESKTOP === '1';
 // LANG=zh|en|fr : la langue de l'app pour les captures (fr par défaut).
 const LANG = process.env.LANG_APP ?? 'fr';
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
+// VIEWPORT=320x568 (iPhone SE 1re gén.), 360x640 (petit Android), 375x667 (iPhone SE 2/3), 390x844 (défaut), 430x932 (grand iPhone).
+const [VW, VH] = (process.env.VIEWPORT ?? '390x844').split('x').map(Number);
 const ctx = await browser.newContext(DESKTOP
   ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, ignoreHTTPSErrors: true }
-  : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
+  : { viewport: { width: VW, height: VH }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
 await ctx.addInitScript((lang) => {
   try { localStorage.setItem('bonzini-reception-location', 'warehouse'); localStorage.setItem('bonzini-language', lang); } catch { /* privé */ }
 }, LANG);
@@ -116,7 +119,7 @@ await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
 });
 
-const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-done', 'rc-pending'];
+const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-edit', 'rc-done', 'rc-pending'];
 for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   const key = screen === 'rc-location' ? 'rc-home' : screen;

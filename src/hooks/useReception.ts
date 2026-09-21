@@ -287,3 +287,26 @@ export function useClientByCode() {
     },
   });
 }
+
+// ── Corriger ou compléter un colis (dépôt ouvert ou fermé, colis pas en boîte) ──
+export type UpdateParcelInput = Omit<AddParcelInput, 'depositId' | 'copies'> & { parcelId: string; depositId: string };
+
+export function useUpdateParcel() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (input: UpdateParcelInput) =>
+      rpcJson<{ deposit: Deposit }>('reception_update_parcel', {
+        p_parcel_id: input.parcelId,
+        p_kind: input.kind,
+        p_weight_kg: input.weightKg ?? null,
+        p_length_cm: input.lengthCm ?? null,
+        p_width_cm: input.widthCm ?? null,
+        p_height_cm: input.heightCm ?? null,
+        p_description: input.description ?? null,
+        p_courier_waybill: input.courierWaybill ?? null,
+        p_photo_path: input.photoPath ?? null,
+      }).then((r) => r.deposit),
+    onSuccess: (dep) => invalidate(dep),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

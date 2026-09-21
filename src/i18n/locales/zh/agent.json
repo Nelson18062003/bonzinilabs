@@ -189,5 +189,18 @@
   "rc_office_short": "办公室",
   "rc_n_parcels_one": "{{count}} 件货物",
   "rc_n_parcels_other": "{{count}} 件货物",
-  "rc_hello_name": "你好，{{name}}"
+  "rc_hello_name": "你好，{{name}}",
+  "rc_add_short": "添加",
+  "rc_finish_short": "完成",
+  "rc_tab_new": "新收货",
+  "rc_tab_pending": "待认领",
+  "rc_retake_hint": "点按照片可重拍",
+  "rc_yesterday": "昨天",
+  "rc_edit_parcel": "修改货物",
+  "rc_save": "保存",
+  "rc_parcel_saved": "货物已保存",
+  "rc_day_prev": "前一天",
+  "rc_day_next": "后一天",
+  "rc_no_deposit_day": "那天没有收货。",
+  "rc_tap_to_edit": "点按货物可补充或修改。"
 }

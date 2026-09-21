@@ -3,7 +3,9 @@
 // preuve), le type, le poids, les trois dimensions (le m³ se calcule sous
 // les yeux), ce qu'il y a dedans, le bordereau du transporteur s'il y en a
 // un, et « combien d'identiques » pour les lots du marché. Rien n'est
-// obligatoire : un colis sans poids existe quand même, marqué incomplet.
+// obligatoire : un colis sans poids existe quand même, marqué incomplet —
+// et le même écran, avec `:parcelId`, le complète ou le corrige plus tard,
+// dépôt ouvert ou fermé, tant qu'il n'est pas dans une boîte.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -12,7 +14,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { PARCEL_KINDS, cbmOf, formatCbm, type ParcelKind } from '@/lib/reception';
-import { uploadParcelPhoto, useAddParcel, useReceptionDeposit } from '@/hooks/useReception';
+import { uploadParcelPhoto, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useUpdateParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, Chip, FormField, PrimaryPill, TextInput } from '@/mobile/designKit';
 import { useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -25,11 +27,14 @@ const num = (s: string): number | null => {
 
 export function ReceptionParcel() {
   const navigate = useNavigate();
-  const { depositId } = useParams<{ depositId: string }>();
+  const { depositId, parcelId } = useParams<{ depositId: string; parcelId?: string }>();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
   const { data: deposit } = useReceptionDeposit(depositId);
   const add = useAddParcel();
+  const update = useUpdateParcel();
+  const editing = deposit?.parcels.find((p) => p.id === parcelId) ?? null;
+  const { data: existingPhotoUrl } = useParcelPhotoUrl(editing?.photo_path);
 
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -42,7 +47,21 @@ export function ReceptionParcel() {
   const [waybill, setWaybill] = useState(() => readDraftWaybill() ?? '');
   const [copies, setCopies] = useState(1);
   const [uploading, setUploading] = useState(false);
+  const [loaded, setLoaded] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Édition : le formulaire se remplit une fois, avec ce que le colis porte déjà.
+  useEffect(() => {
+    if (!editing || loaded === editing.id) return;
+    setKind(editing.kind);
+    setWeight(editing.weight_kg != null ? String(editing.weight_kg) : '');
+    setLength(editing.length_cm != null ? String(editing.length_cm) : '');
+    setWidth(editing.width_cm != null ? String(editing.width_cm) : '');
+    setHeight(editing.height_cm != null ? String(editing.height_cm) : '');
+    setDescription(editing.description ?? '');
+    setWaybill(editing.courier_waybill ?? '');
+    setLoaded(editing.id);
+  }, [editing, loaded]);
 
   useEffect(() => {
     if (!photo) { setPreview(null); return; }
@@ -68,27 +87,23 @@ export function ReceptionParcel() {
       return;
     }
     setUploading(false);
-    await add.mutateAsync({
-      depositId,
-      kind,
-      weightKg: num(weight),
-      lengthCm: num(length),
-      widthCm: num(width),
-      heightCm: num(height),
-      description,
-      courierWaybill: waybill,
-      photoPath,
-      copies,
-    });
-    writeDraftWaybill(null);
-    navigate(`/r/deposit/${depositId}`, { replace: true });
+    const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPath };
+    if (editing) {
+      await update.mutateAsync({ ...fields, parcelId: editing.id, depositId });
+      toast.success(t('rc_parcel_saved'), { description: editing.parcel_no });
+    } else {
+      await add.mutateAsync({ ...fields, depositId, copies });
+      writeDraftWaybill(null);
+    }
+    navigate(deposit?.status === 'closed' ? `/r/deposit/${depositId}/done` : `/r/deposit/${depositId}`, { replace: true });
   };
 
-  const busy = uploading || add.isPending;
+  const busy = uploading || add.isPending || update.isPending;
+  const shownPhoto = preview ?? (editing && !photo ? existingPhotoUrl ?? null : null);
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={`${t('rc_parcel')} ${nextSeq}`} subtitle={deposit?.deposit_no} showBack backTo={`/r/deposit/${depositId}`} />
+      <MobileHeader title={editing ? `${t('rc_parcel')} ${String(editing.seq).padStart(2, '0')}` : `${t('rc_parcel')} ${nextSeq}`} subtitle={editing ? t('rc_edit_parcel') : deposit?.deposit_no} showBack backTo={deposit?.status === 'closed' ? `/r/deposit/${depositId}/done` : `/r/deposit/${depositId}`} />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
         {/* 1 · La photo */}
@@ -96,10 +111,10 @@ export function ReceptionParcel() {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className={cn('flex h-44 w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed', preview ? 'border-transparent' : 'border-[#949494] dark:border-[#6E6E6E]', SURFACE.inset)}
+          className={cn('flex h-44 w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed', shownPhoto ? 'border-transparent' : 'border-[#949494] dark:border-[#6E6E6E]', SURFACE.inset)}
         >
-          {preview ? (
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+          {shownPhoto ? (
+            <img src={shownPhoto} alt="" className="h-full w-full object-cover" />
           ) : (
             <span className="flex flex-col items-center gap-3">
               <Camera className={cn('h-9 w-9', TEXT.strong)} />
@@ -107,7 +122,7 @@ export function ReceptionParcel() {
             </span>
           )}
         </button>
-        {preview && <p className={cn('-mt-3 text-center', TYPE.small, TEXT.muted)}>{t('rc_retake')} : appuyez sur la photo</p>}
+        {shownPhoto && <p className={cn('-mt-3 text-center', TYPE.small, TEXT.muted)}>{t('rc_retake_hint')}</p>}
 
         {/* 2 · Le type */}
         <section>
@@ -151,22 +166,22 @@ export function ReceptionParcel() {
           </FormField>
         </Card>
 
-        {/* 5 · Combien d'identiques */}
-        <Card className="flex items-center justify-between gap-4">
+        {/* 5 · Combien d'identiques — pas en édition */}
+        {!editing && <Card className="flex items-center justify-between gap-4">
           <span className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('rc_copies')}</span>
           <span className="flex items-center gap-2">
             <button type="button" aria-label="−" onClick={() => setCopies((c) => Math.max(1, c - 1))} className={cn('flex h-11 w-11 items-center justify-center rounded-full', SURFACE.holder)}><Minus className="h-5 w-5" /></button>
             <span className={cn('w-10 text-center text-[22px] font-semibold tabular-nums', TEXT.strong)}>{copies}</span>
             <button type="button" aria-label="+" onClick={() => setCopies((c) => Math.min(200, c + 1))} className={cn('flex h-11 w-11 items-center justify-center rounded-full', SURFACE.holder)}><Plus className="h-5 w-5" /></button>
           </span>
-        </Card>
+        </Card>}
 
         <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_missing_hint')}</p>
       </div>
 
       <div className={cn('shrink-0 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
         <PrimaryPill onClick={() => void submit()} loading={busy} className="h-14 w-full text-[17px]">
-          {uploading ? t('rc_uploading') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add')}
+          {uploading ? t('rc_uploading') : editing ? t('rc_save') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add')}
         </PrimaryPill>
       </div>
     </div>

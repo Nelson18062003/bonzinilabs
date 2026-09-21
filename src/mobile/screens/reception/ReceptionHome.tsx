@@ -4,8 +4,10 @@
 // ses m³, et ce qui reste en attente d'attribution. C'est tout son tableau
 // de bord — il ne voit rien d'autre de la plateforme.
 // ============================================================
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
+import { Box, ChevronLeft, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
+import { getCurrentLocale } from '@/i18n';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +25,11 @@ export function ReceptionHome() {
   const { t: ti } = useTranslation('agent');
   const { currentUser, logout } = useAdminAuth();
   const { location, setLocation } = useReceptionLocation();
-  const { data, isLoading } = useReceptionDay();
+  // La journée, puis les précédentes : ‹ › sous le titre. 0 = aujourd'hui.
+  const [back, setBack] = useState(0);
+  const day = (() => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  const { data, isLoading } = useReceptionDay(back === 0 ? undefined : day);
+  const dayLabel = back === 0 ? t('rc_today') : back === 1 ? t('rc_yesterday') : new Date(`${day}T12:00:00`).toLocaleDateString(getCurrentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
 
   const firstName = currentUser?.firstName || '';
   const stats = data?.stats;
@@ -90,7 +96,13 @@ export function ReceptionHome() {
         )}
 
         <section>
-          <h2 className={cn('mb-3', TYPE.lead, TEXT.strong)}>{t('rc_today')}</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className={cn(TYPE.lead, TEXT.strong)}>{dayLabel}</h2>
+            <span className="flex items-center gap-1">
+              <IconButton icon={ChevronLeft} variant="subtle" ariaLabel={t('rc_day_prev')} onClick={() => setBack((b) => b + 1)} />
+              <IconButton icon={ChevronRight} variant="subtle" ariaLabel={t('rc_day_next')} onClick={() => setBack((b) => Math.max(0, b - 1))} disabled={back === 0} />
+            </span>
+          </div>
           {isLoading || !stats ? (
             <ScreenLoader />
           ) : (
@@ -107,7 +119,7 @@ export function ReceptionHome() {
           <section>
             {data.deposits.length === 0 ? (
               <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
-                <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_no_deposit_today')}</p>
+                <p className={cn(TYPE.body, TEXT.muted)}>{back === 0 ? t('rc_no_deposit_today') : t('rc_no_deposit_day')}</p>
               </Card>
             ) : (
               <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">

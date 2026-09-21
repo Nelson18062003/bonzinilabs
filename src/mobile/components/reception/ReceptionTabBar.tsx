@@ -8,8 +8,8 @@ export function ReceptionTabBar({ pendingCount = 0 }: { pendingCount?: number })
   const { t } = useLanguage();
   const items: TabItem[] = [
     { to: '/r', icon: Home, label: t('rc_today'), end: true },
-    { to: '/r/new', icon: ScanLine, label: t('rc_new_deposit') },
-    { to: '/r/pending', icon: Inbox, label: t('rc_pending'), badgeCount: pendingCount },
+    { to: '/r/new', icon: ScanLine, label: t('rc_tab_new') },
+    { to: '/r/pending', icon: Inbox, label: t('rc_tab_pending'), badgeCount: pendingCount },
   ];
   return <LiquidTabBar items={items} />;
 }

@@ -189,5 +189,18 @@
   "rc_office_short": "Bureau",
   "rc_n_parcels_one": "{{count}} colis",
   "rc_n_parcels_other": "{{count}} colis",
-  "rc_hello_name": "Bonjour, {{name}}"
+  "rc_hello_name": "Bonjour, {{name}}",
+  "rc_add_short": "Ajouter",
+  "rc_finish_short": "Terminer",
+  "rc_tab_new": "Nouveau",
+  "rc_tab_pending": "En attente",
+  "rc_retake_hint": "Appuyez sur la photo pour la reprendre",
+  "rc_yesterday": "Hier",
+  "rc_edit_parcel": "Modifier le colis",
+  "rc_save": "Enregistrer",
+  "rc_parcel_saved": "Colis enregistré",
+  "rc_day_prev": "Jour précédent",
+  "rc_day_next": "Jour suivant",
+  "rc_no_deposit_day": "Aucun dépôt ce jour-là.",
+  "rc_tap_to_edit": "Touchez un colis pour le compléter ou le corriger."
 }

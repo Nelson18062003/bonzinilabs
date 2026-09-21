@@ -54,19 +54,18 @@ export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: (
   const st = labels.status(deposit);
   const Tag = onClick ? 'button' : 'div';
   return (
-    <Tag type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex w-full items-center gap-4 py-4 text-left', onClick && 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
+    <Tag type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex w-full items-start gap-3 py-4 text-left', onClick && 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
       <Holder size="lg" tone={deposit.client ? 'neutral' : 'pending'}>{deposit.client ? initials(name) : '?'}</Holder>
+      {/* Rien n'est coupé : sur un petit écran le nom passe à la ligne, l'état et l'heure gardent leur colonne. */}
       <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-3">
-          <span className={cn('truncate', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
-          <span className={cn('shrink-0 tabular-nums', TYPE.small, TEXT.muted)}>{formatTime(deposit.opened_at)}</span>
+        <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
+        <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>
+          {labels.parcels(deposit.parcel_count)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
         </span>
-        <span className={cn('mt-1 flex items-center justify-between gap-3', TYPE.small, TEXT.muted)}>
-          <span className="truncate tabular-nums">
-            {labels.parcels(deposit.parcel_count)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
-          </span>
-          <StatusPill tone={st.tone} label={st.label} className="h-7 text-[14px]" />
-        </span>
+      </span>
+      <span className="flex shrink-0 flex-col items-end gap-1.5">
+        <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{formatTime(deposit.opened_at)}</span>
+        <StatusPill tone={st.tone} label={st.label} className="h-7 text-[14px]" />
       </span>
     </Tag>
   );
@@ -82,12 +81,14 @@ function ParcelThumb({ path }: { path: string | null }) {
 }
 
 /** Une ligne de colis : photo, numéro, description, poids × dimensions = volume. */
-export function ParcelRow({ parcel, onRemove }: { parcel: Parcel; onRemove?: () => void }) {
+export function ParcelRow({ parcel, onRemove, onClick }: { parcel: Parcel; onRemove?: () => void; onClick?: () => void }) {
   const { t } = useTranslation('agent');
   const labels = useReceptionLabels();
   const incomplete = isParcelIncomplete(parcel);
+  const Body = onClick ? 'button' : 'span';
   return (
-    <div className="flex items-center gap-4 py-4">
+    <div className="flex items-center gap-3 py-4">
+      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
       <ParcelThumb path={parcel.photo_path} />
       <span className="min-w-0 flex-1">
         <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>
@@ -99,6 +100,7 @@ export function ParcelRow({ parcel, onRemove }: { parcel: Parcel; onRemove?: () 
         </span>
         {incomplete && <StatusPill tone="pending" label={t('rc_incomplete')} className="mt-2 h-7 text-[14px]" />}
       </span>
+      </Body>
       {onRemove && (
         <button type="button" onClick={onRemove} aria-label={t('rc_remove')} className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
           <Trash2 className="h-5 w-5" />
