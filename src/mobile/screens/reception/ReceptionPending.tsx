@@ -40,14 +40,14 @@ export function ReceptionPending() {
                   <Holder icon={Barcode} tone="pending" size="lg" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-3">
-                      <span className={cn('truncate tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{waybills[0] ?? d.deposit_no}</span>
+                      <span className={cn('break-all tabular-nums tracking-tight', TYPE.bodyStrong, TEXT.strong)}>{waybills[0] ?? d.deposit_no}</span>
                       <LocationMark location={d.location} size={24} />
                     </span>
                     <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>
-                      {d.parcels.length} {t('rc_parcels').toLowerCase()} · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}
+                      {labels.parcels(d.parcels.length)} · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}
                     </span>
                     <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{formatDateTime(d.opened_at)} · {labels.broughtBy(d.brought_by)}{d.received_by_name ? ` · ${d.received_by_name}` : ''}</span>
-                    {descriptions.length > 0 && <span className={cn('mt-1 block truncate', TYPE.small, TEXT.muted)}>{descriptions.join(', ')}</span>}
+                    {descriptions.length > 0 && <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{descriptions.join(', ')}</span>}
                   </span>
                 </div>
                 <Button variant="primary" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${d.id}`)}>

@@ -1,19 +1,20 @@
 // ============================================================
 // RÉCEPTION — « À qui est ce colis ? » La caméra d'abord : le QR du client
-// (son app, une étiquette Bonzini) ou le bordereau du transporteur. Puis une
-// recherche par nom, téléphone ou code. Et deux sorties honnêtes : créer le
-// client, ou enregistrer sans savoir (le colis existe quand même).
+// (son app, une étiquette Bonzini) ou le bordereau du transporteur. Un code
+// client scanné va DROIT au client — le code est unique, il n'y a rien à
+// choisir. Puis une recherche par nom, téléphone ou code. Et deux sorties
+// honnêtes : créer le client, ou enregistrer sans savoir.
 //
 // Avec `?assign=<dépôt>`, l'écran sert à attribuer un dépôt en attente.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Barcode, ChevronRight, HelpCircle, Search, UserPlus } from 'lucide-react';
+import { Barcode, Check, ChevronRight, HelpCircle, Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, initials, parseScan, type ReceptionClient } from '@/lib/reception';
-import { useAssignDeposit, useReceptionSearch } from '@/hooks/useReception';
+import { UnknownCodeError, useAssignDeposit, useClientByCode, useReceptionSearch } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Button, Card, Holder, TextInput } from '@/mobile/designKit';
 import { useQrScanner } from '@/mobile/components/reception/useQrScanner';
@@ -29,36 +30,41 @@ export function ReceptionIdentify() {
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [waybill, setWaybill] = useState<string | null>(() => readDraftWaybill());
-  const [scannedCode, setScannedCode] = useState<string | null>(null);
   const lockRef = useRef(false);
   const assign = useAssignDeposit();
+  const byCode = useClientByCode();
+  const [found, setFound] = useState<ReceptionClient | null>(null);
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query), 250);
     return () => clearTimeout(id);
   }, [query]);
-  const search = useReceptionSearch(scannedCode ?? debounced);
+  const search = useReceptionSearch(debounced);
 
   const scanner = useQrScanner(SCANNER_ID, (text) => {
     if (lockRef.current) return;
     const res = parseScan(text);
     if (!res) return;
     if (res.kind === 'customer') {
+      // Un code, un client : on y va sans liste ni tap. Le verrou évite que la
+      // caméra relise le même QR dix fois par seconde pendant l'appel.
       lockRef.current = true;
-      setScannedCode(res.code);
-      setQuery(res.code);
-      setTimeout(() => { lockRef.current = false; }, 1500);
+      void byCode.mutateAsync(res.code)
+        .then((client) => {
+          // Un instant vert sur la caméra — le nom, le code — puis on enchaîne.
+          try { navigator.vibrate?.(60); } catch { /* pas de vibreur */ }
+          setFound(client);
+          return new Promise<void>((r) => setTimeout(r, 700)).then(() => pick(client));
+        })
+        .catch((err: unknown) => {
+          toast.error(t('rc_code_unknown'), { description: err instanceof UnknownCodeError ? err.code : (err as Error).message });
+          setTimeout(() => { lockRef.current = false; }, 2000);
+        });
     } else {
       setWaybill(res.value);
       writeDraftWaybill(res.value);
     }
   });
-
-  // Un code client scanné qui ne renvoie qu'un client : on y va sans tap.
-  useEffect(() => {
-    if (scannedCode && search.data && search.data.length === 1) void pick(search.data[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scannedCode, search.data]);
 
   const goHow = (client: ReceptionClient | null) => {
     scanner.stop();
@@ -78,7 +84,7 @@ export function ReceptionIdentify() {
   };
 
   const results = search.data ?? [];
-  const searching = (scannedCode ?? debounced).length >= 2;
+  const searching = debounced.length >= 2;
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
@@ -94,6 +100,15 @@ export function ReceptionIdentify() {
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
           <div id={SCANNER_ID} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
           {scanner.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{t('scanning')}</div>}
+          {byCode.isPending && !found && <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[17px] font-semibold text-white">{t('rc_looking_up')}</div>}
+          {found && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#14AE5C]/90 px-6 text-center text-white">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20"><Check className="h-9 w-9" strokeWidth={3} /></span>
+              <span className="text-[15px] font-semibold opacity-90">{t('rc_client_found')}</span>
+              <span className="text-[22px] font-bold leading-tight">{clientFullName(found)}</span>
+              <span className="text-[16px] tabular-nums opacity-90">{found.customer_code}</span>
+            </div>
+          )}
           {scanner.error && (
             <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-[16px] font-medium leading-relaxed text-white/90">{t('rc_camera_off')}</div>
           )}
@@ -115,7 +130,7 @@ export function ReceptionIdentify() {
           <Search className={cn('pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
           <TextInput
             value={query}
-            onChange={(e) => { setScannedCode(null); setQuery(e.target.value); }}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder={t('rc_search_placeholder')}
             className="h-14 pl-12 text-[17px]"
             autoComplete="off"

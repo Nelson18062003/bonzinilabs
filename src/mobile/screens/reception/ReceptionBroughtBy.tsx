@@ -52,12 +52,12 @@ export function ReceptionBroughtBy() {
         <Card className="flex items-center gap-4">
           <Holder size="lg" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
           <span className="min-w-0 flex-1">
-            <span className={cn('block truncate', TYPE.bodyStrong, TEXT.strong)}>{clientId ? clientName : t('rc_unknown_client')}</span>
+            <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{clientId ? clientName : t('rc_unknown_client')}</span>
             {clientCode && <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{clientCode}</span>}
             {location && (
               <span className={cn('mt-1.5 flex items-center gap-2', TYPE.small, TEXT.muted)}>
                 <LocationMark location={location} size={20} />
-                <span className="truncate">{location === 'warehouse' ? t('rc_warehouse') : t('rc_office')}</span>
+                <span>{location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}</span>
               </span>
             )}
           </span>

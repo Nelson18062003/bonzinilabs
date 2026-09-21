@@ -4,23 +4,32 @@
 // ses m³, et ce qui reste en attente d'attribution. C'est tout son tableau
 // de bord — il ne voit rien d'autre de la plateforme.
 // ============================================================
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
+import { Box, ChevronLeft, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
+import { getCurrentLocale } from '@/i18n';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
 import { SURFACE, TEXT, TYPE, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
+import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
 import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionHome() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
   const { currentUser, logout } = useAdminAuth();
   const { location, setLocation } = useReceptionLocation();
-  const { data, isLoading } = useReceptionDay();
+  // La journée, puis les précédentes : ‹ › sous le titre. 0 = aujourd'hui.
+  const [back, setBack] = useState(0);
+  const day = (() => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  const { data, isLoading } = useReceptionDay(back === 0 ? undefined : day);
+  const dayLabel = back === 0 ? t('rc_today') : back === 1 ? t('rc_yesterday') : new Date(`${day}T12:00:00`).toLocaleDateString(getCurrentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
 
   const firstName = currentUser?.firstName || '';
   const stats = data?.stats;
@@ -31,7 +40,7 @@ export function ReceptionHome() {
     label: (
       <span className="inline-flex items-center gap-2">
         <LocationMark location={l} size={24} />
-        {l === 'warehouse' ? t('rc_warehouse') : t('rc_office')}
+        {l === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}
       </span>
     ),
   }));
@@ -39,7 +48,8 @@ export function ReceptionHome() {
   // Premier lancement sur cet appareil : où est-on ? Le lieu décide du mode.
   if (!location) {
     return (
-      <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-10 pt-16', SURFACE.canvas)}>
+      <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-10 pt-[calc(1.25rem+env(safe-area-inset-top))]', SURFACE.canvas)}>
+        <div className="mb-8 flex justify-end"><LanguagePicker /></div>
         <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_choose_location')}</h1>
         <p className={cn('mt-3', TYPE.body, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
         <div className="mt-8 flex flex-col gap-4">
@@ -60,9 +70,12 @@ export function ReceptionHome() {
       <header className="px-5 pb-2 pt-[calc(1.25rem+env(safe-area-inset-top))]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_hello')}{firstName ? `, ${firstName}` : ''}</h1>
+            <h1 className={cn(TYPE.heading, TEXT.strong)}>{firstName ? ti('rc_hello_name', { name: firstName }) : t('rc_hello')}</h1>
           </div>
-          <IconButton icon={LogOut} ariaLabel={t('logout')} onClick={() => void logout().then(() => navigate('/r/login'))} />
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguagePicker />
+            <IconButton icon={LogOut} ariaLabel={t('logout')} onClick={() => void logout().then(() => navigate('/r/login'))} />
+          </div>
         </div>
         <div className="mt-5">
           <Segmented value={location} onChange={setLocation} options={locationOptions} />
@@ -83,7 +96,13 @@ export function ReceptionHome() {
         )}
 
         <section>
-          <h2 className={cn('mb-3', TYPE.lead, TEXT.strong)}>{t('rc_today')}</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className={cn(TYPE.lead, TEXT.strong)}>{dayLabel}</h2>
+            <span className="flex items-center gap-1">
+              <IconButton icon={ChevronLeft} variant="subtle" ariaLabel={t('rc_day_prev')} onClick={() => setBack((b) => b + 1)} />
+              <IconButton icon={ChevronRight} variant="subtle" ariaLabel={t('rc_day_next')} onClick={() => setBack((b) => Math.max(0, b - 1))} disabled={back === 0} />
+            </span>
+          </div>
           {isLoading || !stats ? (
             <ScreenLoader />
           ) : (
@@ -100,7 +119,7 @@ export function ReceptionHome() {
           <section>
             {data.deposits.length === 0 ? (
               <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
-                <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_no_deposit_today')}</p>
+                <p className={cn(TYPE.body, TEXT.muted)}>{back === 0 ? t('rc_no_deposit_today') : t('rc_no_deposit_day')}</p>
               </Card>
             ) : (
               <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">

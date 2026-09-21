@@ -46,7 +46,7 @@ import {
   ScreenLoader,
 } from '@/mobile/designKit';
 
-const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent'];
+const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent', 'receptionist'];
 
 // Action row in the Ofspace/Mola language: toned round holder + label/desc +
 // chevron. No divider hairlines (the card groups items). Mirrors MobileClientDetail.

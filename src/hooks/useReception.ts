@@ -265,3 +265,48 @@ export function useCargoPartsSummary() {
     staleTime: 30_000,
   });
 }
+
+// ── Le scan : un code client → une fiche, tout de suite ─────────────────────
+export class UnknownCodeError extends Error {
+  constructor(public readonly code: string) { super('unknown_code'); }
+}
+
+/**
+ * Un code BZ (ou l'URL du QR) → le client, sans liste. Lève UnknownCodeError
+ * si aucun client ne porte ce code, pour que l'écran le dise et continue à scanner.
+ */
+export function useClientByCode() {
+  return useMutation({
+    mutationFn: async (code: string): Promise<ReceptionClient> => {
+      const { data, error } = await supabaseAdmin.rpc('reception_client_by_code' as never, { p_code: code } as never);
+      if (error) throw new Error(error.message);
+      const res = data as unknown as { success: boolean; error?: string; code?: string; client?: ReceptionClient };
+      if (res?.success && res.client) return res.client;
+      if (res?.error === 'unknown_code') throw new UnknownCodeError(res.code ?? code);
+      throw new Error(res?.error || 'Opération refusée');
+    },
+  });
+}
+
+// ── Corriger ou compléter un colis (dépôt ouvert ou fermé, colis pas en boîte) ──
+export type UpdateParcelInput = Omit<AddParcelInput, 'depositId' | 'copies'> & { parcelId: string; depositId: string };
+
+export function useUpdateParcel() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (input: UpdateParcelInput) =>
+      rpcJson<{ deposit: Deposit }>('reception_update_parcel', {
+        p_parcel_id: input.parcelId,
+        p_kind: input.kind,
+        p_weight_kg: input.weightKg ?? null,
+        p_length_cm: input.lengthCm ?? null,
+        p_width_cm: input.widthCm ?? null,
+        p_height_cm: input.heightCm ?? null,
+        p_description: input.description ?? null,
+        p_courier_waybill: input.courierWaybill ?? null,
+        p_photo_path: input.photoPath ?? null,
+      }).then((r) => r.deposit),
+    onSuccess: (dep) => invalidate(dep),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

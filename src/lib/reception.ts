@@ -9,6 +9,7 @@
 // en base, ceci ne sert qu'à l'affichage immédiat.
 // ============================================================
 import type { ShippingDestination } from '@/lib/customerCode';
+import { getCurrentLocale } from '@/i18n';
 import { normalizeCustomerCode } from '@/lib/customerCode';
 
 export type ReceptionLocation = ShippingDestination; // 'warehouse' (Sea cargo) | 'office' (Air cargo)
@@ -131,19 +132,19 @@ export function cbmOf(l: number | null | undefined, w: number | null | undefined
 export function formatKg(v: number | null | undefined): string {
   if (v == null) return '—';
   const n = Number(v);
-  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} kg`;
+  return `${n.toLocaleString(getCurrentLocale(), { minimumFractionDigits: 0, maximumFractionDigits: 1 })} kg`;
 }
 
 /** « 0,62 m³ » — trois décimales sous 0,1, deux au-delà : on lit la différence entre deux cartons. */
 export function formatCbm(v: number | null | undefined): string {
   if (v == null) return '—';
   const n = Number(v);
-  return `${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: n < 0.1 ? 3 : 2 })} m³`;
+  return `${n.toLocaleString(getCurrentLocale(), { minimumFractionDigits: 2, maximumFractionDigits: n < 0.1 ? 3 : 2 })} m³`;
 }
 
 export function formatDims(p: Pick<Parcel, 'length_cm' | 'width_cm' | 'height_cm'>): string {
   if (p.length_cm == null || p.width_cm == null || p.height_cm == null) return '—';
-  const f = (v: number) => Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+  const f = (v: number) => Number(v).toLocaleString(getCurrentLocale(), { maximumFractionDigits: 1 });
   return `${f(p.length_cm)} × ${f(p.width_cm)} × ${f(p.height_cm)} cm`;
 }
 

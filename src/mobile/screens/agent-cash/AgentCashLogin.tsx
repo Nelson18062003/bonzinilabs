@@ -56,8 +56,12 @@ export function AgentCashLogin({ home = '/a', titleKey = 'agent_login' }: { home
     return `${visible}***@${domain}`;
   };
 
+  // Trois langues, en boucle : fr → en → zh → fr. La pastille dit la langue
+  // courante, dans sa propre écriture.
+  const LANGS = ['fr', 'en', 'zh'] as const;
   const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'zh' : 'en');
+    const i = LANGS.indexOf(language as (typeof LANGS)[number]);
+    setLanguage(LANGS[(i + 1) % LANGS.length]);
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -113,7 +117,7 @@ export function AgentCashLogin({ home = '/a', titleKey = 'agent_login' }: { home
         onClick={toggleLanguage}
         className="absolute top-6 right-4 z-20 min-h-11 px-4 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
       >
-        {language === 'en' ? '中文' : 'EN'}
+        {language === 'zh' ? '中文' : language === 'en' ? 'EN' : 'FR'}
       </button>
 
       <div className="flex-1 flex flex-col justify-center px-6 py-12">

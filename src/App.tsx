@@ -335,6 +335,7 @@ const App = () => (
                 <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/parcel" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/parcel/:parcelId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
 

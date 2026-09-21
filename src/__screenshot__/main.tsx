@@ -325,6 +325,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-deposit': { Comp: ReceptionDeposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
   'rc-deposit-empty': { Comp: ReceptionDeposit, route: '/r/deposit/dep0', path: '/r/deposit/:depositId', wrap: 'lang' },
   'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-parcel-edit': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel/pRC-000123-1', path: '/r/deposit/:depositId/parcel/:parcelId', wrap: 'lang' },
   'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
   'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
   // Admin — la réception dans Bonzini Cargo
