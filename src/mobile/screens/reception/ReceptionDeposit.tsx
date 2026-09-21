@@ -97,7 +97,7 @@ export function ReceptionDeposit() {
         <div className={cn('flex items-center justify-between', TYPE.body)}>
           <span className={TEXT.muted}>{t('rc_total')}</span>
           <span className={cn('font-semibold tabular-nums', TEXT.strong)}>
-            {deposit.parcels.length} {t('rc_parcels').toLowerCase()} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
+            {labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
           </span>
         </div>
         {editable ? (
@@ -116,7 +116,7 @@ export function ReceptionDeposit() {
           <Card className={cn(SURFACE.inset, 'border-0')}>
             <div className={cn('flex items-center justify-between', TYPE.body)}>
               <span className={TEXT.muted}>{name}</span>
-              <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{deposit.parcels.length} {t('rc_parcels').toLowerCase()} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}</span>
+              <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}</span>
             </div>
           </Card>
           <PrimaryPill onClick={() => void finish()} loading={close.isPending} className="h-14 w-full text-[17px]">{t('rc_finish')}</PrimaryPill>

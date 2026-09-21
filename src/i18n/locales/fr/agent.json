@@ -186,5 +186,8 @@
   "rc_deposit_not_found": "Dépôt introuvable",
   "rc_language": "Langue",
   "rc_warehouse_short": "Entrepôt",
-  "rc_office_short": "Bureau"
+  "rc_office_short": "Bureau",
+  "rc_n_parcels_one": "{{count}} colis",
+  "rc_n_parcels_other": "{{count}} colis",
+  "rc_hello_name": "Bonjour, {{name}}"
 }

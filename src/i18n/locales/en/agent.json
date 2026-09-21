@@ -186,5 +186,8 @@
   "rc_deposit_not_found": "Drop-off not found",
   "rc_language": "Language",
   "rc_warehouse_short": "Warehouse",
-  "rc_office_short": "Office"
+  "rc_office_short": "Office",
+  "rc_n_parcels_one": "{{count}} parcel",
+  "rc_n_parcels_other": "{{count}} parcels",
+  "rc_hello_name": "Hello, {{name}}"
 }

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
@@ -19,6 +20,7 @@ import { useReceptionLocation } from './useReceptionLocation';
 export function ReceptionHome() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
   const { currentUser, logout } = useAdminAuth();
   const { location, setLocation } = useReceptionLocation();
   const { data, isLoading } = useReceptionDay();
@@ -62,7 +64,7 @@ export function ReceptionHome() {
       <header className="px-5 pb-2 pt-[calc(1.25rem+env(safe-area-inset-top))]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_hello')}{firstName ? `, ${firstName}` : ''}</h1>
+            <h1 className={cn(TYPE.heading, TEXT.strong)}>{firstName ? ti('rc_hello_name', { name: firstName }) : t('rc_hello')}</h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <LanguagePicker />

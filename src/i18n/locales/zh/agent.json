@@ -186,5 +186,8 @@
   "rc_deposit_not_found": "找不到该收货单",
   "rc_language": "语言",
   "rc_warehouse_short": "仓库",
-  "rc_office_short": "办公室"
+  "rc_office_short": "办公室",
+  "rc_n_parcels_one": "{{count}} 件货物",
+  "rc_n_parcels_other": "{{count}} 件货物",
+  "rc_hello_name": "你好，{{name}}"
 }

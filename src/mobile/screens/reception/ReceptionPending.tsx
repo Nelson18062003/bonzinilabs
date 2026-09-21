@@ -44,7 +44,7 @@ export function ReceptionPending() {
                       <LocationMark location={d.location} size={24} />
                     </span>
                     <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>
-                      {d.parcels.length} {t('rc_parcels').toLowerCase()} · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}
+                      {labels.parcels(d.parcels.length)} · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}
                     </span>
                     <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{formatDateTime(d.opened_at)} · {labels.broughtBy(d.brought_by)}{d.received_by_name ? ` · ${d.received_by_name}` : ''}</span>
                     {descriptions.length > 0 && <span className={cn('mt-1 block truncate', TYPE.small, TEXT.muted)}>{descriptions.join(', ')}</span>}

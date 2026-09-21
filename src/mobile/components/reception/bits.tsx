@@ -30,6 +30,8 @@ export function useReceptionLabels() {
     location: (l: ReceptionLocation) => (l === 'warehouse' ? t('rc_warehouse') : t('rc_office')),
     broughtBy: (b: BroughtBy) => t(`rc_by_${b}`),
     kind: (k: ParcelKind) => t(`kind_${k}`),
+    /** « 3 colis » · « 3 parcels » · « 3 件货物 » — le chinois compte avec un classificateur. */
+    parcels: (n: number) => t('rc_n_parcels', { count: n }),
     status: (d: Deposit): { tone: Tone; label: string } =>
       !d.client ? { tone: 'pending', label: t('rc_status_unassigned') }
       : d.status === 'open' ? { tone: 'info', label: t('rc_status_open') }
@@ -61,7 +63,7 @@ export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: (
         </span>
         <span className={cn('mt-1 flex items-center justify-between gap-3', TYPE.small, TEXT.muted)}>
           <span className="truncate tabular-nums">
-            {deposit.parcel_count} {t('rc_parcels').toLowerCase()} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
+            {labels.parcels(deposit.parcel_count)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
           </span>
           <StatusPill tone={st.tone} label={st.label} className="h-7 text-[14px]" />
         </span>

@@ -9,7 +9,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Barcode, ChevronRight, HelpCircle, Search, UserPlus } from 'lucide-react';
+import { Barcode, Check, ChevronRight, HelpCircle, Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,7 @@ export function ReceptionIdentify() {
   const lockRef = useRef(false);
   const assign = useAssignDeposit();
   const byCode = useClientByCode();
+  const [found, setFound] = useState<ReceptionClient | null>(null);
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(query), 250);
@@ -50,9 +51,10 @@ export function ReceptionIdentify() {
       lockRef.current = true;
       void byCode.mutateAsync(res.code)
         .then((client) => {
+          // Un instant vert sur la caméra — le nom, le code — puis on enchaîne.
           try { navigator.vibrate?.(60); } catch { /* pas de vibreur */ }
-          toast.success(t('rc_client_found'), { description: `${clientFullName(client)} · ${client.customer_code}` });
-          return pick(client);
+          setFound(client);
+          return new Promise<void>((r) => setTimeout(r, 700)).then(() => pick(client));
         })
         .catch((err: unknown) => {
           toast.error(t('rc_code_unknown'), { description: err instanceof UnknownCodeError ? err.code : (err as Error).message });
@@ -98,7 +100,15 @@ export function ReceptionIdentify() {
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
           <div id={SCANNER_ID} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
           {scanner.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{t('scanning')}</div>}
-          {byCode.isPending && <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[17px] font-semibold text-white">{t('rc_looking_up')}</div>}
+          {byCode.isPending && !found && <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[17px] font-semibold text-white">{t('rc_looking_up')}</div>}
+          {found && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#14AE5C]/90 px-6 text-center text-white">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20"><Check className="h-9 w-9" strokeWidth={3} /></span>
+              <span className="text-[15px] font-semibold opacity-90">{t('rc_client_found')}</span>
+              <span className="text-[22px] font-bold leading-tight">{clientFullName(found)}</span>
+              <span className="text-[16px] tabular-nums opacity-90">{found.customer_code}</span>
+            </div>
+          )}
           {scanner.error && (
             <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-[16px] font-medium leading-relaxed text-white/90">{t('rc_camera_off')}</div>
           )}
