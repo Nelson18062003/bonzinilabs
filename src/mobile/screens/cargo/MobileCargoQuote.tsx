@@ -9,7 +9,7 @@
 // ============================================================
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { FileText, Minus, Plus, Send, Trash2 } from 'lucide-react';
+import { Banknote, FileCheck2, FileText, Minus, Plus, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -17,12 +17,13 @@ import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAddQuoteLine, useCargoQuote, useEnsureQuote, useRemoveQuoteLine, useSendQuote, useSetQuoteLine } from '@/hooks/useCargoQuote';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { BASIS_UNIT, lineNeedsMeasure, quoteStatusMeta, xaf, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
-import { deliverQuotePdf } from '@/lib/cargoQuotePdf';
+import { BASIS_UNIT, lineNeedsMeasure, quoteBalance, quotePaid, quoteStatusMeta, xaf, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
+import { deliverInvoicePdf, deliverQuotePdf } from '@/lib/cargoQuotePdf';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Card, FormField, PrimaryPill, ScreenLoader, Segmented, SoftPill, StatusPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
+import { QuotePayments, type PaymentRequest } from './QuotePayments';
 
 const num = (s: string) => { const v = parseFloat(s.replace(/\s/g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
 
@@ -86,6 +87,8 @@ export function MobileCargoQuote() {
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
   const [sending, setSending] = useState(false);
+  const [request, setRequest] = useState<PaymentRequest>(null);
+  const canCollect = hasPermission('canCollectParcelPayments');
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
   if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -173,6 +176,9 @@ export function MobileCargoQuote() {
             </section>
 
             {quote.sent_at && <p className={cn(TYPE.small, TEXT.muted)}>Envoyé le {formatDateTime(quote.sent_at)}.</p>}
+
+            {/* Phase 2 : encaisser, le reste à payer, la facture acquittée. */}
+            {quote.total_xaf > 0 && <QuotePayments quote={quote} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} request={request} />}
           </>
         )}
       </div>
@@ -180,15 +186,28 @@ export function MobileCargoQuote() {
       {quote && (
         <div className={cn('shrink-0 space-y-3 border-t px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4', SURFACE.canvas, SURFACE.divider)}>
           <div className="flex items-baseline justify-between">
-            <span className={cn(TYPE.body, TEXT.muted)}>Total du devis</span>
-            <span className={cn('text-[24px] font-semibold tabular-nums', TEXT.strong)}>{xaf(quote.total_xaf)}</span>
+            <span className={cn(TYPE.body, TEXT.muted)}>{quotePaid(quote) > 0 && quoteBalance(quote) > 0 ? 'Reste à payer' : 'Total du devis'}</span>
+            <span className={cn('text-[24px] font-semibold tabular-nums', TEXT.strong)}>{xaf(quotePaid(quote) > 0 && quoteBalance(quote) > 0 ? quoteBalance(quote) : quote.total_xaf)}</span>
           </div>
-          {canEdit && !locked && (
-            <PrimaryPill onClick={() => void sendQuote()} loading={sending} disabled={quote.lines.length === 0} className="h-14 w-full text-[17px]">
-              <Send /> {quote.status === 'sent' ? 'Renvoyer le devis (PDF)' : 'Envoyer le devis (PDF)'}
-            </PrimaryPill>
-          )}
-          {!canEdit && <SoftPill onClick={() => void deliverQuotePdf(quote, settings ?? DEFAULT_SHIPPING_SETTINGS)} className="h-12 w-full"><FileText /> Voir le PDF</SoftPill>}
+          {(() => {
+            // L'action suivante, une seule en grand : envoyer, encaisser, facturer, ou relire.
+            const balance = quoteBalance(quote); const invoiced = !!quote.invoice_no; const total = quote.total_xaf > 0;
+            if (invoiced) return <SoftPill onClick={() => void deliverInvoicePdf(quote, settings ?? DEFAULT_SHIPPING_SETTINGS)} className="h-12 w-full"><FileCheck2 /> Facture acquittée (PDF)</SoftPill>;
+            if (canCollect && total && balance === 0) return <PrimaryPill onClick={() => setRequest({ kind: 'invoice', n: Date.now() })} className="h-14 w-full text-[17px]"><FileCheck2 /> Établir la facture acquittée</PrimaryPill>;
+            if (canCollect && total && quote.status === 'sent') return (
+              <div className="flex gap-2">
+                <SoftPill onClick={() => void sendQuote()} disabled={sending} className="h-14 px-4 text-[15px]"><Send /> Renvoyer</SoftPill>
+                <PrimaryPill onClick={() => setRequest({ kind: 'pay', n: Date.now() })} className="h-14 flex-1 text-[17px]"><Banknote /> Encaisser</PrimaryPill>
+              </div>
+            );
+            if (canEdit && !locked) return (
+              <PrimaryPill onClick={() => void sendQuote()} loading={sending} disabled={quote.lines.length === 0} className="h-14 w-full text-[17px]">
+                <Send /> {quote.status === 'sent' ? 'Renvoyer le devis (PDF)' : 'Envoyer le devis (PDF)'}
+              </PrimaryPill>
+            );
+            return null;
+          })()}
+          {!canEdit && !quote.invoice_no && <SoftPill onClick={() => void deliverQuotePdf(quote, settings ?? DEFAULT_SHIPPING_SETTINGS)} className="h-12 w-full"><FileText /> Voir le PDF</SoftPill>}
         </div>
       )}
 

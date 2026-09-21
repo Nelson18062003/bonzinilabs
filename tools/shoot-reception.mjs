@@ -65,10 +65,16 @@ const quoteDep2 = {
   ],
 };
 quoteDep2.total_xaf = quoteDep2.lines.reduce((t, l) => t + l.amount_xaf, 0);
-const quoteDep3 = { ...quoteDep2, id: 'q2', quote_no: 'DV-000030', deposit_id: 'dep3', status: 'sent', sent_at: today(13, 30), deposit_no: dep3.deposit_no, client: dep3.client, lines: dep3.parcels.map((p, i) => quoteLine(p, i)) };
+// Phase 2 : un acompte Mobile Money à Guangzhou sur dep2 ; dep3 réglé en deux fois et facturé.
+const payment = (id, no, amount, o) => ({ id, receipt_no: no, amount_xaf: amount, method: 'mobile_money', place: 'guangzhou', paid_at: today(14, 58), reference: 'MP240921.1458.A7K2', proof_path: null, note: null, received_by: 'demo', received_by_name: 'Demo Admin', created_at: today(14, 58), cancelled_at: null, cancel_reason: null, ...o });
+quoteDep2.payments = [payment('pm1', 'RE-000041', 120000), payment('pm0', 'RE-000040', 50000, { method: 'cash', reference: null, paid_at: today(14, 45), cancelled_at: today(14, 50), cancel_reason: 'Double saisie' })];
+quoteDep2.amount_paid_xaf = 120000; quoteDep2.balance_xaf = quoteDep2.total_xaf - 120000; quoteDep2.status = 'sent'; quoteDep2.sent_at = today(14, 55);
+const quoteDep3 = { ...quoteDep2, id: 'q2', quote_no: 'DV-000030', deposit_id: 'dep3', status: 'invoiced', sent_at: today(13, 30), deposit_no: dep3.deposit_no, client: dep3.client, lines: dep3.parcels.map((p, i) => quoteLine(p, i)) };
 quoteDep3.total_xaf = quoteDep3.lines.reduce((t, l) => t + l.amount_xaf, 0);
+quoteDep3.payments = [payment('pm2', 'RE-000038', 30000, { method: 'cash', reference: null, paid_at: today(13, 40) }), payment('pm3', 'RE-000039', quoteDep3.total_xaf - 30000, { method: 'bank_transfer', reference: 'VIR 2026-0921-118', paid_at: today(13, 52) })];
+quoteDep3.amount_paid_xaf = quoteDep3.total_xaf; quoteDep3.balance_xaf = 0; quoteDep3.paid_at = today(13, 52); quoteDep3.invoice_no = 'FA-000012'; quoteDep3.invoiced_at = today(13, 55);
 const QUOTES = { dep2: quoteDep2, dep3: quoteDep3 };
-const withQuote = (d) => { const q = QUOTES[d.id]; return q ? { ...d, quote_status: q.status, quote_no: q.quote_no, quote_total_xaf: q.total_xaf } : { ...d, quote_status: null, quote_no: null, quote_total_xaf: null }; };
+const withQuote = (d) => { const q = QUOTES[d.id]; return q ? { ...d, quote_status: q.status, quote_no: q.quote_no, quote_total_xaf: q.total_xaf, quote_paid_xaf: q.amount_paid_xaf, invoice_no: q.invoice_no ?? null } : { ...d, quote_status: null, quote_no: null, quote_total_xaf: null, quote_paid_xaf: null, invoice_no: null }; };
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
   reception_recent_clients: { success: true, clients: [client, client2, client3] },
@@ -100,6 +106,9 @@ const RPC = {
   cargo_quote_add_line: { success: true, quote: quoteDep2 },
   cargo_quote_remove_line: { success: true, quote: quoteDep2 },
   cargo_quote_send: { success: true, quote: { ...quoteDep2, status: 'sent', sent_at: today(15, 2) } },
+  cargo_quote_add_payment: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmN', 'RE-000042', b.p_amount_xaf, { method: b.p_method, place: b.p_place, reference: b.p_reference, proof_path: b.p_proof_path, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmN', receipt_no: 'RE-000042', quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
+  cargo_quote_cancel_payment: { success: true, quote: quoteDep2 },
+  cargo_quote_invoice: { success: true, invoice_no: 'FA-000013', quote: quoteDep3 },
   reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
 };
 
@@ -172,6 +181,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
   if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
+  if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
     await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();

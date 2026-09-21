@@ -7,7 +7,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import type { CargoPricing, Quote, QuoteBasis } from '@/lib/cargoQuote';
+import { compressImage } from '@/lib/imageCompression';
+import { validateUploadFile } from '@/lib/utils';
+import type { CargoPricing, PaymentMethod, PaymentPlace, Quote, QuoteBasis } from '@/lib/cargoQuote';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -75,3 +77,54 @@ export const useAddQuoteLine = () => useQuoteMutation<{ quoteId: string; kind: '
 );
 export const useRemoveQuoteLine = () => useQuoteMutation<string>('cargo_quote_remove_line', (lineId) => ({ p_line_id: lineId }));
 export const useSendQuote = () => useQuoteMutation<string>('cargo_quote_send', (quoteId) => ({ p_quote_id: quoteId }), 'Devis marqué comme envoyé');
+
+// ── Phase 2 : les encaissements et la facture ──
+
+/** Encaisser : le montant, le mode, le lieu, la date, la référence, la preuve (chemin déjà déposé), une note. Renvoie le devis à jour et l'encaissement créé. */
+export function useAddQuotePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { quoteId: string; amount: number; method: PaymentMethod; place: PaymentPlace; paidAt?: string | null; reference?: string; proofPath?: string | null; note?: string }) =>
+      rpcJson<{ payment_id: string; receipt_no: string; quote: Quote }>('cargo_quote_add_payment', {
+        p_quote_id: a.quoteId, p_amount_xaf: a.amount, p_method: a.method, p_place: a.place, p_paid_at: a.paidAt ?? null,
+        p_reference: a.reference ?? null, p_proof_path: a.proofPath ?? null, p_note: a.note ?? null,
+      }).then((r) => ({ quote: r.quote, payment: r.quote.payments?.find((p) => p.id === r.payment_id) ?? null })),
+    onSuccess: ({ quote }) => {
+      qc.setQueryData(QUOTE_KEYS.quote(quote.deposit_id), quote);
+      qc.invalidateQueries({ queryKey: ['reception'] });
+      toast.success('Encaissement enregistré');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+export const useCancelQuotePayment = () => useQuoteMutation<{ paymentId: string; reason: string }>('cargo_quote_cancel_payment', (a) => ({ p_payment_id: a.paymentId, p_reason: a.reason }), 'Encaissement annulé');
+export const useInvoiceQuote = () => useQuoteMutation<string>('cargo_quote_invoice', (quoteId) => ({ p_quote_id: quoteId }), 'Facture acquittée établie');
+
+/**
+ * La preuve d'un paiement (photo du reçu Mobile Money, du bordereau…) :
+ * compressée puis déposée dans le seau privé `parcel-payment-proofs/<devis>/…`.
+ * Renvoie le chemin à passer à cargo_quote_add_payment.
+ */
+export async function uploadPaymentProof(quoteId: string, file: File): Promise<string> {
+  validateUploadFile(file);
+  const isPdf = file.type === 'application/pdf';
+  const blob = isPdf ? file : await compressImage(file, 1600, 0.82);
+  const path = `${quoteId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${isPdf ? 'pdf' : 'jpg'}`;
+  const { error } = await supabaseAdmin.storage.from('parcel-payment-proofs').upload(path, blob, { contentType: isPdf ? 'application/pdf' : 'image/jpeg', upsert: false });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+/** L'URL signée (1 h) d'une preuve de paiement — le seau est privé. */
+export function usePaymentProofUrl(path: string | null | undefined) {
+  return useQuery({
+    queryKey: ['cargo', 'proof', path],
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.storage.from('parcel-payment-proofs').createSignedUrl(path as string, 3600);
+      if (error) throw new Error(error.message);
+      return data.signedUrl;
+    },
+    enabled: !!path,
+    staleTime: 50 * 60_000,
+  });
+}

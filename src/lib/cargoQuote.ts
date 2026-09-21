@@ -12,6 +12,8 @@ import type { ParcelKind, ReceptionClient, ReceptionLocation } from '@/lib/recep
 export type QuoteBasis = 'per_kg' | 'per_cbm' | 'fixed';
 export type QuoteLineKind = 'parcel' | 'fee' | 'discount';
 export type QuoteStatus = 'draft' | 'sent' | 'paid' | 'invoiced';
+export type PaymentMethod = 'cash' | 'mobile_money' | 'bank_transfer' | 'other';
+export type PaymentPlace = 'guangzhou' | 'douala' | 'other';
 
 export interface CargoPricing {
   air_per_kg_xaf: number;
@@ -38,6 +40,24 @@ export interface QuoteLine {
   cbm?: number | null;
 }
 
+/** Un encaissement sur le devis — jamais effacé : annulé, avec un motif, et toujours visible. */
+export interface QuotePayment {
+  id: string;
+  receipt_no: string;
+  amount_xaf: number;
+  method: PaymentMethod;
+  place: PaymentPlace;
+  paid_at: string;
+  reference: string | null;
+  proof_path: string | null;
+  note: string | null;
+  received_by: string | null;
+  received_by_name?: string | null;
+  created_at: string;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+}
+
 export interface Quote {
   id: string;
   quote_no: string;
@@ -46,8 +66,13 @@ export interface Quote {
   currency: string;
   total_xaf: number;
   amount_paid_xaf: number;
+  /** Le reste à payer, jamais négatif (calculé en base ; recalculé ici par quoteBalance). */
+  balance_xaf?: number;
   notes: string | null;
   sent_at: string | null;
+  paid_at?: string | null;
+  invoice_no?: string | null;
+  invoiced_at?: string | null;
   created_at: string;
   updated_at: string;
   deposit_no: string;
@@ -56,6 +81,7 @@ export interface Quote {
   closed_at: string | null;
   client: ReceptionClient | null;
   lines: QuoteLine[];
+  payments?: QuotePayment[];
 }
 
 /** Le montant d'une ligne, tel que la base le calcule : quantité × prix unitaire, arrondi à l'unité ; ou le montant fixe. */
@@ -100,4 +126,33 @@ export function xaf(amount: number | null | undefined): string {
 /** Le total d'une liste de lignes (pour l'aperçu avant que la base ait répondu). */
 export function quoteTotal(lines: ReadonlyArray<Pick<QuoteLine, 'amount_xaf'>>): number {
   return lines.reduce((s, l) => s + Math.round(Number(l.amount_xaf ?? 0)), 0);
+}
+
+export const METHOD_LABEL: Record<PaymentMethod, string> = { cash: 'Espèces', mobile_money: 'Mobile Money', bank_transfer: 'Virement', other: 'Autre' };
+export const PLACE_LABEL: Record<PaymentPlace, string> = { guangzhou: 'Guangzhou, avant le départ', douala: 'Douala, au retrait', other: 'Ailleurs' };
+export const PLACE_SHORT: Record<PaymentPlace, string> = { guangzhou: 'Guangzhou', douala: 'Douala', other: 'Ailleurs' };
+
+/** Les encaissements qui comptent : les non annulés. */
+export function activePayments(q: Pick<Quote, 'payments'>): QuotePayment[] {
+  return (q.payments ?? []).filter((p) => !p.cancelled_at);
+}
+
+/** L'encaissé, recalculé depuis les paiements quand ils sont là, sinon la valeur de la base. */
+export function quotePaid(q: Pick<Quote, 'payments' | 'amount_paid_xaf'>): number {
+  if (q.payments) return activePayments(q).reduce((s, p) => s + Math.round(Number(p.amount_xaf ?? 0)), 0);
+  return Math.round(Number(q.amount_paid_xaf ?? 0));
+}
+
+/** Le reste à payer : total − encaissé, jamais négatif. */
+export function quoteBalance(q: Pick<Quote, 'total_xaf' | 'amount_paid_xaf' | 'payments'>): number {
+  return Math.max(0, Math.round(Number(q.total_xaf ?? 0)) - quotePaid(q));
+}
+
+/** « Payé 120 000 sur 219 840 · reste 99 840 » — une ligne pour les cartes et les listes. */
+export function paidSentence(total: number | null | undefined, paid: number | null | undefined): string {
+  const t = Math.round(Number(total ?? 0)); const p = Math.round(Number(paid ?? 0));
+  if (t <= 0) return 'Sans montant';
+  if (p <= 0) return `${xaf(t)} à payer`;
+  if (p >= t) return `Payé · ${xaf(t)}`;
+  return `Payé ${xaf(p)} sur ${xaf(t)} · reste ${xaf(t - p)}`;
 }

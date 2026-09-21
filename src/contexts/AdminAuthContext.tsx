@@ -44,6 +44,7 @@ export interface RolePermission {
   canRegisterClients: boolean;
   /** Fixer le prix des colis reçus (au kilo, au m³ ou montant fixe) et émettre le devis. Le réceptionnaire ne l'a jamais. */
   canPriceParcels: boolean;
+  canCollectParcelPayments: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -66,6 +67,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: true,
     canRegisterClients: true,
     canPriceParcels: true,
+    canCollectParcelPayments: true,
   },
   ops: {
     canViewClients: true,
@@ -86,6 +88,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: true,
     canRegisterClients: true,
     canPriceParcels: true,
+    canCollectParcelPayments: true,
   },
   support: {
     canViewClients: true,
@@ -106,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: false,
     canRegisterClients: true,
     canPriceParcels: false,
+    canCollectParcelPayments: false,
   },
   customer_success: {
     canViewClients: true,
@@ -126,6 +130,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: false,
     canRegisterClients: true,
     canPriceParcels: false,
+    canCollectParcelPayments: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -146,6 +151,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: false,
     canRegisterClients: false,
     canPriceParcels: false,
+    canCollectParcelPayments: false,
   },
   treasurer: {
     canViewClients: false,
@@ -166,6 +172,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: false,
     canRegisterClients: false,
     canPriceParcels: false,
+    canCollectParcelPayments: false,
   },
   /**
    * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
@@ -192,6 +199,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canReceiveParcels: true,
     canRegisterClients: true,
     canPriceParcels: false,
+    canCollectParcelPayments: false,
   },
 };
 

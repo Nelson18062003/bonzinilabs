@@ -219,7 +219,7 @@ export function DesktopCargoReception() {
                           {(() => { const q = quoteStatusMeta(d.quote_status); return (
                             <span className="inline-flex flex-col items-start gap-0.5">
                               <StatusPill tone={q.tone} label={q.short} />
-                              {d.quote_total_xaf != null && <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>{xaf(d.quote_total_xaf)}</span>}
+                              {d.quote_total_xaf != null && <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>{d.quote_paid_xaf && d.quote_paid_xaf > 0 && d.quote_paid_xaf < d.quote_total_xaf ? `reste ${xaf(d.quote_total_xaf - d.quote_paid_xaf)}` : xaf(d.quote_total_xaf)}</span>}
                             </span>
                           ); })()}
                         </Td>

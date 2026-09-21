@@ -13,7 +13,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatKg, initials, parcelStage } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
-import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
+import { paidSentence, quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, Row, ScreenError, ScreenLoader, StatusPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, ParcelRow, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -78,7 +78,7 @@ export function MobileCargoDepositDetail() {
                 <span className={cn(TYPE.bodyStrong, TEXT.strong)}>Prix et devis</span>
                 <StatusPill tone={qs.tone} label={qs.label} />
               </span>
-              <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>{quote ? `${quote.quote_no} · ${xaf(quote.total_xaf)}` : hasPermission('canPriceParcels') ? 'Aucun prix posé : touchez pour chiffrer' : 'Aucun prix posé'}</span>
+              <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>{quote ? `${quote.quote_no} · ${quote.amount_paid_xaf > 0 ? paidSentence(quote.total_xaf, quote.amount_paid_xaf) : xaf(quote.total_xaf)}` : hasPermission('canPriceParcels') ? 'Aucun prix posé : touchez pour chiffrer' : 'Aucun prix posé'}</span>
             </span>
             <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
           </button>

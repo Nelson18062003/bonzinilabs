@@ -14,6 +14,7 @@ import { clientFullName, formatCbm, formatDims, formatKg, initials, parcelStage 
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { QuoteSection } from './QuoteSection';
+import { QuotePaymentsSection } from './QuotePaymentsSection';
 import { cn } from '@/lib/utils';
 import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog, Holder, ScreenLoader, StatusPill, Th, Td } from '@/desktop/designKit';
 
@@ -122,6 +123,7 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
             </Facts>
           </Band>
           <QuoteSection deposit={d} />
+          <QuotePaymentsSection depositId={d.id} />
           <Band title="Les colis" meta={loaded.length > 0 ? `${d.parcels.length - loaded.length} à l'entrepôt · ${loaded.length} dans une boîte` : `${d.parcels.length} à l'entrepôt`}>
             <div className="-mx-5 max-h-[360px] overflow-auto">
               <table className="w-full text-left">

@@ -1,7 +1,7 @@
 // L'arithmétique du devis, celle que la base refait : au kilo, au m³, ou
 // montant fixe ; entiers en XAF ; une ligne sans mesure ne se chiffre pas.
 import { describe, expect, it } from 'vitest';
-import { defaultBasis, defaultUnitPrice, lineAmount, lineNeedsMeasure, quoteStatusMeta, quoteTotal, xaf } from '@/lib/cargoQuote';
+import { defaultBasis, defaultUnitPrice, lineAmount, lineNeedsMeasure, paidSentence, quoteBalance, quotePaid, quoteStatusMeta, quoteTotal, xaf, type QuotePayment } from '@/lib/cargoQuote';
 
 describe('lineAmount', () => {
   it('au kilo : poids × prix, arrondi à l\'unité', () => {
@@ -42,5 +42,33 @@ describe('le reste', () => {
     expect(quoteStatusMeta(null).label).toBe('Sans prix');
     expect(quoteStatusMeta('sent').tone).toBe('info');
     expect(xaf(54600)).toMatch(/54.?600 XAF/);
+  });
+});
+
+// ── Phase 2 : l'encaissé et le reste à payer, tels que la base les recalcule ──
+const pay = (amount: number, cancelled = false): QuotePayment => ({
+  id: `p${amount}`, receipt_no: 'RE-000001', amount_xaf: amount, method: 'cash', place: 'guangzhou', paid_at: '2026-09-21T10:00:00Z',
+  reference: null, proof_path: null, note: null, received_by: null, created_at: '2026-09-21T10:00:00Z',
+  cancelled_at: cancelled ? '2026-09-21T11:00:00Z' : null, cancel_reason: cancelled ? 'double saisie' : null,
+});
+
+describe('quotePaid / quoteBalance', () => {
+  it('additionne les encaissements non annulés', () => {
+    const q = { total_xaf: 219840, amount_paid_xaf: 0, payments: [pay(100000), pay(20000), pay(50000, true)] };
+    expect(quotePaid(q)).toBe(120000);
+    expect(quoteBalance(q)).toBe(99840);
+  });
+  it('sans la liste des paiements, se fie à la valeur de la base', () => {
+    expect(quotePaid({ amount_paid_xaf: 5000 })).toBe(5000);
+    expect(quoteBalance({ total_xaf: 4000, amount_paid_xaf: 5000 })).toBe(0);
+  });
+});
+
+describe('paidSentence', () => {
+  it('dit ce qu\'il reste', () => {
+    expect(paidSentence(219840, 0)).toBe(`${xaf(219840)} à payer`);
+    expect(paidSentence(219840, 120000)).toBe(`Payé ${xaf(120000)} sur ${xaf(219840)} · reste ${xaf(99840)}`);
+    expect(paidSentence(219840, 219840)).toBe(`Payé · ${xaf(219840)}`);
+    expect(paidSentence(0, 0)).toBe('Sans montant');
   });
 });

@@ -110,6 +110,8 @@ export interface Deposit {
   quote_status?: 'draft' | 'sent' | 'paid' | 'invoiced' | null;
   quote_no?: string | null;
   quote_total_xaf?: number | null;
+  quote_paid_xaf?: number | null;
+  invoice_no?: string | null;
 }
 
 export interface DayStats {
