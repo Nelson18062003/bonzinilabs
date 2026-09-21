@@ -5,6 +5,7 @@
 // ============================================================
 import { Camera, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getCurrentLocale } from '@/i18n';
 import { DESTINATION_THEME } from '@/lib/customerCode';
 import { ICON_PATHS } from '@/lib/shippingLabelCanvas';
 import { cn } from '@/lib/utils';
@@ -37,10 +38,10 @@ export function useReceptionLabels() {
 }
 
 export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(getCurrentLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleString(getCurrentLocale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Une ligne de dépôt dans une liste : qui, combien, quand, dans quel état. */

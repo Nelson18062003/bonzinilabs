@@ -88,7 +88,7 @@
   "rc_new_deposit": "新收货",
   "rc_today": "今天",
   "rc_deposits": "收货单",
-  "rc_parcels": "件数",
+  "rc_parcels": "货物",
   "rc_weight": "重量",
   "rc_volume": "体积",
   "rc_pending": "待认领",
@@ -163,7 +163,7 @@
   "rc_assigned": "已认领",
   "rc_incomplete": "不完整",
   "rc_missing_hint": "缺少重量、尺寸或照片：可以继续，但开票时需要。",
-  "rc_mode": "方式",
+  "rc_mode": "运输方式",
   "rc_continue": "继续",
   "rc_create_and_continue": "创建客户并继续",
   "rc_change": "更换",
@@ -178,5 +178,13 @@
   "rc_client": "客户",
   "rc_location": "地点",
   "rc_scan_again": "再次扫描",
-  "rc_labels_hint": "每件货一张标签，带货物编号。请贴在每件货上。"
+  "rc_labels_hint": "每件货一张标签，带货物编号。请贴在每件货上。",
+  "rc_client_found": "已找到客户",
+  "rc_code_unknown": "未知编号：没有客户使用此编号",
+  "rc_looking_up": "正在查找客户…",
+  "rc_retry": "重试",
+  "rc_deposit_not_found": "找不到该收货单",
+  "rc_language": "语言",
+  "rc_warehouse_short": "仓库",
+  "rc_office_short": "办公室"
 }

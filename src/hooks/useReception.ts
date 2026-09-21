@@ -265,3 +265,25 @@ export function useCargoPartsSummary() {
     staleTime: 30_000,
   });
 }
+
+// ── Le scan : un code client → une fiche, tout de suite ─────────────────────
+export class UnknownCodeError extends Error {
+  constructor(public readonly code: string) { super('unknown_code'); }
+}
+
+/**
+ * Un code BZ (ou l'URL du QR) → le client, sans liste. Lève UnknownCodeError
+ * si aucun client ne porte ce code, pour que l'écran le dise et continue à scanner.
+ */
+export function useClientByCode() {
+  return useMutation({
+    mutationFn: async (code: string): Promise<ReceptionClient> => {
+      const { data, error } = await supabaseAdmin.rpc('reception_client_by_code' as never, { p_code: code } as never);
+      if (error) throw new Error(error.message);
+      const res = data as unknown as { success: boolean; error?: string; code?: string; client?: ReceptionClient };
+      if (res?.success && res.client) return res.client;
+      if (res?.error === 'unknown_code') throw new UnknownCodeError(res.code ?? code);
+      throw new Error(res?.error || 'Opération refusée');
+    },
+  });
+}

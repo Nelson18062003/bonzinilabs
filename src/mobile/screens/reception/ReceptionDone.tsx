@@ -11,6 +11,7 @@ import { Check, Printer, ScanLine } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getCurrentLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
@@ -54,7 +55,7 @@ export function ReceptionDone() {
     if (!client) return;
     setPrinting(true);
     try {
-      const shipDate = new Date(receivedAt).toLocaleDateString('fr-FR');
+      const shipDate = new Date(receivedAt).toLocaleDateString(getCurrentLocale());
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const box = fitOnPage(LABEL_W, LABEL_H);
       for (let i = 0; i < deposit.parcels.length; i++) {

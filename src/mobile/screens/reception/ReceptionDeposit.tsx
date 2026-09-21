@@ -26,7 +26,7 @@ export function ReceptionDeposit() {
   const [confirm, setConfirm] = useState(false);
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
-  if (error || !deposit) return <ScreenError description={(error as Error | null)?.message ?? 'Dépôt introuvable'} onRetry={() => void refetch()} />;
+  if (error || !deposit) return <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />;
 
   const editable = deposit.status === 'open';
   const name = deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');

@@ -178,5 +178,13 @@
   "rc_client": "Client",
   "rc_location": "Lieu",
   "rc_scan_again": "Scanner encore",
-  "rc_labels_hint": "Une étiquette par colis, avec le numéro du colis. À coller sur chacun."
+  "rc_labels_hint": "Une étiquette par colis, avec le numéro du colis. À coller sur chacun.",
+  "rc_client_found": "Client trouvé",
+  "rc_code_unknown": "Code inconnu : aucun client ne porte ce code",
+  "rc_looking_up": "Recherche du client…",
+  "rc_retry": "Réessayer",
+  "rc_deposit_not_found": "Dépôt introuvable",
+  "rc_language": "Langue",
+  "rc_warehouse_short": "Entrepôt",
+  "rc_office_short": "Bureau"
 }

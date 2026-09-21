@@ -178,5 +178,13 @@
   "rc_client": "Customer",
   "rc_location": "Place",
   "rc_scan_again": "Scan again",
-  "rc_labels_hint": "One label per parcel, with its number. Stick one on each."
+  "rc_labels_hint": "One label per parcel, with its number. Stick one on each.",
+  "rc_client_found": "Customer found",
+  "rc_code_unknown": "Unknown code: no customer has this code",
+  "rc_looking_up": "Looking up the customer…",
+  "rc_retry": "Try again",
+  "rc_deposit_not_found": "Drop-off not found",
+  "rc_language": "Language",
+  "rc_warehouse_short": "Warehouse",
+  "rc_office_short": "Office"
 }

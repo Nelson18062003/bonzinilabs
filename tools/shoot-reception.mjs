@@ -50,7 +50,9 @@ const withDep = (p, d) => ({ ...p, deposit_id: d.id, deposit_no: d.deposit_no, l
 const loadedParcels = dep3.parcels.map((p) => withDep({ ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number }, { ...dep3, client }));
 const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number } : p)) };
 
+const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
+  reception_client_by_code: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; return c ? { success: true, client: c } : { success: false, error: 'unknown_code', code: b.p_code }; },
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
   reception_overview: { success: true, by_receptionist: [
     { received_by: 'demo', name: 'Kevin Nkolo', deposits: 26, parcels: 158, weight_kg: 1210, cbm: 9.1, pending: 2, incomplete: 3 },
@@ -73,13 +75,15 @@ const RPC = {
 
 // DESKTOP=1 : 1440×900, sans émulation mobile — pour les écrans admin desktop dans le shell.
 const DESKTOP = process.env.DESKTOP === '1';
+// LANG=zh|en|fr : la langue de l'app pour les captures (fr par défaut).
+const LANG = process.env.LANG_APP ?? 'fr';
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] });
 const ctx = await browser.newContext(DESKTOP
   ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, ignoreHTTPSErrors: true }
   : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
-await ctx.addInitScript(() => {
-  try { localStorage.setItem('bonzini-reception-location', 'warehouse'); localStorage.setItem('bonzini-language', 'fr'); } catch { /* privé */ }
-});
+await ctx.addInitScript((lang) => {
+  try { localStorage.setItem('bonzini-reception-location', 'warehouse'); localStorage.setItem('bonzini-language', lang); } catch { /* privé */ }
+}, LANG);
 // Polices : Google Fonts n'est pas joignable depuis le bac à sable ; FONTS_DIR
 // (fonts.css + <md5(url+"\n")[0:16]>.woff2) les sert en local, sinon on capture avec la police système.
 if (process.env.FONTS_DIR) {

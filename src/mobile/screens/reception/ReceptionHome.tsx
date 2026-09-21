@@ -13,6 +13,7 @@ import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
 import { SURFACE, TEXT, TYPE, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
+import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
 import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionHome() {
@@ -31,7 +32,7 @@ export function ReceptionHome() {
     label: (
       <span className="inline-flex items-center gap-2">
         <LocationMark location={l} size={24} />
-        {l === 'warehouse' ? t('rc_warehouse') : t('rc_office')}
+        {l === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}
       </span>
     ),
   }));
@@ -39,7 +40,8 @@ export function ReceptionHome() {
   // Premier lancement sur cet appareil : où est-on ? Le lieu décide du mode.
   if (!location) {
     return (
-      <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-10 pt-16', SURFACE.canvas)}>
+      <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-10 pt-[calc(1.25rem+env(safe-area-inset-top))]', SURFACE.canvas)}>
+        <div className="mb-8 flex justify-end"><LanguagePicker /></div>
         <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_choose_location')}</h1>
         <p className={cn('mt-3', TYPE.body, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
         <div className="mt-8 flex flex-col gap-4">
@@ -62,7 +64,10 @@ export function ReceptionHome() {
           <div className="min-w-0">
             <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_hello')}{firstName ? `, ${firstName}` : ''}</h1>
           </div>
-          <IconButton icon={LogOut} ariaLabel={t('logout')} onClick={() => void logout().then(() => navigate('/r/login'))} />
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguagePicker />
+            <IconButton icon={LogOut} ariaLabel={t('logout')} onClick={() => void logout().then(() => navigate('/r/login'))} />
+          </div>
         </div>
         <div className="mt-5">
           <Segmented value={location} onChange={setLocation} options={locationOptions} />
