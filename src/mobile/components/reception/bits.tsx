@@ -3,6 +3,7 @@
 // du lieu (Sea / Air, la même que sur l'étiquette), la ligne d'un dépôt, la
 // ligne d'un colis, le libellé d'un mode d'arrivée ou d'un type de colis.
 // ============================================================
+import type { ReactNode } from 'react';
 import { Camera, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentLocale } from '@/i18n';
@@ -106,6 +107,25 @@ export function ParcelRow({ parcel, onRemove, onClick }: { parcel: Parcel; onRem
           <Trash2 className="h-5 w-5" />
         </button>
       )}
+    </div>
+  );
+}
+
+/* ── Le fil du parcours : « Étape 2 sur 3 », une phrase pour titre, une
+ * ligne d'aide, une barre. Le réceptionnaire sait toujours où il en est et
+ * ce qu'on attend de lui — une question par écran, rien d'autre. */
+export function StepHeader({ step, total, title, help, className }: { step: number; total: number; title: ReactNode; help?: ReactNode; className?: string }) {
+  const { t } = useTranslation('agent');
+  return (
+    <div className={cn('space-y-3', className)}>
+      <div className="flex items-center gap-2" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={cn('h-1.5 flex-1 rounded-full', i < step ? 'bg-[#2C2C2C] dark:bg-[#E3E3E3]' : 'bg-[#E3E3E3] dark:bg-[#444444]')} />
+        ))}
+      </div>
+      <p className={cn('tabular-nums', TYPE.smallStrong, TEXT.muted)}>{t('rc_step_of', { n: step, total })}</p>
+      <h1 className={cn(TYPE.heading, TEXT.strong)}>{title}</h1>
+      {help && <p className={cn(TYPE.body, TEXT.muted)}>{help}</p>}
     </div>
   );
 }

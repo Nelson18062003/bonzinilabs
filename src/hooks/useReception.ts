@@ -310,3 +310,21 @@ export function useUpdateParcel() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── Les clients, côté réception : récents, et une fiche par client ──────────
+export function useRecentClients() {
+  return useQuery({
+    queryKey: ['reception', 'clients', 'recent'],
+    queryFn: () => rpcJson<{ clients: ReceptionClient[] }>('reception_recent_clients', { p_limit: 40 }).then((r) => r.clients),
+    staleTime: 30_000,
+  });
+}
+
+export function useReceptionClient(userId: string | undefined) {
+  return useQuery({
+    queryKey: ['reception', 'client-card', userId],
+    queryFn: () => rpcJson<{ client: ReceptionClient }>('reception_client', { p_user_id: userId }).then((r) => r.client),
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+}

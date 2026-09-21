@@ -13,7 +13,7 @@ import { BROUGHT_BY, initials, type BroughtBy } from '@/lib/reception';
 import { useOpenDeposit } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, FormField, Holder, PrimaryPill, TextInput } from '@/mobile/designKit';
-import { LocationMark } from '@/mobile/components/reception/bits';
+import { LocationMark, StepHeader } from '@/mobile/components/reception/bits';
 import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionBroughtBy() {
@@ -49,24 +49,18 @@ export function ReceptionBroughtBy() {
       <MobileHeader title={t('rc_new_deposit')} showBack backTo="/r/new" />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        <Card className="flex items-center gap-4">
-          <Holder size="lg" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
-          <span className="min-w-0 flex-1">
-            <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{clientId ? clientName : t('rc_unknown_client')}</span>
-            {clientCode && <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{clientCode}</span>}
-            {location && (
-              <span className={cn('mt-1.5 flex items-center gap-2', TYPE.small, TEXT.muted)}>
-                <LocationMark location={location} size={20} />
-                <span>{location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}</span>
-              </span>
-            )}
-          </span>
-          <button type="button" onClick={() => navigate('/r/new')} className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</button>
-        </Card>
+        <StepHeader step={2} total={3} title={t('rc_brought_title')} help={t('rc_s2_help')} />
 
-        <div>
-          <h1 className={cn(TYPE.title, TEXT.strong)}>{t('rc_brought_title')}</h1>
-        </div>
+        {/* Le client, en une ligne : on sait pour qui on travaille, sans que ça prenne l'écran. */}
+        <button type="button" onClick={() => navigate('/r/new')} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
+          <Holder size="sm" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
+          <span className={cn('min-w-0 flex-1 break-words', TYPE.bodyStrong, TEXT.strong)}>
+            {clientId ? clientName : t('rc_unknown_client')}
+            {clientCode && <span className={cn('ml-2 font-normal tabular-nums', TEXT.muted)}>{clientCode}</span>}
+          </span>
+          {location && <LocationMark location={location} size={24} />}
+          <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</span>
+        </button>
 
         <div className="flex flex-col gap-3" role="radiogroup" aria-label={t('rc_brought_title')}>
           {BROUGHT_BY.map((b) => {
@@ -106,7 +100,7 @@ export function ReceptionBroughtBy() {
 
       <div className={cn('shrink-0 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
         <PrimaryPill onClick={() => void submit()} disabled={!canOpen} loading={open.isPending} className="h-14 w-full text-[17px]">
-          {t('rc_open_deposit')}
+          {t('rc_continue_next')}
         </PrimaryPill>
       </div>
     </div>

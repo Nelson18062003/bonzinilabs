@@ -52,6 +52,8 @@ const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...
 
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
+  reception_recent_clients: { success: true, clients: [client, client2, client3] },
+  reception_client: (b) => { const c = [client, client2, client3].find((x) => x.user_id === b.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
   reception_update_parcel: { success: true, deposit: dep1 },
   reception_client_by_code: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; return c ? { success: true, client: c } : { success: false, error: 'unknown_code', code: b.p_code }; },
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
@@ -107,6 +109,19 @@ await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => {
   if ((req.headers()['accept'] ?? '').includes('pgrst.object') && Array.isArray(body)) body = body[0] ?? null;
   r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': `0-9/${Array.isArray(body) ? body.length : 1}` }, body: JSON.stringify(body) });
 });
+// Les réglages d'expédition RÉELS (copie de platform_settings.shipping, 21/09/2026) : l'étiquette capturée est celle que Tina reçoit.
+await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
+  const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
+  const row = { key: 'shipping', value: {
+    company: { email: 'contact@bonzinilabs.com', phone: '+8618667439286', nameEn: 'NORTON GAUSS BONZINI', nameZh: '诺顿·高斯·邦齐尼', wechat: '+8618667439286', whatsapp: '+8618667439286' },
+    warehouse: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
+      addressEn: 'Bonzini Trading Cargo, an iron warehouse located directly opposite the sales department of Yunxi Song Garden Center in Shimen Street, Baiyun District, Guangzhou City, Guangdong Province',
+      addressZh: '广东省广州市白云区石门街道云溪颂花园中心售楼部正对面铁皮仓库 Bonzini Trading Cargo' },
+    office: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
+      addressEn: '259, 2/F, Cameroon Building, No. 219 Guangyuan West Road, Guangzhou, China', addressZh: '广州市广园西路219号\n客麦隆大厦二楼 259' },
+  } };
+  route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? row : [row]) });
+});
 await ctx.route(/\/rest\/v1\/cargo_shipments/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
   route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? shipment : [shipment]) });
@@ -119,19 +134,21 @@ await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
 });
 
-const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-edit', 'rc-done', 'rc-pending'];
+const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-search', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-weight', 'rc-parcel-dims', 'rc-parcel-inside', 'rc-parcel-copies', 'rc-parcel-edit', 'rc-done', 'rc-pending', 'rc-clients', 'rc-client-card'];
 for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
-  const key = screen === 'rc-location' ? 'rc-home' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
-  if (screen === 'rc-identify') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
-  if (screen === 'rc-parcel') {
-    await page.fill('#p-weight', '8,4');
-    const dims = page.locator('input[inputmode="decimal"]');
-    await dims.nth(1).fill('60'); await dims.nth(2).fill('40'); await dims.nth(3).fill('40');
-    await page.fill('#p-desc', 'Chaussures, 40 paires');
+  if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
+  if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
+  if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
+  if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
+  if (screen === 'rc-client-card-label') {
+    // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
+    await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();
+    await page.waitForTimeout(2500);
   }
   if (screen === 'client-desk-panel') {
     // Le panneau de la fiche client défile en interne : on amène le bloc « Colis reçus » à l'écran.

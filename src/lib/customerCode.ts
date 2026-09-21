@@ -156,8 +156,11 @@ export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {
     whatsapp: '+86 186 6743 9286',
   },
   warehouse: {
-    addressZh: '广东省广州市白云区窖心街\n白云湖物流园 K栋 18档',
-    addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou, Guangdong',
+    // L'adresse telle que l'office manager de Guangzhou l'a écrite (21/09/2026) —
+    // au caractère près : 云溪颂花园, pas 颐. La base fait foi ; ceci n'est que
+    // la valeur de départ, le temps que la ligne arrive.
+    addressZh: '广东省广州市白云区石门街道云溪颂花园中心售楼部正对面铁皮仓库 Bonzini Trading Cargo',
+    addressEn: 'Bonzini Trading Cargo, an iron warehouse located directly opposite the sales department of Yunxi Song Garden Center in Shimen Street, Baiyun District, Guangzhou City, Guangdong Province',
     recipient: 'Tina',
     phone: '199 2746 3902',
     wechat: '138 2229 7518',

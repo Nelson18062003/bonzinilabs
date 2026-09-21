@@ -153,12 +153,15 @@ import { ReceptionRouteWrapper } from "./mobile/components/reception/ReceptionRo
 const ReceptionLogin = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionLogin })));
 const ReceptionHome = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionHome })));
 const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionIdentify })));
+const ReceptionSearch = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSearch })));
 const ReceptionBroughtBy = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionBroughtBy })));
 const ReceptionNewClient = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionNewClient })));
 const ReceptionDeposit = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDeposit })));
 const ReceptionParcel = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionParcel })));
 const ReceptionDone = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDone })));
 const ReceptionPending = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPending })));
+const ReceptionClients = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClients })));
+const ReceptionClientCard = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClientCard })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -331,6 +334,7 @@ const App = () => (
                 <Route path="/r/login" element={<ReceptionRouteWrapper requireAuth={false} showTabBar={false}><ReceptionLogin /></ReceptionRouteWrapper>} />
                 <Route path="/r" element={<ReceptionRouteWrapper><ReceptionHome /></ReceptionRouteWrapper>} />
                 <Route path="/r/new" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionIdentify /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/search" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSearch /></ReceptionRouteWrapper>} />
                 <Route path="/r/new/how" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionBroughtBy /></ReceptionRouteWrapper>} />
                 <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
@@ -338,6 +342,8 @@ const App = () => (
                 <Route path="/r/deposit/:depositId/parcel/:parcelId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
+                <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
+                <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionClientCard /></ReceptionRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

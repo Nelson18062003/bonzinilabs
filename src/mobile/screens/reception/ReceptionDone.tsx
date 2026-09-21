@@ -7,7 +7,7 @@
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Printer, ScanLine } from 'lucide-react';
+import { Check, Printer, ScanLine, Tag } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,6 +22,7 @@ import { useShippingLabel } from '@/components/customer-code/useShippingLabel';
 import { deliverFile } from '@/components/customer-code/exportShippingLabel';
 import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { ReceptionLabelSheet } from '@/mobile/components/reception/ReceptionLabelSheet';
 
 export function ReceptionDone() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export function ReceptionDone() {
   const { data: deposit, isLoading } = useReceptionDeposit(depositId);
   const { data: settings } = useAdminShippingSettings();
   const [printing, setPrinting] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
 
   const client = deposit?.client ?? null;
   const { renderWith, qr } = useShippingLabel({
@@ -107,12 +109,14 @@ export function ReceptionDone() {
                 <Printer /> {t('rc_print_labels')} ({count})
               </PrimaryPill>
               <p className={cn('text-center', TYPE.small, TEXT.muted)}>{t('rc_labels_hint')}</p>
+              <SoftPill onClick={() => setLabelOpen(true)} className="h-14 w-full text-[17px]"><Tag /> {t('rc_client_label_short')}</SoftPill>
             </>
           )}
           <SoftPill onClick={() => navigate('/r/new')} className="h-14 w-full text-[17px]"><ScanLine /> {t('rc_next_deposit')}</SoftPill>
           <button type="button" onClick={() => navigate('/r')} className={cn('h-12 w-full', TYPE.bodyStrong, TEXT.muted)}>{t('rc_back_home')}</button>
         </div>
       </div>
+      {client && <ReceptionLabelSheet open={labelOpen} onClose={() => setLabelOpen(false)} client={client} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
     </div>
   );
 }

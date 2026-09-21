@@ -60,8 +60,18 @@ export interface LabelData {
 
 // ── Polices ──────────────────────────────────────────────────────────────
 export const FONT_LATIN = '"DM Sans", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif';
-export const FONT_ZH = '"Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
-export const FONT_ZH_DISPLAY = '"Noto Serif SC", "Songti SC", "SimSun", "Noto Sans SC", "PingFang SC", serif';
+/* Le chinois de l'étiquette est en 黑体 (sans), comme sur toute étiquette de
+ * transporteur en Chine — et d'abord dans la police NATIVE de l'appareil
+ * (PingFang sur iPhone et Mac, Microsoft YaHei sur Windows, Noto Sans CJK sur
+ * Android), pour que l'office manager de Guangzhou lise exactement ce qu'elle
+ * lit partout ailleurs. Noto Sans SC (Google Fonts) n'est qu'un secours :
+ * injoignable depuis la Chine, elle ne doit jamais être la seule. */
+export const FONT_ZH = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", "Noto Sans SC", sans-serif';
+/* Les gros titres chinois (bandeau, adresse, code) : la MÊME sans, en graisse
+ * 900. L'ancienne police à empattements (Noto Serif SC, façon 宋体) donnait au
+ * bloc d'adresse un air « bizarre » et peu lisible sur le terrain — retour de
+ * l'office manager de Guangzhou, 21/09/2026. */
+export const FONT_ZH_DISPLAY = FONT_ZH;
 const f = (weight: number, size: number, family: string) => `${weight} ${size}px ${family}`;
 
 const INK = '#111111';
@@ -283,7 +293,8 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   {
     const fzh = f(900, 23, FONT_ZH_DISPLAY), fen = f(600, 10.5, FONT_LATIN);
     const zhLines = wrapText(loc.addressZh, CW, fzh, measure, 3);
-    const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 2) : [];
+    // Trois lignes pour l'anglais : l'adresse décrite en toutes lettres (« an iron warehouse located directly opposite… ») n'en tient pas en deux.
+    const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 3) : [];
     const ZH_LH = 29, EN_LH = 13;
     const blockH = 8 + zhLines.length * ZH_LH + (enLines.length ? 3 + enLines.length * EN_LH : 0) + 6;
     // Un dos de couleur le long de l'adresse : le mode, encore, là où l'œil va.
@@ -391,8 +402,7 @@ export async function ensureLabelFonts(d: LabelData): Promise<void> {
   const zh = chineseSample(d);
   const specs: Array<[string, string?]> = [
     ['600 16px "DM Sans"'], ['700 16px "DM Sans"'], ['800 16px "DM Sans"'], ['900 16px "DM Sans"'],
-    ['700 16px "Noto Sans SC"', zh], ['800 16px "Noto Sans SC"', zh],
-    ['900 16px "Noto Serif SC"', zh],
+    ['700 16px "Noto Sans SC"', zh], ['800 16px "Noto Sans SC"', zh], ['900 16px "Noto Sans SC"', zh],
   ];
   try {
     await Promise.race([

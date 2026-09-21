@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
-import { SURFACE, TEXT, TYPE, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, StatCard } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BottomSheet, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, SoftPill, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
 import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
 import { useReceptionLocation } from './useReceptionLocation';
@@ -27,6 +27,7 @@ export function ReceptionHome() {
   const { location, setLocation } = useReceptionLocation();
   // La journée, puis les précédentes : ‹ › sous le titre. 0 = aujourd'hui.
   const [back, setBack] = useState(0);
+  const [helpOpen, setHelpOpen] = useState(false);
   const day = (() => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
   const { data, isLoading } = useReceptionDay(back === 0 ? undefined : day);
   const dayLabel = back === 0 ? t('rc_today') : back === 1 ? t('rc_yesterday') : new Date(`${day}T12:00:00`).toLocaleDateString(getCurrentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
@@ -83,9 +84,14 @@ export function ReceptionHome() {
       </header>
 
       <div className="space-y-6 px-5 pb-8 pt-4">
-        <PrimaryPill onClick={() => navigate('/r/new')} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
-          <ScanLine /> {t('rc_new_deposit')}
-        </PrimaryPill>
+        <div className="space-y-2">
+          <PrimaryPill onClick={() => navigate('/r/new')} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
+            <ScanLine /> {t('rc_new_deposit')}
+          </PrimaryPill>
+          <button type="button" onClick={() => setHelpOpen(true)} className={cn('flex h-10 w-full items-center justify-center gap-2', TYPE.smallStrong, TEXT.muted)}>
+            <HelpCircle className="h-4 w-4" /> {t('rc_how_it_works')}
+          </button>
+        </div>
 
         {pending > 0 && (
           <button type="button" onClick={() => navigate('/r/pending')} className="flex w-full items-center gap-4 rounded-lg bg-[#FFF1C2] px-4 py-4 text-left text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
@@ -131,6 +137,19 @@ export function ReceptionHome() {
           </section>
         )}
       </div>
+
+      {/* La pédagogie tient en quatre lignes, à portée de main, jamais imposée. */}
+      <BottomSheet open={helpOpen} onClose={() => setHelpOpen(false)} title={t('rc_how_it_works')}>
+        <ol className="space-y-4">
+          {(['rc_how_1', 'rc_how_2', 'rc_how_3', 'rc_how_4'] as const).map((k, i) => (
+            <li key={k} className="flex items-start gap-4">
+              <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[16px] font-bold', 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]')}>{i + 1}</span>
+              <span className={cn('pt-1.5', TYPE.body, TEXT.strong)}>{t(k)}</span>
+            </li>
+          ))}
+        </ol>
+        <SoftPill onClick={() => setHelpOpen(false)} className="mt-6 h-14 w-full text-[17px]">{t('rc_got_it')}</SoftPill>
+      </BottomSheet>
     </div>
   );
 }
