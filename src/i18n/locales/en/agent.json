@@ -79,6 +79,7 @@
   "signed_by": "Signed by",
   "beneficiary_signature": "Beneficiary signature",
   "qr_already_scanned_continue": "QR already scanned — continue?",
+  "wh_login": "Warehouse sign in",
   "rc_login": "Reception sign in",
   "rc_hello": "Hello",
   "rc_warehouse": "Warehouse · Sea cargo",

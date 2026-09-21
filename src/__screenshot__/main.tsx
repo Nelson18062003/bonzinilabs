@@ -117,6 +117,8 @@ import {
   ReceptionLogin,
 } from '@/mobile/screens/reception';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
+import { WarehouseShell } from '@/mobile/components/warehouse/WarehouseRouteWrapper';
+import { WarehouseHome, WarehouseArrivals, WarehouseCheckin, WarehousePickup, WarehousePickupClient, WarehouseReleaseDone } from '@/mobile/screens/warehouse';
 import {
   AgentCashLogin,
   AgentCashPayments,
@@ -340,6 +342,15 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-clients': { Comp: () => <ReceptionShell><ReceptionClients /></ReceptionShell>, route: '/r/clients', wrap: 'lang' },
   'rc-client-card': { Comp: ReceptionClientCard, route: '/r/clients/u1', path: '/r/clients/:userId', wrap: 'lang' },
   // Admin — la réception dans Bonzini Cargo
+  // Entrepôt de Douala (« /w »)
+  'wh-home': { Comp: () => <WarehouseShell><WarehouseHome /></WarehouseShell>, route: '/w', wrap: 'lang' },
+  'wh-arrivals': { Comp: () => <WarehouseShell><WarehouseArrivals /></WarehouseShell>, route: '/w/arrivees', wrap: 'lang' },
+  'wh-checkin': { Comp: WarehouseCheckin, route: '/w/arrivees/air/air3', path: '/w/arrivees/:kind/:id', wrap: 'lang' },
+  'wh-pickup': { Comp: () => <WarehouseShell><WarehousePickup /></WarehouseShell>, route: '/w/remise', wrap: 'lang' },
+  'wh-client': { Comp: WarehousePickupClient, route: '/w/remise/BZ-510224', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-client-blocked': { Comp: WarehousePickupClient, route: '/w/remise/BZ-482913', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-hand': { Comp: WarehousePickupClient, route: '/w/remise/BZ-510224', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-done': { Comp: WarehouseReleaseDone, route: '/w/bon/rel1', path: '/w/bon/:releaseId', wrap: 'lang' },
   'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
   'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
   'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },

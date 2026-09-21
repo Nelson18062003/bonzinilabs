@@ -157,6 +157,7 @@ const AgentCashSuccess = lazy(() => import("./mobile/screens/agent-cash").then(m
 
 // ── Lazy-loaded Reception Screens (réceptionnaire, /r) ──────
 import { ReceptionRouteWrapper } from "./mobile/components/reception/ReceptionRouteWrapper";
+import { WarehouseRouteWrapper } from "./mobile/components/warehouse/WarehouseRouteWrapper";
 const ReceptionLogin = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionLogin })));
 const ReceptionHome = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionHome })));
 const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionIdentify })));
@@ -169,6 +170,13 @@ const ReceptionDone = lazy(() => import("./mobile/screens/reception").then(m => 
 const ReceptionPending = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPending })));
 const ReceptionClients = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClients })));
 const ReceptionClientCard = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClientCard })));
+const WarehouseLogin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseLogin })));
+const WarehouseHome = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHome })));
+const WarehouseArrivals = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseArrivals })));
+const WarehouseCheckin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckin })));
+const WarehousePickup = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickup })));
+const WarehousePickupClient = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickupClient })));
+const WarehouseReleaseDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseReleaseDone })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -358,6 +366,14 @@ const App = () => (
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionClientCard /></ReceptionRouteWrapper>} />
+                {/* ── Entrepôt de Douala (« /w ») : pointer, remettre ── */}
+                <Route path="/w/login" element={<WarehouseRouteWrapper requireAuth={false} showTabBar={false}><WarehouseLogin /></WarehouseRouteWrapper>} />
+                <Route path="/w" element={<WarehouseRouteWrapper><WarehouseHome /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees" element={<WarehouseRouteWrapper><WarehouseArrivals /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckin /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise" element={<WarehouseRouteWrapper><WarehousePickup /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePickupClient /></WarehouseRouteWrapper>} />
+                <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

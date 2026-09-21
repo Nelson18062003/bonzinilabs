@@ -79,6 +79,7 @@
   "signed_by": "签名人",
   "beneficiary_signature": "收款人签名",
   "qr_already_scanned_continue": "QR码已扫描——继续？",
+  "wh_login": "仓库登录",
   "rc_login": "收货员登录",
   "rc_hello": "你好",
   "rc_warehouse": "仓库 · 海运",

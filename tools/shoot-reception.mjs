@@ -85,6 +85,18 @@ const air2 = { ...air1, id: 'air2', awb_number: '23598877210', airline: 'Turkish
 const air3 = { ...air1, id: 'air3', awb_number: '07112340011', airline: 'Ethiopian Airlines', flight_no: 'ET 607', status: 'ARRIVED', etd: '2026-09-12', eta: '2026-09-13', departed_at: '2026-09-12T15:05:00Z', arrived_at: '2026-09-13T11:40:00Z', parcel_count: 7, total_weight_kg: 41, total_cbm: 0.22, client_count: 2, unpaid_count: 2, parcels: null };
 const AIRS = { air1, air2, air3 };
 const airLoadable = [...dep1.parcels.map((p) => ({ ...withDep(p, dep1), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null })), ...dep4.parcels.map((p) => ({ ...withDep(p, dep4), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null }))].map((p) => ({ ...p, location: p.deposit_no === 'RC-000123' ? 'office' : p.location }));
+
+// ── Phase 4 : l'entrepôt de Douala ──
+const whParcel = (p, d, q, o) => ({ ...withDep(p, d), status: 'arrived', shipment_id: null, air_shipment_id: 'air3', awb_number: '07112340011', container_number: null,
+  checked_in_at: null, warehouse_location: null, condition: null, condition_note: null, delivered_at: null, release_id: null, release_no: null,
+  quote_id: q?.id ?? null, quote_status: q?.status ?? null, quote_no: q?.quote_no ?? null, quote_total_xaf: q?.total_xaf ?? null, quote_paid_xaf: q?.amount_paid_xaf ?? null, invoice_no: q?.invoice_no ?? null, ...o });
+const whAir3 = [
+  ...dep3.parcels.map((p, i) => whParcel(p, dep3, quoteDep3, i < 2 ? { checked_in_at: today(9, 40), warehouse_location: 'B3', condition: 'ok' } : {})),
+  ...dep2.parcels.slice(0, 4).map((p, i) => whParcel(p, dep2, quoteDep2, i === 0 ? { checked_in_at: today(9, 42), warehouse_location: 'B4', condition: 'damaged', condition_note: 'Carton ouvert sur un coin' } : i === 3 ? { condition: 'missing', condition_note: null } : {})),
+];
+const whReady = [...dep3.parcels.map((p) => whParcel(p, dep3, quoteDep3, { checked_in_at: today(9, 40), warehouse_location: 'B3', condition: 'ok' })), whParcel(dep2.parcels[0], dep2, quoteDep2, { checked_in_at: today(9, 42), warehouse_location: 'B4', condition: 'damaged', condition_note: 'Carton ouvert' })];
+const whRelease = { id: 'rel1', release_no: 'BR-000007', released_at: today(11, 5), picked_by_name: 'Samuel Ondo', picked_by_phone: '+241 66 55 44 33', signature_path: null, note: null, parcel_count: 3, released_by_name: 'Demo Admin', client: client2,
+  parcels: dep3.parcels.map((p) => whParcel(p, dep3, quoteDep3, { checked_in_at: today(9, 40), warehouse_location: 'B3', condition: 'ok', delivered_at: today(11, 5), release_id: 'rel1', release_no: 'BR-000007' })) };
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
   reception_recent_clients: { success: true, clients: [client, client2, client3] },
@@ -127,6 +139,22 @@ const RPC = {
   cargo_air_create: (b) => ({ success: true, shipment: { ...air1, id: 'airN', awb_number: b.p_awb_number, parcels: [], parcel_count: 0 } }),
   cargo_air_update: (b) => ({ success: true, shipment: { ...air1, flight_no: b.p_flight_no ?? air1.flight_no } }),
   cargo_air_unload_parcel: { success: true },
+  warehouse_day: { success: true, day: '2026-09-21', stats: { to_checkin: 9, waiting: 5, missing: 1, delivered_today: 3 },
+    arrivals: [{ kind: 'air', id: 'air3', ref: '07112340011', label: 'LTA 07112340011', sub: 'ET 607 · Ethiopian Airlines', arrived_at: '2026-09-13T11:40:00Z', expected: 7, checked: 3, missing: 1, delivered: 0 },
+               { kind: 'sea', id: 'ct1', ref: 'MSKU 482913-7', label: 'MSKU 482913-7', sub: 'Mbarga Import · MAERSK SEMBAWANG', arrived_at: '2026-09-20T06:00:00Z', expected: 13, checked: 8, missing: 0, delivered: 0 }],
+    waiting_by_client: [{ client: client2, parcels: 3, weight_kg: 25.2, since: today(9, 40), unpaid: false, balance_xaf: 0 }, { client, parcels: 5, weight_kg: 42, since: today(9, 42), unpaid: true, balance_xaf: 99840 }],
+    releases_today: [{ id: 'rel1', release_no: 'BR-000007', released_at: today(11, 5), picked_by_name: 'Paul Fotso', parcel_count: 2, client: client3 }] },
+  warehouse_arrival_parcels: (b) => ({ success: true, kind: b.p_kind, id: b.p_id, label: b.p_kind === 'air' ? 'LTA 07112340011' : 'MSKU 482913-7', sub: b.p_kind === 'air' ? 'ET 607 · Ethiopian Airlines' : 'Mbarga Import', parcels: whAir3 }),
+  warehouse_checkin_parcel: (b) => ({ success: true, parcel: { ...whAir3[0], id: b.p_parcel_id, checked_in_at: today(15, 0), condition: b.p_condition } }),
+  warehouse_checkin_many: (b) => ({ success: true, checked: (b.p_parcel_ids ?? []).length }),
+  warehouse_flag_missing: (b) => ({ success: true, parcel: { ...whAir3[0], id: b.p_parcel_id, condition: b.p_missing ? 'missing' : null } }),
+  warehouse_find_parcel: (b) => ({ success: true, parcel: whAir3[0] }),
+  warehouse_client_parcels: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; if (!c) return { success: false, error: 'unknown_code', code: b.p_code };
+    const mine = c.user_id === 'u1' ? [whReady[3]] : c.user_id === 'u2' ? whReady.slice(0, 3) : []; const q = c.user_id === 'u1' ? quoteDep2 : quoteDep3;
+    return { success: true, client: c, ready: mine, not_ready: c.user_id === 'u1' ? dep2.parcels.slice(1, 4).map((p) => whParcel(p, dep2, quoteDep2, { status: 'arrived' })) : [], releases: c.user_id === 'u2' ? [] : [],
+      quotes: mine.length ? [{ id: q.id, quote_no: q.quote_no, deposit_id: q.deposit_id, deposit_no: q.deposit_no, status: q.status, total_xaf: q.total_xaf, amount_paid_xaf: q.amount_paid_xaf, balance_xaf: Math.max(0, q.total_xaf - q.amount_paid_xaf), invoice_no: q.invoice_no ?? null }] : [] }; },
+  warehouse_release_parcels: { success: true, release: whRelease },
+  warehouse_release_get: { success: true, release: whRelease },
   reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
 };
 
@@ -199,6 +227,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
   if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
+  if (screen === 'wh-hand') { await page.click('text=Remettre 3 colis'); await page.waitForTimeout(500); }
   if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
   if (screen === 'rc-client-card-label') {

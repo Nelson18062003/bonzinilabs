@@ -5,7 +5,7 @@ import { authenticateWithPasskey } from '@/lib/passkey';
 import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -45,6 +45,8 @@ export interface RolePermission {
   /** Fixer le prix des colis reçus (au kilo, au m³ ou montant fixe) et émettre le devis. Le réceptionnaire ne l'a jamais. */
   canPriceParcels: boolean;
   canCollectParcelPayments: boolean;
+  canReceiveAtDestination: boolean;
+  canReleaseParcels: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -68,6 +70,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: true,
     canPriceParcels: true,
     canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
   },
   ops: {
     canViewClients: true,
@@ -89,6 +93,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: true,
     canPriceParcels: true,
     canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
   },
   support: {
     canViewClients: true,
@@ -110,6 +116,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: true,
     canPriceParcels: false,
     canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
   },
   customer_success: {
     canViewClients: true,
@@ -131,6 +139,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: true,
     canPriceParcels: false,
     canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -152,6 +162,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: false,
     canPriceParcels: false,
     canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
   },
   treasurer: {
     canViewClients: false,
@@ -173,6 +185,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: false,
     canPriceParcels: false,
     canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
   },
   /**
    * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
@@ -200,6 +214,36 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canRegisterClients: true,
     canPriceParcels: false,
     canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+  },
+  /**
+   * Agent d'entrepôt (Douala) : le dernier maillon. Il pointe ce qui arrive,
+   * range, encaisse le reste à payer sur place, et remet les colis contre un
+   * bon de retrait signé. Rien d'autre de la plateforme.
+   */
+  warehouse_agent: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
   },
 };
 
@@ -211,6 +255,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   cash_agent: 'Agent cash',
   treasurer: 'Trésorier',
   receptionist: 'Réceptionnaire',
+  warehouse_agent: "Agent d'entrepôt",
 };
 
 interface AdminAuthContextType {
