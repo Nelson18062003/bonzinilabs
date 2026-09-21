@@ -1,7 +1,7 @@
 // Ce que l'entrepôt de Douala décide sans la base : lire un scan, dire où en
 // est un colis, et ce qui bloque une remise.
 import { describe, expect, it } from 'vitest';
-import { parseWarehouseScan, quoteWord, releaseBlockers, transportLabel, warehouseStage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
+import { checkinSummary, groupParcelsByClient, isPending, parseWarehouseScan, quoteWord, releaseBlockers, releaseWord, transportLabel, warehouseStage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
 import { xaf } from '@/lib/cargoQuote';
 
 const parcel = (o: Partial<WarehouseParcel> = {}): WarehouseParcel => ({
@@ -64,5 +64,40 @@ describe('remise : ce qui bloque', () => {
     expect(quoteWord({ quote_total_xaf: 0, quote_paid_xaf: 0, invoice_no: null })).toEqual({ text: 'Sans prix', ok: false });
     expect(quoteWord({ quote_total_xaf: 100, quote_paid_xaf: 40, invoice_no: null })).toEqual({ text: `Reste ${xaf(60)}`, ok: false });
     expect(quoteWord({ quote_total_xaf: 100, quote_paid_xaf: 100, invoice_no: 'FA-000012' })).toEqual({ text: 'Facturé', ok: true });
+  });
+});
+
+describe('le pointage, écran par écran', () => {
+  it('fait le bilan : vus, abîmés, manquants, jamais vus', () => {
+    const s = checkinSummary([
+      parcel({ checked_in_at: 'x', condition: 'ok' }),
+      parcel({ checked_in_at: 'x', condition: 'damaged' }),
+      parcel({ condition: 'missing' }),
+      parcel({ delivered_at: 'x', checked_in_at: 'x' }),
+      parcel(),
+    ]);
+    expect(s).toMatchObject({ total: 5, ok: 1, damaged: 1, missing: 1, delivered: 1, pending: 1, seen: 3, done: false });
+    expect(checkinSummary([]).done).toBe(true);
+  });
+  it('sait ce qui reste à pointer', () => {
+    expect(isPending(parcel())).toBe(true);
+    expect(isPending(parcel({ checked_in_at: 'x' }))).toBe(false);
+    expect(isPending(parcel({ condition: 'missing' }))).toBe(false);
+    expect(isPending(parcel({ delivered_at: 'x' }))).toBe(false);
+  });
+  it('groupe les colis par client, sans perdre l’ordre', () => {
+    const c1 = { user_id: 'u1', customer_code: 'BZ-1', first_name: 'A', last_name: 'B', phone: null, email: null, company_name: null, city: null, country: null };
+    const g = groupParcelsByClient([parcel({ id: 'a', client: c1 }), parcel({ id: 'b', client: null }), parcel({ id: 'c', client: c1 })]);
+    expect(g.map((x) => x.parcels.map((p) => p.id))).toEqual([['a', 'c'], ['b']]);
+  });
+});
+
+describe('la phrase du bas de l’écran « ses colis »', () => {
+  const quote = (o: Partial<ClientQuoteSummary>): ClientQuoteSummary => ({ id: 'q', quote_no: 'DV-000031', deposit_id: 'dep1', deposit_no: 'RC-000123', status: 'sent', total_xaf: 219840, amount_paid_xaf: 0, balance_xaf: 219840, invoice_no: null, ...o });
+  it('rien de choisi, le reste à payer, ou prêts à partir', () => {
+    expect(releaseWord(0, [])).toMatchObject({ tone: 'warn' });
+    expect(releaseWord(2, [quote({})])).toEqual({ tone: 'warn', text: `Reste à payer ${xaf(219840)} avant la remise` });
+    expect(releaseWord(2, [quote({ total_xaf: 0, balance_xaf: 0 })])).toMatchObject({ tone: 'bad', text: expect.stringContaining('Sans prix : RC-000123') });
+    expect(releaseWord(3, [])).toEqual({ tone: 'good', text: '3 colis prêts à partir' });
   });
 });

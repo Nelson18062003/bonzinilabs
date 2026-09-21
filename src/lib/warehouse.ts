@@ -153,3 +153,47 @@ export function parseWarehouseScan(text: string): { kind: 'customer'; code: stri
   if (parcel) return { kind: 'parcel', no: `RC-${parcel[1]}-${parcel[2]}` };
   return null;
 }
+
+/** Les colis d'une arrivée, client par client (l'ordre d'arrivée est conservé). */
+export function groupParcelsByClient(parcels: WarehouseParcel[]): { client: ReceptionClient | null; parcels: WarehouseParcel[] }[] {
+  const by = new Map<string, { client: ReceptionClient | null; parcels: WarehouseParcel[] }>();
+  for (const p of parcels) {
+    const k = p.client?.user_id ?? '∅';
+    const g = by.get(k) ?? { client: p.client, parcels: [] };
+    g.parcels.push(p);
+    by.set(k, g);
+  }
+  return [...by.values()];
+}
+
+/** Un colis encore à pointer : arrivé, pas vu, pas remis, pas déclaré manquant. */
+export function isPending(p: Pick<WarehouseParcel, 'checked_in_at' | 'delivered_at' | 'condition'>): boolean {
+  return !p.checked_in_at && !p.delivered_at && p.condition !== 'missing';
+}
+
+/** Le bilan d'un pointage : ce qui est vu (bon état, abîmé), remis, manquant, jamais vu. */
+export function checkinSummary(parcels: ReadonlyArray<Pick<WarehouseParcel, 'checked_in_at' | 'delivered_at' | 'condition'>>) {
+  const s = { total: parcels.length, ok: 0, damaged: 0, delivered: 0, missing: 0, pending: 0 };
+  for (const p of parcels) {
+    if (p.delivered_at) s.delivered += 1;
+    else if (p.condition === 'missing') s.missing += 1;
+    else if (p.checked_in_at) { if (p.condition === 'damaged') s.damaged += 1; else s.ok += 1; }
+    else s.pending += 1;
+  }
+  return { ...s, seen: s.ok + s.damaged + s.delivered, done: s.pending === 0 };
+}
+
+/** « 3 colis », « 1 colis » — le mot ne change pas, mais on centralise. */
+export function nParcels(n: number): string {
+  return `${n} colis`;
+}
+
+/** La phrase du bas de l'écran « ses colis » : ce qui bloque, ou ce qui part. */
+export function releaseWord(chosen: number, blockers: ClientQuoteSummary[]): { tone: 'good' | 'warn' | 'bad'; text: string } {
+  if (chosen === 0) return { tone: 'warn', text: 'Choisissez au moins un colis' };
+  const unpriced = blockers.filter((q) => q.total_xaf <= 0);
+  if (unpriced.length > 0) return { tone: 'bad', text: `Sans prix : ${unpriced.map((q) => q.deposit_no).join(', ')}. Appelez les opérations.` };
+  const due = blockers.reduce((s, q) => s + q.balance_xaf, 0);
+  if (due > 0) return { tone: 'warn', text: `Reste à payer ${xaf(due)} avant la remise` };
+  return { tone: 'good', text: `${nParcels(chosen)} prêts à partir` };
+}

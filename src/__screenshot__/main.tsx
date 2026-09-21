@@ -118,7 +118,7 @@ import {
 } from '@/mobile/screens/reception';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { WarehouseShell } from '@/mobile/components/warehouse/WarehouseRouteWrapper';
-import { WarehouseHome, WarehouseArrivals, WarehouseCheckin, WarehousePickup, WarehousePickupClient, WarehouseReleaseDone } from '@/mobile/screens/warehouse';
+import { WarehouseHome, WarehouseArrivals, WarehouseCheckin, WarehouseCheckinParcel, WarehouseCheckinDone, WarehousePickup, WarehouseWaiting, WarehousePickupClient, WarehousePay, WarehouseHandover, WarehouseSign, WarehouseReleaseDone } from '@/mobile/screens/warehouse';
 import {
   AgentCashLogin,
   AgentCashPayments,
@@ -346,10 +346,16 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'wh-home': { Comp: () => <WarehouseShell><WarehouseHome /></WarehouseShell>, route: '/w', wrap: 'lang' },
   'wh-arrivals': { Comp: () => <WarehouseShell><WarehouseArrivals /></WarehouseShell>, route: '/w/arrivees', wrap: 'lang' },
   'wh-checkin': { Comp: WarehouseCheckin, route: '/w/arrivees/air/air3', path: '/w/arrivees/:kind/:id', wrap: 'lang' },
+  'wh-parcel': { Comp: WarehouseCheckinParcel, route: '/w/arrivees/air/air3/colis/dep3-3', path: '/w/arrivees/:kind/:id/colis/:parcelId', wrap: 'lang' },
+  'wh-parcel-damaged': { Comp: WarehouseCheckinParcel, route: '/w/arrivees/air/air3/colis/dep3-3', path: '/w/arrivees/:kind/:id/colis/:parcelId', wrap: 'lang' },
+  'wh-bilan': { Comp: WarehouseCheckinDone, route: '/w/arrivees/air/air3/bilan', path: '/w/arrivees/:kind/:id/bilan', wrap: 'lang' },
   'wh-pickup': { Comp: () => <WarehouseShell><WarehousePickup /></WarehouseShell>, route: '/w/remise', wrap: 'lang' },
+  'wh-waiting': { Comp: () => <WarehouseShell><WarehouseWaiting /></WarehouseShell>, route: '/w/remise/liste', wrap: 'lang' },
   'wh-client': { Comp: WarehousePickupClient, route: '/w/remise/BZ-510224', path: '/w/remise/:code', wrap: 'lang' },
   'wh-client-blocked': { Comp: WarehousePickupClient, route: '/w/remise/BZ-482913', path: '/w/remise/:code', wrap: 'lang' },
-  'wh-hand': { Comp: WarehousePickupClient, route: '/w/remise/BZ-510224', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-pay': { Comp: WarehousePay, route: '/w/remise/BZ-482913/encaisser', path: '/w/remise/:code/encaisser', wrap: 'lang' },
+  'wh-who': { Comp: WarehouseHandover, route: '/w/remise/BZ-510224/qui', path: '/w/remise/:code/qui', wrap: 'lang' },
+  'wh-sign': { Comp: WarehouseSign, route: '/w/remise/BZ-510224/signature', path: '/w/remise/:code/signature', wrap: 'lang' },
   'wh-done': { Comp: WarehouseReleaseDone, route: '/w/bon/rel1', path: '/w/bon/:releaseId', wrap: 'lang' },
   'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
   'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },

@@ -174,8 +174,14 @@ const WarehouseLogin = lazy(() => import("./mobile/screens/warehouse").then(m =>
 const WarehouseHome = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHome })));
 const WarehouseArrivals = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseArrivals })));
 const WarehouseCheckin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckin })));
+const WarehouseCheckinParcel = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckinParcel })));
+const WarehouseCheckinDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckinDone })));
 const WarehousePickup = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickup })));
+const WarehouseWaiting = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseWaiting })));
 const WarehousePickupClient = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickupClient })));
+const WarehousePay = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePay })));
+const WarehouseHandover = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHandover })));
+const WarehouseSign = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseSign })));
 const WarehouseReleaseDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseReleaseDone })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
@@ -371,8 +377,14 @@ const App = () => (
                 <Route path="/w" element={<WarehouseRouteWrapper><WarehouseHome /></WarehouseRouteWrapper>} />
                 <Route path="/w/arrivees" element={<WarehouseRouteWrapper><WarehouseArrivals /></WarehouseRouteWrapper>} />
                 <Route path="/w/arrivees/:kind/:id" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckin /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id/colis/:parcelId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinParcel /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id/bilan" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinDone /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise" element={<WarehouseRouteWrapper><WarehousePickup /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/liste" element={<WarehouseRouteWrapper><WarehouseWaiting /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePickupClient /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/encaisser" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePay /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/qui" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseHandover /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/signature" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseSign /></WarehouseRouteWrapper>} />
                 <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}

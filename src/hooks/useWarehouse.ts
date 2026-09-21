@@ -65,6 +65,10 @@ export const useCheckinMany = () => useWhMutation<{ parcelIds: string[]; locatio
 export const useFlagMissing = () => useWhMutation<{ parcelId: string; missing: boolean; note?: string }, { parcel: WarehouseParcel }>(
   'warehouse_flag_missing', (a) => ({ p_parcel_id: a.parcelId, p_missing: a.missing, p_note: a.note ?? null }),
 );
+/** Fin de pointage : les colis jamais vus, déclarés manquants d'un coup. */
+export const useFlagMissingMany = () => useWhMutation<{ parcelIds: string[]; note?: string }, { flagged: number }>(
+  'warehouse_flag_missing_many', (a) => ({ p_parcel_ids: a.parcelIds, p_note: a.note ?? null }),
+);
 
 /** Trouver un colis par son numéro (tapé ou scanné). */
 export function useFindParcel() {

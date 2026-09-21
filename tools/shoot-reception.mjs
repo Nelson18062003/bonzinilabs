@@ -87,7 +87,7 @@ const AIRS = { air1, air2, air3 };
 const airLoadable = [...dep1.parcels.map((p) => ({ ...withDep(p, dep1), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null })), ...dep4.parcels.map((p) => ({ ...withDep(p, dep4), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null }))].map((p) => ({ ...p, location: p.deposit_no === 'RC-000123' ? 'office' : p.location }));
 
 // ── Phase 4 : l'entrepôt de Douala ──
-const whParcel = (p, d, q, o) => ({ ...withDep(p, d), status: 'arrived', shipment_id: null, air_shipment_id: 'air3', awb_number: '07112340011', container_number: null,
+const whParcel = (p, d, q, o) => ({ ...withDep(p, d), id: `${d.id}-${p.seq}`, status: 'arrived', shipment_id: null, air_shipment_id: 'air3', awb_number: '07112340011', container_number: null,
   checked_in_at: null, warehouse_location: null, condition: null, condition_note: null, delivered_at: null, release_id: null, release_no: null,
   quote_id: q?.id ?? null, quote_status: q?.status ?? null, quote_no: q?.quote_no ?? null, quote_total_xaf: q?.total_xaf ?? null, quote_paid_xaf: q?.amount_paid_xaf ?? null, invoice_no: q?.invoice_no ?? null, ...o });
 const whAir3 = [
@@ -148,6 +148,7 @@ const RPC = {
   warehouse_checkin_parcel: (b) => ({ success: true, parcel: { ...whAir3[0], id: b.p_parcel_id, checked_in_at: today(15, 0), condition: b.p_condition } }),
   warehouse_checkin_many: (b) => ({ success: true, checked: (b.p_parcel_ids ?? []).length }),
   warehouse_flag_missing: (b) => ({ success: true, parcel: { ...whAir3[0], id: b.p_parcel_id, condition: b.p_missing ? 'missing' : null } }),
+  warehouse_flag_missing_many: (b) => ({ success: true, flagged: (b.p_parcel_ids ?? []).length }),
   warehouse_find_parcel: (b) => ({ success: true, parcel: whAir3[0] }),
   warehouse_client_parcels: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; if (!c) return { success: false, error: 'unknown_code', code: b.p_code };
     const mine = c.user_id === 'u1' ? [whReady[3]] : c.user_id === 'u2' ? whReady.slice(0, 3) : []; const q = c.user_id === 'u1' ? quoteDep2 : quoteDep3;
@@ -222,12 +223,13 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
+  if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
   if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
-  if (screen === 'wh-hand') { await page.click('text=Remettre 3 colis'); await page.waitForTimeout(500); }
+  if (screen === 'wh-parcel-damaged') { await page.click('text=Oui, mais abîmé'); await page.waitForTimeout(400); }
   if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
   if (screen === 'rc-client-card-label') {
