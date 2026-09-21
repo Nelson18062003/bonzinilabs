@@ -105,13 +105,14 @@ CREATE POLICY parcel_quote_payments_staff_read ON public.parcel_quote_payments F
 -- ─────────────────────────────────────────────────────────────────────────
 -- 3. Les preuves de paiement (photos), seau privé
 -- ─────────────────────────────────────────────────────────────────────────
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('parcel-payment-proofs', 'parcel-payment-proofs', false)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('parcel-payment-proofs', 'parcel-payment-proofs', false, 10485760, ARRAY['image/jpeg','image/png','image/webp','application/pdf'])
+ON CONFLICT (id) DO UPDATE SET file_size_limit = EXCLUDED.file_size_limit, allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 DROP POLICY IF EXISTS "Collectors can upload parcel payment proofs" ON storage.objects;
 CREATE POLICY "Collectors can upload parcel payment proofs" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'parcel-payment-proofs' AND public.admin_has_permission(auth.uid(), 'canCollectParcelPayments'));
+  WITH CHECK (bucket_id = 'parcel-payment-proofs' AND public.admin_has_permission(auth.uid(), 'canCollectParcelPayments')
+              AND name ~ '^[0-9a-f-]{36}/[A-Za-z0-9._-]+$');
 DROP POLICY IF EXISTS "Staff can view parcel payment proofs" ON storage.objects;
 CREATE POLICY "Staff can view parcel payment proofs" ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'parcel-payment-proofs' AND public.admin_has_permission(auth.uid(), 'canViewCargo'));
@@ -155,6 +156,8 @@ END;
 $fn$;
 COMMENT ON FUNCTION public.cargo_quote_recompute(UUID) IS
   '@mola:{"expose":false,"kind":"write","permission":"canPriceParcels","confirm":false,"danger":false,"label":"Recalculer le total, l''encaissé et le statut d''un devis (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_quote_recompute(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_quote_recompute(UUID) FROM anon, authenticated;
 
 -- 4.2 Sérialiser un devis, désormais avec ses paiements, le reste à payer et la facture.
 CREATE OR REPLACE FUNCTION public.cargo_quote_json(p_quote_id UUID)
@@ -198,6 +201,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.cargo_quote_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Sérialiser un devis avec ses paiements (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_quote_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_quote_json(UUID) FROM anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 5. RPC
@@ -250,6 +255,19 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Le montant dépasse le reste à payer (' || v_balance || ' XAF)');
   END IF;
 
+  -- La preuve : un objet que CET agent vient de déposer, sous ce devis, jamais réutilisé.
+  IF NULLIF(TRIM(p_proof_path), '') IS NOT NULL THEN
+    IF p_proof_path !~ ('^' || v_q.id::text || '/[A-Za-z0-9._-]+$') THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Chemin de preuve invalide');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM storage.objects o WHERE o.bucket_id = 'parcel-payment-proofs' AND o.name = p_proof_path AND (o.owner = v_uid OR o.owner_id = v_uid::text)) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Preuve introuvable : reprenez la photo');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.parcel_quote_payments x WHERE x.proof_path = p_proof_path) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Cette preuve est déjà rattachée à un encaissement');
+    END IF;
+  END IF;
+
   INSERT INTO public.parcel_quote_payments (quote_id, amount_xaf, method, place, paid_at, reference, proof_path, note, received_by)
   VALUES (v_q.id, p_amount_xaf, p_method, p_place, COALESCE(p_paid_at, now()),
           NULLIF(TRIM(p_reference), ''), NULLIF(TRIM(p_proof_path), ''), NULLIF(TRIM(p_note), ''), v_uid)
@@ -287,6 +305,11 @@ BEGIN
   IF v_pm.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Encaissement introuvable'); END IF;
   SELECT * INTO v_q FROM public.parcel_quotes WHERE id = v_pm.quote_id FOR UPDATE;
   IF v_q.invoice_no IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', 'La facture ' || v_q.invoice_no || ' est établie : les encaissements ne se modifient plus'); END IF;
+  -- Statut terminal aussi : des colis déjà remis contre ce devis. L'annuler rouvrirait
+  -- un « reste à payer » sur une marchandise partie.
+  IF EXISTS (SELECT 1 FROM public.parcels p WHERE p.deposit_id = v_q.deposit_id AND p.delivered_at IS NOT NULL) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Des colis de ce dépôt ont déjà été remis : l''encaissement ne s''annule plus');
+  END IF;
   SELECT * INTO v_pm FROM public.parcel_quote_payments WHERE id = p_payment_id FOR UPDATE;
   IF v_pm.cancelled_at IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Cet encaissement est déjà annulé'); END IF;
 

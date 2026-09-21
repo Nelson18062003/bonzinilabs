@@ -45,6 +45,10 @@ export interface AirShipment {
   total_cbm: number;
   client_count: number;
   unpaid_count: number;
+  /** Douala (phase 4) : pointés, manquants, remis. */
+  checked_count?: number;
+  missing_count?: number;
+  delivered_count?: number;
   /** Présent quand on a demandé la fiche complète (cargo_air_get). */
   parcels?: AirParcel[] | null;
 }

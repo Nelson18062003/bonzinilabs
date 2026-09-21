@@ -73,6 +73,7 @@ export function MobileCargoAirDetail() {
             <Row label="Départ" value={a.departed_at ? `Parti le ${formatDateTime(a.departed_at)}` : a.etd ? `Prévu le ${fmtDay(a.etd)}` : '—'} />
             <Row label="Arrivée" value={a.arrived_at ? `Arrivé le ${formatDateTime(a.arrived_at)}` : a.eta ? `Prévue le ${fmtDay(a.eta)}` : '—'} />
             {a.freight_usd != null && <Row label="Fret" value={`${Number(a.freight_usd).toLocaleString('fr-FR')} USD`} />}
+            {(a.status === 'ARRIVED' || a.status === 'DELIVERED') && <Row label="À Douala" value={`${a.checked_count ?? 0}/${a.parcel_count} pointés${(a.missing_count ?? 0) > 0 ? ` · ${a.missing_count} manquant${(a.missing_count ?? 0) > 1 ? 's' : ''}` : ''}${(a.delivered_count ?? 0) > 0 ? ` · ${a.delivered_count} remis` : ''}`} />}
             {a.notes && <Row label="Notes" value={a.notes} />}
           </div>
           {canManage && next && (

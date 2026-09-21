@@ -85,6 +85,7 @@ export function useClientAtWarehouse(code: string | undefined) {
 /** La signature du bon de retrait : un PNG dans le seau privé. Renvoie le chemin. */
 export async function uploadSignature(dataUrl: string): Promise<string> {
   const blob = await (await fetch(dataUrl)).blob();
+  if (blob.type !== 'image/png' || blob.size > 1_048_576) throw new Error('Signature illisible : refaites signer');
   const path = `${new Date().toISOString().slice(0, 10)}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
   const { error } = await supabaseAdmin.storage.from('parcel-signatures').upload(path, blob, { contentType: 'image/png', upsert: false });
   if (error) throw new Error(error.message);

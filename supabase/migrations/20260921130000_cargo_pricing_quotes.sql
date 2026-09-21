@@ -195,6 +195,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.cargo_quote_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Sérialiser un devis (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_quote_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_quote_json(UUID) FROM anon, authenticated;
 
 -- 4.2 Recalculer le total (helper interne).
 CREATE OR REPLACE FUNCTION public.cargo_quote_recompute(p_quote_id UUID)
@@ -210,6 +212,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.cargo_quote_recompute(UUID) IS
   '@mola:{"expose":false,"kind":"write","permission":"canPriceParcels","confirm":false,"danger":false,"label":"Recalculer le total d''un devis (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_quote_recompute(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_quote_recompute(UUID) FROM anon, authenticated;
 
 -- 4.3 Lire le devis d'un dépôt (null s'il n'existe pas encore).
 CREATE OR REPLACE FUNCTION public.cargo_quote_get(p_deposit_id UUID)
@@ -331,7 +335,7 @@ BEGIN
   IF v_l.kind <> 'parcel' AND v_basis <> 'fixed' THEN v_basis := 'fixed'; END IF;
 
   IF v_basis = 'fixed' THEN
-    v_amount := COALESCE(p_amount_xaf, v_l.amount_xaf, 0);
+    v_amount := round(COALESCE(p_amount_xaf, v_l.amount_xaf, 0));
     v_qty := NULL; v_unit := NULL;
   ELSE
     SELECT * INTO v_p FROM public.parcels WHERE id = v_l.parcel_id;
@@ -340,7 +344,9 @@ BEGIN
     IF v_unit < 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Un prix unitaire ne peut pas être négatif'); END IF;
     v_amount := round(COALESCE(v_qty, 0) * v_unit);
   END IF;
-  IF v_l.kind <> 'discount' AND v_amount < 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Un montant ne peut pas être négatif'); END IF;
+  IF abs(v_amount) >= 1e12 THEN RETURN jsonb_build_object('success', false, 'error', 'Montant hors limites'); END IF;
+  IF v_l.kind = 'discount' THEN v_amount := -abs(v_amount);
+  ELSIF v_amount < 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Un montant ne peut pas être négatif'); END IF;
 
   UPDATE public.parcel_quote_lines
      SET basis = v_basis, quantity = v_qty, unit_price_xaf = v_unit, amount_xaf = v_amount,
@@ -370,9 +376,16 @@ BEGIN
   IF v_q.status IN ('paid','invoiced') THEN RETURN jsonb_build_object('success', false, 'error', 'Ce devis est réglé : il ne se modifie plus'); END IF;
   IF p_kind NOT IN ('fee','discount') THEN RETURN jsonb_build_object('success', false, 'error', 'Type de ligne inconnu'); END IF;
   IF NULLIF(TRIM(p_label), '') IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Un libellé est requis'); END IF;
-  v_amount := COALESCE(p_amount_xaf, 0);
+  v_amount := round(COALESCE(p_amount_xaf, 0));
+  IF abs(v_amount) >= 1e12 THEN RETURN jsonb_build_object('success', false, 'error', 'Montant hors limites'); END IF;
   IF p_kind = 'fee' AND v_amount < 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Un frais ne peut pas être négatif'); END IF;
-  IF p_kind = 'discount' THEN v_amount := -abs(v_amount); END IF;
+  IF p_kind = 'discount' THEN
+    v_amount := -abs(v_amount);
+    -- Une remise ne dépasse pas ce qu'elle remise.
+    IF -v_amount > (SELECT COALESCE(sum(amount_xaf), 0) FROM public.parcel_quote_lines WHERE quote_id = v_q.id AND amount_xaf > 0) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'La remise dépasse le montant du devis');
+    END IF;
+  END IF;
   SELECT COALESCE(max(seq), 0) + 1 INTO v_seq FROM public.parcel_quote_lines WHERE quote_id = v_q.id;
   INSERT INTO public.parcel_quote_lines (quote_id, seq, kind, label, basis, amount_xaf)
   VALUES (v_q.id, v_seq, p_kind, TRIM(p_label), 'fixed', round(v_amount));

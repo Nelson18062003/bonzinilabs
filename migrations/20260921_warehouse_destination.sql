@@ -120,13 +120,14 @@ CREATE POLICY parcel_releases_staff_read ON public.parcel_releases FOR SELECT TO
 -- ─────────────────────────────────────────────────────────────────────────
 -- 3. Les signatures (seau privé) ; les preuves lisibles par qui encaisse
 -- ─────────────────────────────────────────────────────────────────────────
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('parcel-signatures', 'parcel-signatures', false)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('parcel-signatures', 'parcel-signatures', false, 1048576, ARRAY['image/png'])
+ON CONFLICT (id) DO UPDATE SET file_size_limit = EXCLUDED.file_size_limit, allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 DROP POLICY IF EXISTS "Warehouse can upload signatures" ON storage.objects;
 CREATE POLICY "Warehouse can upload signatures" ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'parcel-signatures' AND public.admin_has_permission(auth.uid(), 'canReleaseParcels'));
+  WITH CHECK (bucket_id = 'parcel-signatures' AND public.admin_has_permission(auth.uid(), 'canReleaseParcels')
+              AND name ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}/[A-Za-z0-9._-]+\.png$');
 DROP POLICY IF EXISTS "Staff can view signatures" ON storage.objects;
 CREATE POLICY "Staff can view signatures" ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'parcel-signatures' AND (public.admin_has_permission(auth.uid(), 'canViewCargo') OR public.admin_has_permission(auth.uid(), 'canReleaseParcels')));
@@ -167,6 +168,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.warehouse_parcel_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canReceiveAtDestination","confirm":false,"danger":false,"label":"Sérialiser un colis vu de l''entrepôt de destination (helper interne)"}';
+REVOKE ALL ON FUNCTION public.warehouse_parcel_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.warehouse_parcel_json(UUID) FROM anon, authenticated;
 
 -- 4.2 La journée de l'entrepôt : ce qui est arrivé et reste à pointer, ce qui
 --     attend son client (par client, avec « payé / à encaisser »), ce qui a été
@@ -287,6 +290,11 @@ BEGIN
   IF v_p.shipment_id IS NULL AND v_p.air_shipment_id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Ce colis n''a pas quitté la Chine : il n''est dans aucun avion ni aucune boîte'); END IF;
   IF v_p.delivered_at IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Ce colis a déjà été remis (' || COALESCE((SELECT r.release_no FROM public.parcel_releases r WHERE r.id = v_p.release_id), '') || ')'); END IF;
   IF v_p.status = 'loaded' THEN RETURN jsonb_build_object('success', false, 'error', 'Ce colis n''est pas encore parti de Chine'); END IF;
+  -- Le transport doit être ARRIVÉ (l'admin, ou le suivi armateur, l'a marqué) : on ne pointe pas ce qui vole encore.
+  IF NOT (EXISTS (SELECT 1 FROM public.air_shipments a WHERE a.id = v_p.air_shipment_id AND a.status IN ('ARRIVED','DELIVERED'))
+       OR EXISTS (SELECT 1 FROM public.cargo_shipments cs WHERE cs.id = v_p.shipment_id AND cs.status IN ('ARRIVED','DELIVERED'))) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ce transport n''est pas encore marqué arrivé : demandez à l''admin de poser le jalon');
+  END IF;
   UPDATE public.parcels SET
     status = 'arrived',
     checked_in_at = COALESCE(checked_in_at, now()), checked_in_by = COALESCE(checked_in_by, v_uid),
@@ -324,6 +332,8 @@ BEGIN
       warehouse_location = COALESCE(NULLIF(TRIM(p_location), ''), warehouse_location),
       condition = COALESCE(NULLIF(condition, 'missing'), 'ok'), updated_at = now()
     WHERE id = ANY(p_parcel_ids) AND (shipment_id IS NOT NULL OR air_shipment_id IS NOT NULL) AND status IN ('shipped','arrived') AND delivered_at IS NULL
+      AND (EXISTS (SELECT 1 FROM public.air_shipments a WHERE a.id = parcels.air_shipment_id AND a.status IN ('ARRIVED','DELIVERED'))
+        OR EXISTS (SELECT 1 FROM public.cargo_shipments cs WHERE cs.id = parcels.shipment_id AND cs.status IN ('ARRIVED','DELIVERED')))
     RETURNING id
   ) SELECT count(*) INTO v_n FROM done;
   RETURN jsonb_build_object('success', true, 'checked', v_n);
@@ -454,6 +464,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.warehouse_release_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canReleaseParcels","confirm":false,"danger":false,"label":"Sérialiser un bon de retrait (helper interne)"}';
+REVOKE ALL ON FUNCTION public.warehouse_release_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.warehouse_release_json(UUID) FROM anon, authenticated;
 
 -- 4.10 Remettre des colis : la remise. BLOQUÉE tant qu'un devis n'est pas
 --     soldé. Un bon de retrait BR-000123 avec la signature ; les colis passent
@@ -479,8 +491,23 @@ BEGIN
   IF p_parcel_ids IS NULL OR array_length(p_parcel_ids, 1) IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Aucun colis choisi'); END IF;
   IF NULLIF(TRIM(p_picked_by_name), '') IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Indiquez qui emporte les colis'); END IF;
 
-  -- Verrouiller les colis, tous du même client, tous prêts.
+  -- Dédoublonner : le bon de retrait compte ce qui part, pas ce qu'on a tapé.
+  SELECT array_agg(DISTINCT x) INTO p_parcel_ids FROM unnest(p_parcel_ids) x WHERE x IS NOT NULL;
+  -- La signature : un PNG que CET agent vient de déposer, jamais réutilisé.
+  IF NULLIF(TRIM(p_signature_path), '') IS NOT NULL THEN
+    IF p_signature_path !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}/[A-Za-z0-9._-]+\.png$' THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Signature invalide');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM storage.objects o WHERE o.bucket_id = 'parcel-signatures' AND o.name = p_signature_path AND (o.owner = v_uid OR o.owner_id = v_uid::text)) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Signature introuvable : refaites signer');
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.parcel_releases r WHERE r.signature_path = p_signature_path) THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Cette signature est déjà rattachée à un bon de retrait');
+    END IF;
+  END IF;
+  -- Verrouiller les colis ET leurs devis (le garde-fou « soldé » se lit sous verrou), tous du même client, tous prêts.
   PERFORM 1 FROM public.parcels WHERE id = ANY(p_parcel_ids) FOR UPDATE;
+  PERFORM 1 FROM public.parcel_quotes q WHERE q.deposit_id IN (SELECT DISTINCT p.deposit_id FROM public.parcels p WHERE p.id = ANY(p_parcel_ids)) FOR UPDATE;
   SELECT count(DISTINCT d.client_user_id), min(d.client_user_id) INTO v_clients, v_client
   FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id WHERE p.id = ANY(p_parcel_ids);
   IF v_clients <> 1 OR v_client IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Les colis doivent appartenir à un seul client, connu'); END IF;
@@ -497,11 +524,13 @@ BEGIN
   IF v_bad IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Remise bloquée, devis non soldé : ' || v_bad, 'code', 'unpaid'); END IF;
 
   INSERT INTO public.parcel_releases (client_user_id, picked_by_name, picked_by_phone, signature_path, note, parcel_count, released_by)
-  VALUES (v_client, TRIM(p_picked_by_name), NULLIF(TRIM(p_picked_by_phone), ''), NULLIF(TRIM(p_signature_path), ''), NULLIF(TRIM(p_note), ''), array_length(p_parcel_ids, 1), v_uid)
+  VALUES (v_client, TRIM(p_picked_by_name), NULLIF(TRIM(p_picked_by_phone), ''), NULLIF(TRIM(p_signature_path), ''), NULLIF(TRIM(p_note), ''), 0, v_uid)
   RETURNING * INTO v_r;
 
   UPDATE public.parcels SET status = 'delivered', delivered_at = now(), release_id = v_r.id, updated_at = now() WHERE id = ANY(p_parcel_ids);
   GET DIAGNOSTICS v_n = ROW_COUNT;
+  UPDATE public.parcel_releases SET parcel_count = v_n WHERE id = v_r.id;
+  v_r.parcel_count := v_n;
 
   -- Un avion dont tous les colis sont remis est livré.
   FOR v_air IN SELECT DISTINCT p.air_shipment_id FROM public.parcels p WHERE p.id = ANY(p_parcel_ids) AND p.air_shipment_id IS NOT NULL LOOP
@@ -542,6 +571,42 @@ COMMENT ON FUNCTION public.warehouse_release_get(UUID) IS
 -- ─────────────────────────────────────────────────────────────────────────
 -- 5. Le reste de la plateforme sait le pointage et la remise
 -- ─────────────────────────────────────────────────────────────────────────
+
+-- 5.0 Un colis remis, ou signalé manquant à Douala, ne suit plus son transport
+--     (l'avion ni la boîte) : son histoire est écrite.
+CREATE OR REPLACE FUNCTION public.parcels_follow_air_shipment()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_status TEXT;
+BEGIN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  v_status := public.parcel_status_for_air(NEW.status);
+  UPDATE public.parcels SET status = v_status, updated_at = now()
+   WHERE air_shipment_id = NEW.id AND status <> v_status AND delivered_at IS NULL AND COALESCE(condition, '') <> 'missing';
+  RETURN NEW;
+END;
+$fn$;
+CREATE OR REPLACE FUNCTION public.parcels_follow_shipment()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_status TEXT;
+BEGIN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
+  v_status := public.parcel_status_for_shipment(NEW.status);
+  UPDATE public.parcels SET status = v_status, updated_at = now()
+   WHERE shipment_id = NEW.id AND status <> v_status AND delivered_at IS NULL AND COALESCE(condition, '') <> 'missing';
+  RETURN NEW;
+END;
+$fn$;
+-- La fiche identité d'un client (helper) n'a rien à faire dans l'API publique.
+REVOKE ALL ON FUNCTION public.reception_client_card(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reception_client_card(UUID) FROM anon, authenticated;
 
 -- 5.1 Le devis se lit aussi par qui encaisse (l'agent de Douala).
 CREATE OR REPLACE FUNCTION public.cargo_quote_get(p_deposit_id UUID)
@@ -609,6 +674,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.reception_deposit_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Sérialiser un dépôt de colis (helper interne)"}';
+REVOKE ALL ON FUNCTION public.reception_deposit_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reception_deposit_json(UUID) FROM anon, authenticated;
 
 -- 5.3 L'avion : ses colis disent leur pointage et leur remise.
 CREATE OR REPLACE FUNCTION public.cargo_air_json(p_air_id UUID, p_with_parcels BOOLEAN DEFAULT true)
@@ -651,3 +718,5 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Sérialiser une expédition aérienne (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) FROM anon, authenticated;

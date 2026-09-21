@@ -53,7 +53,9 @@ CREATE POLICY air_shipments_staff_read ON public.air_shipments FOR SELECT TO aut
 -- ─────────────────────────────────────────────────────────────────────────
 -- 2. Le colis connaît son avion ; boîte OU avion, jamais les deux
 -- ─────────────────────────────────────────────────────────────────────────
-ALTER TABLE public.parcels ADD COLUMN IF NOT EXISTS air_shipment_id UUID REFERENCES public.air_shipments(id) ON DELETE SET NULL;
+ALTER TABLE public.parcels ADD COLUMN IF NOT EXISTS air_shipment_id UUID REFERENCES public.air_shipments(id) ON DELETE RESTRICT;
+-- (RESTRICT : une expédition qui porte encore des colis ne se supprime pas — la contrainte de statut
+--  ci-dessous ne le permettrait pas de toute façon. On retire les colis d'abord.)
 CREATE INDEX IF NOT EXISTS parcels_air_shipment_idx ON public.parcels (air_shipment_id) WHERE air_shipment_id IS NOT NULL;
 
 ALTER TABLE public.parcels DROP CONSTRAINT IF EXISTS parcels_status_shipment_check;
@@ -92,6 +94,7 @@ BEGIN
   v_status := public.parcel_status_for_air(NEW.status);
   UPDATE public.parcels SET status = v_status, updated_at = now()
    WHERE air_shipment_id = NEW.id AND status <> v_status;
+  -- (La phase 4 redéfinit ce déclencheur : un colis remis ou manquant à Douala ne suit plus l'avion.)
   RETURN NEW;
 END;
 $fn$;
@@ -142,6 +145,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Sérialiser une expédition aérienne (helper interne)"}';
+REVOKE ALL ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) FROM anon, authenticated;
 
 -- 4.2 La liste : ce qui se prépare, ce qui vole, ce qui est arrivé — les livrées en dernier.
 CREATE OR REPLACE FUNCTION public.cargo_air_list()
@@ -458,6 +463,8 @@ AS $fn$
 $fn$;
 COMMENT ON FUNCTION public.reception_deposit_json(UUID) IS
   '@mola:{"expose":false,"kind":"read","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Sérialiser un dépôt de colis (helper interne)"}';
+REVOKE ALL ON FUNCTION public.reception_deposit_json(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reception_deposit_json(UUID) FROM anon, authenticated;
 
 -- 5.2 L'entrée du module : Container · Avion · Réception.
 CREATE OR REPLACE FUNCTION public.cargo_parts_summary()

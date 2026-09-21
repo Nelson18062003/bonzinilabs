@@ -97,6 +97,13 @@ export function AirQuickView({ airId, onClose }: { airId: string | null; onClose
               <Fact label="Fret" value={a.freight_usd != null ? `${Number(a.freight_usd).toLocaleString('fr-FR')} USD` : '—'} />
               <Fact label="Clients" value={String(a.client_count)} hint={a.unpaid_count > 0 ? `${a.unpaid_count} colis non soldé${a.unpaid_count > 1 ? 's' : ''}` : parcels.length > 0 ? 'tout payé' : undefined} />
             </Facts>
+            {(a.status === 'ARRIVED' || a.status === 'DELIVERED') && (
+              <p className={cn('mt-3 text-[13px]', TEXT.muted)}>
+                À Douala : <b className={TEXT.strong}>{a.checked_count ?? 0} pointé{(a.checked_count ?? 0) > 1 ? 's' : ''}</b> sur {a.parcel_count}
+                {(a.missing_count ?? 0) > 0 && <> · <b className="text-red-700 dark:text-red-400">{a.missing_count} manquant{(a.missing_count ?? 0) > 1 ? 's' : ''}</b></>}
+                {(a.delivered_count ?? 0) > 0 && <> · <b className={TEXT.strong}>{a.delivered_count} remis</b></>}
+              </p>
+            )}
             {a.notes && <p className={cn('mt-3 text-[13px]', TEXT.muted)}>{a.notes}</p>}
           </Band>
 

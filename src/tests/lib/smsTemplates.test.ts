@@ -163,8 +163,8 @@ describe('formateurs de montants', () => {
 });
 
 describe('gabarits SMS — contrainte du segment unique', () => {
-  it('couvre les 16 événements dans les 2 langues', () => {
-    expect(SMS_TEMPLATE_KEYS).toHaveLength(16);
+  it('couvre les 23 événements dans les 2 langues (16 + les 7 jalons cargo)', () => {
+    expect(SMS_TEMPLATE_KEYS).toHaveLength(23);
     for (const key of SMS_TEMPLATE_KEYS) {
       for (const locale of SMS_LOCALES) {
         expect(SMS_TEMPLATES[key][locale], `${key}.${locale} manquant`).toBeTypeOf('function');

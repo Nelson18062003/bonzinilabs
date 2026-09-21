@@ -85,7 +85,7 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
 
   const submit = async () => {
     const v = num(amount);
-    if (v == null || v <= 0) { toast.error('Indiquez le montant reçu'); return; }
+    if (v == null || v <= 0 || !Number.isSafeInteger(Math.round(v))) { toast.error('Indiquez le montant reçu'); return; }
     if (v > balance) { toast.error(`Le montant dépasse le reste à payer (${xaf(balance)})`); return; }
     setSaving(true);
     try {
