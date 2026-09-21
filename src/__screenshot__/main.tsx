@@ -108,6 +108,8 @@ import {
   ReceptionNewClient,
   ReceptionDeposit,
   ReceptionParcel,
+  ReceptionClients,
+  ReceptionClientCard,
   ReceptionDone,
   ReceptionPending,
   ReceptionLogin,
@@ -328,6 +330,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-parcel-edit': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel/pRC-000123-1', path: '/r/deposit/:depositId/parcel/:parcelId', wrap: 'lang' },
   'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
   'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
+  'rc-clients': { Comp: () => <ReceptionShell><ReceptionClients /></ReceptionShell>, route: '/r/clients', wrap: 'lang' },
+  'rc-client-card': { Comp: ReceptionClientCard, route: '/r/clients/u1', path: '/r/clients/:userId', wrap: 'lang' },
   // Admin — la réception dans Bonzini Cargo
   'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
   'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },

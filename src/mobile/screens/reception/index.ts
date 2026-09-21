@@ -7,3 +7,5 @@ export { ReceptionParcel } from './ReceptionParcel';
 export { ReceptionDone } from './ReceptionDone';
 export { ReceptionPending } from './ReceptionPending';
 export { ReceptionLogin } from './ReceptionLogin';
+export { ReceptionClients } from './ReceptionClients';
+export { ReceptionClientCard } from './ReceptionClientCard';

@@ -52,6 +52,8 @@ const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...
 
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
+  reception_recent_clients: { success: true, clients: [client, client2, client3] },
+  reception_client: (b) => { const c = [client, client2, client3].find((x) => x.user_id === b.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
   reception_update_parcel: { success: true, deposit: dep1 },
   reception_client_by_code: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; return c ? { success: true, client: c } : { success: false, error: 'unknown_code', code: b.p_code }; },
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
@@ -119,10 +121,10 @@ await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
   await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
 });
 
-const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-edit', 'rc-done', 'rc-pending'];
+const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-edit', 'rc-done', 'rc-pending', 'rc-clients', 'rc-client-card'];
 for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
-  const key = screen === 'rc-location' ? 'rc-home' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
@@ -132,6 +134,11 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     const dims = page.locator('input[inputmode="decimal"]');
     await dims.nth(1).fill('60'); await dims.nth(2).fill('40'); await dims.nth(3).fill('40');
     await page.fill('#p-desc', 'Chaussures, 40 paires');
+  }
+  if (screen === 'rc-client-card-label') {
+    // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
+    await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();
+    await page.waitForTimeout(2500);
   }
   if (screen === 'client-desk-panel') {
     // Le panneau de la fiche client défile en interne : on amène le bloc « Colis reçus » à l'écran.
