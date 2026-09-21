@@ -75,13 +75,23 @@ quoteDep3.payments = [payment('pm2', 'RE-000038', 30000, { method: 'cash', refer
 quoteDep3.amount_paid_xaf = quoteDep3.total_xaf; quoteDep3.balance_xaf = 0; quoteDep3.paid_at = today(13, 52); quoteDep3.invoice_no = 'FA-000012'; quoteDep3.invoiced_at = today(13, 55);
 const QUOTES = { dep2: quoteDep2, dep3: quoteDep3 };
 const withQuote = (d) => { const q = QUOTES[d.id]; return q ? { ...d, quote_status: q.status, quote_no: q.quote_no, quote_total_xaf: q.total_xaf, quote_paid_xaf: q.amount_paid_xaf, invoice_no: q.invoice_no ?? null } : { ...d, quote_status: null, quote_no: null, quote_total_xaf: null, quote_paid_xaf: null, invoice_no: null }; };
+
+// ── Phase 3 : les expéditions aériennes ──
+const airParcel = (p, d, q) => ({ ...withDep(p, d), status: 'loaded', air_shipment_id: 'air1', awb_number: '07112345675', quote_status: q?.status ?? null, quote_no: q?.quote_no ?? null, quote_total_xaf: q?.total_xaf ?? null, quote_paid_xaf: q?.amount_paid_xaf ?? null, invoice_no: q?.invoice_no ?? null });
+const air1Parcels = [...dep3.parcels.map((p) => airParcel(p, dep3, quoteDep3)), ...dep2.parcels.slice(0, 4).map((p) => airParcel(p, dep2, quoteDep2)), airParcel(pend2.parcels[0], pend2, null)];
+const air1 = { id: 'air1', awb_number: '07112345675', airline: 'Ethiopian Airlines', flight_no: 'ET 607', origin: 'Guangzhou (CAN)', destination: 'Douala (DLA)', status: 'PLANNED', etd: '2026-09-24', eta: '2026-09-25', departed_at: null, arrived_at: null, delivered_at: null, freight_usd: 1840, notes: 'Transitaire : Guangzhou Kaiyun. Remise à l\'aéroport avant 16 h la veille.', created_at: today(9, 10), updated_at: today(9, 10),
+  parcel_count: air1Parcels.length, total_weight_kg: air1Parcels.reduce((t, p) => t + p.weight_kg, 0), total_cbm: air1Parcels.reduce((t, p) => t + p.cbm, 0), client_count: 3, unpaid_count: air1Parcels.filter((p) => !p.quote_total_xaf || p.quote_paid_xaf < p.quote_total_xaf).length, parcels: air1Parcels };
+const air2 = { ...air1, id: 'air2', awb_number: '23598877210', airline: 'Turkish Cargo', flight_no: 'TK 6521', status: 'DEPARTED', etd: '2026-09-19', eta: '2026-09-21', departed_at: '2026-09-19T14:20:00Z', parcel_count: 12, total_weight_kg: 96.4, total_cbm: 0.58, client_count: 4, unpaid_count: 0, parcels: null };
+const air3 = { ...air1, id: 'air3', awb_number: '07112340011', airline: 'Ethiopian Airlines', flight_no: 'ET 607', status: 'ARRIVED', etd: '2026-09-12', eta: '2026-09-13', departed_at: '2026-09-12T15:05:00Z', arrived_at: '2026-09-13T11:40:00Z', parcel_count: 7, total_weight_kg: 41, total_cbm: 0.22, client_count: 2, unpaid_count: 2, parcels: null };
+const AIRS = { air1, air2, air3 };
+const airLoadable = [...dep1.parcels.map((p) => ({ ...withDep(p, dep1), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null })), ...dep4.parcels.map((p) => ({ ...withDep(p, dep4), quote_status: null, quote_total_xaf: null, quote_paid_xaf: null }))].map((p) => ({ ...p, location: p.deposit_no === 'RC-000123' ? 'office' : p.location }));
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
 const RPC = {
   reception_recent_clients: { success: true, clients: [client, client2, client3] },
   reception_client: (b) => { const c = [client, client2, client3].find((x) => x.user_id === b.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
   reception_update_parcel: { success: true, deposit: dep1 },
   reception_client_by_code: (b) => { const code = /BZ-?(\d{6})/i.exec(b.p_code ?? '')?.[1]; const c = code ? clientsByCode['BZ-' + code] : null; return c ? { success: true, client: c } : { success: false, error: 'unknown_code', code: b.p_code }; },
-  cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
+  cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 0, air_open: 3, air_in_flight: 1, parcels_waiting: 31, deposits_pending: 2, deposits_today: 3 },
   reception_overview: { success: true, by_receptionist: [
     { received_by: 'demo', name: 'Kevin Nkolo', deposits: 26, parcels: 158, weight_kg: 1210, cbm: 9.1, pending: 2, incomplete: 3 },
     { received_by: 'mei', name: 'Mei Lin', deposits: 12, parcels: 53, weight_kg: 430, cbm: 3.3, pending: 0, incomplete: 0 },
@@ -109,6 +119,14 @@ const RPC = {
   cargo_quote_add_payment: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmN', 'RE-000042', b.p_amount_xaf, { method: b.p_method, place: b.p_place, reference: b.p_reference, proof_path: b.p_proof_path, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmN', receipt_no: 'RE-000042', quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
   cargo_quote_cancel_payment: { success: true, quote: quoteDep2 },
   cargo_quote_invoice: { success: true, invoice_no: 'FA-000013', quote: quoteDep3 },
+  cargo_air_list: { success: true, shipments: [air2, air1, air3] },
+  cargo_air_get: (b) => AIRS[b.p_air_id] ? { success: true, shipment: { ...AIRS[b.p_air_id], parcels: AIRS[b.p_air_id].parcels ?? air1Parcels } } : { success: false, error: 'Expédition introuvable' },
+  cargo_air_loadable_parcels: { success: true, parcels: airLoadable },
+  cargo_air_load_parcels: { success: true, loaded: 2, weight_kg: 16.8, cbm: 0.19 },
+  cargo_air_set_status: (b) => ({ success: true, shipment: { ...air1, status: b.p_status, departed_at: b.p_status === 'DEPARTED' ? today(15, 30) : null } }),
+  cargo_air_create: (b) => ({ success: true, shipment: { ...air1, id: 'airN', awb_number: b.p_awb_number, parcels: [], parcel_count: 0 } }),
+  cargo_air_update: (b) => ({ success: true, shipment: { ...air1, flight_no: b.p_flight_no ?? air1.flight_no } }),
+  cargo_air_unload_parcel: { success: true },
   reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
 };
 
@@ -181,6 +199,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
   if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');
+  if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.

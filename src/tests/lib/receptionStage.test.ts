@@ -23,7 +23,7 @@ describe('parcelStage', () => {
     expect(parcelStage({ ...inBox, status: 'loaded' })).toEqual({ tone: 'info', label: 'Chargé · MSKU 482913-7', inBox: true });
     expect(parcelStage({ ...inBox, status: 'shipped' }).label).toBe('En mer · MSKU 482913-7');
     expect(parcelStage({ ...inBox, status: 'arrived' })).toMatchObject({ tone: 'pending', label: 'Arrivé · MSKU 482913-7' });
-    expect(parcelStage({ ...inBox, status: 'delivered' })).toMatchObject({ tone: 'success', label: 'Livré · MSKU 482913-7' });
+    expect(parcelStage({ ...inBox, status: 'delivered' })).toMatchObject({ tone: 'success', label: 'Remis · MSKU 482913-7' });
   });
   it("une boîte sans numéro connu s'appelle « boîte »", () => {
     expect(parcelStage({ ...base, status: 'loaded', shipment_id: 'ct1' }).label).toBe('Chargé · boîte');

@@ -252,6 +252,8 @@ export function useUnloadParcel() {
 export interface CargoPartsSummary {
   containers: number;
   containers_at_sea: number;
+  air_open?: number;
+  air_in_flight?: number;
   parcels_waiting: number;
   deposits_pending: number;
   deposits_today: number;

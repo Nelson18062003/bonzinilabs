@@ -75,9 +75,9 @@ import {
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
 import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
-import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote } from '@/mobile/screens/cargo';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote, MobileCargoAir, MobileCargoAirForm, MobileCargoAirDetail, MobileCargoAirLoad } from '@/mobile/screens/cargo';
 import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
-import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception } from '@/desktop/screens/cargo';
+import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception, DesktopCargoAir } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
@@ -349,6 +349,10 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-quote-paid': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep3/devis', path: '/m/cargo/reception/:depositId/devis' },
   'cargo-quote-pay': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },
   'cargo-pricing': { Comp: MobileCargoPricing, route: '/m/more/cargo-pricing' },
+  'cargo-air': { Comp: MobileCargoAir, route: '/m/cargo/avion' },
+  'cargo-air-new': { Comp: MobileCargoAirForm, route: '/m/cargo/avion/nouveau' },
+  'cargo-air-detail': { Comp: MobileCargoAirDetail, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
+  'cargo-air-load': { Comp: MobileCargoAirLoad, route: '/m/cargo/avion/air1/charger', path: '/m/cargo/avion/:airId/charger' },
   'cargo-pricing-desktop': { Comp: () => <MobileCargoPricing desktop />, route: '/m/more/cargo-pricing' },
   'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
@@ -357,6 +361,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-desk-home': { Comp: () => <DesktopAppShell><DesktopCargoScreen /></DesktopAppShell>, route: '/m/cargo' },
   'cargo-desk-reception': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
   'cargo-desk-deposit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-air': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion' },
+  'cargo-desk-air-detail': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
+  'cargo-desk-air-load': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
   'cargo-desk-deposit-paid': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep3', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-deposit-pending': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-chargement': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement', path: '/m/cargo/:shipmentId/:tab' },

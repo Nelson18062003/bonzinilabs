@@ -51,6 +51,9 @@ export interface Parcel {
   /** La boîte (dossier Cargo) où le colis a été chargé — null tant qu'il attend à l'entrepôt. */
   shipment_id?: string | null;
   container_number?: string | null;
+  /** L'expédition aérienne (LTA) où le colis a été chargé — l'autre chemin vers Douala. */
+  air_shipment_id?: string | null;
+  awb_number?: string | null;
   created_at: string;
 }
 
@@ -169,20 +172,20 @@ export type StageTone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
  * suit la boîte grâce au trigger `parcels_follow_shipment` (migration) :
  * chargé → en mer → arrivé → livré, sans rien ressaisir.
  */
-export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>): { tone: StageTone; label: string; inBox: boolean } {
-  const box = p.container_number ?? 'boîte';
+export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'> & { air_shipment_id?: string | null; awb_number?: string | null }): { tone: StageTone; label: string; inBox: boolean } {
+  const air = !!p.air_shipment_id;
+  const box = air ? `LTA ${p.awb_number ?? ''}`.trim() : p.container_number ?? 'boîte';
   switch (p.status) {
     case 'loaded': return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
-    case 'shipped': return { tone: 'info', label: `En mer · ${box}`, inBox: true };
+    case 'shipped': return { tone: 'info', label: `${air ? 'En vol' : 'En mer'} · ${box}`, inBox: true };
     case 'arrived': return { tone: 'pending', label: `Arrivé · ${box}`, inBox: true };
-    case 'delivered': return { tone: 'success', label: `Livré · ${box}`, inBox: true };
+    case 'delivered': return { tone: 'success', label: `Remis · ${box}`, inBox: true };
     default:
-      if (p.shipment_id) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
+      if (p.shipment_id || air) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
       return isParcelIncomplete(p as Parcel) ? { tone: 'pending', label: 'Incomplet', inBox: false } : { tone: 'success', label: "À l'entrepôt", inBox: false };
   }
 }
 
-/** L'état d'un dépôt entier, résumé depuis ses colis : tout chargé, en partie, ou encore à l'entrepôt. */
 export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>>): { tone: StageTone; label: string } {
   const inBox = parcels.filter((p) => parcelStage(p).inBox);
   if (parcels.length === 0) return { tone: 'neutral', label: 'Vide' };

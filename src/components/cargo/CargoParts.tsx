@@ -1,25 +1,29 @@
 // ============================================================
-// Bonzini Cargo a DEUX parties, et l'entrée du module le dit en premier :
+// Bonzini Cargo a TROIS parties, et l'entrée du module le dit en premier :
 //   · Container — les boîtes : suivi, dossiers, papiers, argent, chargement ;
+//   · Avion — les expéditions aériennes : LTA, vol, manifeste, jalons ;
 //   · Réception — les colis enregistrés à l'entrepôt et au bureau, avant
-//     la boîte (le travail du réceptionnaire, vu par l'équipe).
+//     la boîte ou l'avion (le travail du réceptionnaire, vu par l'équipe).
 // Un seul sélecteur, le même sur mobile et sur desktop, avec les chiffres
 // qui comptent : les conteneurs suivis, les colis qui attendent, les
 // dépôts à attribuer. Une route par partie : /m/cargo et /m/cargo/reception.
 // ============================================================
 import { useNavigate } from 'react-router-dom';
-import { Ship, PackageOpen } from 'lucide-react';
+import { Ship, Plane, PackageOpen } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCargoPartsSummary } from '@/hooks/useReception';
 import { cn } from '@/lib/utils';
 import { Segmented } from '@/mobile/designKit';
 
-export type CargoPart = 'container' | 'reception';
+export type CargoPart = 'container' | 'air' | 'reception';
 
 export const CARGO_PARTS: ReadonlyArray<{ key: CargoPart; to: string; label: string }> = [
   { key: 'container', to: '/m/cargo', label: 'Container' },
+  { key: 'air', to: '/m/cargo/avion', label: 'Avion' },
   { key: 'reception', to: '/m/cargo/reception', label: 'Réception' },
 ];
+
+const PART_ICON: Record<CargoPart, typeof Ship> = { container: Ship, air: Plane, reception: PackageOpen };
 
 export function cargoPartPath(part: CargoPart): string {
   return CARGO_PARTS.find((p) => p.key === part)!.to;
@@ -35,8 +39,9 @@ export function MobileCargoParts({ active, className }: { active: CargoPart; cla
         value={active}
         onChange={(part) => { if (part !== active) navigate(cargoPartPath(part)); }}
         options={[
-          { value: 'container', label: <span className="inline-flex items-center gap-2"><Ship className="h-5 w-5" /> Container</span>, count: data?.containers ?? null },
-          { value: 'reception', label: <span className="inline-flex items-center gap-2"><PackageOpen className="h-5 w-5" /> Réception</span>, count: data?.parcels_waiting ?? null },
+          { value: 'container', label: <span className="inline-flex items-center gap-1.5"><Ship className="h-5 w-5" /> Container</span>, count: data?.containers ?? null },
+          { value: 'air', label: <span className="inline-flex items-center gap-1.5"><Plane className="h-5 w-5" /> Avion</span>, count: data?.air_open ?? null },
+          { value: 'reception', label: <span className="inline-flex items-center gap-1.5"><PackageOpen className="h-5 w-5" /> Réception</span>, count: data?.parcels_waiting ?? null },
         ]}
       />
     </div>
@@ -49,6 +54,7 @@ export function DesktopCargoParts({ active, className }: { active: CargoPart; cl
   const { data } = useCargoPartsSummary();
   const meta: Record<CargoPart, string | null> = {
     container: data ? `${data.containers} suivi${data.containers > 1 ? 's' : ''}${data.containers_at_sea > 0 ? ` · ${data.containers_at_sea} en mer` : ''}` : null,
+    air: data ? `${data.air_open ?? 0} en cours${(data.air_in_flight ?? 0) > 0 ? ` · ${data.air_in_flight} en vol` : ''}` : null,
     reception: data ? `${data.parcels_waiting} colis à l'entrepôt${data.deposits_pending > 0 ? ` · ${data.deposits_pending} à attribuer` : ''}` : null,
   };
   return (
@@ -64,7 +70,7 @@ export function DesktopCargoParts({ active, className }: { active: CargoPart; cl
               'data-[state=active]:border-foreground data-[state=active]:font-bold data-[state=active]:text-foreground data-[state=active]:shadow-none',
             )}
           >
-            {p.key === 'container' ? <Ship className="h-4 w-4" /> : <PackageOpen className="h-4 w-4" />}
+            {(() => { const Icon = PART_ICON[p.key]; return <Icon className="h-4 w-4" />; })()}
             {p.label}
             {meta[p.key] && <span className="text-[12px] font-normal tabular-nums text-muted-foreground">{meta[p.key]}</span>}
             {p.key === 'reception' && (data?.deposits_pending ?? 0) > 0 && (

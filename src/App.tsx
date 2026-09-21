@@ -118,6 +118,11 @@ const MobileCargoReception = lazy(() => import("./mobile/screens/cargo").then(m 
 const MobileCargoDepositDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDepositDetail })));
 const MobileCargoLoadParcels = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoLoadParcels })));
 const MobileCargoQuote = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoQuote })));
+const MobileCargoAir = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAir })));
+const MobileCargoAirForm = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirForm })));
+const MobileCargoAirDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirDetail })));
+const MobileCargoAirLoad = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirLoad })));
+const DesktopCargoAir = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoAir })));
 const MobileClientParcels = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcels })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
 const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
@@ -295,6 +300,11 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId/charger" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirLoad /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirDetail /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception" element={<AdminRouteWrapper desktop={<DesktopCargoReception />}><MobileCargoReception /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId/devis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoQuote /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoDepositDetail /></AdminRouteWrapper>} />

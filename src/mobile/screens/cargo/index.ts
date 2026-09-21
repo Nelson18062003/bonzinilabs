@@ -7,3 +7,7 @@ export { MobileCargoReception } from './MobileCargoReception';
 export { MobileCargoDepositDetail } from './MobileCargoDepositDetail';
 export { MobileCargoLoadParcels } from './MobileCargoLoadParcels';
 export { MobileCargoQuote } from './MobileCargoQuote';
+export { MobileCargoAir } from './MobileCargoAir';
+export { MobileCargoAirForm } from './MobileCargoAirForm';
+export { MobileCargoAirDetail } from './MobileCargoAirDetail';
+export { MobileCargoAirLoad } from './MobileCargoAirLoad';
