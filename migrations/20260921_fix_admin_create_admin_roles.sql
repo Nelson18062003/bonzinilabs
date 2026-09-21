@@ -37,6 +37,8 @@ declare
   -- Tous les rôles de l'énumération, dans l'ordre de déclaration.
   valid_roles text[] := (select array_agg(e::text) from unnest(enum_range(null::public.app_role)) as e);
   caller_role text;
+  existing_user_id uuid;
+  existing_client_code text;
 begin
   if auth.uid() is null then
     return jsonb_build_object('success', false, 'error', 'Non authentifié');
@@ -67,7 +69,18 @@ begin
     return jsonb_build_object('success', false, 'error', 'Rôle invalide. Valeurs acceptées: ' || array_to_string(valid_roles, ', '));
   end if;
 
-  if exists (select 1 from auth.users where email = lower(trim(p_email))) then
+  -- Un email = un seul compte auth. Dire À QUI il est déjà : un client (le
+  -- même Gmail sert souvent à tester l'app client) ou un administrateur.
+  select u.id into existing_user_id from auth.users u where lower(u.email) = lower(trim(p_email));
+  if existing_user_id is not null then
+    select c.customer_code into existing_client_code from public.clients c where c.user_id = existing_user_id;
+    if existing_client_code is not null then
+      return jsonb_build_object('success', false, 'error',
+        'Cet email est déjà celui d''un compte CLIENT (' || existing_client_code || '). Un administrateur doit avoir sa propre adresse : utilisez-en une autre.');
+    end if;
+    if exists (select 1 from public.user_roles r where r.user_id = existing_user_id) then
+      return jsonb_build_object('success', false, 'error', 'Cet email est déjà celui d''un administrateur');
+    end if;
     return jsonb_build_object('success', false, 'error', 'Un compte avec cet email existe déjà');
   end if;
 
