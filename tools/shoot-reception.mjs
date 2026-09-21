@@ -115,7 +115,7 @@ await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
   const row = { key: 'shipping', value: {
     company: { email: 'contact@bonzinilabs.com', phone: '+8618667439286', nameEn: 'NORTON GAUSS BONZINI', nameZh: '诺顿·高斯·邦齐尼', wechat: '+8618667439286', whatsapp: '+8618667439286' },
     warehouse: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
-      addressEn: 'Unit 18, Building K, Baiyun Lake Logistics Park, Jiaoxin Street, Baiyun District, Guangzhou City, Guangdong Province',
+      addressEn: 'Bonzini Trading Cargo, an iron warehouse located directly opposite the sales department of Yunxi Song Garden Center in Shimen Street, Baiyun District, Guangzhou City, Guangdong Province',
       addressZh: '广东省广州市白云区石门街道云溪颂花园中心售楼部正对面铁皮仓库 Bonzini Trading Cargo' },
     office: { email: 'contact@bonzinilabs.com', phone: '18667439286', wechat: '18667439286', whatsapp: '18667439286', recipient: 'Tina',
       addressEn: '259, 2/F, Cameroon Building, No. 219 Guangyuan West Road, Guangzhou, China', addressZh: '广州市广园西路219号\n客麦隆大厦二楼 259' },

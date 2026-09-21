@@ -293,7 +293,8 @@ export function layoutLabel(d: LabelData, measure: Measure): Op[] {
   {
     const fzh = f(900, 23, FONT_ZH_DISPLAY), fen = f(600, 10.5, FONT_LATIN);
     const zhLines = wrapText(loc.addressZh, CW, fzh, measure, 3);
-    const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 2) : [];
+    // Trois lignes pour l'anglais : l'adresse décrite en toutes lettres (« an iron warehouse located directly opposite… ») n'en tient pas en deux.
+    const enLines = loc.addressEn.trim() ? wrapText(loc.addressEn, CW, fen, measure, 3) : [];
     const ZH_LH = 29, EN_LH = 13;
     const blockH = 8 + zhLines.length * ZH_LH + (enLines.length ? 3 + enLines.length * EN_LH : 0) + 6;
     // Un dos de couleur le long de l'adresse : le mode, encore, là où l'œil va.
