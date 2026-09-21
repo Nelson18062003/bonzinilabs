@@ -17,6 +17,8 @@ import { ChevronRight, Download } from 'lucide-react';
 import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useReceptionOverview, useReceptionStock } from '@/hooks/useReception';
+import { useWarehouseDay } from '@/hooks/useWarehouse';
+import { xaf as fmtXaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatKg, initials, type Deposit, type ReceptionLocation } from '@/lib/reception';
 import { exportToCSV } from '@/lib/exportCSV';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -49,6 +51,9 @@ export function DesktopCargoReception() {
   const range = useMemo(() => periodRange(period), [period]);
   const stock = useReceptionStock(where === 'all' ? null : where);
   const overview = useReceptionOverview(range.from, range.to);
+  // Douala : ce que l'entrepôt de destination voit (pointage, attente, remises), pour qui peut y agir.
+  const seesDouala = hasPermission('canReleaseParcels') || hasPermission('canReceiveAtDestination');
+  const douala = useWarehouseDay(seesDouala);
 
   const stats = stock.data?.stats;
   const byClient = stock.data?.by_client ?? [];
@@ -234,6 +239,35 @@ export function DesktopCargoReception() {
           </Card>
         </div>
 
+        <div className="flex flex-col gap-5">
+        {seesDouala && douala.data && (
+          <Card className="overflow-hidden p-0">
+            <CardHeader title="À Douala" meta={<a href="/w" className={cn('text-[12px] font-semibold underline-offset-2 hover:underline', TEXT.strong)}>ouvrir l'app entrepôt</a>} />
+            <div className="grid grid-cols-2 gap-x-5 gap-y-3 px-5 py-4">
+              <KV k="À pointer" v={douala.data.stats.to_checkin} />
+              <KV k="Attendent leur client" v={douala.data.stats.waiting} />
+              <KV k="Remis aujourd'hui" v={douala.data.stats.delivered_today} />
+              <KV k="Manquants" v={<span className={douala.data.stats.missing > 0 ? 'text-red-700 dark:text-red-400' : undefined}>{douala.data.stats.missing}</span>} />
+            </div>
+            {douala.data.waiting_by_client.length > 0 && (
+              <ul className="border-t border-black/[0.05] dark:border-white/[0.05]">
+                {douala.data.waiting_by_client.slice(0, 6).map((w) => {
+                  const name = w.client ? clientFullName(w.client) : 'Client à attribuer';
+                  return (
+                    <li key={w.client?.user_id ?? 'none'} className="flex items-center gap-3 border-t border-black/[0.05] px-5 py-3 first:border-t-0 dark:border-white/[0.05]">
+                      <Holder size="sm">{w.client ? initials(name) : '?'}</Holder>
+                      <span className="min-w-0 flex-1">
+                        <span className={cn('block truncate text-[13px] font-semibold', TEXT.strong)}>{name}</span>
+                        <span className={cn('block text-[12px] tabular-nums', TEXT.muted)}>{w.parcels} colis · {formatKg(w.weight_kg)}</span>
+                      </span>
+                      {w.unpaid ? <StatusPill tone="pending" label={w.balance_xaf > 0 ? `reste ${fmtXaf(w.balance_xaf)}` : 'À encaisser'} /> : <StatusPill tone="success" label="Payé" />}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Card>
+        )}
         <Card className="overflow-hidden p-0">
           <CardHeader title="Par réceptionnaire" meta={period === 'today' ? "aujourd'hui" : period === 'week' ? '7 jours' : '30 jours'} />
           {overview.isLoading ? <ScreenLoader /> : staff.length === 0 ? (
@@ -259,6 +293,7 @@ export function DesktopCargoReception() {
             </ul>
           )}
         </Card>
+        </div>
       </div>
 
       <DepositQuickView depositId={depositId ?? null} onClose={() => navigate('/m/cargo/reception')} />

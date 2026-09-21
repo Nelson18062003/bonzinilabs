@@ -7,7 +7,20 @@
 // ============================================================
 import { jsPDF } from 'jspdf';
 import { deliverFile } from '@/components/customer-code/exportShippingLabel';
-import { awbLabel, flightSentence, fmtDay, groupByClient, parcelUnpaid, type AirShipment } from '@/lib/airShipment';
+import { awbLabel, flightSentence, fmtDay, groupByClient, parcelUnpaid, type AirParcel, type AirShipment } from '@/lib/airShipment';
+import type { CargoShipment } from '@/lib/cargo/model';
+import type { ParcelWithDeposit } from '@/lib/reception';
+
+/** Ce que le manifeste imprime en tête, quel que soit le transport. */
+export interface ManifestHead {
+  /** « Air cargo · Guangzhou → Douala » ou « Sea cargo · Guangzhou → Douala » */
+  mode: string;
+  /** La référence : « LTA 071-… » ou le numéro de conteneur. */
+  ref: string;
+  facts: [string, string][];
+  notes?: string | null;
+  fileRef: string;
+}
 import { xaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
 
@@ -16,16 +29,50 @@ const W = 210 - 2 * M;
 const ascii = (s: string) => s.replace(/³/g, '3').replace(/[\u00A0\u202F]/g, ' ');
 
 export function buildAirManifestPdf(a: AirShipment): jsPDF {
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const parcels = a.parcels ?? [];
+  return buildManifestPdf({
+    mode: 'Air cargo · Guangzhou → Douala',
+    ref: awbLabel(a),
+    facts: [
+      ['LTA', awbLabel(a).replace('LTA ', '')],
+      ['Vol', flightSentence(a)],
+      ['Départ', `${a.origin}${a.etd ? ` · ${fmtDay(a.etd)}` : ''}`],
+      ['Arrivée', `${a.destination}${a.eta ? ` · ${fmtDay(a.eta)}` : ''}`],
+    ],
+    notes: a.notes,
+    fileRef: a.awb_number,
+  }, parcels);
+}
+
+/** Le manifeste d'une boîte : les colis reçus à l'entrepôt et chargés dedans. */
+export function buildSeaManifestPdf(s: CargoShipment, parcels: ParcelWithDeposit[]): jsPDF {
+  return buildManifestPdf({
+    mode: 'Sea cargo · Guangzhou → Douala',
+    ref: s.container_number,
+    facts: [
+      ['Conteneur', `${s.container_number}${s.container_iso ? ` · ${s.container_iso}` : ''}`],
+      ['B/L', s.bl_number || '—'],
+      ['Navire', [s.vessel_name, s.voyage].filter(Boolean).join(' · ') || '—'],
+      ['Arrivée', `${s.pod_name}${s.eta_promised ? ` · ${fmtDay(s.eta_promised)}` : ''}`],
+    ],
+    notes: s.notes,
+    fileRef: s.container_number.replace(/\s+/g, ''),
+  }, parcels as AirParcel[]);
+}
+
+function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const groups = groupByClient(parcels);
+  const totalKg = parcels.reduce((t, p) => t + Number(p.weight_kg ?? 0), 0);
+  const totalCbm = parcels.reduce((t, p) => t + Number(p.cbm ?? 0), 0);
+  const unpaid = parcels.filter(parcelUnpaid).length;
   let y = M;
 
   // En-tête.
   pdf.setFont('helvetica', 'bold'); pdf.setFontSize(18); pdf.text('Bonzini Labs', M, y + 6);
   pdf.setFontSize(16); pdf.text('MANIFESTE', 210 - M, y + 6, { align: 'right' });
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(90);
-  pdf.text('Air cargo · Guangzhou → Douala', M, y + 12);
+  pdf.text(ascii(h.mode), M, y + 12);
   pdf.text(fmtDay(new Date().toISOString()), 210 - M, y + 12, { align: 'right' });
   pdf.setTextColor(0);
   y += 20;
@@ -33,11 +80,8 @@ export function buildAirManifestPdf(a: AirShipment): jsPDF {
 
   // La fiche : LTA, vol, dates, totaux.
   const facts: [string, string][] = [
-    ['LTA', awbLabel(a).replace('LTA ', '')],
-    ['Vol', flightSentence(a)],
-    ['Départ', `${a.origin}${a.etd ? ` · ${fmtDay(a.etd)}` : ''}`],
-    ['Arrivée', `${a.destination}${a.eta ? ` · ${fmtDay(a.eta)}` : ''}`],
-    ['Colis', `${parcels.length} · ${formatKg(a.total_weight_kg)} · ${formatCbm(a.total_cbm)}`],
+    ...h.facts,
+    ['Colis', `${parcels.length} · ${formatKg(totalKg)} · ${formatCbm(totalCbm)}`],
     ['Clients', String(groups.length)],
   ];
   const colW = W / 3;
@@ -88,15 +132,15 @@ export function buildAirManifestPdf(a: AirShipment): jsPDF {
   pdf.setFillColor(30, 30, 30); pdf.rect(M, y, W, 9, 'F');
   pdf.setTextColor(255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10);
   pdf.text(`TOTAL · ${parcels.length} colis`, M + 3, y + 6);
-  pdf.text(ascii(`${formatKg(a.total_weight_kg)} · ${formatCbm(a.total_cbm)}${a.unpaid_count > 0 ? ` · ${a.unpaid_count} colis non soldé${a.unpaid_count > 1 ? 's' : ''}` : ' · tout payé'}`), 210 - M - 3, y + 6, { align: 'right' });
+  pdf.text(ascii(`${formatKg(totalKg)} · ${formatCbm(totalCbm)}${unpaid > 0 ? ` · ${unpaid} colis non soldé${unpaid > 1 ? 's' : ''}` : ' · tout payé'}`), 210 - M - 3, y + 6, { align: 'right' });
   pdf.setTextColor(0); pdf.setFont('helvetica', 'normal');
   y += 16;
-  if (a.notes) { pdf.setFontSize(9); pdf.setTextColor(90); pdf.text(pdf.splitTextToSize(ascii(a.notes), W) as string[], M, y); pdf.setTextColor(0); }
+  if (h.notes) { pdf.setFontSize(9); pdf.setTextColor(90); pdf.text(pdf.splitTextToSize(ascii(h.notes), W) as string[], M, y); pdf.setTextColor(0); }
 
   const pages = pdf.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     pdf.setPage(i); pdf.setTextColor(150); pdf.setFontSize(8);
-    pdf.text(ascii(`Bonzini Labs · Manifeste ${awbLabel(a)} · page ${i}/${pages}`), 105, 290, { align: 'center' });
+    pdf.text(ascii(`Bonzini Labs · Manifeste ${h.ref} · page ${i}/${pages}`), 105, 290, { align: 'center' });
     pdf.setTextColor(0);
   }
   return pdf;
@@ -110,4 +154,10 @@ export async function deliverAirManifestPdf(a: AirShipment): Promise<'shared' | 
   const pdf = buildAirManifestPdf(a);
   const file = new File([pdf.output('blob')], manifestFileName(a), { type: 'application/pdf' });
   return deliverFile(file, `Manifeste ${awbLabel(a)}`);
+}
+
+export async function deliverSeaManifestPdf(s: CargoShipment, parcels: ParcelWithDeposit[]): Promise<'shared' | 'downloaded'> {
+  const pdf = buildSeaManifestPdf(s, parcels);
+  const file = new File([pdf.output('blob')], `bonzini-manifeste-${s.container_number.replace(/\s+/g, '')}.pdf`, { type: 'application/pdf' });
+  return deliverFile(file, `Manifeste ${s.container_number}`);
 }

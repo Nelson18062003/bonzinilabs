@@ -6,7 +6,8 @@
 // ============================================================
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { PackagePlus, Undo2 } from 'lucide-react';
+import { FileText, PackagePlus, Undo2 } from 'lucide-react';
+import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
 import { useShipmentParcels, useUnloadParcel } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
 import type { CargoShipment } from '@/lib/cargo/model';
@@ -34,11 +35,20 @@ export function LoadedParcelsSection({ shipment: s, canManage, className }: { sh
       className={className}
       title="Colis reçus à l'entrepôt"
       meta={parcels.length > 0 ? `${parcels.length} colis · ${formatKg(kg)} · ${formatCbm(cbm)}` : undefined}
-      action={canManage ? (
-        <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-bold', PRIMARY_PILL)}>
-          <PackagePlus className="h-3.5 w-3.5" /> Charger des colis reçus
-        </button>
-      ) : undefined}
+      action={
+        <span className="inline-flex items-center gap-2">
+          {parcels.length > 0 && (
+            <button type="button" onClick={() => void deliverSeaManifestPdf(s, parcels)} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold', SOFT_PILL)}>
+              <FileText className="h-3.5 w-3.5" /> Manifeste (PDF)
+            </button>
+          )}
+          {canManage && (
+            <button type="button" onClick={() => setOpen(true)} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-bold', PRIMARY_PILL)}>
+              <PackagePlus className="h-3.5 w-3.5" /> Charger des colis reçus
+            </button>
+          )}
+        </span>
+      }
       bodyClassName={parcels.length > 0 ? 'p-0' : undefined}
     >
       {parcels.length === 0 ? (

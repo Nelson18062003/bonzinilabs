@@ -62,7 +62,8 @@ export function ReceptionDone() {
       const box = fitOnPage(LABEL_W, LABEL_H);
       for (let i = 0; i < deposit.parcels.length; i++) {
         const p = deposit.parcels[i];
-        const canvas = await renderWith({ cartonNo: `${p.seq}/${count}`, shipDate }, 3);
+        // Le numéro du colis sur l'étiquette : c'est lui que Douala tape ou scanne au pointage.
+        const canvas = await renderWith({ cartonNo: `${p.parcel_no} (${p.seq}/${count})`, shipDate }, 3);
         if (i > 0) pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', box.x, box.y, box.w, box.h, undefined, 'FAST');
       }

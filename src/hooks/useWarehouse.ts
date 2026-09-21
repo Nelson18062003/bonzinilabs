@@ -34,8 +34,8 @@ export const WH_KEYS = {
   release: (id: string) => ['warehouse', 'release', id] as const,
 };
 
-export function useWarehouseDay() {
-  return useQuery({ queryKey: WH_KEYS.day, queryFn: () => rpcJson<WarehouseDay>('warehouse_day'), staleTime: 15_000, refetchInterval: 60_000 });
+export function useWarehouseDay(enabled = true) {
+  return useQuery({ queryKey: WH_KEYS.day, queryFn: () => rpcJson<WarehouseDay>('warehouse_day'), staleTime: 15_000, refetchInterval: 60_000, enabled });
 }
 
 export function useWarehouseArrival(kind: 'air' | 'sea' | undefined, id: string | undefined) {

@@ -19,6 +19,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { useShipmentParcels } from '@/hooks/useReception';
+import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { DossierActions } from '@/components/cargo/dossier';
 import { MobilePapiers } from './MobilePapiers';
@@ -225,6 +226,7 @@ function Inside({ s, onOpen3D, canManage }: { s: CargoShipment; onOpen3D: () => 
       )}
       <div className="flex flex-wrap gap-2">
         {canManage && <Button variant="primary" onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</Button>}
+        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaManifestPdf(s, parcels)}>Manifeste (PDF)</Button>}
         <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
       </div>
     </div>
