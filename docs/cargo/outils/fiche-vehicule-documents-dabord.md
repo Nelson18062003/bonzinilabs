@@ -265,48 +265,33 @@ Rien d'autre.
 
 # MESSAGE PRÊT À ENVOYER AU CLIENT
 
+**Court. Deux documents. Rien d'autre.** Un client répond à une demande simple,
+pas à un formulaire. Quand on demande deux choses, on demande deux choses — ne
+jamais doubler d'une liste de questions « au cas où », il ne saura plus quoi faire.
+
 > Bonjour,
 >
-> Pour vous donner une estimation des droits de douane et taxes, le plus simple
-> est de m'envoyer les documents. J'y trouverai presque tout.
+> Pour la douane je peux vous faire une estimation. Il me faut juste deux papiers :
 >
-> **CE QUE J'AI BESOIN DE RECEVOIR**
->
-> *Sur le véhicule :*
-> • la **carte grise** — ou son équivalent selon le pays : *shaken-shō* au Japon,
->   *Title* aux États-Unis, certificat d'immatriculation en Chine ou en Europe
 > • la **facture d'achat** *(ou la proforma si l'achat n'est pas encore fait)*
+> • la **carte grise**
 >
-> *Sur le transport :*
-> • le **connaissement (BL)**
-> • la **facture du transport**, détaillée ligne par ligne
-> • l'**attestation d'assurance**, si vous en avez souscrit une
+> Une photo des deux suffit.
 >
-> *Sur vous :*
-> • votre **NIU** (carte de contribuable)
-> • votre **attestation d'inscription au fichier des importateurs**
+> Attention : le prix du transport que je vous ai donné ne comprend pas la douane.
+> Elle vient en plus, et elle se calcule sur la valeur du véhicule **+** le transport.
 >
-> **ET 4 PHOTOS** — deux minutes, et elles rattrapent tout document manquant :
-> • la plaque constructeur *(sur le montant de la portière conducteur)*
-> • le moteur
-> • le véhicule vu de 3/4 arrière *(pour voir le badge)*
-> • le compteur kilométrique
->
-> **ET 6 QUESTIONS**, parce que les réponses ne sont dans aucun document :
->
-> 1. Deux roues motrices, ou 4×4 ?
-> 2. Le véhicule a-t-il déjà été immatriculé quelque part, même brièvement ?
-> 3. Le prix de la facture est-il exactement ce que vous avez payé, ou une partie
->    a-t-elle été réglée à côté ?
-> 4. Le prix du transport couvre-t-il quelque chose après l'arrivée à Douala —
->    livraison, stationnement, manutention ?
-> 5. Quel est votre régime fiscal : réel, simplifié, ou aucun ?
-> 6. Le véhicule est-il pour votre usage, ou pour la revente ?
->
-> Avec les documents, je vous donne un chiffre.
-> Sans eux, je ne peux donner qu'une fourchette large.
->
-> Bien cordialement,
+> Dès que j'ai les deux papiers je reviens vers vous avec l'estimation.
+
+**Si le client ne reconnaît pas « carte grise »** — à sortir seulement s'il demande,
+jamais dans le premier message :
+
+| Provenance | Nom local |
+|---|---|
+| Chine | 行驶证 · 机动车登记证书 · **合格证** *(véhicule neuf)* |
+| Japon | 車検証 |
+| États-Unis | Title |
+| Émirats | Mulkiya |
 
 ---
 
@@ -320,7 +305,7 @@ document — et c'est normal. On revient alors aux questions, mais **on le dit**
 | rien, juste « une Prado » | **rien.** Aucun chiffre |
 | les réponses orales seulement | **une fourchette**, présentée comme telle |
 | carte grise + facture | **une estimation sérieuse** |
-| les 4 documents + les 6 réponses | **un chiffre**, sous réserve de la valeur retenue par la douane |
+| les 4 documents + les 6 réponses | **une estimation chiffrée** — jamais « le montant ». La douane peut retenir une autre valeur |
 
 > **La phrase à dire systématiquement :**
 > *« Ce montant est une estimation. La douane peut retenir une valeur différente
@@ -331,3 +316,25 @@ document — et c'est normal. On revient alors aux questions, mais **on le dit**
 *Fiche complémentaire : `fiche-vehicule-questions-et-documents.md` — la version
 longue, avec les 27 questions détaillées, à utiliser quand le client n'a pas
 encore de documents.*
+
+---
+
+# 🔴 NE JAMAIS PROMETTRE UN MONTANT EXACT
+
+On donne **une estimation**. Jamais « le montant ». Même avec une facture parfaite
+et tous les papiers, pour deux raisons :
+
+1. **La douane n'est pas tenue de retenir le prix de la facture.** Elle peut douter
+   d'une valeur déclarée et lui en substituer une autre, calculée selon une autre
+   méthode. Sur les véhicules c'est courant : le système a ses valeurs de référence.
+
+2. **Des abattements s'appliquent selon une règle qu'on n'a pas encore élucidée**
+   (voir les dossiers DAU). Sur un véhicule, ça se compte en millions.
+
+**La phrase à envoyer avec chaque chiffre :**
+
+> *« C'est une estimation. C'est la douane qui fixe la valeur finale, pas nous —
+> si elle retient une valeur différente de votre facture, le montant bouge dans
+> la même proportion. »*
+
+Elle protège l'entreprise : si le montant au port est plus élevé, on l'avait dit.

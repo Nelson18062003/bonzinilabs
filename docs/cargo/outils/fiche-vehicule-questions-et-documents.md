@@ -154,7 +154,7 @@ Sur une déclaration de Bonzini, une même marchandise de 9 265 805 XAF :
 | **rien, juste « une Prado »** | rien. **Ne donne jamais de chiffre à ce stade** |
 | **questions 1 à 8 + 13 à 15** | **une fourchette**, en disant que c'est une fourchette |
 | **toutes les questions + documents 1 à 4** | **une estimation sérieuse** |
-| **tout, documents compris** | **un chiffre ferme**, sous réserve de l'acceptation de la valeur par la douane |
+| **tout, documents compris** | **une estimation chiffrée** — jamais « le montant exact ». Voir l'encadré ci-dessous |
 
 > **Une phrase à dire systématiquement au client :**
 > *« Ce montant est une estimation. La douane peut retenir une valeur différente de celle
@@ -210,3 +210,25 @@ Sur une déclaration de Bonzini, une même marchandise de 9 265 805 XAF :
 > Avec les documents, je vous donne un chiffre.
 >
 > Bien cordialement,
+
+---
+
+# 🔴 NE JAMAIS PROMETTRE UN MONTANT EXACT
+
+On donne **une estimation**. Jamais « le montant ». Même avec une facture parfaite
+et tous les papiers, pour deux raisons :
+
+1. **La douane n'est pas tenue de retenir le prix de la facture.** Elle peut douter
+   d'une valeur déclarée et lui en substituer une autre, calculée selon une autre
+   méthode. Sur les véhicules c'est courant : le système a ses valeurs de référence.
+
+2. **Des abattements s'appliquent selon une règle qu'on n'a pas encore élucidée**
+   (voir les dossiers DAU). Sur un véhicule, ça se compte en millions.
+
+**La phrase à envoyer avec chaque chiffre :**
+
+> *« C'est une estimation. C'est la douane qui fixe la valeur finale, pas nous —
+> si elle retient une valeur différente de votre facture, le montant bouge dans
+> la même proportion. »*
+
+Elle protège l'entreprise : si le montant au port est plus élevé, on l'avait dit.
