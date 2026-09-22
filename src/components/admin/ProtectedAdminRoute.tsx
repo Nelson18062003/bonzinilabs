@@ -28,6 +28,10 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   if (currentUser?.role === 'receptionist') {
     return <Navigate to="/r" replace />;
   }
+  // L'agent d'entrepôt de Douala aussi (« /w »).
+  if (currentUser?.role === 'warehouse_agent') {
+    return <Navigate to="/w" replace />;
+  }
 
   return <>{children}</>;
 }

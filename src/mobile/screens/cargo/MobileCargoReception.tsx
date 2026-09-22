@@ -11,10 +11,11 @@
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronRight, HelpCircle } from 'lucide-react';
+import { ChevronRight, HelpCircle, Users } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useReceptionOverview, useReceptionStock } from '@/hooks/useReception';
+import { useWarehouseDay } from '@/hooks/useWarehouse';
 import { clientFullName, formatCbm, formatKg, initials, type ReceptionLocation } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, ScreenLoader, Segmented, StatCard, StatusPill } from '@/mobile/designKit';
@@ -42,6 +43,8 @@ export function MobileCargoReception() {
   const range = useMemo(() => periodRange(period), [period]);
   const stock = useReceptionStock(where === 'all' ? null : where);
   const overview = useReceptionOverview(range.from, range.to);
+  const seesDouala = hasPermission('canReleaseParcels') || hasPermission('canReceiveAtDestination');
+  const douala = useWarehouseDay(seesDouala);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -104,6 +107,46 @@ export function MobileCargoReception() {
             </Card>
           )}
         </section>
+
+        {/* 1 ter · Les comptes : les gros clients qui chargent leurs propres conteneurs */}
+        <button type="button" onClick={() => navigate('/m/cargo/comptes')} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
+          <Users className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+          <span className={cn('min-w-0 flex-1', TYPE.bodyStrong, TEXT.strong)}>Comptes cargo <span className={cn('font-normal', TEXT.muted)}>· PRC, Simon D1… et leurs clients</span></span>
+          <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+        </button>
+
+        {/* 1 bis · Douala : l'autre bout de la chaîne, pour qui peut y agir */}
+        {seesDouala && douala.data && (
+          <section>
+            <div className="mb-2 flex items-baseline justify-between">
+              <h2 className={cn(TYPE.lead, TEXT.strong)}>À Douala</h2>
+              <button type="button" onClick={() => navigate('/w')} className={cn('text-[16px] font-semibold', TEXT.strong)}>Ouvrir l'app</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="À pointer" value={douala.data.stats.to_checkin} tone={douala.data.stats.to_checkin > 0 ? 'pending' : 'neutral'} />
+              <StatCard label="Attendent leur client" value={douala.data.stats.waiting} />
+              <StatCard label="Remis aujourd'hui" value={douala.data.stats.delivered_today} tone="success" />
+              <StatCard label="Manquants" value={douala.data.stats.missing} tone={douala.data.stats.missing > 0 ? 'danger' : 'neutral'} />
+            </div>
+            {douala.data.waiting_by_client.length > 0 && (
+              <Card className="mt-3 py-0">
+                {douala.data.waiting_by_client.slice(0, 5).map((w) => {
+                  const name = w.client ? clientFullName(w.client) : 'Client à attribuer';
+                  return (
+                    <div key={w.client?.user_id ?? 'none'} className={cn('flex items-center gap-4 border-b py-3 last:border-b-0', SURFACE.divider)}>
+                      <Holder size="md" tone={w.client ? 'neutral' : 'pending'}>{w.client ? initials(name) : '?'}</Holder>
+                      <span className="min-w-0 flex-1">
+                        <span className={cn('block truncate', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
+                        <span className={cn('block tabular-nums', TYPE.small, TEXT.muted)}>{w.parcels} colis · {formatKg(w.weight_kg)}</span>
+                      </span>
+                      {w.unpaid ? <StatusPill tone="pending" label="À encaisser" /> : <StatusPill tone="success" label="Payé" />}
+                    </div>
+                  );
+                })}
+              </Card>
+            )}
+          </section>
+        )}
 
         {/* 2 · À attribuer */}
         {pendingDeposits.length > 0 && (

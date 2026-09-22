@@ -41,7 +41,7 @@ export function ReceptionBroughtBy() {
       representativeName: choice === 'representative' ? repName : undefined,
       representativePhone: choice === 'representative' ? repPhone : undefined,
     });
-    navigate(`/r/deposit/${dep.id}`, { replace: true });
+    navigate(`/r/deposit/${dep.id}/supplier`, { replace: true });
   };
 
   return (
@@ -49,7 +49,7 @@ export function ReceptionBroughtBy() {
       <MobileHeader title={t('rc_new_deposit')} showBack backTo="/r/new" />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        <StepHeader step={2} total={3} title={t('rc_brought_title')} help={t('rc_s2_help')} />
+        <StepHeader step={2} total={4} title={t('rc_brought_title')} help={t('rc_s2_help')} />
 
         {/* Le client, en une ligne : on sait pour qui on travaille, sans que ça prenne l'écran. */}
         <button type="button" onClick={() => navigate('/r/new')} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>

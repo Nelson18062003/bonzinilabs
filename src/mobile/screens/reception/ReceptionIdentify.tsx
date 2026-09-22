@@ -75,7 +75,7 @@ export function ReceptionIdentify() {
       <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack backTo={assignId ? '/r/pending' : '/r'} />
 
       <div className="flex-1 space-y-6 px-5 pb-10 pt-4">
-        <StepHeader step={1} total={3} title={t('rc_s1_title')} help={t('rc_s1_help')} />
+        <StepHeader step={1} total={4} title={t('rc_s1_title')} help={t('rc_s1_help')} />
 
         {/* La caméra : carrée, grande, seule. */}
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>

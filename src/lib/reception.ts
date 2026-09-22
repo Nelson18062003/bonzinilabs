@@ -32,6 +32,25 @@ export interface ReceptionClient {
   company_name: string | null;
   city: string | null;
   country: string | null;
+  /** Le compte cargo (PRC, Simon…) qui regroupe ce client, s'il y en a un. */
+  account_id?: string | null;
+  account_name?: string | null;
+  account_code?: string | null;
+}
+
+/** Fournisseur (l'usine, le vendeur) ou agent d'achat qui envoie pour le client. */
+export type SupplierKind = 'supplier' | 'buying_agent';
+export const SUPPLIER_KINDS: SupplierKind[] = ['supplier', 'buying_agent'];
+
+/** Ce que Tina relève sur son bon d'entrée : qui a envoyé les cartons. Un par dépôt. */
+export interface SupplierInfo {
+  kind: SupplierKind;
+  name: string;
+  contact?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  wechat?: string | null;
+  address?: string | null;
 }
 
 export interface Parcel {
@@ -51,6 +70,16 @@ export interface Parcel {
   /** La boîte (dossier Cargo) où le colis a été chargé — null tant qu'il attend à l'entrepôt. */
   shipment_id?: string | null;
   container_number?: string | null;
+  /** L'expédition aérienne (LTA) où le colis a été chargé — l'autre chemin vers Douala. */
+  air_shipment_id?: string | null;
+  awb_number?: string | null;
+  /** À Douala (phase 4) : pointé, sa place, son état, remis. */
+  checked_in_at?: string | null;
+  warehouse_location?: string | null;
+  condition?: 'ok' | 'damaged' | 'missing' | null;
+  condition_note?: string | null;
+  delivered_at?: string | null;
+  release_no?: string | null;
   created_at: string;
 }
 
@@ -96,6 +125,13 @@ export interface Deposit {
   brought_by: BroughtBy;
   representative_name: string | null;
   representative_phone: string | null;
+  supplier_kind?: SupplierKind | null;
+  supplier_name?: string | null;
+  supplier_contact?: string | null;
+  supplier_phone?: string | null;
+  supplier_email?: string | null;
+  supplier_wechat?: string | null;
+  supplier_address?: string | null;
   status: DepositStatus;
   received_by: string;
   received_by_name: string | null;
@@ -106,6 +142,12 @@ export interface Deposit {
   total_cbm: number;
   notes: string | null;
   parcels: Parcel[];
+  /** Côté admin seulement (reception_overview) : l'état du devis du dépôt. */
+  quote_status?: 'draft' | 'sent' | 'paid' | 'invoiced' | null;
+  quote_no?: string | null;
+  quote_total_xaf?: number | null;
+  quote_paid_xaf?: number | null;
+  invoice_no?: string | null;
 }
 
 export interface DayStats {
@@ -163,20 +205,23 @@ export type StageTone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
  * suit la boîte grâce au trigger `parcels_follow_shipment` (migration) :
  * chargé → en mer → arrivé → livré, sans rien ressaisir.
  */
-export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>): { tone: StageTone; label: string; inBox: boolean } {
-  const box = p.container_number ?? 'boîte';
+export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'> & { air_shipment_id?: string | null; awb_number?: string | null; checked_in_at?: string | null; warehouse_location?: string | null; condition?: string | null; delivered_at?: string | null; release_no?: string | null }): { tone: StageTone; label: string; inBox: boolean } {
+  const air = !!p.air_shipment_id;
+  const box = air ? `LTA ${p.awb_number ?? ''}`.trim() : p.container_number ?? 'boîte';
+  // Douala parle en premier : remis, manquant, pointé.
+  if (p.delivered_at || p.status === 'delivered') return { tone: 'success', label: `Remis · ${p.release_no ?? box}`, inBox: true };
+  if (p.condition === 'missing') return { tone: 'danger', label: 'Manquant à Douala', inBox: true };
+  if (p.checked_in_at) return { tone: 'pending', label: `À Douala${p.warehouse_location ? ` · ${p.warehouse_location}` : ''}${p.condition === 'damaged' ? ' · abîmé' : ''}`, inBox: true };
   switch (p.status) {
     case 'loaded': return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
-    case 'shipped': return { tone: 'info', label: `En mer · ${box}`, inBox: true };
+    case 'shipped': return { tone: 'info', label: `${air ? 'En vol' : 'En mer'} · ${box}`, inBox: true };
     case 'arrived': return { tone: 'pending', label: `Arrivé · ${box}`, inBox: true };
-    case 'delivered': return { tone: 'success', label: `Livré · ${box}`, inBox: true };
     default:
-      if (p.shipment_id) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
+      if (p.shipment_id || air) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
       return isParcelIncomplete(p as Parcel) ? { tone: 'pending', label: 'Incomplet', inBox: false } : { tone: 'success', label: "À l'entrepôt", inBox: false };
   }
 }
 
-/** L'état d'un dépôt entier, résumé depuis ses colis : tout chargé, en partie, ou encore à l'entrepôt. */
 export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>>): { tone: StageTone; label: string } {
   const inBox = parcels.filter((p) => parcelStage(p).inBox);
   if (parcels.length === 0) return { tone: 'neutral', label: 'Vide' };
@@ -217,4 +262,16 @@ export function parseScan(raw: string): ScanResult | null {
   const clean = text.replace(/\s+/g, '');
   if (clean.length >= 6 && clean.length <= 40 && /^[A-Za-z0-9-]+$/.test(clean)) return { kind: 'waybill', value: clean.toUpperCase() };
   return null;
+}
+
+/** Le fournisseur d'un dépôt, ou null s'il n'a pas été relevé. */
+export function depositSupplier(d: Pick<Deposit, 'supplier_kind' | 'supplier_name' | 'supplier_contact' | 'supplier_phone' | 'supplier_email' | 'supplier_wechat' | 'supplier_address'>): SupplierInfo | null {
+  if (!d.supplier_name) return null;
+  return { kind: d.supplier_kind ?? 'supplier', name: d.supplier_name, contact: d.supplier_contact, phone: d.supplier_phone, email: d.supplier_email, wechat: d.supplier_wechat, address: d.supplier_address };
+}
+
+/** « 广州鞋业 · Li Wei · 138… » : le fournisseur en une ligne, pour une liste. */
+export function supplierLine(s: SupplierInfo | null | undefined): string {
+  if (!s) return '';
+  return [s.name, s.contact, s.phone].filter((v) => v && v.trim()).join(' · ');
 }

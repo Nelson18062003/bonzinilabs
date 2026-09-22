@@ -53,6 +53,7 @@ export function MobileAdminsScreen() {
     { value: 'ops', label: 'Opérations' },
     { value: 'cash_agent', label: 'Agent cash' },
     { value: 'receptionist', label: 'Réceptionnaire' },
+    { value: 'warehouse_agent', label: "Agent d'entrepôt" },
   ];
 
   const statusOptions: { value: StatusFilter; label: string }[] = [

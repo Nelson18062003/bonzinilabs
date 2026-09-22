@@ -17,6 +17,8 @@ async function getCurrentUser() {
 
 /** Types écrits par les RPC (cf. migrations) — les inconnus retombent sur « bell ». */
 export type NotificationType =
+  // Cargo : du devis au retrait (phases 1–5)
+  | 'parcel_quote_sent' | 'parcel_payment_received' | 'parcel_invoice_issued' | 'parcel_departed' | 'parcel_arrived' | 'parcel_ready' | 'parcel_released'
   | 'deposit_validated'
   | 'deposit_rejected'
   | 'deposit_correction_needed'
@@ -125,7 +127,13 @@ export function getNotificationStyle(type: NotificationType) {
     case 'deposit_validated':
     case 'payment_completed':
     case 'kyc_approved':
+    case 'parcel_payment_received':
+    case 'parcel_invoice_issued':
+    case 'parcel_released':
       return { icon: 'check-circle', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' };
+    case 'parcel_ready':
+      // Une action attendue du client : venir chercher ses colis (et solder, s'il reste à payer).
+      return { icon: 'alert-circle', color: 'text-amber-500', bgColor: 'bg-amber-500/10' };
     case 'deposit_rejected':
     case 'payment_rejected':
       return { icon: 'x-circle', color: 'text-red-500', bgColor: 'bg-red-500/10' };

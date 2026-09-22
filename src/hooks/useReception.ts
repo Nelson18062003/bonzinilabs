@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
-import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionLocation, ReceptionistRow, StockByClient, StockStats } from '@/lib/reception';
+import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionLocation, ReceptionistRow, StockByClient, StockStats, SupplierInfo } from '@/lib/reception';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -77,16 +77,46 @@ function useInvalidateReception() {
 export function useOpenDeposit() {
   const invalidate = useInvalidateReception();
   return useMutation({
-    mutationFn: (input: { location: ReceptionLocation; clientUserId?: string | null; broughtBy: BroughtBy; representativeName?: string; representativePhone?: string }) =>
+    mutationFn: (input: { location: ReceptionLocation; clientUserId?: string | null; broughtBy: BroughtBy; representativeName?: string; representativePhone?: string; supplier?: SupplierInfo | null }) =>
       rpcJson<{ deposit: Deposit }>('reception_open_deposit', {
         p_location: input.location,
         p_client_user_id: input.clientUserId ?? null,
         p_brought_by: input.broughtBy,
         p_representative_name: input.representativeName ?? null,
         p_representative_phone: input.representativePhone ?? null,
+        ...supplierArgs(input.supplier),
       }).then((r) => r.deposit),
     onSuccess: (deposit) => invalidate(deposit),
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Les paramètres fournisseur des RPC, depuis l'objet de l'app. */
+function supplierArgs(s: SupplierInfo | null | undefined): Record<string, unknown> {
+  return {
+    p_supplier_kind: s?.kind ?? null, p_supplier_name: s?.name ?? null, p_supplier_contact: s?.contact ?? null, p_supplier_phone: s?.phone ?? null,
+    p_supplier_email: s?.email ?? null, p_supplier_wechat: s?.wechat ?? null, p_supplier_address: s?.address ?? null,
+  };
+}
+
+/** Poser ou corriger le fournisseur d'un dépôt (null : aucun fournisseur). */
+export function useSetSupplier() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (input: { depositId: string; supplier: SupplierInfo | null }) =>
+      rpcJson<{ deposit: Deposit }>('reception_set_supplier', { p_deposit_id: input.depositId, ...supplierArgs(input.supplier) }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** La mémoire : les fournisseurs déjà vus pour ce client, du plus récent au plus ancien. */
+export function useClientSuppliers(userId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['reception', 'suppliers', userId],
+    queryFn: () => rpcJson<{ suppliers: (SupplierInfo & { last_at: string })[] }>('reception_client_suppliers', { p_user_id: userId }).then((r) => r.suppliers.map((s) => ({ ...s, kind: s.kind ?? 'supplier' }))),
+    enabled: !!userId,
+    staleTime: 60_000,
   });
 }
 
@@ -252,6 +282,8 @@ export function useUnloadParcel() {
 export interface CargoPartsSummary {
   containers: number;
   containers_at_sea: number;
+  air_open?: number;
+  air_in_flight?: number;
   parcels_waiting: number;
   deposits_pending: number;
   deposits_today: number;

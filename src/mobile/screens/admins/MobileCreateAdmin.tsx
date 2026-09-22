@@ -55,6 +55,11 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
     descriptionKey: 'roleReceptionistDesc',
     descriptionDefault: 'Réception des colis à Guangzhou : dépôts, colis, nouveaux clients. Aucun accès aux soldes ni aux paiements',
   },
+  {
+    role: 'warehouse_agent',
+    descriptionKey: 'roleWarehouseAgentDesc',
+    descriptionDefault: "Entrepôt de Douala : pointe les colis arrivés, encaisse le reste à payer, remet les colis contre un bon de retrait signé",
+  },
 ];
 
 export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {}) {
