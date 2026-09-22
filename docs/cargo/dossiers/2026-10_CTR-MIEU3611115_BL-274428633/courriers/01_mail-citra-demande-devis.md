@@ -8,8 +8,9 @@
 
 Bonjour Madame Bissoua,
 
-Faisant suite à nos échanges, je reviens vers vous avec les éléments du premier
-dossier que nous souhaitons vous confier.
+Faisant suite à nos échanges, voici les éléments du premier dossier que nous
+souhaitons vous confier, ainsi que les valeurs nécessaires à l'établissement du
+devis.
 
 **Le dossier**
 
@@ -24,10 +25,7 @@ dossier que nous souhaitons vous confier.
 
 **Les valeurs**
 
-Comme vous me l'avez indiqué, je vous communique des valeurs provisoires en
-attendant les factures, pour que vous puissiez établir le devis.
-
-| Poste | Valeur provisoire |
+| Poste | Valeur |
 |---|---|
 | Toyota Yaris 2009 — châssis LVGCU92399G028166 | 3 000 USD |
 | Toyota RAV4 2014 — châssis LFMJ34AF0E3035663 | 8 000 USD |
@@ -38,29 +36,27 @@ attendant les factures, pour que vous puissiez établir le devis.
 Les trois véhicules sont de fabrication chinoise et voyagent **dans le conteneur**,
 pas à nu.
 
-Je vous transmets en pièces jointes la packing list et le connaissement.
+Vous trouverez en pièces jointes la packing list et le connaissement.
 
-**Trois questions**
+**Le devis**
 
-1. **Sommes-nous en retard ?** Vous nous aviez indiqué que la déclaration
-   d'importation et le RVC devaient être lancés dès l'embarquement. Le conteneur a
-   été plombé le 26 août et je reprends ce dossier aujourd'hui. Qu'est-ce qui peut
-   encore être fait dans les délais, et qu'est-ce qui ne peut plus l'être ? S'il y
-   a une procédure de régularisation, merci de nous dire laquelle et ce qu'elle
-   coûte.
+Merci de nous établir le devis sur cette base, en indiquant séparément les droits et
+taxes estimés, les débours et vos prestations — comme sur les factures que vous nous
+avez transmises.
 
-2. **La domiciliation bancaire.** Pouvez-vous nous confirmer ce que vous exigez sur
-   ce point avant de déclarer, et ce que vous constatez en pratique pour un envoi
-   de ce montant ?
+Nous avons noté que certains de vos clients règlent les droits directement auprès de
+la douane. **C'est la formule que nous souhaitons retenir** : merci de nous
+confirmer qu'elle est possible sur ce dossier.
 
-3. **Le devis.** Merci de nous indiquer séparément les droits et taxes estimés, les
-   débours, et vos prestations — comme sur les factures que vous nous avez
-   transmises. Nous avons noté que certains de vos clients règlent les droits
-   directement auprès de la douane : **c'est la formule que nous souhaitons
-   retenir**, merci de nous confirmer qu'elle est possible sur ce dossier.
+**Une question**
 
-Je reste disponible pour tout complément, et vous transmettrai les factures
-définitives dès réception.
+Vous nous aviez indiqué que la déclaration d'importation et le RVC devaient être
+lancés dès l'embarquement. Le conteneur a été plombé le 26 août et je reprends ce
+dossier aujourd'hui. **Qu'est-ce qui peut encore être fait dans les délais, et
+qu'est-ce qui ne peut plus l'être ?** S'il existe une procédure de régularisation,
+merci de nous dire laquelle et ce qu'elle coûte.
+
+Je reste disponible pour tout complément.
 
 Bien cordialement,
 
@@ -71,26 +67,33 @@ Directeur des opérations — Norton Gauss Bonzini SARL
 
 # PIÈCES À JOINDRE
 
-| # | Pièce | Statut |
-|---|---|---|
-| **1** | **Packing list** — `GAUSS_MIEU3611115_packinglist2.xlsx` | ✅ disponible |
-| **2** | **Connaissement (BL) 274428633** | ✅ disponible |
-| **3** | Factures commerciales | ❌ à venir — annoncé dans le mail |
+| # | Pièce |
+|---|---|
+| **1** | **Packing list** — `GAUSS_MIEU3611115_packinglist2.xlsx` |
+| **2** | **Connaissement (BL) 274428633** |
 
-**Ne pas joindre** la répartition du fret au volume ni nos estimations de taxes :
-c'est notre travail interne, et le leur est de nous donner leur propre chiffre.
-Comparer les deux après coup vaut mieux que de leur souffler une réponse.
+**Et rien d'autre.** Ne pas joindre notre répartition du fret au volume ni nos
+estimations de taxes : leur travail est de produire leur propre chiffre, et on
+comparera après. Leur souffler la réponse rendrait le devis inutile.
 
 ---
 
-# AVANT D'ENVOYER — deux points à trancher
+# AVANT D'ENVOYER
 
-**1. Corriger le poids.** La packing list porte 22 170 kg en poids net sur la seule
-ligne des verres de lunettes (4 CBM), et zéro partout ailleurs. C'est
+**Corriger ou signaler le poids.** La packing list porte 22 170 kg en poids net sur
+la seule ligne des verres de lunettes (4 CBM), et zéro partout ailleurs. C'est
 vraisemblablement le poids total du conteneur mal placé. Le faire corriger par le
-groupeur, ou le signaler dans le mail — mais ne pas l'envoyer tel quel sans rien
-dire.
+groupeur, ou le mentionner — mais ne pas l'envoyer tel quel sans rien dire.
 
-**2. Vérifier la domiciliation avant de poser la question 2.** Si elle n'a pas été
-ouverte, il vaut mieux le savoir avant qu'ils ne le découvrent. La question telle
-qu'elle est rédigée reste neutre et n'engage rien.
+---
+
+# NOTE INTERNE — ce qui a été retiré de ce mail, et pourquoi
+
+**La question sur la domiciliation bancaire a été supprimée du courrier** sur
+décision de la direction des opérations : elle n'a pas sa place dans une première
+demande de devis.
+
+Le point reste ouvert en interne et figure dans `analyse-packing-list.md` : le
+conteneur dépasse le seuil de 5 millions FOB, et l'instruction BEAC prévoit que
+l'administration des douanes rejette toute déclaration en détail dépourvue de
+domiciliation. À traiter par nous, pas par le commissionnaire.
