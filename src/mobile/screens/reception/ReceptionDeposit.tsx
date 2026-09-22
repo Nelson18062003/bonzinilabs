@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, UserSearch } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, formatCbm, formatKg, initials } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatKg, initials, supplierLine } from '@/lib/reception';
 import { useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
@@ -45,7 +45,7 @@ export function ReceptionDeposit() {
       <MobileHeader title={deposit.deposit_no} subtitle={labels.location(deposit.location)} showBack backTo="/r" />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        {editable && <StepHeader step={3} total={3} title={t('rc_s3_title')} help={t('rc_s3_help')} />}
+        {editable && <StepHeader step={4} total={4} title={t('rc_s3_title')} help={t('rc_s3_help')} />}
 
         {/* Le client, en une ligne — la fiche complète n'a rien à faire ici. */}
         <Card className="space-y-3">
@@ -54,13 +54,18 @@ export function ReceptionDeposit() {
             <span className="min-w-0 flex-1">
               <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
               <span className={cn('mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums', TYPE.small, TEXT.muted)}>
-                {deposit.client ? <span>{deposit.client.customer_code}</span> : <span>{t('rc_pending')}</span>}
+                {deposit.client ? <span>{deposit.client.customer_code}{deposit.client.account_name ? ` · ${deposit.client.account_name}` : ''}</span> : <span>{t('rc_pending')}</span>}
                 <span>· {labels.broughtBy(deposit.brought_by)}{deposit.representative_name ? ` (${deposit.representative_name})` : ''}</span>
                 <span className="inline-flex items-center gap-1">· <LocationMark location={deposit.location} size={18} />{deposit.location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}</span>
               </span>
             </span>
             {deposit.client && <StatusPill tone={st.tone} label={st.label} className="shrink-0" />}
           </div>
+          <button type="button" disabled={!editable} onClick={() => navigate(`/r/deposit/${deposit.id}/supplier?edit`)} className={cn('flex w-full items-center gap-2 rounded-md px-3 py-2 text-left', SURFACE.inset)}>
+            <span className={cn('shrink-0', TYPE.small, TEXT.muted)}>{t('rc_sup_label')}</span>
+            <span className={cn('min-w-0 flex-1 break-words', TYPE.smallStrong, depositSupplier(deposit) ? TEXT.strong : TEXT.muted)}>{depositSupplier(deposit) ? supplierLine(depositSupplier(deposit)) : t('rc_sup_none')}</span>
+            {editable && <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{depositSupplier(deposit) ? t('rc_change') : t('rc_sup_add')}</span>}
+          </button>
           {!deposit.client && (
             <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${deposit.id}`)}>
               <UserSearch /> {t('rc_assign')}

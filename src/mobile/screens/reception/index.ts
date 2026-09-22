@@ -10,3 +10,4 @@ export { ReceptionLogin } from './ReceptionLogin';
 export { ReceptionClients } from './ReceptionClients';
 export { ReceptionClientCard } from './ReceptionClientCard';
 export { ReceptionSearch } from './ReceptionSearch';
+export { ReceptionSupplier } from './ReceptionSupplier';

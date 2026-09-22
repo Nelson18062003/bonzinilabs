@@ -32,6 +32,25 @@ export interface ReceptionClient {
   company_name: string | null;
   city: string | null;
   country: string | null;
+  /** Le compte cargo (PRC, Simon…) qui regroupe ce client, s'il y en a un. */
+  account_id?: string | null;
+  account_name?: string | null;
+  account_code?: string | null;
+}
+
+/** Fournisseur (l'usine, le vendeur) ou agent d'achat qui envoie pour le client. */
+export type SupplierKind = 'supplier' | 'buying_agent';
+export const SUPPLIER_KINDS: SupplierKind[] = ['supplier', 'buying_agent'];
+
+/** Ce que Tina relève sur son bon d'entrée : qui a envoyé les cartons. Un par dépôt. */
+export interface SupplierInfo {
+  kind: SupplierKind;
+  name: string;
+  contact?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  wechat?: string | null;
+  address?: string | null;
 }
 
 export interface Parcel {
@@ -106,6 +125,13 @@ export interface Deposit {
   brought_by: BroughtBy;
   representative_name: string | null;
   representative_phone: string | null;
+  supplier_kind?: SupplierKind | null;
+  supplier_name?: string | null;
+  supplier_contact?: string | null;
+  supplier_phone?: string | null;
+  supplier_email?: string | null;
+  supplier_wechat?: string | null;
+  supplier_address?: string | null;
   status: DepositStatus;
   received_by: string;
   received_by_name: string | null;
@@ -236,4 +262,16 @@ export function parseScan(raw: string): ScanResult | null {
   const clean = text.replace(/\s+/g, '');
   if (clean.length >= 6 && clean.length <= 40 && /^[A-Za-z0-9-]+$/.test(clean)) return { kind: 'waybill', value: clean.toUpperCase() };
   return null;
+}
+
+/** Le fournisseur d'un dépôt, ou null s'il n'a pas été relevé. */
+export function depositSupplier(d: Pick<Deposit, 'supplier_kind' | 'supplier_name' | 'supplier_contact' | 'supplier_phone' | 'supplier_email' | 'supplier_wechat' | 'supplier_address'>): SupplierInfo | null {
+  if (!d.supplier_name) return null;
+  return { kind: d.supplier_kind ?? 'supplier', name: d.supplier_name, contact: d.supplier_contact, phone: d.supplier_phone, email: d.supplier_email, wechat: d.supplier_wechat, address: d.supplier_address };
+}
+
+/** « 广州鞋业 · Li Wei · 138… » : le fournisseur en une ligne, pour une liste. */
+export function supplierLine(s: SupplierInfo | null | undefined): string {
+  if (!s) return '';
+  return [s.name, s.contact, s.phone].filter((v) => v && v.trim()).join(' · ');
 }

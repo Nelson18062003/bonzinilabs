@@ -117,7 +117,7 @@ export function ClientHead({ client, sub, size = 'lg' }: { client: ReceptionClie
       <Holder size={size} tone={client ? 'neutral' : 'pending'}>{client ? initials(name) : '?'}</Holder>
       <span className="min-w-0 flex-1">
         <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
-        <span className={cn('block break-words tabular-nums', TYPE.small, TEXT.muted)}>{sub ?? [client?.customer_code, client?.phone].filter(Boolean).join(' · ')}</span>
+        <span className={cn('block break-words tabular-nums', TYPE.small, TEXT.muted)}>{sub ?? [client?.customer_code, client?.account_name ? `compte ${client.account_name}` : null, client?.phone].filter(Boolean).join(' · ')}</span>
       </span>
     </div>
   );

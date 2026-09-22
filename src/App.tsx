@@ -122,6 +122,8 @@ const MobileCargoAir = lazy(() => import("./mobile/screens/cargo").then(m => ({ 
 const MobileCargoAirForm = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirForm })));
 const MobileCargoAirDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirDetail })));
 const MobileCargoAirLoad = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirLoad })));
+const MobileCargoAccounts = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAccounts })));
+const MobileCargoAccount = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAccount })));
 const DesktopCargoAir = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoAir })));
 const MobileClientParcels = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcels })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
@@ -164,6 +166,7 @@ const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m
 const ReceptionSearch = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSearch })));
 const ReceptionBroughtBy = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionBroughtBy })));
 const ReceptionNewClient = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionNewClient })));
+const ReceptionSupplier = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSupplier })));
 const ReceptionDeposit = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDeposit })));
 const ReceptionParcel = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionParcel })));
 const ReceptionDone = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDone })));
@@ -319,6 +322,8 @@ const App = () => (
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/charger" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirLoad /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirDetail /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/comptes" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/comptes/:accountId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoAccount /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception" element={<AdminRouteWrapper desktop={<DesktopCargoReception />}><MobileCargoReception /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId/devis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoQuote /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoDepositDetail /></AdminRouteWrapper>} />
@@ -366,6 +371,7 @@ const App = () => (
                 <Route path="/r/new/how" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionBroughtBy /></ReceptionRouteWrapper>} />
                 <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/supplier" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSupplier /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/parcel" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/parcel/:parcelId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />

@@ -17,6 +17,8 @@ import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
+import { findScannedParcel } from '@/lib/warehouse';
 
 const BOX = (on: boolean) => cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', on ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'border-[#949494]');
 
@@ -47,6 +49,14 @@ export function MobileCargoAirLoad() {
   const cbm = chosen.reduce((s, p) => s + Number(p.cbm ?? 0), 0);
   const toggle = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleGroup = (ps: AirParcel[]) => setPicked((s) => { const n = new Set(s); const every = ps.every((p) => n.has(p.id)); for (const p of ps) { if (every) n.delete(p.id); else n.add(p.id); } return n; });
+  // Un carton scanné (douchette ou caméra) se coche ; le rescanner ne le décoche pas.
+  const onScan = (text: string): ScanResult => {
+    const p = findScannedParcel(text, data);
+    if (!p) return { outcome: 'unknown', text: `${text.trim()} : pas dans la liste d'attente` };
+    if (picked.has(p.id)) return { outcome: 'again', text: `${p.parcel_no} déjà coché` };
+    setPicked((s) => new Set(s).add(p.id));
+    return { outcome: 'ok', text: `${p.parcel_no} · ${clientFullName(p.client)}` };
+  };
 
   const submit = async () => {
     if (!airId || chosen.length === 0) return;
@@ -63,7 +73,8 @@ export function MobileCargoAirLoad() {
           <Card className={cn('text-center', SURFACE.inset, 'border-0')}><p className={cn(TYPE.body, TEXT.muted)}>Rien n'attend au bureau ni à l'entrepôt.</p></Card>
         ) : (
           <>
-            <p className={cn(TYPE.body, TEXT.muted)}>{data.length} colis attendent. Le bureau (Air cargo) en premier. Cochez ceux qui montent dans cet avion.</p>
+            <p className={cn(TYPE.body, TEXT.muted)}>{data.length} colis attendent. Le bureau (Air cargo) en premier. Scannez ou cochez ceux qui montent dans cet avion.</p>
+            <ParcelScanBox onScan={onScan} counter={`${chosen.length} / ${data.length}`} />
             {groups.map((g) => {
               const every = g.parcels.every((p) => picked.has(p.id));
               return (

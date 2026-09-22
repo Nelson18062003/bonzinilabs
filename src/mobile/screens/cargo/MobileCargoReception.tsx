@@ -11,7 +11,7 @@
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronRight, HelpCircle } from 'lucide-react';
+import { ChevronRight, HelpCircle, Users } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useReceptionOverview, useReceptionStock } from '@/hooks/useReception';
@@ -107,6 +107,13 @@ export function MobileCargoReception() {
             </Card>
           )}
         </section>
+
+        {/* 1 ter · Les comptes : les gros clients qui chargent leurs propres conteneurs */}
+        <button type="button" onClick={() => navigate('/m/cargo/comptes')} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
+          <Users className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+          <span className={cn('min-w-0 flex-1', TYPE.bodyStrong, TEXT.strong)}>Comptes cargo <span className={cn('font-normal', TEXT.muted)}>· PRC, Simon D1… et leurs clients</span></span>
+          <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+        </button>
 
         {/* 1 bis · Douala : l'autre bout de la chaîne, pour qui peut y agir */}
         {seesDouala && douala.data && (

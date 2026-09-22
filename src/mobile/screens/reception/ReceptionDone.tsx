@@ -11,13 +11,13 @@ import { Check, Printer, ScanLine, Tag } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getCurrentLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { LABEL_H, LABEL_W, fitOnPage } from '@/lib/shippingLabelCanvas';
+import { parcelQrPayload, renderWarehouseLabel } from '@/lib/warehouseLabelCanvas';
+import { useParcelQrCanvases } from '@/components/customer-code/useParcelQrCanvases';
 import { useShippingLabel } from '@/components/customer-code/useShippingLabel';
 import { deliverFile } from '@/components/customer-code/exportShippingLabel';
 import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill } from '@/mobile/designKit';
@@ -35,7 +35,7 @@ export function ReceptionDone() {
   const [labelOpen, setLabelOpen] = useState(false);
 
   const client = deposit?.client ?? null;
-  const { renderWith, qr } = useShippingLabel({
+  const { qr } = useShippingLabel({
     code: client?.customer_code ?? '',
     clientName: clientFullName(client),
     clientPhone: client?.phone,
@@ -47,25 +47,29 @@ export function ReceptionDone() {
     settings: settings ?? DEFAULT_SHIPPING_SETTINGS,
   }, { active: !!client });
 
+  const parcelQrs = useParcelQrCanvases((client && deposit ? deposit.parcels : []).map((p) => ({ id: p.id, value: parcelQrPayload(client!.customer_code, p.parcel_no) })));
+
   if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
 
   const name = client ? clientFullName(client) : t('rc_unknown_client');
   const count = deposit.parcels.length;
   const receivedAt = deposit.closed_at ?? deposit.opened_at;
 
+  // L'étiquette interne : une page 100 × 150 mm par carton, le QR du carton,
+  // ses mesures, le fournisseur — à coller par-dessus la marque client.
   const printLabels = async () => {
     if (!client) return;
     setPrinting(true);
     try {
-      const shipDate = new Date(receivedAt).toLocaleDateString(getCurrentLocale());
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const box = fitOnPage(LABEL_W, LABEL_H);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [100, 150] });
       for (let i = 0; i < deposit.parcels.length; i++) {
         const p = deposit.parcels[i];
-        // Le numéro du colis sur l'étiquette : c'est lui que Douala tape ou scanne au pointage.
-        const canvas = await renderWith({ cartonNo: `${p.parcel_no} (${p.seq}/${count})`, shipDate }, 3);
-        if (i > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', box.x, box.y, box.w, box.h, undefined, 'FAST');
+        const canvas = await renderWarehouseLabel({
+          destination: deposit.location, settings: settings ?? DEFAULT_SHIPPING_SETTINGS, parcel: p, count, depositNo: deposit.deposit_no,
+          client, supplier: depositSupplier(deposit), receivedAt, receivedByName: deposit.received_by_name,
+        }, parcelQrs.get(p.id), 3);
+        if (i > 0) pdf.addPage([100, 150], 'portrait');
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 100, 150, undefined, 'FAST');
       }
       const file = new File([pdf.output('blob')], `bonzini-etiquettes-${deposit.deposit_no}-${client.customer_code}.pdf`, { type: 'application/pdf' });
       await deliverFile(file, `${deposit.deposit_no} · ${client.customer_code}`);
@@ -76,10 +80,9 @@ export function ReceptionDone() {
       setPrinting(false);
     }
   };
-
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      {qr}
+      {qr}{parcelQrs.nodes}
       <div className="flex-1 space-y-6 px-5 pb-10 pt-[calc(2.5rem+env(safe-area-inset-top))]">
         <div className="text-center">
           <div className="mx-auto mb-4 flex justify-center"><Holder icon={Check} tone="success" size="lg" className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8" /></div>

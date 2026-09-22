@@ -58,7 +58,7 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
-import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile } from './shippingLabel';
+import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
@@ -75,7 +75,7 @@ import {
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
 import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
-import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote, MobileCargoAir, MobileCargoAirForm, MobileCargoAirDetail, MobileCargoAirLoad } from '@/mobile/screens/cargo';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote, MobileCargoAir, MobileCargoAirForm, MobileCargoAirDetail, MobileCargoAirLoad, MobileCargoAccounts, MobileCargoAccount } from '@/mobile/screens/cargo';
 import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
 import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception, DesktopCargoAir } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
@@ -107,6 +107,7 @@ import {
   ReceptionIdentify,
   ReceptionSearch,
   ReceptionBroughtBy,
+  ReceptionSupplier,
   ReceptionNewClient,
   ReceptionDeposit,
   ReceptionParcel,
@@ -253,6 +254,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'mola-real': { Comp: MobileAssistantScreen, route: '/m/more/assistant' },
   flyer: { Comp: Flyer, route: '/' },
   'label-warehouse': { Comp: LabelWarehouse, route: '/' },
+  'label-internal-sea': { Comp: LabelInternalSea, route: '/' },
+  'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },
   'label-office-mono': { Comp: LabelOfficeMono, route: '/' },
@@ -333,6 +336,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-parcel-copies': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel?step=copies', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
   'rc-how': { Comp: ReceptionBroughtBy, route: '/r/new/how?client=u1&name=A%C3%AFcha%20Mbarga&code=BZ-482913', wrap: 'lang' },
   'rc-client': { Comp: ReceptionNewClient, route: '/r/new/client', wrap: 'lang' },
+  'rc-supplier': { Comp: ReceptionSupplier, route: '/r/deposit/dep1/supplier', path: '/r/deposit/:depositId/supplier', wrap: 'lang' },
   'rc-deposit': { Comp: ReceptionDeposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
   'rc-deposit-empty': { Comp: ReceptionDeposit, route: '/r/deposit/dep0', path: '/r/deposit/:depositId', wrap: 'lang' },
   'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
@@ -359,6 +363,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'wh-done': { Comp: WarehouseReleaseDone, route: '/w/bon/rel1', path: '/w/bon/:releaseId', wrap: 'lang' },
   'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
   'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
+  'cargo-accounts': { Comp: MobileCargoAccounts, route: '/m/cargo/comptes' },
+  'cargo-account': { Comp: MobileCargoAccount, route: '/m/cargo/comptes/acc1', path: '/m/cargo/comptes/:accountId' },
   'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
   'cargo-quote': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },

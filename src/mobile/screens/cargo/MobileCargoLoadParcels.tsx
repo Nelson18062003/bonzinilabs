@@ -18,6 +18,8 @@ import { clientFullName, formatCbm, formatDims, formatKg, type ParcelWithDeposit
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
+import { findScannedParcel } from '@/lib/warehouse';
 
 export function MobileCargoLoadParcels() {
   const navigate = useNavigate();
@@ -54,6 +56,15 @@ export function MobileCargoLoadParcels() {
     return n;
   });
 
+  // Un carton scanné (douchette ou caméra) se coche ; le rescanner ne le décoche pas.
+  const onScan = (text: string): ScanResult => {
+    const p = findScannedParcel(text, all);
+    if (!p) return { outcome: 'unknown', text: `${text.trim()} : pas dans la liste d'attente` };
+    if (picked.has(p.id)) return { outcome: 'again', text: `${p.parcel_no} déjà coché` };
+    setPicked((s) => new Set(s).add(p.id));
+    return { outcome: 'ok', text: `${p.parcel_no} · ${clientFullName(p.client)}` };
+  };
+
   const submit = async () => {
     if (!shipmentId || chosen.length === 0) return;
     const res = await load.mutateAsync({ shipmentId, parcelIds: chosen.map((p) => p.id) });
@@ -72,7 +83,8 @@ export function MobileCargoLoadParcels() {
           </Card>
         ) : (
           <>
-            <p className={cn(TYPE.body, TEXT.muted)}>{all.length} colis attendent à l'entrepôt{data.client_user_id ? ' pour ce client' : ''}. Cochez ceux qui montent dans cette boîte.</p>
+            <p className={cn(TYPE.body, TEXT.muted)}>{all.length} colis attendent à l'entrepôt{data.client_user_id ? ' pour ce client' : ''}. Scannez ou cochez ceux qui montent dans cette boîte.</p>
+            <ParcelScanBox onScan={onScan} counter={`${chosen.length} / ${all.length}`} />
             {groups.map((g) => {
               const every = g.parcels.every((p) => picked.has(p.id));
               return (

@@ -11,7 +11,7 @@ const OUT = process.argv[2] ?? 'tools/out/reception';
 const ONLY = process.argv.slice(3);
 mkdirSync(OUT, { recursive: true });
 
-const client = { user_id: 'u1', customer_code: 'BZ-482913', first_name: 'Aïcha', last_name: 'Mbarga', phone: '+237 677 12 34 56', email: 'aicha@mbarga-import.cm', company_name: 'Mbarga Import SARL', city: 'Douala', country: 'Cameroun' };
+const client = { user_id: 'u1', customer_code: 'BZ-482913', first_name: 'Aïcha', last_name: 'Mbarga', phone: '+237 677 12 34 56', email: 'aicha@mbarga-import.cm', company_name: 'Mbarga Import SARL', city: 'Douala', country: 'Cameroun', account_id: 'acc1', account_name: 'PRC', account_code: 'PRC' };
 const client2 = { user_id: 'u2', customer_code: 'BZ-510224', first_name: 'Samuel', last_name: 'Ondo', phone: '+241 66 55 44 33', email: null, company_name: 'Ondo Distribution', city: 'Libreville', country: 'Gabon' };
 const client3 = { user_id: 'u3', customer_code: 'BZ-207781', first_name: 'Nadia', last_name: 'Fotso', phone: '+237 699 88 77 66', email: null, company_name: null, city: 'Yaoundé', country: 'Cameroun' };
 const parcel = (seq, no, o) => ({ id: `p${no}-${seq}`, seq, parcel_no: `${no}-${String(seq).padStart(2, '0')}`, kind: 'carton', weight_kg: 8.4, length_cm: 60, width_cm: 40, height_cm: 40, cbm: 0.096, description: null, courier_waybill: null, photo_path: null, status: 'received', created_at: '2026-09-20T06:32:00Z', ...o });
@@ -28,6 +28,8 @@ const dep1 = {
   ],
 };
 const dep0 = { ...dep1, id: 'dep0', deposit_no: 'RC-000124', client: null, brought_by: 'courier', parcels: [], parcel_count: 0, total_weight_kg: 0, total_cbm: 0, opened_at: today(14, 20) };
+const supplier = { supplier_kind: 'supplier', supplier_name: '广州鞋业有限公司 Guangzhou Shoes Co.', supplier_contact: 'Li Wei 李伟', supplier_phone: '138 0000 1234', supplier_email: 'liwei@gzshoes.cn', supplier_wechat: 'gzshoes_li', supplier_address: '广州市白云区石井大道 168 号 3 栋' };
+Object.assign(dep1, supplier);
 const dep2 = {
   ...dep1, id: 'dep2', deposit_no: 'RC-000122', status: 'closed', closed_at: today(14, 32), opened_at: today(14, 1),
   parcel_count: 10, total_weight_kg: 84, total_cbm: 0.62,
@@ -98,7 +100,24 @@ const whReady = [...dep3.parcels.map((p) => whParcel(p, dep3, quoteDep3, { check
 const whRelease = { id: 'rel1', release_no: 'BR-000007', released_at: today(11, 5), picked_by_name: 'Samuel Ondo', picked_by_phone: '+241 66 55 44 33', signature_path: null, note: null, parcel_count: 3, released_by_name: 'Demo Admin', client: client2,
   parcels: dep3.parcels.map((p) => whParcel(p, dep3, quoteDep3, { checked_in_at: today(9, 40), warehouse_location: 'B3', condition: 'ok', delivered_at: today(11, 5), release_id: 'rel1', release_no: 'BR-000007' })) };
 const clientsByCode = { [client.customer_code]: client, [client2.customer_code]: client2, [client3.customer_code]: client3 };
+const accounts = [
+  { id: 'acc1', name: 'PRC', code: 'PRC', contact_name: 'Prince', contact_phone: '+237 699 10 20 30', notes: null, is_active: true, client_count: 14, parcels_waiting: 62, created_at: '2026-09-01T08:00:00Z' },
+  { id: 'acc2', name: 'Simon D1', code: 'D1', contact_name: 'Simon', contact_phone: '+237 677 40 50 60', notes: 'Zone D, charge un 40 pieds par mois', is_active: true, client_count: 9, parcels_waiting: 38, created_at: '2026-09-01T08:00:00Z' },
+  { id: 'acc3', name: 'Fabrice B1', code: 'B1', contact_name: 'Fabrice', contact_phone: null, notes: null, is_active: true, client_count: 6, parcels_waiting: 0, created_at: '2026-09-01T08:00:00Z' },
+  { id: 'acc4', name: 'Nkenkome F1', code: 'F1', contact_name: null, contact_phone: null, notes: null, is_active: true, client_count: 4, parcels_waiting: 11, created_at: '2026-09-01T08:00:00Z' },
+  { id: 'acc5', name: '2L C1', code: 'C1', contact_name: null, contact_phone: null, notes: null, is_active: false, client_count: 2, parcels_waiting: 0, created_at: '2026-09-01T08:00:00Z' },
+];
 const RPC = {
+  cargo_account_list: (b) => ({ success: true, accounts: b?.p_include_inactive ? accounts : accounts.filter((a) => a.is_active) }),
+  cargo_account_clients: { success: true, clients: [{ client, parcels_waiting: 13 }, { client: { ...client3, account_id: 'acc1', account_name: 'PRC', account_code: 'PRC' }, parcels_waiting: 2 }] },
+  cargo_account_upsert: (b) => ({ success: true, id: b?.p_id ?? 'acc9' }),
+  cargo_account_assign: (b) => ({ success: true, client: { ...client2, account_id: b?.p_account_id, account_name: 'PRC', account_code: 'PRC' } }),
+  reception_client_suppliers: { success: true, suppliers: [
+    { kind: 'supplier', name: '广州鞋业有限公司 Guangzhou Shoes Co.', contact: 'Li Wei 李伟', phone: '138 0000 1234', email: 'liwei@gzshoes.cn', wechat: 'gzshoes_li', address: '广州市白云区石井大道 168 号 3 栋', last_at: today(9, 12) },
+    { kind: 'buying_agent', name: 'Mme Chen 陈姐 (采购代理)', contact: null, phone: '186 5555 8888', email: null, wechat: 'chenjie88', address: null, last_at: '2026-09-02T03:10:00Z' },
+    { kind: 'supplier', name: 'Yiwu Bags Factory 义乌箱包厂', contact: 'Zhang', phone: '159 1234 5678', email: null, wechat: null, address: null, last_at: '2026-08-20T03:10:00Z' },
+  ] },
+  reception_set_supplier: (b) => ({ success: true, deposit: { ...dep1, supplier_kind: b?.p_supplier_kind, supplier_name: b?.p_supplier_name, supplier_contact: b?.p_supplier_contact, supplier_phone: b?.p_supplier_phone } }),
   reception_recent_clients: { success: true, clients: [client, client2, client3] },
   reception_client: (b) => { const c = [client, client2, client3].find((x) => x.user_id === b.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
   reception_update_parcel: { success: true, deposit: dep1 },

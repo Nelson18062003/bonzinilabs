@@ -9,14 +9,15 @@
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCheck, ClipboardCheck, MapPin, Search } from 'lucide-react';
+import { CheckCheck, ClipboardCheck, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCheckinMany, useCheckinParcel, useFindParcel, useWarehouseArrival } from '@/hooks/useWarehouse';
-import { checkinSummary, groupParcelsByClient, isPending, nParcels, parseWarehouseScan, type WarehouseParcel } from '@/lib/warehouse';
+import { checkinSummary, findScannedParcel, groupParcelsByClient, isPending, nParcels, parseWarehouseScan, type WarehouseParcel } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Card, FormField, PrimaryPill, ScreenError, ScreenLoader, SoftPill, TextInput } from '@/mobile/designKit';
 import { BottomBar, ClientHead, ParcelLine } from '@/mobile/components/warehouse/bits';
+import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
 
 const PLACE_KEY = 'bonzini-warehouse-place';
 const readPlace = () => { try { return sessionStorage.getItem(PLACE_KEY) ?? ''; } catch { return ''; } };
@@ -28,7 +29,6 @@ export function WarehouseCheckin() {
   const checkin = useCheckinParcel();
   const checkinMany = useCheckinMany();
   const find = useFindParcel();
-  const [query, setQuery] = useState('');
   const [place, setPlace] = useState(readPlace);
   const [placeOpen, setPlaceOpen] = useState(false);
   const [placeDraft, setPlaceDraft] = useState('');
@@ -48,15 +48,25 @@ export function WarehouseCheckin() {
     checkin.mutate({ parcelId: p.id, location: place || undefined, condition: 'ok' });
   };
 
-  const lookup = async () => {
-    const scan = parseWarehouseScan(query);
-    if (!scan || scan.kind !== 'parcel') { toast.error('Tapez un numéro de colis, comme RC-000123-01'); return; }
-    const local = parcels.find((p) => p.parcel_no === scan.no);
-    if (local) { setQuery(''); if (isPending(local)) { tap(local); toast.success(`${local.parcel_no} pointé`); } else open(local); return; }
+  // Une lecture (douchette, caméra, numéro tapé) : présent et pas encore vu → pointé,
+  // déjà vu → on le dit, pas dans cette arrivée → on dit où il est.
+  const onScan = async (text: string): Promise<ScanResult> => {
+    const local = findScannedParcel(text, parcels);
+    if (local) {
+      if (local.delivered_at) return { outcome: 'refused', text: `${local.parcel_no} a déjà été remis` };
+      if (!isPending(local)) return { outcome: 'again', text: `${local.parcel_no} déjà pointé` };
+      try {
+        await checkin.mutateAsync({ parcelId: local.id, location: place || undefined, condition: 'ok' });
+        return { outcome: 'ok', text: `${local.parcel_no} pointé${place ? ` · ${place}` : ''}` };
+      } catch (e) { return { outcome: 'refused', text: (e as Error).message }; }
+    }
+    const scan = parseWarehouseScan(text);
+    if (!scan || scan.kind !== 'parcel') return { outcome: 'unknown', text: `${text.trim()} : ce n'est pas un numéro de colis` };
     try {
       const p = await find.mutateAsync(scan.no);
-      toast.error(`${p.parcel_no} n'est pas dans cette arrivée`, { description: p.awb_number ? `Il voyage par LTA ${p.awb_number}` : p.container_number ? `Il voyage dans ${p.container_number}` : 'Il n\'a pas quitté la Chine' });
-    } catch (e) { toast.error((e as Error).message); }
+      const where = p.awb_number ? `il voyage par LTA ${p.awb_number}` : p.container_number ? `il voyage dans ${p.container_number}` : 'il n\'a pas quitté la Chine';
+      return { outcome: 'unknown', text: `${p.parcel_no} n'est pas dans cette arrivée : ${where}` };
+    } catch { return { outcome: 'unknown', text: `${text.trim()} : colis inconnu` }; }
   };
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -80,10 +90,7 @@ export function WarehouseCheckin() {
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[#E6E6E6] dark:bg-[#444444]"><div className="h-full rounded-full bg-[#14AE5C] transition-all" style={{ width: `${sum.total ? Math.round((sum.seen / sum.total) * 100) : 0}%` }} /></div>
-          <div className="relative">
-            <Search className={cn('pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
-            <TextInput value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void lookup(); }} enterKeyHint="done" placeholder="Numéro de colis, ex. RC-000123-01" className="h-12 pl-12" aria-label="Numéro de colis" />
-          </div>
+          <ParcelScanBox onScan={onScan} placeholder="Scannez un carton ou tapez son numéro" />
           <button type="button" onClick={() => { setPlaceDraft(place); setPlaceOpen(true); }} className={cn('flex h-10 w-full items-center gap-2 text-left', TYPE.small, TEXT.muted)}>
             <MapPin className="h-4 w-4 shrink-0" />
             <span className="flex-1">{place ? <>Les colis pointés vont en <b className={TEXT.strong}>{place}</b></> : 'Où rangez-vous les colis ? (facultatif)'}</span>
@@ -91,7 +98,7 @@ export function WarehouseCheckin() {
           </button>
         </Card>
 
-        <p className={cn(TYPE.body, TEXT.muted)}>Touchez un colis présent pour le pointer. Un souci ? Ouvrez sa fiche avec la flèche.</p>
+        <p className={cn(TYPE.body, TEXT.muted)}>Scannez l'étiquette Bonzini de chaque carton, ou touchez un colis présent pour le pointer. Un souci ? Ouvrez sa fiche avec la flèche.</p>
 
         {groups.map((g) => (
           <Card key={g.client?.user_id ?? 'none'} className="py-0">

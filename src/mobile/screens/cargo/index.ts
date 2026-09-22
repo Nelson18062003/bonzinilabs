@@ -11,3 +11,4 @@ export { MobileCargoAir } from './MobileCargoAir';
 export { MobileCargoAirForm } from './MobileCargoAirForm';
 export { MobileCargoAirDetail } from './MobileCargoAirDetail';
 export { MobileCargoAirLoad } from './MobileCargoAirLoad';
+export { MobileCargoAccounts, MobileCargoAccount } from './MobileCargoAccounts';

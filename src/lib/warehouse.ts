@@ -154,6 +154,13 @@ export function parseWarehouseScan(text: string): { kind: 'customer'; code: stri
   return null;
 }
 
+/** Le colis d'une liste que désigne une lecture (QR de l'étiquette interne, code-barres, numéro tapé). */
+export function findScannedParcel<T extends { parcel_no: string }>(text: string, parcels: readonly T[]): T | null {
+  const scan = parseWarehouseScan(text);
+  if (!scan || scan.kind !== 'parcel') return null;
+  return parcels.find((p) => p.parcel_no === scan.no) ?? null;
+}
+
 /** Les colis d'une arrivée, client par client (l'ordre d'arrivée est conservé). */
 export function groupParcelsByClient(parcels: WarehouseParcel[]): { client: ReceptionClient | null; parcels: WarehouseParcel[] }[] {
   const by = new Map<string, { client: ReceptionClient | null; parcels: WarehouseParcel[] }>();

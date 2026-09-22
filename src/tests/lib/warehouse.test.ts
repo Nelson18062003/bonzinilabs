@@ -101,3 +101,14 @@ describe('la phrase du bas de l’écran « ses colis »', () => {
     expect(releaseWord(3, [])).toEqual({ tone: 'good', text: '3 colis prêts à partir' });
   });
 });
+
+describe('le fournisseur du dépôt', () => {
+  it('se lit en un objet, ou rien', async () => {
+    const { depositSupplier, supplierLine } = await import('@/lib/reception');
+    expect(depositSupplier({ supplier_name: null })).toBeNull();
+    const s = depositSupplier({ supplier_kind: null, supplier_name: '广州鞋业', supplier_contact: 'Li Wei', supplier_phone: '138', supplier_email: null, supplier_wechat: null, supplier_address: null });
+    expect(s).toMatchObject({ kind: 'supplier', name: '广州鞋业', contact: 'Li Wei', phone: '138' });
+    expect(supplierLine(s)).toBe('广州鞋业 · Li Wei · 138');
+    expect(supplierLine(null)).toBe('');
+  });
+});
