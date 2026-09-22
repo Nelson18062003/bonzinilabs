@@ -47,3 +47,55 @@ describe('le QR du carton', () => {
     expect(parseScan(qr)).toEqual({ kind: 'customer', code: 'BZ-482913' });
   });
 });
+
+// ─── L'étiquette interne : rien ne déborde, le lieu est celui de la plateforme ───
+import { formatGuangzhou, layoutWarehouseLabel } from '@/lib/warehouseLabelCanvas';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
+
+// Une mesure plausible sans canvas : 0,6 em par lettre latine, 1 em par idéogramme.
+const fakeMeasure = (t: string, font: string) => {
+  const px = Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1] ?? 16);
+  let w = 0;
+  for (const ch of t) w += /[\u3000-\u9fff]/.test(ch) ? px : px * 0.6;
+  return w;
+};
+
+const baseData = {
+  destination: 'office' as const, settings: DEFAULT_SHIPPING_SETTINGS, count: 1, depositNo: 'RC-000001', receivedAt: '2026-09-21T04:29:36Z',
+  receivedByName: 'Augustin Tcheumassom Tchiakoua',
+  client: { user_id: 'y', customer_code: 'BZ-756899', first_name: 'SYLVAIN', last_name: 'PASCAL TATANG', phone: '+237686702157', email: 'pascalitopascaltattoo@gmail.com', company_name: 'Nanfelcapital', city: 'Douala', country: 'Cameroun' },
+  parcel: { id: 'p', seq: 1, parcel_no: 'RC-000001-01', kind: 'carton' as const, weight_kg: 10, length_cm: 12, width_cm: 23, height_cm: 23, cbm: 0.0063, description: null },
+  supplier: { kind: 'supplier' as const, name: '广州市白云区诚信皮具有限公司', contact: '王经理', phone: '13800001234', email: 'chengxin.leather.guangzhou@gmail.com', wechat: 'chengxin_leather_wang', address: '广州市白云区石井大道 168 号 3 栋' },
+};
+
+describe("l'étiquette interne avec de vraies données", () => {
+  const textOps = () => layoutWarehouseLabel(baseData, fakeMeasure).filter((o): o is Extract<typeof o, { kind: 'text' }> => o.kind === 'text');
+  const texts = () => textOps().map((o) => o.text);
+
+  it("garde l'email et le WeChat du fournisseur entiers : ils rétrécissent au lieu d'être coupés", () => {
+    const all = texts();
+    expect(all).toContain('chengxin.leather.guangzhou@gmail.com');
+    expect(all).toContain('chengxin_leather_wang');
+    expect(all).toContain('Augustin Tcheumassom Tchiakoua');
+    // Aucune valeur de ligne (row@…) n'est coupée ; le sous-titre du bandeau, texte fixe, ne compte pas.
+    expect(textOps().filter((o) => o.row?.startsWith('row@')).some((o) => o.text.endsWith('…'))).toBe(false);
+  });
+
+  it("dit le lieu de la plateforme : le bureau pour l'avion, l'entrepôt pour le bateau", () => {
+    expect(texts()).toContain('办公室 Office · 广州 Guangzhou');
+    const sea = layoutWarehouseLabel({ ...baseData, destination: 'warehouse' }, fakeMeasure).filter((o) => o.kind === 'text').map((o) => (o as { text: string }).text);
+    expect(sea).toContain('仓库 Warehouse · 广州 Guangzhou');
+  });
+
+  it("écrit la date et l'heure de Guangzhou, et le type de colis quand il n'y a pas de description", () => {
+    expect(formatGuangzhou('2026-09-21T04:29:36Z')).toBe('2026-09-21 12:29');
+    expect(formatGuangzhou('n/a')).toBe('—');
+    expect(texts()).toContain('纸箱 Carton');
+  });
+
+  it("n'imprime la place que si on en a une", () => {
+    expect(texts().some((t) => t === 'Shelf'.toUpperCase())).toBe(false);
+    const withSlot = layoutWarehouseLabel({ ...baseData, location: 'B3' }, fakeMeasure).filter((o) => o.kind === 'text').map((o) => (o as { text: string }).text);
+    expect(withSlot).toContain('B3');
+  });
+});

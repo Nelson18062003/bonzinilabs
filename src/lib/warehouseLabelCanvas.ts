@@ -16,7 +16,7 @@
 import { DESTINATION_LABEL, DESTINATION_THEME, customerQrPayload, type ShippingDestination, type ShippingSettings } from '@/lib/customerCode';
 import { FONT_LATIN, FONT_ZH, FONT_ZH_DISPLAY, fitText, paintLabel, wrapText, type Measure, type Op } from '@/lib/shippingLabelCanvas';
 import { code128Bars } from '@/lib/code128';
-import type { Parcel, ReceptionClient, SupplierInfo } from '@/lib/reception';
+import type { Parcel, ParcelKind, ReceptionClient, SupplierInfo } from '@/lib/reception';
 import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
 
 export const WLABEL_W = 600;
@@ -55,6 +55,24 @@ const f = (weight: number, size: number, family: string) => `${weight} ${size}px
 const CJK = /[\u3000-\u9fff\uf900-\ufaff]/;
 const dash = (v: string | null | undefined) => (v && v.trim() ? v.trim() : '—');
 
+/** Sans description, l'étiquette dit au moins le type de colis, en chinois et en anglais. */
+const KIND_LABEL: Record<ParcelKind, string> = { carton: '纸箱 Carton', bag: '袋 Bag', bale: '编织袋 Bale', roll: '卷 Roll', pallet: '托盘 Pallet', other: '其他 Other' };
+
+/** Le lieu de réception, tel que la plateforme le nomme : l'entrepôt pour le bateau, le bureau pour l'avion. */
+const RECEIVED_AT_PLACE: Record<ShippingDestination, { zh: string; en: string }> = {
+  warehouse: { zh: '仓库', en: 'Warehouse' },
+  office: { zh: '办公室', en: 'Office' },
+};
+
+/** La date et l'heure de Guangzhou (UTC+8), « 2026-09-21 13:22 » — l'heure où le carton est entré. */
+export function formatGuangzhou(iso: string): string {
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return '—';
+  const z = new Date(t.getTime() + 8 * 3600_000);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${z.getUTCFullYear()}-${p(z.getUTCMonth() + 1)}-${p(z.getUTCDate())} ${p(z.getUTCHours())}:${p(z.getUTCMinutes())}`;
+}
+
 export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): Op[] {
   const ops: Op[] = [];
   const tag = DESTINATION_LABEL[d.destination];
@@ -75,12 +93,16 @@ export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): O
     if (zh) cursor += text(zh, cursor, cy, f(700, 12, FONT_ZH), '#333333', width, 'left', row) + 6;
     text(en.toUpperCase(), cursor, cy, f(700, 9.5, FONT_LATIN), MUTED, Math.max(0, x + width - cursor), 'left', row);
   };
+  // Une valeur trop longue pour sa case rétrécit (jusqu'à 10 px) avant d'être coupée : rien ne déborde.
+  const MIN_VALUE_PX = 10;
+  const valueFont = (t: string, width: number, size: number) => {
+    const family = CJK.test(t) ? FONT_ZH : FONT_LATIN;
+    for (let px = size; px > MIN_VALUE_PX; px -= 0.5) { const font = f(700, px, family); if (measure(t, font) <= width) return font; }
+    return f(700, MIN_VALUE_PX, family);
+  };
   const value = (v: string | null | undefined, x: number, cy: number, width: number, row: string, size = 16) => {
     const t = dash(v);
-    const family = CJK.test(t) ? FONT_ZH : FONT_LATIN;
-    let font = f(700, size, family);
-    for (const s of [size, size - 1, size - 2, size - 3]) { font = f(700, s, family); if (measure(t, font) <= width) break; }
-    text(t, x, cy, font, INK, width, 'left', row);
+    text(t, x, cy, valueFont(t, width, size), INK, width, 'left', row);
   };
   const row1 = (y: number, zh: string, en: string, v?: string | null, size = 16, h = ROW_H) => {
     const cy = y + h / 2, id = `row@${y}`;
@@ -89,14 +111,35 @@ export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): O
     hair(y + h);
     return y + h;
   };
+  // Deux cases sur une ligne. La coupe demandée ne tient qu'à condition que les deux valeurs
+  // y tiennent ; sinon la ligne se partage au prorata de ce que chacune a à dire.
+  const keyWidth = (zh: string, en: string) => (zh ? measure(zh, f(700, 12, FONT_ZH)) + 6 : 0) + measure(en.toUpperCase(), f(700, 9.5, FONT_LATIN)) + 14;
   const row2 = (y: number, a: [string, string, string | null | undefined], b: [string, string, string | null | undefined], sizeA = 16, split = 0.5) => {
     const cy = y + ROW_H / 2, id = `row@${y}`;
-    const leftW = Math.round(CW * split);
-    key(a[0], a[1], CX0, cy, KEY_COL - 8, id);
-    value(a[2], CX0 + KEY_COL, cy, leftW - KEY_COL - 10, id, sizeA);
+    const vA = measure(dash(a[2]), valueFont(dash(a[2]), Infinity, sizeA));
+    const vB = measure(dash(b[2]), valueFont(dash(b[2]), Infinity, 16));
+    let kA = KEY_COL, kB = KEY_COL_2;
+    let leftW = Math.round(CW * split);
+    if (kA + 10 + vA > leftW || kB + vB > CW - leftW) {
+      // Trop long pour la coupe habituelle. D'abord on déplace la coupe, clés alignées comme
+      // les autres lignes ; si même ainsi les valeurs devraient descendre sous 12 px, les clés
+      // se resserrent sur leur texte. Dans tous les cas la place des deux valeurs se partage au
+      // prorata de ce que chacune mesure : elles rétrécissent ensemble, jamais coupées.
+      const share = vA / Math.max(1, vA + vB);
+      const scale = (CW - kA - 10 - kB) / Math.max(1, vA + vB);
+      if (scale < 12 / Math.max(sizeA, 16)) {
+        kA = Math.min(KEY_COL, Math.ceil(keyWidth(a[0], a[1])));
+        kB = Math.min(KEY_COL_2, Math.ceil(keyWidth(b[0], b[1])));
+      }
+      const avail = CW - kA - 10 - kB;
+      const leftVal = vA + vB <= avail ? vA + (avail - vA - vB) * share : avail * share;
+      leftW = Math.round(Math.min(CW * 0.75, Math.max(CW * 0.25, kA + 10 + leftVal)));
+    }
+    key(a[0], a[1], CX0, cy, kA - 8, id);
+    value(a[2], CX0 + kA, cy, leftW - kA - 10, id, sizeA);
     const x2 = CX0 + leftW;
-    key(b[0], b[1], x2, cy, KEY_COL_2 - 8, id);
-    value(b[2], x2 + KEY_COL_2, cy, CW - leftW - KEY_COL_2, id);
+    key(b[0], b[1], x2, cy, kB - 8, id);
+    value(b[2], x2 + kB, cy, CW - leftW - kB, id);
     hair(y + ROW_H);
     return y + ROW_H;
   };
@@ -163,14 +206,16 @@ export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): O
   // 3 · La marchandise.
   const p = d.parcel;
   y = band(y, '3', '货物', 'Goods');
-  y = row1(y, '货物品名', 'Goods', p.description || p.kind);
+  y = row1(y, '货物品名', 'Goods', p.description || KIND_LABEL[p.kind] || p.kind);
   y = row2(y, ['重量', 'Weight', formatKg(p.weight_kg)], ['尺寸', 'Dimensions', formatDims(p)], 16, 0.42);
   y = row2(y, ['立方', 'CBM', formatCbm(p.cbm)], ['总包数', 'Total', `${d.count} 箱`], 16, 0.56);
 
-  // 4 · L'entrepôt.
-  y = band(y, '4', '仓库', 'Warehouse');
-  y = row2(y, ['到货日期', 'Date', new Date(d.receivedAt).toISOString().slice(0, 10)], ['收货人', 'Received by', d.receivedByName ?? loc.recipient], 16, 0.56);
-  y = row1(y, '位置', 'Location', d.location ?? '—', 20);
+  // 4 · Où et quand on l'a reçu : l'entrepôt (bateau) ou le bureau (avion) — le lieu de la
+  // plateforme —, la date et l'heure de Guangzhou, qui l'a reçu, et sa place si on en a une.
+  y = band(y, '4', '收货地点', 'Location');
+  const place = `${RECEIVED_AT_PLACE[d.destination].zh} ${RECEIVED_AT_PLACE[d.destination].en} · 广州 Guangzhou`;
+  y = d.location ? row2(y, ['地点', 'Place', place], ['货位', 'Shelf', d.location], 16, 0.62) : row1(y, '地点', 'Place', place);
+  y = row2(y, ['到货日期', 'Date', formatGuangzhou(d.receivedAt)], ['收货人', 'Received by', d.receivedByName ?? loc.recipient], 16, 0.5);
 
   // 5 · Le fournisseur.
   const s = d.supplier;

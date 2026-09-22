@@ -58,19 +58,27 @@ const internalClient = { user_id: 'u1', customer_code: 'BZ-482913', first_name: 
 const internalParcel = { parcel_no: 'RC-000123-03', seq: 3, kind: 'carton' as const, description: 'Chaussures, 40 paires 鞋子', weight_kg: 8.4, length_cm: 60, width_cm: 40, height_cm: 40, cbm: 0.096 };
 const internalSupplier = { kind: 'supplier' as const, name: '广州鞋业有限公司 Guangzhou Shoes Co.', contact: 'Li Wei 李伟', phone: '138 0000 1234', email: 'liwei@gzshoes.cn', wechat: 'gzshoes_li', address: '广州市白云区石井大道 168 号 3 栋 · 168 Shijing Ave, Bldg 3, Baiyun, Guangzhou' };
 
-function InternalLabel({ destination, supplier: s }: { destination: ShippingDestination; supplier?: WarehouseLabelData['supplier'] }) {
-  const qrs = useParcelQrCanvases([{ id: 'p', value: parcelQrPayload(internalClient.customer_code, internalParcel.parcel_no) }]);
+function InternalLabel({ destination, supplier: s, data }: { destination: ShippingDestination; supplier?: WarehouseLabelData['supplier']; data?: Partial<WarehouseLabelData> }) {
+  const full: WarehouseLabelData = { destination, settings: DEFAULT_SHIPPING_SETTINGS, parcel: internalParcel, count: 10, depositNo: 'RC-000123', client: internalClient, supplier: s ?? null, receivedAt: '2026-09-21T06:32:00Z', receivedByName: 'Tina', location: 'B3', ...data };
+  const qrs = useParcelQrCanvases([{ id: 'p', value: parcelQrPayload(full.client?.customer_code ?? '', full.parcel.parcel_no) }]);
   const [src, setSrc] = useState<string | null>(null);
   useEffect(() => {
     if (!qrs.ready) return;
     const id = requestAnimationFrame(() => {
-      renderWarehouseLabel({ destination, settings: DEFAULT_SHIPPING_SETTINGS, parcel: internalParcel, count: 10, depositNo: 'RC-000123', client: internalClient, supplier: s ?? null, receivedAt: '2026-09-21T06:32:00Z', receivedByName: 'Tina', location: 'B3' }, qrs.get('p'), 2)
+      renderWarehouseLabel(full, qrs.get('p'), 2)
         .then((c) => setSrc(c.toDataURL('image/png')))
         .catch((e) => console.error(e));
     });
     return () => cancelAnimationFrame(id);
-  }, [qrs.ready, destination, s]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [qrs.ready, destination, s, data]); // eslint-disable-line react-hooks/exhaustive-deps
   return <div style={{ width: 600, padding: 16, background: '#ECEAF7' }}>{qrs.nodes}{src && <img src={src} alt="" style={{ width: 600, display: 'block', boxShadow: '0 2px 10px rgba(0,0,0,.25)' }} />}</div>;
 }
 export const LabelInternalSea = () => <InternalLabel destination="warehouse" supplier={internalSupplier} />;
 export const LabelInternalAir = () => <InternalLabel destination="office" />;
+/** ?data=<JSON encodé en base64 d'un WarehouseLabelData partiel> : l'étiquette avec de vraies données, sans toucher aux fixtures. */
+export const LabelInternalJson = () => {
+  const raw = new URLSearchParams(window.location.search).get('data');
+  let data: Partial<WarehouseLabelData> = {};
+  try { if (raw) data = JSON.parse(decodeURIComponent(escape(atob(raw)))); } catch (e) { console.error('label data', e); }
+  return <InternalLabel destination={data.destination ?? 'office'} supplier={data.supplier ?? null} data={data} />;
+};
