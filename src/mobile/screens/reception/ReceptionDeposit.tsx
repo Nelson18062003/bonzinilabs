@@ -14,6 +14,7 @@ import { useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/u
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
 import { LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { useTranslation } from 'react-i18next';
 
 export function ReceptionDeposit() {
@@ -23,6 +24,7 @@ export function ReceptionDeposit() {
   const labels = useReceptionLabels();
   const { t: ti } = useTranslation('agent');
   const { data: deposit, isLoading, error, refetch } = useReceptionDeposit(depositId);
+  const viewer = useParcelViewer();
   const remove = useRemoveParcel();
   const close = useCloseDeposit();
   const [confirm, setConfirm] = useState(false);
@@ -86,7 +88,7 @@ export function ReceptionDeposit() {
           ) : (
             <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
               {deposit.parcels.map((p) => (
-                <ParcelRow key={p.id} parcel={p} onClick={!p.shipment_id ? () => navigate(`/r/deposit/${deposit.id}/parcel/${p.id}`) : undefined} onRemove={editable ? () => remove.mutate(p.id) : undefined} />
+                <ParcelRow key={p.id} parcel={p} onClick={!p.shipment_id ? () => navigate(`/r/deposit/${deposit.id}/parcel/${p.id}`) : () => viewer.open(deposit.parcels.indexOf(p))} onPhoto={() => viewer.open(deposit.parcels.indexOf(p))} onRemove={editable ? () => remove.mutate(p.id) : undefined} />
               ))}
             </Card>
           )}
@@ -127,6 +129,7 @@ export function ReceptionDeposit() {
           <SoftPill onClick={() => setConfirm(false)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
         </div>
       </BottomSheet>
+      <ParcelPhotoViewer parcels={deposit.parcels} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={deposit.deposit_no} />
     </div>
   );
 }

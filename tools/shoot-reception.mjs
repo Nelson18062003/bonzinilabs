@@ -3,7 +3,7 @@
 //   VITE_SUPABASE_URL=https://example.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=x VITE_SUPABASE_PROJECT_ID=x npx vite --host --port 8080
 //   node tools/shoot-reception.mjs [out-dir] [screen…]
 import { chromium } from 'playwright';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { respond as adminRespond } from './adminFixtures.mjs';
 
@@ -33,7 +33,7 @@ Object.assign(dep1, supplier);
 const dep2 = {
   ...dep1, id: 'dep2', deposit_no: 'RC-000122', status: 'closed', closed_at: today(14, 32), opened_at: today(14, 1),
   parcel_count: 10, total_weight_kg: 84, total_cbm: 0.62,
-  parcels: Array.from({ length: 10 }, (_, i) => parcel(i + 1, 'RC-000122', { description: ['Chaussures, 40 paires', 'Tissus wax', 'Sacs à main, 30 pièces'][i % 3], weight_kg: 8.4 })),
+  parcels: Array.from({ length: 10 }, (_, i) => parcel(i + 1, 'RC-000122', { description: ['Chaussures, 40 paires', 'Tissus wax', 'Sacs à main, 30 pièces'][i % 3], weight_kg: 8.4, photo_path: i < 7 ? `dep2/carton-${(i % 3) + 1}.jpg` : null })),
 };
 const dep3 = { ...dep2, id: 'dep3', deposit_no: 'RC-000121', client: client2, brought_by: 'courier', parcel_count: 3, total_weight_kg: 21, total_cbm: 0.18, opened_at: today(13, 10), closed_at: today(13, 18), parcels: dep2.parcels.slice(0, 3).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000121') })) };
 const dep4 = { ...dep2, id: 'dep4', deposit_no: 'RC-000120', client: client3, brought_by: 'representative', representative_name: 'Paul Fotso', parcel_count: 2, total_weight_kg: 9, total_cbm: 0.05, opened_at: today(11, 47), closed_at: today(11, 52), parcels: dep2.parcels.slice(0, 2).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000120') })) };
@@ -194,7 +194,6 @@ await ctx.addInitScript((lang) => {
 // Polices : Google Fonts n'est pas joignable depuis le bac à sable ; FONTS_DIR
 // (fonts.css + <md5(url+"\n")[0:16]>.woff2) les sert en local, sinon on capture avec la police système.
 if (process.env.FONTS_DIR) {
-  const { readFileSync } = await import('node:fs');
   const { createHash } = await import('node:crypto');
   const css = readFileSync(join(process.env.FONTS_DIR, 'fonts.css'), 'utf8');
   const fontFile = (url) => join(process.env.FONTS_DIR, createHash('md5').update(url + '\n').digest('hex').slice(0, 16) + '.woff2');
@@ -210,6 +209,14 @@ await ctx.route(/supabase\.co|\/rest\/v1|\/auth\/v1|\/storage\/v1/, (r) => {
   try { body = adminRespond(req.url()) ?? []; } catch { body = []; }
   if ((req.headers()['accept'] ?? '').includes('pgrst.object') && Array.isArray(body)) body = body[0] ?? null;
   r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': `0-9/${Array.isArray(body) ? body.length : 1}` }, body: JSON.stringify(body) });
+});
+// Les photos des colis : createSignedUrl répond une URL locale, que l'on sert depuis PHOTOS_DIR (carton-1.jpg…).
+await ctx.route(/\/storage\/v1\/object\/sign\/parcel-photos\//, (route) => {
+  const req = route.request();
+  const url = req.url();
+  if (req.method() === 'POST') { const path = url.split('/object/sign/')[1]; return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ signedURL: `/object/sign/${path}?token=demo` }) }); }
+  const m = /carton-(\d)\.jpg/.exec(url); const file = process.env.PHOTOS_DIR && m ? join(process.env.PHOTOS_DIR, `carton-${m[1]}.jpg`) : null;
+  try { return route.fulfill({ status: 200, contentType: 'image/jpeg', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(file) }); } catch { return route.fulfill({ status: 404, body: '' }); }
 });
 // Les réglages d'expédition RÉELS (copie de platform_settings.shipping, 21/09/2026) : l'étiquette capturée est celle que Tina reçoit.
 await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
@@ -239,11 +246,14 @@ await ctx.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
 const SCREENS = ['rc-location', 'rc-home', 'rc-identify', 'rc-search', 'rc-how', 'rc-client', 'rc-deposit', 'rc-deposit-empty', 'rc-parcel', 'rc-parcel-weight', 'rc-parcel-dims', 'rc-parcel-inside', 'rc-parcel-copies', 'rc-parcel-edit', 'rc-done', 'rc-pending', 'rc-clients', 'rc-client-card'];
 for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
+  // DEBUG_NET=1 : trace les requêtes vers Supabase (REST, storage) et leur réponse.
+  if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
   const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
+  if (screen === 'cargo-deposit-photo' || screen === 'rc-deposit-photo' || screen === 'wh-client-photo') { await page.click('button[aria-label="Voir la photo en grand"]'); await page.waitForTimeout(900); }
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
@@ -262,6 +272,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     await block.scrollIntoViewIfNeeded().catch(() => {});
   }
   await page.evaluate(() => document.fonts.ready);
+  if (process.env.DEBUG_NET) console.log('IMG', await page.evaluate(() => [...document.querySelectorAll('img')].map((i) => `${i.getAttribute('src')?.slice(0, 120)} ${i.naturalWidth}x${i.naturalHeight}`).slice(0, 4)));
   await page.waitForTimeout(700);
   await page.screenshot({ path: join(OUT, `${screen}.png`), fullPage: !DESKTOP || screen.includes('reception') || screen.includes('chargement') });
   console.log(screen, 'ok');

@@ -7,7 +7,7 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Banknote, PackageCheck } from 'lucide-react';
+import { Banknote, FileSignature, PackageCheck } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { UnknownCodeError, useClientAtWarehouse } from '@/hooks/useWarehouse';
@@ -16,6 +16,9 @@ import { formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Fold, Line, PrimaryPill, ScreenError, ScreenLoader, StatusPill } from '@/mobile/designKit';
 import { BottomBar, ClientHead, ParcelLine, TickBox, WhStep } from '@/mobile/components/warehouse/bits';
+import { WarehouseReceipts } from '@/mobile/components/warehouse/WarehouseReceipts';
+import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
+import { formatDateTime } from '@/mobile/components/reception/bits';
 import { readReleaseDraft, writeReleaseDraft } from './releaseDraft';
 
 export function WarehousePickupClient() {
@@ -25,6 +28,8 @@ export function WarehousePickupClient() {
   const { data, isLoading, error, refetch } = useClientAtWarehouse(code);
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [laterOpen, setLaterOpen] = useState(false);
+  const [moneyOpen, setMoneyOpen] = useState(false);
+  const viewer = useParcelViewer();
 
   const ready = useMemo(() => data?.ready ?? [], [data]);
   // Tout est coché d'office ; un brouillon (retour depuis l'étape 3) garde son choix.
@@ -63,7 +68,7 @@ export function WarehousePickupClient() {
             {ready.map((p) => {
               const on = !!picked?.has(p.id);
               const qw = quoteWord(p);
-              return <ParcelLine key={p.id} parcel={p} onTap={() => toggle(p.id)} lead={<TickBox on={on} />} badge={<StatusPill tone={qw.ok ? 'success' : 'pending'} label={qw.text} />} withTransport />;
+              return <ParcelLine key={p.id} parcel={p} onTap={() => toggle(p.id)} lead={<TickBox on={on} />} badge={<StatusPill tone={qw.ok ? 'success' : 'pending'} label={qw.text} />} withTransport onPhoto={() => viewer.open(ready.indexOf(p))} />;
             })}
           </Card>
         )}
@@ -73,7 +78,30 @@ export function WarehousePickupClient() {
             {data.not_ready.map((p) => { const st = warehouseStage(p); return <ParcelLine key={p.id} parcel={p} withTransport badge={<StatusPill tone={st.tone} label={st.label} />} />; })}
           </Fold>
         )}
+
+        {/* Ce qu'il a déjà payé, reçu par reçu ; et ses bons de retrait passés, à réimprimer. */}
+        {data.quotes.length > 0 && (
+          <Fold title={`Paiements et reçus (${data.quotes.length} devis)`} open={moneyOpen} onToggle={() => setMoneyOpen((o) => !o)}>
+            <div className="pt-2"><WarehouseReceipts quotes={data.quotes} /></div>
+          </Fold>
+        )}
+        {data.releases.length > 0 && (
+          <Card className="py-0">
+            <div className={cn('py-3', TYPE.smallStrong, TEXT.muted)}>Bons de retrait déjà faits</div>
+            {data.releases.map((r) => (
+              <button key={r.id} type="button" onClick={() => navigate(`/w/bon/${r.id}`)} className={cn('flex w-full items-center gap-3 border-t py-3 text-left active:opacity-70', SURFACE.divider)}>
+                <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}><FileSignature className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{r.release_no} · {nParcels(r.parcel_count)}</span>
+                  <span className={cn('block', TYPE.small, TEXT.muted)}>{r.picked_by_name} · {formatDateTime(r.released_at)} · réimprimer</span>
+                </span>
+              </button>
+            ))}
+          </Card>
+        )}
       </div>
+
+      <ParcelPhotoViewer parcels={ready.map((p) => ({ ...p, note: warehouseStage(p).label }))} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={client.customer_code} />
 
       {ready.length > 0 && (
         <BottomBar>
