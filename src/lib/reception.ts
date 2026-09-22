@@ -79,6 +79,7 @@ export interface Parcel {
   condition?: 'ok' | 'damaged' | 'missing' | null;
   condition_note?: string | null;
   delivered_at?: string | null;
+  release_id?: string | null;
   release_no?: string | null;
   created_at: string;
 }

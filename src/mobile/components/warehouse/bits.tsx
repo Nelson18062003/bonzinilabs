@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { clientFullName, formatDims, formatKg, initials, type ReceptionClient } from '@/lib/reception';
 import { transportLabel, type WarehouseParcel } from '@/lib/warehouse';
 import { SURFACE, TEXT, TYPE, BottomSheet, Holder, SoftPill } from '@/mobile/designKit';
+import { ParcelThumb } from '@/mobile/components/reception/bits';
 
 /* ── Le fil du parcours : une barre, « Étape 2 sur 3 », une phrase pour
  * titre, une ligne d'aide. L'agent sait toujours où il en est. */
@@ -91,8 +92,10 @@ export function ParcelText({ parcel, withTransport = false, badge, className }: 
 }
 
 /** Une ligne de colis qu'on touche : la case (son état), le texte, un chevron vers sa fiche. Un badge sous le texte quand il dit quelque chose de plus. */
-export function ParcelLine({ parcel, onTap, onOpen, lead, badge, disabled, withTransport }: {
+export function ParcelLine({ parcel, onTap, onOpen, lead, badge, disabled, withTransport, onPhoto }: {
   parcel: WarehouseParcel; onTap?: () => void; onOpen?: () => void; lead?: ReactNode; badge?: ReactNode; disabled?: boolean; withTransport?: boolean;
+  /** Avec `onPhoto`, la vignette de la photo prise à Guangzhou s'affiche et s'ouvre en grand. */
+  onPhoto?: () => void;
 }) {
   return (
     <div className={cn('flex w-full items-center gap-3 border-b py-3 last:border-b-0', SURFACE.divider, disabled && 'opacity-60')}>
@@ -100,6 +103,7 @@ export function ParcelLine({ parcel, onTap, onOpen, lead, badge, disabled, withT
         {lead ?? <CheckMark parcel={parcel} />}
         <ParcelText parcel={parcel} withTransport={withTransport} badge={badge} />
       </button>
+      {onPhoto && <ParcelThumb path={parcel.photo_path} onOpen={onPhoto} size="h-12 w-12" />}
       {onOpen && (
         <button type="button" onClick={onOpen} aria-label={`Ouvrir ${parcel.parcel_no}`} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
           <ChevronRight className="h-5 w-5" />

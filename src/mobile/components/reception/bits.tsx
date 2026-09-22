@@ -72,17 +72,17 @@ export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: (
   );
 }
 
-function ParcelThumb({ path }: { path: string | null }) {
+/** La vignette d'un colis ; avec `onOpen`, elle s'ouvre en grand (ParcelPhotoViewer). */
+export function ParcelThumb({ path, onOpen, size = 'h-14 w-14' }: { path: string | null; onOpen?: () => void; size?: string }) {
   const { data: url } = useParcelPhotoUrl(path);
-  return (
-    <span className={cn('flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg', SURFACE.inset)}>
-      {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <Camera className={cn('h-5 w-5', TEXT.faint)} />}
-    </span>
-  );
+  const inner = url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <Camera className={cn('h-5 w-5', TEXT.faint)} />;
+  const cls = cn('flex shrink-0 items-center justify-center overflow-hidden rounded-lg', size, SURFACE.inset);
+  if (!onOpen) return <span className={cls}>{inner}</span>;
+  return <button type="button" onClick={(e) => { e.stopPropagation(); onOpen(); }} aria-label={url ? 'Voir la photo en grand' : 'Pas de photo'} className={cn(cls, 'active:opacity-70')}>{inner}</button>;
 }
 
-/** Une ligne de colis : photo, numéro, description, poids × dimensions = volume. */
-export function ParcelRow({ parcel, onRemove, onClick }: { parcel: Parcel; onRemove?: () => void; onClick?: () => void }) {
+/** Une ligne de colis : photo, numéro, description, poids × dimensions = volume. `onPhoto` ouvre la photo en grand. */
+export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parcel; onRemove?: () => void; onClick?: () => void; onPhoto?: () => void }) {
   const { t } = useTranslation('agent');
   const labels = useReceptionLabels();
   const incomplete = isParcelIncomplete(parcel);
@@ -90,7 +90,7 @@ export function ParcelRow({ parcel, onRemove, onClick }: { parcel: Parcel; onRem
   return (
     <div className="flex items-center gap-3 py-4">
       <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
-      <ParcelThumb path={parcel.photo_path} />
+      <ParcelThumb path={parcel.photo_path} onOpen={onPhoto} />
       <span className="min-w-0 flex-1">
         <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>
           <span className={cn('mr-2 tabular-nums', TEXT.muted)}>{String(parcel.seq).padStart(2, '0')}</span>

@@ -16,6 +16,8 @@ import { SURFACE, TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, Soft
 import { TextArea } from '@/components/form';
 import { formatDateTime } from '@/mobile/components/reception/bits';
 import { AnswerButton, CheckMark, ClientHead, ParcelText, WhQuestion } from '@/mobile/components/warehouse/bits';
+import { ParcelThumb } from '@/mobile/components/reception/bits';
+import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 
 type Step = 'state' | 'damaged' | 'missing';
 
@@ -27,6 +29,7 @@ export function WarehouseCheckinParcel() {
   const flag = useFlagMissing();
   const [step, setStep] = useState<Step>('state');
   const [note, setNote] = useState('');
+  const viewer = useParcelViewer();
   const back = `/w/arrivees/${kind}/${id}`;
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -43,7 +46,7 @@ export function WarehouseCheckinParcel() {
       <div className="space-y-6 px-4 pb-10 pt-4">
         <Card className="space-y-3">
           <ClientHead client={parcel.client} size="md" />
-          <div className="flex items-center gap-3 border-t pt-3 dark:border-[#444444]"><CheckMark parcel={parcel} size="lg" /><ParcelText parcel={parcel} withTransport /></div>
+          <div className="flex items-center gap-3 border-t pt-3 dark:border-[#444444]"><CheckMark parcel={parcel} size="lg" /><ParcelText parcel={parcel} withTransport /><ParcelThumb path={parcel.photo_path} onOpen={() => viewer.open(0)} size="h-16 w-16" /></div>
           <div className="flex items-center justify-between gap-3">
             <StatusPill tone={st.tone} label={st.label} />
             {parcel.checked_in_at && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>pointé le {formatDateTime(parcel.checked_in_at)}</span>}
@@ -82,6 +85,7 @@ export function WarehouseCheckinParcel() {
           </>
         )}
       </div>
+      <ParcelPhotoViewer parcels={[{ ...parcel, note: `Photo prise à Guangzhou · ${st.label}` }]} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={data.label} />
     </div>
   );
 }

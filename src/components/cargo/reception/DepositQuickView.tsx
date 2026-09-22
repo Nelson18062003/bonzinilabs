@@ -10,9 +10,14 @@ import { ArrowRight, Search, UserSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
-import { clientFullName, formatCbm, formatDims, formatKg, initials, parcelStage } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatDims, formatKg, initials, parcelStage, supplierLine } from '@/lib/reception';
+import { useCargoQuote } from '@/hooks/useCargoQuote';
+import { depositTimeline } from '@/lib/parcelDepositTimeline';
+import { DepositReleases, releaseIds } from '@/mobile/components/cargo/DepositReleases';
+import { DepositTimeline } from '@/mobile/components/cargo/DepositTimeline';
+import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
-import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { LocationMark, ParcelThumb, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { QuoteSection } from './QuoteSection';
 import { QuotePaymentsSection } from './QuotePaymentsSection';
 import { cn } from '@/lib/utils';
@@ -29,11 +34,16 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
   useEffect(() => { const id = setTimeout(() => setDebounced(query), 250); return () => clearTimeout(id); }, [query]);
   const search = useReceptionSearch(assigning ? debounced : '');
   const assign = useAssignDeposit();
-  useEffect(() => { if (!depositId) { setAssigning(false); setQuery(''); } }, [depositId]);
+  const { data: quote } = useCargoQuote(depositId ?? undefined);
+  const viewer = useParcelViewer();
+  useEffect(() => { if (!depositId) { setAssigning(false); setQuery(''); viewer.close(); } }, [depositId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const name = d?.client ? clientFullName(d.client) : 'Client à attribuer';
   const st = d ? labels.status(d) : null;
   const loaded = d?.parcels.filter((p) => parcelStage(p).inBox) ?? [];
+  const supplier = d ? depositSupplier(d) : null;
+  const photos = d?.parcels.filter((p) => p.photo_path).length ?? 0;
+  const events = d ? depositTimeline(d, quote) : [];
 
   return (
     <CenterDialog
@@ -121,15 +131,20 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
               <Fact label="Reçu le" value={formatDateTime(d.closed_at ?? d.opened_at)} />
               <Fact label="Total" value={`${d.parcels.length} colis`} hint={`${formatKg(d.total_weight_kg)} · ${formatCbm(d.total_cbm)}`} />
             </Facts>
+            <div className="mt-4"><Facts cols={2}>
+              <Fact label="Fournisseur" value={supplier ? supplierLine(supplier) : '—'} hint={supplier ? [supplier.email, supplier.wechat ? `WeChat ${supplier.wechat}` : null].filter(Boolean).join(' · ') || undefined : 'Non renseigné à la réception'} />
+              <Fact label="Adresse du fournisseur" value={supplier?.address || '—'} />
+            </Facts></div>
           </Band>
           <QuoteSection deposit={d} />
           <QuotePaymentsSection depositId={d.id} />
-          <Band title="Les colis" meta={loaded.length > 0 ? `${d.parcels.length - loaded.length} à l'entrepôt · ${loaded.length} dans une boîte` : `${d.parcels.length} à l'entrepôt`}>
+          <Band title="Les colis" meta={`${photos > 0 ? `${photos} photo${photos > 1 ? 's' : ''} · ` : ''}${loaded.length > 0 ? `${d.parcels.length - loaded.length} à l'entrepôt · ${loaded.length} dans une boîte` : `${d.parcels.length} à l'entrepôt`}`}>
             <div className="-mx-5 max-h-[360px] overflow-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr>
-                    <Th first>N°</Th>
+                    <Th first>Photo</Th>
+                    <Th>N°</Th>
                     <Th>Ce qu'il y a dedans</Th>
                     <Th align="right">Poids</Th>
                     <Th align="right">Dimensions</Th>
@@ -138,9 +153,10 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
                   </tr>
                 </thead>
                 <tbody>
-                  {d.parcels.map((p) => (
-                    <tr key={p.id}>
-                      <Td first><span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{String(p.seq).padStart(2, '0')}</span></Td>
+                  {d.parcels.map((p, i) => (
+                    <tr key={p.id} className="cursor-pointer transition-colors hover:bg-muted/40" onClick={() => viewer.open(i)}>
+                      <Td first><ParcelThumb path={p.photo_path} onOpen={() => viewer.open(i)} size="h-12 w-12" /></Td>
+                      <Td><span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{String(p.seq).padStart(2, '0')}</span></Td>
                       <Td>
                         <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{p.description || labels.kind(p.kind)}</div>
                         {p.courier_waybill && <div className={cn('font-mono text-[11.5px]', TEXT.muted)}>{p.courier_waybill}</div>}
@@ -152,7 +168,7 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
                         {(() => {
                           const st = parcelStage(p);
                           return st.inBox && p.shipment_id ? (
-                            <button type="button" onClick={() => { onClose(); navigate(`/m/cargo/${p.shipment_id}/chargement`); }}>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/m/cargo/${p.shipment_id}/chargement`); }}>
                               <StatusPill tone={st.tone} label={st.label} />
                             </button>
                           ) : <StatusPill tone={st.tone} label={st.label} />;
@@ -164,6 +180,11 @@ export function DepositQuickView({ depositId, onClose }: { depositId: string | n
               </table>
             </div>
           </Band>
+          {releaseIds(d.parcels).length > 0 && (
+            <Band title="Les bons de retrait"><DepositReleases parcels={d.parcels} /></Band>
+          )}
+          <Band title="L'historique"><DepositTimeline events={events} flat /></Band>
+          <ParcelPhotoViewer parcels={d.parcels.map((p) => ({ ...p, note: parcelStage(p).label }))} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={d.deposit_no} />
         </>
       )}
     </CenterDialog>
