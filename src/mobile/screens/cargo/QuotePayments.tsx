@@ -14,7 +14,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Banknote, Camera, FileCheck2, FileText, Receipt, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useAddQuotePayment, useCancelQuotePayment, useInvoiceQuote, uploadPaymentProof, usePaymentProofUrl } from '@/hooks/useCargoQuote';
+import { useAddQuotePayment, useCancelQuotePayment, useInvoiceQuote, usePayQuoteFromWallet, uploadPaymentProof, usePaymentProofUrl } from '@/hooks/useCargoQuote';
+import { WalletBalanceCard } from '@/mobile/components/cargo/WalletBalanceCard';
 import { METHOD_LABEL, PLACE_SHORT, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type Quote, type QuotePayment } from '@/lib/cargoQuote';
 import { deliverInvoicePdf, deliverReceiptPdf } from '@/lib/cargoQuotePdf';
 import type { ShippingSettings } from '@/lib/customerCode';
@@ -24,7 +25,7 @@ import { TextArea } from '@/components/form';
 import { formatDateTime } from '@/mobile/components/reception/bits';
 
 const num = (s: string) => { const v = parseFloat(s.replace(/\s/g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
-const METHODS: PaymentMethod[] = ['cash', 'mobile_money', 'bank_transfer', 'other'];
+const METHODS: PaymentMethod[] = ['cash', 'wallet', 'mobile_money', 'bank_transfer', 'other'];
 
 /** Quatre modes en deux rangées : à 320 px, une seule ligne ne tient pas. */
 function MethodGrid({ value, onChange }: { value: PaymentMethod; onChange: (m: PaymentMethod) => void }) {
@@ -88,6 +89,7 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
   const { hasPermission } = useAdminAuth();
   const canCollect = hasPermission('canCollectParcelPayments');
   const add = useAddQuotePayment();
+  const payWallet = usePayQuoteFromWallet();
   const cancel = useCancelQuotePayment();
   const invoice = useInvoiceQuote();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -119,8 +121,13 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
     if (v > balance) { toast.error(`Le montant dépasse le reste à payer (${xaf(balance)})`); return; }
     setSaving(true);
     try {
-      const proofPath = proof ? await uploadPaymentProof(quote.id, proof) : null;
-      const { quote: fresh, payment } = await add.mutateAsync({ quoteId: quote.id, amount: Math.round(v), method, place, paidAt: paidAt ? new Date(paidAt).toISOString() : null, reference: reference.trim() || undefined, proofPath, note: note.trim() || undefined });
+      // Depuis le solde du client : la base débite le portefeuille et fait le reçu ; sinon, l'encaissement classique.
+      const { quote: fresh, payment } = method === 'wallet'
+        ? await payWallet.mutateAsync({ quoteId: quote.id, amount: Math.round(v), note: note.trim() || undefined })
+        : await (async () => {
+          const proofPath = proof ? await uploadPaymentProof(quote.id, proof) : null;
+          return add.mutateAsync({ quoteId: quote.id, amount: Math.round(v), method, place, paidAt: paidAt ? new Date(paidAt).toISOString() : null, reference: reference.trim() || undefined, proofPath, note: note.trim() || undefined });
+        })();
       setOpen(false);
       if (payment) {
         const outcome = await deliverReceiptPdf(fresh, payment, settings);
@@ -197,21 +204,27 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
             </div>
           </FormField>
           <FormField label="Comment" htmlFor="pay-method"><MethodGrid value={method} onChange={setMethod} /></FormField>
-          <FormField label="Où" htmlFor="pay-place">
-            <Segmented<PaymentPlace> value={place} onChange={setPlace} options={[{ value: 'guangzhou', label: 'Guangzhou' }, { value: 'douala', label: 'Douala' }, { value: 'other', label: 'Ailleurs' }]} />
-          </FormField>
-          <FormField label="La preuve" htmlFor="pay-proof" hint="Photo du reçu Mobile Money, du bordereau de virement, du billet compté.">
-            <input ref={fileRef} id="pay-proof" type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
-            <SoftPill onClick={() => fileRef.current?.click()} className="h-12 w-full text-[16px]"><Camera /> {proof ? proof.name.length > 28 ? `${proof.name.slice(0, 25)}…` : proof.name : 'Prendre la photo de la preuve'}</SoftPill>
-          </FormField>
-          {method !== 'cash' && (
-            <FormField label="Référence de la transaction" htmlFor="pay-ref">
-              <TextInput id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° Mobile Money, référence du virement" className="h-12" />
-            </FormField>
+          {method === 'wallet' ? (
+            <WalletBalanceCard userId={quote.client?.user_id} amount={Math.round(num(amount) ?? 0)} />
+          ) : (
+            <>
+              <FormField label="Où" htmlFor="pay-place">
+                <Segmented<PaymentPlace> value={place} onChange={setPlace} options={[{ value: 'guangzhou', label: 'Guangzhou' }, { value: 'douala', label: 'Douala' }, { value: 'other', label: 'Ailleurs' }]} />
+              </FormField>
+              <FormField label="La preuve" htmlFor="pay-proof" hint="Photo du reçu Mobile Money, du bordereau de virement, du billet compté.">
+                <input ref={fileRef} id="pay-proof" type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
+                <SoftPill onClick={() => fileRef.current?.click()} className="h-12 w-full text-[16px]"><Camera /> {proof ? proof.name.length > 28 ? `${proof.name.slice(0, 25)}…` : proof.name : 'Prendre la photo de la preuve'}</SoftPill>
+              </FormField>
+              {method !== 'cash' && (
+                <FormField label="Référence de la transaction" htmlFor="pay-ref">
+                  <TextInput id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="N° Mobile Money, référence du virement" className="h-12" />
+                </FormField>
+              )}
+              <FormField label="Date du paiement" htmlFor="pay-date" hint="Laissez vide si c'est maintenant.">
+                <TextInput id="pay-date" type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} className="h-12" />
+              </FormField>
+            </>
           )}
-          <FormField label="Date du paiement" htmlFor="pay-date" hint="Laissez vide si c'est maintenant.">
-            <TextInput id="pay-date" type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} className="h-12" />
-          </FormField>
           <TextArea id="pay-note" label="Note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Facultatif" controlClassName="min-h-[64px]" />
           <PrimaryPill onClick={() => void submit()} loading={saving} disabled={num(amount) == null} className="h-14 w-full text-[17px]"><Receipt /> Enregistrer et faire le reçu</PrimaryPill>
         </div>
@@ -220,7 +233,7 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
       {/* La feuille « Annuler cet encaissement ». */}
       <BottomSheet open={cancelId !== null} onClose={() => setCancelId(null)} title="Annuler cet encaissement">
         <div className="space-y-4">
-          <p className={cn(TYPE.body, TEXT.muted)}>L'encaissement reste visible, barré, avec votre motif. Le reste à payer remonte d'autant.</p>
+          <p className={cn(TYPE.body, TEXT.muted)}>L'encaissement reste visible, barré, avec votre motif. Le reste à payer remonte d'autant.{payments.find((p) => p.id === cancelId)?.method === 'wallet' ? ' Le montant retourne sur le solde du client.' : ''}</p>
           <TextArea id="cancel-reason" label="Pourquoi" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Double saisie, mauvais montant…" controlClassName="min-h-[72px]" />
           <PrimaryPill danger onClick={() => { if (!cancelId || !reason.trim()) return; cancel.mutate({ paymentId: cancelId, reason: reason.trim() }); setCancelId(null); }} disabled={!reason.trim()} loading={cancel.isPending} className="h-14 w-full text-[17px]">
             <Undo2 /> Annuler l'encaissement

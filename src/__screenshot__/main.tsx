@@ -58,6 +58,7 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
+import { PdfDoc } from './pdfDocs';
 import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir, LabelInternalJson } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
@@ -256,6 +257,11 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'label-warehouse': { Comp: LabelWarehouse, route: '/' },
   'label-internal-sea': { Comp: LabelInternalSea, route: '/' },
   'label-internal-json': { Comp: LabelInternalJson, route: '/' },
+  // Les documents PDF cargo (le script les lit sur window.__pdf et les rastérise)
+  'pdf-devis': { Comp: () => <PdfDoc kind="devis" />, route: '/' },
+  'pdf-recu': { Comp: () => <PdfDoc kind="recu" />, route: '/' },
+  'pdf-facture': { Comp: () => <PdfDoc kind="facture" />, route: '/' },
+  'pdf-bon': { Comp: () => <PdfDoc kind="bon" />, route: '/' },
   'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },
@@ -344,6 +350,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
   'rc-parcel-edit': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel/pRC-000123-1', path: '/r/deposit/:depositId/parcel/:parcelId', wrap: 'lang' },
   'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'rc-done-labels': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
   'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
   'rc-clients': { Comp: () => <ReceptionShell><ReceptionClients /></ReceptionShell>, route: '/r/clients', wrap: 'lang' },
   'rc-client-card': { Comp: ReceptionClientCard, route: '/r/clients/u1', path: '/r/clients/:userId', wrap: 'lang' },
@@ -369,6 +376,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-account': { Comp: MobileCargoAccount, route: '/m/cargo/comptes/acc1', path: '/m/cargo/comptes/:accountId' },
   'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-deposit-photo': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-wallet': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
   'cargo-quote': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },
   'cargo-quote-empty': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep4/devis', path: '/m/cargo/reception/:depositId/devis' },
@@ -386,6 +394,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // Admin DESKTOP — la réception dans Bonzini Cargo (1440×900, dans le shell)
   'cargo-desk-home': { Comp: () => <DesktopAppShell><DesktopCargoScreen /></DesktopAppShell>, route: '/m/cargo' },
   'cargo-desk-reception': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-client': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
   'cargo-desk-deposit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-air': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion' },
   'cargo-desk-air-detail': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },

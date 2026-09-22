@@ -12,7 +12,7 @@ import type { ParcelKind, ReceptionClient, ReceptionLocation } from '@/lib/recep
 export type QuoteBasis = 'per_kg' | 'per_cbm' | 'fixed';
 export type QuoteLineKind = 'parcel' | 'fee' | 'discount';
 export type QuoteStatus = 'draft' | 'sent' | 'paid' | 'invoiced';
-export type PaymentMethod = 'cash' | 'mobile_money' | 'bank_transfer' | 'other';
+export type PaymentMethod = 'cash' | 'mobile_money' | 'bank_transfer' | 'wallet' | 'other';
 export type PaymentPlace = 'guangzhou' | 'douala' | 'other';
 
 export interface CargoPricing {
@@ -128,7 +128,7 @@ export function quoteTotal(lines: ReadonlyArray<Pick<QuoteLine, 'amount_xaf'>>):
   return lines.reduce((s, l) => s + Math.round(Number(l.amount_xaf ?? 0)), 0);
 }
 
-export const METHOD_LABEL: Record<PaymentMethod, string> = { cash: 'Espèces', mobile_money: 'Mobile Money', bank_transfer: 'Virement', other: 'Autre' };
+export const METHOD_LABEL: Record<PaymentMethod, string> = { cash: 'Espèces', mobile_money: 'Mobile Money', bank_transfer: 'Virement', wallet: 'Solde Bonzini', other: 'Autre' };
 export const PLACE_LABEL: Record<PaymentPlace, string> = { guangzhou: 'Guangzhou, avant le départ', douala: 'Douala, au retrait', other: 'Ailleurs' };
 export const PLACE_SHORT: Record<PaymentPlace, string> = { guangzhou: 'Guangzhou', douala: 'Douala', other: 'Ailleurs' };
 

@@ -2,8 +2,8 @@
 // RÉCEPTION — l'étiquette colis d'un client, en feuille basse, dans la
 // langue de l'app. Le même peintre et les mêmes sorties que la fiche client
 // admin : Sea cargo · Air cargo (le lieu où l'on est, par défaut), puis
-// ENVOYER l'image (WhatsApp, WeChat), envoyer le PDF à imprimer, ou
-// télécharger. L'aperçu est l'image exacte qui part.
+// TÉLÉCHARGER l'image ou le PDF ; envoyer l'image (WhatsApp, WeChat) en
+// second. L'aperçu est l'image exacte qui part.
 // ============================================================
 import { useState } from 'react';
 import { Download, FileDown, Share2 } from 'lucide-react';
@@ -49,18 +49,9 @@ export function ReceptionLabelSheet({ open, onClose, client, settings }: { open:
           </div>
 
           <div className="flex flex-col gap-2">
-            {share ? (
-              <>
-                <Button className="h-12 w-full text-[16px]" onClick={() => run('share')} disabled={!ready} loading={busy === 'share'}><Share2 /> {t('rc_send_image')}</Button>
-                <Button variant="neutral" className="h-12 w-full text-[16px]" onClick={() => run('sharePdf')} disabled={!ready} loading={busy === 'sharePdf'}><FileDown /> {t('rc_send_pdf')}</Button>
-                <Button variant="subtle" className="h-12 w-full text-[16px]" onClick={() => run('png')} disabled={!ready} loading={busy === 'png'}><Download /> {t('rc_download_image')}</Button>
-              </>
-            ) : (
-              <>
-                <Button className="h-12 w-full text-[16px]" onClick={() => run('png')} disabled={!ready} loading={busy === 'png'}><Download /> {t('rc_download_image')}</Button>
-                <Button variant="neutral" className="h-12 w-full text-[16px]" onClick={() => run('pdf')} disabled={!ready} loading={busy === 'pdf'}><FileDown /> {t('rc_download_pdf')}</Button>
-              </>
-            )}
+            <Button className="h-12 w-full text-[16px]" onClick={() => run('png')} disabled={!ready} loading={busy === 'png'}><Download /> {t('rc_download_image')}</Button>
+            <Button variant="neutral" className="h-12 w-full text-[16px]" onClick={() => run('pdf')} disabled={!ready} loading={busy === 'pdf'}><FileDown /> {t('rc_download_pdf')}</Button>
+            {share && <Button variant="subtle" className="h-12 w-full text-[16px]" onClick={() => run('share')} disabled={!ready} loading={busy === 'share'}><Share2 /> {t('rc_send_image')}</Button>}
           </div>
 
           <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_client_label_hint')}</p>

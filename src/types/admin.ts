@@ -400,7 +400,8 @@ export type LedgerEntryType =
   | 'PAYMENT_EXECUTED'
   | 'PAYMENT_CANCELLED_REFUNDED'
   | 'ADMIN_CREDIT'
-  | 'ADMIN_DEBIT';
+  | 'ADMIN_DEBIT'
+  | 'CARGO_FEES';
 
 export interface LedgerEntry {
   id: string;

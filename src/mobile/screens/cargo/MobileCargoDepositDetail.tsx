@@ -9,7 +9,7 @@
 // ============================================================
 import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, FileText, Search, UserSearch } from 'lucide-react';
+import { ChevronRight, FileText, Search, Tag, UserSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -24,6 +24,7 @@ import { QuotePayments } from './QuotePayments';
 import { DepositReleases } from '@/mobile/components/cargo/DepositReleases';
 import { DepositTimeline } from '@/mobile/components/cargo/DepositTimeline';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
+import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, Holder, Row, ScreenError, ScreenLoader, StatusPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, ParcelRow, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -43,6 +44,7 @@ export function MobileCargoDepositDetail() {
   const { data: quote } = useCargoQuote(depositId);
   const { data: settings } = useAdminShippingSettings();
   const viewer = useParcelViewer();
+  const [labelsOpen, setLabelsOpen] = useState(false);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -83,6 +85,9 @@ export function MobileCargoDepositDetail() {
           </div>
           {!deposit.client && hasPermission('canReceiveParcels') && (
             <Button variant="primary" className="h-12 w-full" onClick={() => setAssignOpen(true)}><UserSearch /> Attribuer à un client</Button>
+          )}
+          {deposit.client && deposit.parcels.length > 0 && (
+            <Button variant="neutral" className="h-12 w-full" onClick={() => setLabelsOpen(true)}><Tag /> Étiquettes des cartons ({deposit.parcels.length})</Button>
           )}
         </Card>
 
@@ -137,6 +142,7 @@ export function MobileCargoDepositDetail() {
       </div>
 
       <ParcelPhotoViewer parcels={viewerParcels} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={deposit.deposit_no} />
+      {deposit.client && <InternalLabelSheet open={labelsOpen} onClose={() => setLabelsOpen(false)} deposit={deposit} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
 
       <BottomSheet open={assignOpen} onClose={() => setAssignOpen(false)} title="Attribuer à un client">
         <div className="space-y-4">

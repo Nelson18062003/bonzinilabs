@@ -147,6 +147,7 @@ const RPC = {
   cargo_quote_add_line: { success: true, quote: quoteDep2 },
   cargo_quote_remove_line: { success: true, quote: quoteDep2 },
   cargo_quote_send: { success: true, quote: { ...quoteDep2, status: 'sent', sent_at: today(15, 2) } },
+  cargo_quote_pay_from_wallet: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmW', 'RE-000043', b.p_amount_xaf, { method: 'wallet', place: 'other', reference: 'Solde Bonzini', proof_path: null, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmW', receipt_no: 'RE-000043', wallet_balance_xaf: 250000 - b.p_amount_xaf, quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
   cargo_quote_add_payment: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmN', 'RE-000042', b.p_amount_xaf, { method: b.p_method, place: b.p_place, reference: b.p_reference, proof_path: b.p_proof_path, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmN', receipt_no: 'RE-000042', quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
   cargo_quote_cancel_payment: { success: true, quote: quoteDep2 },
   cargo_quote_invoice: { success: true, invoice_no: 'FA-000013', quote: quoteDep3 },
@@ -218,6 +219,12 @@ await ctx.route(/\/storage\/v1\/object\/sign\/parcel-photos\//, (route) => {
   const m = /carton-(\d)\.jpg/.exec(url); const file = process.env.PHOTOS_DIR && m ? join(process.env.PHOTOS_DIR, `carton-${m[1]}.jpg`) : null;
   try { return route.fulfill({ status: 200, contentType: 'image/jpeg', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(file) }); } catch { return route.fulfill({ status: 404, body: '' }); }
 });
+// Le portefeuille du client (solde), pour « régler depuis le solde ».
+await ctx.route(/\/rest\/v1\/wallets\?/, (route) => {
+  const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
+  const row = { id: 'w1', user_id: 'u1', balance_xaf: 250000, created_at: '2026-09-01T08:00:00Z', updated_at: today(9, 0) };
+  route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(single ? row : [row]) });
+});
 // Les réglages d'expédition RÉELS (copie de platform_settings.shipping, 21/09/2026) : l'étiquette capturée est celle que Tina reçoit.
 await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
@@ -253,6 +260,9 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
+  if (screen === 'cargo-deposit-wallet') { await page.click('text=Encaisser'); await page.waitForTimeout(500); await page.click('text=Solde Bonzini'); await page.waitForTimeout(700); }
+  if (screen === 'rc-done-labels') { await page.click('button:has-text("Imprimer")'); await page.waitForTimeout(2500); }
+  if (screen === 'cargo-desk-client') { await page.click('text=Aïcha Mbarga'); await page.waitForTimeout(900); }
   if (screen === 'cargo-deposit-photo' || screen === 'rc-deposit-photo' || screen === 'wh-client-photo') { await page.click('button[aria-label="Voir la photo en grand"]'); await page.waitForTimeout(900); }
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
@@ -270,6 +280,34 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     // Le panneau de la fiche client défile en interne : on amène le bloc « Colis reçus » à l'écran.
     const block = page.getByText('Colis reçus', { exact: true }).first();
     await block.scrollIntoViewIfNeeded().catch(() => {});
+  }
+  // Un document PDF : on attend le fichier, on l'enregistre, puis on rastérise sa première page avec pdf.js (PDFJS_DIR).
+  if (screen.startsWith('pdf-')) {
+    await page.waitForFunction(() => !!window.__pdf, null, { timeout: 30_000 });
+    const b64 = await page.evaluate(async () => { const buf = await window.__pdf.arrayBuffer(); let bin = ''; const bytes = new Uint8Array(buf); for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); });
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(join(OUT, `${screen}.pdf`), Buffer.from(b64, 'base64'));
+    if (process.env.PDFJS_DIR) {
+      const raster = await ctx.newPage();
+      await raster.route(/\/__pdfjs\//, (r) => { const f = r.request().url().split('/__pdfjs/')[1].split('?')[0]; try { r.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(join(process.env.PDFJS_DIR, f)) }); } catch { r.fulfill({ status: 404, body: '' }); } });
+      await raster.setViewportSize({ width: 1300, height: 1800 });
+      await raster.goto('http://localhost:8080/screenshot.html?screen=blank', { waitUntil: 'domcontentloaded' });
+      await raster.evaluate(async (data) => {
+        document.body.innerHTML = '<canvas id="c"></canvas>'; document.body.style.margin = '0';
+        const pdfjs = await import('/__pdfjs/pdf.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = '/__pdfjs/pdf.worker.mjs';
+        const bytes = Uint8Array.from(atob(data), (ch) => ch.charCodeAt(0));
+        const doc = await pdfjs.getDocument({ data: bytes }).promise;
+        const pg = await doc.getPage(1);
+        const vp = pg.getViewport({ scale: 2 });
+        const c = document.getElementById('c'); c.width = vp.width; c.height = vp.height;
+        await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      }, b64);
+      await raster.locator('#c').screenshot({ path: join(OUT, `${screen}.png`) });
+      await raster.close();
+      console.log(screen, 'ok (pdf + png)');
+      continue;
+    }
   }
   await page.evaluate(() => document.fonts.ready);
   if (process.env.DEBUG_NET) console.log('IMG', await page.evaluate(() => [...document.querySelectorAll('img')].map((i) => `${i.getAttribute('src')?.slice(0, 120)} ${i.naturalWidth}x${i.naturalHeight}`).slice(0, 4)));
