@@ -41,9 +41,9 @@ describe('la fiche Mobile Money', () => {
     expect(c.flotte.needs).toBe('Numéro + Titulaire');
     expect(c.retrait.needs).toBe('Code + Montant');
     expect([c.flotte.word, c.flotte.en, c.retrait.word, c.retrait.en]).toEqual(['Flotte', 'Float', 'Retrait', 'Withdrawal']);
-    const [orange, mtn] = mobileMoneyGuideData().operators;
-    expect(orange.account).toBe('Compte UV');
-    expect(mtn.account).toBe('Compte Float');
+    // Chaque façon dit d'où l'on paie : c'est ce qui permet au client de choisir.
+    expect(c.flotte.sentence).toBe('Depuis votre puce commerciale.');
+    expect(c.retrait.sentence).toBe('Depuis votre compte Mobile Money.');
   });
 
   it('reste sobre : peu de mots, des phrases courtes, une idée par page', () => {
@@ -51,7 +51,7 @@ describe('la fiche Mobile Money', () => {
     expect(words.length).toBeLessThanOrEqual(120);
     const c = MOBILE_MONEY_GUIDE_COPY;
     const sentences = [
-      c.cover.lead, c.cover.flotte, c.cover.retrait, c.cover.choose,
+      c.cover.lead, c.cover.choose,
       c.flotte.sentence, c.flotte.check, c.retrait.sentence, c.retrait.legend,
       c.preuve.sentence, c.preuve.clear, c.preuve.thanks,
     ];

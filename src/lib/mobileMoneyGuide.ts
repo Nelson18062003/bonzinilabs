@@ -18,8 +18,6 @@ export type MobileMoneyOperatorKey = 'orange' | 'mtn';
 export interface MobileMoneyOperator {
   key: MobileMoneyOperatorKey;
   name: string;
-  /** Le type de notre compte côté Flotte, tel que l'opérateur le nomme (UV chez Orange, Float chez MTN). */
-  account: string;
   /** Le nom du titulaire, celui qui s'affiche sur le téléphone du client avant validation. */
   holder: string;
   /** Le numéro, groupé pour la lecture : « 696 10 38 64 ». */
@@ -50,11 +48,11 @@ export function mobileMoneyGuideData(): MobileMoneyGuideData {
   return {
     operators: [
       {
-        key: 'orange', name: 'Orange Money', account: 'Compte UV', holder: orangeMoneyAccount.accountName,
+        key: 'orange', name: 'Orange Money', holder: orangeMoneyAccount.accountName,
         number: groupPhone(orangeMoneyAccount.phone), numberIntl: intlPhone(orangeMoneyAccount.phone), merchantCode: omMerchantInfo.merchantCode,
       },
       {
-        key: 'mtn', name: 'MTN Mobile Money', account: 'Compte Float', holder: mtnMoneyAccount.accountName,
+        key: 'mtn', name: 'MTN Mobile Money', holder: mtnMoneyAccount.accountName,
         number: groupPhone(mtnMoneyAccount.phone), numberIntl: intlPhone(mtnMoneyAccount.phone), merchantCode: mtnMerchantInfo.merchantCode,
       },
     ],
@@ -74,8 +72,6 @@ export const MOBILE_MONEY_GUIDE_COPY = {
   cover: {
     kicker: 'Pour vos dépôts',
     lead: 'Deux façons de nous payer.',
-    flotte: 'Transfert vers notre numéro.',
-    retrait: 'Notre code, avec le montant.',
     or: 'ou',
     choose: 'Choisissez une seule façon.',
     preuve: 'Puis la preuve',
@@ -90,7 +86,7 @@ export const MOBILE_MONEY_GUIDE_COPY = {
     needs: 'Numéro + Titulaire',
     number: 'Numéro',
     holder: 'Titulaire',
-    check: 'Nom différent ? Ne validez pas.',
+    check: 'Titulaire différent ? Ne validez pas.',
   },
   retrait: {
     eyebrow: 'Façon 2 sur 2',
@@ -99,12 +95,13 @@ export const MOBILE_MONEY_GUIDE_COPY = {
     sentence: 'Depuis votre compte Mobile Money.',
     needs: 'Code + Montant',
     code: 'Code',
-    legend: 'La somme, en chiffres, sans espace.',
+    example: '50000',
+    legend: 'Sans espace.',
   },
   preuve: {
     eyebrow: 'Dans les deux cas',
     word: 'La preuve',
-    sentence: 'Envoyez la capture juste après le paiement.',
+    sentence: 'Transmettez-nous la capture juste après le paiement.',
     needs: '4 éléments',
     shot: 'Votre capture',
     items: ['Date et heure', 'Identifiant de transaction', 'Intitulé du compte', 'Montant'],
