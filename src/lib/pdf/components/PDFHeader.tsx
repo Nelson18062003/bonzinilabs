@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export type PDFHeaderType = 'depot' | 'paiement' | 'devis' | 'recu-cargo' | 'facture' | 'bon-retrait' | 'manifeste';
+export type PDFHeaderType = 'depot' | 'paiement' | 'devis' | 'recu-cargo' | 'facture' | 'bon-retrait' | 'manifeste' | 'mobile-money';
 
 const TYPE_LABEL: Record<PDFHeaderType, string> = {
   depot: 'REÇU DE DÉPÔT',
@@ -96,6 +96,7 @@ const TYPE_LABEL: Record<PDFHeaderType, string> = {
   facture: 'FACTURE ACQUITTÉE',
   'bon-retrait': 'BON DE RETRAIT',
   manifeste: 'MANIFESTE',
+  'mobile-money': 'COORDONNÉES MOBILE MONEY',
 };
 
 export interface PDFHeaderProps {

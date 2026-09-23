@@ -4,7 +4,7 @@
 // note. Copie au toucher. Logique getInstructionInfo 100% PRÉSERVÉE.
 // ============================================================
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, FileDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import {
   omMerchantInfo,
   mtnMerchantInfo,
 } from '@/data/depositMethodsData';
+import { deliverMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 
 interface Deposit {
   method: string;
@@ -273,6 +274,17 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-[12.5px] text-[#9A6B12] dark:text-[#E0B978]">{info.note}</span>
         </div>
       )}
+
+      {/* La fiche complète (les deux opérateurs, les deux façons), à garder ou à envoyer. */}
+      {deposit.method.startsWith('om_') || deposit.method.startsWith('mtn_') ? (
+        <button
+          type="button"
+          onClick={() => { void deliverMobileMoneyGuidePdf().then((o) => { if (o === 'downloaded') toast.success(t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
+          className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
+        >
+          <FileDown className="h-4 w-4" /> {t('instructions.guidePdf', { defaultValue: 'Fiche Mobile Money (PDF)' })}
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -262,6 +262,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'pdf-recu': { Comp: () => <PdfDoc kind="recu" />, route: '/' },
   'pdf-facture': { Comp: () => <PdfDoc kind="facture" />, route: '/' },
   'pdf-bon': { Comp: () => <PdfDoc kind="bon" />, route: '/' },
+  'pdf-mobile-money': { Comp: () => <PdfDoc kind="mobile-money" />, route: '/' },
   'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },

@@ -11,8 +11,9 @@ import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { activePayments } from '@/lib/cargoQuote';
 import { buildInvoicePdf, buildQuotePdf, buildReceiptPdf } from '@/lib/cargoQuotePdf';
 import { buildReleaseNotePdf } from '@/lib/releaseNotePdf';
+import { buildMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 
-type Kind = 'devis' | 'recu' | 'facture' | 'bon';
+type Kind = 'devis' | 'recu' | 'facture' | 'bon' | 'mobile-money';
 
 export function PdfDoc({ kind }: { kind: Kind }) {
   const { data: q2 } = useCargoQuote('dep2');
@@ -29,6 +30,7 @@ export function PdfDoc({ kind }: { kind: Kind }) {
       if (kind === 'recu' && q2) { const p = activePayments(q2)[0]; if (p) file = await buildReceiptPdf(q2, p, s); }
       if (kind === 'facture' && q3) file = await buildInvoicePdf(q3, s);
       if (kind === 'bon' && release) file = await buildReleaseNotePdf(release, null);
+      if (kind === 'mobile-money') file = await buildMobileMoneyGuidePdf();
       if (!file) return;
       (window as unknown as { __pdf?: File }).__pdf = file;
       setName(file.name);

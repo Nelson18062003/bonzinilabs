@@ -193,9 +193,10 @@ export const orangeMoneyAccount: MobileMoneyInfo = {
   accountName: 'WONDER PHONE',
 };
 
+// Ligne MTN de la société (23/09/2026) : le nom affiché par MoMo à la confirmation est « NORTON GAUSS BONZINI SARL 1 ».
 export const mtnMoneyAccount: MobileMoneyInfo = {
-  phone: '6 52 23 68 56',
-  accountName: 'NGANGON SOH NELSON',
+  phone: '6 52 40 36 02',
+  accountName: 'NORTON GAUSS BONZINI SARL 1',
 };
 
 export const waveAccount: MobileMoneyInfo = {
@@ -211,8 +212,8 @@ export const omMerchantInfo: MerchantInfo = {
 };
 
 export const mtnMerchantInfo: MerchantInfo = {
-  accountName: 'NGANGON SOH NELSON',
-  merchantCode: '*126*14*652236856*MONTANT#', 
+  accountName: 'NORTON GAUSS BONZINI SARL 1',
+  merchantCode: '*126*14*652403602*MONTANT#',
 };
 
 // Max 5 000 000 XAF per mobile money transaction
