@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Svg, Path } from '@react-pdf/renderer';
 import { colors } from '../styles';
 
 // ─── LOGO SVG BONZINI (tracés originaux — NE PAS MODIFIER) ───────────────────
-function PdfLogo({ size = 32 }: { size?: number }) {
+export function PdfLogo({ size = 32 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Path

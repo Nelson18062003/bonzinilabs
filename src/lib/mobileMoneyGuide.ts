@@ -1,9 +1,15 @@
 // ============================================================
-// LA FICHE MOBILE MONEY — les données, tirées de la même source que l'app
-// (src/data/depositMethodsData.ts) pour que la fiche envoyée au client dise
-// toujours les mêmes numéros, noms et codes que l'écran de dépôt.
-// Deux opérateurs, deux façons chacun : la FLOTTE (transfert vers notre
-// numéro) et le RETRAIT (paiement par code marchand).
+// LA FICHE MOBILE MONEY — les données et les textes, tirés de la même source
+// que l'app (src/data/depositMethodsData.ts) pour que la fiche remise au client
+// dise toujours les mêmes numéros, noms et codes que l'écran de dépôt.
+//
+// Deux façons de payer, présentées SÉPARÉMENT, chacune sur sa page :
+//   · la FLOTTE (Float) : transfert de flotte vers notre compte — il faut
+//     notre NUMÉRO et le nom du TITULAIRE ;
+//   · le RETRAIT (Withdrawal) : notre code à composer — il faut le CODE, où
+//     seul MONTANT change.
+// Le document est émis par la société (NORTON GAUSS BONZINI SARL) : aucun
+// site, aucune marque d'app, aucun plafond, aucune étape de menu inventée.
 // ============================================================
 import { mtnMerchantInfo, mtnMoneyAccount, omMerchantInfo, orangeMoneyAccount } from '@/data/depositMethodsData';
 
@@ -12,36 +18,23 @@ export type MobileMoneyOperatorKey = 'orange' | 'mtn';
 export interface MobileMoneyOperator {
   key: MobileMoneyOperatorKey;
   name: string;
-  /** Le nom qui s'affiche sur le téléphone du client à la confirmation. */
+  /** Le type de notre compte côté Flotte, tel que l'opérateur le nomme (UV chez Orange, Float chez MTN). */
+  account: string;
+  /** Le nom du titulaire, celui qui s'affiche sur le téléphone du client avant validation. */
   holder: string;
   /** Le numéro, groupé pour la lecture : « 696 10 38 64 ». */
   number: string;
   /** Le numéro international : « +237 696 10 38 64 ». */
   numberIntl: string;
-  /** Le code marchand, avec MONTANT à remplacer. */
+  /** Le code du Retrait, avec MONTANT à remplacer. */
   merchantCode: string;
-  /** Le code USSD du transfert classique, pour la façon « Flotte ». */
-  transferUssd: string;
-  /** Le nom du PIN, tel que l'opérateur le dit. */
-  pinName: string;
-  /** Une précision sur le nom affiché, quand il pourrait faire douter (le « 1 » de MTN). */
-  holderNote?: string;
 }
-
-/**
- * Le plafond usuel d'UNE opération Mobile Money au Cameroun — celui que l'app
- * rappelle sous les retraits (`instructions.notes.*WithdrawalLimit`). Différent
- * de MOBILE_MONEY_TRANSACTION_LIMIT (depositMethodsData), qui borne le montant
- * d'un dépôt déclaré dans le formulaire, flotte comprise.
- */
-export const MOBILE_MONEY_USUAL_CAP_XAF = 500_000;
 
 export interface MobileMoneyGuideData {
   operators: MobileMoneyOperator[];
-  limitXaf: number;
 }
 
-/** « 6 96 10 38 64 » → « 696 10 38 64 » ; « +237 691 000 003 » reste tel quel. */
+/** « 6 96 10 38 64 » → « 696 10 38 64 » ; un numéro étranger reste tel quel. */
 export function groupPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '');
   const local = digits.startsWith('237') ? digits.slice(3) : digits;
@@ -57,17 +50,79 @@ export function mobileMoneyGuideData(): MobileMoneyGuideData {
   return {
     operators: [
       {
-        key: 'orange', name: 'Orange Money', holder: orangeMoneyAccount.accountName, number: groupPhone(orangeMoneyAccount.phone), numberIntl: intlPhone(orangeMoneyAccount.phone),
-        merchantCode: omMerchantInfo.merchantCode, transferUssd: '#150*1*1#', pinName: 'code PIN Orange Money',
+        key: 'orange', name: 'Orange Money', account: 'Compte UV', holder: orangeMoneyAccount.accountName,
+        number: groupPhone(orangeMoneyAccount.phone), numberIntl: intlPhone(orangeMoneyAccount.phone), merchantCode: omMerchantInfo.merchantCode,
       },
       {
-        key: 'mtn', name: 'MTN Mobile Money', holder: mtnMoneyAccount.accountName, number: groupPhone(mtnMoneyAccount.phone), numberIntl: intlPhone(mtnMoneyAccount.phone),
-        merchantCode: mtnMerchantInfo.merchantCode, transferUssd: '*126#', pinName: 'code PIN MTN MoMo',
-        holderNote: 'Le « 1 » fait partie du nom.',
+        key: 'mtn', name: 'MTN Mobile Money', account: 'Compte Float', holder: mtnMoneyAccount.accountName,
+        number: groupPhone(mtnMoneyAccount.phone), numberIntl: intlPhone(mtnMoneyAccount.phone), merchantCode: mtnMerchantInfo.merchantCode,
       },
     ],
-    limitXaf: MOBILE_MONEY_USUAL_CAP_XAF,
   };
 }
 
-export const MOBILE_MONEY_GUIDE_FILENAME = 'bonzini-coordonnees-mobile-money.pdf';
+/**
+ * Tout le texte courant de la fiche, à un seul endroit : une idée par page,
+ * des phrases courtes. Le test de la fiche compte les mots et interdit les
+ * mentions qui n'ont rien à y faire.
+ */
+export const MOBILE_MONEY_GUIDE_COPY = {
+  docTitle: 'Coordonnées Mobile Money',
+  titleTop: 'Coordonnées',
+  titleBottom: 'Mobile Money',
+  way: { flotte: 'Flotte', retrait: 'Retrait', preuve: 'Preuve' },
+  cover: {
+    kicker: 'Pour vos dépôts',
+    lead: 'Deux façons de nous payer.',
+    flotte: 'Transfert vers notre numéro.',
+    retrait: 'Notre code, avec le montant.',
+    or: 'ou',
+    choose: 'Choisissez une seule façon.',
+    preuve: 'Puis la preuve',
+    operators: 'Opérateurs acceptés',
+    page: 'Page',
+  },
+  flotte: {
+    eyebrow: 'Façon 1 sur 2',
+    word: 'Flotte',
+    en: 'Float',
+    sentence: 'Depuis votre puce commerciale.',
+    needs: 'Numéro + Titulaire',
+    number: 'Numéro',
+    holder: 'Titulaire',
+    check: 'Nom différent ? Ne validez pas.',
+  },
+  retrait: {
+    eyebrow: 'Façon 2 sur 2',
+    word: 'Retrait',
+    en: 'Withdrawal',
+    sentence: 'Depuis votre compte Mobile Money.',
+    needs: 'Code + Montant',
+    code: 'Code',
+    legend: 'La somme, en chiffres, sans espace.',
+  },
+  preuve: {
+    eyebrow: 'Dans les deux cas',
+    word: 'La preuve',
+    sentence: 'Envoyez la capture juste après le paiement.',
+    needs: '4 éléments',
+    shot: 'Votre capture',
+    items: ['Date et heure', 'Identifiant de transaction', 'Intitulé du compte', 'Montant'],
+    clear: 'Capture complète, nette, lisible.',
+    thanks: 'Merci pour votre confiance.',
+  },
+} as const;
+
+/** Tous les textes de la fiche, à plat, pour compter les mots. */
+export function mobileMoneyGuideWords(): string[] {
+  const out: string[] = [];
+  const walk = (v: unknown) => {
+    if (typeof v === 'string') out.push(...v.split(/\s+/).filter(Boolean));
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(MOBILE_MONEY_GUIDE_COPY);
+  return out;
+}
+
+export const MOBILE_MONEY_GUIDE_FILENAME = 'coordonnees-mobile-money.pdf';

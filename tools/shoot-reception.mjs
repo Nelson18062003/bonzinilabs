@@ -292,20 +292,27 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
       await raster.route(/\/__pdfjs\//, (r) => { const f = r.request().url().split('/__pdfjs/')[1].split('?')[0]; try { r.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(join(process.env.PDFJS_DIR, f)) }); } catch { r.fulfill({ status: 404, body: '' }); } });
       await raster.setViewportSize({ width: 1300, height: 1800 });
       await raster.goto('http://localhost:8080/screenshot.html?screen=blank', { waitUntil: 'domcontentloaded' });
-      await raster.evaluate(async (data) => {
-        document.body.innerHTML = '<canvas id="c"></canvas>'; document.body.style.margin = '0';
+      // Toutes les pages : la première en `<screen>.png`, les suivantes en `<screen>-p2.png`, `-p3.png`…
+      const pages = await raster.evaluate(async (data) => {
+        document.body.innerHTML = ''; document.body.style.margin = '0';
         const pdfjs = await import('/__pdfjs/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc = '/__pdfjs/pdf.worker.mjs';
         const bytes = Uint8Array.from(atob(data), (ch) => ch.charCodeAt(0));
         const doc = await pdfjs.getDocument({ data: bytes }).promise;
-        const pg = await doc.getPage(1);
-        const vp = pg.getViewport({ scale: 2 });
-        const c = document.getElementById('c'); c.width = vp.width; c.height = vp.height;
-        await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        for (let n = 1; n <= doc.numPages; n++) {
+          const pg = await doc.getPage(n);
+          const vp = pg.getViewport({ scale: 2 });
+          const c = document.createElement('canvas'); c.id = `c${n}`; c.width = vp.width; c.height = vp.height; c.style.display = 'block';
+          document.body.appendChild(c);
+          await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        }
+        return doc.numPages;
       }, b64);
-      await raster.locator('#c').screenshot({ path: join(OUT, `${screen}.png`) });
+      for (let n = 1; n <= pages; n++) {
+        await raster.locator(`#c${n}`).screenshot({ path: join(OUT, n === 1 ? `${screen}.png` : `${screen}-p${n}.png`) });
+      }
       await raster.close();
-      console.log(screen, 'ok (pdf + png)');
+      console.log(screen, `ok (pdf + ${pages} page(s) png)`);
       continue;
     }
   }

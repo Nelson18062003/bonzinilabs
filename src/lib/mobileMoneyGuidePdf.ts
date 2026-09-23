@@ -1,12 +1,14 @@
 // ============================================================
-// LA FICHE MOBILE MONEY — fabrication du fichier (react-pdf, en-tête officiel)
-// et sa remise : téléchargement direct, ou feuille de partage sur téléphone.
+// LA FICHE MOBILE MONEY — fabrication du fichier (react-pdf) et sa remise :
+// téléchargement direct, ou feuille de partage sur téléphone. Le document est
+// émis au nom de la société : NORTON GAUSS BONZINI SARL.
 // ============================================================
 import { createElement, type ReactElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
 import { MOBILE_MONEY_GUIDE_FILENAME, mobileMoneyGuideData } from '@/lib/mobileMoneyGuide';
 import { MobileMoneyGuidePDF } from '@/lib/pdf/templates/MobileMoneyGuidePDF';
+import { LEGAL_NAME } from '@/lib/companyIdentity';
 
 export async function buildMobileMoneyGuidePdf(): Promise<File> {
   const el: ReactElement = createElement(MobileMoneyGuidePDF, { data: mobileMoneyGuideData() });
@@ -17,5 +19,5 @@ export async function buildMobileMoneyGuidePdf(): Promise<File> {
 export async function downloadMobileMoneyGuidePdf(): Promise<void> { downloadFile(await buildMobileMoneyGuidePdf()); }
 
 export async function deliverMobileMoneyGuidePdf(): Promise<'shared' | 'downloaded'> {
-  return deliverFile(await buildMobileMoneyGuidePdf(), 'Bonzini · Coordonnées Mobile Money');
+  return deliverFile(await buildMobileMoneyGuidePdf(), `${LEGAL_NAME} · Coordonnées Mobile Money`);
 }
