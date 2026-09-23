@@ -195,7 +195,10 @@
     "notes": {
       "omWithdrawalLimit": "限额：每笔交易500,000 XAF",
       "mtnWithdrawalLimit": "限额：每笔交易500,000 XAF"
-    }
+    },
+    "guidePortrait": "PDF 资料 · 竖版",
+    "guideLandscape": "PDF 资料 · 横版",
+    "guideDownloaded": "Mobile Money 资料已下载"
   },
   "proof": {
     "title": "附加充值凭证",

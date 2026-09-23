@@ -1,26 +1,26 @@
 // ============================================================
 // LA FICHE « COORDONNÉES MOBILE MONEY » — un livret de quatre pages A4,
-// émis par NORTON GAUSS BONZINI SARL, une idée par page :
+// émis par NORTON GAUSS BONZINI SARL, en français ET en anglais, en portrait
+// ou en paysage. Une idée par page :
 //   1 · Couverture : deux façons de payer, séparées par un « ou ».
-//   2 · FLOTTE (Float) — page claire, violet : le numéro et le titulaire.
-//   3 · RETRAIT (Withdrawal) — page sombre, orange : le code à composer.
-//   4 · LA PREUVE — page claire, or : ce que la capture doit montrer.
-// Flotte et Retrait portent un numéro (façon 1, façon 2) ; la preuve porte une
-// coche : ce n'est pas une troisième façon, c'est ce qui suit l'une ou l'autre.
-// Chaque façon a sa couleur ET son fond : on ne peut pas confondre la page
-// Flotte et la page Retrait, même en miniature sur un téléphone. Les logos sont
-// les logos officiels des opérateurs.
-//
-// Système : rayons 20 (conteneurs) · 12 (éléments intérieurs) · 6 (cases) ;
-// petites capitales sur trois niveaux (micro 8 pt, surtitre 11 pt, marque 10 pt).
+//   2 · FLOTTE / FLOAT — page claire, violet : le numéro et le titulaire.
+//   3 · RETRAIT / WITHDRAWAL — page sombre, orange : le code à composer.
+//   4 · LA PREUVE / PROOF OF PAYMENT — page claire, or : ce que la capture
+//       doit montrer.
+// Lisible par tous, y compris sur un petit écran et par des yeux fatigués :
+// aucun texte utile sous 11 pt, le numéro, le titulaire et le code en très
+// gros. Le français d'abord, l'anglais juste dessous.
+// Les logos sont les logos officiels des opérateurs. Aucun site, aucun plafond.
 // ============================================================
-import { Document, Page, View, Text, Image, Link, Svg, Path, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text as PdfText, Image, Link, Svg, Path, StyleSheet } from '@react-pdf/renderer';
+import type { ComponentProps } from 'react';
 import type { ReactNode } from 'react';
+import type { Style } from '@react-pdf/types';
 import { PdfLogo } from '../components/PDFHeader';
 import { colors } from '../styles';
 import '../fonts';
 import { MOBILE_MONEY_GUIDE_COPY as COPY } from '@/lib/mobileMoneyGuide';
-import type { MobileMoneyGuideData, MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
+import type { Bi, GuideOrientation, MobileMoneyGuideData, MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import orangeMoneyLogo from '@/assets/deposit-logos/orange-money.png';
 
@@ -34,141 +34,183 @@ const MTN_LOGO_PATH = 'M640,0C286.5,0,0,143.3,0,320s286.5,320,640,320s640-143.3,
 /** Le logo Orange Money, recadré au ras du dessin (1000 × 269 px). */
 const ORANGE_RATIO = 1000 / 269;
 
-const PAGE_W = 595.28;
-const M = 44; // marge latérale
-const CONTENT_W = PAGE_W - 2 * M;
 const INK = colors.violetDark;
 const WHITE = colors.white;
 const CALL_GREEN = '#1faa59';
 const TOTAL = 4;
 const R = { box: 20, inner: 12, cell: 6 };
+// Textes secondaires : plus foncés que le gris habituel, pour les yeux fatigués.
+const MUTED = '#5f5775';
 // Sur fond sombre : couleurs pleines pré-mélangées (react-pdf rend mal le rgba des bordures).
 const PANEL = '#251a37';
 const LINE_ON_INK = '#362d42';
 const LINE_ON_PANEL = '#3a2f4b';
 const OR_RING = '#5f586a';
-const ON_INK_SOFT = '#cfc8da';
+const ON_INK_SOFT = '#d6d0e0';
+
+/**
+ * Tout texte de la fiche passe par ici : pas de césure. « BONZINI » ne devient
+ * jamais « BONZI-NI » — on ne coupe qu'entre deux mots.
+ */
+const noHyphen = (word: string) => [word];
+function Text(props: ComponentProps<typeof PdfText>) {
+  return <PdfText hyphenationCallback={noHyphen} {...props} />;
+}
+
+/* ─────────────── Les deux mises en page ─────────────── */
+
+interface Layout {
+  o: GuideOrientation;
+  W: number;
+  H: number;
+  /** Marge latérale. */
+  M: number;
+  /** Largeur utile. */
+  CW: number;
+  /** Cartes opérateur côte à côte (paysage) ou l'une sous l'autre (portrait). */
+  columns: boolean;
+  heroWord: number;
+  heroEnWord: number;
+  ghost: number;
+  keys: number;
+  holder: number;
+  code: number;
+  coverTitle: number;
+  doorWord: number;
+  doorEnWord: number;
+}
+
+const PORTRAIT: Layout = { o: 'portrait', W: 595.28, H: 841.89, M: 40, CW: 595.28 - 80, columns: false, heroWord: 54, heroEnWord: 28, ghost: 300, keys: 44, holder: 28, code: 32, coverTitle: 54, doorWord: 26, doorEnWord: 16 };
+const LANDSCAPE: Layout = { o: 'landscape', W: 841.89, H: 595.28, M: 36, CW: 841.89 - 72, columns: true, heroWord: 50, heroEnWord: 26, ghost: 280, keys: 40, holder: 26, code: 30, coverTitle: 44, doorWord: 23, doorEnWord: 14 };
 
 type SectionKey = 'flotte' | 'retrait' | 'preuve';
-/** Une couleur par partie ; le texte principal et le texte secondaire posés dessus (contraste vérifié). */
-const SECTION: Record<SectionKey, { n?: string; color: string; ink: string; soft: string; page: number }> = {
-  flotte: { n: '1', color: colors.violet, ink: WHITE, soft: WHITE, page: 2 },
-  retrait: { n: '2', color: colors.orange, ink: WHITE, soft: INK, page: 3 },
-  preuve: { color: colors.gold, ink: INK, soft: INK, page: 4 },
+/** Une couleur par partie ; la couleur du français et de l'anglais posés dessus (contraste vérifié). */
+const SECTION: Record<SectionKey, { n: string; color: string; fr: string; en: string; page: number }> = {
+  flotte: { n: '1', color: colors.violet, fr: WHITE, en: WHITE, page: 2 },
+  retrait: { n: '2', color: colors.orange, fr: WHITE, en: INK, page: 3 },
+  preuve: { n: '3', color: colors.gold, fr: INK, en: INK, page: 4 },
 };
 const ORDER: SectionKey[] = ['flotte', 'retrait', 'preuve'];
 
-const MICRO = { fontSize: 8, fontWeight: 700, letterSpacing: 1.6, textTransform: 'uppercase' } as const;
-const OVERLINE = { fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' } as const;
-const BRANDLINE = { fontSize: 10, fontWeight: 800, letterSpacing: 2 } as const;
+const LABEL = { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase' } as const;
 
 const st = StyleSheet.create({
   page: { padding: 0, fontFamily: 'DM Sans', color: colors.text },
-  body: { paddingHorizontal: M, paddingTop: 18 },
-  label: { ...MICRO, color: colors.muted, marginBottom: 7 },
+  label: { ...LABEL, color: MUTED, marginBottom: 7 },
 
-  // ── Bandeau de partie (pages 2 à 4) ──
-  hero: { position: 'relative', overflow: 'hidden', paddingTop: 26, paddingHorizontal: M, paddingBottom: 24 },
-  heroGhost: { position: 'absolute', right: -40, top: -86, fontSize: 340, fontWeight: 900, lineHeight: 1 },
-  heroGhostCheck: { position: 'absolute', right: -30, top: -30 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 26 },
+  // ── Bandeau de partie ──
+  hero: { position: 'relative', overflow: 'hidden' },
+  heroGhost: { position: 'absolute', fontWeight: 900, lineHeight: 1, color: WHITE, opacity: 0.16 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  brandRow: { flexDirection: 'row', alignItems: 'center' },
   markDisc: { width: 28, height: 28, borderRadius: 14, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  brandName: { ...BRANDLINE },
-  eyebrow: { ...OVERLINE, marginBottom: 8 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  heroWord: { fontSize: 60, fontWeight: 900, letterSpacing: 3, textTransform: 'uppercase', lineHeight: 1 },
-  heroEn: { fontSize: 17, fontWeight: 700, marginLeft: 12, marginBottom: 1 },
-  heroBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-  heroSentence: { fontSize: 15, fontWeight: 700 },
-  needs: { borderRadius: 14, paddingVertical: 6, paddingHorizontal: 13 },
-  needsText: { fontSize: 10, fontWeight: 800, letterSpacing: 0.6 },
+  brandName: { fontSize: 10.5, fontWeight: 800, letterSpacing: 2 },
+  folio: { fontSize: 10.5, fontWeight: 800, letterSpacing: 1.4 },
+  eyebrow: { ...LABEL, marginBottom: 6 },
+  heroWord: { fontWeight: 900, letterSpacing: 2.5, textTransform: 'uppercase', lineHeight: 1 },
+  heroEnWord: { fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
+  sentenceFr: { fontSize: 16, fontWeight: 700 },
+  sentenceEn: { fontSize: 14, fontWeight: 500, marginTop: 2 },
+  needs: { borderRadius: R.inner, paddingVertical: 7, paddingHorizontal: 14 },
+  needsFr: { fontSize: 12, fontWeight: 800 },
+  needsEn: { fontSize: 11, fontWeight: 600, marginTop: 1 },
 
-  // ── Pied de page : où l'on est dans le livret ──
-  footer: { position: 'absolute', left: M, right: M, bottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: 9 },
+  // ── Pied de page ──
+  footer: { position: 'absolute', bottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: 8 },
+  footerText: { fontSize: 9, fontWeight: 600, letterSpacing: 0.4 },
   way: { flexDirection: 'row', alignItems: 'center' },
-  wayItem: { flexDirection: 'row', alignItems: 'center', marginRight: 14 },
-  wayDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
-  wayText: { fontSize: 7.5, letterSpacing: 0.4 },
-  folio: { fontSize: 7.5, fontWeight: 700, letterSpacing: 1 },
+  wayItem: { flexDirection: 'row', alignItems: 'center', marginLeft: 14 },
+  wayDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 5 },
+  wayText: { fontSize: 9, letterSpacing: 0.3 },
 
-  // ── Cartes opérateur (pages 2 et 3) ──
-  card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, marginBottom: 10, overflow: 'hidden' },
-  cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, marginBottom: 10, overflow: 'hidden' },
-  cardHead: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, borderBottomWidth: 1 },
-  cardBody: { paddingTop: 14, paddingBottom: 18, paddingHorizontal: 20 },
+  // ── Cartes opérateur ──
+  card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, overflow: 'hidden' },
+  cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, overflow: 'hidden' },
+  cardHead: { height: 52, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
+  cardBody: { paddingTop: 11, paddingBottom: 14, paddingHorizontal: 18 },
+  opMark: { flexDirection: 'row', alignItems: 'center' },
+  opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
   logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
+  kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 4, paddingHorizontal: 10, alignItems: 'flex-end' },
+  kindFr: { fontSize: 10, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
+  kindEn: { fontSize: 9, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
 
-  // ── Page Flotte ──
+  // ── Flotte ──
   keys: { flexDirection: 'row' },
-  key: { flexBasis: 0, alignItems: 'center', backgroundColor: '#f5f2f9', borderWidth: 1, borderColor: '#e6def0', borderRadius: R.inner, paddingTop: 3, paddingBottom: 1 },
-  keyText: { fontSize: 38, fontWeight: 900, color: INK, letterSpacing: 1.6, lineHeight: 1.15 },
-  holder: { alignSelf: 'flex-start', borderWidth: 1.5, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 7, paddingHorizontal: 14 },
-  holderText: { fontSize: 17, fontWeight: 900, color: INK, letterSpacing: 0.5 },
+  key: { flexBasis: 0, alignItems: 'center', backgroundColor: '#f5f2f9', borderWidth: 1, borderColor: '#e2d9ee', borderRadius: R.inner, paddingTop: 2, paddingBottom: 0 },
+  keyText: { fontWeight: 900, color: INK, letterSpacing: 1.2, lineHeight: 1.15 },
+  holder: { alignSelf: 'flex-start', borderWidth: 2, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 5, paddingHorizontal: 14 },
+  holderText: { fontWeight: 900, color: INK, letterSpacing: 0.3, lineHeight: 1.15 },
   alert: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 11, paddingHorizontal: 16, backgroundColor: colors.violetLight },
-  alertDisc: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  alertMark: { fontSize: 15, fontWeight: 900, color: WHITE, lineHeight: 1 },
-  alertText: { fontSize: 15, fontWeight: 700, color: INK },
+  alertDisc: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  alertMark: { fontSize: 17, fontWeight: 900, color: WHITE, lineHeight: 1 },
+  alertFr: { fontSize: 16, fontWeight: 800, color: INK },
+  alertEn: { fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 1 },
 
-  // ── Page Retrait (fond sombre) ──
-  dial: { backgroundColor: WHITE, borderRadius: R.inner, paddingVertical: 14, paddingLeft: 16, paddingRight: 12 },
+  // ── Retrait ──
+  dial: { backgroundColor: WHITE, borderRadius: R.inner, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 },
   codeRow: { flexDirection: 'row', alignItems: 'center' },
-  digits: { fontWeight: 800, color: INK, letterSpacing: 0.4 },
+  digits: { fontWeight: 800, color: INK, letterSpacing: 0.4, lineHeight: 1.2 },
   amountBox: { backgroundColor: colors.orange, borderRadius: R.cell, paddingTop: 2, paddingBottom: 1, paddingHorizontal: 6, marginRight: 3 },
   amountText: { fontWeight: 900, color: WHITE, letterSpacing: 0.6 },
-  call: { width: 38, height: 38, borderRadius: 19, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+  call: { width: 40, height: 40, borderRadius: 20, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
   legend: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 11, paddingHorizontal: 16, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL },
-  exampleBox: { backgroundColor: WHITE, borderRadius: R.cell, paddingTop: 2, paddingBottom: 1, paddingHorizontal: 6, marginLeft: 10 },
-  exampleText: { fontSize: 13, fontWeight: 900, color: INK, letterSpacing: 0.6 },
-  legendText: { fontSize: 15, fontWeight: 700, color: WHITE, marginLeft: 14 },
+  legendFr: { fontSize: 16, fontWeight: 800, color: WHITE },
+  legendEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 1 },
 
-  // ── Page Preuve ──
-  ticketHead: { flexDirection: 'row', alignItems: 'center', height: 66, paddingHorizontal: 22 },
+  // ── Preuve ──
+  ticketHead: { flexDirection: 'row', alignItems: 'center', height: 60, paddingHorizontal: 20 },
   ticketOk: { width: 30, height: 30, borderRadius: 15, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  barA: { width: 150, height: 10, borderRadius: 5, backgroundColor: '#ddd5ea', marginBottom: 6 },
-  barB: { width: 92, height: 8, borderRadius: 4, backgroundColor: '#ddd5ea' },
-  ticketTag: { ...MICRO, marginLeft: 'auto', color: colors.muted },
-  ticketRow: { flexDirection: 'row', alignItems: 'center', height: 58, marginHorizontal: 22, borderTopWidth: 1, borderTopColor: '#ddd5ea', borderStyle: 'dashed' },
-  goldCheck: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  ticketLabel: { flex: 1, fontSize: 16, fontWeight: 800, color: INK },
-  ticketBar: { height: 10, borderRadius: 5, backgroundColor: '#ddd5ea' },
-  clear: { fontSize: 11, fontWeight: 600, color: colors.muted, textAlign: 'center' },
-  thanks: { position: 'absolute', left: M, right: M, bottom: 64, flexDirection: 'row', alignItems: 'center', backgroundColor: INK, borderRadius: R.box, paddingVertical: 20, paddingHorizontal: 24 },
-  thanksText: { fontSize: 17, fontWeight: 800, color: WHITE },
-  thanksSign: { ...MICRO, color: colors.gold, marginTop: 5 },
+  barA: { width: 130, height: 10, borderRadius: 5, backgroundColor: '#ddd5ea', marginBottom: 6 },
+  barB: { width: 80, height: 8, borderRadius: 4, backgroundColor: '#ddd5ea' },
+  ticketTag: { marginLeft: 'auto', alignItems: 'flex-end' },
+  ticketRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderTopWidth: 1, borderTopColor: '#ddd5ea', borderStyle: 'dashed' },
+  goldCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  itemFr: { fontSize: 18, fontWeight: 800, color: INK },
+  itemEn: { fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 1 },
+  ticketBar: { height: 10, borderRadius: 5, backgroundColor: '#ddd5ea', marginLeft: 'auto' },
+  clearRow: { flexDirection: 'row', alignItems: 'center' },
+  clearFr: { fontSize: 15, fontWeight: 800, color: INK },
+  clearEn: { fontSize: 13, fontWeight: 500, color: MUTED, marginTop: 1 },
+  thanks: { flexDirection: 'row', alignItems: 'center', backgroundColor: INK, borderRadius: R.box, paddingVertical: 18, paddingHorizontal: 22 },
+  thanksFr: { fontSize: 19, fontWeight: 800, color: WHITE },
+  thanksEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
+  thanksSign: { fontSize: 9.5, fontWeight: 800, color: colors.gold, letterSpacing: 1.8, marginTop: 6 },
 
-  // ── Couverture (fond sombre) ──
-  coverTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 36, paddingHorizontal: M },
-  coverBrand: { ...BRANDLINE, color: WHITE, marginLeft: 10 },
-  coverFolio: { ...MICRO, color: ON_INK_SOFT },
-  stripe: { flexDirection: 'row', marginHorizontal: M, marginTop: 18 },
+  // ── Couverture ──
+  coverBrand: { fontSize: 11, fontWeight: 800, color: WHITE, letterSpacing: 2, marginLeft: 10 },
+  coverFolio: { fontSize: 10.5, fontWeight: 800, color: ON_INK_SOFT, letterSpacing: 1.4 },
+  stripe: { flexDirection: 'row' },
   stripeSeg: { flex: 1, height: 3, borderRadius: 2 },
-  coverTitles: { paddingHorizontal: M, marginTop: 44 },
-  coverKicker: { ...OVERLINE, color: colors.gold, marginBottom: 14 },
-  coverTitleTop: { fontSize: 26, fontWeight: 400, color: ON_INK_SOFT, lineHeight: 1.1 },
-  coverTitleBottom: { fontSize: 56, fontWeight: 900, color: WHITE, letterSpacing: -0.8, lineHeight: 1.05 },
-  coverBody: { paddingHorizontal: M, marginTop: 30 },
-  coverLead: { fontSize: 16, fontWeight: 700, color: WHITE, marginBottom: 4 },
-  choose: { fontSize: 11, fontWeight: 700, color: ON_INK_SOFT, marginBottom: 16 },
-  door: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, paddingVertical: 22, paddingHorizontal: 22 },
-  doorLead: { width: 50, alignItems: 'center', marginRight: 16 },
-  doorDisc: { width: 50, height: 50, borderRadius: 25, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center' },
-  doorDiscText: { fontSize: 24, fontWeight: 900, lineHeight: 1 },
-  doorWordRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  doorWord: { fontSize: 28, fontWeight: 900, color: WHITE, letterSpacing: 2.4, textTransform: 'uppercase', lineHeight: 1 },
-  doorEn: { fontSize: 14, fontWeight: 700, marginLeft: 9, marginBottom: 1 },
-  doorSentence: { fontSize: 14, fontWeight: 700, color: WHITE, marginTop: 6 },
-  doorPage: { flexDirection: 'row', alignItems: 'center', backgroundColor: WHITE, borderRadius: 13, paddingVertical: 6, paddingHorizontal: 11 },
-  doorPageText: { ...MICRO, color: INK, marginRight: 5 },
-  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 10 },
+  coverKicker: { ...LABEL, color: colors.gold, letterSpacing: 2, marginBottom: 12 },
+  coverTitleTop: { fontSize: 24, fontWeight: 400, color: ON_INK_SOFT, lineHeight: 1.1 },
+  coverTitleBottom: { fontWeight: 900, color: WHITE, letterSpacing: -0.8, lineHeight: 1.05 },
+  leadFr: { fontSize: 19, fontWeight: 800, color: WHITE },
+  leadEn: { fontSize: 15, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
+  door: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, paddingVertical: 16, paddingHorizontal: 18 },
+  doorDisc: { width: 46, height: 46, borderRadius: 23, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  doorDiscText: { fontSize: 22, fontWeight: 900, lineHeight: 1 },
+  doorWordRow: { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' },
+  doorWord: { fontSize: 26, fontWeight: 900, color: WHITE, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1 },
+  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 1 },
+  doorFr: { fontSize: 14, fontWeight: 700, color: WHITE, marginTop: 6 },
+  doorEn: { fontSize: 13, fontWeight: 500, marginTop: 1 },
+  doorPage: { flexDirection: 'row', alignItems: 'center', backgroundColor: WHITE, borderRadius: 14, paddingVertical: 6, paddingHorizontal: 11, marginLeft: 10 },
+  doorPageText: { fontSize: 10, fontWeight: 800, color: INK, letterSpacing: 1.2, textTransform: 'uppercase', marginRight: 5 },
+  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   orLine: { flex: 1, height: 1, backgroundColor: LINE_ON_INK },
-  orDisc: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, borderColor: OR_RING, alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
-  orText: { fontSize: 12, fontWeight: 800, color: WHITE, lineHeight: 1 },
-  proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 13, paddingHorizontal: 20.5, marginTop: 28 },
-  proofDisc: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center' },
-  proofWord: { flex: 1, fontSize: 15, fontWeight: 900, color: WHITE, textTransform: 'uppercase', letterSpacing: 1.8 },
-  plate: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 128, backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 26, paddingHorizontal: M },
-  plateLogos: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  plateCell: { width: CONTENT_W / 2 },
+  orDisc: { width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: OR_RING, alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
+  orFr: { fontSize: 14, fontWeight: 800, color: WHITE, lineHeight: 1 },
+  orEn: { fontSize: 10, fontWeight: 600, color: ON_INK_SOFT, lineHeight: 1, marginTop: 2 },
+  chooseFr: { fontSize: 14, fontWeight: 800, color: colors.gold, textAlign: 'center' },
+  chooseEn: { fontSize: 12.5, fontWeight: 600, color: '#e7c48e', textAlign: 'center', marginTop: 1 },
+  proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 12, paddingHorizontal: 18 },
+  proofDisc: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  proofDiscText: { fontSize: 19, fontWeight: 900, color: INK, lineHeight: 1 },
+  proofFr: { fontSize: 16, fontWeight: 900, color: WHITE, textTransform: 'uppercase', letterSpacing: 1.8 },
+  proofEn: { fontSize: 12, fontWeight: 700, color: ON_INK_SOFT, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 2 },
+  plate: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  plateLogos: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   link: { textDecoration: 'none' },
 });
 
@@ -182,21 +224,26 @@ function ArrowIcon({ color, size = 10 }: { color: string; size?: number }) {
   );
 }
 
-function CheckIcon({ color, size = 12, weight = 3.2 }: { color: string; size?: number; weight?: number }) {
+function CheckIcon({ color, size = 12 }: { color: string; size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5 12.5l4.5 4.5L19 7" stroke={color} strokeWidth={weight} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <Path d="M5 12.5l4.5 4.5L19 7" stroke={color} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
     </Svg>
   );
 }
 
 /** Le combiné du bouton « Appeler » : on compose le code, puis on appelle. */
-function CallIcon({ size = 16 }: { size?: number }) {
+function CallIcon({ size = 18 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path fill={WHITE} d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
     </Svg>
   );
+}
+
+/** « NUMÉRO · NUMBER » : une étiquette dans les deux langues, sur une ligne. */
+function biLabel(b: Bi): string {
+  return b.fr.toLowerCase() === b.en.toLowerCase() ? b.fr : `${b.fr} · ${b.en}`;
 }
 
 /* ─────────────── Logos officiels ─────────────── */
@@ -212,77 +259,123 @@ function MtnLogo({ height }: { height: number }) {
   );
 }
 
-/** Le logo seul, sans nom tapé à côté. Sur fond sombre, le logo Orange (texte noir) est posé sur une plaque blanche de même hauteur que la tuile MTN. */
-function OperatorLogo({ op, height, onDark }: { op: MobileMoneyOperator; height: number; onDark?: boolean }) {
-  if (op.key === 'mtn') return <MtnLogo height={height} />;
-  if (onDark) {
-    const h = height - 6;
-    return <View style={st.logoPlate}><Image src={orangeMoneyLogo} style={{ width: h * ORANGE_RATIO, height: h }} /></View>;
-  }
-  return <Image src={orangeMoneyLogo} style={{ width: height * ORANGE_RATIO, height }} />;
+/** Le logo officiel, et le nom quand le logo ne le porte pas (MTN). Sur fond sombre, le logo Orange (texte noir) est posé sur une plaque blanche. */
+function OperatorMark({ op, height, onDark }: { op: MobileMoneyOperator; height: number; onDark?: boolean }) {
+  let logo: ReactNode;
+  if (op.key === 'mtn') logo = <MtnLogo height={height} />;
+  else if (onDark) logo = <View style={st.logoPlate}><Image src={orangeMoneyLogo} style={{ width: (height - 6) * ORANGE_RATIO, height: height - 6 }} /></View>;
+  else logo = <Image src={orangeMoneyLogo} style={{ width: height * ORANGE_RATIO, height }} />;
+  return (
+    <View style={st.opMark}>
+      {logo}
+      {op.key === 'mtn' ? <Text style={[st.opName, { color: onDark ? WHITE : colors.text }]}>{op.name}</Text> : null}
+    </View>
+  );
 }
 
 /* ─────────────── Éléments communs ─────────────── */
 
-function Footer({ active, dark }: { active: SectionKey; dark?: boolean }) {
-  const muted = dark ? ON_INK_SOFT : colors.muted;
+function Footer({ L, active, dark }: { L: Layout; active: SectionKey; dark?: boolean }) {
+  const muted = dark ? ON_INK_SOFT : MUTED;
   return (
-    <View style={[st.footer, { borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
+    <View style={[st.footer, { left: L.M, right: L.M, borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
+      <Text style={[st.footerText, { color: muted }]}>{LEGAL_NAME}</Text>
       <View style={st.way}>
         {ORDER.map((k) => {
           const on = active === k;
           return (
             <View key={k} style={st.wayItem}>
-              <View style={[st.wayDot, { backgroundColor: on ? SECTION[k].color : dark ? LINE_ON_PANEL : '#dcd6e4' }]} />
-              <Text style={[st.wayText, { color: on ? (dark ? WHITE : colors.text) : muted, fontWeight: on ? 800 : 500 }]}>{COPY.way[k]}</Text>
+              <View style={[st.wayDot, { backgroundColor: on ? SECTION[k].color : dark ? LINE_ON_PANEL : '#d6cfe0' }]} />
+              <Text style={[st.wayText, { color: on ? (dark ? WHITE : INK) : muted, fontWeight: on ? 800 : 500 }]}>{biLabel(COPY.way[k])}</Text>
             </View>
           );
         })}
       </View>
-      <Text style={[st.folio, { color: muted }]}>{SECTION[active].page} / {TOTAL}</Text>
     </View>
   );
 }
 
-function Hero({ section, eyebrow, word, en, sentence, needs }: { section: SectionKey; eyebrow: string; word: string; en?: string; sentence: string; needs: string }) {
-  const s = SECTION[section];
+function NeedsPill({ section, needs }: { section: SectionKey; needs: Bi }) {
   const onGold = section === 'preuve';
+  const bg = onGold ? INK : WHITE;
+  const fg = onGold ? colors.gold : section === 'retrait' ? '#c53d06' : '#7b2fd0';
   return (
-    <View id={section} style={[st.hero, { backgroundColor: s.color }]}>
-      {s.n
-        ? <Text style={[st.heroGhost, { color: WHITE, opacity: 0.13, right: section === 'flotte' ? 4 : -40 }]}>{s.n}</Text>
-        : (
-          <View style={st.heroGhostCheck}>
-            <Svg width={260} height={260} viewBox="0 0 24 24">
-              <Path d="M5 12.5l4.5 4.5L19 7" stroke={WHITE} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.22} />
-            </Svg>
-          </View>
-        )}
-      <View style={st.brandRow}>
-        <View style={st.markDisc}><PdfLogo size={19} /></View>
-        <Text style={[st.brandName, { color: s.ink }]}>{LEGAL_NAME}</Text>
-      </View>
-      <Text style={[st.eyebrow, { color: s.soft }]}>{eyebrow}</Text>
-      <View style={st.titleRow}>
-        <Text style={[st.heroWord, { color: s.ink }]}>{word}</Text>
-        {en ? <Text style={[st.heroEn, { color: s.soft }]}>{en}</Text> : null}
-      </View>
-      <View style={st.heroBottom}>
-        <Text style={[st.heroSentence, { color: s.ink }]}>{sentence}</Text>
-        <View style={[st.needs, { backgroundColor: onGold ? INK : WHITE }]}>
-          <Text style={[st.needsText, { color: onGold ? colors.gold : section === 'retrait' ? '#d8430a' : s.color }]}>{needs}</Text>
-        </View>
-      </View>
+    <View style={[st.needs, { backgroundColor: bg }]}>
+      <Text style={[st.needsFr, { color: fg }]}>{needs.fr}</Text>
+      <Text style={[st.needsEn, { color: fg }]}>{needs.en}</Text>
     </View>
   );
 }
 
-function SectionPage({ section, dark, children }: { section: SectionKey; dark?: boolean; children: ReactNode }) {
+function Hero({ L, section, eyebrow, word, sentence, needs }: { L: Layout; section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi }) {
+  const s = SECTION[section];
+  const portrait = L.o === 'portrait';
+  // En paysage, le mot anglais passe sous le mot français quand les deux ne tiennent pas côte à côte
+  // (« LA PREUVE / PROOF OF PAYMENT ») : la phrase de droite garde alors sa place.
+  const titleW = word.fr.length * 0.72 * L.heroWord + 14 + word.en.length * 0.7 * L.heroEnWord;
+  const stacked = !portrait && titleW > L.CW * 0.6;
+  const title = (
+    <View>
+      <Text style={[st.eyebrow, { color: s.en }]}>{biLabel(eyebrow)}</Text>
+      <View style={stacked ? undefined : { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <Text style={[st.heroWord, { color: s.fr, fontSize: L.heroWord, marginRight: 14 }]}>{word.fr}</Text>
+        <Text style={[st.heroEnWord, { color: s.en, fontSize: L.heroEnWord, marginBottom: stacked ? 0 : L.heroWord * 0.06, marginTop: stacked ? 6 : 0 }]}>{word.en}</Text>
+      </View>
+    </View>
+  );
+  const sentenceBlock = (
+    <View style={portrait ? { flex: 1, marginRight: 12 } : { alignSelf: 'stretch', alignItems: 'flex-end', marginBottom: 10 }}>
+      <Text style={[st.sentenceFr, { color: s.fr, textAlign: portrait ? 'left' : 'right' }]}>{sentence.fr}</Text>
+      <Text style={[st.sentenceEn, { color: s.en, textAlign: portrait ? 'left' : 'right' }]}>{sentence.en}</Text>
+    </View>
+  );
   return (
-    <Page size="A4" style={[st.page, { backgroundColor: dark ? INK : WHITE }]}>
+    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: portrait ? 22 : 20, paddingBottom: portrait ? 20 : 18 }]}>
+      <Text style={[st.heroGhost, { fontSize: L.ghost, right: section === 'flotte' ? 4 : -40, top: portrait ? -80 : -70, opacity: section === 'preuve' ? 0.22 : 0.16 }]}>{s.n}</Text>
+      <View style={[st.heroTop, { marginBottom: portrait ? 18 : 14 }]}>
+        <View style={st.brandRow}>
+          <View style={st.markDisc}><PdfLogo size={19} /></View>
+          <Text style={[st.brandName, { color: s.fr }]}>{LEGAL_NAME}</Text>
+        </View>
+        <Text style={[st.folio, { color: s.en }]}>{s.page} / {TOTAL}</Text>
+      </View>
+      {portrait ? (
+        <>
+          {title}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 }}>
+            {sentenceBlock}
+            <NeedsPill section={section} needs={needs} />
+          </View>
+        </>
+      ) : (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          {title}
+          <View style={{ flex: 1, marginLeft: 28, alignItems: 'flex-end' }}>
+            {sentenceBlock}
+            <NeedsPill section={section} needs={needs} />
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function SectionPage({ L, section, dark, children }: { L: Layout; section: SectionKey; dark?: boolean; children: ReactNode }) {
+  return (
+    <Page size="A4" orientation={L.o} style={[st.page, { backgroundColor: dark ? INK : WHITE }]}>
       {children}
-      <Footer active={section} dark={dark} />
+      <Footer L={L} active={section} dark={dark} />
     </Page>
+  );
+}
+
+/** Les deux cartes opérateur : l'une sous l'autre en portrait, côte à côte en paysage (Orange à gauche). */
+function OperatorGrid({ L, children }: { L: Layout; children: ReactNode[] }) {
+  if (!L.columns) return <View>{children.map((c, i) => <View key={i} style={{ marginBottom: 10 }}>{c}</View>)}</View>;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 10 }}>
+      {children.map((c, i) => <View key={i} style={{ flex: 1, marginLeft: i ? 12 : 0 }}>{c}</View>)}
+    </View>
   );
 }
 
@@ -291,26 +384,25 @@ function SectionPage({ section, dark, children }: { section: SectionKey; dark?: 
 function PagePill({ page, color = INK, background = WHITE }: { page: number; color?: string; background?: string }) {
   return (
     <View style={[st.doorPage, { backgroundColor: background }]}>
-      <Text style={[st.doorPageText, { color }]}>{COPY.cover.page} {page}</Text>
-      <ArrowIcon color={color} size={9} />
+      <Text style={[st.doorPageText, { color }]}>{COPY.page.fr} {page}</Text>
+      <ArrowIcon color={color} size={10} />
     </View>
   );
 }
 
-function Door({ section, word, en, sentence }: { section: 'flotte' | 'retrait'; word: string; en: string; sentence: string }) {
+function Door({ L, section, word, sentence }: { L: Layout; section: 'flotte' | 'retrait'; word: Bi; sentence: Bi }) {
   const s = SECTION[section];
   return (
     <Link src={`#${section}`} style={st.link}>
       <View style={[st.door, { backgroundColor: s.color }]}>
-        <View style={st.doorLead}>
-          <View style={st.doorDisc}><Text style={[st.doorDiscText, { color: s.color }]}>{s.n}</Text></View>
-        </View>
+        <View style={st.doorDisc}><Text style={[st.doorDiscText, { color: s.color }]}>{s.n}</Text></View>
         <View style={{ flex: 1 }}>
           <View style={st.doorWordRow}>
-            <Text style={st.doorWord}>{word}</Text>
-            <Text style={[st.doorEn, { color: s.soft }]}>{en}</Text>
+            <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
+            <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord }]}>{word.en}</Text>
           </View>
-          <Text style={st.doorSentence}>{sentence}</Text>
+          <Text style={st.doorFr}>{sentence.fr}</Text>
+          <Text style={[st.doorEn, { color: s.en }]}>{sentence.en}</Text>
         </View>
         <PagePill page={s.page} />
       </View>
@@ -318,10 +410,67 @@ function Door({ section, word, en, sentence }: { section: 'flotte' | 'retrait'; 
   );
 }
 
-function Cover({ operators }: { operators: MobileMoneyOperator[] }) {
+function CoverDoors({ L }: { L: Layout }) {
   return (
-    <Page size="A4" style={[st.page, { backgroundColor: INK }]}>
-      <View style={st.coverTop}>
+    <View>
+      <Door L={L} section="flotte" word={COPY.flotte.word} sentence={COPY.cover.flotte} />
+      <View style={st.orRow}>
+        <View style={st.orLine} />
+        <View style={st.orDisc}>
+          <Text style={st.orFr}>{COPY.cover.or.fr}</Text>
+          <Text style={st.orEn}>{COPY.cover.or.en}</Text>
+        </View>
+        <View style={st.orLine} />
+      </View>
+      <Door L={L} section="retrait" word={COPY.retrait.word} sentence={COPY.cover.retrait} />
+      <View style={{ marginTop: 10, marginBottom: 12 }}>
+        <Text style={st.chooseFr}>{COPY.cover.choose.fr}</Text>
+        <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text>
+      </View>
+      <Link src="#preuve" style={st.link}>
+        <View style={st.proofDoor}>
+          <View style={st.proofDisc}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
+          <View style={{ flex: 1 }}>
+            <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
+            <Text style={st.proofEn}>{COPY.cover.preuve.en}</Text>
+          </View>
+          <PagePill page={SECTION.preuve.page} color={INK} background={colors.gold} />
+        </View>
+      </Link>
+    </View>
+  );
+}
+
+function CoverTitles({ L }: { L: Layout }) {
+  return (
+    <View>
+      <Text style={st.coverKicker}>{biLabel(COPY.cover.kicker)}</Text>
+      <Text style={st.coverTitleTop}>{COPY.titleTop.fr} <Text style={{ color: '#a79fb6' }}>/ {COPY.titleTop.en}</Text></Text>
+      <Text style={[st.coverTitleBottom, { fontSize: L.coverTitle }]}>{COPY.titleBottom}</Text>
+      <View style={{ marginTop: L.o === 'portrait' ? 22 : 18 }}>
+        <Text style={st.leadFr}>{COPY.cover.lead.fr}</Text>
+        <Text style={st.leadEn}>{COPY.cover.lead.en}</Text>
+      </View>
+    </View>
+  );
+}
+
+/** La plaque blanche : les logos officiels sur leur fond d'origine. */
+function LogosPlate({ L, operators, height }: { L: Layout; operators: MobileMoneyOperator[]; height: number }) {
+  return (
+    <View style={[st.plate, { height, paddingHorizontal: L.M, paddingTop: 20 }]}>
+      <Text style={st.label}>{biLabel(COPY.cover.operators)}</Text>
+      <View style={st.plateLogos}>
+        {operators.map((op) => <View key={op.key} style={{ width: L.CW / (L.columns ? 3 : 2) }}><OperatorMark op={op} height={36} /></View>)}
+      </View>
+    </View>
+  );
+}
+
+function CoverBrand({ L }: { L: Layout }) {
+  return (
+    <>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <PdfLogo size={30} />
           <Text style={st.coverBrand}>{LEGAL_NAME}</Text>
@@ -329,69 +478,65 @@ function Cover({ operators }: { operators: MobileMoneyOperator[] }) {
         <Text style={st.coverFolio}>1 / {TOTAL}</Text>
       </View>
       {/* Le code couleur du livret, annoncé d'un trait : Flotte · Retrait · Preuve. */}
-      <View style={st.stripe}>
+      <View style={[st.stripe, { marginTop: L.o === 'portrait' ? 16 : 12 }]}>
         {ORDER.map((k, i) => <View key={k} style={[st.stripeSeg, { backgroundColor: SECTION[k].color, marginLeft: i ? 5 : 0 }]} />)}
       </View>
+    </>
+  );
+}
 
-      <View style={st.coverTitles}>
-        <Text style={st.coverKicker}>{COPY.cover.kicker}</Text>
-        <Text style={st.coverTitleTop}>{COPY.titleTop}</Text>
-        <Text style={st.coverTitleBottom}>{COPY.titleBottom}</Text>
-      </View>
-
-      <View style={st.coverBody}>
-        <Text style={st.coverLead}>{COPY.cover.lead}</Text>
-        <Text style={st.choose}>{COPY.cover.choose}</Text>
-        <Door section="flotte" word={COPY.flotte.word} en={COPY.flotte.en} sentence={COPY.flotte.sentence} />
-        <View style={st.orRow}>
-          <View style={st.orLine} />
-          <View style={st.orDisc}><Text style={st.orText}>{COPY.cover.or}</Text></View>
-          <View style={st.orLine} />
+function Cover({ L, operators }: { L: Layout; operators: MobileMoneyOperator[] }) {
+  if (L.o === 'portrait') {
+    return (
+      <Page size="A4" orientation="portrait" style={[st.page, { backgroundColor: INK }]}>
+        <View style={{ paddingHorizontal: L.M, paddingTop: 32 }}>
+          <CoverBrand L={L} />
+          <View style={{ marginTop: 28 }}><CoverTitles L={L} /></View>
+          <View style={{ marginTop: 18 }}><CoverDoors L={L} /></View>
         </View>
-        <Door section="retrait" word={COPY.retrait.word} en={COPY.retrait.en} sentence={COPY.retrait.sentence} />
-        <Link src="#preuve" style={st.link}>
-          <View style={st.proofDoor}>
-            <View style={[st.doorLead, { width: 50 }]}>
-              <View style={st.proofDisc}><CheckIcon color={INK} size={16} /></View>
-            </View>
-            <Text style={st.proofWord}>{COPY.cover.preuve}</Text>
-            <PagePill page={SECTION.preuve.page} color={INK} background={colors.gold} />
-          </View>
-        </Link>
-      </View>
-
-      {/* La plaque blanche : les logos officiels sur leur fond d'origine, à la même hauteur. */}
-      <View style={st.plate}>
-        <Text style={st.label}>{COPY.cover.operators}</Text>
-        <View style={st.plateLogos}>
-          {operators.map((op) => <View key={op.key} style={st.plateCell}><OperatorLogo op={op} height={35.4} /></View>)}
+        <LogosPlate L={L} operators={operators} height={104} />
+      </Page>
+    );
+  }
+  return (
+    <Page size="A4" orientation="landscape" style={[st.page, { backgroundColor: INK }]}>
+      <View style={{ paddingHorizontal: L.M, paddingTop: 26 }}>
+        <CoverBrand L={L} />
+        <View style={{ flexDirection: 'row', marginTop: 24 }}>
+          <View style={{ width: L.CW * 0.45, paddingRight: 22, paddingTop: 10 }}><CoverTitles L={L} /></View>
+          <View style={{ flex: 1 }}><CoverDoors L={L} /></View>
         </View>
       </View>
+      <LogosPlate L={L} operators={operators} height={92} />
     </Page>
   );
 }
 
 /* ─────────────── Page 2 · Flotte ─────────────── */
 
-function FlotteCard({ op }: { op: MobileMoneyOperator }) {
+function FlotteCard({ L, op }: { L: Layout; op: MobileMoneyOperator }) {
   const groups = op.number.split(' ');
   return (
-    <View style={st.card} wrap={false}>
+    <View style={[st.card, { flexGrow: 1 }]} wrap={false}>
       <View style={[st.cardHead, { borderBottomColor: colors.border, backgroundColor: '#fcfbfd' }]}>
-        <OperatorLogo op={op} height={30} />
+        <OperatorMark op={op} height={32} />
+        <View style={st.kind}>
+          <Text style={st.kindFr}>{op.account.fr}</Text>
+          <Text style={st.kindEn}>{op.account.en}</Text>
+        </View>
       </View>
       <View style={st.cardBody}>
-        <Text style={st.label}>{COPY.flotte.number}</Text>
+        <Text style={st.label}>{biLabel(COPY.flotte.number)}</Text>
         {/* Le numéro en touches, larges comme leurs chiffres : on le recopie groupe par groupe. */}
         <View style={st.keys}>
           {groups.map((g, i) => (
             <View key={i} style={[st.key, { flexGrow: g.length, marginRight: i < groups.length - 1 ? 8 : 0 }]}>
-              <Text style={st.keyText}>{g}</Text>
+              <Text style={[st.keyText, { fontSize: L.keys }]}>{g}</Text>
             </View>
           ))}
         </View>
-        <Text style={[st.label, { marginTop: 14 }]}>{COPY.flotte.holder}</Text>
-        <View style={st.holder}><Text style={st.holderText}>{op.holder}</Text></View>
+        <Text style={[st.label, { marginTop: 11 }]}>{biLabel(COPY.flotte.holder)}</Text>
+        <View style={st.holder}><Text style={[st.holderText, { fontSize: L.holder }]}>{op.holder}</Text></View>
       </View>
     </View>
   );
@@ -399,37 +544,77 @@ function FlotteCard({ op }: { op: MobileMoneyOperator }) {
 
 /* ─────────────── Page 3 · Retrait ─────────────── */
 
-const CODE_SIZE = 28;
+/**
+ * Le code, coupé en lignes après un « * » pour tenir dans l'écran sans
+ * rapetisser. Largeurs estimées (DM Sans 800) : chiffre 0,6 em, « # » 0,64 em,
+ * « * » agrandi 0,58 em, la case MONTANT ≈ 4,35 em + ses marges ; 7 % de marge
+ * de sécurité. MONTANT et le « # » final ne sont jamais séparés.
+ */
+type CodePiece = { kind: 'text'; text: string } | { kind: 'amount'; after: string };
 
-/** Chiffres, puis « * » et « # » agrandis et recentrés : ce sont les signes qu'on saute le plus facilement. */
-function CodeText({ text }: { text: string }) {
-  const parts = text.split(/([*#])/).filter(Boolean);
+function textWidth(t: string, size: number): number {
+  let em = 0;
+  for (const ch of t) em += ch === '*' ? 0.58 : ch === '#' ? 0.64 : 0.6;
+  return em * size * 1.07;
+}
+
+function pieceWidth(p: CodePiece, size: number): number {
+  if (p.kind === 'text') return textWidth(p.text, size);
+  return 7 * 0.72 * 0.86 * size * 1.07 + 12 + 3 + textWidth(p.after, size);
+}
+
+function codeLines(code: string, size: number, room: number, callRoom: number): CodePiece[][] {
+  const [before, after] = code.split('MONTANT');
+  const pieces: CodePiece[] = [...(before.match(/[^*]*\*|[^*]+$/g) ?? []).map((t) => ({ kind: 'text' as const, text: t })), { kind: 'amount', after }];
+  const lines: CodePiece[][] = [];
+  let cur: CodePiece[] = [];
+  let w = 0;
+  pieces.forEach((p, i) => {
+    const pw = pieceWidth(p, size) + (i === pieces.length - 1 ? callRoom : 0);
+    if (cur.length && w + pw > room) { lines.push(cur); cur = []; w = 0; }
+    cur.push(p);
+    w += pieceWidth(p, size);
+  });
+  if (cur.length) lines.push(cur);
+  return lines;
+}
+
+/** Chiffres, puis « * » agrandis et recentrés : ce sont les signes qu'on saute le plus facilement. */
+function CodeText({ text, size }: { text: string; size: number }) {
+  const parts = text.split(/([*])/).filter(Boolean);
   return (
     <>
       {parts.map((p, i) => (p === '*'
-        ? <Text key={i} style={[st.digits, { fontSize: CODE_SIZE * 1.3, position: 'relative', top: CODE_SIZE * 0.2 }]}>*</Text>
-        : <Text key={i} style={[st.digits, { fontSize: CODE_SIZE }]}>{p}</Text>))}
+        ? <Text key={i} style={[st.digits, { fontSize: size * 1.3, lineHeight: 0.8, position: 'relative', top: -size * 0.03 }]}>*</Text>
+        : <Text key={i} style={[st.digits, { fontSize: size }]}>{p}</Text>))}
     </>
   );
 }
 
-function RetraitCard({ op }: { op: MobileMoneyOperator }) {
-  const [before, after] = op.merchantCode.split('MONTANT');
+function RetraitCard({ L, op, room }: { L: Layout; op: MobileMoneyOperator; room: number }) {
+  const lines = codeLines(op.merchantCode, L.code, room, 52);
   return (
-    <View style={st.cardDark} wrap={false}>
+    <View style={[st.cardDark, { flexGrow: 1 }]} wrap={false}>
       <View style={[st.cardHead, { borderBottomColor: LINE_ON_PANEL }]}>
-        <OperatorLogo op={op} height={30} onDark />
+        <OperatorMark op={op} height={32} onDark />
       </View>
       <View style={st.cardBody}>
-        <Text style={[st.label, { color: ON_INK_SOFT }]}>{COPY.retrait.code}</Text>
-        {/* L'écran du téléphone : le code sur deux lignes, coupé juste avant MONTANT, puis « Appeler ». */}
+        <Text style={[st.label, { color: ON_INK_SOFT }]}>{COPY.retrait.code.fr}</Text>
+        {/* L'écran du téléphone : le code, MONTANT en orange, puis « Appeler ». */}
         <View style={st.dial}>
-          <View style={st.codeRow}><CodeText text={before} /></View>
-          <View style={[st.codeRow, { marginTop: 6 }]}>
-            <View style={st.amountBox}><Text style={[st.amountText, { fontSize: CODE_SIZE * 0.86 }]}>MONTANT</Text></View>
-            <CodeText text={after} />
-            <View style={st.call}><CallIcon size={18} /></View>
-          </View>
+          {lines.map((line, li) => (
+            <View key={li} style={[st.codeRow, { marginTop: li ? 6 : 0 }]}>
+              {line.map((p, pi) => (p.kind === 'text'
+                ? <CodeText key={pi} text={p.text} size={L.code} />
+                : (
+                  <View key={pi} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={st.amountBox}><Text style={[st.amountText, { fontSize: L.code * 0.86 }]}>MONTANT</Text></View>
+                    <CodeText text={p.after} size={L.code} />
+                  </View>
+                )))}
+              {li === lines.length - 1 ? <View style={st.call}><CallIcon size={19} /></View> : null}
+            </View>
+          ))}
         </View>
       </View>
     </View>
@@ -451,16 +636,15 @@ function ticketPath(w: number, h: number, tooth: number): string {
   return `${d} Z`;
 }
 
-const PROOF_BAR_W = [96, 150, 120, 84];
-const TICKET_ROW = 58;
+const PROOF_BAR_W = [70, 110, 90, 60];
 
-function Ticket() {
+function Ticket({ width, rowH }: { width: number; rowH: number }) {
   const tooth = 9;
-  const h = 66 + COPY.preuve.items.length * TICKET_ROW + 14 + tooth;
+  const h = 60 + COPY.preuve.items.length * rowH + 14 + tooth;
   return (
-    <View style={{ width: CONTENT_W, height: h, position: 'relative', marginBottom: 10 }}>
-      <Svg width={CONTENT_W} height={h} style={{ position: 'absolute', top: 0, left: 0 }}>
-        <Path d={ticketPath(CONTENT_W, h, tooth)} fill="#f4f0f9" stroke="#d9d1e5" strokeWidth={1} />
+    <View style={{ width, height: h, position: 'relative' }}>
+      <Svg width={width} height={h} style={{ position: 'absolute', top: 0, left: 0 }}>
+        <Path d={ticketPath(width, h, tooth)} fill="#f4f0f9" stroke="#d9d1e5" strokeWidth={1} />
       </Svg>
       <View style={st.ticketHead}>
         <View style={st.ticketOk}><CheckIcon color={WHITE} size={15} /></View>
@@ -468,12 +652,18 @@ function Ticket() {
           <View style={st.barA} />
           <View style={st.barB} />
         </View>
-        <Text style={st.ticketTag}>{COPY.preuve.shot}</Text>
+        <View style={st.ticketTag}>
+          <Text style={[st.label, { marginBottom: 0 }]}>{COPY.preuve.shot.fr}</Text>
+          <Text style={[st.label, { marginBottom: 0, fontSize: 9.5, fontWeight: 600 }]}>{COPY.preuve.shot.en}</Text>
+        </View>
       </View>
       {COPY.preuve.items.map((item, i) => (
-        <View key={item} style={st.ticketRow}>
-          <View style={st.goldCheck}><CheckIcon color={INK} size={12} /></View>
-          <Text style={st.ticketLabel}>{item}</Text>
+        <View key={item.fr} style={[st.ticketRow, { height: rowH }]}>
+          <View style={st.goldCheck}><CheckIcon color={INK} size={14} /></View>
+          <View>
+            <Text style={st.itemFr}>{item.fr}</Text>
+            <Text style={st.itemEn}>{item.en}</Text>
+          </View>
           <View style={[st.ticketBar, { width: PROOF_BAR_W[i] }]} />
         </View>
       ))}
@@ -481,52 +671,92 @@ function Ticket() {
   );
 }
 
+function ClearLine() {
+  return (
+    <View style={st.clearRow}>
+      <View style={[st.goldCheck, { width: 26, height: 26, borderRadius: 13 }]}><CheckIcon color={INK} size={13} /></View>
+      <View style={{ flex: 1 }}>
+        <Text style={st.clearFr}>{COPY.preuve.clear.fr}</Text>
+        <Text style={st.clearEn}>{COPY.preuve.clear.en}</Text>
+      </View>
+    </View>
+  );
+}
+
+function Thanks() {
+  return (
+    <View style={st.thanks}>
+      <View style={[st.markDisc, { width: 38, height: 38, borderRadius: 19, marginRight: 16 }]}><PdfLogo size={26} /></View>
+      <View style={{ flex: 1 }}>
+        <Text style={st.thanksFr}>{COPY.preuve.thanks.fr}</Text>
+        <Text style={st.thanksEn}>{COPY.preuve.thanks.en}</Text>
+        <Text style={st.thanksSign}>{LEGAL_NAME}</Text>
+      </View>
+    </View>
+  );
+}
+
 /* ─────────────── Le document ─────────────── */
 
-export function MobileMoneyGuidePDF({ data }: { data: MobileMoneyGuideData }) {
+export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: MobileMoneyGuideData; orientation?: GuideOrientation }) {
+  const L = orientation === 'landscape' ? LANDSCAPE : PORTRAIT;
   const { operators } = data;
+  const body: Style = { paddingHorizontal: L.M, paddingTop: L.o === 'portrait' ? 16 : 14 };
+  // Place du code dans l'écran : largeur de la carte, moins ses marges et celles de l'écran.
+  const cardW = L.columns ? (L.CW - 12) / 2 : L.CW;
+  const codeRoom = cardW - 2 * 18 - 14 - 12 - 2;
   return (
-    <Document title={`${COPY.docTitle} — ${LEGAL_NAME}`} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
-      <Cover operators={operators} />
+    <Document title={`${COPY.docTitle.fr} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
+      <Cover L={L} operators={operators} />
 
-      <SectionPage section="flotte">
-        <Hero section="flotte" eyebrow={COPY.flotte.eyebrow} word={COPY.flotte.word} en={COPY.flotte.en} sentence={COPY.flotte.sentence} needs={COPY.flotte.needs} />
-        <View style={st.body}>
-          {operators.map((op) => <FlotteCard key={op.key} op={op} />)}
+      <SectionPage L={L} section="flotte">
+        <Hero L={L} section="flotte" eyebrow={COPY.flotte.eyebrow} word={COPY.flotte.word} sentence={COPY.flotte.sentence} needs={COPY.flotte.needs} />
+        <View style={body}>
+          <OperatorGrid L={L}>{operators.map((op) => <FlotteCard key={op.key} L={L} op={op} />)}</OperatorGrid>
           <View style={st.alert}>
             <View style={st.alertDisc}><Text style={st.alertMark}>!</Text></View>
-            <Text style={st.alertText}>{COPY.flotte.check}</Text>
+            <View>
+              <Text style={st.alertFr}>{COPY.flotte.check.fr}</Text>
+              <Text style={st.alertEn}>{COPY.flotte.check.en}</Text>
+            </View>
           </View>
         </View>
       </SectionPage>
 
-      <SectionPage section="retrait" dark>
-        <Hero section="retrait" eyebrow={COPY.retrait.eyebrow} word={COPY.retrait.word} en={COPY.retrait.en} sentence={COPY.retrait.sentence} needs={COPY.retrait.needs} />
-        <View style={st.body}>
-          {operators.map((op) => <RetraitCard key={op.key} op={op} />)}
-          {/* Un exemple plutôt qu'une règle : MONTANT devient la somme, en chiffres collés. */}
+      <SectionPage L={L} section="retrait" dark>
+        <Hero L={L} section="retrait" eyebrow={COPY.retrait.eyebrow} word={COPY.retrait.word} sentence={COPY.retrait.sentence} needs={COPY.retrait.needs} />
+        <View style={body}>
+          <OperatorGrid L={L}>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorGrid>
           <View style={st.legend}>
-            <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 13 }]}>MONTANT</Text></View>
-            <View style={{ marginLeft: 10 }}><ArrowIcon color={WHITE} size={13} /></View>
-            <View style={st.exampleBox}><Text style={st.exampleText}>{COPY.retrait.example}</Text></View>
-            <Text style={st.legendText}>{COPY.retrait.legend}</Text>
+            <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 14 }]}>MONTANT</Text></View>
+            <View style={{ marginLeft: 12, marginRight: 14 }}><ArrowIcon color={WHITE} size={14} /></View>
+            <View>
+              <Text style={st.legendFr}>{COPY.retrait.legend.fr}</Text>
+              <Text style={st.legendEn}>{COPY.retrait.legend.en}</Text>
+            </View>
           </View>
         </View>
       </SectionPage>
 
-      <SectionPage section="preuve">
-        <Hero section="preuve" eyebrow={COPY.preuve.eyebrow} word={COPY.preuve.word} sentence={COPY.preuve.sentence} needs={COPY.preuve.needs} />
-        <View style={st.body}>
-          <Ticket />
-          <Text style={st.clear}>{COPY.preuve.clear}</Text>
-        </View>
-        <View style={st.thanks}>
-          <View style={[st.markDisc, { width: 34, height: 34, borderRadius: 17, marginRight: 14 }]}><PdfLogo size={24} /></View>
-          <View>
-            <Text style={st.thanksText}>{COPY.preuve.thanks}</Text>
-            <Text style={st.thanksSign}>{LEGAL_NAME}</Text>
+      <SectionPage L={L} section="preuve">
+        <Hero L={L} section="preuve" eyebrow={COPY.preuve.eyebrow} word={COPY.preuve.word} sentence={COPY.preuve.sentence} needs={COPY.preuve.needs} />
+        {L.o === 'portrait' ? (
+          <>
+            <View style={body}>
+              <Ticket width={L.CW} rowH={60} />
+              <View style={{ marginTop: 12 }}><ClearLine /></View>
+            </View>
+            <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 58 }}><Thanks /></View>
+          </>
+        ) : (
+          <View style={[body, { flexDirection: 'row' }]}>
+            <Ticket width={L.CW * 0.56} rowH={52} />
+            <View style={{ flex: 1, marginLeft: 22, justifyContent: 'space-between', paddingTop: 8, paddingBottom: 9 }}>
+              <ClearLine />
+              <Thanks />
+            </View>
           </View>
-        </View>
+        )}
       </SectionPage>
     </Document>
   );

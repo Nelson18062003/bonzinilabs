@@ -195,7 +195,10 @@
     "notes": {
       "omWithdrawalLimit": "Limit: 500,000 XAF per transaction",
       "mtnWithdrawalLimit": "Limit: 500,000 XAF per transaction"
-    }
+    },
+    "guidePortrait": "PDF sheet · portrait",
+    "guideLandscape": "PDF sheet · landscape",
+    "guideDownloaded": "Mobile Money sheet downloaded"
   },
   "proof": {
     "title": "Attach deposit proofs",

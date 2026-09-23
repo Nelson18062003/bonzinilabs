@@ -146,20 +146,27 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
             </button>
-            <button
-              type="button"
-              onClick={() => { void deliverMobileMoneyGuidePdf().then((o) => { if (o === 'downloaded') toast.success('Fiche Mobile Money téléchargée'); }).catch((e: Error) => toast.error(e.message)); }}
-              className={cn('flex w-full items-center gap-3 border-t py-1 pt-3 text-left', SURFACE.divider)}
-            >
+            <div className={cn('flex w-full items-center gap-3 border-t py-1 pt-3 text-left', SURFACE.divider)}>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
                 <Smartphone className="h-[18px] w-[18px]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Fiche Mobile Money (PDF)</p>
-                <p className={cn('text-[14px]', TEXT.muted)}>Orange Money et MTN MoMo : numéros, noms, codes marchands, Flotte ou Retrait — à envoyer aux clients</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>Orange Money et MTN MoMo, en français et en anglais : numéros, titulaires, codes, Flotte ou Retrait — à envoyer aux clients</p>
+                <div className="mt-2 flex gap-2">
+                  {([['portrait', 'Portrait'], ['landscape', 'Paysage']] as const).map(([orientation, label]) => (
+                    <button
+                      key={orientation}
+                      type="button"
+                      onClick={() => { void deliverMobileMoneyGuidePdf(orientation).then((o) => { if (o === 'downloaded') toast.success('Fiche Mobile Money téléchargée'); }).catch((e: Error) => toast.error(e.message)); }}
+                      className="flex items-center gap-1.5 rounded-full bg-[#F5F5F5] px-3.5 py-2 text-[13px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]"
+                    >
+                      <FileDown className="h-4 w-4" /> {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <FileDown className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
-            </button>
+            </div>
           </Card>
         </div>
 

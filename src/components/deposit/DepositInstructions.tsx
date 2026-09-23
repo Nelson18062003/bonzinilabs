@@ -275,15 +275,23 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
         </div>
       )}
 
-      {/* La fiche complète (les deux opérateurs, les deux façons), à garder ou à envoyer. */}
+      {/* La fiche complète (les deux opérateurs, les deux façons, en français et en anglais), à garder ou à envoyer : portrait ou paysage. */}
       {deposit.method.startsWith('om_') || deposit.method.startsWith('mtn_') ? (
-        <button
-          type="button"
-          onClick={() => { void deliverMobileMoneyGuidePdf().then((o) => { if (o === 'downloaded') toast.success(t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
-          className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
-        >
-          <FileDown className="h-4 w-4" /> {t('instructions.guidePdf', { defaultValue: 'Fiche Mobile Money (PDF)' })}
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          {(['portrait', 'landscape'] as const).map((orientation) => (
+            <button
+              key={orientation}
+              type="button"
+              onClick={() => { void deliverMobileMoneyGuidePdf(orientation).then((o) => { if (o === 'downloaded') toast.success(t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
+              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
+            >
+              <FileDown className="h-4 w-4 shrink-0" />
+              {orientation === 'portrait'
+                ? t('instructions.guidePortrait', { defaultValue: 'Fiche PDF · portrait' })
+                : t('instructions.guideLandscape', { defaultValue: 'Fiche PDF · paysage' })}
+            </button>
+          ))}
+        </div>
       ) : null}
     </div>
   );

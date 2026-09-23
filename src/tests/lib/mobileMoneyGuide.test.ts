@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { groupPhone, intlPhone, mobileMoneyGuideData, mobileMoneyGuideWords, MOBILE_MONEY_GUIDE_COPY } from '@/lib/mobileMoneyGuide';
+import { groupPhone, intlPhone, mobileMoneyGuideData, mobileMoneyGuideWords, MOBILE_MONEY_GUIDE_COPY, MOBILE_MONEY_GUIDE_FILENAME } from '@/lib/mobileMoneyGuide';
 import { mtnMerchantInfo, mtnMoneyAccount, omMerchantInfo, orangeMoneyAccount } from '@/data/depositMethodsData';
+
+/** Toutes les paires { fr, en } du texte de la fiche. */
+function pairs(v: unknown, out: { fr: string; en: string }[] = []): { fr: string; en: string }[] {
+  if (Array.isArray(v)) v.forEach((x) => pairs(x, out));
+  else if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    if (typeof o.fr === 'string' && typeof o.en === 'string') out.push({ fr: o.fr, en: o.en });
+    else Object.values(o).forEach((x) => pairs(x, out));
+  }
+  return out;
+}
 
 describe('la fiche Mobile Money', () => {
   it('groupe les numéros comme on les dicte au Cameroun', () => {
@@ -31,32 +42,40 @@ describe('la fiche Mobile Money', () => {
     expect(mtn.merchantCode).toBe(mtnMerchantInfo.merchantCode);
     expect(groupPhone(orangeMoneyAccount.phone)).toBe(orange.number);
     expect(groupPhone(mtnMoneyAccount.phone)).toBe(mtn.number);
-    // Le code de retrait MTN se déduit du numéro : une ligne changée, un code changé.
+    // Le code du Retrait MTN se déduit du numéro : une ligne changée, un code changé.
     expect(mtn.merchantCode).toContain(mtn.number.replace(/\s/g, ''));
     expect(mtnMerchantInfo.accountName).toBe(mtnMoneyAccount.accountName);
   });
 
-  it('sépare les deux façons : la Flotte donne un numéro et un titulaire, le Retrait un code', () => {
+  it('est bilingue : chaque texte a sa version française et anglaise, Flotte / Float et Retrait / Withdrawal en tête', () => {
     const c = MOBILE_MONEY_GUIDE_COPY;
-    expect(c.flotte.needs).toBe('Numéro + Titulaire');
-    expect(c.retrait.needs).toBe('Code + Montant');
-    expect([c.flotte.word, c.flotte.en, c.retrait.word, c.retrait.en]).toEqual(['Flotte', 'Float', 'Retrait', 'Withdrawal']);
-    // Chaque façon dit d'où l'on paie : c'est ce qui permet au client de choisir.
-    expect(c.flotte.sentence).toBe('Depuis votre puce commerciale.');
-    expect(c.retrait.sentence).toBe('Depuis votre compte Mobile Money.');
+    expect(c.flotte.word).toEqual({ fr: 'Flotte', en: 'Float' });
+    expect(c.retrait.word).toEqual({ fr: 'Retrait', en: 'Withdrawal' });
+    for (const p of pairs(c)) {
+      expect(p.fr.trim(), JSON.stringify(p)).not.toBe('');
+      expect(p.en.trim(), JSON.stringify(p)).not.toBe('');
+    }
+    for (const op of mobileMoneyGuideData().operators) {
+      expect(op.account.fr).not.toBe('');
+      expect(op.account.en).not.toBe('');
+    }
+    expect(MOBILE_MONEY_GUIDE_FILENAME).toEqual({ portrait: 'coordonnees-mobile-money-portrait.pdf', landscape: 'coordonnees-mobile-money-paysage.pdf' });
   });
 
-  it('reste sobre : peu de mots, des phrases courtes, une idée par page', () => {
-    const words = mobileMoneyGuideWords();
-    expect(words.length).toBeLessThanOrEqual(120);
+  it('sépare les deux façons : la Flotte donne un numéro et un titulaire, le Retrait un code', () => {
     const c = MOBILE_MONEY_GUIDE_COPY;
-    const sentences = [
-      c.cover.lead, c.cover.choose,
-      c.flotte.sentence, c.flotte.check, c.retrait.sentence, c.retrait.legend,
-      c.preuve.sentence, c.preuve.clear, c.preuve.thanks,
-    ];
-    for (const s of sentences) expect(s.split(/\s+/).length, s).toBeLessThanOrEqual(12);
-    expect(MOBILE_MONEY_GUIDE_COPY.preuve.items).toEqual(['Date et heure', 'Identifiant de transaction', 'Intitulé du compte', 'Montant']);
+    expect(c.flotte.needs).toEqual({ fr: 'Numéro + Titulaire', en: 'Number + Holder' });
+    expect(c.retrait.needs).toEqual({ fr: 'Code + Montant', en: 'Code + Amount' });
+  });
+
+  it('reste sobre dans chaque langue : peu de mots, des phrases courtes', () => {
+    expect(mobileMoneyGuideWords('fr').length).toBeLessThanOrEqual(130);
+    expect(mobileMoneyGuideWords('en').length).toBeLessThanOrEqual(130);
+    for (const p of pairs(MOBILE_MONEY_GUIDE_COPY)) {
+      expect(p.fr.split(/\s+/).length, p.fr).toBeLessThanOrEqual(12);
+      expect(p.en.split(/\s+/).length, p.en).toBeLessThanOrEqual(12);
+    }
+    expect(MOBILE_MONEY_GUIDE_COPY.preuve.items.map((i) => i.fr)).toEqual(['Date et heure', 'Identifiant de transaction', 'Intitulé du compte', 'Montant']);
   });
 
   it("est au nom de la société : ni site, ni « Bonzini Labs », ni « Bonzini Trading », ni WhatsApp, ni plafond, ni menu inventé", () => {

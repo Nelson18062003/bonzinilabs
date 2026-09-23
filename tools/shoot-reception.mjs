@@ -290,7 +290,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     if (process.env.PDFJS_DIR) {
       const raster = await ctx.newPage();
       await raster.route(/\/__pdfjs\//, (r) => { const f = r.request().url().split('/__pdfjs/')[1].split('?')[0]; try { r.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(join(process.env.PDFJS_DIR, f)) }); } catch { r.fulfill({ status: 404, body: '' }); } });
-      await raster.setViewportSize({ width: 1300, height: 1800 });
+      await raster.setViewportSize({ width: 1800, height: 1800 }); // assez large pour une page A4 paysage à l'échelle 2
       await raster.goto('http://localhost:8080/screenshot.html?screen=blank', { waitUntil: 'domcontentloaded' });
       // Toutes les pages : la première en `<screen>.png`, les suivantes en `<screen>-p2.png`, `-p3.png`…
       const pages = await raster.evaluate(async (data) => {
