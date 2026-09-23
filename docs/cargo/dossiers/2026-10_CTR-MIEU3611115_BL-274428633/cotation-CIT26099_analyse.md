@@ -27,13 +27,20 @@ conteneur à 21 500 USD, soit environ 12 470 000 XAF. Il faut en sortir
 
 # 1. D'OÙ SORTENT LES 15 000 000 DE VALEUR IMPOSABLE
 
-Le chiffre n'est pas expliqué sur la proforma, mais il se décompose exactement :
+⚠️ **Ce qui suit est une déduction, pas une vérification.** La proforma porte une
+seule ligne, *« Valeur imposable en CFA avant CIVIC : 15 000 000 »*, **sans aucun
+détail par véhicule**. Le tableau ci-dessous est obtenu par soustraction à partir du
+seul chiffre qu'elle a donné dans son mail, le forfait de 4 500 000 sur les effets.
 
-| | Montant | Source |
+| | Montant | Provenance du chiffre |
 |---|---|---|
-| Les 3 véhicules | **10 500 000** | **cote Argus**, selon son mail |
-| Les effets | **4 500 000** | **forfait de la douane du port 5** |
-| **Total** | **15 000 000** | |
+| Total, valeur imposable | **15 000 000** | **écrit sur la proforma** |
+| moins les effets | **− 4 500 000** | **écrit dans son mail** |
+| reste, pour les 3 véhicules | **= 10 500 000** | **déduit, jamais vérifié** |
+
+**Aucune cote Argus n'a été consultée.** Les 10 500 000 ne sont pas un calcul de
+valeur : c'est ce qui reste quand on retire le forfait du total. Le détail véhicule
+par véhicule doit être demandé.
 
 ## Comparaison avec notre propre estimation
 
@@ -43,8 +50,9 @@ Le chiffre n'est pas expliqué sur la proforma, mais il se décompose exactement
 | Marchandises / effets | 3 190 000 | **4 500 000** | +41 % |
 | **Total** | **12 470 000** | **15 000 000** | **+20 %** |
 
-**Nos estimations de véhicules étaient bonnes à 13 % près.** L'écart vient surtout
-du forfait sur les effets, que nous ne pouvions pas deviner.
+⚠️ **Cette comparaison est plus faible qu'elle n'en a l'air.** Nos 9 280 000 sont
+une estimation de marché ; les 10 500 000 sont une soustraction. Les deux chiffres
+sont mous. Leur convergence est rassurante, elle ne prouve rien.
 
 ⚠️ Et elle prévient : *« je pense fortement que les valeurs peuvent être revues à la
 baisse après évaluation »*. Le chiffre est donc un **plafond de travail**, pas un
