@@ -7,6 +7,10 @@
 //   3 · RETRAIT / WITHDRAWAL — page sombre, orange : le code à composer.
 //   4 · LA PREUVE / PROOF OF PAYMENT — page claire, or : ce que la capture
 //       doit montrer.
+// Portrait : bandeau de couleur en haut, opérateurs l'un sous l'autre.
+// Paysage : une colonne de couleur à gauche (quelle façon, d'où, ce qu'il faut,
+// et en bas la règle de la page), la zone de données à droite (Orange puis
+// MTN, en blocs identiques) ; couverture avec les deux façons côte à côte.
 // Lisible par tous, y compris sur un petit écran et par des yeux fatigués :
 // aucun texte utile sous 11 pt, le numéro, le titulaire et le code en très
 // gros. Le français d'abord, l'anglais juste dessous.
@@ -80,8 +84,8 @@ interface Layout {
   doorEnWord: number;
 }
 
-const PORTRAIT: Layout = { o: 'portrait', W: 595.28, H: 841.89, M: 40, CW: 595.28 - 80, columns: false, heroWord: 54, heroEnWord: 28, ghost: 300, keys: 44, holder: 28, code: 32, coverTitle: 54, doorWord: 26, doorEnWord: 16 };
-const LANDSCAPE: Layout = { o: 'landscape', W: 841.89, H: 595.28, M: 36, CW: 841.89 - 72, columns: true, heroWord: 50, heroEnWord: 26, ghost: 280, keys: 40, holder: 26, code: 30, coverTitle: 44, doorWord: 23, doorEnWord: 14 };
+const PORTRAIT: Layout = { o: 'portrait', W: 595.28, H: 841.89, M: 40, CW: 595.28 - 80, columns: false, heroWord: 54, heroEnWord: 28, ghost: 300, keys: 50, holder: 28, code: 32, coverTitle: 54, doorWord: 26, doorEnWord: 16 };
+const LANDSCAPE: Layout = { o: 'landscape', W: 841.89, H: 595.28, M: 36, CW: 841.89 - 72, columns: false, heroWord: 46, heroEnWord: 22, ghost: 300, keys: 44, holder: 26, code: 30, coverTitle: 46, doorWord: 30, doorEnWord: 18 };
 
 type SectionKey = 'flotte' | 'retrait' | 'preuve';
 /** Une couleur par partie ; la couleur du français et de l'anglais posés dessus (contraste vérifié). */
@@ -126,14 +130,14 @@ const st = StyleSheet.create({
   // ── Cartes opérateur ──
   card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, overflow: 'hidden' },
   cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, overflow: 'hidden' },
-  cardHead: { height: 52, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
+  cardHead: { height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
   cardBody: { paddingTop: 11, paddingBottom: 14, paddingHorizontal: 18 },
   opMark: { flexDirection: 'row', alignItems: 'center' },
   opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
   logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
-  kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 4, paddingHorizontal: 10, alignItems: 'flex-end' },
-  kindFr: { fontSize: 10, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
-  kindEn: { fontSize: 9, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
+  kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 5, paddingHorizontal: 12, alignItems: 'flex-end' },
+  kindFr: { fontSize: 12.5, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
+  kindEn: { fontSize: 11, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
 
   // ── Flotte ──
   keys: { flexDirection: 'row' },
@@ -188,11 +192,11 @@ const st = StyleSheet.create({
   leadFr: { fontSize: 19, fontWeight: 800, color: WHITE },
   leadEn: { fontSize: 15, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
   door: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, paddingVertical: 16, paddingHorizontal: 18 },
-  doorDisc: { width: 46, height: 46, borderRadius: 23, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  doorDisc: { width: 50, height: 50, borderRadius: 25, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   doorDiscText: { fontSize: 22, fontWeight: 900, lineHeight: 1 },
   doorWordRow: { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' },
   doorWord: { fontSize: 26, fontWeight: 900, color: WHITE, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1 },
-  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 1 },
+  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 2, lineHeight: 1 },
   doorFr: { fontSize: 14, fontWeight: 700, color: WHITE, marginTop: 6 },
   doorEn: { fontSize: 13, fontWeight: 500, marginTop: 1 },
   doorPage: { flexDirection: 'row', alignItems: 'center', backgroundColor: WHITE, borderRadius: 14, paddingVertical: 6, paddingHorizontal: 11, marginLeft: 10 },
@@ -200,10 +204,10 @@ const st = StyleSheet.create({
   orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   orLine: { flex: 1, height: 1, backgroundColor: LINE_ON_INK },
   orDisc: { width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: OR_RING, alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
-  orFr: { fontSize: 14, fontWeight: 800, color: WHITE, lineHeight: 1 },
-  orEn: { fontSize: 10, fontWeight: 600, color: ON_INK_SOFT, lineHeight: 1, marginTop: 2 },
-  chooseFr: { fontSize: 14, fontWeight: 800, color: colors.gold, textAlign: 'center' },
-  chooseEn: { fontSize: 12.5, fontWeight: 600, color: '#e7c48e', textAlign: 'center', marginTop: 1 },
+  orFr: { fontSize: 16, fontWeight: 800, color: WHITE, lineHeight: 1 },
+  orEn: { fontSize: 12, fontWeight: 600, color: ON_INK_SOFT, lineHeight: 1, marginTop: 2 },
+  chooseFr: { fontSize: 16, fontWeight: 800, color: colors.gold, textAlign: 'center' },
+  chooseEn: { fontSize: 14, fontWeight: 600, color: '#e7c48e', textAlign: 'center', marginTop: 1 },
   proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 12, paddingHorizontal: 18 },
   proofDisc: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   proofDiscText: { fontSize: 19, fontWeight: 900, color: INK, lineHeight: 1 },
@@ -275,10 +279,10 @@ function OperatorMark({ op, height, onDark }: { op: MobileMoneyOperator; height:
 
 /* ─────────────── Éléments communs ─────────────── */
 
-function Footer({ L, active, dark }: { L: Layout; active: SectionKey; dark?: boolean }) {
+function Footer({ inset, active, dark }: { inset: number; active: SectionKey; dark?: boolean }) {
   const muted = dark ? ON_INK_SOFT : MUTED;
   return (
-    <View style={[st.footer, { left: L.M, right: L.M, borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
+    <View style={[st.footer, { left: inset, right: inset, borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
       <Text style={[st.footerText, { color: muted }]}>{LEGAL_NAME}</Text>
       <View style={st.way}>
         {ORDER.map((k) => {
@@ -307,55 +311,31 @@ function NeedsPill({ section, needs }: { section: SectionKey; needs: Bi }) {
   );
 }
 
+/** Portrait : le bandeau de couleur en haut de page. */
 function Hero({ L, section, eyebrow, word, sentence, needs }: { L: Layout; section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi }) {
   const s = SECTION[section];
-  const portrait = L.o === 'portrait';
-  // En paysage, le mot anglais passe sous le mot français quand les deux ne tiennent pas côte à côte
-  // (« LA PREUVE / PROOF OF PAYMENT ») : la phrase de droite garde alors sa place.
-  const titleW = word.fr.length * 0.72 * L.heroWord + 14 + word.en.length * 0.7 * L.heroEnWord;
-  const stacked = !portrait && titleW > L.CW * 0.6;
-  const title = (
-    <View>
-      <Text style={[st.eyebrow, { color: s.en }]}>{biLabel(eyebrow)}</Text>
-      <View style={stacked ? undefined : { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Text style={[st.heroWord, { color: s.fr, fontSize: L.heroWord, marginRight: 14 }]}>{word.fr}</Text>
-        <Text style={[st.heroEnWord, { color: s.en, fontSize: L.heroEnWord, marginBottom: stacked ? 0 : L.heroWord * 0.06, marginTop: stacked ? 6 : 0 }]}>{word.en}</Text>
-      </View>
-    </View>
-  );
-  const sentenceBlock = (
-    <View style={portrait ? { flex: 1, marginRight: 12 } : { alignSelf: 'stretch', alignItems: 'flex-end', marginBottom: 10 }}>
-      <Text style={[st.sentenceFr, { color: s.fr, textAlign: portrait ? 'left' : 'right' }]}>{sentence.fr}</Text>
-      <Text style={[st.sentenceEn, { color: s.en, textAlign: portrait ? 'left' : 'right' }]}>{sentence.en}</Text>
-    </View>
-  );
   return (
-    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: portrait ? 22 : 20, paddingBottom: portrait ? 20 : 18 }]}>
-      <Text style={[st.heroGhost, { fontSize: L.ghost, right: section === 'flotte' ? 4 : -40, top: portrait ? -80 : -70, opacity: section === 'preuve' ? 0.22 : 0.16 }]}>{s.n}</Text>
-      <View style={[st.heroTop, { marginBottom: portrait ? 18 : 14 }]}>
+    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: 22, paddingBottom: 20 }]}>
+      <Text style={[st.heroGhost, { fontSize: L.ghost, right: section === 'flotte' ? 4 : -40, top: -80, opacity: section === 'preuve' ? 0.22 : 0.16 }]}>{s.n}</Text>
+      <View style={[st.heroTop, { marginBottom: 18 }]}>
         <View style={st.brandRow}>
           <View style={st.markDisc}><PdfLogo size={19} /></View>
           <Text style={[st.brandName, { color: s.fr }]}>{LEGAL_NAME}</Text>
         </View>
         <Text style={[st.folio, { color: s.en }]}>{s.page} / {TOTAL}</Text>
       </View>
-      {portrait ? (
-        <>
-          {title}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 }}>
-            {sentenceBlock}
-            <NeedsPill section={section} needs={needs} />
-          </View>
-        </>
-      ) : (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-          {title}
-          <View style={{ flex: 1, marginLeft: 28, alignItems: 'flex-end' }}>
-            {sentenceBlock}
-            <NeedsPill section={section} needs={needs} />
-          </View>
+      <Text style={[st.eyebrow, { color: s.en }]}>{biLabel(eyebrow)}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <Text style={[st.heroWord, { color: s.fr, fontSize: L.heroWord, marginRight: 14 }]}>{word.fr}</Text>
+        <Text style={[st.heroEnWord, { color: s.en, fontSize: L.heroEnWord, marginBottom: L.heroWord * 0.06 }]}>{word.en}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 }}>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={[st.sentenceFr, { color: s.fr }]}>{sentence.fr}</Text>
+          <Text style={[st.sentenceEn, { color: s.en }]}>{sentence.en}</Text>
         </View>
-      )}
+        <NeedsPill section={section} needs={needs} />
+      </View>
     </View>
   );
 }
@@ -364,19 +344,14 @@ function SectionPage({ L, section, dark, children }: { L: Layout; section: Secti
   return (
     <Page size="A4" orientation={L.o} style={[st.page, { backgroundColor: dark ? INK : WHITE }]}>
       {children}
-      <Footer L={L} active={section} dark={dark} />
+      <Footer inset={L.M} active={section} dark={dark} />
     </Page>
   );
 }
 
-/** Les deux cartes opérateur : l'une sous l'autre en portrait, côte à côte en paysage (Orange à gauche). */
-function OperatorGrid({ L, children }: { L: Layout; children: ReactNode[] }) {
-  if (!L.columns) return <View>{children.map((c, i) => <View key={i} style={{ marginBottom: 10 }}>{c}</View>)}</View>;
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 10 }}>
-      {children.map((c, i) => <View key={i} style={{ flex: 1, marginLeft: i ? 12 : 0 }}>{c}</View>)}
-    </View>
-  );
+/** Les deux cartes opérateur, l'une sous l'autre (Orange puis MTN), à l'identique. */
+function OperatorStack({ children, gap = 10 }: { children: ReactNode[]; gap?: number }) {
+  return <View>{children.map((c, i) => <View key={i} style={{ marginTop: i ? gap : 0 }}>{c}</View>)}</View>;
 }
 
 /* ─────────────── Page 1 · Couverture ─────────────── */
@@ -498,18 +473,7 @@ function Cover({ L, operators }: { L: Layout; operators: MobileMoneyOperator[] }
       </Page>
     );
   }
-  return (
-    <Page size="A4" orientation="landscape" style={[st.page, { backgroundColor: INK }]}>
-      <View style={{ paddingHorizontal: L.M, paddingTop: 26 }}>
-        <CoverBrand L={L} />
-        <View style={{ flexDirection: 'row', marginTop: 24 }}>
-          <View style={{ width: L.CW * 0.45, paddingRight: 22, paddingTop: 10 }}><CoverTitles L={L} /></View>
-          <View style={{ flex: 1 }}><CoverDoors L={L} /></View>
-        </View>
-      </View>
-      <LogosPlate L={L} operators={operators} height={92} />
-    </Page>
-  );
+  return <CoverLandscape L={L} operators={operators} />;
 }
 
 /* ─────────────── Page 2 · Flotte ─────────────── */
@@ -696,24 +660,207 @@ function Thanks() {
   );
 }
 
+/* ─────────────── PAYSAGE : colonne de couleur + zone de données ─────────────── */
+
+const SIDE_W = 280;
+const SIDE_PAD = 24;
+const AREA_PAD = 30;
+const AREA_W = LANDSCAPE.W - SIDE_W - 2 * AREA_PAD;
+
+const ls = StyleSheet.create({
+  side: { width: SIDE_W, paddingTop: 26, paddingBottom: 22, paddingHorizontal: SIDE_PAD, position: 'relative', overflow: 'hidden' },
+  sideGhost: { position: 'absolute', right: -24, top: 64, fontSize: 300, fontWeight: 900, lineHeight: 1, color: WHITE },
+  sideBrand: { fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2 },
+  sideEyebrow: { fontSize: 11, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase' },
+  sideEyebrowEn: { fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 2, marginBottom: 14 },
+  sideWord: { fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
+  sideEnWord: { fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', lineHeight: 1.05, marginTop: 6 },
+  sideSentenceFr: { fontSize: 15, fontWeight: 700, marginTop: 18, lineHeight: 1.25 },
+  sideSentenceEn: { fontSize: 13, fontWeight: 500, marginTop: 3, lineHeight: 1.25 },
+  sideFolio: { fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginTop: 12 },
+  rule: { backgroundColor: WHITE, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
+  ruleRow: { flexDirection: 'row', alignItems: 'center' },
+  ruleFr: { fontSize: 14, fontWeight: 800, color: INK, lineHeight: 1.25 },
+  ruleEn: { fontSize: 12.5, fontWeight: 500, color: MUTED, marginTop: 2, lineHeight: 1.25 },
+  area: { flex: 1, paddingHorizontal: AREA_PAD, paddingTop: 26, paddingBottom: 56, justifyContent: 'center', position: 'relative' },
+  // Couverture
+  doorTall: { borderRadius: R.box, paddingVertical: 16, paddingHorizontal: 18 },
+  doorTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+});
+
+/**
+ * Coupures choisies pour la colonne étroite : une phrase trop longue pour une
+ * ligne se coupe en deux lignes équilibrées — après « ? » ou à la virgule la
+ * plus centrale s'il y en a, sinon à l'espace le plus central — et « Mobile
+ * Money » ne se sépare jamais.
+ */
+function balanced(text: string, size: number, room: number, em = 0.54): string {
+  const keep = text.replace(/Mobile Money/g, 'Mobile\u00A0Money');
+  if (keep.length * size * em <= room) return keep;
+  const mid = keep.length / 2;
+  const pick = (re: RegExp) => {
+    let best = -1;
+    for (const m of keep.matchAll(re)) {
+      const at = (m.index ?? 0) + m[0].length - 1;
+      if (best < 0 || Math.abs(at - mid) < Math.abs(best - mid)) best = at;
+    }
+    return best;
+  };
+  const at = [pick(/\? /g), pick(/, /g), pick(/ /g)].find((i) => i > 0) ?? -1;
+  return at > 0 ? `${keep.slice(0, at)}\n${keep.slice(at + 1)}` : keep;
+}
+
+/** Un titre en capitales ajusté à la largeur de la colonne (jamais au-delà de `max`). */
+function fitSize(word: string, max: number, room: number, em: number): number {
+  return Math.min(max, Math.floor((room / (word.length * em)) * 10) / 10);
+}
+
+/** La colonne de couleur : quelle façon, d'où, ce qu'il faut ; en bas, la règle de la page. */
+function Sidebar({ section, eyebrow, word, sentence, needs, rule }: { section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi; rule: ReactNode }) {
+  const s = SECTION[section];
+  const room = SIDE_W - 2 * SIDE_PAD;
+  return (
+    <View id={section} style={[ls.side, { backgroundColor: s.color }]}>
+      <Text style={[ls.sideGhost, { opacity: section === 'preuve' ? 0.18 : 0.1 }]}>{s.n}</Text>
+      <View style={st.brandRow}>
+        <View style={[st.markDisc, { width: 26, height: 26, borderRadius: 13, marginRight: 8 }]}><PdfLogo size={18} /></View>
+        <Text style={[ls.sideBrand, { color: s.fr }]}>{LEGAL_NAME}</Text>
+      </View>
+      <View style={{ marginTop: 34 }}>
+        <Text style={[ls.sideEyebrow, { color: s.en }]}>{eyebrow.fr}</Text>
+        <Text style={[ls.sideEyebrowEn, { color: s.en }]}>{eyebrow.en}</Text>
+        <Text style={[ls.sideWord, { color: s.fr, fontSize: fitSize(word.fr, 46, room, 0.76) }]}>{word.fr}</Text>
+        <Text style={[ls.sideEnWord, { color: s.en, fontSize: fitSize(word.en, 22, room, 0.74) }]}>{word.en}</Text>
+        <Text style={[ls.sideSentenceFr, { color: s.fr }]}>{balanced(sentence.fr, 15, room)}</Text>
+        <Text style={[ls.sideSentenceEn, { color: s.en }]}>{balanced(sentence.en, 13, room, 0.5)}</Text>
+        <View style={{ marginTop: 14, alignSelf: 'flex-start' }}><NeedsPill section={section} needs={needs} /></View>
+      </View>
+      <View style={{ marginTop: 'auto' }}>
+        <View style={ls.rule}>{rule}</View>
+        <Text style={[ls.sideFolio, { color: s.en }]}>{s.page} / {TOTAL}</Text>
+      </View>
+    </View>
+  );
+}
+
+function LandscapePage({ section, dark, sidebar, children }: { section: SectionKey; dark?: boolean; sidebar: ReactNode; children: ReactNode }) {
+  return (
+    <Page size="A4" orientation="landscape" style={[st.page, { flexDirection: 'row', backgroundColor: dark ? INK : WHITE }]}>
+      {sidebar}
+      <View style={ls.area}>
+        {children}
+        <Footer inset={AREA_PAD} active={section} dark={dark} />
+      </View>
+    </Page>
+  );
+}
+
+/** Une règle de page, en français puis en anglais, avec son repère visuel à gauche. */
+function RuleText({ text, lead }: { text: Bi; lead: ReactNode }) {
+  return (
+    <View style={ls.ruleRow}>
+      {lead}
+      <View style={{ flex: 1 }}>
+        <Text style={ls.ruleFr}>{balanced(text.fr, 14, 0)}</Text>
+        <Text style={ls.ruleEn}>{balanced(text.en, 12.5, 0)}</Text>
+      </View>
+    </View>
+  );
+}
+
+function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte' | 'retrait'; word: Bi; sentence: Bi }) {
+  const s = SECTION[section];
+  return (
+    <Link src={`#${section}`} style={st.link}>
+      <View style={[ls.doorTall, { backgroundColor: s.color }]}>
+        <View style={ls.doorTop}>
+          <View style={[st.doorDisc, { width: 42, height: 42, borderRadius: 21, marginRight: 0 }]}><Text style={[st.doorDiscText, { color: s.color }]}>{s.n}</Text></View>
+          <PagePill page={s.page} />
+        </View>
+        <View style={st.doorWordRow}>
+          <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
+          <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord, marginBottom: 2 }]}>{word.en}</Text>
+        </View>
+        <Text style={[st.doorFr, { fontSize: 15 }]}>{sentence.fr}</Text>
+        <Text style={[st.doorEn, { color: s.en, fontSize: 13.5 }]}>{sentence.en}</Text>
+      </View>
+    </Link>
+  );
+}
+
+function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOperator[] }) {
+  return (
+    <Page size="A4" orientation="landscape" style={[st.page, { backgroundColor: INK }]}>
+      <View style={{ paddingHorizontal: L.M, paddingTop: 24 }}>
+        <CoverBrand L={L} />
+        {/* Le titre à gauche, la phrase d'entrée à droite, sur la même ligne de pied. */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16 }}>
+          <View>
+            <Text style={[st.coverKicker, { marginBottom: 8 }]}>{biLabel(COPY.cover.kicker)}</Text>
+            <Text style={st.coverTitleTop}>{COPY.titleTop.fr} <Text style={{ color: '#a79fb6' }}>/ {COPY.titleTop.en}</Text></Text>
+            <Text style={[st.coverTitleBottom, { fontSize: L.coverTitle }]}>{COPY.titleBottom}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end', marginBottom: 6 }}>
+            <Text style={[st.leadFr, { textAlign: 'right' }]}>{COPY.cover.lead.fr}</Text>
+            <Text style={[st.leadEn, { textAlign: 'right' }]}>{COPY.cover.lead.en}</Text>
+          </View>
+        </View>
+        {/* Les deux façons, côte à côte, séparées par « ou / or ». */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16 }}>
+          <View style={{ flex: 1 }}><DoorTall L={L} section="flotte" word={COPY.flotte.word} sentence={COPY.cover.flotte} /></View>
+          <View style={{ width: 62, alignItems: 'center' }}>
+            <View style={[st.orDisc, { marginHorizontal: 0 }]}>
+              <Text style={st.orFr}>{COPY.cover.or.fr}</Text>
+              <Text style={st.orEn}>{COPY.cover.or.en}</Text>
+            </View>
+          </View>
+          <View style={{ flex: 1 }}><DoorTall L={L} section="retrait" word={COPY.retrait.word} sentence={COPY.cover.retrait} /></View>
+        </View>
+        <View style={{ marginTop: 8, marginBottom: 8 }}>
+          <Text style={st.chooseFr}>{COPY.cover.choose.fr}</Text>
+          <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text>
+        </View>
+        <Link src="#preuve" style={st.link}>
+          <View style={[st.proofDoor, { paddingVertical: 10 }]}>
+            <View style={[st.proofDisc, { width: 36, height: 36, borderRadius: 18 }]}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline' }}>
+              <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
+              <Text style={[st.proofEn, { marginLeft: 12, marginTop: 0 }]}>{COPY.cover.preuve.en}</Text>
+            </View>
+            <PagePill page={SECTION.preuve.page} color={INK} background={colors.gold} />
+          </View>
+        </Link>
+      </View>
+      <LogosPlate L={L} operators={operators} height={84} />
+    </Page>
+  );
+}
+
 /* ─────────────── Le document ─────────────── */
 
 export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: MobileMoneyGuideData; orientation?: GuideOrientation }) {
-  const L = orientation === 'landscape' ? LANDSCAPE : PORTRAIT;
   const { operators } = data;
-  const body: Style = { paddingHorizontal: L.M, paddingTop: L.o === 'portrait' ? 16 : 14 };
-  // Place du code dans l'écran : largeur de la carte, moins ses marges et celles de l'écran.
-  const cardW = L.columns ? (L.CW - 12) / 2 : L.CW;
-  const codeRoom = cardW - 2 * 18 - 14 - 12 - 2;
   return (
     <Document title={`${COPY.docTitle.fr} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
+      {orientation === 'landscape' ? <LandscapePages operators={operators} /> : <PortraitPages operators={operators} />}
+    </Document>
+  );
+}
+
+function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
+  const L = PORTRAIT;
+  const body: Style = { paddingHorizontal: L.M, paddingTop: 16 };
+  // Place du code dans l'écran : largeur de la carte, moins ses marges et celles de l'écran.
+  const codeRoom = L.CW - 2 * 18 - 14 - 12 - 2;
+  return (
+    <>
       <Cover L={L} operators={operators} />
 
       <SectionPage L={L} section="flotte">
         <Hero L={L} section="flotte" eyebrow={COPY.flotte.eyebrow} word={COPY.flotte.word} sentence={COPY.flotte.sentence} needs={COPY.flotte.needs} />
         <View style={body}>
-          <OperatorGrid L={L}>{operators.map((op) => <FlotteCard key={op.key} L={L} op={op} />)}</OperatorGrid>
-          <View style={st.alert}>
+          <OperatorStack>{operators.map((op) => <FlotteCard key={op.key} L={L} op={op} />)}</OperatorStack>
+          <View style={[st.alert, { marginTop: 10 }]}>
             <View style={st.alertDisc}><Text style={st.alertMark}>!</Text></View>
             <View>
               <Text style={st.alertFr}>{COPY.flotte.check.fr}</Text>
@@ -726,8 +873,8 @@ export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: 
       <SectionPage L={L} section="retrait" dark>
         <Hero L={L} section="retrait" eyebrow={COPY.retrait.eyebrow} word={COPY.retrait.word} sentence={COPY.retrait.sentence} needs={COPY.retrait.needs} />
         <View style={body}>
-          <OperatorGrid L={L}>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorGrid>
-          <View style={st.legend}>
+          <OperatorStack>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorStack>
+          <View style={[st.legend, { marginTop: 10 }]}>
             <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 14 }]}>MONTANT</Text></View>
             <View style={{ marginLeft: 12, marginRight: 14 }}><ArrowIcon color={WHITE} size={14} /></View>
             <View>
@@ -740,24 +887,69 @@ export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: 
 
       <SectionPage L={L} section="preuve">
         <Hero L={L} section="preuve" eyebrow={COPY.preuve.eyebrow} word={COPY.preuve.word} sentence={COPY.preuve.sentence} needs={COPY.preuve.needs} />
-        {L.o === 'portrait' ? (
-          <>
-            <View style={body}>
-              <Ticket width={L.CW} rowH={60} />
-              <View style={{ marginTop: 12 }}><ClearLine /></View>
-            </View>
-            <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 58 }}><Thanks /></View>
-          </>
-        ) : (
-          <View style={[body, { flexDirection: 'row' }]}>
-            <Ticket width={L.CW * 0.56} rowH={52} />
-            <View style={{ flex: 1, marginLeft: 22, justifyContent: 'space-between', paddingTop: 8, paddingBottom: 9 }}>
-              <ClearLine />
-              <Thanks />
-            </View>
-          </View>
-        )}
+        <View style={body}>
+          <Ticket width={L.CW} rowH={60} />
+          <View style={{ marginTop: 12 }}><ClearLine /></View>
+        </View>
+        <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 58 }}><Thanks /></View>
       </SectionPage>
-    </Document>
+    </>
+  );
+}
+
+function LandscapePages({ operators }: { operators: MobileMoneyOperator[] }) {
+  const L = LANDSCAPE;
+  const codeRoom = AREA_W - 2 * 18 - 14 - 12 - 2;
+  return (
+    <>
+      <Cover L={L} operators={operators} />
+
+      <LandscapePage
+        section="flotte"
+        sidebar={(
+          <Sidebar
+            section="flotte" eyebrow={COPY.flotte.eyebrow} word={COPY.flotte.word} sentence={COPY.flotte.sentence} needs={COPY.flotte.needs}
+            rule={<RuleText text={COPY.flotte.check} lead={<View style={[st.alertDisc, { width: 26, height: 26, borderRadius: 13, marginRight: 10 }]}><Text style={[st.alertMark, { fontSize: 15 }]}>!</Text></View>} />}
+          />
+        )}
+      >
+        <OperatorStack gap={12}>{operators.map((op) => <FlotteCard key={op.key} L={L} op={op} />)}</OperatorStack>
+      </LandscapePage>
+
+      <LandscapePage
+        section="retrait"
+        dark
+        sidebar={(
+          <Sidebar
+            section="retrait" eyebrow={COPY.retrait.eyebrow} word={COPY.retrait.word} sentence={COPY.retrait.sentence} needs={COPY.retrait.needs}
+            rule={(
+              <View>
+                <View style={[ls.ruleRow, { marginBottom: 8 }]}>
+                  <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 13 }]}>MONTANT</Text></View>
+                  <View style={{ marginLeft: 10 }}><ArrowIcon color={INK} size={13} /></View>
+                </View>
+                <Text style={ls.ruleFr}>{balanced(COPY.retrait.legend.fr, 14, 0)}</Text>
+                <Text style={ls.ruleEn}>{balanced(COPY.retrait.legend.en, 12.5, 0)}</Text>
+              </View>
+            )}
+          />
+        )}
+      >
+        <OperatorStack gap={12}>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorStack>
+      </LandscapePage>
+
+      <LandscapePage
+        section="preuve"
+        sidebar={(
+          <Sidebar
+            section="preuve" eyebrow={COPY.preuve.eyebrow} word={COPY.preuve.word} sentence={COPY.preuve.sentence} needs={COPY.preuve.needs}
+            rule={<RuleText text={COPY.preuve.clear} lead={<View style={[st.goldCheck, { width: 26, height: 26, borderRadius: 13, marginRight: 10 }]}><CheckIcon color={INK} size={13} /></View>} />}
+          />
+        )}
+      >
+        <Ticket width={AREA_W} rowH={56} />
+        <View style={{ marginTop: 14 }}><Thanks /></View>
+      </LandscapePage>
+    </>
   );
 }
