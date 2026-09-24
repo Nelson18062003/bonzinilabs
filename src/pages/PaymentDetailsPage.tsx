@@ -11,10 +11,12 @@ import { cn } from '@/lib/utils';
 import { MobileLayout } from '@/components/layout/MobileLayout';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 import { PaymentDetailsHub } from '@/components/payment-details/PaymentDetailsHub';
+import { useMyProfile } from '@/hooks/useProfile';
 
 const PaymentDetailsPage = () => {
   const { t } = useTranslation('deposits');
   const navigate = useNavigate();
+  const { data: profile } = useMyProfile();
   return (
     <MobileLayout showNav={false} showHeader={false}>
       <div className={cn('min-h-[100dvh] pb-8', SURFACE.canvas)}>
@@ -29,7 +31,7 @@ const PaymentDetailsPage = () => {
           <h1 className={cn('flex-1 truncate text-[17px] font-black', TEXT.strong)}>{t('paymentDetails.title', { defaultValue: 'Coordonnées de paiement' })}</h1>
         </div>
         <div className="px-4 pt-3">
-          <PaymentDetailsHub audience="client" />
+          <PaymentDetailsHub audience="client" clientCode={profile?.customer_code ?? null} />
         </div>
       </div>
     </MobileLayout>

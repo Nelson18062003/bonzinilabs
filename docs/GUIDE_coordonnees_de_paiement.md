@@ -23,16 +23,22 @@ La page a deux onglets : **Banques** et **Mobile Money**.
    - **Portrait** : pour un téléphone et pour imprimer ;
    - **Paysage** : pour un écran d'ordinateur ou une tablette.
 4. Choisir le **format** :
-   - **PDF** : un seul fichier, toutes les pages. Sur téléphone, la feuille de
-     partage s'ouvre (WhatsApp, e-mail…) ; sur ordinateur, le fichier se
-     télécharge.
-   - **Images** : une image par page. Un aperçu s'ouvre : **Envoyer les N
-     images** d'un coup, ou toucher une page pour l'enregistrer seule.
+   - **PDF** : un seul fichier, toutes les pages. Sur **ordinateur**, il se
+     télécharge. Sur **téléphone**, la feuille de partage s'ouvre (WhatsApp,
+     e-mail, Fichiers…).
+   - **Images** : une image par page. Un aperçu s'ouvre avec, en haut,
+     **Envoyer les N images** (téléphone) ou **Télécharger les N images**
+     (ordinateur). On peut aussi toucher une seule page pour l'enregistrer.
 5. Pour **une seule banque** : sous la carte de la banque, **RIB · PDF** ou
    **RIB · Image** (une page, avec le rappel de la preuve de paiement).
 6. Pour envoyer en **texte** : toucher une ligne (IBAN, SWIFT, RIB, numéro,
    code) pour la copier, ou **Copier les coordonnées** sur la carte d'une
-   banque, puis coller dans la conversation.
+   banque ou d'un opérateur, puis coller dans la conversation.
+
+Côté client, la page rappelle en encadré la référence à écrire dans le motif
+du virement : **son identifiant client** (BZ-…), comme l'écran « Mon
+identifiant client ». La fiche PDF, elle, garde « votre nom + n° de commande »
+en attendant votre décision (voir § 5).
 
 ### Quel document pour quelle demande
 

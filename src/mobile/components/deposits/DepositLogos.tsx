@@ -77,7 +77,8 @@ export function DepositBankLogo({
   if (b.src && b.cover) {
     return (
       <div style={{ ...tile(size, radius), background: b.bg }} className="flex shrink-0 items-center justify-center overflow-hidden">
-        <img src={b.src} alt={b.label} className="h-full w-full object-cover" />
+        {/* Logo large sur une tuile carrée : contenu entier (« CCA Bank »), sur son fond violet. */}
+        <img src={b.src} alt={b.label} className="h-full w-full object-contain" />
       </div>
     );
   }

@@ -177,6 +177,18 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
   const info = getInstructionInfo(deposit, t);
+  // Wave fermé : un ancien dépôt Wave ne montre plus le numéro d'exemple, mais dit quoi faire.
+  if (!info && deposit.method === 'wave' && !WAVE_ENABLED) {
+    return (
+      <div className="space-y-3 rounded-2xl bg-[#FDF1DD] p-4 dark:bg-[#3A2F1A]">
+        <p className="text-[16px] font-bold text-[#7A4F0E] dark:text-[#E0B978]">{t('instructions.waveClosedTitle', { defaultValue: 'Wave n’est plus accepté' })}</p>
+        <p className="text-[14px] text-[#7A4F0E] dark:text-[#E0B978]">{t('instructions.waveClosedBody', { defaultValue: 'Ne payez pas sur l’ancien numéro Wave. Payez par banque ou par Mobile Money.' })}</p>
+        <button type="button" onClick={() => navigate('/payment-details')} className={cn('flex min-h-11 w-full items-center justify-center rounded-2xl px-3 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}>
+          {t('instructions.waveClosedAction', { defaultValue: 'Voir nos coordonnées de paiement' })}
+        </button>
+      </div>
+    );
+  }
   if (!info) return null;
 
   const copyToClipboard = async (text: string, field: string) => {

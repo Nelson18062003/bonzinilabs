@@ -12,7 +12,7 @@
 // (src/data/depositMethodsData.ts, via les modules des fiches) : l'écran,
 // les PDF et les images disent toujours la même chose.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, Download, FileText, Image as ImageIcon, Loader2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ import { SURFACE, TEXT, TYPE, Button, BottomSheet, Segmented } from '@/mobile/de
 import { bankGuideData, type BankGuideAccount } from '@/lib/bankDetailsGuide';
 import { mobileMoneyGuideData, type GuideOrientation, type MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
 import { paymentDocId, paymentDocImages, paymentDocPdf, paymentDocTitle, type PaymentDoc, type PaymentDocFormat } from '@/lib/paymentDocuments';
-import { deliverFile, deliverFiles, downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { deliverFile, deliverFiles, downloadFile, downloadFiles } from '@/components/customer-code/exportShippingLabel';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import { MTN_LOGO_PATH, MTN_YELLOW } from '@/lib/brand/mtnLogo';
 import ecobankLogo from '@/assets/bank-logos/ecobank.png';
@@ -117,33 +117,61 @@ function breakAfterStars(code: string): string {
 
 /* ─────────────── Documents : PDF ou images ─────────────── */
 
+/**
+ * Sur un ordinateur (souris, pas d'écran tactile), on TÉLÉCHARGE : la
+ * feuille de partage de Windows ou de macOS n'a pas d'« Enregistrer ». Sur
+ * téléphone, feuille de partage (WhatsApp, e-mail, Fichiers…).
+ */
+function prefersDownload(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(any-pointer: coarse)').matches;
+}
+
+/** « rib-UBA:png » : ce qu'on fabrique, sans la mise en page (le bouton garde son sablier si on la change). */
+function busyKey(doc: PaymentDoc, format: PaymentDocFormat): string {
+  return paymentDocId(doc, format, 'portrait').replace(/:portrait$/, '');
+}
+
 interface Preview { doc: PaymentDoc; orientation: GuideOrientation; title: string; files: File[]; urls: string[] }
 
 function useDocuments(orientation: GuideOrientation) {
   const { t } = useTranslation('deposits');
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
+  // Page quittée pendant la fabrication : on ne crée ni aperçu ni message.
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
   // Les aperçus sont des URL « blob: » : on les rend au navigateur à la fermeture.
   useEffect(() => () => preview?.urls.forEach((u) => URL.revokeObjectURL(u)), [preview]);
 
   const run = (doc: PaymentDoc, format: PaymentDocFormat) => {
     if (busy) return;
-    const id = paymentDocId(doc, format, orientation);
-    setBusy(id);
+    // La mise en page choisie AU MOMENT du toucher : la changer ensuite ne mélange rien.
+    const layout = orientation;
+    setBusy(busyKey(doc, format));
     const done = format === 'pdf'
-      ? paymentDocPdf(doc, orientation).then((file) => deliverFile(file, paymentDocTitle(doc))).then((o) => {
-        if (o === 'downloaded') toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' }));
+      ? paymentDocPdf(doc, layout).then(async (file) => {
+        if (prefersDownload()) { downloadFile(file); return 'downloaded' as const; }
+        return deliverFile(file, paymentDocTitle(doc));
+      }).then((o) => {
+        if (o === 'downloaded' && mounted.current) toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' }));
       })
-      : paymentDocImages(doc, orientation).then((files) => {
-        setPreview({ doc, orientation, title: paymentDocTitle(doc), files, urls: files.map((f) => URL.createObjectURL(f)) });
+      : paymentDocImages(doc, layout).then((files) => {
+        if (!mounted.current) return;
+        setPreview({ doc, orientation: layout, title: paymentDocTitle(doc), files, urls: files.map((f) => URL.createObjectURL(f)) });
       });
     void done
-      .catch(() => toast.error(t('instructions.pdfError', { defaultValue: 'Impossible de créer le PDF, réessayez' })))
-      .finally(() => setBusy(null));
+      .catch(() => {
+        if (!mounted.current) return;
+        toast.error(format === 'pdf'
+          ? t('instructions.pdfError', { defaultValue: 'Impossible de créer le PDF, réessayez' })
+          : t('paymentDetails.imagesError', { defaultValue: 'Impossible de créer les images, réessayez' }));
+      })
+      .finally(() => { if (mounted.current) setBusy(null); });
   };
 
-  const isBusy = (doc: PaymentDoc, format: PaymentDocFormat) => busy === paymentDocId(doc, format, orientation);
+  const isBusy = (doc: PaymentDoc, format: PaymentDocFormat) => busy === busyKey(doc, format);
   return { busy, run, isBusy, preview, closePreview: () => setPreview(null) };
 }
 type DocsApi = ReturnType<typeof useDocuments>;
@@ -167,17 +195,24 @@ function DocButtons({ doc, docs, pdfLabel, imagesLabel }: { doc: PaymentDoc; doc
   );
 }
 
-/** Les images prêtes : on les voit, puis on les envoie toutes, ou une seule. */
+/** Les images prêtes : on les envoie toutes (le bouton en tête), ou on en garde une seule. */
 function ImagesSheet({ docs }: { docs: DocsApi }) {
   const { t } = useTranslation('deposits');
+  const [sending, setSending] = useState(false);
   const p = docs.preview;
   const count = p?.files.length ?? 0;
+  const download = prefersDownload();
   const sendAll = () => {
-    if (!p) return;
-    void deliverFiles(p.files, p.title).then((o) => {
-      if (o === 'downloaded') toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' }));
-    });
+    if (!p || sending) return;
+    setSending(true);
+    const go = download ? downloadFiles(p.files).then(() => 'downloaded' as const) : deliverFiles(p.files, p.title);
+    void go
+      .then((o) => { if (o === 'downloaded') toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' })); })
+      .finally(() => setSending(false));
   };
+  const allLabel = download
+    ? (count > 1 ? t('paymentDetails.downloadAll', { count, defaultValue: 'Télécharger les {{count}} images' }) : t('paymentDetails.downloadOne', { defaultValue: 'Télécharger l’image' }))
+    : (count > 1 ? t('paymentDetails.sendAll', { count, defaultValue: 'Envoyer les {{count}} images' }) : t('paymentDetails.sendOne', { defaultValue: 'Envoyer l’image' }));
   return (
     <BottomSheet
       open={p !== null}
@@ -187,7 +222,11 @@ function ImagesSheet({ docs }: { docs: DocsApi }) {
     >
       {p ? (
         <div className="space-y-4">
-          <p className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.imagesHint', { defaultValue: 'Envoyez tout, ou touchez une page pour l’enregistrer seule.' })}</p>
+          <Button variant="primary" onClick={sendAll} loading={sending} className="w-full">
+            {download ? <Download className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
+            {allLabel}
+          </Button>
+          {count > 1 ? <p className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.imagesHint', { defaultValue: 'Ou touchez une page pour l’enregistrer seule.' })}</p> : null}
           <div className={cn('grid gap-3', count === 1 ? 'grid-cols-1' : p.orientation === 'landscape' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3')}>
             {p.files.map((file, i) => (
               <button
@@ -205,12 +244,6 @@ function ImagesSheet({ docs }: { docs: DocsApi }) {
               </button>
             ))}
           </div>
-          <Button variant="primary" onClick={sendAll} className="w-full">
-            <Share2 className="h-5 w-5" />
-            {count > 1
-              ? t('paymentDetails.sendAll', { count, defaultValue: 'Envoyer les {{count}} images' })
-              : t('paymentDetails.sendOne', { defaultValue: 'Envoyer l’image' })}
-          </Button>
         </div>
       ) : null}
     </BottomSheet>
@@ -219,17 +252,34 @@ function ImagesSheet({ docs }: { docs: DocsApi }) {
 
 /* ─────────────── Banques ─────────────── */
 
-function bankText(a: BankGuideAccount): string {
+/** La coordonnée d'une banque en texte, prête à coller dans un message — référence comprise. */
+function bankText(a: BankGuideAccount, mention: string): string {
   return [
     a.holder,
     a.name,
     `IBAN : ${a.iban}`,
     `SWIFT : ${a.swift}`,
     `RIB : ${a.bankCode} ${a.branchCode} ${a.accountNumber} ${a.ribKey}`,
+    mention,
   ].join('\n');
 }
 
-function BankCard({ a, copier, docs }: { a: BankGuideAccount; copier: CopyApi; docs: DocsApi }) {
+/** Le bouton « Copier les coordonnées » d'une carte. */
+function CopyAllButton({ id, text, copier }: { id: string; text: string; copier: CopyApi }) {
+  const { t } = useTranslation('deposits');
+  return (
+    <button
+      type="button"
+      onClick={() => void copier.copy(id, text)}
+      className={cn('flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3', TYPE.bodyStrong, SURFACE.inset, TEXT.body)}
+    >
+      {copier.copied === id ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+      {t('paymentDetails.copyAll', { defaultValue: 'Copier les coordonnées' })}
+    </button>
+  );
+}
+
+function BankCard({ a, copier, docs, mention }: { a: BankGuideAccount; copier: CopyApi; docs: DocsApi; mention: string }) {
   const { t } = useTranslation('deposits');
   const k = (field: string) => `${a.key}:${field}`;
   return (
@@ -252,7 +302,7 @@ function BankCard({ a, copier, docs }: { a: BankGuideAccount; copier: CopyApi; d
           copier={copier}
           last
         />
-        <div className={cn('mb-3 grid grid-cols-[1fr_1fr_1.9fr_0.7fr] gap-1 rounded-lg p-2 text-center', SURFACE.inset)}>
+        <div className={cn('mb-3 grid grid-cols-[1fr_1fr_1.9fr_0.7fr] gap-1 rounded-lg px-1 py-2 text-center', SURFACE.inset)}>
           {[
             [t('paymentDetails.bankCode', { defaultValue: 'Banque' }), a.bankCode],
             [t('paymentDetails.branchCode', { defaultValue: 'Agence' }), a.branchCode],
@@ -260,21 +310,13 @@ function BankCard({ a, copier, docs }: { a: BankGuideAccount; copier: CopyApi; d
             [t('paymentDetails.ribKey', { defaultValue: 'Clé' }), a.ribKey],
           ].map(([label, value]) => (
             <div key={label} className="min-w-0">
-              <div className={cn('text-[12px] font-semibold', TEXT.muted)}>{label}</div>
-              <div className={cn('text-[13px] font-semibold tabular-nums', TEXT.strong)}>{value}</div>
+              <div className={cn('text-[14px] font-semibold', TEXT.muted)}>{label}</div>
+              <div className={cn('text-[16px] font-semibold tabular-nums', TEXT.strong)}>{value}</div>
             </div>
           ))}
         </div>
       </div>
-      {/* Les coordonnées en texte, prêtes à coller dans un message. */}
-      <button
-        type="button"
-        onClick={() => void copier.copy(k('all'), bankText(a))}
-        className={cn('mb-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3', TYPE.bodyStrong, SURFACE.inset, TEXT.body)}
-      >
-        {copier.copied === k('all') ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-        {t('paymentDetails.copyAll', { defaultValue: 'Copier les coordonnées' })}
-      </button>
+      <div className="mb-2"><CopyAllButton id={k('all')} text={bankText(a, mention)} copier={copier} /></div>
       <DocButtons
         doc={{ kind: 'rib', bank: a.key }}
         docs={docs}
@@ -290,28 +332,42 @@ function BankCard({ a, copier, docs }: { a: BankGuideAccount; copier: CopyApi; d
 function OperatorCard({ op, copier }: { op: MobileMoneyOperator; copier: CopyApi }) {
   const { t } = useTranslation('deposits');
   const k = (field: string) => `${op.key}:${field}`;
+  const from = op.key === 'mtn'
+    ? t('paymentDetails.flotteFromMtn', { defaultValue: 'Depuis votre puce commerciale MTN (compte Float).' })
+    : t('paymentDetails.flotteFromOm', { defaultValue: 'Depuis votre puce commerciale Orange (compte UV).' });
+  const text = [
+    op.name,
+    `${t('paymentDetails.flotteShort', { defaultValue: 'Flotte' })} : ${op.number} — ${op.holder}`,
+    `${t('paymentDetails.retraitShort', { defaultValue: 'Retrait' })} : ${op.merchantCode}`,
+  ].join('\n');
   return (
     <section className={cn('rounded-2xl p-4', SURFACE.card, SURFACE.shadow)}>
       <div className="flex items-center gap-3">
         <OperatorLogo op={op} />
         <h3 className={cn('min-w-0 flex-1', TYPE.lead, TEXT.strong)}>{op.name}</h3>
       </div>
-      <h4 className={cn('mt-4', TYPE.smallStrong, TEXT.body)}>
-        {t('paymentDetails.flotte', { defaultValue: '1 · Flotte — transfert vers notre numéro' })}
-        <span className={cn('ml-1 font-normal', TEXT.muted)}>({op.account.fr})</span>
-      </h4>
+      <h4 className={cn('mt-4', TYPE.bodyStrong, TEXT.strong)}>{t('paymentDetails.flotte', { defaultValue: '1 · Flotte — transfert vers notre numéro' })}</h4>
+      <p className={cn(TYPE.small, TEXT.muted)}>{from}</p>
       <CopyRow id={k('number')} label={t('paymentDetails.number', { defaultValue: 'Numéro' })} value={op.number} code big copier={copier} />
       <CopyRow id={k('holder')} label={t('paymentDetails.holder', { defaultValue: 'Titulaire (nom affiché avant de valider)' })} value={op.holder} copier={copier} last />
-      <h4 className={cn('mt-4', TYPE.smallStrong, TEXT.body)}>{t('paymentDetails.retrait', { defaultValue: '2 · Retrait — notre code, avec le montant' })}</h4>
+      <p className="mt-1 text-[16px] font-semibold text-[#975102] dark:text-[#E8B931]">{t('paymentDetails.nameCheck', { defaultValue: 'Nom différent ? Ne validez pas.' })}</p>
+      <h4 className={cn('mt-5', TYPE.bodyStrong, TEXT.strong)}>{t('paymentDetails.retrait', { defaultValue: '2 · Retrait — notre code, avec le montant' })}</h4>
+      <p className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.retraitFrom', { defaultValue: 'Depuis votre compte Mobile Money.' })}</p>
       <CopyRow id={k('code')} label={t('paymentDetails.code', { defaultValue: 'Code à composer' })} value={op.merchantCode} display={breakAfterStars(op.merchantCode)} code big copier={copier} last />
-      <p className={cn('mt-1', TYPE.small, TEXT.muted)}>{t('paymentDetails.amountHint', { defaultValue: 'Remplacez MONTANT par la somme, en chiffres, sans espace.' })}</p>
+      <p className={cn('mt-1 mb-3', TYPE.small, TEXT.muted)}>{t('paymentDetails.amountHint', { defaultValue: 'Remplacez MONTANT par la somme, en chiffres, sans espace.' })}</p>
+      <CopyAllButton id={k('all')} text={text} copier={copier} />
     </section>
   );
 }
 
 /* ─────────────── La page ─────────────── */
 
-export function PaymentDetailsHub({ audience, initialTab = 'banks' }: { audience: 'client' | 'admin'; initialTab?: Tab }) {
+/**
+ * `clientCode` (page client) : l'identifiant du client (BZ-…), à écrire dans
+ * le motif de ses virements — la règle de l'app (Mon identifiant client).
+ * Côté équipe, la mention générale de la fiche envoyée aux clients.
+ */
+export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }: { audience: 'client' | 'admin'; initialTab?: Tab; clientCode?: string | null }) {
   const { t } = useTranslation('deposits');
   const [tab, setTab] = useState<Tab>(initialTab);
   const [orientation, setOrientation] = useState<GuideOrientation>('portrait');
@@ -319,6 +375,11 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks' }: { audience
   const docs = useDocuments(orientation);
   const accounts = useMemo(() => bankGuideData().accounts, []);
   const operators = useMemo(() => mobileMoneyGuideData().operators, []);
+  const mention = audience === 'client'
+    ? (clientCode
+      ? t('paymentDetails.mentionClient', { code: clientCode, defaultValue: 'Dans le motif du virement, écrivez votre identifiant client : {{code}}.' })
+      : t('paymentDetails.mentionClientNoCode', { defaultValue: 'Dans le motif du virement, écrivez votre identifiant client (BZ-…).' }))
+    : t('paymentDetails.mention', { defaultValue: 'Mention obligatoire : votre nom + n° de commande.' });
 
   return (
     <div className="space-y-5">
@@ -379,12 +440,14 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks' }: { audience
               <span className={cn('text-[20px] font-semibold leading-snug', TEXT.strong)}>{LEGAL_NAME}</span>
               {copier.copied === 'holder' ? <Check className="h-5 w-5 shrink-0 text-[#2E7D52] dark:text-[#7FCBA0]" /> : <Copy className={cn('h-5 w-5 shrink-0', TEXT.muted)} />}
             </button>
-            <p className={cn('mt-2', TYPE.small, TEXT.body)}>{t('paymentDetails.mention', { defaultValue: 'Mention obligatoire : votre nom + n° de commande.' })}</p>
+            {/* La référence du virement : c'est elle qui permet de créditer le bon compte. */}
+            <p className="mt-3 rounded-lg bg-[#FDF1DD] px-3 py-2.5 text-[16px] font-semibold leading-snug text-[#7A4F0E] dark:bg-[#3A2F1A] dark:text-[#E0B978]">{mention}</p>
           </section>
-          {accounts.map((a) => <BankCard key={a.key} a={a} copier={copier} docs={docs} />)}
+          {accounts.map((a) => <BankCard key={a.key} a={a} copier={copier} docs={docs} mention={mention} />)}
         </div>
       ) : (
         <div className="space-y-4">
+          <p className={cn(TYPE.body, TEXT.body)}>{t('paymentDetails.chooseOne', { defaultValue: 'Deux façons de payer par Mobile Money : choisissez-en une seule.' })}</p>
           {operators.map((op) => <OperatorCard key={op.key} op={op} copier={copier} />)}
         </div>
       )}

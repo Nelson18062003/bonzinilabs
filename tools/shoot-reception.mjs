@@ -255,7 +255,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   // DEBUG_NET=1 : trace les requêtes vers Supabase (REST, storage) et leur réponse.
   if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
-  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen === 'payment-details-desktop-pdf' ? 'payment-details-desktop' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
@@ -271,6 +271,13 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'wh-parcel-damaged') { await page.click('text=Oui, mais abîmé'); await page.waitForTimeout(400); }
   if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
+  if (screen === 'payment-details-desktop-pdf') {
+    // Sur ordinateur, « PDF » télécharge le fichier (pas de feuille de partage).
+    const [pdf] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.getByRole('button', { name: /^PDF$/ }).first().click()]);
+    console.log(screen, 'téléchargé', pdf.suggestedFilename());
+    await page.close();
+    continue;
+  }
   if (screen === 'payment-details-images') {
     // Paysage, puis « Images » du livret complet : pdf.js dessine chaque page, l'aperçu s'ouvre.
     await page.getByRole('tab', { name: 'Paysage' }).click();

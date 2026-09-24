@@ -60,9 +60,26 @@ export function downloadFile(file: File): void {
 }
 
 /**
+ * La feuille de partage a été refermée (AbortError), ou une autre est déjà
+ * ouverte (InvalidStateError, un double toucher) : ni l'un ni l'autre n'est
+ * un échec, et ni l'un ni l'autre ne doit déclencher de téléchargement.
+ */
+function shareWasHandled(err: unknown): boolean {
+  return err instanceof DOMException && (err.name === 'AbortError' || err.name === 'InvalidStateError');
+}
+
+/** Plusieurs téléchargements, espacés pour que le navigateur les accepte tous. */
+export async function downloadFiles(files: File[]): Promise<void> {
+  for (const [i, file] of files.entries()) {
+    if (i) await new Promise((r) => setTimeout(r, 350));
+    downloadFile(file);
+  }
+}
+
+/**
  * Plusieurs fichiers d'un coup (les pages d'une fiche en images) : une seule
  * feuille de partage si le téléphone sait partager plusieurs fichiers, sinon
- * un téléchargement par fichier, espacés pour que le navigateur les accepte.
+ * un téléchargement par fichier.
  */
 export async function deliverFiles(files: File[], title: string): Promise<Outcome> {
   if (files.length === 1) return deliverFile(files[0], title);
@@ -73,14 +90,11 @@ export async function deliverFiles(files: File[], title: string): Promise<Outcom
         await navigator.share(payload);
         return 'shared';
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return 'shared';
+        if (shareWasHandled(err)) return 'shared';
       }
     }
   }
-  for (const [i, file] of files.entries()) {
-    if (i) await new Promise((r) => setTimeout(r, 350));
-    downloadFile(file);
-  }
+  await downloadFiles(files);
   return 'downloaded';
 }
 
@@ -93,8 +107,8 @@ export async function deliverFile(file: File, title: string): Promise<Outcome> {
         await navigator.share(payload);
         return 'shared';
       } catch (err) {
-        // La personne a refermé la feuille de partage : ce n'est pas un échec.
-        if (err instanceof DOMException && err.name === 'AbortError') return 'shared';
+        // Feuille refermée, ou déjà ouverte par un premier toucher : ce n'est pas un échec.
+        if (shareWasHandled(err)) return 'shared';
         // Autre erreur (feuille indisponible) : on retombe sur le téléchargement.
       }
     }
