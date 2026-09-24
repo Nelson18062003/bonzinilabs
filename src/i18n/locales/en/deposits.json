@@ -198,7 +198,10 @@
     },
     "guidePortrait": "PDF sheet · portrait",
     "guideLandscape": "PDF sheet · landscape",
-    "guideDownloaded": "Mobile Money sheet downloaded"
+    "guideDownloaded": "Mobile Money sheet downloaded",
+    "ribBank": "{{bank}} RIB · PDF",
+    "allBanks": "All our banks · PDF",
+    "bankDetailsDownloaded": "Bank details downloaded"
   },
   "proof": {
     "title": "Attach deposit proofs",

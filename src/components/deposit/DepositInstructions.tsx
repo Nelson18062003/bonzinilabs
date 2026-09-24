@@ -21,6 +21,9 @@ import {
   mtnMerchantInfo,
 } from '@/data/depositMethodsData';
 import { deliverMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
+import { deliverBankDetailsPdf } from '@/lib/bankDetailsPdf';
+import { bankShortName } from '@/lib/bankDetailsGuide';
+import type { BankOption } from '@/types/deposit';
 
 interface Deposit {
   method: string;
@@ -289,6 +292,25 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
               {orientation === 'portrait'
                 ? t('instructions.guidePortrait', { defaultValue: 'Fiche PDF · portrait' })
                 : t('instructions.guideLandscape', { defaultValue: 'Fiche PDF · paysage' })}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Virement ou dépôt au guichet : le RIB de la banque choisie (une page), ou le livret de toutes nos banques — en français et en anglais. */}
+      {(deposit.method === 'bank_transfer' || deposit.method === 'bank_cash') && deposit.bank_name && getBankInfo(deposit.bank_name) ? (
+        <div className="grid grid-cols-2 gap-2">
+          {([deposit.bank_name as BankOption, undefined] as const).map((bank) => (
+            <button
+              key={bank ?? 'all'}
+              type="button"
+              onClick={() => { void deliverBankDetailsPdf({ bank }).then((o) => { if (o === 'downloaded') toast.success(t('instructions.bankDetailsDownloaded', { defaultValue: 'Coordonnées bancaires téléchargées' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
+              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl px-2 py-3.5 text-center text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
+            >
+              <FileDown className="h-4 w-4 shrink-0" />
+              {bank
+                ? t('instructions.ribBank', { bank: bankShortName(bank), defaultValue: 'RIB {{bank}} · PDF' })
+                : t('instructions.allBanks', { defaultValue: 'Toutes nos banques · PDF' })}
             </button>
           ))}
         </div>

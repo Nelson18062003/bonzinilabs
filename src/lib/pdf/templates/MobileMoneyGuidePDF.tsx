@@ -16,11 +16,19 @@
 // gros. Le français d'abord, l'anglais juste dessous.
 // Les logos sont les logos officiels des opérateurs. Aucun site, aucun plafond.
 // ============================================================
-import { Document, Page, View, Text as PdfText, Image, Link, Svg, Path, StyleSheet } from '@react-pdf/renderer';
-import type { ComponentProps } from 'react';
+import { Document, Page, View, Image, Link, Svg, Path, StyleSheet } from '@react-pdf/renderer';
 import type { ReactNode } from 'react';
 import type { Style } from '@react-pdf/types';
-import { PdfLogo } from '../components/PDFHeader';
+import {
+  Text, ArrowIcon, CheckIcon, PagePill, RuleText,
+  Hero as KitHero, Sidebar as KitSidebar, Footer as KitFooter, CoverBrand as KitCoverBrand,
+  Ticket as KitTicket, ClearLine as KitClearLine, Thanks as KitThanks,
+} from '../components/guideKit';
+import {
+  INK, WHITE, CALL_GREEN, R, MUTED, PANEL, LINE_ON_PANEL, ON_INK_SOFT, VIOLET_DEEP, ORANGE_DEEP, SIDE_W, AREA_PAD,
+  biLabel, balanced,
+} from '../guideTokens';
+import { gk, ls } from '../guideStyles';
 import { colors } from '../styles';
 import '../fonts';
 import { MOBILE_MONEY_GUIDE_COPY as COPY } from '@/lib/mobileMoneyGuide';
@@ -38,28 +46,7 @@ const MTN_LOGO_PATH = 'M640,0C286.5,0,0,143.3,0,320s286.5,320,640,320s640-143.3,
 /** Le logo Orange Money, recadré au ras du dessin (1000 × 269 px). */
 const ORANGE_RATIO = 1000 / 269;
 
-const INK = colors.violetDark;
-const WHITE = colors.white;
-const CALL_GREEN = '#1faa59';
 const TOTAL = 4;
-const R = { box: 20, inner: 12, cell: 6 };
-// Textes secondaires : plus foncés que le gris habituel, pour les yeux fatigués.
-const MUTED = '#5f5775';
-// Sur fond sombre : couleurs pleines pré-mélangées (react-pdf rend mal le rgba des bordures).
-const PANEL = '#251a37';
-const LINE_ON_INK = '#362d42';
-const LINE_ON_PANEL = '#3a2f4b';
-const OR_RING = '#5f586a';
-const ON_INK_SOFT = '#d6d0e0';
-
-/**
- * Tout texte de la fiche passe par ici : pas de césure. « BONZINI » ne devient
- * jamais « BONZI-NI » — on ne coupe qu'entre deux mots.
- */
-const noHyphen = (word: string) => [word];
-function Text(props: ComponentProps<typeof PdfText>) {
-  return <PdfText hyphenationCallback={noHyphen} {...props} />;
-}
 
 /* ─────────────── Les deux mises en page ─────────────── */
 
@@ -96,146 +83,49 @@ const SECTION: Record<SectionKey, { n: string; color: string; fr: string; en: st
 };
 const ORDER: SectionKey[] = ['flotte', 'retrait', 'preuve'];
 
-const LABEL = { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform: 'uppercase' } as const;
+/** Les styles propres à la fiche Mobile Money ; les styles communs viennent du kit. */
+const st = {
+  ...gk,
+  ...StyleSheet.create({
+    // ── Cartes opérateur ──
+    card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, overflow: 'hidden' },
+    cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, overflow: 'hidden' },
+    cardHead: { height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
+    cardBody: { paddingTop: 11, paddingBottom: 12, paddingHorizontal: 18 },
+    opMark: { flexDirection: 'row', alignItems: 'center' },
+    opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
+    logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
+    kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 5, paddingHorizontal: 12, alignItems: 'flex-end' },
+    kindFr: { fontSize: 12.5, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
+    kindEn: { fontSize: 11, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
 
-const st = StyleSheet.create({
-  page: { padding: 0, fontFamily: 'DM Sans', color: colors.text },
-  label: { ...LABEL, color: MUTED, marginBottom: 5 },
+    // ── Flotte ──
+    keys: { flexDirection: 'row' },
+    key: { flexBasis: 0, alignItems: 'center', backgroundColor: '#f5f2f9', borderWidth: 1, borderColor: '#e2d9ee', borderRadius: R.inner, paddingTop: 2, paddingBottom: 0 },
+    keyText: { fontWeight: 900, color: INK, letterSpacing: 1.2, lineHeight: 1.15 },
+    holder: { alignSelf: 'flex-start', borderWidth: 2, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 5, paddingHorizontal: 10 },
+    holderText: { fontWeight: 900, color: INK, letterSpacing: 0, lineHeight: 1.15 },
+    alert: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: colors.violetLight },
+    alertDisc: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+    alertMark: { fontSize: 17, fontWeight: 900, color: WHITE, lineHeight: 1 },
+    alertFr: { fontSize: 16, fontWeight: 800, color: INK },
+    alertEn: { fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 1 },
 
-  // ── Bandeau de partie ──
-  hero: { position: 'relative', overflow: 'hidden' },
-  heroGhost: { position: 'absolute', fontWeight: 900, lineHeight: 1, color: WHITE, opacity: 0.16 },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  brandRow: { flexDirection: 'row', alignItems: 'center' },
-  markDisc: { width: 28, height: 28, borderRadius: 14, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  brandName: { fontSize: 10.5, fontWeight: 800, letterSpacing: 2 },
-  folio: { fontSize: 10.5, fontWeight: 800, letterSpacing: 1.4 },
-  eyebrow: { ...LABEL, marginBottom: 6 },
-  heroWord: { fontWeight: 900, letterSpacing: 2.5, textTransform: 'uppercase', lineHeight: 1 },
-  heroEnWord: { fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
-  sentenceFr: { fontSize: 16, fontWeight: 700 },
-  sentenceEn: { fontSize: 14, fontWeight: 500, marginTop: 2 },
-  sentenceEnOnViolet: { fontWeight: 700 },
-  needs: { borderRadius: R.inner, paddingVertical: 7, paddingHorizontal: 14 },
-  needsFr: { fontSize: 12, fontWeight: 800 },
-  needsEn: { fontSize: 11, fontWeight: 600, marginTop: 1 },
-
-  // ── Pied de page ──
-  footer: { position: 'absolute', bottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: 8 },
-  footerText: { fontSize: 11, fontWeight: 600, letterSpacing: 0.3 },
-  way: { flexDirection: 'row', alignItems: 'center' },
-  wayItem: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
-  wayDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 5 },
-  wayText: { fontSize: 11, letterSpacing: 0.2 },
-
-  // ── Cartes opérateur ──
-  card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, overflow: 'hidden' },
-  cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, overflow: 'hidden' },
-  cardHead: { height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
-  cardBody: { paddingTop: 11, paddingBottom: 12, paddingHorizontal: 18 },
-  opMark: { flexDirection: 'row', alignItems: 'center' },
-  opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
-  logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
-  kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 5, paddingHorizontal: 12, alignItems: 'flex-end' },
-  kindFr: { fontSize: 12.5, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
-  kindEn: { fontSize: 11, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
-
-  // ── Flotte ──
-  keys: { flexDirection: 'row' },
-  key: { flexBasis: 0, alignItems: 'center', backgroundColor: '#f5f2f9', borderWidth: 1, borderColor: '#e2d9ee', borderRadius: R.inner, paddingTop: 2, paddingBottom: 0 },
-  keyText: { fontWeight: 900, color: INK, letterSpacing: 1.2, lineHeight: 1.15 },
-  holder: { alignSelf: 'flex-start', borderWidth: 2, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 5, paddingHorizontal: 10 },
-  holderText: { fontWeight: 900, color: INK, letterSpacing: 0, lineHeight: 1.15 },
-  alert: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: colors.violetLight },
-  alertDisc: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  alertMark: { fontSize: 17, fontWeight: 900, color: WHITE, lineHeight: 1 },
-  alertFr: { fontSize: 16, fontWeight: 800, color: INK },
-  alertEn: { fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 1 },
-
-  // ── Retrait ──
-  dial: { backgroundColor: WHITE, borderRadius: R.inner, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 },
-  codeRow: { flexDirection: 'row', alignItems: 'center' },
-  digits: { fontWeight: 800, color: INK, letterSpacing: 0.4, lineHeight: 1.2 },
-  amountBox: { backgroundColor: colors.orange, borderRadius: R.cell, paddingTop: 2, paddingBottom: 1, paddingHorizontal: 6, marginRight: 3 },
-  amountText: { fontWeight: 900, color: WHITE, letterSpacing: 0.6 },
-  call: { width: 40, height: 40, borderRadius: 20, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
-  legend: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 11, paddingHorizontal: 16, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL },
-  legendFr: { fontSize: 16, fontWeight: 800, color: WHITE },
-  legendEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 1 },
-
-  // ── Preuve ──
-  ticketHead: { flexDirection: 'row', alignItems: 'center', height: 60, paddingHorizontal: 20 },
-  ticketOk: { width: 30, height: 30, borderRadius: 15, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  barA: { width: 130, height: 10, borderRadius: 5, backgroundColor: '#ddd5ea', marginBottom: 6 },
-  barB: { width: 80, height: 8, borderRadius: 4, backgroundColor: '#ddd5ea' },
-  ticketTag: { marginLeft: 'auto', alignItems: 'flex-end' },
-  ticketRow: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, borderTopWidth: 1, borderTopColor: '#ddd5ea', borderStyle: 'dashed' },
-  goldCheck: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  itemFr: { fontSize: 18, fontWeight: 800, color: INK },
-  itemEn: { fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 1 },
-  ticketBar: { height: 10, borderRadius: 5, backgroundColor: '#ddd5ea', marginLeft: 'auto' },
-  clearRow: { flexDirection: 'row', alignItems: 'center' },
-  clearFr: { fontSize: 15, fontWeight: 800, color: INK },
-  clearEn: { fontSize: 13, fontWeight: 500, color: MUTED, marginTop: 1 },
-  thanks: { flexDirection: 'row', alignItems: 'center', backgroundColor: INK, borderRadius: R.box, paddingVertical: 18, paddingHorizontal: 22 },
-  thanksFr: { fontSize: 19, fontWeight: 800, color: WHITE },
-  thanksEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
-  thanksSign: { fontSize: 11, fontWeight: 800, color: colors.gold, letterSpacing: 1.8, marginTop: 6 },
-
-  // ── Couverture ──
-  coverBrand: { fontSize: 11, fontWeight: 800, color: WHITE, letterSpacing: 2, marginLeft: 10 },
-  coverFolio: { fontSize: 10.5, fontWeight: 800, color: ON_INK_SOFT, letterSpacing: 1.4 },
-  stripe: { flexDirection: 'row' },
-  stripeSeg: { flex: 1, height: 3, borderRadius: 2 },
-  coverKicker: { ...LABEL, color: colors.gold, letterSpacing: 2, marginBottom: 12 },
-  coverTitleTop: { fontSize: 24, fontWeight: 400, color: ON_INK_SOFT, lineHeight: 1.1 },
-  coverTitleBottom: { fontWeight: 900, color: WHITE, letterSpacing: -0.8, lineHeight: 1.05 },
-  leadFr: { fontSize: 19, fontWeight: 800, color: WHITE },
-  leadEn: { fontSize: 15, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
-  door: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, paddingVertical: 16, paddingHorizontal: 18 },
-  doorDisc: { width: 50, height: 50, borderRadius: 25, backgroundColor: WHITE, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  doorDiscText: { fontSize: 22, fontWeight: 900, lineHeight: 1 },
-  doorWordRow: { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' },
-  doorWord: { fontSize: 26, fontWeight: 900, color: WHITE, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1 },
-  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 0, lineHeight: 1 },
-  doorFr: { fontSize: 14, fontWeight: 700, color: WHITE, marginTop: 6 },
-  doorEn: { fontSize: 13, fontWeight: 500, marginTop: 1 },
-  doorPage: { flexDirection: 'row', alignItems: 'center', backgroundColor: WHITE, borderRadius: 14, paddingVertical: 6, paddingHorizontal: 11, marginLeft: 10 },
-  doorPageText: { fontSize: 12, fontWeight: 800, color: INK, letterSpacing: 1.2, textTransform: 'uppercase', marginRight: 5 },
-  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
-  orLine: { flex: 1, height: 1, backgroundColor: LINE_ON_INK },
-  orDisc: { width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: OR_RING, alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
-  orFr: { fontSize: 16, fontWeight: 800, color: WHITE, lineHeight: 1 },
-  orEn: { fontSize: 12, fontWeight: 600, color: ON_INK_SOFT, lineHeight: 1, marginTop: 2 },
-  chooseFr: { fontSize: 16, fontWeight: 800, color: colors.gold, textAlign: 'center' },
-  chooseEn: { fontSize: 14, fontWeight: 600, color: '#e7c48e', textAlign: 'center', marginTop: 1 },
-  proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 12, paddingHorizontal: 16.5 },
-  proofDisc: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  proofDiscText: { fontSize: 19, fontWeight: 900, color: INK, lineHeight: 1 },
-  proofFr: { fontSize: 16, fontWeight: 900, color: WHITE, textTransform: 'uppercase', letterSpacing: 1.8 },
-  proofEn: { fontSize: 12, fontWeight: 700, color: ON_INK_SOFT, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 2 },
-  plate: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
-  plateLogos: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  link: { textDecoration: 'none' },
-});
+    // ── Retrait ──
+    dial: { backgroundColor: WHITE, borderRadius: R.inner, paddingVertical: 12, paddingLeft: 14, paddingRight: 12 },
+    codeRow: { flexDirection: 'row', alignItems: 'center' },
+    digits: { fontWeight: 800, color: INK, letterSpacing: 0.4, lineHeight: 1.2 },
+    amountBox: { backgroundColor: colors.orange, borderRadius: R.cell, paddingTop: 2, paddingBottom: 1, paddingHorizontal: 6, marginRight: 3 },
+    amountText: { fontWeight: 900, color: WHITE, letterSpacing: 0.6 },
+    call: { width: 40, height: 40, borderRadius: 20, backgroundColor: CALL_GREEN, alignItems: 'center', justifyContent: 'center', marginLeft: 'auto' },
+    legend: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 11, paddingHorizontal: 16, backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL },
+    legendFr: { fontSize: 16, fontWeight: 800, color: WHITE },
+    legendEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 1 },
+    plateLogos: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  }),
+};
 
 /* ─────────────── Pictogrammes (dessinés, pas de police d'icônes) ─────────────── */
-
-function ArrowIcon({ color, size = 10 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M4 12h15M13 6l6 6-6 6" stroke={color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </Svg>
-  );
-}
-
-function CheckIcon({ color, size = 12 }: { color: string; size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Path d="M5 12.5l4.5 4.5L19 7" stroke={color} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </Svg>
-  );
-}
 
 /** Le combiné du bouton « Appeler » : on compose le code, puis on appelle. */
 function CallIcon({ size = 18 }: { size?: number }) {
@@ -255,10 +145,6 @@ function ExampleBox({ size, outlined }: { size: number; outlined?: boolean }) {
   );
 }
 
-/** « NUMÉRO · NUMBER » : une étiquette dans les deux langues, sur une ligne. */
-function biLabel(b: Bi): string {
-  return b.fr.toLowerCase() === b.en.toLowerCase() ? b.fr : `${b.fr} · ${b.en}`;
-}
 
 /* ─────────────── Logos officiels ─────────────── */
 
@@ -287,66 +173,28 @@ function OperatorMark({ op, height, onDark }: { op: MobileMoneyOperator; height:
   );
 }
 
-/* ─────────────── Éléments communs ─────────────── */
+/* ─────────────── Éléments communs (le kit, aux couleurs des trois parties) ─────────────── */
 
 function Footer({ inset, active, dark }: { inset: number; active: SectionKey; dark?: boolean }) {
-  const muted = dark ? ON_INK_SOFT : MUTED;
-  return (
-    <View style={[st.footer, { left: inset, right: inset, borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
-      <Text style={[st.footerText, { color: muted }]}>{LEGAL_NAME}</Text>
-      <View style={st.way}>
-        {ORDER.map((k) => {
-          const on = active === k;
-          return (
-            <View key={k} style={st.wayItem}>
-              <View style={[st.wayDot, { backgroundColor: on ? SECTION[k].color : dark ? LINE_ON_PANEL : '#d6cfe0' }]} />
-              <Text style={[st.wayText, { color: on ? (dark ? WHITE : INK) : muted, fontWeight: on ? 800 : 500 }]}>{biLabel(COPY.way[k])}</Text>
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
+  return <KitFooter inset={inset} dark={dark} items={ORDER.map((k) => ({ key: k, label: biLabel(COPY.way[k]), color: SECTION[k].color, active: active === k }))} />;
 }
 
-function NeedsPill({ section, needs }: { section: SectionKey; needs: Bi }) {
-  const onGold = section === 'preuve';
-  const bg = onGold ? INK : WHITE;
-  const fg = onGold ? colors.gold : section === 'retrait' ? '#c53d06' : '#7b2fd0';
-  return (
-    <View style={[st.needs, { backgroundColor: bg }]}>
-      <Text style={[st.needsFr, { color: fg }]}>{needs.fr}</Text>
-      <Text style={[st.needsEn, { color: fg }]}>{needs.en}</Text>
-    </View>
-  );
+/** Sur blanc, le violet ou l'orange foncé ; sur or, l'or sur encre. */
+function needsInk(section: SectionKey): { needsFg: string; needsBg?: string } {
+  if (section === 'preuve') return { needsFg: colors.gold, needsBg: INK };
+  return { needsFg: section === 'retrait' ? ORANGE_DEEP : VIOLET_DEEP };
 }
 
 /** Portrait : le bandeau de couleur en haut de page. */
 function Hero({ L, section, eyebrow, word, sentence, needs }: { L: Layout; section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi }) {
   const s = SECTION[section];
   return (
-    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: 16, paddingBottom: 14 }]}>
-      <Text style={[st.heroGhost, { fontSize: L.ghost, right: section === 'flotte' ? 4 : -40, top: -80, opacity: section === 'preuve' ? 0.22 : 0.16 }]}>{s.n}</Text>
-      <View style={[st.heroTop, { marginBottom: 12 }]}>
-        <View style={st.brandRow}>
-          <View style={st.markDisc}><PdfLogo size={19} /></View>
-          <Text style={[st.brandName, { color: s.fr }]}>{LEGAL_NAME}</Text>
-        </View>
-        <Text style={[st.folio, { color: s.en }]}>{s.page} / {TOTAL}</Text>
-      </View>
-      <Text style={[st.eyebrow, { color: s.en }]}>{biLabel(eyebrow)}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Text style={[st.heroWord, { color: s.fr, fontSize: L.heroWord, marginRight: 14 }]}>{word.fr}</Text>
-        <Text style={[st.heroEnWord, { color: s.en, fontSize: L.heroEnWord, marginBottom: L.heroWord * 0.06 }]}>{word.en}</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 8 }}>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={[st.sentenceFr, { color: s.fr }]}>{sentence.fr}</Text>
-          <Text style={[st.sentenceEn, { color: s.en }, section === 'flotte' ? st.sentenceEnOnViolet : {}]}>{sentence.en}</Text>
-        </View>
-        <NeedsPill section={section} needs={needs} />
-      </View>
-    </View>
+    <KitHero
+      id={section} tone={s} inset={L.M} folio={`${s.page} / ${TOTAL}`}
+      text={{ eyebrow, word, sentence, needs, ...needsInk(section) }}
+      sizes={{ ghost: L.ghost, word: L.heroWord, enWord: L.heroEnWord }}
+      ghostRight={section === 'flotte' ? 4 : -40} ghostOpacity={section === 'preuve' ? 0.22 : 0.16} enStrong={section === 'flotte'}
+    />
   );
 }
 
@@ -365,15 +213,6 @@ function OperatorStack({ children, gap = 10 }: { children: ReactNode[]; gap?: nu
 }
 
 /* ─────────────── Page 1 · Couverture ─────────────── */
-
-function PagePill({ page, color = INK, background = WHITE }: { page: number; color?: string; background?: string }) {
-  return (
-    <View style={[st.doorPage, { backgroundColor: background }]}>
-      <Text style={[st.doorPageText, { color }]}>{COPY.page.fr} {page}</Text>
-      <ArrowIcon color={color} size={10} />
-    </View>
-  );
-}
 
 function Door({ L, section, word, sentence }: { L: Layout; section: 'flotte' | 'retrait'; word: Bi; sentence: Bi }) {
   const s = SECTION[section];
@@ -453,21 +292,8 @@ function LogosPlate({ L, operators, height }: { L: Layout; operators: MobileMone
 }
 
 function CoverBrand({ L }: { L: Layout }) {
-  return (
-    <>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <PdfLogo size={30} />
-          <Text style={st.coverBrand}>{LEGAL_NAME}</Text>
-        </View>
-        <Text style={st.coverFolio}>1 / {TOTAL}</Text>
-      </View>
-      {/* Le code couleur du livret, annoncé d'un trait : Flotte · Retrait · Preuve. */}
-      <View style={[st.stripe, { marginTop: L.o === 'portrait' ? 16 : 12 }]}>
-        {ORDER.map((k, i) => <View key={k} style={[st.stripeSeg, { backgroundColor: SECTION[k].color, marginLeft: i ? 5 : 0 }]} />)}
-      </View>
-    </>
-  );
+  // Le code couleur du livret, annoncé d'un trait : Flotte · Retrait · Preuve.
+  return <KitCoverBrand folio={`1 / ${TOTAL}`} stripe={ORDER.map((k) => SECTION[k].color)} stripeTop={L.o === 'portrait' ? 16 : 12} />;
 }
 
 function Cover({ L, operators }: { L: Layout; operators: MobileMoneyOperator[] }) {
@@ -597,159 +423,31 @@ function RetraitCard({ L, op, room }: { L: Layout; op: MobileMoneyOperator; room
 
 /* ─────────────── Page 4 · Preuve ─────────────── */
 
-/** Le contour d'un ticket : coins arrondis en haut, dents de scie en bas. */
-function ticketPath(w: number, h: number, tooth: number): string {
-  const r = R.box;
-  const n = Math.round(w / 14);
-  const tw = w / n;
-  let d = `M0 ${r} Q0 0 ${r} 0 H${w - r} Q${w} 0 ${w} ${r} V${h - tooth}`;
-  for (let i = 0; i < n; i++) {
-    const x = w - i * tw;
-    d += ` L${(x - tw / 2).toFixed(2)} ${h} L${(x - tw).toFixed(2)} ${h - tooth}`;
-  }
-  return `${d} Z`;
-}
-
-const PROOF_BAR_W = [70, 110, 90, 60];
-
 function Ticket({ width, rowH }: { width: number; rowH: number }) {
-  const tooth = 9;
-  const h = 60 + COPY.preuve.items.length * rowH + 14 + tooth;
-  return (
-    <View style={{ width, height: h, position: 'relative' }}>
-      <Svg width={width} height={h} style={{ position: 'absolute', top: 0, left: 0 }}>
-        <Path d={ticketPath(width, h, tooth)} fill="#f4f0f9" stroke="#d9d1e5" strokeWidth={1} />
-      </Svg>
-      <View style={st.ticketHead}>
-        <View style={st.ticketOk}><CheckIcon color={WHITE} size={15} /></View>
-        <View>
-          <View style={st.barA} />
-          <View style={st.barB} />
-        </View>
-        <View style={st.ticketTag}>
-          <Text style={[st.label, { marginBottom: 0 }]}>{COPY.preuve.shot.fr}</Text>
-          <Text style={[st.label, { marginBottom: 0, fontSize: 11, fontWeight: 700 }]}>{COPY.preuve.shot.en}</Text>
-        </View>
-      </View>
-      {COPY.preuve.items.map((item, i) => (
-        <View key={item.fr} style={[st.ticketRow, { height: rowH }]}>
-          <View style={st.goldCheck}><CheckIcon color={INK} size={14} /></View>
-          <View>
-            <Text style={st.itemFr}>{item.fr}</Text>
-            <Text style={st.itemEn}>{item.en}</Text>
-          </View>
-          <View style={[st.ticketBar, { width: PROOF_BAR_W[i] }]} />
-        </View>
-      ))}
-    </View>
-  );
+  return <KitTicket width={width} rowH={rowH} items={COPY.preuve.items} shot={COPY.preuve.shot} />;
 }
 
 function ClearLine() {
-  return (
-    <View style={[st.clearRow, { paddingHorizontal: 20 }]}>
-      <View style={st.goldCheck}><CheckIcon color={INK} size={14} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={st.clearFr}>{COPY.preuve.clear.fr}</Text>
-        <Text style={st.clearEn}>{COPY.preuve.clear.en}</Text>
-      </View>
-    </View>
-  );
+  return <KitClearLine text={COPY.preuve.clear} />;
 }
 
 function Thanks() {
-  return (
-    <View style={st.thanks}>
-      <View style={[st.markDisc, { width: 38, height: 38, borderRadius: 19, marginRight: 16 }]}><PdfLogo size={26} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={st.thanksFr}>{COPY.preuve.thanks.fr}</Text>
-        <Text style={st.thanksEn}>{COPY.preuve.thanks.en}</Text>
-        <Text style={st.thanksSign}>{LEGAL_NAME}</Text>
-      </View>
-    </View>
-  );
+  return <KitThanks text={COPY.preuve.thanks} />;
 }
 
 /* ─────────────── PAYSAGE : colonne de couleur + zone de données ─────────────── */
 
-const SIDE_W = 280;
-const SIDE_PAD = 24;
-const AREA_PAD = 30;
 const AREA_W = LANDSCAPE.W - SIDE_W - 2 * AREA_PAD;
-
-const ls = StyleSheet.create({
-  side: { width: SIDE_W, paddingTop: 26, paddingBottom: 22, paddingHorizontal: SIDE_PAD, position: 'relative', overflow: 'hidden' },
-  sideGhost: { position: 'absolute', right: -24, top: 64, fontSize: 300, fontWeight: 900, lineHeight: 1, color: WHITE },
-  sideBrand: { fontSize: 11, fontWeight: 800, letterSpacing: 1 },
-  sideEyebrow: { fontSize: 11, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase' },
-  sideEyebrowEn: { fontSize: 11, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 2, marginBottom: 14 },
-  sideWord: { fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
-  sideEnWord: { fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', lineHeight: 1.05, marginTop: 6 },
-  sideSentenceFr: { fontSize: 15, fontWeight: 700, marginTop: 18, lineHeight: 1.25 },
-  sideSentenceEn: { fontSize: 13, fontWeight: 500, marginTop: 3, lineHeight: 1.25 },
-  sideFolio: { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, marginTop: 12 },
-  rule: { backgroundColor: WHITE, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
-  ruleRow: { flexDirection: 'row', alignItems: 'center' },
-  ruleFr: { fontSize: 14, fontWeight: 800, color: INK, lineHeight: 1.25 },
-  ruleEn: { fontSize: 12.5, fontWeight: 500, color: MUTED, marginTop: 2, lineHeight: 1.25 },
-  area: { flex: 1, paddingHorizontal: AREA_PAD, paddingTop: 26, paddingBottom: 56, justifyContent: 'center', position: 'relative' },
-  // Couverture
-  doorTall: { borderRadius: R.box, paddingVertical: 16, paddingHorizontal: 18 },
-  doorTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-});
-
-/**
- * Coupures choisies pour la colonne étroite : une phrase trop longue pour une
- * ligne se coupe en deux lignes équilibrées — après « ? » ou à la virgule la
- * plus centrale s'il y en a, sinon à l'espace le plus central — et « Mobile
- * Money » ne se sépare jamais.
- */
-function balanced(text: string, size: number, room: number, em = 0.54): string {
-  const keep = text.replace(/Mobile Money/g, 'Mobile\u00A0Money');
-  if (keep.length * size * em <= room) return keep;
-  const mid = keep.length / 2;
-  const pick = (re: RegExp) => {
-    let best = -1;
-    for (const m of keep.matchAll(re)) {
-      const at = (m.index ?? 0) + m[0].length - 1;
-      if (best < 0 || Math.abs(at - mid) < Math.abs(best - mid)) best = at;
-    }
-    return best;
-  };
-  const at = [pick(/\? /g), pick(/, /g), pick(/ /g)].find((i) => i > 0) ?? -1;
-  return at > 0 ? `${keep.slice(0, at)}\n${keep.slice(at + 1)}` : keep;
-}
-
-/** Un titre en capitales ajusté à la largeur de la colonne (jamais au-delà de `max`). */
-function fitSize(word: string, max: number, room: number, em: number): number {
-  return Math.min(max, Math.floor((room / (word.length * em)) * 10) / 10);
-}
 
 /** La colonne de couleur : quelle façon, d'où, ce qu'il faut ; en bas, la règle de la page. */
 function Sidebar({ section, eyebrow, word, sentence, needs, rule }: { section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi; rule: ReactNode }) {
   const s = SECTION[section];
-  const room = SIDE_W - 2 * SIDE_PAD;
   return (
-    <View id={section} style={[ls.side, { backgroundColor: s.color }]}>
-      <Text style={[ls.sideGhost, { opacity: section === 'preuve' ? 0.18 : 0.1 }]}>{s.n}</Text>
-      <View style={st.brandRow}>
-        <View style={[st.markDisc, { width: 26, height: 26, borderRadius: 13, marginRight: 8 }]}><PdfLogo size={18} /></View>
-        <Text style={[ls.sideBrand, { color: s.fr }]}>{LEGAL_NAME}</Text>
-      </View>
-      <View style={{ marginTop: 34 }}>
-        <Text style={[ls.sideEyebrow, { color: s.en }]}>{eyebrow.fr}</Text>
-        <Text style={[ls.sideEyebrowEn, { color: s.en }]}>{eyebrow.en}</Text>
-        <Text style={[ls.sideWord, { color: s.fr, fontSize: fitSize(word.fr, 46, room, 0.66) }]}>{word.fr}</Text>
-        <Text style={[ls.sideEnWord, { color: s.en, fontSize: fitSize(word.en, 22, room, 0.74) }]}>{word.en}</Text>
-        <Text style={[ls.sideSentenceFr, { color: s.fr }]}>{balanced(sentence.fr, 15, room)}</Text>
-        <Text style={[ls.sideSentenceEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{balanced(sentence.en, section === 'flotte' ? 14 : 13, room, 0.5)}</Text>
-        <View style={{ marginTop: 14, alignSelf: 'flex-start' }}><NeedsPill section={section} needs={needs} /></View>
-      </View>
-      <View style={{ marginTop: 'auto' }}>
-        <View style={ls.rule}>{rule}</View>
-        <Text style={[ls.sideFolio, { color: s.en }]}>{s.page} / {TOTAL}</Text>
-      </View>
-    </View>
+    <KitSidebar
+      id={section} tone={s} folio={`${s.page} / ${TOTAL}`} rule={rule}
+      text={{ eyebrow, word, sentence, needs, ...needsInk(section) }}
+      ghostOpacity={section === 'preuve' ? 0.18 : 0.1} enStrong={section === 'flotte'}
+    />
   );
 }
 
@@ -766,17 +464,6 @@ function LandscapePage({ section, dark, sidebar, children }: { section: SectionK
 }
 
 /** Une règle de page, en français puis en anglais, avec son repère visuel à gauche. */
-function RuleText({ text, lead }: { text: Bi; lead: ReactNode }) {
-  return (
-    <View style={ls.ruleRow}>
-      {lead}
-      <View style={{ flex: 1 }}>
-        <Text style={ls.ruleFr}>{balanced(text.fr, 14, 0)}</Text>
-        <Text style={ls.ruleEn}>{balanced(text.en, 12.5, 0)}</Text>
-      </View>
-    </View>
-  );
-}
 
 function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte' | 'retrait'; word: Bi; sentence: Bi }) {
   const s = SECTION[section];

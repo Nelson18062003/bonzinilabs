@@ -198,7 +198,10 @@
     },
     "guidePortrait": "Fiche PDF · portrait",
     "guideLandscape": "Fiche PDF · paysage",
-    "guideDownloaded": "Fiche Mobile Money téléchargée"
+    "guideDownloaded": "Fiche Mobile Money téléchargée",
+    "ribBank": "RIB {{bank}} · PDF",
+    "allBanks": "Toutes nos banques · PDF",
+    "bankDetailsDownloaded": "Coordonnées bancaires téléchargées"
   },
   "proof": {
     "title": "Joindre les preuves de dépôt",

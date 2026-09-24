@@ -126,6 +126,10 @@ export const banks: BankInfo[] = [
       accountName: 'NORTON GAUSS BONZINI SARL',
       accountNumber: '00280298901',
       bankName: 'CCA-BANK Cameroun',
+      // À VÉRIFIER auprès de CCA-Bank : cet IBAN ne passe pas le contrôle
+      // modulo 97, et la clé RIB recalculée depuis banque/agence/compte vaut
+      // 71, pas 57. Laissé tel quel faute de source (voir le test de la fiche
+      // bancaire) : la correction la plus probable est la clé 71.
       iban: 'CM21 10039 10444 00280298901 57',
       swift: 'CCAMCMCY',
       codeBanque: '10039',
@@ -140,8 +144,13 @@ export const banks: BankInfo[] = [
       accountName: 'NORTON GAUSS BONZINI SARL',
       accountNumber: '14011000141',
       bankName: 'UBA Cameroun',
-      iban: 'CM21 10033 05214 140110001411 88',
-      swift: 'UNAFMCX',
+      // Corrigé le 24/09/2026 : l'IBAN portait un « 1 » en trop (12 chiffres de
+      // compte au lieu de 11 → IBAN de 28 caractères, rejeté par le contrôle
+      // modulo 97). Recalculé depuis le RIB, dont la clé 88 se vérifie : les
+      // chiffres de contrôle « 21 » retombent juste. Le SWIFT n'avait que 7
+      // caractères (« UNAFMCX ») : banque UNAF + pays CM + lieu CX.
+      iban: 'CM21 10033 05214 14011000141 88',
+      swift: 'UNAFCMCX',
       codeBanque: '10033',
       codeAgence: '05214',
       cleRib: '88',
