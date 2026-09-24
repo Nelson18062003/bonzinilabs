@@ -97,6 +97,22 @@ export function useAddQuotePayment() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+/** Régler un devis depuis le solde du client (portefeuille) : la base débite sous verrou et écrit au grand livre. */
+export function usePayQuoteFromWallet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { quoteId: string; amount: number; note?: string }) =>
+      rpcJson<{ payment_id: string; receipt_no: string; wallet_balance_xaf: number; quote: Quote }>('cargo_quote_pay_from_wallet', { p_quote_id: a.quoteId, p_amount_xaf: a.amount, p_note: a.note ?? null })
+        .then((r) => ({ quote: r.quote, payment: r.quote.payments?.find((p) => p.id === r.payment_id) ?? null, walletBalance: r.wallet_balance_xaf })),
+    onSuccess: ({ quote }) => {
+      qc.setQueryData(QUOTE_KEYS.quote(quote.deposit_id), quote);
+      qc.invalidateQueries({ queryKey: ['reception'] });
+      qc.invalidateQueries({ queryKey: ['admin-wallet'] });
+      toast.success('Réglé depuis le solde du client');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
 export const useCancelQuotePayment = () => useQuoteMutation<{ paymentId: string; reason: string }>('cargo_quote_cancel_payment', (a) => ({ p_payment_id: a.paymentId, p_reason: a.reason }), 'Encaissement annulé');
 export const useInvoiceQuote = () => useQuoteMutation<string>('cargo_quote_invoice', (quoteId) => ({ p_quote_id: quoteId }), 'Facture acquittée établie');
 

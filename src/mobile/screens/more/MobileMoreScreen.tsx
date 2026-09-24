@@ -18,6 +18,7 @@ import {
   MessageSquareQuote,
   Sparkles,
   Newspaper,
+  Banknote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -118,6 +119,12 @@ export function MobileMoreScreen() {
         <div>
           <SectionTitle>{t('tools', { defaultValue: 'Outils' })}</SectionTitle>
           <Card className="space-y-0.5 p-2">
+            <MenuRow
+              icon={Banknote}
+              label="Coordonnées de paiement"
+              description="Banques et Mobile Money · PDF et images à envoyer"
+              onClick={() => navigate('/m/more/payment-details')}
+            />
             <MenuRow
               icon={BarChart3}
               label="Tableau de bord"

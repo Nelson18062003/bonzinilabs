@@ -2,27 +2,23 @@
 // RÉCEPTION — Dépôt terminé : le reçu (colis, poids, volume, mode, date,
 // qui), et les étiquettes : une page par colis, la même étiquette que
 // celle des fournisseurs, avec « 3/10 » dans la case Carton no. et la date
-// d'arrivée. Le PDF part dans la feuille de partage (AirPrint, WeChat)
-// ou se télécharge.
+// d'arrivée. Un aperçu, puis le PDF ou l'image se téléchargent ; le partage
+// (AirPrint, WeChat) reste possible.
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Printer, ScanLine, Tag } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, depositSupplier, formatCbm, formatKg } from '@/lib/reception';
+import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { parcelQrPayload, renderWarehouseLabel } from '@/lib/warehouseLabelCanvas';
-import { useParcelQrCanvases } from '@/components/customer-code/useParcelQrCanvases';
 import { useShippingLabel } from '@/components/customer-code/useShippingLabel';
-import { deliverFile } from '@/components/customer-code/exportShippingLabel';
 import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { ReceptionLabelSheet } from '@/mobile/components/reception/ReceptionLabelSheet';
+import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
 
 export function ReceptionDone() {
   const navigate = useNavigate();
@@ -31,7 +27,7 @@ export function ReceptionDone() {
   const labels = useReceptionLabels();
   const { data: deposit, isLoading } = useReceptionDeposit(depositId);
   const { data: settings } = useAdminShippingSettings();
-  const [printing, setPrinting] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [labelOpen, setLabelOpen] = useState(false);
 
   const client = deposit?.client ?? null;
@@ -47,42 +43,15 @@ export function ReceptionDone() {
     settings: settings ?? DEFAULT_SHIPPING_SETTINGS,
   }, { active: !!client });
 
-  const parcelQrs = useParcelQrCanvases((client && deposit ? deposit.parcels : []).map((p) => ({ id: p.id, value: parcelQrPayload(client!.customer_code, p.parcel_no) })));
-
   if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
 
   const name = client ? clientFullName(client) : t('rc_unknown_client');
   const count = deposit.parcels.length;
   const receivedAt = deposit.closed_at ?? deposit.opened_at;
 
-  // L'étiquette interne : une page 100 × 150 mm par carton, le QR du carton,
-  // ses mesures, le fournisseur — à coller par-dessus la marque client.
-  const printLabels = async () => {
-    if (!client) return;
-    setPrinting(true);
-    try {
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [100, 150] });
-      for (let i = 0; i < deposit.parcels.length; i++) {
-        const p = deposit.parcels[i];
-        const canvas = await renderWarehouseLabel({
-          destination: deposit.location, settings: settings ?? DEFAULT_SHIPPING_SETTINGS, parcel: p, count, depositNo: deposit.deposit_no,
-          client, supplier: depositSupplier(deposit), receivedAt, receivedByName: deposit.received_by_name,
-        }, parcelQrs.get(p.id), 3);
-        if (i > 0) pdf.addPage([100, 150], 'portrait');
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 100, 150, undefined, 'FAST');
-      }
-      const file = new File([pdf.output('blob')], `bonzini-etiquettes-${deposit.deposit_no}-${client.customer_code}.pdf`, { type: 'application/pdf' });
-      await deliverFile(file, `${deposit.deposit_no} · ${client.customer_code}`);
-    } catch (err) {
-      console.error('reception labels', err);
-      toast.error(t('error'));
-    } finally {
-      setPrinting(false);
-    }
-  };
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      {qr}{parcelQrs.nodes}
+      {qr}
       <div className="flex-1 space-y-6 px-5 pb-10 pt-[calc(2.5rem+env(safe-area-inset-top))]">
         <div className="text-center">
           <div className="mx-auto mb-4 flex justify-center"><Holder icon={Check} tone="success" size="lg" className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8" /></div>
@@ -109,7 +78,7 @@ export function ReceptionDone() {
         <div className="space-y-3 pt-2">
           {client && (
             <>
-              <PrimaryPill onClick={() => void printLabels()} loading={printing} className="h-14 w-full text-[17px]">
+              <PrimaryPill onClick={() => setInternalOpen(true)} className="h-14 w-full text-[17px]">
                 <Printer /> {t('rc_print_labels')} ({count})
               </PrimaryPill>
               <p className={cn('text-center', TYPE.small, TEXT.muted)}>{t('rc_labels_hint')}</p>
@@ -121,6 +90,7 @@ export function ReceptionDone() {
         </div>
       </div>
       {client && <ReceptionLabelSheet open={labelOpen} onClose={() => setLabelOpen(false)} client={client} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
+      {client && <InternalLabelSheet open={internalOpen} onClose={() => setInternalOpen(false)} deposit={deposit} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
     </div>
   );
 }

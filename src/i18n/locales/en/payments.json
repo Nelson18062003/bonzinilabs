@@ -125,7 +125,7 @@
     "all": "All",
     "addFunds": "Top up my account",
     "insufficientBalance": "Insufficient balance",
-    "amountTooHigh": "Amount cannot exceed 50,000,000 XAF",
+    "amountTooHigh": "Enter a whole amount in figures.",
     "beneficiaryTitle": "Beneficiary information",
     "beneficiaryName": "Beneficiary name",
     "beneficiaryId": "Identifier",
@@ -184,7 +184,7 @@
     },
     "rateDependsOnMethod": "The day rate depends on the chosen method.",
     "balanceAfterPayment": "Balance after payment",
-    "minMaxCaption": "Maximum 50,000,000 XAF",
+    "minMaxCaption": "The maximum is your available balance.",
     "rateAppliedTitle": "Today's rate applied"
   },
   "detail": {

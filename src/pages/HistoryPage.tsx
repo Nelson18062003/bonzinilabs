@@ -47,7 +47,7 @@ const HistoryPage = () => {
   const isDebitOperation = (op: WalletOperation): boolean => {
     const ty = op.operation_type.toUpperCase();
     if (ty === 'DEPOSIT' || ty === 'DEPOSIT_VALIDATED' || ty === 'ADMIN_CREDIT' || ty === 'PAYMENT_CANCELLED_REFUNDED') return false;
-    if (ty === 'PAYMENT' || ty === 'PAYMENT_EXECUTED' || ty === 'PAYMENT_RESERVED' || ty === 'ADMIN_DEBIT' || ty === 'DEPOSIT_REFUSED') return true;
+    if (ty === 'PAYMENT' || ty === 'PAYMENT_EXECUTED' || ty === 'PAYMENT_RESERVED' || ty === 'ADMIN_DEBIT' || ty === 'DEPOSIT_REFUSED' || ty === 'CARGO_FEES') return true;
     if (op.balance_after < op.balance_before) return true;
     if (op.balance_after > op.balance_before) return false;
     return op.amount_xaf < 0;

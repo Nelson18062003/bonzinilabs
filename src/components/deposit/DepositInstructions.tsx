@@ -4,8 +4,9 @@
 // note. Copie au toucher. Logique getInstructionInfo 100% PRÉSERVÉE.
 // ============================================================
 import { useState } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, FileDown, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -19,7 +20,11 @@ import {
   waveAccount,
   omMerchantInfo,
   mtnMerchantInfo,
+  WAVE_ENABLED,
 } from '@/data/depositMethodsData';
+import { deliverMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
+import { deliverBankDetailsPdf } from '@/lib/bankDetailsPdf';
+import { bankShortName, printableBank } from '@/lib/bankDetailsGuide';
 
 interface Deposit {
   method: string;
@@ -99,7 +104,6 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
       ],
       merchantCode: omMerchantInfo.merchantCode,
       instructions: t('instructions.steps.omWithdrawal', { returnObjects: true }) as string[],
-      note: t('instructions.notes.omWithdrawalLimit'),
     };
   }
 
@@ -128,7 +132,6 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
       ],
       merchantCode: mtnMerchantInfo.merchantCode,
       instructions: t('instructions.steps.mtnWithdrawal', { returnObjects: true }) as string[],
-      note: t('instructions.notes.mtnWithdrawalLimit'),
     };
   }
 
@@ -149,7 +152,8 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
     };
   }
 
-  if (method === 'wave') {
+  // Wave fermé : on n'affiche jamais le numéro d'exemple, même pour un ancien dépôt en attente.
+  if (method === 'wave' && WAVE_ENABLED) {
     return {
       type: 'mobile',
       title: t('instructions.wave'),
@@ -168,8 +172,23 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
 export function DepositInstructions({ deposit, showTitle = true, compact = false }: DepositInstructionsProps) {
   const { t } = useTranslation('deposits');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const navigate = useNavigate();
+  // Le PDF met un moment à se fabriquer : un seul à la fois, et un sablier sur le bouton touché.
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
   const info = getInstructionInfo(deposit, t);
+  // Wave fermé : un ancien dépôt Wave ne montre plus le numéro d'exemple, mais dit quoi faire.
+  if (!info && deposit.method === 'wave' && !WAVE_ENABLED) {
+    return (
+      <div className="space-y-3 rounded-2xl bg-[#FDF1DD] p-4 dark:bg-[#3A2F1A]">
+        <p className="text-[16px] font-bold text-[#7A4F0E] dark:text-[#E0B978]">{t('instructions.waveClosedTitle', { defaultValue: 'Wave n’est plus accepté' })}</p>
+        <p className="text-[14px] text-[#7A4F0E] dark:text-[#E0B978]">{t('instructions.waveClosedBody', { defaultValue: 'Ne payez pas sur l’ancien numéro Wave. Payez par banque ou par Mobile Money.' })}</p>
+        <button type="button" onClick={() => navigate('/payment-details')} className={cn('flex min-h-11 w-full items-center justify-center rounded-2xl px-3 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}>
+          {t('instructions.waveClosedAction', { defaultValue: 'Voir nos coordonnées de paiement' })}
+        </button>
+      </div>
+    );
+  }
   if (!info) return null;
 
   const copyToClipboard = async (text: string, field: string) => {
@@ -182,6 +201,19 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
       toast.error(t('instructions.copyError'));
     }
   };
+
+  const deliverPdf = (id: string, deliver: () => Promise<'shared' | 'downloaded'>, downloaded: string) => {
+    if (pdfBusy) return;
+    setPdfBusy(id);
+    void deliver()
+      .then((o) => { if (o === 'downloaded') toast.success(downloaded); })
+      .catch(() => toast.error(t('instructions.pdfError', { defaultValue: 'Impossible de créer le PDF, réessayez' })))
+      .finally(() => setPdfBusy(null));
+  };
+
+  const PdfIcon = ({ id }: { id: string }) => (pdfBusy === id
+    ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+    : <FileDown className="h-4 w-4 shrink-0" />);
 
   const copyAllInfo = () => {
     const parts = info.fields.map((f) => `${f.label}: ${f.value}`);
@@ -273,6 +305,63 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           <span className="text-[12.5px] text-[#9A6B12] dark:text-[#E0B978]">{info.note}</span>
         </div>
       )}
+
+      {/* La fiche complète (les deux opérateurs, les deux façons, en français et en anglais), à garder ou à envoyer : portrait ou paysage. */}
+      {deposit.method.startsWith('om_') || deposit.method.startsWith('mtn_') ? (
+        <div className="grid grid-cols-2 gap-2">
+          {(['portrait', 'landscape'] as const).map((orientation) => (
+            <button
+              key={orientation}
+              type="button"
+              disabled={pdfBusy !== null}
+              aria-busy={pdfBusy === `mm-${orientation}`}
+              onClick={() => deliverPdf(`mm-${orientation}`, () => deliverMobileMoneyGuidePdf(orientation), t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' }))}
+              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold disabled:opacity-60', SURFACE.holder, TEXT.strong)}
+            >
+              <PdfIcon id={`mm-${orientation}`} />
+              {orientation === 'portrait'
+                ? t('instructions.guidePortrait', { defaultValue: 'Fiche PDF · portrait' })
+                : t('instructions.guideLandscape', { defaultValue: 'Fiche PDF · paysage' })}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Virement ou dépôt au guichet : le RIB de la banque choisie (une page), et le livret de toutes nos banques — en français et en anglais. */}
+      {deposit.method === 'bank_transfer' || deposit.method === 'bank_cash' ? (() => {
+        const bank = printableBank(deposit.bank_name);
+        const choices: { id: string; bank?: typeof bank; label: string }[] = [
+          ...(bank ? [{ id: `rib-${bank}`, bank, label: t('instructions.ribBank', { bank: bankShortName(bank), defaultValue: 'RIB {{bank}} · PDF' }) }] : []),
+          { id: 'banks', label: t('instructions.allBanks', { defaultValue: 'Toutes nos banques · PDF' }) },
+        ];
+        return (
+          <div className="space-y-2">
+          <div className={cn('grid gap-2', choices.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+            {choices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                disabled={pdfBusy !== null}
+                aria-busy={pdfBusy === c.id}
+                onClick={() => deliverPdf(c.id, () => deliverBankDetailsPdf({ bank: c.bank }), t('instructions.bankDetailsDownloaded', { defaultValue: 'Coordonnées bancaires téléchargées' }))}
+                className={cn('flex w-full items-center justify-center gap-2 rounded-2xl px-2 py-3.5 text-center text-[14px] font-bold disabled:opacity-60', SURFACE.holder, TEXT.strong)}
+              >
+                <PdfIcon id={c.id} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {/* Toutes nos coordonnées, en images aussi (pour WhatsApp), portrait ou paysage. */}
+          <button
+            type="button"
+            onClick={() => navigate('/payment-details')}
+            className={cn('w-full py-2 text-center text-[13px] font-bold underline underline-offset-2', TEXT.muted)}
+          >
+            {t('instructions.allPaymentDetails', { defaultValue: 'Toutes nos coordonnées de paiement (PDF et images)' })}
+          </button>
+          </div>
+        );
+      })() : null}
     </div>
   );
 }

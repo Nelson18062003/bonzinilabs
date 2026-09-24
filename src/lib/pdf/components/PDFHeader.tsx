@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Svg, Path } from '@react-pdf/renderer';
 import { colors } from '../styles';
 
 // ─── LOGO SVG BONZINI (tracés originaux — NE PAS MODIFIER) ───────────────────
-function PdfLogo({ size = 32 }: { size?: number }) {
+export function PdfLogo({ size = 32 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Path
@@ -86,13 +86,26 @@ const styles = StyleSheet.create({
   },
 });
 
+export type PDFHeaderType = 'depot' | 'paiement' | 'devis' | 'recu-cargo' | 'facture' | 'bon-retrait' | 'manifeste' | 'mobile-money';
+
+const TYPE_LABEL: Record<PDFHeaderType, string> = {
+  depot: 'REÇU DE DÉPÔT',
+  paiement: 'REÇU DE PAIEMENT',
+  devis: 'DEVIS DE TRANSPORT',
+  'recu-cargo': 'REÇU · FRAIS DE TRANSPORT',
+  facture: 'FACTURE ACQUITTÉE',
+  'bon-retrait': 'BON DE RETRAIT',
+  manifeste: 'MANIFESTE',
+  'mobile-money': 'COORDONNÉES MOBILE MONEY',
+};
+
 export interface PDFHeaderProps {
-  type: 'depot' | 'paiement';
+  type: PDFHeaderType;
   reference: string;
 }
 
 export function PDFHeader({ type, reference }: PDFHeaderProps) {
-  const typeLabel = type === 'depot' ? 'REÇU DE DÉPÔT' : 'REÇU DE PAIEMENT';
+  const typeLabel = TYPE_LABEL[type];
 
   return (
     <View style={styles.container} fixed>

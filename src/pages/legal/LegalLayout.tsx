@@ -23,6 +23,7 @@
 // ============================================================
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { CONTACT_PHONE_CM } from '@/lib/companyContacts';
 
 // Même palette et mêmes fontes que src/pages/LandingPage.tsx : ces pages sont
 // la continuation du site public, pas une annexe administrative.
@@ -43,7 +44,7 @@ export const F = { display: "'Syne', sans-serif", body: "'DM Sans', sans-serif" 
 export const COMPANY = {
   name: 'BONZINILABS LTD',
   address: ['71-75 Shelton Street', 'Covent Garden', 'Londres WC2H 9JQ', 'Royaume-Uni'],
-  phone: '+237 652 236 856',
+  phone: CONTACT_PHONE_CM,
   /**
    * Adresse de contact publiée. DOIT être une boîte réellement relevée : c'est
    * par elle que transitent les demandes d'accès et de suppression, auxquelles

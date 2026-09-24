@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
 import { flagUrl } from '@/components/form/CountryFlag';
+import { CONTACT_PHONE_CM, CONTACT_PHONE_CN } from '@/lib/companyContacts';
 
 export interface RateFlyerCountry {
   /** Libellé imprimé sur le flyer (« Gabon »). */
@@ -159,14 +160,14 @@ export function RateFlyer({ alipay, wechat, bank, cash, theme = 'dark', country 
               {whatsapp('#25D366')}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontSize: 36, color: muted }}>Cameroun · WhatsApp</div>
-                <div style={{ fontSize: 56, fontWeight: 800, color: text, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>+237 652 236 856</div>
+                <div style={{ fontSize: 56, fontWeight: 800, color: text, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{CONTACT_PHONE_CM}</div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 26 }}>
               {whatsapp('#07C160')}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: 36, color: muted }}>中国 · WhatsApp / 微信</div>
-                <div style={{ fontSize: 56, fontWeight: 800, color: text, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>+86 131 3849 5598</div>
+                <div style={{ fontSize: 56, fontWeight: 800, color: text, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{CONTACT_PHONE_CN}</div>
               </div>
             </div>
           </div>

@@ -49,6 +49,19 @@ export const methodFamilies: MethodFamilyInfo[] = [
   },
 ];
 
+/**
+ * Wave — RETIRÉ des choix le 24/09/2026 : le numéro enregistré
+ * (+237 691 000 003, au nom de « BONZINI TRADING », l'ancien nom) est un
+ * numéro d'exemple, pas un compte de la société. Un client qui choisissait
+ * Wave aurait payé sur un numéro inconnu. Pour le rouvrir : saisir le vrai
+ * numéro et le vrai titulaire dans `waveAccount`, puis passer ceci à true.
+ * Les anciens dépôts Wave restent affichés et filtrables.
+ */
+export const WAVE_ENABLED = false;
+
+/** Les moyens proposés à la création d'un dépôt (client et équipe). */
+export const selectableMethodFamilies: MethodFamilyInfo[] = methodFamilies.filter((f) => f.family !== 'WAVE' || WAVE_ENABLED);
+
 // ── Level 2: Sub-methods ─────────────────────────────────────
 
 export const subMethods: SubMethodInfo[] = [
@@ -68,7 +81,7 @@ export const subMethods: SubMethodInfo[] = [
     subMethod: 'OM_TRANSFER',
     family: 'ORANGE_MONEY',
     label: 'Transfert Orange UV vers Bonzini',
-    description: 'Envoyez vers le compte Orange UV Bonzini',
+    description: 'Transfert de flotte vers notre compte Orange UV',
   },
   {
     subMethod: 'OM_WITHDRAWAL',
@@ -126,10 +139,14 @@ export const banks: BankInfo[] = [
       accountName: 'NORTON GAUSS BONZINI SARL',
       accountNumber: '00280298901',
       bankName: 'CCA-BANK Cameroun',
-      iban: 'CM21 10039 10444 00280298901 57',
+      // Corrigé le 24/09/2026 d'après le RIB émis par CCA-Bank (C-Online) :
+      // l'agence est 10044, pas 10444. L'ancien IBAN (… 10444 …) était refusé
+      // par le contrôle modulo 97 ; avec la bonne agence, la clé 57 et les
+      // chiffres de contrôle « 21 » se vérifient. Domiciliation : Douala.
+      iban: 'CM21 10039 10044 00280298901 57',
       swift: 'CCAMCMCY',
       codeBanque: '10039',
-      codeAgence: '10444',
+      codeAgence: '10044',
       cleRib: '57',
     },
   },
@@ -140,8 +157,13 @@ export const banks: BankInfo[] = [
       accountName: 'NORTON GAUSS BONZINI SARL',
       accountNumber: '14011000141',
       bankName: 'UBA Cameroun',
-      iban: 'CM21 10033 05214 140110001411 88',
-      swift: 'UNAFMCX',
+      // Corrigé le 24/09/2026 : l'IBAN portait un « 1 » en trop (12 chiffres de
+      // compte au lieu de 11 → IBAN de 28 caractères, rejeté par le contrôle
+      // modulo 97). Recalculé depuis le RIB, dont la clé 88 se vérifie : les
+      // chiffres de contrôle « 21 » retombent juste. Le SWIFT n'avait que 7
+      // caractères (« UNAFMCX ») : banque UNAF + pays CM + lieu CX.
+      iban: 'CM21 10033 05214 14011000141 88',
+      swift: 'UNAFCMCX',
       codeBanque: '10033',
       codeAgence: '05214',
       cleRib: '88',
@@ -193,9 +215,10 @@ export const orangeMoneyAccount: MobileMoneyInfo = {
   accountName: 'WONDER PHONE',
 };
 
+// Ligne MTN de la société (23/09/2026) : le nom affiché par MoMo à la confirmation est « NORTON GAUSS BONZINI SARL 1 ».
 export const mtnMoneyAccount: MobileMoneyInfo = {
-  phone: '6 52 23 68 56',
-  accountName: 'NGANGON SOH NELSON',
+  phone: '6 52 40 36 02',
+  accountName: 'NORTON GAUSS BONZINI SARL 1',
 };
 
 export const waveAccount: MobileMoneyInfo = {
@@ -211,8 +234,8 @@ export const omMerchantInfo: MerchantInfo = {
 };
 
 export const mtnMerchantInfo: MerchantInfo = {
-  accountName: 'NGANGON SOH NELSON',
-  merchantCode: '*126*14*652236856*MONTANT#', 
+  accountName: 'NORTON GAUSS BONZINI SARL 1',
+  merchantCode: '*126*14*652403602*MONTANT#',
 };
 
 // Max 5 000 000 XAF per mobile money transaction
@@ -226,8 +249,12 @@ export const getSubMethodsForFamily = (family: DepositMethodFamily): SubMethodIn
 export const getFamilyInfo = (family: DepositMethodFamily): MethodFamilyInfo | undefined =>
   methodFamilies.find((mf) => mf.family === family);
 
+/**
+ * La banque d'un dépôt, par sa clé (« UBA », dépôts créés par le client) ou
+ * par son libellé (« UBA Cameroun », dépôts créés par l'équipe).
+ */
 export const getBankInfo = (bank: string): BankInfo | undefined =>
-  banks.find((b) => b.bank === bank);
+  banks.find((b) => b.bank === bank || b.label === bank);
 
 export const getAgencyInfo = (agency: string): AgencyInfo | undefined =>
   agencies.find((a) => a.agency === agency);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
-import { Palette, Fingerprint, ChevronRight, Lock, Warehouse, Scale } from 'lucide-react';
+import { Palette, Fingerprint, ChevronRight, Lock, Warehouse, Scale, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 
@@ -141,6 +141,21 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               <div className="min-w-0 flex-1">
                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Tarifs cargo</p>
                 <p className={cn('text-[14px]', TEXT.muted)}>XAF au kilo (Air cargo), XAF au mètre cube (Sea cargo) — pré-remplissent chaque devis</p>
+              </div>
+              <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+            </button>
+            {/* Nos coordonnées (banques et Mobile Money) : copiées, ou envoyées en PDF ou en images, sur leur propre page. */}
+            <button
+              type="button"
+              onClick={() => navigate('/m/more/payment-details')}
+              className={cn('flex w-full items-center gap-3 border-t py-1 pt-3 text-left', SURFACE.divider)}
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
+                <Banknote className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Coordonnées de paiement</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>Banques et Mobile Money, en français et en anglais : à copier, ou à envoyer en PDF ou en images, portrait ou paysage</p>
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
             </button>

@@ -8,6 +8,7 @@
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
 import type { PaymentMethodKey } from '@/types/rates';
+import { CONTACT_PHONE_CM } from '@/lib/companyContacts';
 
 export const QUOTE_W = 1080;
 export const QUOTE_H = 1080;
@@ -135,7 +136,7 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
               <svg viewBox="0 0 24 24" width={34} height={34} fill="#FFFFFF"><path d={LOGO_PATH.whatsapp} /></svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: 30, fontWeight: 800, color: text, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>+237 652 236 856</div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: text, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>{CONTACT_PHONE_CM}</div>
               <div style={{ fontSize: 21, color: muted, marginTop: 2 }}>bonzinilabs.com</div>
             </div>
           </div>

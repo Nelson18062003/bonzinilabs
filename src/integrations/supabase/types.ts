@@ -3810,6 +3810,7 @@ export type Database = {
         | "PAYMENT_CANCELLED_REFUNDED"
         | "ADMIN_CREDIT"
         | "ADMIN_DEBIT"
+        | "CARGO_FEES"
       payment_method: "alipay" | "wechat" | "bank_transfer" | "cash"
       payment_status:
         | "created"
@@ -4012,6 +4013,7 @@ export const Constants = {
         "PAYMENT_CANCELLED_REFUNDED",
         "ADMIN_CREDIT",
         "ADMIN_DEBIT",
+        "CARGO_FEES",
       ],
       payment_method: ["alipay", "wechat", "bank_transfer", "cash"],
       payment_status: [

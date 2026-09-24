@@ -25,6 +25,7 @@ import {
   MessageSquareQuote,
   Sparkles,
   Newspaper,
+  Banknote,
 } from 'lucide-react';
 import { useAdminAuth, type RolePermission } from '@/contexts/AdminAuthContext';
 import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
@@ -84,6 +85,7 @@ export function DesktopMoreScreen() {
       title: 'Outils',
       items: [
         { icon: Bot, label: 'Mola', desc: 'Pose une question sur la plateforme', to: '/m/assistant', mascot: true },
+        { icon: Banknote, label: 'Coordonnées de paiement', desc: 'Banques et Mobile Money · PDF et images', to: '/m/more/payment-details' },
         { icon: BarChart3, label: 'Dashboard', desc: 'Rapports et indicateurs clés', to: '/m/dashboard' },
         { icon: TrendingUp, label: 'Taux de change', desc: 'Gérer les taux XAF/RMB', to: '/m/more/rates', perm: 'canManageRates' },
         { icon: Coins, label: 'Trésorerie', desc: 'Achats/ventes USDT, soldes, inventaire', to: '/m/more/treasury', perm: 'canViewTreasury' },

@@ -23,6 +23,7 @@ import {
   LayoutGrid,
   LineChart as ChartLine,
   Ship,
+  Banknote,
 } from 'lucide-react';
 import type { RolePermission } from '@/contexts/AdminAuthContext';
 
@@ -74,6 +75,9 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
       { to: '/m/dashboard', label: 'Tableau de bord', icon: ChartLine },
       { to: '/m/more/rates', label: 'Taux de change', icon: Percent, perm: 'canManageRates' },
       { to: '/m/cargo', label: 'Cargo', icon: Ship, perm: 'canViewCargo' },
+      // Nos banques et nos numéros Mobile Money, à envoyer aux clients. Pas de
+      // `perm` : la route n'en a pas, et toute l'équipe donne ces coordonnées.
+      { to: '/m/more/payment-details', label: 'Coordonnées de paiement', icon: Banknote },
       { to: '/m/support', label: 'Support', icon: LifeBuoy, perm: 'canAccessSupportChat' },
     ],
   },

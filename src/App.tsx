@@ -74,6 +74,7 @@ const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileClientScan = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientScan })));
 const MyCodePage = lazy(() => import("./pages/MyCodePage"));
+const PaymentDetailsPage = lazy(() => import("./pages/PaymentDetailsPage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
@@ -91,6 +92,8 @@ const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
+// Importé à part (pas par le barrel « more ») : il embarque le moteur PDF, les autres écrans n'en ont pas besoin.
+const MobilePaymentDetailsScreen = lazy(() => import("./mobile/screens/more/MobilePaymentDetailsScreen").then(m => ({ default: m.MobilePaymentDetailsScreen })));
 const MobileShippingSettings = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileShippingSettings })));
 const MobileCargoPricing = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileCargoPricing })));
 const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobilePasskeysScreen })));
@@ -256,6 +259,8 @@ const App = () => (
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/my-code" element={<ProtectedRoute><MyCodePage /></ProtectedRoute>} />
+                {/* Nos banques et nos numéros Mobile Money : à copier, ou en PDF / images. */}
+                <Route path="/payment-details" element={<ProtectedRoute><PaymentDetailsPage /></ProtectedRoute>} />
                 {/* Cible du QR code client (https://bonzinilabs.com/c/BZ-…) : un
                     scan depuis l'appareil photo du téléphone ouvre la fiche du
                     client dans l'app admin. */}
@@ -298,6 +303,7 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
                 <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
                 <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />

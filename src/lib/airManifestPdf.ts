@@ -6,6 +6,7 @@
 // Helvetica, même sortie que les autres documents (deliverFile).
 // ============================================================
 import { jsPDF } from 'jspdf';
+import { LEGAL_NAME } from '@/lib/companyIdentity';
 import { deliverFile } from '@/components/customer-code/exportShippingLabel';
 import { awbLabel, flightSentence, fmtDay, groupByClient, parcelUnpaid, type AirParcel, type AirShipment } from '@/lib/airShipment';
 import type { CargoShipment } from '@/lib/cargo/model';
@@ -69,7 +70,7 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
   let y = M;
 
   // En-tête.
-  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(18); pdf.text('Bonzini Labs', M, y + 6);
+  pdf.setFont('helvetica', 'bold'); pdf.setFontSize(18); pdf.text(LEGAL_NAME, M, y + 6);
   pdf.setFontSize(16); pdf.text('MANIFESTE', 210 - M, y + 6, { align: 'right' });
   pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(90);
   pdf.text(ascii(h.mode), M, y + 12);
@@ -140,7 +141,7 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
   const pages = pdf.getNumberOfPages();
   for (let i = 1; i <= pages; i++) {
     pdf.setPage(i); pdf.setTextColor(150); pdf.setFontSize(8);
-    pdf.text(ascii(`Bonzini Labs · Manifeste ${h.ref} · page ${i}/${pages}`), 105, 290, { align: 'center' });
+    pdf.text(ascii(`${LEGAL_NAME} · Manifeste ${h.ref} · page ${i}/${pages}`), 105, 290, { align: 'center' });
     pdf.setTextColor(0);
   }
   return pdf;

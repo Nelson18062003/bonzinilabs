@@ -147,6 +147,7 @@ const RPC = {
   cargo_quote_add_line: { success: true, quote: quoteDep2 },
   cargo_quote_remove_line: { success: true, quote: quoteDep2 },
   cargo_quote_send: { success: true, quote: { ...quoteDep2, status: 'sent', sent_at: today(15, 2) } },
+  cargo_quote_pay_from_wallet: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmW', 'RE-000043', b.p_amount_xaf, { method: 'wallet', place: 'other', reference: 'Solde Bonzini', proof_path: null, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmW', receipt_no: 'RE-000043', wallet_balance_xaf: 250000 - b.p_amount_xaf, quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
   cargo_quote_add_payment: (b) => { const q = QUOTES[Object.keys(QUOTES).find((k) => QUOTES[k].id === b.p_quote_id) ?? 'dep2']; const pm = payment('pmN', 'RE-000042', b.p_amount_xaf, { method: b.p_method, place: b.p_place, reference: b.p_reference, proof_path: b.p_proof_path, note: b.p_note }); const paid = q.amount_paid_xaf + b.p_amount_xaf; return { success: true, payment_id: 'pmN', receipt_no: 'RE-000042', quote: { ...q, payments: [...q.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, q.total_xaf - paid), status: paid >= q.total_xaf ? 'paid' : q.status } }; },
   cargo_quote_cancel_payment: { success: true, quote: quoteDep2 },
   cargo_quote_invoice: { success: true, invoice_no: 'FA-000013', quote: quoteDep3 },
@@ -218,6 +219,12 @@ await ctx.route(/\/storage\/v1\/object\/sign\/parcel-photos\//, (route) => {
   const m = /carton-(\d)\.jpg/.exec(url); const file = process.env.PHOTOS_DIR && m ? join(process.env.PHOTOS_DIR, `carton-${m[1]}.jpg`) : null;
   try { return route.fulfill({ status: 200, contentType: 'image/jpeg', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(file) }); } catch { return route.fulfill({ status: 404, body: '' }); }
 });
+// Le portefeuille du client (solde), pour « régler depuis le solde ».
+await ctx.route(/\/rest\/v1\/wallets\?/, (route) => {
+  const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
+  const row = { id: 'w1', user_id: 'u1', balance_xaf: 250000, created_at: '2026-09-01T08:00:00Z', updated_at: today(9, 0) };
+  route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(single ? row : [row]) });
+});
 // Les réglages d'expédition RÉELS (copie de platform_settings.shipping, 21/09/2026) : l'étiquette capturée est celle que Tina reçoit.
 await ctx.route(/\/rest\/v1\/platform_settings/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
@@ -248,11 +255,14 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   // DEBUG_NET=1 : trace les requêtes vers Supabase (REST, storage) et leur réponse.
   if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
-  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen === 'payment-details-desktop-pdf' ? 'payment-details-desktop' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
+  if (screen === 'cargo-deposit-wallet') { await page.click('text=Encaisser'); await page.waitForTimeout(500); await page.click('text=Solde Bonzini'); await page.waitForTimeout(700); }
+  if (screen === 'rc-done-labels') { await page.click('button:has-text("Imprimer")'); await page.waitForTimeout(2500); }
+  if (screen === 'cargo-desk-client') { await page.click('text=Aïcha Mbarga'); await page.waitForTimeout(900); }
   if (screen === 'cargo-deposit-photo' || screen === 'rc-deposit-photo' || screen === 'wh-client-photo') { await page.click('button[aria-label="Voir la photo en grand"]'); await page.waitForTimeout(900); }
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
@@ -261,6 +271,27 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'wh-parcel-damaged') { await page.click('text=Oui, mais abîmé'); await page.waitForTimeout(400); }
   if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
+  if (screen === 'payment-details-desktop-pdf') {
+    // Sur ordinateur, « PDF » télécharge le fichier (pas de feuille de partage).
+    const [pdf] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), page.getByRole('button', { name: /^PDF$/ }).first().click()]);
+    console.log(screen, 'téléchargé', pdf.suggestedFilename());
+    await page.close();
+    continue;
+  }
+  if (screen === 'payment-details-images') {
+    // Paysage, puis « Images » du livret complet : pdf.js dessine chaque page, l'aperçu s'ouvre.
+    await page.getByRole('tab', { name: 'Paysage' }).click();
+    const t0 = Date.now();
+    await page.getByRole('button', { name: /^Images$/ }).first().click();
+    await page.waitForFunction(() => { const imgs = [...document.querySelectorAll('[role=dialog] img')]; return imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0); }, null, { timeout: 90_000 });
+    console.log(screen, 'images', await page.locator('[role=dialog] img').count(), 'en', Date.now() - t0, 'ms');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('[role=dialog] img').nth(1).click()]);
+    console.log(screen, 'page seule', dl.suggestedFilename());
+    await page.screenshot({ path: join(OUT, `${screen}.png`) });
+    console.log(screen, 'ok');
+    await page.close();
+    continue;
+  }
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
     await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();
@@ -270,6 +301,47 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     // Le panneau de la fiche client défile en interne : on amène le bloc « Colis reçus » à l'écran.
     const block = page.getByText('Colis reçus', { exact: true }).first();
     await block.scrollIntoViewIfNeeded().catch(() => {});
+  }
+  // Un document PDF : on attend le fichier, on l'enregistre, puis on rastérise sa première page avec pdf.js (PDFJS_DIR).
+  if (screen.startsWith('pdf-')) {
+    await page.waitForFunction(() => !!window.__pdf, null, { timeout: 30_000 });
+    const b64 = await page.evaluate(async () => { const buf = await window.__pdf.arrayBuffer(); let bin = ''; const bytes = new Uint8Array(buf); for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); });
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(join(OUT, `${screen}.pdf`), Buffer.from(b64, 'base64'));
+    if (process.env.PDFJS_DIR) {
+      const raster = await ctx.newPage();
+      await raster.route(/\/__pdfjs\//, (r) => { const f = r.request().url().split('/__pdfjs/')[1].split('?')[0]; try { r.fulfill({ status: 200, contentType: 'text/javascript', body: readFileSync(join(process.env.PDFJS_DIR, f)) }); } catch { r.fulfill({ status: 404, body: '' }); } });
+      await raster.setViewportSize({ width: 1800, height: 1800 }); // assez large pour une page A4 paysage à l'échelle 2
+      await raster.goto('http://localhost:8080/screenshot.html?screen=blank', { waitUntil: 'domcontentloaded' });
+      // Toutes les pages : la première en `<screen>.png`, les suivantes en `<screen>-p2.png`, `-p3.png`…
+      const pages = await raster.evaluate(async (data) => {
+        document.body.innerHTML = ''; document.body.style.margin = '0';
+        const pdfjs = await import('/__pdfjs/pdf.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = '/__pdfjs/pdf.worker.mjs';
+        const bytes = Uint8Array.from(atob(data), (ch) => ch.charCodeAt(0));
+        const doc = await pdfjs.getDocument({ data: bytes }).promise;
+        for (let n = 1; n <= doc.numPages; n++) {
+          const pg = await doc.getPage(n);
+          const vp = pg.getViewport({ scale: 2 });
+          const c = document.createElement('canvas'); c.id = `c${n}`; c.width = vp.width; c.height = vp.height; c.style.display = 'block';
+          document.body.appendChild(c);
+          await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        }
+        return doc.numPages;
+      }, b64);
+      for (let n = 1; n <= pages; n++) {
+        await raster.locator(`#c${n}`).screenshot({ path: join(OUT, n === 1 ? `${screen}.png` : `${screen}-p${n}.png`) });
+      }
+      await raster.close();
+      console.log(screen, `ok (pdf + ${pages} page(s) png)`);
+      continue;
+    }
+  }
+  // Des images fabriquées dans le navigateur (pdf.js) : on attend qu'elles soient toutes là, et leurs noms.
+  if (screen.startsWith('png-')) {
+    await page.waitForFunction(() => Number(document.querySelector('#png-ready')?.getAttribute('data-count') ?? 0) > 0 || document.body.innerText.startsWith('Erreur'), null, { timeout: 60_000 });
+    await page.waitForFunction(() => [...document.querySelectorAll('#png-ready img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 30_000 });
+    console.log(screen, 'images', await page.evaluate(() => JSON.stringify(window.__pngNames ?? [])));
   }
   await page.evaluate(() => document.fonts.ready);
   if (process.env.DEBUG_NET) console.log('IMG', await page.evaluate(() => [...document.querySelectorAll('img')].map((i) => `${i.getAttribute('src')?.slice(0, 120)} ${i.naturalWidth}x${i.naturalHeight}`).slice(0, 4)));

@@ -23,6 +23,7 @@ import { clientFullName, formatCbm, formatKg, initials, type Deposit, type Recep
 import { exportToCSV } from '@/lib/exportCSV';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { DepositQuickView } from '@/components/cargo/reception/DepositQuickView';
+import { ClientParcelsQuickView } from '@/components/cargo/reception/ClientParcelsQuickView';
 import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, Card, CardHeader, Chip, Holder, KV, ScreenLoader, StatusPill, Th, Td } from '@/desktop/designKit';
@@ -48,6 +49,7 @@ export function DesktopCargoReception() {
   const [where, setWhere] = useState<'all' | ReceptionLocation>('all');
   const [period, setPeriod] = useState<Period>('week');
   const [queue, setQueue] = useState<Queue>('all');
+  const [clientId, setClientId] = useState<string | null>(null);
   const range = useMemo(() => periodRange(period), [period]);
   const stock = useReceptionStock(where === 'all' ? null : where);
   const overview = useReceptionOverview(range.from, range.to);
@@ -141,7 +143,7 @@ export function DesktopCargoReception() {
                   {byClient.map((row, i) => {
                     const name = row.client ? clientFullName(row.client) : 'Client à attribuer';
                     return (
-                      <tr key={`${row.client?.user_id ?? 'none'}-${row.location}-${i}`} onClick={() => row.client ? navigate(`/m/clients/${row.client.user_id}/parcels`) : setQueue('pending')} className="cursor-pointer transition-colors hover:bg-muted/40">
+                      <tr key={`${row.client?.user_id ?? 'none'}-${row.location}-${i}`} onClick={() => row.client ? setClientId(row.client.user_id) : setQueue('pending')} className="cursor-pointer transition-colors hover:bg-muted/40">
                         <Td first>
                           <div className="flex items-center gap-2.5">
                             <Holder size="sm" tone={row.client ? 'neutral' : 'pending'}>{row.client ? initials(name) : '?'}</Holder>
@@ -296,6 +298,7 @@ export function DesktopCargoReception() {
         </div>
       </div>
 
+      <ClientParcelsQuickView clientId={clientId} onClose={() => setClientId(null)} onOpenDeposit={(id) => { setClientId(null); navigate(`/m/cargo/reception/${id}`); }} />
       <DepositQuickView depositId={depositId ?? null} onClose={() => navigate('/m/cargo/reception')} />
     </div>
   );

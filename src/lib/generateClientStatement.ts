@@ -101,7 +101,7 @@ export function shouldIncludeLedgerEntry(entry: RawLedgerEntry): boolean {
 function isCredit(type: string, balanceBefore: number, balanceAfter: number): boolean {
   const t = type.toUpperCase();
   if (['DEPOSIT', 'DEPOSIT_VALIDATED', 'ADMIN_CREDIT', 'PAYMENT_CANCELLED_REFUNDED'].includes(t)) return true;
-  if (['PAYMENT', 'PAYMENT_EXECUTED', 'PAYMENT_RESERVED', 'ADMIN_DEBIT', 'DEPOSIT_REFUSED'].includes(t)) return false;
+  if (['PAYMENT', 'PAYMENT_EXECUTED', 'PAYMENT_RESERVED', 'ADMIN_DEBIT', 'DEPOSIT_REFUSED', 'CARGO_FEES'].includes(t)) return false;
   return balanceAfter > balanceBefore;
 }
 
@@ -109,7 +109,7 @@ function getMovementType(entryType: string): StatementMovement['type'] {
   const t = entryType.toUpperCase();
   if (t === 'PAYMENT_CANCELLED_REFUNDED') return 'Remboursement';
   if (t.includes('DEPOSIT') || t === 'ADMIN_CREDIT') return 'Dépôt';
-  if (t.includes('PAYMENT')) return 'Paiement';
+  if (t.includes('PAYMENT') || t === 'CARGO_FEES') return 'Paiement';
   return 'Ajustement';
 }
 
@@ -124,6 +124,7 @@ function getFallbackMotif(entryType: string): string {
     PAYMENT_CANCELLED_REFUNDED: 'Remboursement',
     ADMIN_CREDIT:               'Crédit administrateur',
     ADMIN_DEBIT:                'Débit administrateur',
+    CARGO_FEES:                 'Frais de transport (cargo)',
     ADJUSTMENT:                 'Ajustement',
   };
   return map[entryType.toUpperCase()] || entryType;

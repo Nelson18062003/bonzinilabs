@@ -41,8 +41,8 @@ export interface WarehouseLabelData {
 }
 
 /** Le contenu du QR du carton : le code client ET le numéro du colis. Tout lecteur qui ne connaît que le code client y trouve son compte. */
-/** La raison sociale, telle qu'elle figure sur les relevés et les bons : pas la marque. */
-export const LEGAL_NAME = 'NORTON GAUSS BONZINI SARL';
+import { LEGAL_NAME } from '@/lib/companyIdentity';
+export { LEGAL_NAME };
 
 export function parcelQrPayload(code: string, parcelNo: string): string {
   return `${customerQrPayload(code)}?p=${encodeURIComponent(parcelNo)}`;

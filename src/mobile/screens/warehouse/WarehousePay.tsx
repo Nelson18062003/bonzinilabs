@@ -12,7 +12,8 @@ import { Banknote, Camera, Check, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClientAtWarehouse } from '@/hooks/useWarehouse';
-import { useAddQuotePayment, useCargoQuote, uploadPaymentProof } from '@/hooks/useCargoQuote';
+import { useAddQuotePayment, useCargoQuote, usePayQuoteFromWallet, uploadPaymentProof } from '@/hooks/useCargoQuote';
+import { WalletBalanceCard } from '@/mobile/components/cargo/WalletBalanceCard';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { METHOD_LABEL, xaf, type PaymentMethod } from '@/lib/cargoQuote';
@@ -23,7 +24,7 @@ import { SURFACE, TEXT, TYPE, Card, FormField, PrimaryPill, ScreenError, ScreenL
 import { ClientHead, WhQuestion } from '@/mobile/components/warehouse/bits';
 import { readReleaseDraft } from './releaseDraft';
 
-const METHODS: PaymentMethod[] = ['cash', 'mobile_money', 'bank_transfer', 'other'];
+const METHODS: PaymentMethod[] = ['cash', 'wallet', 'mobile_money', 'bank_transfer', 'other'];
 const num = (s: string) => { const v = parseFloat(s.replace(/\s/g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
 
 /** Le formulaire d'un devis : ce qu'il reste, ce qu'on reçoit, comment. */
@@ -31,6 +32,7 @@ function PayForm({ summary, onDone }: { summary: ClientQuoteSummary; onDone: () 
   const { data: q, isLoading } = useCargoQuote(summary.deposit_id);
   const { data: settings } = useAdminShippingSettings();
   const add = useAddQuotePayment();
+  const payWallet = usePayQuoteFromWallet();
   const fileRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState(String(summary.balance_xaf));
   const [method, setMethod] = useState<PaymentMethod>('cash');
@@ -47,8 +49,12 @@ function PayForm({ summary, onDone }: { summary: ClientQuoteSummary; onDone: () 
     if (!ok) { toast.error(v != null && v > balance ? `Le montant dépasse le reste à payer (${xaf(balance)})` : 'Indiquez le montant reçu'); return; }
     setSaving(true);
     try {
-      const proofPath = proof ? await uploadPaymentProof(q.id, proof) : null;
-      const { quote: fresh, payment } = await add.mutateAsync({ quoteId: q.id, amount: Math.round(v!), method, place: 'douala', reference: reference.trim() || undefined, proofPath });
+      const { quote: fresh, payment } = method === 'wallet'
+        ? await payWallet.mutateAsync({ quoteId: q.id, amount: Math.round(v!) })
+        : await (async () => {
+          const proofPath = proof ? await uploadPaymentProof(q.id, proof) : null;
+          return add.mutateAsync({ quoteId: q.id, amount: Math.round(v!), method, place: 'douala', reference: reference.trim() || undefined, proofPath });
+        })();
       if (payment) { const out = await deliverReceiptPdf(fresh, payment, settings ?? DEFAULT_SHIPPING_SETTINGS); if (out === 'downloaded') toast.success(`Reçu ${payment.receipt_no} téléchargé`); }
       onDone();
     } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
@@ -77,13 +83,16 @@ function PayForm({ summary, onDone }: { summary: ClientQuoteSummary; onDone: () 
           ))}
         </div>
       </FormField>
-      {method !== 'cash' && (
+      {method === 'wallet' && <WalletBalanceCard userId={q.client?.user_id} amount={ok ? Math.round(v!) : 0} />}
+      {method !== 'cash' && method !== 'wallet' && (
         <FormField label="Référence de l'opération" htmlFor="wp-ref" hint="Le numéro de la transaction, sur le téléphone du client ou le bordereau."><TextInput id="wp-ref" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Facultatif" className="h-12" /></FormField>
       )}
-      <div>
-        <input ref={fileRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
-        <SoftPill onClick={() => fileRef.current?.click()} className="h-12 w-full text-[16px]"><Camera /> {proof ? `Preuve : ${proof.name}` : 'Photographier la preuve (facultatif)'}</SoftPill>
-      </div>
+      {method !== 'wallet' && (
+        <div>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={(e) => setProof(e.target.files?.[0] ?? null)} />
+          <SoftPill onClick={() => fileRef.current?.click()} className="h-12 w-full text-[16px]"><Camera /> {proof ? `Preuve : ${proof.name}` : 'Photographier la preuve (facultatif)'}</SoftPill>
+        </div>
+      )}
       <PrimaryPill onClick={() => void submit()} disabled={!ok} loading={saving} className="h-14 w-full text-[17px]"><Banknote /> Encaisser {ok ? xaf(Math.round(v!)) : ''}</PrimaryPill>
     </div>
   );
