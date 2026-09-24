@@ -13,8 +13,9 @@ import { buildInvoicePdf, buildQuotePdf, buildReceiptPdf } from '@/lib/cargoQuot
 import { buildReleaseNotePdf } from '@/lib/releaseNotePdf';
 import { buildMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 import { buildBankDetailsPdf } from '@/lib/bankDetailsPdf';
+import type { BankOption } from '@/types/deposit';
 
-type Kind = 'devis' | 'recu' | 'facture' | 'bon' | 'mobile-money' | 'mobile-money-paysage' | 'banques' | 'banques-paysage' | 'rib-uba' | 'rib-afriland-paysage';
+type Kind = 'devis' | 'recu' | 'facture' | 'bon' | 'mobile-money' | 'mobile-money-paysage' | 'banques' | 'banques-paysage' | `rib-${string}`;
 
 export function PdfDoc({ kind }: { kind: Kind }) {
   const { data: q2 } = useCargoQuote('dep2');
@@ -35,8 +36,9 @@ export function PdfDoc({ kind }: { kind: Kind }) {
       if (kind === 'mobile-money-paysage') file = await buildMobileMoneyGuidePdf('landscape');
       if (kind === 'banques') file = await buildBankDetailsPdf({ orientation: 'portrait' });
       if (kind === 'banques-paysage') file = await buildBankDetailsPdf({ orientation: 'landscape' });
-      if (kind === 'rib-uba') file = await buildBankDetailsPdf({ bank: 'UBA' });
-      if (kind === 'rib-afriland-paysage') file = await buildBankDetailsPdf({ orientation: 'landscape', bank: 'AFRILAND' });
+      // « rib-uba », « rib-cca-paysage »… : le RIB d'une banque, en portrait ou en paysage.
+      const rib = /^rib-([a-z]+)(-paysage)?$/.exec(kind);
+      if (rib) file = await buildBankDetailsPdf({ bank: rib[1].toUpperCase() as BankOption, orientation: rib[2] ? 'landscape' : 'portrait' });
       if (!file) return;
       (window as unknown as { __pdf?: File }).__pdf = file;
       setName(file.name);

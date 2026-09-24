@@ -272,8 +272,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'pdf-mobile-money-paysage': { Comp: () => <PdfDoc kind="mobile-money-paysage" />, route: '/' },
   'pdf-banques': { Comp: () => <PdfDoc kind="banques" />, route: '/' },
   'pdf-banques-paysage': { Comp: () => <PdfDoc kind="banques-paysage" />, route: '/' },
-  'pdf-rib-uba': { Comp: () => <PdfDoc kind="rib-uba" />, route: '/' },
-  'pdf-rib-afriland-paysage': { Comp: () => <PdfDoc kind="rib-afriland-paysage" />, route: '/' },
+  // Le RIB de chaque banque, portrait et paysage : pdf-rib-ecobank, pdf-rib-cca-paysage…
+  ...Object.fromEntries(['ecobank', 'cca', 'uba', 'afriland'].flatMap((b) => ['', '-paysage'].map((o) => [`pdf-rib-${b}${o}`, { Comp: () => <PdfDoc kind={`rib-${b}${o}`} />, route: '/' }]))),
   'png-rib-uba': { Comp: () => <PngDoc doc={RIB_UBA} orientation="portrait" />, route: '/' },
   'png-momo-paysage': { Comp: () => <PngDoc doc={MOMO} orientation="landscape" />, route: '/' },
   'payment-details': { Comp: MobilePaymentDetailsScreen, route: '/m/more/payment-details' },

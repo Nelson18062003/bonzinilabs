@@ -33,7 +33,8 @@ export function pageImageName(pdfName: string, page: number, pages: number): str
 /** Toutes les pages du PDF, en PNG, dans l'ordre. */
 export async function pdfToPngFiles(pdf: File, scale = IMAGE_SCALE): Promise<File[]> {
   const pdfjs = await loadPdfJs();
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(await pdf.arrayBuffer()) }).promise;
+  // Nos propres PDF, mais par principe : pdf.js n'évalue jamais de code venu d'un document.
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(await pdf.arrayBuffer()), isEvalSupported: false }).promise;
   try {
     const files: File[] = [];
     for (let n = 1; n <= doc.numPages; n++) {
