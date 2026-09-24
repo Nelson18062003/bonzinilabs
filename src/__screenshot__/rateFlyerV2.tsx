@@ -53,7 +53,7 @@ const METHODS: { key: MethodKey; label: string }[] = [
 export interface Bracket { min: number; max: number | null; pct: number; label: string; lines: [string, string] }
 
 export function fmt(n: number): string {
-  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
 }
 
 /**
