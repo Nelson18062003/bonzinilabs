@@ -114,7 +114,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $fn$
-DECLARE v_uid UUID := auth.uid(); v_pm public.parcel_quote_payments; v_q public.parcel_quotes; v_dep public.parcel_deposits; v_wallet public.wallets;
+DECLARE v_uid UUID := auth.uid(); v_pm public.parcel_quote_payments; v_q public.parcel_quotes; v_wallet public.wallets;
 BEGIN
   IF NOT public.admin_has_permission(v_uid, 'canCollectParcelPayments') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
@@ -132,19 +132,31 @@ BEGIN
   SELECT * INTO v_pm FROM public.parcel_quote_payments WHERE id = p_payment_id FOR UPDATE;
   IF v_pm.cancelled_at IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Cet encaissement est déjà annulé'); END IF;
 
+  -- Venu du solde : on rembourse le portefeuille qui a été DÉBITÉ (lu dans son
+  -- écriture CARGO_FEES), pas celui du client actuel du dépôt — un dépôt peut
+  -- changer de client (reception_assign_client). Verrouillé et vérifié AVANT
+  -- d'annuler : sinon l'encaissement serait annulé sans remboursement.
+  IF v_pm.method = 'wallet' THEN
+    SELECT w.* INTO v_wallet
+      FROM public.wallets w
+     WHERE w.id = (SELECT le.wallet_id FROM public.ledger_entries le
+                    WHERE le.reference_type = 'parcel_quote_payment' AND le.reference_id = v_pm.id
+                      AND le.entry_type = 'CARGO_FEES'
+                    ORDER BY le.created_at LIMIT 1)
+       FOR UPDATE;
+    IF v_wallet.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Portefeuille débité introuvable : impossible de rembourser'); END IF;
+  END IF;
+
   UPDATE public.parcel_quote_payments
      SET cancelled_at = now(), cancelled_by = v_uid, cancel_reason = TRIM(p_reason)
    WHERE id = v_pm.id;
 
   -- Venu du solde : on le rend au client, avec son écriture.
   IF v_pm.method = 'wallet' THEN
-    SELECT * INTO v_dep FROM public.parcel_deposits WHERE id = v_q.deposit_id;
-    SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_dep.client_user_id FOR UPDATE;
-    IF v_wallet.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Portefeuille du client introuvable : impossible de rembourser'); END IF;
     UPDATE public.wallets SET balance_xaf = balance_xaf + v_pm.amount_xaf, updated_at = now() WHERE id = v_wallet.id;
     INSERT INTO public.ledger_entries (wallet_id, user_id, entry_type, amount_xaf, balance_before, balance_after,
                                        reference_type, reference_id, description, created_by_admin_id, metadata)
-    VALUES (v_wallet.id, v_dep.client_user_id, 'PAYMENT_CANCELLED_REFUNDED', v_pm.amount_xaf, v_wallet.balance_xaf, v_wallet.balance_xaf + v_pm.amount_xaf,
+    VALUES (v_wallet.id, v_wallet.user_id, 'PAYMENT_CANCELLED_REFUNDED', v_pm.amount_xaf, v_wallet.balance_xaf, v_wallet.balance_xaf + v_pm.amount_xaf,
             'parcel_quote_payment', v_pm.id,
             'Remboursement frais de transport · reçu ' || v_pm.receipt_no || ' annulé : ' || TRIM(p_reason),
             v_uid, jsonb_build_object('quote_no', v_q.quote_no, 'receipt_no', v_pm.receipt_no, 'reason', TRIM(p_reason)));
