@@ -83,8 +83,12 @@ export function brackets(tiers: Tier[]): Bracket[] {
   return out.reverse();
 }
 
+export function exactRate(base: Base, method: MethodKey, countryPct: number, tierPct: number): number {
+  return Math.round(base[method] * (1 + countryPct / 100) * (1 + tierPct / 100) * 100) / 100;
+}
+
 export function rateFor(base: Base, method: MethodKey, countryPct: number, tierPct: number): number {
-  return Math.round(base[method] * (1 + countryPct / 100) * (1 + tierPct / 100));
+  return Math.round(exactRate(base, method, countryPct, tierPct));
 }
 
 /** Les modes au même taux (Alipay, WeChat, Virement le sont 134 jours sur 137) se regroupent. */
@@ -155,12 +159,24 @@ function Foot({ children }: { children?: ReactNode }) {
   );
 }
 
-function Lead() {
+/**
+ * L'accroche. « Pour 1 000 000 XAF, votre fournisseur reçoit » se contredisait
+ * au-dessus d'une colonne « moins de 400 000 XAF » : on dit l'unité, puis
+ * pourquoi il y a deux colonnes.
+ */
+function Lead({ split }: { split: boolean }) {
   return (
-    <div style={{ padding: '22px 64px 0', fontSize: 31, fontWeight: 500, color: MUTED }}>
-      Pour <b style={{ color: TEXT, fontWeight: 800 }}>1&nbsp;000&nbsp;000 XAF</b>, votre fournisseur reçoit&nbsp;:
+    <div style={{ padding: '22px 64px 0', fontSize: 31, fontWeight: 500, color: MUTED, lineHeight: 1.3 }}>
+      En ¥ pour <b style={{ color: TEXT, fontWeight: 800 }}>1&nbsp;000&nbsp;000 XAF</b>{split ? ', selon le montant de votre paiement' : ''}&nbsp;:
     </div>
   );
+}
+
+/** Un exemple chiffré sous la petite tranche : « 200 000 XAF → 2 096 ¥ ». */
+function example(b: Bracket, rate: number): string | null {
+  if (b.min !== 0 || b.max === null) return null;
+  const amount = b.max + 1 >= 400_000 ? 200_000 : Math.round((b.max + 1) / 2 / 10_000) * 10_000;
+  return `${fmt(amount)} XAF → ${fmt((amount * rate) / 1_000_000)} ¥`;
 }
 
 export interface FlyerProps { country: Country; base: Base; tiers: Tier[]; date: string }
@@ -175,7 +191,7 @@ export function FlyerTable({ country, base, tiers, date }: FlyerProps) {
   return (
     <div style={{ width: 1080, height: 1350, background: PAPER, display: 'flex', flexDirection: 'column', fontFamily: FONT }}>
       <Head country={country} date={date} />
-      <Lead />
+      <Lead split={bs.length > 1} />
       <div style={{ margin: '26px 40px 0', background: SHEET, borderRadius: 40, padding: '24px 24px 10px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 22px 16px', gap: 24 }}>
           <div style={{ flex: 1, fontSize: 24, fontWeight: 700, color: MUTED, lineHeight: 1.2 }}>Vous payez&nbsp;:</div>
@@ -219,7 +235,7 @@ export function FlyerEssential({ country, base, tiers, date }: FlyerProps) {
   return (
     <div style={{ width: 1080, height: 1350, background: PAPER, display: 'flex', flexDirection: 'column', fontFamily: FONT }}>
       <Head country={country} date={date} />
-      <Lead />
+      <Lead split={bs.length > 1} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22, margin: '26px 40px 0' }}>
         {groups.map((g) => (
           <div key={g.label} style={{ background: SHEET, borderRadius: 40, padding: '24px 28px 28px' }}>
@@ -235,6 +251,9 @@ export function FlyerEssential({ country, base, tiers, date }: FlyerProps) {
                     <span style={{ ...NUM, fontSize: bs.length > 2 ? 72 : i === 0 ? 108 : 76, fontWeight: 900, letterSpacing: -2, color: i === 0 ? TEXT : MUTED, lineHeight: 1 }}>{fmt(rateFor(base, g.keys[0], country.pct, b.pct))}</span>
                     <span style={{ fontSize: i === 0 ? 44 : 32, fontWeight: 800, color: i === 0 ? TEXT : MUTED }}>¥</span>
                   </div>
+                  {example(b, exactRate(base, g.keys[0], country.pct, b.pct)) && (
+                    <div style={{ ...NUM, fontSize: 24, fontWeight: 700, color: MUTED, marginTop: 10, whiteSpace: 'nowrap' }}>Ex. {example(b, exactRate(base, g.keys[0], country.pct, b.pct))}</div>
+                  )}
                 </div>
               ))}
             </div>
