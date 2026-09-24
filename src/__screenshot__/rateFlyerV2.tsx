@@ -264,3 +264,46 @@ export function FlyerEssential({ country, base, tiers, date }: FlyerProps) {
     </div>
   );
 }
+
+/**
+ * VARIANTE C — « Simple » (retour du 24/09 : A et B trop complexes, les
+ * flèches et les colonnes perdent le lecteur). Un seul format de lecture,
+ * celui que les clients connaissent : « Pour 1 000 000 XAF » puis un gros
+ * chiffre par carte. La petite tranche n'est plus une colonne : une seule
+ * ligne sous le chiffre, sans flèche ni exemple — ou rien du tout (small=false).
+ */
+export function FlyerSimple({ country, base, tiers, date, small = true }: FlyerProps & { small?: boolean }) {
+  const bs = brackets(tiers);
+  const top = bs[0];
+  const low = small && bs.length > 1 ? bs[bs.length - 1] : null;
+  const groups = methodGroups(base);
+  const many = groups.length > 2;
+  return (
+    <div style={{ width: 1080, height: 1350, background: PAPER, display: 'flex', flexDirection: 'column', fontFamily: FONT }}>
+      <Head country={country} date={date} />
+      <div style={{ padding: '26px 64px 0', fontSize: 40, fontWeight: 600, color: MUTED }}>
+        Pour <b style={{ color: TEXT, fontWeight: 900 }}>1&nbsp;000&nbsp;000 XAF</b>, votre fournisseur reçoit&nbsp;:
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: many ? 14 : 24, margin: '28px 40px 0' }}>
+        {groups.map((g) => (
+          <div key={g.label} style={{ background: SHEET, borderRadius: 40, padding: many ? '18px 30px' : '28px 34px 30px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {g.keys.map((k) => <Tile key={k} method={k} size={many ? 52 : 64} />)}
+              <div style={{ marginLeft: 10, fontSize: g.keys.length > 1 ? 36 : 44, fontWeight: 800, color: TEXT, whiteSpace: 'nowrap' }}>{g.label}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: many ? 4 : 10 }}>
+              <span style={{ ...NUM, fontSize: many ? 96 : low ? 140 : 156, fontWeight: 900, letterSpacing: -3, color: TEXT, lineHeight: 1 }}>{fmt(rateFor(base, g.keys[0], country.pct, top.pct))}</span>
+              <span style={{ fontSize: many ? 44 : 60, fontWeight: 800, color: TEXT }}>¥</span>
+            </div>
+            {low && (
+              <div style={{ ...NUM, fontSize: many ? 26 : 30, fontWeight: 700, color: GOLD_DEEP, marginTop: many ? 4 : 10 }}>
+                {`Petits paiements (moins de ${fmt(low.max! + 1)}\u00a0XAF)\u00a0: ${fmt(rateFor(base, g.keys[0], country.pct, low.pct))}\u00a0¥`}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <Foot />
+    </div>
+  );
+}
