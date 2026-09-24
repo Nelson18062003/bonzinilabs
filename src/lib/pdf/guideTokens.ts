@@ -49,7 +49,7 @@ export function biLabel(b: BiText): string {
  * Money » ne se sépare jamais.
  */
 export function balanced(text: string, size: number, room: number, em = 0.54): string {
-  const keep = text.replace(/Mobile Money/g, 'Mobile Money');
+  const keep = text.replace(/Mobile Money/g, 'Mobile\u00a0Money');
   if (keep.length * size * em <= room) return keep;
   const mid = keep.length / 2;
   const pick = (re: RegExp) => {

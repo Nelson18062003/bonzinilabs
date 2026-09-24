@@ -3,14 +3,16 @@
 // en français ET en anglais, en portrait ou en paysage. Même famille que la
 // fiche Mobile Money (même kit, mêmes couleurs, mêmes tailles de lecture).
 //
-// Le livret complet (6 pages A4) :
-//   1 · Couverture : le titulaire unique, les deux façons de payer
-//       (1 VIREMENT, violet · 2 DÉPÔT AU GUICHET, orange), puis le sommaire
-//       des banques, cliquable, avec leurs logos officiels.
-//   2–5 · Une page par banque : le titulaire en très gros, le bloc violet du
-//       virement (IBAN sur une ligne, SWIFT), le bloc orange du dépôt au
-//       guichet (les 4 cases du RIB), la mention obligatoire.
-//   6 · LA PREUVE : ce que l'avis de virement ou le bordereau doit montrer.
+// Le livret complet (A4, 2 pages + une par banque) :
+//   · Couverture : le titulaire unique, les deux façons de payer
+//     (1 VIREMENT, violet · 2 DÉPÔT AU GUICHET, orange), puis le sommaire
+//     des banques, cliquable, avec leurs logos officiels.
+//   · Une page par banque : le titulaire en très gros, le bloc violet du
+//     virement (IBAN sur une ligne, SWIFT), le bloc orange du dépôt au
+//     guichet (les 4 cases du RIB), la mention obligatoire.
+//   · LA PREUVE : ce que l'avis de virement ou le bordereau doit montrer.
+// Seules les banques dont l'IBAN et la clé RIB se vérifient sont imprimées
+// (bankGuideData) : un document officiel ne porte jamais un IBAN refusé.
 // Le RIB seul (1 page) : la page d'une banque, sans folio, avec en bas le
 // rappel de la preuve — ce qu'on envoie quand on nous demande « votre RIB ».
 // Portrait : bandeau sombre en haut. Paysage : colonne sombre à gauche
@@ -425,7 +427,7 @@ function BankPagePortrait(p: BankPageProps) {
         {tight ? <View style={{ marginTop: 8 }}><ProofStrip /></View> : null}
       </View>
       {/* Le RIB seul n'a pas de pied de page : la raison sociale est déjà en tête, et la place va à la preuve. */}
-      {tight ? null : <Footer inset={L.M} items={p.footer} />}
+      {tight ? null : <Footer inset={L.M} items={p.footer} showName={false} />}
     </Page>
   );
 }
@@ -490,7 +492,8 @@ function BankPageLandscape(p: BankPageProps) {
         <View style={{ marginTop: 14 }}><VirementCard a={a} size={size} room={AREA_W} swiftW={swiftWidth(p.accounts)} /></View>
         <OrRow />
         <GuichetCard a={a} size={size} />
-        <Footer inset={AREA_PAD} items={p.footer} />
+        {/* Livret : la navigation prend toute la largeur (le nom est en tête de colonne). */}
+        <Footer inset={AREA_PAD} items={p.footer} showName={p.single} />
       </View>
     </Page>
   );
@@ -663,7 +666,7 @@ function ProofPortrait({ folio, footer }: { folio: string; footer: FooterItem[] 
         <View style={{ marginTop: 12 }}><ClearLine text={COPY.preuve.clear} /></View>
       </View>
       <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 70 }}><Thanks text={COPY.preuve.thanks} /></View>
-      <Footer inset={L.M} items={footer} />
+      <Footer inset={L.M} items={footer} showName={false} />
     </Page>
   );
 }
@@ -678,7 +681,7 @@ function ProofLandscape({ folio, footer }: { folio: string; footer: FooterItem[]
       <View style={ls.area}>
         <Ticket width={AREA_W} rowH={56} items={COPY.preuve.items} shot={COPY.preuve.shot} />
         <View style={{ marginTop: 14 }}><Thanks text={COPY.preuve.thanks} /></View>
-        <Footer inset={AREA_PAD} items={footer} />
+        <Footer inset={AREA_PAD} items={footer} showName={false} />
       </View>
     </Page>
   );
@@ -694,7 +697,8 @@ export function BankDetailsPDF({ data, orientation = 'portrait', bank }: { data:
   const L = orientation === 'landscape' ? LANDSCAPE : PORTRAIT;
   const BankPage = orientation === 'landscape' ? BankPageLandscape : BankPagePortrait;
   const single = bank ? data.accounts.find((a) => a.key === bank) : undefined;
-  if (bank && !single) throw new Error(`Banque inconnue : ${bank}`);
+  // Une banque absente des données, ou dont l'IBAN ne se vérifie pas, n'a pas de RIB imprimable.
+  if (bank && !single) throw new Error(`RIB non disponible pour ${bank}`);
 
   if (single) {
     // Paysage seulement (le portrait n'a pas de pied de page).

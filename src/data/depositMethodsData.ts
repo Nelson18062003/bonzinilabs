@@ -127,9 +127,15 @@ export const banks: BankInfo[] = [
       accountNumber: '00280298901',
       bankName: 'CCA-BANK Cameroun',
       // À VÉRIFIER auprès de CCA-Bank : cet IBAN ne passe pas le contrôle
-      // modulo 97, et la clé RIB recalculée depuis banque/agence/compte vaut
-      // 71, pas 57. Laissé tel quel faute de source (voir le test de la fiche
-      // bancaire) : la correction la plus probable est la clé 71.
+      // modulo 97 — la clé 57 ne correspond pas à banque/agence/compte (la
+      // clé recalculée vaut 71). Trois corrections d'un seul chiffre
+      // rendraient le RIB cohérent, et seule la banque peut trancher :
+      //   · clé 71 au lieu de 57 ;
+      //   · agence 10044 au lieu de 10444 (clé 57 conservée) ;
+      //   · compte 00280296901 au lieu de 00280298901 (clé 57 conservée).
+      // Tant que le contrôle échoue, la fiche PDF « Coordonnées bancaires »
+      // n'imprime pas ce compte (voir bankGuideData) ; elle le reprendra
+      // d'elle-même une fois les bons chiffres saisis ici.
       iban: 'CM21 10039 10444 00280298901 57',
       swift: 'CCAMCMCY',
       codeBanque: '10039',
@@ -236,8 +242,12 @@ export const getSubMethodsForFamily = (family: DepositMethodFamily): SubMethodIn
 export const getFamilyInfo = (family: DepositMethodFamily): MethodFamilyInfo | undefined =>
   methodFamilies.find((mf) => mf.family === family);
 
+/**
+ * La banque d'un dépôt, par sa clé (« UBA », dépôts créés par le client) ou
+ * par son libellé (« UBA Cameroun », dépôts créés par l'équipe).
+ */
 export const getBankInfo = (bank: string): BankInfo | undefined =>
-  banks.find((b) => b.bank === bank);
+  banks.find((b) => b.bank === bank || b.label === bank);
 
 export const getAgencyInfo = (agency: string): AgencyInfo | undefined =>
   agencies.find((a) => a.agency === agency);

@@ -201,7 +201,8 @@
     "guideDownloaded": "Mobile Money 资料已下载",
     "ribBank": "{{bank}} 银行账户 · PDF",
     "allBanks": "全部银行账户 · PDF",
-    "bankDetailsDownloaded": "银行账户信息已下载"
+    "bankDetailsDownloaded": "银行账户信息已下载",
+    "pdfError": "无法生成 PDF，请重试"
   },
   "proof": {
     "title": "附加充值凭证",

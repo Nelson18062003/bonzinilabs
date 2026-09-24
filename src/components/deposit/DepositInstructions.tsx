@@ -4,7 +4,7 @@
 // note. Copie au toucher. Logique getInstructionInfo 100% PRÉSERVÉE.
 // ============================================================
 import { useState } from 'react';
-import { Copy, Check, FileDown } from 'lucide-react';
+import { Copy, Check, FileDown, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
 import { toast } from 'sonner';
@@ -22,8 +22,7 @@ import {
 } from '@/data/depositMethodsData';
 import { deliverMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 import { deliverBankDetailsPdf } from '@/lib/bankDetailsPdf';
-import { bankShortName } from '@/lib/bankDetailsGuide';
-import type { BankOption } from '@/types/deposit';
+import { bankShortName, printableBank } from '@/lib/bankDetailsGuide';
 
 interface Deposit {
   method: string;
@@ -172,6 +171,8 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
 export function DepositInstructions({ deposit, showTitle = true, compact = false }: DepositInstructionsProps) {
   const { t } = useTranslation('deposits');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  // Le PDF met un moment à se fabriquer : un seul à la fois, et un sablier sur le bouton touché.
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
   const info = getInstructionInfo(deposit, t);
   if (!info) return null;
@@ -186,6 +187,19 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
       toast.error(t('instructions.copyError'));
     }
   };
+
+  const deliverPdf = (id: string, deliver: () => Promise<'shared' | 'downloaded'>, downloaded: string) => {
+    if (pdfBusy) return;
+    setPdfBusy(id);
+    void deliver()
+      .then((o) => { if (o === 'downloaded') toast.success(downloaded); })
+      .catch(() => toast.error(t('instructions.pdfError', { defaultValue: 'Impossible de créer le PDF, réessayez' })))
+      .finally(() => setPdfBusy(null));
+  };
+
+  const PdfIcon = ({ id }: { id: string }) => (pdfBusy === id
+    ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+    : <FileDown className="h-4 w-4 shrink-0" />);
 
   const copyAllInfo = () => {
     const parts = info.fields.map((f) => `${f.label}: ${f.value}`);
@@ -285,10 +299,12 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
             <button
               key={orientation}
               type="button"
-              onClick={() => { void deliverMobileMoneyGuidePdf(orientation).then((o) => { if (o === 'downloaded') toast.success(t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
-              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
+              disabled={pdfBusy !== null}
+              aria-busy={pdfBusy === `mm-${orientation}`}
+              onClick={() => deliverPdf(`mm-${orientation}`, () => deliverMobileMoneyGuidePdf(orientation), t('instructions.guideDownloaded', { defaultValue: 'Fiche Mobile Money téléchargée' }))}
+              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-[14px] font-bold disabled:opacity-60', SURFACE.holder, TEXT.strong)}
             >
-              <FileDown className="h-4 w-4 shrink-0" />
+              <PdfIcon id={`mm-${orientation}`} />
               {orientation === 'portrait'
                 ? t('instructions.guidePortrait', { defaultValue: 'Fiche PDF · portrait' })
                 : t('instructions.guideLandscape', { defaultValue: 'Fiche PDF · paysage' })}
@@ -297,24 +313,31 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
         </div>
       ) : null}
 
-      {/* Virement ou dépôt au guichet : le RIB de la banque choisie (une page), ou le livret de toutes nos banques — en français et en anglais. */}
-      {(deposit.method === 'bank_transfer' || deposit.method === 'bank_cash') && deposit.bank_name && getBankInfo(deposit.bank_name) ? (
-        <div className="grid grid-cols-2 gap-2">
-          {([deposit.bank_name as BankOption, undefined] as const).map((bank) => (
-            <button
-              key={bank ?? 'all'}
-              type="button"
-              onClick={() => { void deliverBankDetailsPdf({ bank }).then((o) => { if (o === 'downloaded') toast.success(t('instructions.bankDetailsDownloaded', { defaultValue: 'Coordonnées bancaires téléchargées' })); }).catch(() => toast.error(t('instructions.copyError'))); }}
-              className={cn('flex w-full items-center justify-center gap-2 rounded-2xl px-2 py-3.5 text-center text-[14px] font-bold', SURFACE.holder, TEXT.strong)}
-            >
-              <FileDown className="h-4 w-4 shrink-0" />
-              {bank
-                ? t('instructions.ribBank', { bank: bankShortName(bank), defaultValue: 'RIB {{bank}} · PDF' })
-                : t('instructions.allBanks', { defaultValue: 'Toutes nos banques · PDF' })}
-            </button>
-          ))}
-        </div>
-      ) : null}
+      {/* Virement ou dépôt au guichet : le RIB de la banque choisie (une page), et le livret de toutes nos banques — en français et en anglais. */}
+      {deposit.method === 'bank_transfer' || deposit.method === 'bank_cash' ? (() => {
+        const bank = printableBank(deposit.bank_name);
+        const choices: { id: string; bank?: typeof bank; label: string }[] = [
+          ...(bank ? [{ id: `rib-${bank}`, bank, label: t('instructions.ribBank', { bank: bankShortName(bank), defaultValue: 'RIB {{bank}} · PDF' }) }] : []),
+          { id: 'banks', label: t('instructions.allBanks', { defaultValue: 'Toutes nos banques · PDF' }) },
+        ];
+        return (
+          <div className={cn('grid gap-2', choices.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+            {choices.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                disabled={pdfBusy !== null}
+                aria-busy={pdfBusy === c.id}
+                onClick={() => deliverPdf(c.id, () => deliverBankDetailsPdf({ bank: c.bank }), t('instructions.bankDetailsDownloaded', { defaultValue: 'Coordonnées bancaires téléchargées' }))}
+                className={cn('flex w-full items-center justify-center gap-2 rounded-2xl px-2 py-3.5 text-center text-[14px] font-bold disabled:opacity-60', SURFACE.holder, TEXT.strong)}
+              >
+                <PdfIcon id={c.id} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        );
+      })() : null}
     </div>
   );
 }

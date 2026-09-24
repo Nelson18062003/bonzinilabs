@@ -201,7 +201,8 @@
     "guideDownloaded": "Fiche Mobile Money téléchargée",
     "ribBank": "RIB {{bank}} · PDF",
     "allBanks": "Toutes nos banques · PDF",
-    "bankDetailsDownloaded": "Coordonnées bancaires téléchargées"
+    "bankDetailsDownloaded": "Coordonnées bancaires téléchargées",
+    "pdfError": "Impossible de créer le PDF, réessayez"
   },
   "proof": {
     "title": "Joindre les preuves de dépôt",

@@ -81,11 +81,14 @@ describe('la fiche Mobile Money', () => {
   it("est au nom de la société : ni site, ni « Bonzini Labs », ni « Bonzini Trading », ni WhatsApp, ni plafond, ni menu inventé", () => {
     // Le code, sans ses commentaires : ce qui compte, c'est ce que le document affiche.
     const stripComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-    const src = stripComments(readFileSync('src/lib/pdf/templates/MobileMoneyGuidePDF.tsx', 'utf8') + readFileSync('src/lib/mobileMoneyGuide.ts', 'utf8'));
+    // La fiche et le kit qu'elle partage avec la fiche bancaire (en-tête, pied, remerciement).
+    const files = ['src/lib/pdf/templates/MobileMoneyGuidePDF.tsx', 'src/lib/mobileMoneyGuide.ts', 'src/lib/pdf/components/guideKit.tsx', 'src/lib/pdf/guideTokens.ts', 'src/lib/pdf/guideStyles.ts'];
+    const src = stripComments(files.map((f) => readFileSync(f, 'utf8')).join('\n'));
     for (const forbidden of [/bonzinilabs\.com/i, /Bonzini ?Labs/i, /Bonzini Trading/i, /WhatsApp/i, /WEBSITE/, /plafond|500 000|Max /i, /#150\*1\*1#|\*126#/]) {
       expect(src, String(forbidden)).not.toMatch(forbidden);
     }
-    expect(src).toContain('LEGAL_NAME');
+    // La raison sociale est imprimée par le kit (en-tête, pied de page, remerciement).
+    expect(readFileSync('src/lib/pdf/components/guideKit.tsx', 'utf8')).toContain('{LEGAL_NAME}');
     // Les logos sont les logos officiels : le fichier Orange Money, le tracé MTN d'origine.
     expect(src).toContain('deposit-logos/orange-money.png');
     expect(src).toContain('MTN_LOGO_PATH');

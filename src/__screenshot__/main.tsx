@@ -267,7 +267,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'pdf-banques': { Comp: () => <PdfDoc kind="banques" />, route: '/' },
   'pdf-banques-paysage': { Comp: () => <PdfDoc kind="banques-paysage" />, route: '/' },
   'pdf-rib-uba': { Comp: () => <PdfDoc kind="rib-uba" />, route: '/' },
-  'pdf-rib-cca-paysage': { Comp: () => <PdfDoc kind="rib-cca-paysage" />, route: '/' },
+  'pdf-rib-afriland-paysage': { Comp: () => <PdfDoc kind="rib-afriland-paysage" />, route: '/' },
   'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },

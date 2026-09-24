@@ -96,8 +96,8 @@ const st = {
     opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
     logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
     kind: { borderRadius: R.inner, backgroundColor: colors.violetLight, paddingVertical: 5, paddingHorizontal: 12, alignItems: 'flex-end' },
-    kindFr: { fontSize: 12.5, fontWeight: 800, color: '#7b2fd0', letterSpacing: 1, textTransform: 'uppercase' },
-    kindEn: { fontSize: 11, fontWeight: 600, color: '#7b2fd0', letterSpacing: 0.6, textTransform: 'uppercase' },
+    kindFr: { fontSize: 12.5, fontWeight: 800, color: VIOLET_DEEP, letterSpacing: 1, textTransform: 'uppercase' },
+    kindEn: { fontSize: 11, fontWeight: 600, color: VIOLET_DEEP, letterSpacing: 0.6, textTransform: 'uppercase' },
 
     // ── Flotte ──
     keys: { flexDirection: 'row' },
@@ -144,7 +144,6 @@ function ExampleBox({ size, outlined }: { size: number; outlined?: boolean }) {
     </View>
   );
 }
-
 
 /* ─────────────── Logos officiels ─────────────── */
 
@@ -228,7 +227,7 @@ function Door({ L, section, word, sentence }: { L: Layout; section: 'flotte' | '
           <Text style={st.doorFr}>{sentence.fr}</Text>
           <Text style={[st.doorEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{sentence.en}</Text>
         </View>
-        <PagePill page={s.page} />
+        <PagePill page={s.page} word={COPY.page.fr} />
       </View>
     </Link>
   );
@@ -258,7 +257,7 @@ function CoverDoors({ L }: { L: Layout }) {
             <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
             <Text style={st.proofEn}>{COPY.cover.preuve.en}</Text>
           </View>
-          <PagePill page={SECTION.preuve.page} color={INK} background={colors.gold} />
+          <PagePill page={SECTION.preuve.page} word={COPY.page.fr} color={INK} background={colors.gold} />
         </View>
       </Link>
     </View>
@@ -463,8 +462,7 @@ function LandscapePage({ section, dark, sidebar, children }: { section: SectionK
   );
 }
 
-/** Une règle de page, en français puis en anglais, avec son repère visuel à gauche. */
-
+/** Paysage : une façon de payer, en porte haute (couverture), cliquable vers sa page. */
 function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte' | 'retrait'; word: Bi; sentence: Bi }) {
   const s = SECTION[section];
   return (
@@ -472,7 +470,7 @@ function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte'
       <View style={[ls.doorTall, { backgroundColor: s.color }]}>
         <View style={ls.doorTop}>
           <View style={[st.doorDisc, { width: 42, height: 42, borderRadius: 21, marginRight: 0 }]}><Text style={[st.doorDiscText, { color: s.color }]}>{s.n}</Text></View>
-          <PagePill page={s.page} />
+          <PagePill page={s.page} word={COPY.page.fr} />
         </View>
         <View style={st.doorWordRow}>
           <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
@@ -524,7 +522,7 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
               <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
               <Text style={[st.proofEn, { marginLeft: 12, marginTop: 0 }]}>{COPY.cover.preuve.en}</Text>
             </View>
-            <PagePill page={SECTION.preuve.page} color={INK} background={colors.gold} />
+            <PagePill page={SECTION.preuve.page} word={COPY.page.fr} color={INK} background={colors.gold} />
           </View>
         </Link>
       </View>

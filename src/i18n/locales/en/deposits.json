@@ -201,7 +201,8 @@
     "guideDownloaded": "Mobile Money sheet downloaded",
     "ribBank": "{{bank}} RIB · PDF",
     "allBanks": "All our banks · PDF",
-    "bankDetailsDownloaded": "Bank details downloaded"
+    "bankDetailsDownloaded": "Bank details downloaded",
+    "pdfError": "Could not create the PDF, please try again"
   },
   "proof": {
     "title": "Attach deposit proofs",

@@ -122,7 +122,7 @@ export function Sidebar({ id, tone, folio, text, rule, ghostOpacity, enStrong }:
 }
 
 /** Le bas de la colonne : la carte blanche de la règle, puis le folio. */
-export function SideBottom({ rule, folio, color }: { rule: ReactNode; folio: string; color: string }) {
+function SideBottom({ rule, folio, color }: { rule: ReactNode; folio: string; color: string }) {
   return (
     <View style={{ marginTop: 'auto' }}>
       <View style={ls.rule}>{rule}</View>
@@ -148,13 +148,18 @@ export function RuleText({ text, lead }: { text: BiText; lead: ReactNode }) {
 
 export interface FooterItem { key: string; label: string; color: string; active: boolean; href?: string }
 
-/** La raison sociale à gauche ; à droite, où l'on est dans le livret (points de couleur). */
-export function Footer({ inset, items, dark }: { inset: number; items: FooterItem[]; dark?: boolean }) {
+/**
+ * La raison sociale à gauche ; à droite, où l'on est dans le livret (points de
+ * couleur). `showName={false}` quand la navigation a besoin de toute la largeur
+ * (le nom est déjà en tête de chaque page). Rien ne rétrécit : un pied trop
+ * long déborderait franchement au lieu de se chevaucher en silence.
+ */
+export function Footer({ inset, items, dark, showName = true }: { inset: number; items: FooterItem[]; dark?: boolean; showName?: boolean }) {
   const muted = dark ? ON_INK_SOFT : MUTED;
   return (
     <View style={[gk.footer, { left: inset, right: inset, borderTopColor: dark ? LINE_ON_INK : colors.border }]} fixed>
-      <Text style={[gk.footerText, { color: muted }]}>{LEGAL_NAME}</Text>
-      <View style={gk.way}>
+      {showName ? <Text style={[gk.footerText, { color: muted, flexShrink: 0 }]}>{LEGAL_NAME}</Text> : <View />}
+      <View style={[gk.way, { flexShrink: 0 }]}>
         {items.map((it) => {
           const item = (
             <View key={it.key} style={gk.wayItem}>
@@ -200,7 +205,7 @@ export function OrDisc({ or, style }: { or: BiText; style?: Style }) {
 }
 
 /** « PAGE 4 → » : le renvoi cliquable d'une porte de couverture. */
-export function PagePill({ page, word = 'Page', color = INK, background = WHITE }: { page: number; word?: string; color?: string; background?: string }) {
+export function PagePill({ page, word, color = INK, background = WHITE }: { page: number; word: string; color?: string; background?: string }) {
   return (
     <View style={[gk.doorPage, { backgroundColor: background }]}>
       <Text style={[gk.doorPageText, { color }]}>{word} {page}</Text>

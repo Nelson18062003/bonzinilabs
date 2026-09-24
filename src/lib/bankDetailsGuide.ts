@@ -10,10 +10,11 @@
 //     agence, n° de compte, clé.
 // Un seul titulaire pour tous les comptes : NORTON GAUSS BONZINI SARL. Une
 // page par banque, pour pouvoir donner un RIB seul quand on nous le demande.
+// Un compte n'est imprimé que si son IBAN et sa clé RIB se vérifient.
 // Bilingue (français d'abord, anglais dessous), portrait ou paysage. Aucun
 // site, aucun numéro de téléphone.
 // ============================================================
-import { banks } from '@/data/depositMethodsData';
+import { banks, getBankInfo } from '@/data/depositMethodsData';
 import type { BankOption } from '@/types/deposit';
 import type { Bi, GuideOrientation } from '@/lib/mobileMoneyGuide';
 
@@ -73,21 +74,40 @@ export function bankShortName(key: BankOption): string {
   return b ? bankDisplayName(b.label).split(' ')[0] : key;
 }
 
+/**
+ * Un compte n'est imprimé que si ses chiffres se tiennent : IBAN valide
+ * (modulo 97) et clé RIB conforme à banque/agence/compte. Un document officiel
+ * ne doit jamais porter un IBAN que la banque de l'expéditeur refusera.
+ */
+export function accountIsConsistent(a: Pick<BankGuideAccount, 'iban' | 'bankCode' | 'branchCode' | 'accountNumber' | 'ribKey'>): boolean {
+  return ibanIsValid(a.iban) && computeRibKey(a.bankCode, a.branchCode, a.accountNumber) === a.ribKey;
+}
+
+/** Tous nos comptes, tels que l'app les connaît (y compris ceux à vérifier). */
+export function allBankAccounts(): BankGuideAccount[] {
+  return banks.map((b) => ({
+    key: b.bank,
+    name: bankDisplayName(b.label),
+    short: bankShortName(b.bank),
+    holder: b.bonziniAccount.accountName,
+    iban: b.bonziniAccount.iban,
+    swift: b.bonziniAccount.swift,
+    bankCode: b.bonziniAccount.codeBanque,
+    branchCode: b.bonziniAccount.codeAgence,
+    accountNumber: b.bonziniAccount.accountNumber,
+    ribKey: b.bonziniAccount.cleRib,
+  }));
+}
+
+/** Les comptes que la fiche imprime : ceux dont les chiffres se vérifient. */
 export function bankGuideData(): BankGuideData {
-  return {
-    accounts: banks.map((b) => ({
-      key: b.bank,
-      name: bankDisplayName(b.label),
-      short: bankShortName(b.bank),
-      holder: b.bonziniAccount.accountName,
-      iban: b.bonziniAccount.iban,
-      swift: b.bonziniAccount.swift,
-      bankCode: b.bonziniAccount.codeBanque,
-      branchCode: b.bonziniAccount.codeAgence,
-      accountNumber: b.bonziniAccount.accountNumber,
-      ribKey: b.bonziniAccount.cleRib,
-    })),
-  };
+  return { accounts: allBankAccounts().filter(accountIsConsistent) };
+}
+
+/** Une banque que la fiche sait imprimer (clé ou libellé), sinon undefined. */
+export function printableBank(value: string | null | undefined): BankOption | undefined {
+  const key = value ? getBankInfo(value)?.bank : undefined;
+  return key && bankGuideData().accounts.some((a) => a.key === key) ? key : undefined;
 }
 
 /**
