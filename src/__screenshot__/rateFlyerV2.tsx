@@ -272,10 +272,11 @@ export function FlyerEssential({ country, base, tiers, date }: FlyerProps) {
  * chiffre par carte. La petite tranche n'est plus une colonne : une seule
  * ligne sous le chiffre, sans flèche ni exemple — ou rien du tout (small=false).
  */
-export function FlyerSimple({ country, base, tiers, date, small = true }: FlyerProps & { small?: boolean }) {
+export function FlyerSimple({ country, base, tiers, date, small = true, alert = false }: FlyerProps & { small?: boolean; alert?: boolean }) {
   const bs = brackets(tiers);
   const top = bs[0];
   const low = small && bs.length > 1 ? bs[bs.length - 1] : null;
+  if (alert && low) return <FlyerSimpleAlert country={country} base={base} tiers={tiers} date={date} />;
   const groups = methodGroups(base);
   const many = groups.length > 2;
   return (
@@ -302,6 +303,62 @@ export function FlyerSimple({ country, base, tiers, date, small = true }: FlyerP
             )}
           </div>
         ))}
+      </div>
+      <Foot />
+    </div>
+  );
+}
+
+const ALERT = '#D7261E';
+
+/**
+ * VARIANTE C rouge — retour du 24/09 : la ligne « petits paiements » en
+ * petit, on ne la voit pas. Le grand taux en haut, et un bloc ROUGE plein
+ * pour les paiements de moins de 400 000 XAF : on ne peut pas le rater.
+ */
+export function FlyerSimpleAlert({ country, base, tiers, date }: FlyerProps) {
+  const bs = brackets(tiers);
+  const top = bs[0];
+  const low = bs[bs.length - 1];
+  const groups = methodGroups(base);
+  return (
+    <div style={{ width: 1080, height: 1350, background: PAPER, display: 'flex', flexDirection: 'column', fontFamily: FONT }}>
+      <Head country={country} date={date} />
+      <div style={{ padding: '22px 64px 0', fontSize: 36, fontWeight: 600, color: MUTED }}>
+        Pour <b style={{ color: TEXT, fontWeight: 900 }}>1&nbsp;000&nbsp;000 XAF</b>, votre fournisseur reçoit&nbsp;:
+      </div>
+      <div style={{ display: 'flex', gap: 20, margin: '22px 40px 0' }}>
+        {groups.map((g) => (
+          <div key={g.label} style={{ flex: 1, minWidth: 0, background: SHEET, borderRadius: 36, padding: '24px 26px 26px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {g.keys.map((k) => <Tile key={k} method={k} size={52} />)}
+            </div>
+            <div style={{ fontSize: 27, fontWeight: 800, color: TEXT, marginTop: 12, whiteSpace: 'nowrap' }}>{g.label}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 8 }}>
+              <span style={{ ...NUM, fontSize: 100, fontWeight: 900, letterSpacing: -3, color: TEXT, lineHeight: 1 }}>{fmt(rateFor(base, g.keys[0], country.pct, top.pct))}</span>
+              <span style={{ fontSize: 44, fontWeight: 800, color: TEXT }}>¥</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ margin: '24px 40px 0', background: ALERT, borderRadius: 36, padding: '26px 34px 30px', color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 26, background: '#fff', color: ALERT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, fontWeight: 900, flexShrink: 0 }}>!</div>
+          <div style={{ fontSize: 40, fontWeight: 900, letterSpacing: -0.5, lineHeight: 1.1 }}>
+            Paiement de moins de {fmt(low.max! + 1)}&nbsp;XAF
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 20, marginTop: 20 }}>
+          {groups.map((g) => (
+            <div key={g.label} style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.14)', borderRadius: 26, padding: '16px 22px 18px' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, whiteSpace: 'nowrap', opacity: 0.95 }}>{g.label}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+                <span style={{ ...NUM, fontSize: 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>{fmt(rateFor(base, g.keys[0], country.pct, low.pct))}</span>
+                <span style={{ fontSize: 38, fontWeight: 800 }}>¥</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       <Foot />
     </div>

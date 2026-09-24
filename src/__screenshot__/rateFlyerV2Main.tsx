@@ -17,7 +17,7 @@ const base: Base = p.get('diverge') ? { cash: 11350, alipay: 11400, wechat: 1140
 // flat=1 : tous les paliers à 0 % (un seul taux, comme le flyer actuel).
 const tiers = p.get('flat') ? TIERS_2409.map((t) => ({ ...t, pct: 0 })) : TIERS_2409;
 const v = p.get('variant');
-const Flyer = v === 'table' ? FlyerTable : v === 'simple' ? FlyerSimple : v === 'simple1' ? (props: Parameters<typeof FlyerSimple>[0]) => <FlyerSimple {...props} small={false} /> : FlyerEssential;
+const Flyer = v === 'table' ? FlyerTable : v === 'simple' ? FlyerSimple : v === 'rouge' ? (props: Parameters<typeof FlyerSimple>[0]) => <FlyerSimple {...props} alert /> : v === 'simple1' ? (props: Parameters<typeof FlyerSimple>[0]) => <FlyerSimple {...props} small={false} /> : FlyerEssential;
 createRoot(document.getElementById('root')!).render(
   <div id="flyer" style={{ width: 1080, height: 1350 }}>
     <Flyer country={country} base={base} tiers={tiers} date={DATE_2409} />
