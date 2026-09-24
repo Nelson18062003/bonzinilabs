@@ -158,3 +158,78 @@ préalable permanent, pas une formalité par dossier.
 | Montants réellement facturés | factures CITRA SA des 15/02/2026 et 09/06/2026 |
 | 🔵 Grille tarifaire officielle | **non lisible**, page en JavaScript |
 | 🔵 Révision tarifaire au 01/01/2026 | source tierce non vérifiée |
+
+---
+
+# 7. PAR CONNAISSEMENT, PAR CONTENEUR, OU PAR VÉHICULE ?
+
+Question née de la proforma CIT26099, qui facture **3 BESC à 151 000** pour un
+conteneur couvert par **un seul connaissement**. Enjeu : **302 000 XAF**.
+
+## La grille tarifaire historique du CNCC
+
+Grille 2006/2007, issue de la documentation du CNCC, reproduite par
+`logistiqueconseil.org`. Ancienne, mais elle établit **la structure**.
+
+| **IMPORTATIONS** | Afrique | Europe | Reste du monde |
+|---|---|---|---|
+| Vracs et conventionnels | 100 € **par BL** | 100 € **par BL** | 100 € **par BL** |
+| Riz, farine, blé, autres alimentaires | 90 € **par BL** | 90 € **par BL** | 90 € **par BL** |
+| **Conteneurs**, par tranche de 10 TEU | 55 € **par BL** | 55 € **par BL** | 100 € **par BL** |
+| **Véhicules** | 20 € **par BL** | 20 € **par BL** | **100 € par BL** |
+
+| **RÉGULARISATION** | |
+|---|---|
+| BESC de régularisation ou BESC à l'arrivée | **prix majoré de 50 %** *(porté à 200 % par le communiqué CNCC du 01/02/2023)* |
+
+🔴 **Tout est tarifé « par BL ».** Pas par conteneur, pas par véhicule. Et la ligne
+« Véhicules » existe séparément, avec son propre tarif, **lui aussi par BL**.
+
+## L'évolution du tarif
+
+| | Montant | Équivalent |
+|---|---|---|
+| Grille 2006, reste du monde | 100 € | **65 596 XAF** |
+| Facturé par CITRA en février et juin 2026 | 196 000 XAF | 298,8 € |
+| Facturé par CITRA aujourd'hui | 151 000 XAF | 230,2 € |
+
+Le tarif a triplé en vingt ans, ce qui est normal. **La structure « par BL », elle,
+n'a jamais été démentie par une source que j'aie pu lire.**
+
+## Les précédents de CITRA elle-même
+
+| Dossier | BESC facturé |
+|---|---|
+| YAMMI, conteneur 40' d'imprimantes | **1 ×** 196 800 |
+| GIZ, un Toyota Prado hors conteneur | **1 ×** 196 000 |
+| **NORTON, conteneur avec 3 véhicules** | **3 ×** 151 000 |
+
+⚠️ **Aucun des deux précédents ne tranche le cas multi-véhicules** : l'un n'avait
+pas de véhicule, l'autre n'en avait qu'un. Mais dans les deux cas, un seul BESC.
+
+## La contre-indication
+
+Un émetteur commercial de BESC énonce que, pour des véhicules chargés en conteneur,
+*« the charge will multiply with the vehicle amount which is loaded into
+containers »*.
+
+🔵 **Repris d'un résumé de moteur de recherche, introuvable dans la page source.**
+Ne peut pas être opposé à la grille du CNCC.
+
+## Conclusion
+
+**La question est légitime et fondée.** La seule grille officielle consultable
+tarife au connaissement, y compris pour les véhicules. CITRA facture trois fois.
+
+**Ce qu'il faut demander :** la **ligne de la grille tarifaire CNCC en vigueur** qui
+justifie la multiplication par le nombre de véhicules. Pas une affirmation : la
+ligne.
+
+🔵 **Réserve honnête.** La grille consultée date de 2006/2007 et le CNCC a révisé sa
+tarification au 1ᵉʳ janvier 2026. Il est possible que la règle ait changé, d'autant
+que chaque véhicule est désormais suivi individuellement par son châssis (CIVIC,
+application Cosmos). **La grille en vigueur n'a pas pu être lue** : la page
+`besc.cncc.cm/Tarification` est une application JavaScript qui ne rend aucun texte.
+
+*Source : `logistiqueconseil.org/Fiches/Transit/Tarifs-besc.pdf`, mention
+« Source : Documentation du CNCC – Douala – Cameroun ».*
