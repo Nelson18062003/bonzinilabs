@@ -49,6 +49,19 @@ export const methodFamilies: MethodFamilyInfo[] = [
   },
 ];
 
+/**
+ * Wave — RETIRÉ des choix le 24/09/2026 : le numéro enregistré
+ * (+237 691 000 003, au nom de « BONZINI TRADING », l'ancien nom) est un
+ * numéro d'exemple, pas un compte de la société. Un client qui choisissait
+ * Wave aurait payé sur un numéro inconnu. Pour le rouvrir : saisir le vrai
+ * numéro et le vrai titulaire dans `waveAccount`, puis passer ceci à true.
+ * Les anciens dépôts Wave restent affichés et filtrables.
+ */
+export const WAVE_ENABLED = false;
+
+/** Les moyens proposés à la création d'un dépôt (client et équipe). */
+export const selectableMethodFamilies: MethodFamilyInfo[] = methodFamilies.filter((f) => f.family !== 'WAVE' || WAVE_ENABLED);
+
 // ── Level 2: Sub-methods ─────────────────────────────────────
 
 export const subMethods: SubMethodInfo[] = [
@@ -68,7 +81,7 @@ export const subMethods: SubMethodInfo[] = [
     subMethod: 'OM_TRANSFER',
     family: 'ORANGE_MONEY',
     label: 'Transfert Orange UV vers Bonzini',
-    description: 'Envoyez vers le compte Orange UV Bonzini',
+    description: 'Transfert de flotte vers notre compte Orange UV',
   },
   {
     subMethod: 'OM_WITHDRAWAL',
@@ -126,20 +139,14 @@ export const banks: BankInfo[] = [
       accountName: 'NORTON GAUSS BONZINI SARL',
       accountNumber: '00280298901',
       bankName: 'CCA-BANK Cameroun',
-      // À VÉRIFIER auprès de CCA-Bank : cet IBAN ne passe pas le contrôle
-      // modulo 97 — la clé 57 ne correspond pas à banque/agence/compte (la
-      // clé recalculée vaut 71). Trois corrections d'un seul chiffre
-      // rendraient le RIB cohérent, et seule la banque peut trancher :
-      //   · clé 71 au lieu de 57 ;
-      //   · agence 10044 au lieu de 10444 (clé 57 conservée) ;
-      //   · compte 00280296901 au lieu de 00280298901 (clé 57 conservée).
-      // Tant que le contrôle échoue, la fiche PDF « Coordonnées bancaires »
-      // n'imprime pas ce compte (voir bankGuideData) ; elle le reprendra
-      // d'elle-même une fois les bons chiffres saisis ici.
-      iban: 'CM21 10039 10444 00280298901 57',
+      // Corrigé le 24/09/2026 d'après le RIB émis par CCA-Bank (C-Online) :
+      // l'agence est 10044, pas 10444. L'ancien IBAN (… 10444 …) était refusé
+      // par le contrôle modulo 97 ; avec la bonne agence, la clé 57 et les
+      // chiffres de contrôle « 21 » se vérifient. Domiciliation : Douala.
+      iban: 'CM21 10039 10044 00280298901 57',
       swift: 'CCAMCMCY',
       codeBanque: '10039',
-      codeAgence: '10444',
+      codeAgence: '10044',
       cleRib: '57',
     },
   },

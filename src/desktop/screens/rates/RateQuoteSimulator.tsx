@@ -23,6 +23,7 @@ import { downloadNodePNG } from '@/lib/exportFlyer';
 import { SURFACE, TEXT, Card, CardHeader, Chip, SecLabel, StatusPill, ScreenError, ScreenLoader } from '@/desktop/designKit';
 import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
 import { RateQuoteCard, QUOTE_W, QUOTE_H } from './RateQuoteCard';
+import { CONTACT_PHONE_CM } from '@/lib/companyContacts';
 
 interface Props {
   activeRate: DailyRate | null | undefined;
@@ -141,7 +142,7 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
       `Vous payez : ${result.amountXAF.toLocaleString('fr-FR')} XAF`,
       `Votre fournisseur reçoit : ¥${Math.round(result.amountCNY).toLocaleString('fr-FR')} (${methodLabel})`,
       `Taux : ¥${result.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} / 1M XAF — valable aujourd'hui`,
-      `WhatsApp : +237 652 236 856 · bonzinilabs.com`,
+      `WhatsApp : ${CONTACT_PHONE_CM} · bonzinilabs.com`,
     ];
     try {
       await navigator.clipboard.writeText(lines.join('\n'));

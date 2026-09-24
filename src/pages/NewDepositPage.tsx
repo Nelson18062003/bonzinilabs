@@ -21,7 +21,7 @@ import { useCreateDeposit } from '@/hooks/useDeposits';
 import { useMyWallet } from '@/hooks/useWallet';
 import { SUB_METHOD_TO_DB_METHOD, type DepositMethod } from '@/types/deposit';
 import {
-  methodFamilies,
+  selectableMethodFamilies,
   getSubMethodsForFamily,
   banks,
   agencies,
@@ -231,9 +231,9 @@ const NewDepositPage = () => {
           merchantCode: undefined as string | undefined,
           instructions: [
             t('new.recap.mtnTransferInstr1'),
-            t('new.recap.mtnTransferInstr2'),
-            t('new.recap.mtnTransferInstr3', { phone: mtnMoneyAccount.phone }),
-            t('new.recap.mtnTransferInstr4', { amount: `${formatNumber(parseInt(amount))} XAF` }),
+            t('new.recap.mtnTransferInstr2', { phone: mtnMoneyAccount.phone }),
+            t('new.recap.mtnTransferInstr3', { amount: `${formatNumber(parseInt(amount))} XAF` }),
+            t('new.recap.mtnTransferInstr4'),
             t('new.recap.mtnTransferInstr5'),
           ],
         };
@@ -399,7 +399,7 @@ const NewDepositPage = () => {
       return (
         <div className="animate-fade-in space-y-3">
           <p className={cn('px-1 text-[15px] font-semibold', TEXT.strong)}>{t('new.howToDeposit')}</p>
-          {methodFamilies.map((family) => (
+          {selectableMethodFamilies.map((family) => (
             <SelectRow
               key={family.family}
               logo={<DepositFamilyLogo family={family.family} size={48} />}

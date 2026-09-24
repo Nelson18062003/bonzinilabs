@@ -78,7 +78,9 @@
     "comingSoon": "功能即将推出",
     "customerCode": "我的客户编号",
     "sectionAccount": "账户",
-    "sectionPreferences": "偏好设置"
+    "sectionPreferences": "偏好设置",
+    "paymentDetails": "付款信息",
+    "paymentDetailsDesc": "银行和 Mobile Money · PDF 和图片"
   },
   "beneficiaries": {
     "title": "收款人",

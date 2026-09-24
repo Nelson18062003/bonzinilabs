@@ -78,7 +78,9 @@
     "comingSoon": "Fonctionnalité bientôt disponible",
     "sectionAccount": "Compte",
     "sectionPreferences": "Préférences",
-    "customerCode": "Mon identifiant client"
+    "customerCode": "Mon identifiant client",
+    "paymentDetails": "Coordonnées de paiement",
+    "paymentDetailsDesc": "Banques et Mobile Money · PDF et images"
   },
   "beneficiaries": {
     "title": "Bénéficiaires",

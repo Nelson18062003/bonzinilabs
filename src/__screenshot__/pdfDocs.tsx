@@ -45,3 +45,20 @@ export function PdfDoc({ kind }: { kind: Kind }) {
   }, [kind, q2, q3, release, settings]);
   return <div style={{ padding: 24, fontFamily: 'sans-serif' }}>{err ? `Erreur : ${err}` : name ? `PDF prêt : ${name}` : 'Fabrication du PDF…'}</div>;
 }
+
+/** Les images d'un document, fabriquées dans le navigateur par pdf.js, affichées l'une sous l'autre. */
+export function PngDoc({ doc, orientation }: { doc: import('@/lib/paymentDocuments').PaymentDoc; orientation: 'portrait' | 'landscape' }) {
+  const [urls, setUrls] = useState<string[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    import('@/lib/paymentDocuments')
+      .then((m) => m.paymentDocImages(doc, orientation))
+      .then((files) => {
+        (window as unknown as { __pngNames?: string[] }).__pngNames = files.map((f) => `${f.name} ${f.size}`);
+        setUrls(files.map((f) => URL.createObjectURL(f)));
+      })
+      .catch((e) => setErr(String(e)));
+  }, [doc, orientation]);
+  if (err) return <div style={{ padding: 24 }}>Erreur : {err}</div>;
+  return <div id="png-ready" data-count={urls.length} style={{ background: '#ddd', padding: 8 }}>{urls.map((u) => <img key={u} src={u} style={{ width: '100%', display: 'block', marginBottom: 8 }} />)}</div>;
+}

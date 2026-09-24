@@ -255,7 +255,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   // DEBUG_NET=1 : trace les requêtes vers Supabase (REST, storage) et leur réponse.
   if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
-  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
@@ -271,6 +271,20 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'wh-parcel-damaged') { await page.click('text=Oui, mais abîmé'); await page.waitForTimeout(400); }
   if (screen === 'cargo-desk-air-load') { await page.click('text=Charger des colis'); await page.waitForTimeout(600); }
   if (screen === 'cargo-quote-pay') { await page.click('text=Encaisser'); await page.waitForTimeout(500); }
+  if (screen === 'payment-details-images') {
+    // Paysage, puis « Images » du livret complet : pdf.js dessine chaque page, l'aperçu s'ouvre.
+    await page.getByRole('tab', { name: 'Paysage' }).click();
+    const t0 = Date.now();
+    await page.getByRole('button', { name: /^Images$/ }).first().click();
+    await page.waitForFunction(() => { const imgs = [...document.querySelectorAll('[role=dialog] img')]; return imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0); }, null, { timeout: 90_000 });
+    console.log(screen, 'images', await page.locator('[role=dialog] img').count(), 'en', Date.now() - t0, 'ms');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('[role=dialog] img').nth(1).click()]);
+    console.log(screen, 'page seule', dl.suggestedFilename());
+    await page.screenshot({ path: join(OUT, `${screen}.png`) });
+    console.log(screen, 'ok');
+    await page.close();
+    continue;
+  }
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.
     await page.getByRole('button', { name: /Étiquette colis|Shipping label|货物标签/ }).first().click();
@@ -315,6 +329,12 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
       console.log(screen, `ok (pdf + ${pages} page(s) png)`);
       continue;
     }
+  }
+  // Des images fabriquées dans le navigateur (pdf.js) : on attend qu'elles soient toutes là, et leurs noms.
+  if (screen.startsWith('png-')) {
+    await page.waitForFunction(() => Number(document.querySelector('#png-ready')?.getAttribute('data-count') ?? 0) > 0 || document.body.innerText.startsWith('Erreur'), null, { timeout: 60_000 });
+    await page.waitForFunction(() => [...document.querySelectorAll('#png-ready img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 30_000 });
+    console.log(screen, 'images', await page.evaluate(() => JSON.stringify(window.__pngNames ?? [])));
   }
   await page.evaluate(() => document.fonts.ready);
   if (process.env.DEBUG_NET) console.log('IMG', await page.evaluate(() => [...document.querySelectorAll('img')].map((i) => `${i.getAttribute('src')?.slice(0, 120)} ${i.naturalWidth}x${i.naturalHeight}`).slice(0, 4)));

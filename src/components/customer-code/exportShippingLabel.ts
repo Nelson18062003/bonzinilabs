@@ -59,6 +59,31 @@ export function downloadFile(file: File): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+/**
+ * Plusieurs fichiers d'un coup (les pages d'une fiche en images) : une seule
+ * feuille de partage si le téléphone sait partager plusieurs fichiers, sinon
+ * un téléchargement par fichier, espacés pour que le navigateur les accepte.
+ */
+export async function deliverFiles(files: File[], title: string): Promise<Outcome> {
+  if (files.length === 1) return deliverFile(files[0], title);
+  if (canShareFiles()) {
+    const payload = { files, title };
+    if (!navigator.canShare || navigator.canShare(payload)) {
+      try {
+        await navigator.share(payload);
+        return 'shared';
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return 'shared';
+      }
+    }
+  }
+  for (const [i, file] of files.entries()) {
+    if (i) await new Promise((r) => setTimeout(r, 350));
+    downloadFile(file);
+  }
+  return 'downloaded';
+}
+
 /** Partage natif si le navigateur sait partager CE fichier, sinon téléchargement. */
 export async function deliverFile(file: File, title: string): Promise<Outcome> {
   if (canShareFiles()) {

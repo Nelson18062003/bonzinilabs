@@ -6,6 +6,7 @@
 // qu'un devis dise où payer sans recopier un RIB à la main.
 // ============================================================
 import { banks } from '@/data/depositMethodsData';
+import { bankGuideData } from '@/lib/bankDetailsGuide';
 
 /** La raison sociale, telle qu'elle figure sur les relevés bancaires et les bons. */
 export const LEGAL_NAME = 'NORTON GAUSS BONZINI SARL';
@@ -16,7 +17,14 @@ export const TAGLINE_CARGO = 'Cargo · Guangzhou → Douala';
 
 export interface BankAccountLine { bank: string; accountName: string; iban: string; swift: string }
 
-/** Les comptes au nom de la société, dans l'ordre des modes de dépôt. */
+/**
+ * Les comptes au nom de la société, dans l'ordre des modes de dépôt — ceux
+ * dont l'IBAN et la clé RIB se vérifient seulement : un devis ne doit jamais
+ * imprimer un IBAN que la banque du client refusera.
+ */
 export function companyBankAccounts(): BankAccountLine[] {
-  return banks.map((b) => ({ bank: b.bonziniAccount.bankName, accountName: b.bonziniAccount.accountName, iban: b.bonziniAccount.iban, swift: b.bonziniAccount.swift }));
+  const verified = new Set(bankGuideData().accounts.map((a) => a.key));
+  return banks
+    .filter((b) => verified.has(b.bank))
+    .map((b) => ({ bank: b.bonziniAccount.bankName, accountName: b.bonziniAccount.accountName, iban: b.bonziniAccount.iban, swift: b.bonziniAccount.swift }));
 }

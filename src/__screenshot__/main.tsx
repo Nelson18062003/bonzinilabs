@@ -58,7 +58,9 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
-import { PdfDoc } from './pdfDocs';
+import { PdfDoc, PngDoc } from './pdfDocs';
+import { MobilePaymentDetailsScreen } from '@/mobile/screens/more/MobilePaymentDetailsScreen';
+import { PaymentDetailsHub } from '@/components/payment-details/PaymentDetailsHub';
 import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir, LabelInternalJson } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
@@ -147,6 +149,10 @@ function FlyerGabon() {
   );
 }
 import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
+
+/** Les documents rastérisés dans le navigateur (harnais des images). */
+const RIB_UBA = { kind: 'rib', bank: 'UBA' } as const;
+const MOMO = { kind: 'mobile-money' } as const;
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -268,6 +274,11 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'pdf-banques-paysage': { Comp: () => <PdfDoc kind="banques-paysage" />, route: '/' },
   'pdf-rib-uba': { Comp: () => <PdfDoc kind="rib-uba" />, route: '/' },
   'pdf-rib-afriland-paysage': { Comp: () => <PdfDoc kind="rib-afriland-paysage" />, route: '/' },
+  'png-rib-uba': { Comp: () => <PngDoc doc={RIB_UBA} orientation="portrait" />, route: '/' },
+  'png-momo-paysage': { Comp: () => <PngDoc doc={MOMO} orientation="landscape" />, route: '/' },
+  'payment-details': { Comp: MobilePaymentDetailsScreen, route: '/m/more/payment-details' },
+  'payment-details-momo': { Comp: () => <div className="p-4"><PaymentDetailsHub audience="client" initialTab="momo" /></div>, route: '/payment-details' },
+  'payment-details-desktop': { Comp: () => <MobilePaymentDetailsScreen desktop />, route: '/m/more/payment-details' },
   'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },

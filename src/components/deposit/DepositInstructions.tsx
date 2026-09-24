@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Copy, Check, FileDown, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ import {
   waveAccount,
   omMerchantInfo,
   mtnMerchantInfo,
+  WAVE_ENABLED,
 } from '@/data/depositMethodsData';
 import { deliverMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 import { deliverBankDetailsPdf } from '@/lib/bankDetailsPdf';
@@ -102,7 +104,6 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
       ],
       merchantCode: omMerchantInfo.merchantCode,
       instructions: t('instructions.steps.omWithdrawal', { returnObjects: true }) as string[],
-      note: t('instructions.notes.omWithdrawalLimit'),
     };
   }
 
@@ -131,7 +132,6 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
       ],
       merchantCode: mtnMerchantInfo.merchantCode,
       instructions: t('instructions.steps.mtnWithdrawal', { returnObjects: true }) as string[],
-      note: t('instructions.notes.mtnWithdrawalLimit'),
     };
   }
 
@@ -152,7 +152,8 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
     };
   }
 
-  if (method === 'wave') {
+  // Wave fermé : on n'affiche jamais le numéro d'exemple, même pour un ancien dépôt en attente.
+  if (method === 'wave' && WAVE_ENABLED) {
     return {
       type: 'mobile',
       title: t('instructions.wave'),
@@ -171,6 +172,7 @@ function getInstructionInfo(deposit: Deposit, t: TFunction): InstructionInfo | n
 export function DepositInstructions({ deposit, showTitle = true, compact = false }: DepositInstructionsProps) {
   const { t } = useTranslation('deposits');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const navigate = useNavigate();
   // Le PDF met un moment à se fabriquer : un seul à la fois, et un sablier sur le bouton touché.
   const [pdfBusy, setPdfBusy] = useState<string | null>(null);
 
@@ -321,6 +323,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
           { id: 'banks', label: t('instructions.allBanks', { defaultValue: 'Toutes nos banques · PDF' }) },
         ];
         return (
+          <div className="space-y-2">
           <div className={cn('grid gap-2', choices.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
             {choices.map((c) => (
               <button
@@ -335,6 +338,15 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
                 {c.label}
               </button>
             ))}
+          </div>
+          {/* Toutes nos coordonnées, en images aussi (pour WhatsApp), portrait ou paysage. */}
+          <button
+            type="button"
+            onClick={() => navigate('/payment-details')}
+            className={cn('w-full py-2 text-center text-[13px] font-bold underline underline-offset-2', TEXT.muted)}
+          >
+            {t('instructions.allPaymentDetails', { defaultValue: 'Toutes nos coordonnées de paiement (PDF et images)' })}
+          </button>
           </div>
         );
       })() : null}

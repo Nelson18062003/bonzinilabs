@@ -89,7 +89,7 @@ describe('la fiche coordonnées bancaires', () => {
     }
   });
 
-  it.each(['ECOBANK', 'UBA', 'AFRILAND'])('%s : IBAN et clé RIB vérifiés', (key) => {
+  it.each(['ECOBANK', 'CCA', 'UBA', 'AFRILAND'])('%s : IBAN et clé RIB vérifiés', (key) => {
     const a = account(key);
     expect(ibanIsValid(a.iban)).toBe(true);
     expect(computeRibKey(a.bankCode, a.branchCode, a.accountNumber)).toBe(a.ribKey);
@@ -101,16 +101,18 @@ describe('la fiche coordonnées bancaires', () => {
     expect(uba.swift).toBe('UNAFCMCX');
   });
 
-  it("CCA-Bank : l'IBAN en base ne passe pas le contrôle — la fiche ne l'imprime pas tant que la banque n'a pas confirmé", () => {
-    // Garde-fou : quand CCA-Bank aura confirmé ses chiffres et que la donnée
-    // sera corrigée, ce test échouera — ajoutez alors CCA au test ci-dessus.
-    // Trois corrections d'un seul chiffre rendraient le RIB cohérent (clé 71,
-    // agence 10044 ou compte 00280296901) : seule la banque peut trancher.
+  it("CCA-Bank : le RIB émis par la banque le 24/09/2026 (agence 10044, pas 10444)", () => {
     const cca = account('CCA');
-    expect(ibanIsValid(cca.iban)).toBe(false);
-    expect(computeRibKey(cca.bankCode, cca.branchCode, cca.accountNumber)).not.toBe(cca.ribKey);
-    expect(bankGuideData().accounts.map((a) => a.key)).not.toContain('CCA');
-    expect(printableBank('CCA')).toBeUndefined();
+    expect(cca.branchCode).toBe('10044');
+    expect(cca.iban).toBe('CM21 10039 10044 00280298901 57');
+    expect(cca.swift).toBe('CCAMCMCY');
+    // L'ancienne agence rendait l'IBAN invalide : le contrôle l'aurait refusé.
+    expect(ibanIsValid('CM21 10039 10444 00280298901 57')).toBe(false);
+    expect(printableBank('CCA')).toBe('CCA');
+  });
+
+  it('imprime nos quatre banques, toutes vérifiées', () => {
+    expect(bankGuideData().accounts.map((a) => a.key)).toEqual(['ECOBANK', 'CCA', 'UBA', 'AFRILAND']);
   });
 
   it('est bilingue : chaque texte a sa version française et anglaise', () => {

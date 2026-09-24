@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { track } from '@vercel/analytics';
 import { getStoredUtm } from '@/hooks/useUtmTracking';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { CONTACT_PHONE_CM, whatsappLink } from '@/lib/companyContacts';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const C = {
@@ -424,7 +425,7 @@ function Footer() {
       { key: 'terms', label: t('footer.links.terms'), to: '/conditions' },
     ]},
     { title: t('footer.support'), links: [
-      { key: 'whatsapp', label: t('footer.links.whatsapp'), href: 'https://wa.me/237652236856', external: true },
+      { key: 'whatsapp', label: t('footer.links.whatsapp'), href: whatsappLink(CONTACT_PHONE_CM), external: true },
       { key: 'emailSupport', label: t('footer.links.emailSupport'), href: 'mailto:contact@bonzinilabs.com' },
       { key: 'helpCenter', label: t('footer.links.helpCenter') },
     ]},
