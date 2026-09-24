@@ -64,7 +64,7 @@ describe('la fiche Mobile Money', () => {
 
   it('sépare les deux façons : la Flotte donne un numéro et un titulaire, le Retrait un code', () => {
     const c = MOBILE_MONEY_GUIDE_COPY;
-    expect(c.flotte.needs).toEqual({ fr: 'Numéro + Titulaire', en: 'Number + Holder' });
+    expect(c.flotte.needs).toEqual({ fr: 'Numéro + Titulaire', en: 'Number + Account holder' });
     expect(c.retrait.needs).toEqual({ fr: 'Code + Montant', en: 'Code + Amount' });
   });
 

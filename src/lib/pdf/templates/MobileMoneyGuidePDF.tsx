@@ -84,8 +84,8 @@ interface Layout {
   doorEnWord: number;
 }
 
-const PORTRAIT: Layout = { o: 'portrait', W: 595.28, H: 841.89, M: 40, CW: 595.28 - 80, columns: false, heroWord: 54, heroEnWord: 28, ghost: 300, keys: 50, holder: 28, code: 32, coverTitle: 54, doorWord: 26, doorEnWord: 16 };
-const LANDSCAPE: Layout = { o: 'landscape', W: 841.89, H: 595.28, M: 36, CW: 841.89 - 72, columns: false, heroWord: 46, heroEnWord: 22, ghost: 300, keys: 44, holder: 26, code: 30, coverTitle: 46, doorWord: 30, doorEnWord: 18 };
+const PORTRAIT: Layout = { o: 'portrait', W: 595.28, H: 841.89, M: 40, CW: 595.28 - 80, columns: false, heroWord: 54, heroEnWord: 28, ghost: 300, keys: 50, holder: 32, code: 36, coverTitle: 54, doorWord: 26, doorEnWord: 16 };
+const LANDSCAPE: Layout = { o: 'landscape', W: 841.89, H: 595.28, M: 36, CW: 841.89 - 72, columns: false, heroWord: 46, heroEnWord: 22, ghost: 300, keys: 50, holder: 28, code: 36, coverTitle: 46, doorWord: 30, doorEnWord: 18 };
 
 type SectionKey = 'flotte' | 'retrait' | 'preuve';
 /** Une couleur par partie ; la couleur du français et de l'anglais posés dessus (contraste vérifié). */
@@ -100,7 +100,7 @@ const LABEL = { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, textTransform
 
 const st = StyleSheet.create({
   page: { padding: 0, fontFamily: 'DM Sans', color: colors.text },
-  label: { ...LABEL, color: MUTED, marginBottom: 7 },
+  label: { ...LABEL, color: MUTED, marginBottom: 5 },
 
   // ── Bandeau de partie ──
   hero: { position: 'relative', overflow: 'hidden' },
@@ -115,23 +115,24 @@ const st = StyleSheet.create({
   heroEnWord: { fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
   sentenceFr: { fontSize: 16, fontWeight: 700 },
   sentenceEn: { fontSize: 14, fontWeight: 500, marginTop: 2 },
+  sentenceEnOnViolet: { fontWeight: 700 },
   needs: { borderRadius: R.inner, paddingVertical: 7, paddingHorizontal: 14 },
   needsFr: { fontSize: 12, fontWeight: 800 },
   needsEn: { fontSize: 11, fontWeight: 600, marginTop: 1 },
 
   // ── Pied de page ──
   footer: { position: 'absolute', bottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: 8 },
-  footerText: { fontSize: 9, fontWeight: 600, letterSpacing: 0.4 },
+  footerText: { fontSize: 11, fontWeight: 600, letterSpacing: 0.3 },
   way: { flexDirection: 'row', alignItems: 'center' },
-  wayItem: { flexDirection: 'row', alignItems: 'center', marginLeft: 14 },
+  wayItem: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
   wayDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 5 },
-  wayText: { fontSize: 9, letterSpacing: 0.3 },
+  wayText: { fontSize: 11, letterSpacing: 0.2 },
 
   // ── Cartes opérateur ──
   card: { backgroundColor: WHITE, borderWidth: 1, borderColor: colors.border, borderRadius: R.box, overflow: 'hidden' },
   cardDark: { backgroundColor: PANEL, borderWidth: 1, borderColor: LINE_ON_PANEL, borderRadius: R.box, overflow: 'hidden' },
   cardHead: { height: 48, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18, borderBottomWidth: 1 },
-  cardBody: { paddingTop: 11, paddingBottom: 14, paddingHorizontal: 18 },
+  cardBody: { paddingTop: 11, paddingBottom: 12, paddingHorizontal: 18 },
   opMark: { flexDirection: 'row', alignItems: 'center' },
   opName: { fontSize: 15, fontWeight: 800, marginLeft: 10 },
   logoPlate: { backgroundColor: WHITE, borderRadius: R.cell, paddingVertical: 3, paddingHorizontal: 7 },
@@ -143,9 +144,9 @@ const st = StyleSheet.create({
   keys: { flexDirection: 'row' },
   key: { flexBasis: 0, alignItems: 'center', backgroundColor: '#f5f2f9', borderWidth: 1, borderColor: '#e2d9ee', borderRadius: R.inner, paddingTop: 2, paddingBottom: 0 },
   keyText: { fontWeight: 900, color: INK, letterSpacing: 1.2, lineHeight: 1.15 },
-  holder: { alignSelf: 'flex-start', borderWidth: 2, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 5, paddingHorizontal: 14 },
-  holderText: { fontWeight: 900, color: INK, letterSpacing: 0.3, lineHeight: 1.15 },
-  alert: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 11, paddingHorizontal: 16, backgroundColor: colors.violetLight },
+  holder: { alignSelf: 'flex-start', borderWidth: 2, borderColor: colors.violet, backgroundColor: colors.violetLight, borderRadius: R.inner, paddingVertical: 5, paddingHorizontal: 10 },
+  holderText: { fontWeight: 900, color: INK, letterSpacing: 0, lineHeight: 1.15 },
+  alert: { flexDirection: 'row', alignItems: 'center', borderRadius: R.inner, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: colors.violetLight },
   alertDisc: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.violet, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   alertMark: { fontSize: 17, fontWeight: 900, color: WHITE, lineHeight: 1 },
   alertFr: { fontSize: 16, fontWeight: 800, color: INK },
@@ -179,7 +180,7 @@ const st = StyleSheet.create({
   thanks: { flexDirection: 'row', alignItems: 'center', backgroundColor: INK, borderRadius: R.box, paddingVertical: 18, paddingHorizontal: 22 },
   thanksFr: { fontSize: 19, fontWeight: 800, color: WHITE },
   thanksEn: { fontSize: 14, fontWeight: 500, color: ON_INK_SOFT, marginTop: 2 },
-  thanksSign: { fontSize: 9.5, fontWeight: 800, color: colors.gold, letterSpacing: 1.8, marginTop: 6 },
+  thanksSign: { fontSize: 11, fontWeight: 800, color: colors.gold, letterSpacing: 1.8, marginTop: 6 },
 
   // ── Couverture ──
   coverBrand: { fontSize: 11, fontWeight: 800, color: WHITE, letterSpacing: 2, marginLeft: 10 },
@@ -196,11 +197,11 @@ const st = StyleSheet.create({
   doorDiscText: { fontSize: 22, fontWeight: 900, lineHeight: 1 },
   doorWordRow: { flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' },
   doorWord: { fontSize: 26, fontWeight: 900, color: WHITE, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1 },
-  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 2, lineHeight: 1 },
+  doorEnWord: { fontSize: 16, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', marginLeft: 8, marginBottom: 0, lineHeight: 1 },
   doorFr: { fontSize: 14, fontWeight: 700, color: WHITE, marginTop: 6 },
   doorEn: { fontSize: 13, fontWeight: 500, marginTop: 1 },
   doorPage: { flexDirection: 'row', alignItems: 'center', backgroundColor: WHITE, borderRadius: 14, paddingVertical: 6, paddingHorizontal: 11, marginLeft: 10 },
-  doorPageText: { fontSize: 10, fontWeight: 800, color: INK, letterSpacing: 1.2, textTransform: 'uppercase', marginRight: 5 },
+  doorPageText: { fontSize: 12, fontWeight: 800, color: INK, letterSpacing: 1.2, textTransform: 'uppercase', marginRight: 5 },
   orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 8 },
   orLine: { flex: 1, height: 1, backgroundColor: LINE_ON_INK },
   orDisc: { width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: OR_RING, alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
@@ -208,7 +209,7 @@ const st = StyleSheet.create({
   orEn: { fontSize: 12, fontWeight: 600, color: ON_INK_SOFT, lineHeight: 1, marginTop: 2 },
   chooseFr: { fontSize: 16, fontWeight: 800, color: colors.gold, textAlign: 'center' },
   chooseEn: { fontSize: 14, fontWeight: 600, color: '#e7c48e', textAlign: 'center', marginTop: 1 },
-  proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 12, paddingHorizontal: 18 },
+  proofDoor: { flexDirection: 'row', alignItems: 'center', borderRadius: R.box, borderWidth: 1.5, borderColor: colors.gold, paddingVertical: 12, paddingHorizontal: 16.5 },
   proofDisc: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   proofDiscText: { fontSize: 19, fontWeight: 900, color: INK, lineHeight: 1 },
   proofFr: { fontSize: 16, fontWeight: 900, color: WHITE, textTransform: 'uppercase', letterSpacing: 1.8 },
@@ -242,6 +243,15 @@ function CallIcon({ size = 18 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path fill={WHITE} d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
     </Svg>
+  );
+}
+
+/** L'exemple de montant : MONTANT devient 50000, en chiffres collés. */
+function ExampleBox({ size, outlined }: { size: number; outlined?: boolean }) {
+  return (
+    <View style={[{ backgroundColor: WHITE, borderRadius: R.cell, paddingHorizontal: 7, paddingTop: 2, paddingBottom: 1 }, outlined ? { borderWidth: 1.5, borderColor: INK } : {}]}>
+      <Text style={{ fontSize: size, fontWeight: 900, color: INK, letterSpacing: 0.6 }}>{COPY.retrait.example}</Text>
+    </View>
   );
 }
 
@@ -315,9 +325,9 @@ function NeedsPill({ section, needs }: { section: SectionKey; needs: Bi }) {
 function Hero({ L, section, eyebrow, word, sentence, needs }: { L: Layout; section: SectionKey; eyebrow: Bi; word: Bi; sentence: Bi; needs: Bi }) {
   const s = SECTION[section];
   return (
-    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: 22, paddingBottom: 20 }]}>
+    <View id={section} style={[st.hero, { backgroundColor: s.color, paddingHorizontal: L.M, paddingTop: 16, paddingBottom: 14 }]}>
       <Text style={[st.heroGhost, { fontSize: L.ghost, right: section === 'flotte' ? 4 : -40, top: -80, opacity: section === 'preuve' ? 0.22 : 0.16 }]}>{s.n}</Text>
-      <View style={[st.heroTop, { marginBottom: 18 }]}>
+      <View style={[st.heroTop, { marginBottom: 12 }]}>
         <View style={st.brandRow}>
           <View style={st.markDisc}><PdfLogo size={19} /></View>
           <Text style={[st.brandName, { color: s.fr }]}>{LEGAL_NAME}</Text>
@@ -329,10 +339,10 @@ function Hero({ L, section, eyebrow, word, sentence, needs }: { L: Layout; secti
         <Text style={[st.heroWord, { color: s.fr, fontSize: L.heroWord, marginRight: 14 }]}>{word.fr}</Text>
         <Text style={[st.heroEnWord, { color: s.en, fontSize: L.heroEnWord, marginBottom: L.heroWord * 0.06 }]}>{word.en}</Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 8 }}>
         <View style={{ flex: 1, marginRight: 12 }}>
           <Text style={[st.sentenceFr, { color: s.fr }]}>{sentence.fr}</Text>
-          <Text style={[st.sentenceEn, { color: s.en }]}>{sentence.en}</Text>
+          <Text style={[st.sentenceEn, { color: s.en }, section === 'flotte' ? st.sentenceEnOnViolet : {}]}>{sentence.en}</Text>
         </View>
         <NeedsPill section={section} needs={needs} />
       </View>
@@ -377,7 +387,7 @@ function Door({ L, section, word, sentence }: { L: Layout; section: 'flotte' | '
             <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord }]}>{word.en}</Text>
           </View>
           <Text style={st.doorFr}>{sentence.fr}</Text>
-          <Text style={[st.doorEn, { color: s.en }]}>{sentence.en}</Text>
+          <Text style={[st.doorEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{sentence.en}</Text>
         </View>
         <PagePill page={s.page} />
       </View>
@@ -404,7 +414,7 @@ function CoverDoors({ L }: { L: Layout }) {
       </View>
       <Link src="#preuve" style={st.link}>
         <View style={st.proofDoor}>
-          <View style={st.proofDisc}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
+          <View style={[st.proofDisc, { marginLeft: 5, marginRight: 19 }]}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
             <Text style={st.proofEn}>{COPY.cover.preuve.en}</Text>
@@ -495,12 +505,12 @@ function FlotteCard({ L, op }: { L: Layout; op: MobileMoneyOperator }) {
         <View style={st.keys}>
           {groups.map((g, i) => (
             <View key={i} style={[st.key, { flexGrow: g.length, marginRight: i < groups.length - 1 ? 8 : 0 }]}>
-              <Text style={[st.keyText, { fontSize: L.keys }]}>{g}</Text>
+              <Text style={[st.keyText, { fontSize: L.keys, position: 'relative', top: -L.keys * 0.078 }]}>{g}</Text>
             </View>
           ))}
         </View>
-        <Text style={[st.label, { marginTop: 11 }]}>{biLabel(COPY.flotte.holder)}</Text>
-        <View style={st.holder}><Text style={[st.holderText, { fontSize: L.holder }]}>{op.holder}</Text></View>
+        <Text style={[st.label, { marginTop: 8 }]}>{biLabel(COPY.flotte.holder)}</Text>
+        <View style={st.holder}><Text style={[st.holderText, { fontSize: L.holder }]}>{L.o === 'portrait' ? balanced(op.holder, L.holder, L.CW - 70, 0.66) : op.holder}</Text></View>
       </View>
     </View>
   );
@@ -618,7 +628,7 @@ function Ticket({ width, rowH }: { width: number; rowH: number }) {
         </View>
         <View style={st.ticketTag}>
           <Text style={[st.label, { marginBottom: 0 }]}>{COPY.preuve.shot.fr}</Text>
-          <Text style={[st.label, { marginBottom: 0, fontSize: 9.5, fontWeight: 600 }]}>{COPY.preuve.shot.en}</Text>
+          <Text style={[st.label, { marginBottom: 0, fontSize: 11, fontWeight: 700 }]}>{COPY.preuve.shot.en}</Text>
         </View>
       </View>
       {COPY.preuve.items.map((item, i) => (
@@ -637,8 +647,8 @@ function Ticket({ width, rowH }: { width: number; rowH: number }) {
 
 function ClearLine() {
   return (
-    <View style={st.clearRow}>
-      <View style={[st.goldCheck, { width: 26, height: 26, borderRadius: 13 }]}><CheckIcon color={INK} size={13} /></View>
+    <View style={[st.clearRow, { paddingHorizontal: 20 }]}>
+      <View style={st.goldCheck}><CheckIcon color={INK} size={14} /></View>
       <View style={{ flex: 1 }}>
         <Text style={st.clearFr}>{COPY.preuve.clear.fr}</Text>
         <Text style={st.clearEn}>{COPY.preuve.clear.en}</Text>
@@ -670,14 +680,14 @@ const AREA_W = LANDSCAPE.W - SIDE_W - 2 * AREA_PAD;
 const ls = StyleSheet.create({
   side: { width: SIDE_W, paddingTop: 26, paddingBottom: 22, paddingHorizontal: SIDE_PAD, position: 'relative', overflow: 'hidden' },
   sideGhost: { position: 'absolute', right: -24, top: 64, fontSize: 300, fontWeight: 900, lineHeight: 1, color: WHITE },
-  sideBrand: { fontSize: 9.5, fontWeight: 800, letterSpacing: 1.2 },
+  sideBrand: { fontSize: 11, fontWeight: 800, letterSpacing: 1 },
   sideEyebrow: { fontSize: 11, fontWeight: 800, letterSpacing: 1.6, textTransform: 'uppercase' },
-  sideEyebrowEn: { fontSize: 10, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 2, marginBottom: 14 },
+  sideEyebrowEn: { fontSize: 11, fontWeight: 700, letterSpacing: 1.4, textTransform: 'uppercase', marginTop: 2, marginBottom: 14 },
   sideWord: { fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase', lineHeight: 1 },
   sideEnWord: { fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', lineHeight: 1.05, marginTop: 6 },
   sideSentenceFr: { fontSize: 15, fontWeight: 700, marginTop: 18, lineHeight: 1.25 },
   sideSentenceEn: { fontSize: 13, fontWeight: 500, marginTop: 3, lineHeight: 1.25 },
-  sideFolio: { fontSize: 10, fontWeight: 800, letterSpacing: 1.4, marginTop: 12 },
+  sideFolio: { fontSize: 11, fontWeight: 800, letterSpacing: 1.4, marginTop: 12 },
   rule: { backgroundColor: WHITE, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14 },
   ruleRow: { flexDirection: 'row', alignItems: 'center' },
   ruleFr: { fontSize: 14, fontWeight: 800, color: INK, lineHeight: 1.25 },
@@ -729,10 +739,10 @@ function Sidebar({ section, eyebrow, word, sentence, needs, rule }: { section: S
       <View style={{ marginTop: 34 }}>
         <Text style={[ls.sideEyebrow, { color: s.en }]}>{eyebrow.fr}</Text>
         <Text style={[ls.sideEyebrowEn, { color: s.en }]}>{eyebrow.en}</Text>
-        <Text style={[ls.sideWord, { color: s.fr, fontSize: fitSize(word.fr, 46, room, 0.76) }]}>{word.fr}</Text>
+        <Text style={[ls.sideWord, { color: s.fr, fontSize: fitSize(word.fr, 46, room, 0.66) }]}>{word.fr}</Text>
         <Text style={[ls.sideEnWord, { color: s.en, fontSize: fitSize(word.en, 22, room, 0.74) }]}>{word.en}</Text>
         <Text style={[ls.sideSentenceFr, { color: s.fr }]}>{balanced(sentence.fr, 15, room)}</Text>
-        <Text style={[ls.sideSentenceEn, { color: s.en }]}>{balanced(sentence.en, 13, room, 0.5)}</Text>
+        <Text style={[ls.sideSentenceEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{balanced(sentence.en, section === 'flotte' ? 14 : 13, room, 0.5)}</Text>
         <View style={{ marginTop: 14, alignSelf: 'flex-start' }}><NeedsPill section={section} needs={needs} /></View>
       </View>
       <View style={{ marginTop: 'auto' }}>
@@ -779,10 +789,10 @@ function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte'
         </View>
         <View style={st.doorWordRow}>
           <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
-          <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord, marginBottom: 2 }]}>{word.en}</Text>
+          <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord, marginBottom: 0 }]}>{word.en}</Text>
         </View>
         <Text style={[st.doorFr, { fontSize: 15 }]}>{sentence.fr}</Text>
-        <Text style={[st.doorEn, { color: s.en, fontSize: 13.5 }]}>{sentence.en}</Text>
+        <Text style={[st.doorEn, { color: s.en, fontSize: section === 'flotte' ? 14 : 13.5, fontWeight: section === 'flotte' ? 700 : 500 }]}>{sentence.en}</Text>
       </View>
     </Link>
   );
@@ -800,7 +810,7 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
             <Text style={st.coverTitleTop}>{COPY.titleTop.fr} <Text style={{ color: '#a79fb6' }}>/ {COPY.titleTop.en}</Text></Text>
             <Text style={[st.coverTitleBottom, { fontSize: L.coverTitle }]}>{COPY.titleBottom}</Text>
           </View>
-          <View style={{ alignItems: 'flex-end', marginBottom: 6 }}>
+          <View style={{ alignItems: 'flex-end', marginBottom: -1.75 }}>
             <Text style={[st.leadFr, { textAlign: 'right' }]}>{COPY.cover.lead.fr}</Text>
             <Text style={[st.leadEn, { textAlign: 'right' }]}>{COPY.cover.lead.en}</Text>
           </View>
@@ -831,7 +841,7 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
           </View>
         </Link>
       </View>
-      <LogosPlate L={L} operators={operators} height={84} />
+      <LogosPlate L={L} operators={operators} height={104} />
     </Page>
   );
 }
@@ -841,7 +851,7 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
 export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: MobileMoneyGuideData; orientation?: GuideOrientation }) {
   const { operators } = data;
   return (
-    <Document title={`${COPY.docTitle.fr} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
+    <Document title={`${COPY.docTitle.fr} · ${COPY.docTitle.en} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
       {orientation === 'landscape' ? <LandscapePages operators={operators} /> : <PortraitPages operators={operators} />}
     </Document>
   );
@@ -849,7 +859,7 @@ export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: 
 
 function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
   const L = PORTRAIT;
-  const body: Style = { paddingHorizontal: L.M, paddingTop: 16 };
+  const body: Style = { paddingHorizontal: L.M, paddingTop: 12 };
   // Place du code dans l'écran : largeur de la carte, moins ses marges et celles de l'écran.
   const codeRoom = L.CW - 2 * 18 - 14 - 12 - 2;
   return (
@@ -876,10 +886,11 @@ function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
           <OperatorStack>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorStack>
           <View style={[st.legend, { marginTop: 10 }]}>
             <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 14 }]}>MONTANT</Text></View>
-            <View style={{ marginLeft: 12, marginRight: 14 }}><ArrowIcon color={WHITE} size={14} /></View>
-            <View>
-              <Text style={st.legendFr}>{COPY.retrait.legend.fr}</Text>
-              <Text style={st.legendEn}>{COPY.retrait.legend.en}</Text>
+            <View style={{ marginLeft: 10, marginRight: 10 }}><ArrowIcon color={WHITE} size={14} /></View>
+            <ExampleBox size={14} />
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <Text style={[st.legendFr, { fontSize: 15 }]}>{COPY.retrait.legend.fr}</Text>
+              <Text style={[st.legendEn, { fontSize: 13 }]}>{COPY.retrait.legend.en}</Text>
             </View>
           </View>
         </View>
@@ -891,7 +902,7 @@ function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
           <Ticket width={L.CW} rowH={60} />
           <View style={{ marginTop: 12 }}><ClearLine /></View>
         </View>
-        <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 58 }}><Thanks /></View>
+        <View style={{ position: 'absolute', left: L.M, right: L.M, bottom: 70 }}><Thanks /></View>
       </SectionPage>
     </>
   );
@@ -926,7 +937,8 @@ function LandscapePages({ operators }: { operators: MobileMoneyOperator[] }) {
               <View>
                 <View style={[ls.ruleRow, { marginBottom: 8 }]}>
                   <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 13 }]}>MONTANT</Text></View>
-                  <View style={{ marginLeft: 10 }}><ArrowIcon color={INK} size={13} /></View>
+                  <View style={{ marginLeft: 8, marginRight: 8 }}><ArrowIcon color={INK} size={13} /></View>
+                  <ExampleBox size={13} outlined />
                 </View>
                 <Text style={ls.ruleFr}>{balanced(COPY.retrait.legend.fr, 14, 0)}</Text>
                 <Text style={ls.ruleEn}>{balanced(COPY.retrait.legend.en, 12.5, 0)}</Text>
