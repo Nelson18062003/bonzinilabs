@@ -8,28 +8,25 @@
 //
 // Téléchargement via anchor click direct — iOS Safari 13+, Android, desktop.
 import { captureNodePng, triggerDownload } from './nodeImage';
+import { flyerFileName } from './rateFlyer';
 import { jsPDF } from 'jspdf';
 
-// Taille naturelle du flyer (le nœud capturé doit être non transformé).
-export const FLYER_W = 2150;
-export const FLYER_H = 2560;
-
-// `slug` = pays d'un flyer dérivé (« gabon ») ; absent pour la référence.
-function fileName(ext: string, slug?: string): string {
-  const date = new Date().toISOString().slice(0, 10);
-  return slug ? `bonzini_taux_${slug}_${date}.${ext}` : `bonzini_taux_${date}.${ext}`;
-}
+// Taille naturelle du flyer (le nœud capturé doit être non transformé),
+// exportée au double : 2160×2700, net sur WhatsApp.
+export const FLYER_W = 1080;
+export const FLYER_H = 1350;
+const PIXEL_RATIO = 2;
 
 async function capturePng(node: HTMLElement): Promise<string> {
-  // pixelRatio 1 : le nœud est déjà rendu en taille naturelle 2150×2560.
-  return captureNodePng(node, { width: FLYER_W, height: FLYER_H, pixelRatio: 1 });
+  return captureNodePng(node, { width: FLYER_W, height: FLYER_H, pixelRatio: PIXEL_RATIO });
 }
 
 // ── API publique ──────────────────────────────────────────────────────────
-// `node` = racine NON transformée du RateFlyer rendu (cf. RateFlyerSheet).
+// `node` = racine NON transformée du RateFlyer rendu (cf. RateFlyerSheet) ;
+// `countryKey` = pays du flyer (« gabon »), dans le nom du fichier.
 
-export async function downloadFlyerPNG(node: HTMLElement, slug?: string): Promise<void> {
-  triggerDownload(await capturePng(node), fileName('png', slug));
+export async function downloadFlyerPNG(node: HTMLElement, countryKey: string): Promise<void> {
+  triggerDownload(await capturePng(node), flyerFileName(countryKey, 'png'));
 }
 
 // Capture générique d'un nœud NON transformé en taille naturelle — même
@@ -44,9 +41,9 @@ export async function downloadNodePNG(
   triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1 }), name);
 }
 
-export async function downloadFlyerPDF(node: HTMLElement, slug?: string): Promise<void> {
+export async function downloadFlyerPDF(node: HTMLElement, countryKey: string): Promise<void> {
   const dataUrl = await capturePng(node);
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [FLYER_W, FLYER_H] });
   pdf.addImage(dataUrl, 'PNG', 0, 0, FLYER_W, FLYER_H, undefined, 'FAST');
-  pdf.save(fileName('pdf', slug));
+  pdf.save(flyerFileName(countryKey, 'pdf'));
 }
