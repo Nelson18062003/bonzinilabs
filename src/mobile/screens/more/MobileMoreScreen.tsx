@@ -122,7 +122,7 @@ export function MobileMoreScreen() {
             <MenuRow
               icon={Banknote}
               label="Coordonnées de paiement"
-              description="Banques et Mobile Money · PDF et images à envoyer"
+              description="Banques et Mobile Money · PDF et image à envoyer"
               onClick={() => navigate('/m/more/payment-details')}
             />
             <MenuRow

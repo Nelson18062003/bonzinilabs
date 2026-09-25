@@ -199,7 +199,7 @@
     "allBanks": "Toutes nos banques · PDF",
     "bankDetailsDownloaded": "Coordonnées bancaires téléchargées",
     "pdfError": "Impossible de créer le PDF, réessayez",
-    "allPaymentDetails": "Toutes nos coordonnées de paiement (PDF et images)",
+    "allPaymentDetails": "Toutes nos coordonnées de paiement (PDF et image)",
     "waveClosedTitle": "Wave n’est plus accepté",
     "waveClosedBody": "Ne payez pas sur l’ancien numéro Wave. Payez par banque ou par Mobile Money.",
     "waveClosedAction": "Voir nos coordonnées de paiement"

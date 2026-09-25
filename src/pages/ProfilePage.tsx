@@ -100,7 +100,7 @@ const ProfilePage = () => {
           <h2 className={cn('mb-2 px-1 text-[12px] font-bold uppercase tracking-wider', TEXT.muted)}>{t('profile.sectionAccount', { defaultValue: 'Compte' })}</h2>
           <div className={cn('overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow)}>
             <MenuRow icon={QrCode} label={t('profile.customerCode', { defaultValue: 'Mon identifiant client' })} desc={profile?.customer_code ?? '—'} onClick={() => navigate('/my-code')} />
-            <MenuRow icon={Banknote} label={t('profile.paymentDetails', { defaultValue: 'Coordonnées de paiement' })} desc={t('profile.paymentDetailsDesc', { defaultValue: 'Banques et Mobile Money · PDF et images' })} onClick={() => navigate('/payment-details')} />
+            <MenuRow icon={Banknote} label={t('profile.paymentDetails', { defaultValue: 'Coordonnées de paiement' })} desc={t('profile.paymentDetailsDesc', { defaultValue: 'Banques et Mobile Money · PDF et image' })} onClick={() => navigate('/payment-details')} />
             <MenuRow icon={Bell} label={t('profile.notifications')} desc={t('profile.notificationsDesc')} onClick={() => navigate('/notifications')} />
             <MenuRow icon={Shield} label={t('profile.security')} desc={t('profile.securityDesc')} onClick={comingSoon} />
             <MenuRow icon={Smartphone} label={t('profile.devices')} desc={t('profile.devicesDesc')} onClick={comingSoon} />

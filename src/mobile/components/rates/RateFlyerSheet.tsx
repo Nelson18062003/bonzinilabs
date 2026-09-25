@@ -8,7 +8,7 @@
 // Le flyer est dessiné hors écran (RateFlyer, 1080×1350), photographié en PNG
 // (2160×2700), et c'est CETTE IMAGE qu'on affiche : ce qu'on voit est ce
 // qu'on copie ou télécharge, et le clic droit / appui long « Copier l'image »
-// du navigateur marche dessus. Boutons : Copier l'image · Télécharger (ou
+// du navigateur marche dessus. Boutons : Copier l'image · Télécharger (et
 // Partager sur téléphone) · Copier le texte du jour. Plus de PDF (25/09/2026).
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Download, Loader2, Share2 } from 'lucide-react';
@@ -18,7 +18,7 @@ import { RateFlyer } from './RateFlyer';
 import { flyerPngFile, FLYER_W, FLYER_H } from '@/lib/exportFlyer';
 import { buildCountryRateSheets, formatCountryPct, REFERENCE_COUNTRY_KEY } from '@/lib/countryRates';
 import { buildFlyerData, flyerCaption } from '@/lib/rateFlyer';
-import { copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
+import { canShareFiles, copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import type { DailyRate, RateAdjustment } from '@/types/rates';
 import { CountryFlag } from '@/components/form/CountryFlag';
@@ -38,6 +38,8 @@ interface FlyerImage { key: string; file: File; url: string }
 export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: RateFlyerSheetProps) {
   const [copied, setCopied] = useState<'image' | 'text' | null>(null);
   const [saving, setSaving] = useState(false);
+  // Un double toucher ne lance pas deux écritures (la seconde annulerait la première).
+  const copying = useRef(false);
 
   const sheets = useMemo(() => buildCountryRateSheets(activeRate, adjustments ?? []), [activeRate, adjustments]);
   const [countryKey, setCountryKey] = useState<string>(initialCountry ?? REFERENCE_COUNTRY_KEY);
@@ -50,6 +52,8 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   );
   // Ce que montre le flyer, en une clé : l'image est refaite quand elle change.
   const flyerKey = flyer ? JSON.stringify(flyer) : '';
+  // « Copiée » valait pour l'image d'avant : on l'efface quand le flyer change.
+  useEffect(() => { setCopied(null); }, [flyerKey]);
 
   // ── Le flyer en image ──────────────────────────────────────────────────
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -58,46 +62,64 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   const imageRef = useRef<FlyerImage | null>(null);
   imageRef.current = image;
   useEffect(() => () => { if (imageRef.current) URL.revokeObjectURL(imageRef.current.url); }, []);
+  // Les photos passent l'une après l'autre : deux captures du même nœud en même temps se mélangeraient.
+  const captures = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     const node = nodeRef.current;
     if (!flyer || !node) return;
+    const key = flyerKey;
+    const countryKey = flyer.country.key;
     let cancelled = false;
     setFailed(false);
-    // Une image à la fois : le navigateur pose d'abord le flyer (et son drapeau).
-    void new Promise((r) => requestAnimationFrame(r))
-      .then(() => flyerPngFile(node, flyer.country.key))
-      .then((file) => {
-        if (cancelled) return;
-        const url = URL.createObjectURL(file);
-        setImage((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { key: flyerKey, file, url }; });
-      })
-      .catch(() => { if (!cancelled) setFailed(true); });
-    return () => { cancelled = true; };
+    // Un court délai : en passant vite d'un pays à l'autre, seul le dernier est photographié.
+    const timer = window.setTimeout(() => {
+      captures.current = captures.current
+        .then(async () => {
+          if (cancelled) return;
+          // Le navigateur pose d'abord le flyer (et son drapeau).
+          await new Promise((r) => requestAnimationFrame(r));
+          if (cancelled) return;
+          const file = await flyerPngFile(node, countryKey);
+          if (cancelled) return;
+          const url = URL.createObjectURL(file);
+          setImage((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { key, file, url }; });
+        })
+        .catch(() => { if (!cancelled) setFailed(true); });
+    }, 150);
+    return () => { cancelled = true; window.clearTimeout(timer); };
     // flyerKey résume flyer : pas besoin de l'objet dans les dépendances.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyerKey]);
 
   const ready = !!image && image.key === flyerKey;
-  const download = prefersDownload();
+  const desktop = prefersDownload();
+  const share = !desktop && canShareFiles();
 
   const flash = (what: 'image' | 'text') => { setCopied(what); setTimeout(() => setCopied((c) => (c === what ? null : c)), 2200); };
 
   // Pas d'attente avant l'écriture : Safari n'accepte le presse-papiers que dans le geste.
   const copyImage = () => {
-    if (!ready || !image) return;
-    void copyImageFile(image.file).then((o) => {
-      if (o === 'copied') { flash('image'); toast.success('Image copiée — collez-la dans WhatsApp'); }
-      else toast.success('Copie impossible ici : l’image a été téléchargée');
-    });
+    if (!ready || !image || copying.current) return;
+    copying.current = true;
+    void copyImageFile(image.file)
+      .then((o) => {
+        if (o === 'copied') { flash('image'); toast.success('Image copiée — collez-la dans WhatsApp'); }
+        else if (o === 'downloaded') toast.success('Copie impossible ici : l’image a été téléchargée');
+      })
+      .finally(() => { copying.current = false; });
   };
-  const save = () => {
+  const download = () => {
+    if (!ready || !image) return;
+    downloadFile(image.file);
+    toast.success('Image téléchargée');
+  };
+  const shareImage = () => {
     if (!ready || !image || saving || !flyer) return;
     setSaving(true);
-    const go = download
-      ? Promise.resolve(downloadFile(image.file)).then(() => 'downloaded' as const)
-      : deliverFile(image.file, `${LEGAL_NAME} · Taux du jour · ${flyer.country.label}`);
-    void go.finally(() => setSaving(false));
+    void deliverFile(image.file, `${LEGAL_NAME} · Taux du jour · ${flyer.country.label}`)
+      .then((o) => { if (o === 'downloaded') toast.success('Image téléchargée'); })
+      .finally(() => setSaving(false));
   };
   const copyCaption = async () => {
     if (!flyer) return;
@@ -139,21 +161,27 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="primary" onClick={copyImage} disabled={!ready} className="w-full">
+            <Button variant="primary" onClick={copyImage} disabled={!ready} className={cn('w-full', share && 'col-span-2')}>
               {copied === 'image' ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
               {copied === 'image' ? 'Copiée' : 'Copier l’image'}
             </Button>
-            <Button variant="neutral" onClick={save} disabled={!ready} loading={saving} className="w-full">
-              {download ? <Download className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
-              {download ? 'Télécharger' : 'Partager'}
+            <Button variant="neutral" onClick={download} disabled={!ready} className="w-full">
+              <Download className="h-5 w-5" />
+              Télécharger
             </Button>
+            {share && (
+              <Button variant="neutral" onClick={shareImage} disabled={!ready} loading={saving} className="w-full">
+                <Share2 className="h-5 w-5" />
+                Partager
+              </Button>
+            )}
           </div>
           <Button variant="neutral" onClick={() => void copyCaption()} className="w-full">
             {copied === 'text' ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
             Copier le texte du jour
           </Button>
           <p className={cn(TYPE.small, TEXT.muted)}>
-            {download ? 'Ou clic droit sur l’image › Copier l’image.' : 'Ou appui long sur l’image › Copier.'}
+            {desktop ? 'Ou clic droit sur l’image › Copier l’image.' : 'Ou appui long sur l’image › Copier.'}
           </p>
 
           {/* L'aperçu EST l'image : le menu du navigateur (Copier l'image, Enregistrer) marche dessus. */}

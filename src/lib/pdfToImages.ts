@@ -70,7 +70,8 @@ export function sheetLayout(pages: PageSize[], scale = IMAGE_SCALE): SheetLayout
     if (score(s) < score(best) - 1e-9) best = s;
   }
   const fit = Math.min(scale, Math.sqrt(MAX_CANVAS_AREA / (best.w * best.h)), MAX_CANVAS_SIDE / Math.max(best.w, best.h));
-  const px = (v: number) => Math.round(v * fit);
+  // Arrondi vers le bas : la surface ne dépasse JAMAIS le plafond, et chaque case reste dans l'image.
+  const px = (v: number) => Math.floor(v * fit);
   const cells = pages.map((p, i) => {
     const c = i % best.cols;
     const r = Math.floor(i / best.cols);

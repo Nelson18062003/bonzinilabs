@@ -47,6 +47,22 @@ describe("l'image unique : toutes les pages dans une planche", () => {
     expect(one.cells[0]).toEqual({ x: 0, y: 0, width: one.width, height: one.height });
   });
 
+  it('ne dépasse jamais le plafond, quel que soit le nombre de pages, et garde chaque page dans l’image', () => {
+    for (const size of [A4, A4L]) {
+      for (let n = 1; n <= 12; n++) {
+        const l = sheetLayout(pages(size, n));
+        expect(l.width * l.height, `${n} pages`).toBeLessThanOrEqual(MAX_CANVAS_AREA);
+        expect(l.cells).toHaveLength(n);
+        for (const c of l.cells) {
+          expect(c.x).toBeGreaterThanOrEqual(0);
+          expect(c.y).toBeGreaterThanOrEqual(0);
+          expect(c.x + c.width).toBeLessThanOrEqual(l.width);
+          expect(c.y + c.height).toBeLessThanOrEqual(l.height);
+        }
+      }
+    }
+  });
+
   it("range les pages dans l'ordre de lecture, sans chevauchement", () => {
     const { cells } = sheetLayout(pages(A4, 6));
     expect(cells[1].x).toBeGreaterThan(cells[0].x + cells[0].width); // page 2 à droite de la page 1

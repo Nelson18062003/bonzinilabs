@@ -26,13 +26,17 @@ export function labelFileName(code: string, destination: ShippingDestination, ex
 }
 
 /**
- * Sur un ordinateur (souris, pas d'écran tactile), on TÉLÉCHARGE : la
- * feuille de partage de Windows ou de macOS n'a pas d'« Enregistrer ». Sur
- * téléphone, feuille de partage (WhatsApp, e-mail, Photos, Fichiers…).
+ * Sur un ordinateur, on TÉLÉCHARGE : la feuille de partage de Windows ou de
+ * macOS n'a pas d'« Enregistrer ». Sur téléphone et tablette, feuille de
+ * partage (WhatsApp, e-mail, Photos, Fichiers…). On regarde le pointeur
+ * PRINCIPAL (un PC portable à écran tactile garde son pavé tactile, donc
+ * reste un ordinateur) et le système (un iPad annonce « Macintosh »).
  */
 export function prefersDownload(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(any-pointer: coarse)').matches;
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const mobileOs = /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
+  return !mobileOs && window.matchMedia('(pointer: fine)').matches;
 }
 
 export function canShareFiles(): boolean {
@@ -130,17 +134,22 @@ export async function deliverFile(file: File, title: string): Promise<Outcome> {
 /**
  * Une image DÉJÀ PRÊTE dans le presse-papiers — à coller dans WhatsApp,
  * WeChat ou un e-mail. À appeler directement dans le toucher, sans rien
- * attendre avant : Safari n'accepte l'écriture que dans le geste. Sans
- * ClipboardItem, ou si le navigateur refuse, on télécharge l'image.
+ * attendre avant : Safari n'accepte l'écriture que dans le geste.
+ *   · 'copied' : l'image est dans le presse-papiers ;
+ *   · 'downloaded' : pas de presse-papiers pour les images ici (API absente,
+ *     permission refusée) — l'image est téléchargée à la place ;
+ *   · 'cancelled' : une autre écriture l'a remplacée (double toucher) — rien
+ *     à faire, surtout pas de téléchargement.
  */
-export async function copyImageFile(file: File): Promise<CopyOutcome> {
+export async function copyImageFile(file: File): Promise<CopyOutcome | 'cancelled'> {
   const canWrite = typeof ClipboardItem !== 'undefined' && typeof navigator !== 'undefined' && !!navigator.clipboard?.write;
   if (canWrite) {
     try {
       await navigator.clipboard.write([new ClipboardItem({ [file.type || 'image/png']: file })]);
       return 'copied';
-    } catch {
-      // Permission refusée, page sans focus… : l'image passe par le disque.
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+      // Permission refusée, page sans focus, type non pris en charge : l'image passe par le disque.
     }
   }
   downloadFile(file);

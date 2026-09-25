@@ -1,6 +1,6 @@
 // ============================================================
 // APP CLIENT — « Coordonnées de paiement » : nos banques et nos numéros
-// Mobile Money, à copier, ou à télécharger en PDF ou en images (portrait
+// Mobile Money, à copier, ou à télécharger en PDF ou en image (portrait
 // ou paysage). Tout le contenu vient de PaymentDetailsHub, partagé avec
 // l'app de l'équipe.
 // ============================================================

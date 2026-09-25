@@ -22,7 +22,7 @@ import { SURFACE, TEXT, TYPE, Button, BottomSheet, Segmented } from '@/mobile/de
 import { bankGuideData, type BankGuideAccount } from '@/lib/bankDetailsGuide';
 import { mobileMoneyGuideData, type GuideOrientation, type MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
 import { paymentDocId, paymentDocImage, paymentDocPdf, paymentDocTitle, type PaymentDoc, type PaymentDocFormat } from '@/lib/paymentDocuments';
-import { copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
+import { canShareFiles, copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import { MTN_LOGO_PATH, MTN_YELLOW } from '@/lib/brand/mtnLogo';
 import ecobankLogo from '@/assets/bank-logos/ecobank.png';
@@ -188,36 +188,46 @@ function DocButtons({ doc, docs, pdfLabel, imagesLabel }: { doc: PaymentDoc; doc
 
 /**
  * L'image prête : UNE image qui réunit toutes les pages. On la copie (pour la
- * coller dans WhatsApp), on la télécharge (ordinateur) ou on la partage
- * (téléphone). L'aperçu est l'image elle-même : clic droit ou appui long
- * « Copier l'image » marche aussi.
+ * coller dans WhatsApp) ou on la télécharge — partout, téléphone compris ; sur
+ * téléphone, on peut aussi la partager. L'aperçu est l'image elle-même : clic
+ * droit ou appui long « Copier l'image » marche aussi.
  */
 function ImageSheet({ docs }: { docs: DocsApi }) {
   const { t } = useTranslation('deposits');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Un double toucher ne lance pas deux écritures (la seconde annulerait la première).
+  const copying = useRef(false);
   const p = docs.preview;
-  const download = prefersDownload();
+  const desktop = prefersDownload();
+  const share = !desktop && canShareFiles();
   useEffect(() => { setCopied(false); }, [p]);
 
   // Pas d'attente avant l'écriture : Safari n'accepte le presse-papiers que dans le geste.
   const copy = () => {
-    if (!p) return;
-    void copyImageFile(p.file).then((o) => {
-      if (o === 'copied') {
-        setCopied(true);
-        toast.success(t('paymentDetails.imageCopied', { defaultValue: 'Image copiée — collez-la dans WhatsApp' }));
-        setTimeout(() => setCopied(false), 2500);
-      } else {
-        toast.success(t('paymentDetails.imageDownloadedInstead', { defaultValue: 'Copie impossible ici : l’image a été téléchargée' }));
-      }
-    });
+    if (!p || copying.current) return;
+    copying.current = true;
+    void copyImageFile(p.file)
+      .then((o) => {
+        if (o === 'copied') {
+          setCopied(true);
+          toast.success(t('paymentDetails.imageCopied', { defaultValue: 'Image copiée — collez-la dans WhatsApp' }));
+          setTimeout(() => setCopied(false), 2500);
+        } else if (o === 'downloaded') {
+          toast.success(t('paymentDetails.imageDownloadedInstead', { defaultValue: 'Copie impossible ici : l’image a été téléchargée' }));
+        }
+      })
+      .finally(() => { copying.current = false; });
   };
-  const save = () => {
+  const download = () => {
+    if (!p) return;
+    downloadFile(p.file);
+    toast.success(t('paymentDetails.imageDownloaded', { defaultValue: 'Image téléchargée' }));
+  };
+  const shareImage = () => {
     if (!p || saving) return;
     setSaving(true);
-    const go = download ? Promise.resolve(downloadFile(p.file)).then(() => 'downloaded' as const) : deliverFile(p.file, p.title);
-    void go
+    void deliverFile(p.file, p.title)
       .then((o) => { if (o === 'downloaded') toast.success(t('paymentDetails.imageDownloaded', { defaultValue: 'Image téléchargée' })); })
       .finally(() => setSaving(false));
   };
@@ -232,17 +242,23 @@ function ImageSheet({ docs }: { docs: DocsApi }) {
       {p ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="primary" onClick={copy} className="w-full">
+            <Button variant="primary" onClick={copy} className={cn('w-full', share && 'col-span-2')}>
               {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
               {copied ? t('paymentDetails.imageCopiedShort', { defaultValue: 'Copiée' }) : t('paymentDetails.copyImage', { defaultValue: 'Copier l’image' })}
             </Button>
-            <Button variant="neutral" onClick={save} loading={saving} className="w-full">
-              {download ? <Download className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
-              {download ? t('paymentDetails.downloadImage', { defaultValue: 'Télécharger' }) : t('paymentDetails.shareImage', { defaultValue: 'Partager' })}
+            <Button variant="neutral" onClick={download} className="w-full">
+              <Download className="h-5 w-5" />
+              {t('paymentDetails.downloadImage', { defaultValue: 'Télécharger' })}
             </Button>
+            {share && (
+              <Button variant="neutral" onClick={shareImage} loading={saving} className="w-full">
+                <Share2 className="h-5 w-5" />
+                {t('paymentDetails.shareImage', { defaultValue: 'Partager' })}
+              </Button>
+            )}
           </div>
           <p className={cn(TYPE.small, TEXT.muted)}>
-            {download
+            {desktop
               ? t('paymentDetails.imageHintDesktop', { defaultValue: 'Ou clic droit sur l’image › Copier l’image.' })
               : t('paymentDetails.imageHintMobile', { defaultValue: 'Ou appui long sur l’image › Copier.' })}
           </p>
@@ -391,7 +407,7 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }
     <div className="space-y-5">
       <p className={cn(TYPE.body, TEXT.muted)}>
         {audience === 'admin'
-          ? t('paymentDetails.introAdmin', { defaultValue: 'Tout ce qu’un client doit avoir pour nous payer : à copier, ou à envoyer en PDF ou en images.' })
+          ? t('paymentDetails.introAdmin', { defaultValue: 'Tout ce qu’un client doit avoir pour nous payer : à copier, ou à envoyer en PDF ou en image.' })
           : t('paymentDetails.introClient', { defaultValue: 'Pour recharger votre compte : par la banque ou par Mobile Money.' })}
       </p>
 

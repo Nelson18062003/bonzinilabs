@@ -291,6 +291,8 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     await page.waitForTimeout(800);
     const clip = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return Promise.all(items.map(async (it) => ({ types: it.types, size: (await it.getType(it.types[0])).size }))); });
     console.log(screen, 'presse-papiers', JSON.stringify(clip));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15_000 }), page.getByRole('dialog').getByRole('button', { name: /^Télécharger$/ }).click()]);
+    console.log(screen, 'téléchargé', dl.suggestedFilename());
     await page.screenshot({ path: join(OUT, `${screen}.png`) });
     console.log(screen, 'ok');
     await page.close();
@@ -305,6 +307,8 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     await page.waitForTimeout(800);
     const clip = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return Promise.all(items.map(async (it) => ({ types: it.types, size: (await it.getType(it.types[0])).size }))); });
     console.log(screen, 'presse-papiers', JSON.stringify(clip));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15_000 }), page.getByRole('button', { name: /^Télécharger$/ }).click()]);
+    console.log(screen, 'téléchargé', dl.suggestedFilename());
     await page.getByRole('button', { name: /Copier le texte du jour/ }).click();
     await page.waitForTimeout(400);
     console.log(screen, 'texte', JSON.stringify((await page.evaluate(() => navigator.clipboard.readText())).split('\n').slice(0, 3)));

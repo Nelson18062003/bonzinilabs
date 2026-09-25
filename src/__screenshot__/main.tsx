@@ -150,7 +150,7 @@ const FLYER_ADJUSTMENTS = [
 ];
 function FlyerGabon() {
   return (
-    <div style={{ width: 560, padding: 16 }}>
+    <div style={{ width: '100%', maxWidth: 560, padding: 16, boxSizing: 'border-box' }}>
       <RateFlyerSheet activeRate={FLYER_RATE} adjustments={FLYER_ADJUSTMENTS} initialCountry="gabon" />
     </div>
   );
