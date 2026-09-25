@@ -522,7 +522,24 @@
     "passwordOnce": "This password will not be shown again. Send it to the client on WhatsApp.",
     "sendOnWhatsapp": "Send on WhatsApp · {{number}}",
     "extraPhonesFailed": "The extra numbers could not be saved. The client exists with the main number — add the others from the client sheet.",
-    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login."
+    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login.",
+    "primaryNumber": "Main number (WhatsApp)",
+    "makePrimary": "Make main",
+    "phonesTitle": "Phone numbers",
+    "primaryBadge": "Main · login and SMS",
+    "primaryHint": "Used to log in; receives the password and the SMS.",
+    "makePrimaryShort": "Main",
+    "duplicateNumber": "This number is already in the list.",
+    "labelOther": "Your label: WeChat, Home…",
+    "addNumberShort": "Add a number",
+    "quickLabel": {
+      "mtn": "MTN",
+      "orange": "Orange",
+      "office": "Office",
+      "china": "China",
+      "personal": "Personal",
+      "other": "Other…"
+    }
   },
   "overdraft": {
     "title": "Authorised overdraft",

@@ -522,7 +522,24 @@
     "passwordOnce": "此密码不会再次显示，请通过 WhatsApp 发送给客户。",
     "sendOnWhatsapp": "通过 WhatsApp 发送 · {{number}}",
     "extraPhonesFailed": "其他号码未能保存。客户已用主号码创建，请在客户资料中添加其他号码。",
-    "whatsappMessage": "您好 {{name}}，您的 Bonzini Labs 账户已就绪。临时密码：{{password}}。首次登录时需要修改密码。"
+    "whatsappMessage": "您好 {{name}}，您的 Bonzini Labs 账户已就绪。临时密码：{{password}}。首次登录时需要修改密码。",
+    "primaryNumber": "主号码（WhatsApp）",
+    "makePrimary": "设为主号码",
+    "phonesTitle": "电话号码",
+    "primaryBadge": "主号码 · 登录和短信",
+    "primaryHint": "用于登录，接收密码和短信。",
+    "makePrimaryShort": "设为主号码",
+    "duplicateNumber": "该号码已在列表中。",
+    "labelOther": "自定义备注：微信、家…",
+    "addNumberShort": "添加号码",
+    "quickLabel": {
+      "mtn": "MTN",
+      "orange": "Orange",
+      "office": "办公室",
+      "china": "中国",
+      "personal": "个人",
+      "other": "其他…"
+    }
   },
   "overdraft": {
     "title": "授权透支",
