@@ -214,8 +214,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   try {
-    const body = await req.json().catch(() => ({})) as { country_key?: string };
-    const wanted = typeof body.country_key === "string" ? body.country_key.trim().toLowerCase() : "cameroun";
+    // country_slug : nom envoyé par l'ancienne version de Mola, tant qu'elle n'est pas redéployée.
+    const body = await req.json().catch(() => ({})) as { country_key?: string; country_slug?: string };
+    const raw = typeof body.country_key === "string" ? body.country_key : typeof body.country_slug === "string" ? body.country_slug : "cameroun";
+    const wanted = raw.trim().toLowerCase();
     const key = COUNTRIES[wanted] ? wanted : "cameroun";
     const country = COUNTRIES[key];
 
