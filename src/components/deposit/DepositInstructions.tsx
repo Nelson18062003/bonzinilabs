@@ -357,7 +357,7 @@ export function DepositInstructions({ deposit, showTitle = true, compact = false
             onClick={() => navigate('/payment-details')}
             className={cn('w-full py-2 text-center text-[13px] font-bold underline underline-offset-2', TEXT.muted)}
           >
-            {t('instructions.allPaymentDetails', { defaultValue: 'Toutes nos coordonnées de paiement (PDF et images)' })}
+            {t('instructions.allPaymentDetails', { defaultValue: 'Toutes nos coordonnées de paiement (PDF et image)' })}
           </button>
           </div>
         );

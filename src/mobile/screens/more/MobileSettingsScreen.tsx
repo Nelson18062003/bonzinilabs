@@ -144,7 +144,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
             </button>
-            {/* Nos coordonnées (banques et Mobile Money) : copiées, ou envoyées en PDF ou en images, sur leur propre page. */}
+            {/* Nos coordonnées (banques et Mobile Money) : copiées, ou envoyées en PDF ou en image, sur leur propre page. */}
             <button
               type="button"
               onClick={() => navigate('/m/more/payment-details')}
@@ -155,7 +155,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               </div>
               <div className="min-w-0 flex-1">
                 <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Coordonnées de paiement</p>
-                <p className={cn('text-[14px]', TEXT.muted)}>Banques et Mobile Money, en français et en anglais : à copier, ou à envoyer en PDF ou en images, portrait ou paysage</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>Banques et Mobile Money, en français et en anglais : à copier, ou à envoyer en PDF ou en image, portrait ou paysage</p>
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
             </button>

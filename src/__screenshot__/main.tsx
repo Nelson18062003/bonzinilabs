@@ -136,15 +136,22 @@ import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/depo
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
-import { useActiveDailyRate as useMockActiveRate, useRateAdjustments as useMockAdjustments } from '@/hooks/useDailyRates';
 
-// Flyer réglé sur un pays dérivé (Gabon) — hooks aliasés sur les fixtures.
+// Le panneau « Flyer du jour », réglé sur le Gabon, avec les chiffres de
+// production du 24/09/2026 (10 700 cash, 10 800 le reste ; pays −1 % ;
+// moins de 400 000 XAF −2 %) — donnés directement, sans hook.
+const FLYER_RATE = { id: 'r', rate_cash: 10700, rate_alipay: 10800, rate_wechat: 10800, rate_virement: 10800, effective_at: '2026-09-24T06:02:56Z', created_at: '', created_by: null, is_active: true };
+const flyerAdj = (type: 'country' | 'tier', key: string, percentage: number, is_reference = false) =>
+  ({ id: key, type, key, label: key, percentage, is_reference, sort_order: 0, updated_at: '', updated_by: null });
+const FLYER_ADJUSTMENTS = [
+  flyerAdj('country', 'cameroun', 0, true), flyerAdj('country', 'gabon', -1), flyerAdj('country', 'tchad', -1),
+  flyerAdj('country', 'rca', -1), flyerAdj('country', 'congo', -1), flyerAdj('country', 'guinee', -1),
+  flyerAdj('tier', 't3', 0, true), flyerAdj('tier', 't2', 0), flyerAdj('tier', 't1', -2),
+];
 function FlyerGabon() {
-  const { data: rate } = useMockActiveRate();
-  const { data: adjustments } = useMockAdjustments();
   return (
-    <div style={{ width: 560, padding: 16 }}>
-      <RateFlyerSheet activeRate={rate} adjustments={adjustments} initialCountry="gabon" />
+    <div style={{ width: '100%', maxWidth: 560, padding: 16, boxSizing: 'border-box' }}>
+      <RateFlyerSheet activeRate={FLYER_RATE} adjustments={FLYER_ADJUSTMENTS} initialCountry="gabon" />
     </div>
   );
 }
@@ -153,6 +160,7 @@ import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, Shi
 /** Les documents rastérisés dans le navigateur (harnais des images). */
 const RIB_UBA = { kind: 'rib', bank: 'UBA' } as const;
 const MOMO = { kind: 'mobile-money' } as const;
+const BANKS = { kind: 'banks' } as const;
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -276,6 +284,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   ...Object.fromEntries(['ecobank', 'cca', 'uba', 'afriland'].flatMap((b) => ['', '-paysage'].map((o) => [`pdf-rib-${b}${o}`, { Comp: () => <PdfDoc kind={`rib-${b}${o}`} />, route: '/' }]))),
   'png-rib-uba': { Comp: () => <PngDoc doc={RIB_UBA} orientation="portrait" />, route: '/' },
   'png-momo-paysage': { Comp: () => <PngDoc doc={MOMO} orientation="landscape" />, route: '/' },
+  'png-momo-portrait': { Comp: () => <PngDoc doc={MOMO} orientation="portrait" />, route: '/' },
+  'png-banks-portrait': { Comp: () => <PngDoc doc={BANKS} orientation="portrait" />, route: '/' },
+  'png-banks-paysage': { Comp: () => <PngDoc doc={BANKS} orientation="landscape" />, route: '/' },
   'payment-details': { Comp: MobilePaymentDetailsScreen, route: '/m/more/payment-details' },
   'payment-details-momo': { Comp: () => <div className="p-4"><PaymentDetailsHub audience="client" initialTab="momo" /></div>, route: '/payment-details' },
   'payment-details-desktop': { Comp: () => <MobilePaymentDetailsScreen desktop />, route: '/m/more/payment-details' },
