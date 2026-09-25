@@ -48,16 +48,17 @@ export function PdfDoc({ kind }: { kind: Kind }) {
   return <div style={{ padding: 24, fontFamily: 'sans-serif' }}>{err ? `Erreur : ${err}` : name ? `PDF prêt : ${name}` : 'Fabrication du PDF…'}</div>;
 }
 
-/** Les images d'un document, fabriquées dans le navigateur par pdf.js, affichées l'une sous l'autre. */
+/** L'image unique d'un document (toutes les pages en planche), fabriquée dans le navigateur par pdf.js. */
 export function PngDoc({ doc, orientation }: { doc: import('@/lib/paymentDocuments').PaymentDoc; orientation: 'portrait' | 'landscape' }) {
   const [urls, setUrls] = useState<string[]>([]);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     import('@/lib/paymentDocuments')
-      .then((m) => m.paymentDocImages(doc, orientation))
-      .then((files) => {
-        (window as unknown as { __pngNames?: string[] }).__pngNames = files.map((f) => `${f.name} ${f.size}`);
-        setUrls(files.map((f) => URL.createObjectURL(f)));
+      .then((m) => m.paymentDocImage(doc, orientation))
+      .then((file) => {
+        (window as unknown as { __pngNames?: string[]; __pngFile?: File }).__pngNames = [`${file.name} ${file.size}`];
+        (window as unknown as { __pngFile?: File }).__pngFile = file;
+        setUrls([URL.createObjectURL(file)]);
       })
       .catch((e) => setErr(String(e)));
   }, [doc, orientation]);

@@ -187,8 +187,8 @@ const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromi
 // VIEWPORT=320x568 (iPhone SE 1re gén.), 360x640 (petit Android), 375x667 (iPhone SE 2/3), 390x844 (défaut), 430x932 (grand iPhone).
 const [VW, VH] = (process.env.VIEWPORT ?? '390x844').split('x').map(Number);
 const ctx = await browser.newContext(DESKTOP
-  ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, ignoreHTTPSErrors: true }
-  : { viewport: { width: VW, height: VH }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera'], ignoreHTTPSErrors: true });
+  ? { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1.5, ignoreHTTPSErrors: true, permissions: ['clipboard-read', 'clipboard-write'] }
+  : { viewport: { width: VW, height: VH }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, permissions: ['camera', 'clipboard-read', 'clipboard-write'], ignoreHTTPSErrors: true });
 await ctx.addInitScript((lang) => {
   try { localStorage.setItem('bonzini-reception-location', 'warehouse'); localStorage.setItem('bonzini-language', lang); } catch { /* privé */ }
 }, LANG);
@@ -259,7 +259,8 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
-  await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: 'networkidle' });
+  // Le panneau du flyer photographie son flyer en boucle de rendu : « load », puis on attend l'image plus bas.
+  await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: screen === 'real-flyer-gabon' ? 'load' : 'networkidle' });
   if (screen === 'cargo-deposit-wallet') { await page.click('text=Encaisser'); await page.waitForTimeout(500); await page.click('text=Solde Bonzini'); await page.waitForTimeout(700); }
   if (screen === 'rc-done-labels') { await page.click('button:has-text("Imprimer")'); await page.waitForTimeout(2500); }
   if (screen === 'cargo-desk-client') { await page.click('text=Aïcha Mbarga'); await page.waitForTimeout(900); }
@@ -279,18 +280,34 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
     continue;
   }
   if (screen === 'payment-details-images') {
-    // Paysage, puis « Images » du livret complet : pdf.js dessine chaque page, l'aperçu s'ouvre.
+    // Paysage, puis « Image » du livret complet : pdf.js dessine les 6 pages dans UNE planche.
     await page.getByRole('tab', { name: 'Paysage' }).click();
     const t0 = Date.now();
-    await page.getByRole('button', { name: /^Images$/ }).first().click();
-    await page.waitForFunction(() => { const imgs = [...document.querySelectorAll('[role=dialog] img')]; return imgs.length > 0 && imgs.every((i) => i.complete && i.naturalWidth > 0); }, null, { timeout: 90_000 });
-    console.log(screen, 'images', await page.locator('[role=dialog] img').count(), 'en', Date.now() - t0, 'ms');
-    const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('[role=dialog] img').nth(1).click()]);
-    console.log(screen, 'page seule', dl.suggestedFilename());
+    await page.getByRole('button', { name: /^Image$/ }).first().click();
+    await page.waitForFunction(() => { const i = document.querySelector('[role=dialog] img'); return !!i && i.complete && i.naturalWidth > 0; }, null, { timeout: 90_000 });
+    const info = await page.evaluate(() => { const imgs = [...document.querySelectorAll('[role=dialog] img')]; return { count: imgs.length, w: imgs[0].naturalWidth, h: imgs[0].naturalHeight }; });
+    console.log(screen, 'images', info.count, `${info.w}×${info.h}`, 'en', Date.now() - t0, 'ms');
+    await page.getByRole('button', { name: /Copier l.image/ }).click();
+    await page.waitForTimeout(800);
+    const clip = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return Promise.all(items.map(async (it) => ({ types: it.types, size: (await it.getType(it.types[0])).size }))); });
+    console.log(screen, 'presse-papiers', JSON.stringify(clip));
     await page.screenshot({ path: join(OUT, `${screen}.png`) });
     console.log(screen, 'ok');
     await page.close();
     continue;
+  }
+  if (screen === 'real-flyer-gabon') {
+    // Le flyer est photographié hors écran, puis l'aperçu EST l'image : on la copie.
+    await page.waitForFunction(() => { const i = document.querySelector('img[alt^="Taux du jour"]'); return !!i && i.complete && i.naturalWidth > 0 && getComputedStyle(i).opacity === '1'; }, null, { timeout: 60_000 });
+    const info = await page.evaluate(() => { const i = document.querySelector('img[alt^="Taux du jour"]'); return { w: i.naturalWidth, h: i.naturalHeight, pdf: [...document.querySelectorAll('button')].some((b) => /PDF/.test(b.textContent ?? '')) }; });
+    console.log(screen, 'image', `${info.w}×${info.h}`, 'bouton PDF :', info.pdf);
+    await page.getByRole('button', { name: /Copier l.image/ }).click();
+    await page.waitForTimeout(800);
+    const clip = await page.evaluate(async () => { const items = await navigator.clipboard.read(); return Promise.all(items.map(async (it) => ({ types: it.types, size: (await it.getType(it.types[0])).size }))); });
+    console.log(screen, 'presse-papiers', JSON.stringify(clip));
+    await page.getByRole('button', { name: /Copier le texte du jour/ }).click();
+    await page.waitForTimeout(400);
+    console.log(screen, 'texte', JSON.stringify((await page.evaluate(() => navigator.clipboard.readText())).split('\n').slice(0, 3)));
   }
   if (screen === 'rc-client-card-label') {
     // La feuille de l'étiquette : on l'ouvre et on laisse le peintre finir l'aperçu.

@@ -5,9 +5,10 @@
 //     4 cases du RIB, chacun copiable d'un toucher (ou « Tout copier ») ;
 //   · MOBILE MONEY : Orange Money et MTN MoMo — la Flotte (numéro +
 //     titulaire) et le Retrait (code à composer).
-// Et en tête de chaque onglet, les documents à envoyer : PDF ou images
-// (une par page, pour WhatsApp), en portrait ou en paysage. Les images
-// s'ouvrent d'abord en aperçu : on envoie tout, ou une seule page.
+// Et en tête de chaque onglet, les documents à envoyer : PDF, ou UNE image
+// qui réunit toutes les pages (pour WhatsApp), en portrait ou en paysage.
+// L'image s'ouvre en aperçu : on la copie (bouton, ou clic droit / appui
+// long sur l'image elle-même) ou on la télécharge.
 // Les données viennent de la source unique de l'app
 // (src/data/depositMethodsData.ts, via les modules des fiches) : l'écran,
 // les PDF et les images disent toujours la même chose.
@@ -20,8 +21,8 @@ import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Button, BottomSheet, Segmented } from '@/mobile/designKit';
 import { bankGuideData, type BankGuideAccount } from '@/lib/bankDetailsGuide';
 import { mobileMoneyGuideData, type GuideOrientation, type MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
-import { paymentDocId, paymentDocImages, paymentDocPdf, paymentDocTitle, type PaymentDoc, type PaymentDocFormat } from '@/lib/paymentDocuments';
-import { deliverFile, deliverFiles, downloadFile, downloadFiles } from '@/components/customer-code/exportShippingLabel';
+import { paymentDocId, paymentDocImage, paymentDocPdf, paymentDocTitle, type PaymentDoc, type PaymentDocFormat } from '@/lib/paymentDocuments';
+import { copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import { MTN_LOGO_PATH, MTN_YELLOW } from '@/lib/brand/mtnLogo';
 import ecobankLogo from '@/assets/bank-logos/ecobank.png';
@@ -117,22 +118,12 @@ function breakAfterStars(code: string): string {
 
 /* ─────────────── Documents : PDF ou images ─────────────── */
 
-/**
- * Sur un ordinateur (souris, pas d'écran tactile), on TÉLÉCHARGE : la
- * feuille de partage de Windows ou de macOS n'a pas d'« Enregistrer ». Sur
- * téléphone, feuille de partage (WhatsApp, e-mail, Fichiers…).
- */
-function prefersDownload(): boolean {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
-  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(any-pointer: coarse)').matches;
-}
-
 /** « rib-UBA:png » : ce qu'on fabrique, sans la mise en page (le bouton garde son sablier si on la change). */
 function busyKey(doc: PaymentDoc, format: PaymentDocFormat): string {
   return paymentDocId(doc, format, 'portrait').replace(/:portrait$/, '');
 }
 
-interface Preview { doc: PaymentDoc; orientation: GuideOrientation; title: string; files: File[]; urls: string[] }
+interface Preview { doc: PaymentDoc; orientation: GuideOrientation; title: string; file: File; url: string }
 
 function useDocuments(orientation: GuideOrientation) {
   const { t } = useTranslation('deposits');
@@ -142,8 +133,8 @@ function useDocuments(orientation: GuideOrientation) {
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
-  // Les aperçus sont des URL « blob: » : on les rend au navigateur à la fermeture.
-  useEffect(() => () => preview?.urls.forEach((u) => URL.revokeObjectURL(u)), [preview]);
+  // L'aperçu est une URL « blob: » : on la rend au navigateur à la fermeture.
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
 
   const run = (doc: PaymentDoc, format: PaymentDocFormat) => {
     if (busy) return;
@@ -157,16 +148,16 @@ function useDocuments(orientation: GuideOrientation) {
       }).then((o) => {
         if (o === 'downloaded' && mounted.current) toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' }));
       })
-      : paymentDocImages(doc, layout).then((files) => {
+      : paymentDocImage(doc, layout).then((file) => {
         if (!mounted.current) return;
-        setPreview({ doc, orientation: layout, title: paymentDocTitle(doc), files, urls: files.map((f) => URL.createObjectURL(f)) });
+        setPreview({ doc, orientation: layout, title: paymentDocTitle(doc), file, url: URL.createObjectURL(file) });
       });
     void done
       .catch(() => {
         if (!mounted.current) return;
         toast.error(format === 'pdf'
           ? t('instructions.pdfError', { defaultValue: 'Impossible de créer le PDF, réessayez' })
-          : t('paymentDetails.imagesError', { defaultValue: 'Impossible de créer les images, réessayez' }));
+          : t('paymentDetails.imageError', { defaultValue: 'Impossible de créer l’image, réessayez' }));
       })
       .finally(() => { if (mounted.current) setBusy(null); });
   };
@@ -176,7 +167,7 @@ function useDocuments(orientation: GuideOrientation) {
 }
 type DocsApi = ReturnType<typeof useDocuments>;
 
-/** Les deux boutons d'un document : PDF · Images. */
+/** Les deux boutons d'un document : PDF · Image. */
 function DocButtons({ doc, docs, pdfLabel, imagesLabel }: { doc: PaymentDoc; docs: DocsApi; pdfLabel?: string; imagesLabel?: string }) {
   const { t } = useTranslation('deposits');
   const icon = (format: PaymentDocFormat) => {
@@ -189,60 +180,75 @@ function DocButtons({ doc, docs, pdfLabel, imagesLabel }: { doc: PaymentDoc; doc
         {icon('pdf')} {pdfLabel ?? t('paymentDetails.pdf', { defaultValue: 'PDF' })}
       </Button>
       <Button variant="neutral" disabled={docs.busy !== null} onClick={() => docs.run(doc, 'png')} className="w-full">
-        {icon('png')} {imagesLabel ?? t('paymentDetails.images', { defaultValue: 'Images' })}
+        {icon('png')} {imagesLabel ?? t('paymentDetails.image', { defaultValue: 'Image' })}
       </Button>
     </div>
   );
 }
 
-/** Les images prêtes : on les envoie toutes (le bouton en tête), ou on en garde une seule. */
-function ImagesSheet({ docs }: { docs: DocsApi }) {
+/**
+ * L'image prête : UNE image qui réunit toutes les pages. On la copie (pour la
+ * coller dans WhatsApp), on la télécharge (ordinateur) ou on la partage
+ * (téléphone). L'aperçu est l'image elle-même : clic droit ou appui long
+ * « Copier l'image » marche aussi.
+ */
+function ImageSheet({ docs }: { docs: DocsApi }) {
   const { t } = useTranslation('deposits');
-  const [sending, setSending] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const p = docs.preview;
-  const count = p?.files.length ?? 0;
   const download = prefersDownload();
-  const sendAll = () => {
-    if (!p || sending) return;
-    setSending(true);
-    const go = download ? downloadFiles(p.files).then(() => 'downloaded' as const) : deliverFiles(p.files, p.title);
-    void go
-      .then((o) => { if (o === 'downloaded') toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' })); })
-      .finally(() => setSending(false));
+  useEffect(() => { setCopied(false); }, [p]);
+
+  // Pas d'attente avant l'écriture : Safari n'accepte le presse-papiers que dans le geste.
+  const copy = () => {
+    if (!p) return;
+    void copyImageFile(p.file).then((o) => {
+      if (o === 'copied') {
+        setCopied(true);
+        toast.success(t('paymentDetails.imageCopied', { defaultValue: 'Image copiée — collez-la dans WhatsApp' }));
+        setTimeout(() => setCopied(false), 2500);
+      } else {
+        toast.success(t('paymentDetails.imageDownloadedInstead', { defaultValue: 'Copie impossible ici : l’image a été téléchargée' }));
+      }
+    });
   };
-  const allLabel = download
-    ? (count > 1 ? t('paymentDetails.downloadAll', { count, defaultValue: 'Télécharger les {{count}} images' }) : t('paymentDetails.downloadOne', { defaultValue: 'Télécharger l’image' }))
-    : (count > 1 ? t('paymentDetails.sendAll', { count, defaultValue: 'Envoyer les {{count}} images' }) : t('paymentDetails.sendOne', { defaultValue: 'Envoyer l’image' }));
+  const save = () => {
+    if (!p || saving) return;
+    setSaving(true);
+    const go = download ? Promise.resolve(downloadFile(p.file)).then(() => 'downloaded' as const) : deliverFile(p.file, p.title);
+    void go
+      .then((o) => { if (o === 'downloaded') toast.success(t('paymentDetails.imageDownloaded', { defaultValue: 'Image téléchargée' })); })
+      .finally(() => setSaving(false));
+  };
+
   return (
     <BottomSheet
       open={p !== null}
       onClose={docs.closePreview}
-      title={t('paymentDetails.imagesReady', { count, defaultValue: count > 1 ? '{{count}} images prêtes' : 'Image prête' })}
+      title={t('paymentDetails.imageReady', { defaultValue: 'Image prête' })}
       className="mx-auto w-full max-w-3xl"
     >
       {p ? (
-        <div className="space-y-4">
-          <Button variant="primary" onClick={sendAll} loading={sending} className="w-full">
-            {download ? <Download className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
-            {allLabel}
-          </Button>
-          {count > 1 ? <p className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.imagesHint', { defaultValue: 'Ou touchez une page pour l’enregistrer seule.' })}</p> : null}
-          <div className={cn('grid gap-3', count === 1 ? 'grid-cols-1' : p.orientation === 'landscape' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-3')}>
-            {p.files.map((file, i) => (
-              <button
-                key={file.name}
-                type="button"
-                onClick={() => downloadFile(file)}
-                className={cn('group overflow-hidden rounded-lg text-left', SURFACE.shadow)}
-                aria-label={t('paymentDetails.saveOne', { page: i + 1, defaultValue: 'Enregistrer la page {{page}}' })}
-              >
-                <img src={p.urls[i]} alt="" className={cn('w-full bg-white object-contain', p.orientation === 'landscape' ? 'aspect-[297/210]' : 'aspect-[210/297]', count === 1 && 'max-h-[55vh]')} />
-                <div className={cn('flex items-center justify-between gap-2 px-3 py-2', TYPE.smallStrong, TEXT.body)}>
-                  <span>{t('paymentDetails.page', { page: i + 1, defaultValue: 'Page {{page}}' })}</span>
-                  <Download className="h-4 w-4 shrink-0" />
-                </div>
-              </button>
-            ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="primary" onClick={copy} className="w-full">
+              {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+              {copied ? t('paymentDetails.imageCopiedShort', { defaultValue: 'Copiée' }) : t('paymentDetails.copyImage', { defaultValue: 'Copier l’image' })}
+            </Button>
+            <Button variant="neutral" onClick={save} loading={saving} className="w-full">
+              {download ? <Download className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
+              {download ? t('paymentDetails.downloadImage', { defaultValue: 'Télécharger' }) : t('paymentDetails.shareImage', { defaultValue: 'Partager' })}
+            </Button>
+          </div>
+          <p className={cn(TYPE.small, TEXT.muted)}>
+            {download
+              ? t('paymentDetails.imageHintDesktop', { defaultValue: 'Ou clic droit sur l’image › Copier l’image.' })
+              : t('paymentDetails.imageHintMobile', { defaultValue: 'Ou appui long sur l’image › Copier.' })}
+          </p>
+          <div className={cn('overflow-auto rounded-lg bg-[#e9e6ef]', SURFACE.shadow)} style={{ maxHeight: '62vh' }}>
+            {/* Une vraie <img> : le menu du navigateur (Copier l'image, Enregistrer) fonctionne dessus. */}
+            <img src={p.url} alt={p.title} className="block h-auto w-full" />
           </div>
         </div>
       ) : null}
@@ -452,7 +458,7 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }
         </div>
       )}
 
-      <ImagesSheet docs={docs} />
+      <ImageSheet docs={docs} />
     </div>
   );
 }

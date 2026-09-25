@@ -4,9 +4,9 @@
 //   · le livret de toutes nos banques ;
 //   · le RIB d'une seule banque (une page) ;
 //   · la fiche Mobile Money (Orange Money et MTN MoMo).
-// Chacun en PDF, ou en images PNG (une par page, pour WhatsApp). Les images
-// sont les pages du PDF, dessinées par pdf.js : les deux disent exactement
-// la même chose.
+// Chacun en PDF, ou en UNE image PNG qui réunit toutes les pages (pour
+// WhatsApp, à copier ou à télécharger). L'image est faite des pages du PDF,
+// dessinées par pdf.js : les deux disent exactement la même chose.
 // ============================================================
 import type { BankOption } from '@/types/deposit';
 import type { GuideOrientation } from '@/lib/mobileMoneyGuide';
@@ -41,8 +41,8 @@ export function paymentDocPdf(doc: PaymentDoc, orientation: GuideOrientation): P
   return buildBankDetailsPdf({ orientation, bank: doc.kind === 'rib' ? doc.bank : undefined });
 }
 
-/** Les pages du document en PNG. pdf.js n'est chargé qu'ici, à la demande. */
-export async function paymentDocImages(doc: PaymentDoc, orientation: GuideOrientation): Promise<File[]> {
-  const [{ pdfToPngFiles }, pdf] = await Promise.all([import('@/lib/pdfToImages'), paymentDocPdf(doc, orientation)]);
-  return pdfToPngFiles(pdf);
+/** Tout le document dans UNE image PNG. pdf.js n'est chargé qu'ici, à la demande. */
+export async function paymentDocImage(doc: PaymentDoc, orientation: GuideOrientation): Promise<File> {
+  const [{ pdfToSheetImage }, pdf] = await Promise.all([import('@/lib/pdfToImages'), paymentDocPdf(doc, orientation)]);
+  return pdfToSheetImage(pdf);
 }

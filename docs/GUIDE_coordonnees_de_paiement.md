@@ -2,7 +2,7 @@
 
 Nos coordonnées de paiement (4 banques, Orange Money, MTN MoMo) sont au même
 endroit dans l'app client et dans l'app de l'équipe. On peut les copier, ou les
-envoyer en **PDF** ou en **images**, en **portrait** ou en **paysage**.
+envoyer en **PDF** ou en **une image**, en **portrait** ou en **paysage**.
 
 ## 1. Où les trouver
 
@@ -26,11 +26,14 @@ La page a deux onglets : **Banques** et **Mobile Money**.
    - **PDF** : un seul fichier, toutes les pages. Sur **ordinateur**, il se
      télécharge. Sur **téléphone**, la feuille de partage s'ouvre (WhatsApp,
      e-mail, Fichiers…).
-   - **Images** : une image par page. Un aperçu s'ouvre avec, en haut,
-     **Envoyer les N images** (téléphone) ou **Télécharger les N images**
-     (ordinateur). On peut aussi toucher une seule page pour l'enregistrer.
+   - **Image** : UNE seule image qui réunit toutes les pages, en planche
+     (6 pages → 3 × 2, 4 pages → 2 × 2). Un aperçu s'ouvre avec **Copier
+     l'image** (puis coller dans WhatsApp) et **Télécharger** (ordinateur) ou
+     **Partager** (téléphone). Le clic droit ou l'appui long sur l'image
+     › « Copier l'image » marche aussi.
 5. Pour **une seule banque** : sous la carte de la banque, **RIB · PDF** ou
-   **RIB · Image** (une page, avec le rappel de la preuve de paiement).
+   **RIB · Image** (une page, avec le rappel de la preuve de paiement), à
+   copier ou télécharger de la même façon.
 6. Pour envoyer en **texte** : toucher une ligne (IBAN, SWIFT, RIB, numéro,
    code) pour la copier, ou **Copier les coordonnées** sur la carte d'une
    banque ou d'un opérateur, puis coller dans la conversation.
@@ -45,7 +48,7 @@ en attendant votre décision (voir § 5).
 | Le client demande… | Envoyer |
 |---|---|
 | « Votre RIB UBA » (ou une autre banque) | **RIB · Image** de cette banque (WhatsApp) ou **RIB · PDF** (e-mail) |
-| « Vos coordonnées bancaires » | **Toutes nos banques**, en Images ou en PDF |
+| « Vos coordonnées bancaires » | **Toutes nos banques**, en Image (une seule) ou en PDF |
 | « Comment payer par Orange / MTN ? » | Onglet **Mobile Money**, **Fiche Mobile Money** |
 | Un virement depuis l'étranger | Le RIB de la banque choisie : il porte le **SWIFT** |
 

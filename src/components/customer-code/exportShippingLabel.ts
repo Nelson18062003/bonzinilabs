@@ -25,6 +25,16 @@ export function labelFileName(code: string, destination: ShippingDestination, ex
   return `bonzini-etiquette-${DESTINATION_SLUG[destination]}-${code}.${ext}`;
 }
 
+/**
+ * Sur un ordinateur (souris, pas d'écran tactile), on TÉLÉCHARGE : la
+ * feuille de partage de Windows ou de macOS n'a pas d'« Enregistrer ». Sur
+ * téléphone, feuille de partage (WhatsApp, e-mail, Photos, Fichiers…).
+ */
+export function prefersDownload(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(any-pointer: coarse)').matches;
+}
+
 export function canShareFiles(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof File !== 'undefined';
 }
@@ -111,6 +121,26 @@ export async function deliverFile(file: File, title: string): Promise<Outcome> {
         if (shareWasHandled(err)) return 'shared';
         // Autre erreur (feuille indisponible) : on retombe sur le téléchargement.
       }
+    }
+  }
+  downloadFile(file);
+  return 'downloaded';
+}
+
+/**
+ * Une image DÉJÀ PRÊTE dans le presse-papiers — à coller dans WhatsApp,
+ * WeChat ou un e-mail. À appeler directement dans le toucher, sans rien
+ * attendre avant : Safari n'accepte l'écriture que dans le geste. Sans
+ * ClipboardItem, ou si le navigateur refuse, on télécharge l'image.
+ */
+export async function copyImageFile(file: File): Promise<CopyOutcome> {
+  const canWrite = typeof ClipboardItem !== 'undefined' && typeof navigator !== 'undefined' && !!navigator.clipboard?.write;
+  if (canWrite) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ [file.type || 'image/png']: file })]);
+      return 'copied';
+    } catch {
+      // Permission refusée, page sans focus… : l'image passe par le disque.
     }
   }
   downloadFile(file);
