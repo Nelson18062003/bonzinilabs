@@ -460,21 +460,14 @@ async function handleFlyer(chatId: number) {
       return;
     }
 
-    // Call generate-flyer with published rates
+    // generate-flyer lit lui-même le taux actif et les réglages (même flyer que l'app).
     const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-flyer`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
-      body: JSON.stringify({
-        rates: {
-          alipay: activeRate.rate_alipay,
-          wechat: activeRate.rate_wechat,
-          bank: activeRate.rate_virement,
-          cash: activeRate.rate_cash,
-        },
-      }),
+      body: JSON.stringify({ country_key: "cameroun" }),
     });
 
     if (!res.ok) {
@@ -486,7 +479,7 @@ async function handleFlyer(chatId: number) {
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("image")) {
       const buffer = new Uint8Array(await res.arrayBuffer());
-      await sendPhoto(chatId, buffer, `<b>\ud83d\udcc4 Flyer Bonzini</b>\nTaux publi\u00e9 : ${fi(activeRate.rate_cash)} \u00a5 / 1M XAF`);
+      await sendPhoto(chatId, buffer, `<b>Taux du jour \u00b7 Cameroun</b>\nTaux publi\u00e9 : ${fi(activeRate.rate_cash)} \u00a5 / 1M XAF (cash)`);
     } else {
       await sendMessage(chatId, "\u274c Le service flyer n'a pas retourn\u00e9 une image.");
     }

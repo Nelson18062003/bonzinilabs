@@ -107,7 +107,7 @@ const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
   customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false },
   cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false },
   treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false },
-  receptionist:      { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: true , canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false }
+  receptionist:      { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: true , canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false },
   warehouse_agent:   { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: true, canReceiveAtDestination: true, canReleaseParcels: true },
 };
 
@@ -280,7 +280,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   taux: [
     { capability: "définir les 4 taux du jour", tool: "set_daily_rate" },
     { capability: "modifier un ajustement de taux par pays/palier (%)", tool: "set_rate_adjustment", note: "super_admin" },
-    { capability: "générer le flyer du taux (Cameroun, ou un autre pays : Gabon… via country_key)", tool: "generate_rate_flyer" },
+    { capability: "générer le flyer du taux du jour d'un pays (Cameroun, Gabon… via country_key), avec le texte WhatsApp à coller dessous", tool: "generate_rate_flyer" },
   ],
   tresorerie: [
     { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
@@ -310,7 +310,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
 const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
   { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
   { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Pas de montant minimum. Méthodes : alipay, wechat, bank_transfer, cash." },
-  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Le Cameroun est la RÉFÉRENCE : ce sont ses taux qui sont publiés. Chaque autre pays (Gabon, Tchad, RCA, Congo, Guinée équatoriale) a un écart en pourcentage (rate_adjustments, type country, ex. Gabon −1 %) appliqué en facteur aux quatre taux publiés : ses taux sont dérivés, jamais saisis à part. Les paliers de montant (< 400 000, 400 000–999 999, ≥ 1 000 000 XAF) ajoutent un second pourcentage ; le flyer et « Taux par pays » montrent le palier ≥ 1 M. Un paiement utilise le taux du jour du pays du client, ou un taux personnalisé si l'admin en fixe un." },
+  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Le Cameroun est la RÉFÉRENCE : ce sont ses taux qui sont publiés. Chaque autre pays (Gabon, Tchad, RCA, Congo, Guinée équatoriale) a un écart en pourcentage (rate_adjustments, type country, ex. Gabon −1 %) appliqué en facteur aux quatre taux publiés : ses taux sont dérivés, jamais saisis à part. Les paliers de montant (< 400 000, 400 000–999 999, ≥ 1 000 000 XAF) ajoutent un second pourcentage. Le flyer montre le taux ≥ 400 000 XAF en gros et, dans un bloc rouge, celui des petits paiements. Les paiements de l'app client ET ceux saisis par l'équipe (nouveau paiement, paiements groupés) appliquent le pays du client et la tranche du montant, sauf taux personnalisé fixé par l'admin. Pour create_payment, passe toujours le country_key du client." },
   { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
   { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
   { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
@@ -859,66 +859,45 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "generate_rate_flyer",
     permission: "canViewPayments",
-    description: "Générer le FLYER (image PNG) du taux du jour, prêt à partager. Utilise le taux actif (référence Cameroun). Optionnel: country_key (gabon, tchad, rca, congo, guinee) pour le flyer d'un AUTRE pays — ses taux sont dérivés automatiquement de la référence via l'ajustement pays (ex. Gabon −1 %), pour 1 000 000 XAF. Optionnel: dark (true pour la version sombre). L'image est renvoyée directement dans le chat, téléchargeable.",
-    input_schema: { type: "object", properties: { dark: { type: "boolean" }, country_key: { type: "string", description: "Clé pays (rate_adjustments) : gabon, tchad, rca, congo, guinee. Absent = Cameroun (référence)." } } },
-    execute: async (admin, { dark, country_key }) => {
-      // 1) Taux du jour actif
-      const { data: rate, error } = await admin.from("daily_rates")
-        .select("rate_cash, rate_alipay, rate_wechat, rate_virement")
-        .eq("is_active", true).order("effective_at", { ascending: false }).limit(1).maybeSingle();
-      if (error) return { error: error.message };
-      if (!rate) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
+    description: "Générer le FLYER (image PNG) du taux du jour d'un pays, prêt à partager sur WhatsApp : au nom de NORTON GAUSS BONZINI SARL, taux pour 1 000 000 XAF (Alipay/WeChat/Virement et Cash), petits paiements (tranches de montant) dans un bloc rouge. Utilise le taux actif et les réglages pays et tranches. Optionnel: country_key (cameroun par défaut ; gabon, tchad, rca, congo, guinee). Renvoie aussi `caption`, le texte du jour à coller sous l'image. L'image est affichée directement dans le chat, téléchargeable.",
+    input_schema: { type: "object", properties: { country_key: { type: "string", description: "Clé pays (rate_adjustments) : cameroun, gabon, tchad, rca, congo, guinee. Absent = Cameroun." } } },
+    execute: async (admin, { country_key }) => {
+      const LABELS: Record<string, string> = { cameroun: "Cameroun", gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
+      const key = typeof country_key === "string" && country_key.trim() ? country_key.trim().toLowerCase() : "cameroun";
+      if (!LABELS[key]) return { error: `Pays inconnu : ${key}. Clés possibles : cameroun, gabon, tchad, rca, congo, guinee.` };
 
-      // 1b) Pays dérivé : base × (1 + écart %), même formule que calculate_final_rate (palier ≥ 1 M = 0 %).
-      let country: { key: string; label: string; percentage: number } | null = null;
-      let factor = 1;
-      const wantedKey = typeof country_key === "string" ? country_key.trim().toLowerCase() : "";
-      if (wantedKey && wantedKey !== "cameroun") {
-        const { data: adj, error: adjErr } = await admin.from("rate_adjustments")
-          .select("key, label, percentage, is_reference").eq("type", "country").eq("key", wantedKey).maybeSingle();
-        if (adjErr) return { error: adjErr.message };
-        if (!adj) return { error: `Pays inconnu : ${wantedKey}. Clés possibles : gabon, tchad, rca, congo, guinee (ou rien pour le Cameroun).` };
-        if (!adj.is_reference) {
-          // Libellés accentués (la base stocke « Guinee Equatoriale ») : ce texte part sur le flyer.
-          const LABELS: Record<string, string> = { gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
-          country = { key: adj.key, label: LABELS[adj.key] || adj.label || adj.key, percentage: Number(adj.percentage) || 0 };
-          factor = 1 + country.percentage / 100;
-        }
-      }
-      const derive = (v: unknown) => Math.round(Number(v) * factor * 100) / 100;
-
-      // 2) Appel de l'Edge Function generate-flyer (PNG). rates attendu: {alipay, wechat, bank, cash}
+      // generate-flyer lit lui-même le taux actif et les réglages (pays, tranches) :
+      // mêmes chiffres et même dessin que le flyer de l'app.
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const rates = { alipay: derive(rate.rate_alipay), wechat: derive(rate.rate_wechat), bank: derive(rate.rate_virement), cash: derive(rate.rate_cash) };
       let pngBytes: Uint8Array;
+      let caption = "";
       try {
         const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
-          body: JSON.stringify({ rates, dark: dark === true, country: country?.label, country_slug: country?.key }),
+          body: JSON.stringify({ country_key: key }),
         });
+        if (res.status === 404) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
         if (!res.ok) return { error: `Génération du flyer échouée (${res.status}).` };
+        caption = decodeURIComponent(res.headers.get("x-flyer-caption") ?? "");
         pngBytes = new Uint8Array(await res.arrayBuffer());
       } catch (e) { return { error: `Génération du flyer: ${String((e as Error)?.message ?? e)}` }; }
 
-      // 3) Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
-      const path = country ? `flyers/${Date.now()}-taux-${country.key}.png` : `flyers/${Date.now()}-taux.png`;
+      // Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
+      const path = `flyers/${Date.now()}-taux-du-jour-${key}.png`;
       const up = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, pngBytes, { contentType: "image/png", upsert: true });
       if (up.error) return { error: `Stockage du flyer: ${up.error.message}` };
       const signed = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 3600);
       if (signed.error || !signed.data?.signedUrl) return { error: "URL du flyer indisponible." };
 
-      // __image renvoie l'image au chat ; le texte sert au modèle.
-      const title = country ? `Flyer taux du jour · ${country.label}` : "Flyer taux du jour";
+      const title = `Taux du jour · ${LABELS[key]}`;
       return {
         success: true,
-        rates,
-        country: country ? { key: country.key, label: country.label, adjustment_pct: country.percentage } : `${wantedKey || "cameroun"} (référence)`,
+        country: key,
+        caption,
         __image: { url: signed.data.signedUrl, name: title, kind: "image" },
-        message: country
-          ? `Flyer ${country.label} généré (taux Cameroun ${country.percentage > 0 ? "+" : ""}${country.percentage} %) et affiché dans le chat.`
-          : "Flyer du taux du jour généré et affiché dans le chat.",
+        message: `Flyer ${LABELS[key]} généré et affiché dans le chat. Texte du jour à coller sous l'image : fourni dans \`caption\`.`,
       };
     },
   },
@@ -1606,6 +1585,23 @@ async function uploadBeneficiaryQr(
 }
 
 // payment_method (enum DB) → clé attendue par calculate_final_rate
+/**
+ * Pays d'une fiche client (texte libre : « Gabon », « Congo-Brazzaville »…) →
+ * clé rate_adjustments. Miroir de clientCountryToRateKey (app) : hors des six
+ * pays de la zone, ou vide, c'est le Cameroun (référence).
+ */
+function rateCountryKey(country: unknown): string {
+  const n = String(country ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (!n) return "cameroun";
+  if (["cameroun", "cameroon", "cm"].includes(n)) return "cameroun";
+  if (["gabon", "ga"].includes(n)) return "gabon";
+  if (["tchad", "chad", "td"].includes(n)) return "tchad";
+  if (["rca", "cf", "centrafrique", "republique centrafricaine", "central african republic"].includes(n)) return "rca";
+  if (["congo", "cg", "congo-brazzaville", "republique du congo", "congo brazzaville"].includes(n)) return "congo";
+  if (["guinee", "gq", "guinee equatoriale", "equatorial guinea"].includes(n)) return "guinee";
+  return "cameroun";
+}
+
 const PAYMENT_METHOD_TO_RATE: Record<string, string> = { alipay: "alipay", wechat: "wechat", cash: "cash", bank_transfer: "virement" };
 const PAYMENT_METHOD_LABEL: Record<string, string> = { alipay: "Alipay", wechat: "WeChat", cash: "Cash", bank_transfer: "Virement" };
 
@@ -1906,7 +1902,7 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "create_payment",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut : le pays de la fiche client), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
     input_schema: {
       type: "object",
       properties: {
@@ -1924,7 +1920,13 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!amt) return { ok: false, error: "Montant invalide." };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
-      const countryKey = (a.country_key || "cameroun").toLowerCase();
+      // Pays : celui demandé, sinon celui de la FICHE du client (même règle que l'app et
+      // les écrans de l'équipe) — avant le 25/09/2026, Mola prenait toujours le Cameroun.
+      let countryKey = typeof a.country_key === "string" && a.country_key.trim() ? a.country_key.trim().toLowerCase() : "";
+      if (!countryKey) {
+        const { data: cl } = await admin.from("clients").select("country").eq("user_id", c.uid).maybeSingle();
+        countryKey = rateCountryKey(cl?.country);
+      }
       // Vérifier le solde du client
       const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };
