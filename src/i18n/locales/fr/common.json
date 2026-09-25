@@ -522,7 +522,10 @@
     "passwordOnce": "Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.",
     "sendOnWhatsapp": "Envoyer sur WhatsApp · {{number}}",
     "extraPhonesFailed": "Les numéros supplémentaires n'ont pas pu être enregistrés. Le client existe avec son numéro principal — ajoutez les autres depuis sa fiche.",
-    "whatsappMessage": "Bonjour {{name}}, votre compte Bonzini Labs est prêt. Votre mot de passe temporaire : {{password}}. Vous devrez le changer à votre première connexion."
+    "whatsappMessage": "Bonjour {{name}}, votre compte Bonzini Labs est prêt. Votre mot de passe temporaire : {{password}}. Vous devrez le changer à votre première connexion.",
+    "primaryNumber": "Numéro principal (WhatsApp)",
+    "makePrimary": "Mettre en principal",
+    "primaryIsMain": "Le numéro principal sert à la connexion et reçoit les SMS. Les autres restent sur la fiche."
   },
   "overdraft": {
     "title": "Découvert autorisé",

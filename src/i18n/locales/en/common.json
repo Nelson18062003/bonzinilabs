@@ -522,7 +522,10 @@
     "passwordOnce": "This password will not be shown again. Send it to the client on WhatsApp.",
     "sendOnWhatsapp": "Send on WhatsApp · {{number}}",
     "extraPhonesFailed": "The extra numbers could not be saved. The client exists with the main number — add the others from the client sheet.",
-    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login."
+    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login.",
+    "primaryNumber": "Main number (WhatsApp)",
+    "makePrimary": "Make main",
+    "primaryIsMain": "The main number is used to log in and receives the SMS. The others stay on the profile."
   },
   "overdraft": {
     "title": "Authorised overdraft",

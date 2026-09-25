@@ -522,7 +522,10 @@
     "passwordOnce": "此密码不会再次显示，请通过 WhatsApp 发送给客户。",
     "sendOnWhatsapp": "通过 WhatsApp 发送 · {{number}}",
     "extraPhonesFailed": "其他号码未能保存。客户已用主号码创建，请在客户资料中添加其他号码。",
-    "whatsappMessage": "您好 {{name}}，您的 Bonzini Labs 账户已就绪。临时密码：{{password}}。首次登录时需要修改密码。"
+    "whatsappMessage": "您好 {{name}}，您的 Bonzini Labs 账户已就绪。临时密码：{{password}}。首次登录时需要修改密码。",
+    "primaryNumber": "主号码（WhatsApp）",
+    "makePrimary": "设为主号码",
+    "primaryIsMain": "主号码用于登录并接收短信，其他号码保存在客户资料中。"
   },
   "overdraft": {
     "title": "授权透支",

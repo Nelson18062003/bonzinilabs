@@ -32,15 +32,15 @@ import {
   shouldIncludeLedgerEntry,
 } from '@/lib/generateClientStatement';
 import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
-import { normalizePhone } from '@/lib/phone';
 import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
-import { useClientPhones } from '@/hooks/useClientPhones';
+import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
+import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
+import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
 import { useClientDeposits } from '@/hooks/useReception';
 import { depositStage, formatCbm, formatKg } from '@/lib/reception';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
-import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
 import { AmountField, TextArea } from '@/components/form';
@@ -255,7 +255,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    firstName: '', lastName: '', phone: '', email: '', companyName: '', country: '', city: '',
+    firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
   });
   const [resetOpen, setResetOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -286,12 +286,15 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
 
   const close = () => navigate('/m/clients');
 
+  const phonesEditor = useClientPhonesEditor();
+  const setPhones = useSetClientPhones();
+
   const openEdit = () => {
     if (!client) return;
+    phonesEditor.reset(clientPhones, client.phone, client.country);
     setEditForm({
       firstName: client.firstName,
       lastName: client.lastName,
-      phone: client.phone,
       email: client.email,
       companyName: client.companyName,
       country: client.country,
@@ -303,22 +306,29 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const saveEdit = async () => {
     // Le garde isPending compte : ⌘⏎ (onConfirm du CenterDialog) peut
     // relancer la mutation pendant qu'elle est en vol.
-    if (!client || updateClient.isPending) return;
+    if (!client || updateClient.isPending || setPhones.isPending) return;
     // Un numéro invalide met phone_e164 à NULL côté DB : le client cesse
     // silencieusement de recevoir ses SMS. On bloque ici.
-    const phone = editForm.phone.trim();
-    if (phone !== '' && !normalizePhone(phone)) {
-      toast.error('Numéro invalide', {
+    if (phonesEditor.primaryInvalid) {
+      toast.error('Numéro principal invalide', {
         description: 'Vérifiez le pays et le numéro. Sans numéro valide, ce client ne recevra aucun SMS.',
       });
       return;
     }
+    if (phonesEditor.extrasInvalid) {
+      toast.error('Un autre numéro est incomplet', { description: 'Complétez-le ou retirez-le.' });
+      return;
+    }
+    const phones = phonesEditor.toInputs();
     try {
+      // Les numéros d'abord : la RPC recopie le principal dans la fiche. S'ils
+      // sont refusés, rien d'autre n'est écrit.
+      if (phonesEditor.changed) await setPhones.mutateAsync({ userId: client.id, phones });
       await updateClient.mutateAsync({
         userId: client.id,
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
-        phone: editForm.phone.trim(),
+        phone: phones[0].phone_e164,
         email: editForm.email.trim(),
         companyName: editForm.companyName.trim(),
         country: editForm.country.trim(),
@@ -836,7 +846,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         width={560}
         footer={
           <>
-            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending} className="flex-1">
+            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending || setPhones.isPending} className="flex-1">
               Enregistrer
             </PrimaryPill>
             <SoftPill onClick={() => setEditOpen(false)} className="flex-1">
@@ -853,9 +863,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <TextInput id="edit-lastName" value={editForm.lastName} onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))} />
           </FormField>
           <div className="col-span-2">
-            <FormField label="Téléphone / WhatsApp" htmlFor="edit-phone">
-              <PhoneCountryInput hideLabel value={editForm.phone} onChange={(val) => setEditForm((f) => ({ ...f, phone: val }))} controlClassName="h-11 rounded-lg" />
-            </FormField>
+            <ClientPhonesEditor editor={phonesEditor} />
           </div>
           <FormField label="Email" htmlFor="edit-email">
             <TextInput id="edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
