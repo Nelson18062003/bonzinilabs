@@ -93,7 +93,7 @@ type Adj = { type: string; key: string; percentage: number; is_reference: boolea
 type Bracket = { min: number; max: number | null; pct: number; label: string };
 type Group = { keys: MethodKey[]; label: string; rates: number[] };
 
-const fmt = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+const fmt = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
 
 function brackets(adj: Adj[]): Bracket[] {
   const pctOf = (k: string) => { const t = adj.find((a) => a.type === "tier" && a.key === k); return t && !t.is_reference ? Number(t.percentage) || 0 : 0; };
@@ -137,7 +137,7 @@ function caption(country: string, date: string, bs: Bracket[], gs: Group[]): str
   for (const g of gs) lines.push(`• ${g.label.replace(/ · /g, ", ")} : ${fmt(g.rates[0])} ¥`);
   bs.slice(1).forEach((b, i) => { lines.push("", `${smallTitle(b)} :`); for (const g of gs) lines.push(`• ${g.label.replace(/ · /g, ", ")} : ${fmt(g.rates[i + 1])} ¥`); });
   lines.push("", "Taux valables ce jour, confirmés au moment du paiement.", LEGAL_NAME);
-  return lines.join("\n").replace(/ /g, " ");
+  return lines.join("\n").replace(/\u00a0/g, " ");
 }
 
 // ── Le dessin : même mise en page que RateFlyer.tsx ───────────────────────
@@ -203,7 +203,7 @@ function flyer(country: { label: string }, flag: string | null, date: string, bs
       flag ? h("img", { src: flag, width: 116, height: 87, style: { borderRadius: 14, border: `2px solid ${LINE}` } }) : null,
       h("div", { style: { fontSize: country.label.length > 12 ? 68 : 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1 } }, country.label)),
     h("div", { style: { display: "flex", padding: "22px 64px 0", fontSize: 36, fontWeight: 600, color: MUTED } },
-      "Pour ", h("span", { style: { color: INK, fontWeight: 900 } }, "1 000 000 XAF"), ", votre fournisseur reçoit :"),
+      "Pour\u00a0", h("span", { style: { color: INK, fontWeight: 900 } }, "1\u00a0000\u00a0000 XAF"), ", votre fournisseur reçoit\u00a0:"),
     ...cards,
     h("div", { style: { display: "flex", marginTop: "auto", padding: compact ? "0 64px 32px" : "0 64px 46px" } },
       h("div", { style: { display: "flex", flex: 1, borderTop: `2px solid ${LINE}`, paddingTop: compact ? 18 : 26, fontSize: 26, color: MUTED } }, "Taux valables ce jour. Le taux est confirmé au moment du paiement.")),
