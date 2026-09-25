@@ -14,7 +14,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryRate, formatCountryPct, teamPaymentFromCny, teamPaymentRate } from '@/lib/countryRates';
 import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
@@ -146,10 +146,18 @@ export function DesktopNewPayment() {
   // choisie (et sans taux perso), il n'y a PAS de taux ni de conversion.
   // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
   // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
-  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  // pays » et que la RPC calculate_final_rate, arrondie à l'entier —
+  // … et la TRANCHE du montant (petits paiements, en rouge sur le flyer).
   const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
-  const countryRate = refRate != null ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
-  const baseRate = countryRate ? countryRate.rate : refRate;
+  const clientKey = client ? clientCountryToRateKey(client.country) : null;
+  const baseRate = refRate == null
+    ? null
+    : lastEdited === 'cny'
+      ? teamPaymentFromCny(refRate, clientKey, adjustments, parseInt(rawCny) || 0).rate
+      : teamPaymentRate(refRate, clientKey, adjustments, parseInt(rawXaf) || 0);
+  // Pour les libellés : l'écart du pays, et si la tranche « petits paiements » s'applique.
+  const countryRate = refRate != null ? clientCountryRate(refRate, clientKey, adjustments) : null;
+  const smallPayment = refRate != null && baseRate !== teamPaymentRate(refRate, clientKey, adjustments, 1_000_000);
   const fallbackActive = !!mode && !useCustomRate && baseRate == null;
   const rate: number | null = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
   const hasRate = rate != null && rate > 0;
@@ -520,8 +528,8 @@ export function DesktopNewPayment() {
                       : fallbackActive
                         ? 'Taux de secours'
                         : countryRate
-                          ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}`
-                          : `Taux du jour ${mode?.name}`} :{' '}
+                          ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}${smallPayment ? ' · petit paiement' : ''}`
+                          : `Taux du jour ${mode?.name}${smallPayment ? ' · petit paiement' : ''}`} :{' '}
                     <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
                     {!useCustomRate && countryRate && refRate != null && <span className="ml-1.5">· Cameroun ¥{fmt(refRate)}</span>}
                     {useCustomRate && (

@@ -1,5 +1,6 @@
 // Maquettes du flyer « Taux du jour » v2 (phase 13) — PNG 2160×2700.
 //   node tools/shoot-rate-flyers.mjs <out-dir> [variant:country[:diverge|:flat] …]
+//   variant « app » = le vrai flyer de l'app ; les autres = maquettes de rateFlyerV2.tsx.
 // Serveur : npx vite --host --port 8080 (variables Supabase factices suffisent).
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
@@ -19,20 +20,14 @@ for (const s of SHOTS) {
   const [variant, country, flag] = s.split(':');
   const q = new URLSearchParams({ variant, country });
   if (flag) q.set(flag, '1');
-  if (s.startsWith('before')) {
-    // before[:gabon] — le flyer actuel, avec les taux réels du 24/09 (Gabon : −1 %).
-    const gabon = s === 'before:gabon';
-    const rates = gabon ? '10692,10692,10692,10593' : '10800,10800,10800,10700';
-    await page.setViewportSize({ width: 1075, height: 1280 });
-    await page.goto(`http://127.0.0.1:${PORT}/flyer-real-preview.html?theme=light&rates=${rates}${gabon ? '&country=Gabon,GA' : ''}`, { waitUntil: 'networkidle' });
+  if (variant === 'app') {
+    // app:<pays>[:flat] — le VRAI flyer de l'app (RateFlyer + buildFlyerData).
+    await page.goto(`http://127.0.0.1:${PORT}/flyer-real-preview.html?country=${country}${flag === 'flat' ? '&flat=1' : ''}`, { waitUntil: 'networkidle' });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(400);
-    // Le harnais affiche le flyer réduit à 0,34 : on le montre en entier.
-    await page.addStyleTag({ content: '#root>div{width:1075px!important;height:1280px!important}#root>div>div{transform:scale(0.5)!important}' });
     await page.waitForTimeout(300);
-    await page.screenshot({ path: join(OUT, gabon ? 'avant-flyer-actuel-gabon.png' : 'avant-flyer-actuel.png'), clip: { x: 0, y: 0, width: 1075, height: 1280 } });
-    await page.setViewportSize({ width: 1080, height: 1350 });
-    console.log('OK before');
+    const name = `app-${country}${flag ? '-' + flag : ''}.png`;
+    await page.locator('#flyer').screenshot({ path: join(OUT, name) });
+    console.log('OK', name);
     continue;
   }
   await page.goto(`http://127.0.0.1:${PORT}/rate-flyer-v2.html?${q}`, { waitUntil: 'networkidle' });

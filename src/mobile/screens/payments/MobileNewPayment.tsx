@@ -17,7 +17,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
 import { useAllClients } from '@/hooks/useAdminDeposits';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { clientCountryRate, formatCountryPct } from '@/lib/countryRates';
+import { clientCountryRate, formatCountryPct, teamPaymentFromCny, teamPaymentRate } from '@/lib/countryRates';
 import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { useAdminCreatePayment } from '@/hooks/useAdminPayments';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
@@ -254,17 +254,24 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé par le super admin.
   const clientAvailable = clientBalance + clientOverdraft;
   // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
-  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
-  // pays » et que la RPC calculate_final_rate, arrondie à l'entier.
+  // client (Gabon −1 %…) et de la TRANCHE du montant (petits paiements, en
+  // rouge sur le flyer) — même règle que l'app client et que la RPC
+  // calculate_final_rate, arrondie à l'entier.
   const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
-  // Jamais d'écart pays sur la constante de secours : elle n'est pas un taux publié.
-  const countryRate = rateData && mode ? clientCountryRate(refRate, client ? clientCountryToRateKey(client.country) : null, adjustments) : null;
-  const baseRate = countryRate ? countryRate.rate : refRate;
+  const raw = parseInt(rawAmount) || 0;
+  const clientKey = client ? clientCountryToRateKey(client.country) : null;
+  // Jamais d'écart pays ni de tranche sur la constante de secours : elle n'est pas un taux publié.
+  const published = !!(rateData && mode);
+  const fromCny = published && inputCurrency !== 'xaf' ? teamPaymentFromCny(refRate, clientKey, adjustments, raw) : null;
+  const baseRate = !published ? refRate : fromCny ? fromCny.rate : teamPaymentRate(refRate, clientKey, adjustments, raw);
+  // Pour les libellés : l'écart du pays, et si la tranche « petits paiements » s'applique.
+  const countryRate = published ? clientCountryRate(refRate, clientKey, adjustments) : null;
+  const smallPayment = published && baseRate !== teamPaymentRate(refRate, clientKey, adjustments, 1_000_000);
+  const rateNote = [countryRate ? `${countryRate.label} ${formatCountryPct(countryRate.percentage)}` : '', smallPayment ? 'petit paiement' : ''].filter(Boolean).join(' · ');
   // Champ perso vidé pour retaper : on retombe sur le taux du jour, jamais
   // sur la constante de secours (le paiement partait à 11 530).
   const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
   const customRateValid = !useCustomRate || parseInt(customRateStr) > 0;
-  const raw = parseInt(rawAmount) || 0;
   const xaf = inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate);
   const cny = inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw;
   // Animation du montant converti (kit cohérent avec l'assistant dépôt).
@@ -802,8 +809,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   {!useCustomRate && (
                     <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>
                       {countryRate
-                        ? <>Taux {countryRate.label} ({formatCountryPct(countryRate.percentage)}) : 1M XAF = ¥{fmt(baseRate)} · Cameroun ¥{fmt(refRate)}</>
-                        : <>Taux du jour : 1M XAF = ¥{fmt(baseRate)}</>}
+                        ? <>Taux {countryRate.label} ({formatCountryPct(countryRate.percentage)}){smallPayment ? ' · petit paiement' : ''} : 1M XAF = ¥{fmt(baseRate)} · Cameroun ¥{fmt(refRate)}</>
+                        : <>Taux du jour{smallPayment ? ' · petit paiement' : ''} : 1M XAF = ¥{fmt(baseRate)}</>}
                     </div>
                   )}
                 </div>
@@ -1187,7 +1194,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
                   ? { l: 'Email', v: selectedBenef?.email || benef.email }
                   : null,
-                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : countryRate ? ` (${countryRate.label} ${formatCountryPct(countryRate.percentage)})` : ''}` },
+                { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : rateNote ? ` (${rateNote})` : ''}` },
                 useCustomDate && customDateStr
                   ? { l: 'Date', v: new Date(customDateStr).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
                   : null,

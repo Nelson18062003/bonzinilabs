@@ -149,3 +149,61 @@ export function clientCountryRate(
     label: countryMeta(adj.key).iso ? countryMeta(adj.key).label : (adj.label || adj.key),
   };
 }
+
+// ── Paiements saisis par l'équipe ─────────────────────────────────────────
+// Le flyer affiche, en rouge, un taux plus bas pour les petits paiements
+// (tranches t1/t2 de rate_adjustments). L'app client l'applique déjà ; ces
+// deux fonctions donnent le même taux aux écrans de l'équipe (nouveau
+// paiement, paiements groupés) : pays du client ET tranche du montant, en
+// entier « ¥ pour 1 M XAF » comme ils le stockent. Avant le 25/09/2026,
+// l'équipe donnait le taux ≥ 1 M à tous les montants.
+
+function tierAdjustments(adjustments: readonly RateAdjustment[] | undefined) {
+  return (adjustments ?? []).filter((a) => a.type === 'tier').map((a) => ({ key: a.key, percentage: a.is_reference ? 0 : Number(a.percentage) || 0 }));
+}
+
+function countryPctFor(countryKey: string | null | undefined, adjustments: readonly RateAdjustment[] | undefined): number {
+  const adj = (adjustments ?? []).find((a) => a.type === 'country' && a.key === countryKey);
+  return adj && !adj.is_reference ? Number(adj.percentage) || 0 : 0;
+}
+
+/**
+ * Taux d'un paiement de `amountXaf` XAF pour un client de `countryKey`.
+ * Montant pas encore saisi (≤ 0) : le taux de la meilleure tranche, celui
+ * du flyer.
+ */
+export function teamPaymentRate(
+  base: number,
+  countryKey: string | null | undefined,
+  adjustments: readonly RateAdjustment[] | undefined,
+  amountXaf: number,
+): number {
+  if (!(base > 0)) return base;
+  const amount = amountXaf > 0 ? amountXaf : 1_000_000;
+  return Math.round(calculateFinalRate(base, countryPctFor(countryKey, adjustments), amount, tierAdjustments(adjustments)).finalRate);
+}
+
+/**
+ * Saisie en ¥ : la tranche dépend du montant en XAF, qui dépend du taux.
+ * On essaie chaque tranche, de la plus basse à la plus haute, et on garde
+ * celle dont le montant XAF obtenu tombe bien dedans. Juste sous une borne
+ * (ex. 4 200 ¥ au Gabon), aucune ne tombe juste : on prend la tranche
+ * supérieure, la plus favorable au client.
+ */
+export function teamPaymentFromCny(
+  base: number,
+  countryKey: string | null | undefined,
+  adjustments: readonly RateAdjustment[] | undefined,
+  cny: number,
+): { rate: number; xaf: number } {
+  const probes = [1, 400_000, 1_000_000];
+  let last = { rate: base, xaf: base > 0 ? Math.round((cny * 1_000_000) / base) : 0 };
+  for (let i = 0; i < probes.length; i++) {
+    const rate = teamPaymentRate(base, countryKey, adjustments, probes[i]);
+    const xaf = rate > 0 ? Math.round((cny * 1_000_000) / rate) : 0;
+    last = { rate, xaf };
+    const upper = probes[i + 1];
+    if (upper === undefined || xaf < upper) return last;
+  }
+  return last;
+}
