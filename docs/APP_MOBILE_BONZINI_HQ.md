@@ -28,10 +28,10 @@ Personne n'a à choisir « quelle app » ouvrir.
 | Natif (code de l'app) | Écrans du site, pilotés par l'app |
 |---|---|
 | Connexion (code email ou mot de passe), contrôle du rôle | Opérations, dépôts, paiements |
-| Barre d'onglets par rôle, scanner au centre | Clients, fiches, relevés |
+| Barre d'onglets par rôle, scanner au centre, **pastilles en direct** (à traiter, en attente, à pointer, à remettre) | Clients, fiches, relevés |
 | Accueil : dépôts à valider, paiements à traiter, raccourcis | Cargo, réception, entrepôt Douala |
 | Scanner caméra : QR + codes-barres, torche, mode continu | Trésorerie, taux, Mola, support |
-| « Moi » : profil, verrou Face ID, déconnexion | |
+| « Moi » : profil, verrou Face ID, état des notifications, déconnexion | |
 | Notifications push (voir plus bas) | |
 
 ### Les notifications
@@ -210,10 +210,7 @@ Avant chaque compilation : `npm run typecheck && npm run doctor`.
 
 ## 7. Étapes suivantes proposées
 
-1. **Notifications push** (nouveau dépôt à valider, colis arrivé à Douala,
-   paiement cash à remettre…) : nécessite une table des appareils et un
-   envoi depuis Supabase.
-2. **Scanner natif** plus rapide que celui du navigateur pour la réception
-   à Guangzhou (gros volumes).
-3. Passer en natif, un par un, les écrans les plus utilisés sur téléphone.
-4. Plus tard : l'app **clients**, sur le même modèle.
+1. Passer en natif, un par un, les écrans les plus utilisés sur téléphone
+   (d'après les retours de Tina et de Douala).
+2. Mises à jour sans store (`eas update`) pour la partie native.
+3. Plus tard : l'app **clients**, sur le même modèle.

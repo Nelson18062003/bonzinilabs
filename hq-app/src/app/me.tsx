@@ -4,7 +4,7 @@
 // n'ont pas d'autre écran de profil).
 // ============================================================
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,13 +13,14 @@ import { ROLE_LABEL, staffHome } from '../roles';
 import { APP_VERSION } from '../config';
 import { canLock } from '../LockScreen';
 import { lockWanted, setLockWanted } from '../lockPref';
-import { unregisterPush } from '../push';
+import { pushState, registerForPush, unregisterPush, type PushState } from '../push';
 import { C } from '../theme';
 
 export default function Me() {
   const { user, web, setNativeTab } = useHQ();
   const [lockOn, setLockOn] = useState(true);
   const [lockPossible, setLockPossible] = useState(false);
+  const [push, setPush] = useState<PushState | null>(pushState());
 
   useEffect(() => {
     void Promise.all([canLock(), lockWanted()]).then(([hw, wanted]) => {
@@ -86,6 +87,27 @@ export default function Me() {
               }}
             />
           </View>
+          <View style={styles.sep} />
+          <Pressable
+            onPress={() => {
+              if (push === 'denied') void Linking.openSettings();
+              else if (push !== 'ok') void registerForPush().then(setPush);
+            }}
+            disabled={push === 'ok'}
+            style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+            accessibilityRole="button"
+          >
+            <Ionicons name="notifications" size={24} color={C.ink} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>Notifications</Text>
+              <Text style={styles.rowHint}>{PUSH_HINT[push ?? 'pending']}</Text>
+            </View>
+            <Ionicons
+              name={push === 'ok' ? 'checkmark-circle' : push === 'denied' ? 'open-outline' : 'refresh'}
+              size={22}
+              color={push === 'ok' ? C.green : C.faint}
+            />
+          </Pressable>
         </View>
 
         {isAdminSpace && (
@@ -111,6 +133,13 @@ export default function Me() {
     </SafeAreaView>
   );
 }
+
+const PUSH_HINT: Record<PushState | 'pending', string> = {
+  ok: 'Activées : dépôts, paiements, messages, arrivées',
+  denied: 'Refusées — toucher pour les autoriser dans les réglages',
+  unavailable: 'Pas encore disponibles sur ce téléphone — toucher pour réessayer',
+  pending: 'Vérification…',
+};
 
 function Row({ icon, title, onPress }: { icon: 'person' | 'lock-closed' | 'settings'; title: string; onPress: () => void }) {
   return (

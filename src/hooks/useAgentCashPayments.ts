@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
+/** Paiements cash encore à remettre (onglet « À payer » ; pastille de l'app BONZINI HQ). */
+export const CASH_TO_HAND_OVER_STATUSES = ['processing', 'cash_scanned', 'cash_pending', 'ready_for_payment'] as const;
+
 export interface CashPayment {
   id: string;
   reference: string;
@@ -36,7 +39,7 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
       // To Pay tab: show cash payments that are not yet fully paid
       // This includes 'processing' (awaiting scan), 'cash_scanned', and 'cash_pending'
       const statusFilter = status === 'pending'
-        ? (['processing', 'cash_scanned', 'cash_pending', 'ready_for_payment'] as const)
+        ? CASH_TO_HAND_OVER_STATUSES
         : (['completed'] as const);
 
       let query = supabaseAdmin

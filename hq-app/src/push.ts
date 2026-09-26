@@ -27,10 +27,21 @@ Notifications.setNotificationHandler({
 });
 
 let registeredToken: string | null = null;
+let lastState: PushState | null = null;
 
 export type PushState = 'ok' | 'denied' | 'unavailable';
 
+/** Le résultat du dernier enregistrement (écran « Moi »), null s'il n'a pas eu lieu. */
+export function pushState(): PushState | null {
+  return lastState;
+}
+
 export async function registerForPush(): Promise<PushState> {
+  lastState = await register();
+  return lastState;
+}
+
+async function register(): Promise<PushState> {
   try {
     if (!Device.isDevice) return 'unavailable';
     if (Platform.OS === 'android') {
@@ -75,6 +86,7 @@ export async function unregisterPush(): Promise<void> {
     // hors ligne : la ligne sera réattribuée à la prochaine connexion sur ce téléphone
   }
   registeredToken = null;
+  lastState = null;
 }
 
 /** La page à ouvrir quand on touche une notification. */

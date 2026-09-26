@@ -8,13 +8,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { db, hasFreshToken } from './supabase';
+import { DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from './statuses';
 import { can, firstName, ROLE_LABEL, type StaffUser } from './roles';
 import { C } from './theme';
 import type { IconName } from './tabs';
 
-/** Mêmes statuts que src/lib/actionable.ts côté site. */
-const DEPOSITS_TO_PROCESS = ['proof_submitted', 'admin_review'];
-const PAYMENTS_TO_PROCESS = ['ready_for_payment', 'cash_scanned', 'processing'];
 
 interface Counts { deposits: number | null; payments: number | null }
 

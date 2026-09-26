@@ -24,7 +24,9 @@ onglets natifs pilotent sans rechargement.
 - `push.ts` : notifications (autorisation, jeton Expo, RPC
   `register_staff_push_device`, ouverture de `data.path` au toucher).
   Envois : déclencheurs Supabase, migration `20260926100000_staff_push_notifications.sql`.
-- `roles.ts`, `tabs.ts`, `scan.ts` : miroir des règles du site — le test
+- `badges.ts` : pastilles des onglets (mêmes sources que les barres du site),
+  statuts dans `statuses.ts`.
+- `roles.ts`, `tabs.ts`, `scan.ts`, `statuses.ts` : miroir des règles du site — le test
   `src/tests/hqApp/parity.test.ts` (racine) échoue en cas de dérive.
 
 ## Session — règle absolue

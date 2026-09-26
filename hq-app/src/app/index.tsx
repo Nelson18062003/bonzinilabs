@@ -25,6 +25,7 @@ import { OfflineScreen } from '../OfflineScreen';
 import { LoginScreen } from '../LoginScreen';
 import { HomeScreen } from '../HomeScreen';
 import { TabBar } from '../TabBar';
+import { useBadges } from '../badges';
 import { RELOCK_AFTER_MS } from '../config';
 import { lockWanted } from '../lockPref';
 import { setAccessToken } from '../supabase';
@@ -108,6 +109,7 @@ export default function Main() {
 
   const tabs = useMemo(() => (user ? tabsFor(user.role) : []), [user]);
   const hasHome = tabs.some((t) => t.native === 'home');
+  const badges = useBadges(user?.role ?? null, route);
 
   // Ce que le site dit à l'app.
   const onSiteMessage = useCallback((msg: Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' }>) => {
@@ -237,7 +239,7 @@ export default function Main() {
           )}
         </View>
       </SafeAreaView>
-      {user && tabs.length > 0 && <TabBar tabs={tabs} activeKey={activeKey} onPress={onTab} />}
+      {user && tabs.length > 0 && <TabBar tabs={tabs} activeKey={activeKey} onPress={onTab} badges={badges} />}
 
       {showLogin && <LoginScreen onSession={onSession} busy={loginBusy} error={loginError} />}
       {offline && (

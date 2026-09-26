@@ -8,6 +8,10 @@ import { normalizeCustomerCode } from '@/lib/customerCode';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { can, staffHome, ROLE_LABEL } from '../../../hq-app/src/roles';
 import { cashPaymentId, customerCode, routeScan } from '../../../hq-app/src/scan';
+import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/actionable';
+import { CASH_TO_HAND_OVER_STATUSES } from '@/hooks/useAgentCashPayments';
+import { BADGE_TABS, CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from '../../../hq-app/src/statuses';
+import { tabsFor } from '../../../hq-app/src/tabs';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS) as AppRole[];
 
@@ -50,5 +54,19 @@ describe('BONZINI HQ ↔ site', () => {
     expect(routeScan('warehouse_agent', 'BZ-482913')).toEqual({ kind: 'deliver', path: '/w/remise', text: 'BZ-482913' });
     expect(routeScan('super_admin', 'BZ-482913')).toEqual({ kind: 'open', path: '/m/clients/scan?code=BZ-482913' });
     expect(routeScan('treasurer', 'BZ-482913').kind).toBe('unknown');
+  });
+
+  it('compte « à traiter » avec les mêmes statuts que le site', () => {
+    expect([...DEPOSITS_TO_PROCESS].sort()).toEqual([...ACTIONABLE_DEPOSIT_STATUSES].sort());
+    expect([...PAYMENTS_TO_PROCESS].sort()).toEqual([...ACTIONABLE_PAYMENT_STATUSES].sort());
+    expect([...CASH_PENDING].sort()).toEqual([...CASH_TO_HAND_OVER_STATUSES].sort());
+  });
+
+  it('pose chaque pastille sur un onglet qui existe', () => {
+    const keys = (r: AppRole) => tabsFor(r).map((t) => t.key);
+    expect(keys('super_admin')).toEqual(expect.arrayContaining([...BADGE_TABS.admin]));
+    for (const r of ['receptionist', 'warehouse_agent', 'cash_agent'] as const) {
+      expect(keys(r)).toEqual(expect.arrayContaining([...BADGE_TABS[r]]));
+    }
   });
 });
