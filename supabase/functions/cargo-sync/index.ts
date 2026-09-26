@@ -29,18 +29,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
 import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
+import { carrierSecret } from "../_shared/secrets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
-const CMACGM_KEY = Deno.env.get("CMACGM_API_KEY") ?? "";
 
 /** Un connecteur par armateur interrogeable (les deux parlent DCSA). */
-const CARRIERS: Record<string, { name: string; key: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
-  MAERSK: { name: "Maersk", key: MAERSK_KEY, secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
-  CMA_CGM: { name: "CMA CGM", key: CMACGM_KEY, secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
+const CARRIERS: Record<string, { name: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
+  MAERSK: { name: "Maersk", secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
+  CMA_CGM: { name: "CMA CGM", secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
 };
-const AISSTREAM_KEY = Deno.env.get("AISSTREAM_API_KEY") ?? "";
 const AIS_LISTEN_MS = 20_000;
 
 type Shipment = {
@@ -94,7 +92,7 @@ interface AisPosition {
   mmsi: string; lat: number; lon: number; sog: number | null; cog: number | null; at: string; name?: string;
 }
 
-function listenAis(mmsis: string[]): Promise<Map<string, AisPosition>> {
+function listenAis(mmsis: string[], apiKey: string): Promise<Map<string, AisPosition>> {
   return new Promise((resolve) => {
     const found = new Map<string, AisPosition>();
     let ws: WebSocket;
@@ -108,7 +106,7 @@ function listenAis(mmsis: string[]): Promise<Map<string, AisPosition>> {
     const timer = setTimeout(done, AIS_LISTEN_MS);
     ws.onopen = () => {
       ws.send(JSON.stringify({
-        APIKey: AISSTREAM_KEY,
+        APIKey: apiKey,
         BoundingBoxes: [[[-90, -180], [90, 180]]],
         FiltersShipMMSI: mmsis,
         FilterMessageTypes: ["PositionReport"],
@@ -138,11 +136,11 @@ function listenAis(mmsis: string[]): Promise<Map<string, AisPosition>> {
   });
 }
 
-async function syncPositions(sb: ReturnType<typeof createClient>, shipments: Shipment[]) {
+async function syncPositions(sb: ReturnType<typeof createClient>, shipments: Shipment[], apiKey: string) {
   const byMmsi = new Map<string, Shipment>();
   for (const s of shipments) if (s.vessel_mmsi && s.vessel_imo) byMmsi.set(s.vessel_mmsi, s);
   if (byMmsi.size === 0) return 0;
-  const found = await listenAis([...byMmsi.keys()]);
+  const found = await listenAis([...byMmsi.keys()], apiKey);
   let n = 0;
   for (const [mmsi, p] of found) {
     const s = byMmsi.get(mmsi);
@@ -182,11 +180,12 @@ serve(async (req) => {
   for (const [code, carrier] of Object.entries(CARRIERS)) {
     const mine = shipments.filter((s) => s.carrier === code);
     if (mine.length === 0) continue;
-    if (!carrier.key) { (report.skipped as string[]).push(`${carrier.secret} absent`); continue; }
+    const key = await carrierSecret(sb, carrier.secret);
+    if (!key) { (report.skipped as string[]).push(`${carrier.secret} absent`); continue; }
     synced[code] = {};
     for (const s of mine) {
       try {
-        synced[code][s.container_number] = await syncCarrier(sb, s, carrier.fetch, carrier.key);
+        synced[code][s.container_number] = await syncCarrier(sb, s, carrier.fetch, key);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         synced[code][s.container_number] = `erreur: ${msg}`;
@@ -196,8 +195,9 @@ serve(async (req) => {
   }
   for (const s of shipments) if (!CARRIERS[s.carrier]) (report.skipped as string[]).push(`${s.container_number} (${s.carrier}: pas d'API)`);
 
+  const AISSTREAM_KEY = await carrierSecret(sb, "AISSTREAM_API_KEY");
   if (AISSTREAM_KEY) {
-    try { report.positions = await syncPositions(sb, shipments); }
+    try { report.positions = await syncPositions(sb, shipments, AISSTREAM_KEY); }
     catch (e) { report.positionsError = e instanceof Error ? e.message : String(e); }
   } else {
     (report.skipped as string[]).push("AISSTREAM_API_KEY absent");

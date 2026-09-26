@@ -15,16 +15,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { containersIn, fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
 import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
+import { carrierSecret } from "../_shared/secrets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
-const CMACGM_KEY = Deno.env.get("CMACGM_API_KEY") ?? "";
 
 /** Un connecteur par armateur interrogeable ; les autres restent « unsupported » côté RPC. */
-const CARRIERS: Record<string, { name: string; key: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
-  MAERSK: { name: "Maersk", key: MAERSK_KEY, secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
-  CMA_CGM: { name: "CMA CGM", key: CMACGM_KEY, secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
+const CARRIERS: Record<string, { name: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
+  MAERSK: { name: "Maersk", secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
+  CMA_CGM: { name: "CMA CGM", secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
 };
 
 serve(async (req) => {
@@ -45,12 +44,13 @@ serve(async (req) => {
 
   const carrier = CARRIERS[lookup.carrier];
   if (!carrier) return fail("Armateur non interrogeable pour l'instant");
-  if (!carrier.key) return fail(`Clé ${carrier.name} absente (${carrier.secret})`);
+  const key = await carrierSecret(sb, carrier.secret);
+  if (!key) return fail(`Clé ${carrier.name} absente (${carrier.secret})`);
 
   try {
     const events = lookup.reference_type === "CONTAINER"
-      ? await carrier.fetch(carrier.key, { container: lookup.reference })
-      : await carrier.fetch(carrier.key, { bl: lookup.reference });
+      ? await carrier.fetch(key, { container: lookup.reference })
+      : await carrier.fetch(key, { bl: lookup.reference });
     if (events.length === 0) return fail(`${carrier.name} ne connaît pas cette référence (ou elle n'est plus sur le suivi public)`);
 
     const numbers = containersIn(events);
