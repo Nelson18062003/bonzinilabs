@@ -1,6 +1,7 @@
 // supabase/functions/cargo-lookup/index.ts
 // ============================================================
-// Bonzini Cargo — recherche libre d'une référence (B/L, booking, conteneur).
+// Bonzini Cargo — recherche libre d'une référence (B/L, booking, conteneur)
+// chez Maersk ou CMA CGM (les deux parlent DCSA, cf. _shared/maersk.ts et cmacgm.ts).
 //
 // Déclenchée par request_cargo_lookup (pg_net, Bearer service role — vérifié
 // par _shared/caller.ts, quelle que soit la forme de la clé). Lit la
@@ -12,11 +13,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { containersIn, fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
+import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
+const CMACGM_KEY = Deno.env.get("CMACGM_API_KEY") ?? "";
+
+/** Un connecteur par armateur interrogeable ; les autres restent « unsupported » côté RPC. */
+const CARRIERS: Record<string, { name: string; key: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
+  MAERSK: { name: "Maersk", key: MAERSK_KEY, secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
+  CMA_CGM: { name: "CMA CGM", key: CMACGM_KEY, secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
+};
 
 serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
@@ -34,14 +43,15 @@ serve(async (req) => {
     return Response.json({ success: false, error: msg });
   };
 
-  if (lookup.carrier !== "MAERSK") return fail("Armateur non interrogeable pour l'instant");
-  if (!MAERSK_KEY) return fail("Clé Maersk absente (MAERSK_CONSUMER_KEY)");
+  const carrier = CARRIERS[lookup.carrier];
+  if (!carrier) return fail("Armateur non interrogeable pour l'instant");
+  if (!carrier.key) return fail(`Clé ${carrier.name} absente (${carrier.secret})`);
 
   try {
     const events = lookup.reference_type === "CONTAINER"
-      ? await fetchMaerskEvents(MAERSK_KEY, { container: lookup.reference })
-      : await fetchMaerskEvents(MAERSK_KEY, { bl: lookup.reference });
-    if (events.length === 0) return fail("Maersk ne connaît pas cette référence (ou elle n'est plus sur le suivi public)");
+      ? await carrier.fetch(carrier.key, { container: lookup.reference })
+      : await carrier.fetch(carrier.key, { bl: lookup.reference });
+    if (events.length === 0) return fail(`${carrier.name} ne connaît pas cette référence (ou elle n'est plus sur le suivi public)`);
 
     const numbers = containersIn(events);
     if (numbers.length === 0 && lookup.reference_type === "CONTAINER") numbers.push(lookup.reference);
@@ -49,7 +59,7 @@ serve(async (req) => {
     const blRef = events.flatMap((e) => e.documentReferences ?? []).find((r) => r.documentReferenceType === "TRD")?.documentReferenceValue
       ?? (lookup.reference_type === "BL" ? lookup.reference : null);
 
-    const result = { carrier: "MAERSK", reference: lookup.reference, bl_number: blRef, fetched_at: new Date().toISOString(), containers };
+    const result = { carrier: lookup.carrier, reference: lookup.reference, bl_number: blRef, fetched_at: new Date().toISOString(), containers };
     await sb.from("cargo_lookups").update({ status: "done", result, error: null, completed_at: new Date().toISOString() }).eq("id", lookup_id);
     return Response.json({ success: true, containers: containers.length });
   } catch (e) {

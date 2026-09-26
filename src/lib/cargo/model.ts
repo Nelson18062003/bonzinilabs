@@ -47,7 +47,7 @@ export const CARRIER_LABEL: Record<string, string> = {
 /** Ce que la plateforme sait faire par armateur — dit tel quel à l'écran. */
 export const CARRIER_SUPPORT: { carrier: string; label: string; state: 'live' | 'pending' | 'later'; note: string }[] = [
   { carrier: 'MAERSK', label: 'Maersk', state: 'live', note: 'Jalons et arrivée en direct (API Track & Trace)' },
-  { carrier: 'CMA_CGM', label: 'CMA CGM', state: 'pending', note: 'Référence reconnue · accès API demandé' },
+  { carrier: 'CMA_CGM', label: 'CMA CGM', state: 'live', note: 'Jalons, escales et arrivée en direct (API Track & Trace)' },
   { carrier: 'MSC', label: 'MSC', state: 'later', note: 'Via agrégateur, à brancher' },
   { carrier: 'COSCO', label: 'COSCO', state: 'later', note: 'Via agrégateur, à brancher' },
 ];

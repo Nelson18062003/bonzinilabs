@@ -34,6 +34,8 @@ export interface DcsaEvent {
     vessel?: { vesselName?: string; vesselIMONumber?: string; vesselCallSignNumber?: string };
   };
   references?: { referenceType: string; referenceValue: string }[];
+  /** DCSA 2.2 (CMA CGM) : le conteneur est porté directement par le jalon. */
+  equipmentReference?: string;
 }
 
 export function codeOf(e: DcsaEvent): string {
@@ -78,13 +80,23 @@ export async function fetchMaerskEvents(key: string, params: { bl?: string; cont
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`Maersk HTTP ${res.status}`);
   const json = await res.json();
-  return (json.events ?? []) as DcsaEvent[];
+  return dcsaEventsOf(json);
+}
+
+/** DCSA renvoie tantôt un tableau nu, tantôt `{ events: [...] }`. */
+export function dcsaEventsOf(json: unknown): DcsaEvent[] {
+  if (Array.isArray(json)) return json as DcsaEvent[];
+  const events = (json as { events?: unknown })?.events;
+  return Array.isArray(events) ? (events as DcsaEvent[]) : [];
 }
 
 /** Numéros de conteneur portés par un lot de jalons. */
 export function containersIn(events: DcsaEvent[]): string[] {
   const set = new Set<string>();
-  for (const e of events) for (const r of e.references ?? []) if (r.referenceType === "EQ") set.add(r.referenceValue);
+  for (const e of events) {
+    if (e.equipmentReference) set.add(e.equipmentReference);
+    for (const r of e.references ?? []) if (r.referenceType === "EQ") set.add(r.referenceValue);
+  }
   return [...set];
 }
 
@@ -92,6 +104,7 @@ export function containersIn(events: DcsaEvent[]): string[] {
 export function eventsFor(events: DcsaEvent[], container: string): DcsaEvent[] {
   return events.filter((e) => {
     const eq = (e.references ?? []).filter((r) => r.referenceType === "EQ").map((r) => r.referenceValue);
+    if (e.equipmentReference) eq.push(e.equipmentReference);
     return eq.length === 0 || eq.includes(container);
   });
 }

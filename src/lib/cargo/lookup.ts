@@ -64,6 +64,6 @@ export const STALLED_BODY =
   'La demande est partie mais rien n’est revenu. Ce n’est pas la référence : c’est la chaîne de recherche côté serveur.';
 export const STALLED_CAUSES = [
   'la fonction « cargo-lookup » n’est pas déployée — c’est la cause la plus fréquente, et elle est silencieuse : la base envoie la demande sans jamais savoir qu’elle tombe dans le vide',
-  'la clé Maersk (MAERSK_CONSUMER_KEY) n’est pas renseignée côté serveur',
-  'le quota de l’armateur est atteint — la clé d’essai est limitée à 20 appels par heure',
+  'la clé de l’armateur (MAERSK_CONSUMER_KEY ou CMACGM_API_KEY) n’est pas renseignée côté serveur',
+  'le quota de l’armateur est atteint — Maersk comme CMA CGM limitent la clé à 20 appels par heure',
 ] as const;

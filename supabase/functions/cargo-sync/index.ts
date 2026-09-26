@@ -20,18 +20,26 @@
 //    navires connus et on garde le dernier message par navire. Couverture
 //    terrestre seulement : en plein océan, pas de message — c'est attendu.
 //
-// 3) CMA CGM — pas encore d'accès API (demande en cours). Les dossiers
-//    CMA_CGM restent tels qu'ils ont été saisis.
+// 3) CMA CGM — API Track & Trace (DCSA 2.2, header keyId, 20 appels/heure),
+//    même traitement que Maersk via _shared/cmacgm.ts. MSC / COSCO : rien encore.
 // ============================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
+import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const MAERSK_KEY = Deno.env.get("MAERSK_CONSUMER_KEY") ?? "";
+const CMACGM_KEY = Deno.env.get("CMACGM_API_KEY") ?? "";
+
+/** Un connecteur par armateur interrogeable (les deux parlent DCSA). */
+const CARRIERS: Record<string, { name: string; key: string; secret: string; fetch: typeof fetchMaerskEvents }> = {
+  MAERSK: { name: "Maersk", key: MAERSK_KEY, secret: "MAERSK_CONSUMER_KEY", fetch: fetchMaerskEvents },
+  CMA_CGM: { name: "CMA CGM", key: CMACGM_KEY, secret: "CMACGM_API_KEY", fetch: fetchCmaCgmEvents },
+};
 const AISSTREAM_KEY = Deno.env.get("AISSTREAM_API_KEY") ?? "";
 const AIS_LISTEN_MS = 20_000;
 
@@ -47,10 +55,10 @@ type Shipment = {
   status: string;
 };
 
-// ── Maersk (DCSA) — logique partagée dans _shared/maersk.ts ─────────────
+// ── Armateurs DCSA (Maersk, CMA CGM) — logique partagée dans _shared/ ──
 
-async function syncMaersk(sb: ReturnType<typeof createClient>, s: Shipment) {
-  const events = await fetchMaerskEvents(MAERSK_KEY, { bl: s.bl_number });
+async function syncCarrier(sb: ReturnType<typeof createClient>, s: Shipment, fetchEvents: typeof fetchMaerskEvents, key: string) {
+  const events = await fetchEvents(key, { bl: s.bl_number });
   const c = summarizeContainer(s.container_number, events);
 
   if (c.events.length) {
@@ -169,22 +177,24 @@ serve(async (req) => {
   if (error) return Response.json({ success: false, error: error.message }, { status: 500 });
   const shipments = (data ?? []) as Shipment[];
 
-  const report: Record<string, unknown> = { maersk: {}, positions: 0, skipped: [] as string[] };
-  const maersk = shipments.filter((s) => s.carrier === "MAERSK");
-  if (MAERSK_KEY) {
-    for (const s of maersk) {
+  const report: Record<string, unknown> = { carriers: {}, positions: 0, skipped: [] as string[] };
+  const synced = report.carriers as Record<string, Record<string, unknown>>;
+  for (const [code, carrier] of Object.entries(CARRIERS)) {
+    const mine = shipments.filter((s) => s.carrier === code);
+    if (mine.length === 0) continue;
+    if (!carrier.key) { (report.skipped as string[]).push(`${carrier.secret} absent`); continue; }
+    synced[code] = {};
+    for (const s of mine) {
       try {
-        (report.maersk as Record<string, unknown>)[s.container_number] = await syncMaersk(sb, s);
+        synced[code][s.container_number] = await syncCarrier(sb, s, carrier.fetch, carrier.key);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        (report.maersk as Record<string, unknown>)[s.container_number] = `erreur: ${msg}`;
+        synced[code][s.container_number] = `erreur: ${msg}`;
         await sb.from("cargo_shipments").update({ sync_error: msg, last_synced_at: new Date().toISOString() }).eq("id", s.id);
       }
     }
-  } else {
-    (report.skipped as string[]).push("MAERSK_CONSUMER_KEY absent");
   }
-  for (const s of shipments) if (s.carrier !== "MAERSK") (report.skipped as string[]).push(`${s.container_number} (${s.carrier}: pas d'API)`);
+  for (const s of shipments) if (!CARRIERS[s.carrier]) (report.skipped as string[]).push(`${s.container_number} (${s.carrier}: pas d'API)`);
 
   if (AISSTREAM_KEY) {
     try { report.positions = await syncPositions(sb, shipments); }
