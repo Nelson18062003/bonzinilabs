@@ -70,7 +70,11 @@ export async function handleBridgeMessage(msg: BridgeMessage, openUrl: (url: str
       await Clipboard.setStringAsync(msg.text);
       return;
     case 'theme':
-      return; // géré par l'écran (couleur des bords)
+    case 'auth':
+    case 'route':
+    case 'scan-open':
+    case 'scan-close':
+      return; // gérés par l'écran principal
     case 'error':
       Alert.alert('Fichier', 'Le fichier n’a pas pu être préparé. Réessayez.');
       return;

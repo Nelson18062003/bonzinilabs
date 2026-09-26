@@ -16,6 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 // Auth (eagerly loaded — needed for route guard)
 import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { NativeAppBridge } from "./components/NativeAppBridge";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRouteWrapper } from "./desktop/components/AdminRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
@@ -228,6 +229,7 @@ const App = () => (
             <ClientRealtimeListener />
             <AdminAuthProvider>
             <AdminRealtimeListener />
+            <NativeAppBridge />
             <KeyboardFocusManager />
               <Suspense fallback={<PageLoader />}>
               <Routes>

@@ -1,16 +1,19 @@
 // ============================================================
-// Où l'app va chercher les écrans : le site de production. Chaque mise en
-// ligne du site (Vercel, branche main) arrive dans l'app sans republier sur
-// les stores. Changer `extra.baseUrl` dans app.json pour tester une préprod.
+// Réglages de l'app : le site (écrans), Supabase (données natives).
+// Tout vient de app.json → extra : changer d'environnement = changer app.json.
+// La clé Supabase est la clé PUBLIQUE (publishable) : la sécurité est dans
+// les règles RLS et les RPC gardées par rôle, pas dans ce secret.
 // ============================================================
 import Constants from 'expo-constants';
 
-type Extra = { baseUrl?: string; startPath?: string };
+type Extra = { baseUrl?: string; startPath?: string; supabaseUrl?: string; supabaseKey?: string };
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
 export const BASE_URL = (extra.baseUrl ?? 'https://www.bonzinilabs.com').replace(/\/+$/, '');
-/** La connexion unique : une fois connecté, le site envoie chacun vers SON espace (/m, /a, /r, /w). */
+/** Le site ouvre ici ; la connexion est native, puis chacun va dans SON espace. */
 export const START_URL = BASE_URL + (extra.startPath ?? '/m/login');
+export const SUPABASE_URL = extra.supabaseUrl ?? 'https://fmhsohrgbznqmcvqktjw.supabase.co';
+export const SUPABASE_KEY = extra.supabaseKey ?? '';
 export const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 /** Ajouté à l'agent utilisateur : le site sait qu'il est dans l'app (src/lib/nativeApp.ts). */
 export const USER_AGENT_SUFFIX = `BonziniHQ/${APP_VERSION}`;

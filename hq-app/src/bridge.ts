@@ -25,6 +25,11 @@ export type BridgeMessage =
   | { type: 'clipboard-image'; mime: string; base64: string }
   | { type: 'clipboard-text'; text: string }
   | { type: 'theme'; background: string }
+  // Messages du SITE lui-même (src/lib/nativeBridge.ts côté site) :
+  | { type: 'auth'; user: { id: string; email: string; firstName: string; lastName: string; role: string } | null; accessToken: string | null; expiresAt: number | null }
+  | { type: 'route'; path: string }
+  | { type: 'scan-open'; continuous: boolean }
+  | { type: 'scan-close' }
   | { type: 'error'; message: string };
 
 export function parseBridgeMessage(raw: string): BridgeMessage | null {

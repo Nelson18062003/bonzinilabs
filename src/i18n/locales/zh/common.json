@@ -564,5 +564,6 @@
   },
   "signInWithPassword": "密码",
   "signInWithPasswordHint": "开通账号时提供给您的密码",
-  "enterPassword": "请输入密码"
+  "enterPassword": "请输入密码",
+  "scanOpenNative": "打开扫码"
 }

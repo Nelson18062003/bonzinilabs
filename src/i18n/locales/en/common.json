@@ -564,5 +564,6 @@
   },
   "signInWithPassword": "Password",
   "signInWithPasswordHint": "The one you were given with your account",
-  "enterPassword": "Your password"
+  "enterPassword": "Your password",
+  "scanOpenNative": "Open the scanner"
 }

@@ -89,7 +89,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
     }
   };
 
-  const cam = useQrScanner(scannerId, (text) => { void handle(text); }, camera);
+  const cam = useQrScanner(scannerId, (text) => { void handle(text); }, camera, { continuous: true });
 
   // La douchette « tape » dans le champ : on le garde au focus, sauf si l'utilisateur
   // écrit ailleurs (un autre champ, la fiche d'un colis).

@@ -15,6 +15,10 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AnimatedPage } from '@/components/transitions/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { ReceptionTabBar } from './ReceptionTabBar';
+import { isNativeApp } from '@/lib/nativeApp';
+
+/** Dans l'app BONZINI HQ, la barre d'onglets est native : celle du site se retire. */
+const inApp = isNativeApp();
 
 function Protected({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, hasPermission, currentUser } = useAdminAuth();
@@ -37,7 +41,7 @@ export function ReceptionShell({ children, showTabBar = true }: { children: Reac
       <main className={cn('flex-1', showTabBar && 'pb-24')}>
         <AnimatedPage>{children}</AnimatedPage>
       </main>
-      {showTabBar && <ReceptionTabBar />}
+      {showTabBar && !inApp && <ReceptionTabBar />}
     </div>
   );
 }

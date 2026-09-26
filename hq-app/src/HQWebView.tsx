@@ -1,41 +1,43 @@
 // ============================================================
-// L'écran principal : le site du personnel, dans l'app.
+// Le site du personnel, DANS l'app — une seule WebView, jamais démontée :
+// les onglets natifs y naviguent sans rechargement (routeur du site).
 //
-//   · Les pages bonzinilabs.com restent DANS l'app ; tout autre lien part
-//     là où il doit aller : WhatsApp, appel, e-mail → l'app du téléphone ;
-//     autre site (preuve stockée, carte…) → navigateur intégré.
-//   · Fichiers, partage, presse-papiers : voir bridge.ts et files.ts.
-//   · Bouton retour Android = page précédente ; balayage retour sur iPhone.
-//   · Caméra : autorisée pour le site (scanner les codes clients et cartons).
-//   · Si la page plante (mémoire), on la recharge au lieu d'un écran blanc.
+//   · Poignée (WebHandle) : naviguer, poser la session de la connexion
+//     native, déconnecter, rendre un scan à l'écran qui l'attend.
+//   · Messages du site (src/lib/nativeBridge.ts) : qui est connecté + jeton,
+//     page courante, demandes d'ouverture/fermeture du scanner.
+//   · Pages bonzinilabs.com dans l'app ; WhatsApp, appels, e-mails → apps
+//     du téléphone ; autres sites → navigateur intégré.
+//   · Fichiers, partage, presse-papiers : bridge.ts + files.ts.
+//   · Bouton retour Android = page précédente ; plantage mémoire → rechargement.
 // ============================================================
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { BackHandler, Linking, Platform } from 'react-native';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 import type { ShouldStartLoadRequest, WebViewMessageEvent, WebViewOpenWindowEvent } from 'react-native-webview/lib/WebViewTypes';
 import * as WebBrowser from 'expo-web-browser';
-import { INJECTED_BEFORE_CONTENT, parseBridgeMessage } from './bridge';
+import { INJECTED_BEFORE_CONTENT, parseBridgeMessage, type BridgeMessage } from './bridge';
 import { handleBridgeMessage } from './files';
 import { START_URL, USER_AGENT_SUFFIX, isAppUrl } from './config';
+import type { WebHandle } from './store';
 
-export interface HQWebViewHandle {
-  reload: () => void;
-}
+type SiteMessage = Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' }>;
 
 interface Props {
   /** Première page affichée : on peut retirer l'écran de lancement. */
   onFirstLoad: () => void;
   /** Échec réseau de la page principale. */
   onNetworkError: () => void;
-  /** Couleur de fond de la page (pour peindre les bords de l'écran). */
-  onTheme: (background: string) => void;
+  /** Ce que le site dit à l'app. */
+  onSiteMessage: (msg: SiteMessage) => void;
+  /** Retour Android sans page précédente : l'écran principal décide (revenir à l'accueil…). */
+  onBackAtRoot?: () => boolean;
 }
 
 /** Hors de l'app : applications du téléphone (tel:, mailto:, whatsapp:…) ou navigateur intégré. */
-async function openOutside(url: string) {
+export async function openOutside(url: string) {
   try {
     if (/^https?:/i.test(url)) {
-      // wa.me et api.whatsapp.com ouvrent WhatsApp directement.
       if (/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//i.test(url)) {
         await Linking.openURL(url);
         return;
@@ -49,12 +51,23 @@ async function openOutside(url: string) {
   }
 }
 
-export const HQWebView = forwardRef<HQWebViewHandle, Props>(function HQWebView({ onFirstLoad, onNetworkError, onTheme }, ref) {
+/** Un appel au site, protégé : si le pont n'est pas encore prêt, on retente un peu plus tard. */
+function callSite(expr: string): string {
+  return `(function(){var n=0;function go(){if(window.__bonziniHQ){try{${expr}}catch(e){}}else if(n++<40){setTimeout(go,150);}}go();})();true;`;
+}
+
+export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFirstLoad, onNetworkError, onSiteMessage, onBackAtRoot }, ref) {
   const web = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const loadedOnce = useRef(false);
 
-  useImperativeHandle(ref, () => ({ reload: () => web.current?.reload() }), []);
+  useImperativeHandle(ref, () => ({
+    reload: () => web.current?.reload(),
+    navigate: (path) => web.current?.injectJavaScript(callSite(`window.__bonziniHQ.navigate(${JSON.stringify(path)});`)),
+    setSession: (tokens) => web.current?.injectJavaScript(callSite(`window.__bonziniHQ.setSession(${JSON.stringify(tokens)});`)),
+    logout: () => web.current?.injectJavaScript(callSite('window.__bonziniHQ.logout();')),
+    deliverScan: (text) => web.current?.injectJavaScript(callSite(`window.__bonziniHQ.deliverScan(${JSON.stringify(text)});`)),
+  }), []);
 
   // Android : le bouton retour revient à la page précédente avant de quitter.
   useEffect(() => {
@@ -64,14 +77,13 @@ export const HQWebView = forwardRef<HQWebViewHandle, Props>(function HQWebView({
         web.current?.goBack();
         return true;
       }
-      return false;
+      return onBackAtRoot ? onBackAtRoot() : false;
     });
     return () => sub.remove();
-  }, [canGoBack]);
+  }, [canGoBack, onBackAtRoot]);
 
   const onShouldStart = useCallback((req: ShouldStartLoadRequest) => {
     const { url } = req;
-    // Cadres intégrés (aperçus, captcha…) : laissés au site.
     if (req.isTopFrame === false) return true;
     if (url.startsWith('about:') || url.startsWith('blob:') || url.startsWith('data:')) return true;
     if (isAppUrl(url)) return true;
@@ -88,12 +100,12 @@ export const HQWebView = forwardRef<HQWebViewHandle, Props>(function HQWebView({
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     const msg = parseBridgeMessage(e.nativeEvent.data);
     if (!msg) return;
-    if (msg.type === 'theme') {
-      onTheme(msg.background);
+    if (msg.type === 'auth' || msg.type === 'route' || msg.type === 'scan-open' || msg.type === 'scan-close' || msg.type === 'theme') {
+      onSiteMessage(msg);
       return;
     }
     void handleBridgeMessage(msg, (url) => void openOutside(url));
-  }, [onTheme]);
+  }, [onSiteMessage]);
 
   const onNav = useCallback((nav: WebViewNavigation) => setCanGoBack(nav.canGoBack), []);
 
@@ -115,20 +127,17 @@ export const HQWebView = forwardRef<HQWebViewHandle, Props>(function HQWebView({
         }
       }}
       onError={() => onNetworkError()}
-      // Mémoire saturée (grosses images, PDF) : on recharge plutôt qu'un écran blanc.
       onContentProcessDidTerminate={() => web.current?.reload()}
       onRenderProcessGone={() => web.current?.reload()}
       originWhitelist={['https://*', 'about:*', 'blob:*', 'data:*']}
       javaScriptEnabled
       domStorageEnabled
       sharedCookiesEnabled
-      // Caméra du scanner : accordée au site sans seconde question (la permission du téléphone suffit).
       mediaCapturePermissionGrantType="grant"
       allowsInlineMediaPlayback
       allowsBackForwardNavigationGestures
       allowsLinkPreview={false}
       setSupportMultipleWindows
-      // Taille du texte : celle du site, pas un zoom Android qui casse les écrans.
       textZoom={100}
       overScrollMode="never"
       contentInsetAdjustmentBehavior="never"

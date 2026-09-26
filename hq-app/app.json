@@ -27,8 +27,13 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["android.permission.CAMERA"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.SYSTEM_ALERT_WINDOW"],
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -52,11 +57,24 @@
         {
           "faceIDPermission": "BONZINI HQ utilise Face ID pour que vous seul puissiez ouvrir l'app de l'équipe."
         }
+      ],
+      "expo-router",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BONZINI HQ utilise l'appareil photo pour scanner les codes des clients et des cartons, et pour photographier les colis et les preuves de paiement.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
       ]
     ],
     "extra": {
       "baseUrl": "https://www.bonzinilabs.com",
-      "startPath": "/m/login"
+      "startPath": "/m/login",
+      "supabaseUrl": "https://fmhsohrgbznqmcvqktjw.supabase.co",
+      "supabaseKey": "sb_publishable_cBhFX7Zcchab5DAXAswfrw_iAIncZOt"
     }
   }
 }
