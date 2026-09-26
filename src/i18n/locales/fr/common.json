@@ -561,5 +561,8 @@
     "error": "Impossible de modifier le découvert",
     "availableWithOverdraft": "Disponible avec découvert : {{amount}} (autorisé {{limit}})",
     "willOverdraw": "Le client passe en découvert : solde après {{amount}}."
-  }
+  },
+  "signInWithPassword": "Mot de passe",
+  "signInWithPasswordHint": "Celui qui vous a été donné avec votre compte",
+  "enterPassword": "Votre mot de passe"
 }

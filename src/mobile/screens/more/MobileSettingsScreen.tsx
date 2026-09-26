@@ -6,6 +6,7 @@ import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminA
 import { Palette, Fingerprint, ChevronRight, Lock, Warehouse, Scale, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
+import { isNativeApp } from '@/lib/nativeApp';
 
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
@@ -66,6 +67,8 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
         <div>
           <SectionTitle>{t('security', { defaultValue: 'Sécurité' })}</SectionTitle>
           <Card>
+            {/* Dans l'app BONZINI HQ, Face ID / empreinte sont gérés par l'app : pas de clé d'accès (WebAuthn ne marche pas en WebView). */}
+            {!isNativeApp() && (<>
             <button
               type="button"
               onClick={() => navigate('/m/more/passkeys')}
@@ -86,6 +89,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
             </button>
 
             <div className="my-1 h-px bg-black/5 dark:bg-white/5" />
+            </>)}
 
             <button
               type="button"

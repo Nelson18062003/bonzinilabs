@@ -5,6 +5,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AgentCashShell } from './AgentCashShell';
 import { Loader2 } from 'lucide-react';
+import { staffHomeFor } from '@/lib/staffHome';
 
 interface AgentCashRouteWrapperProps {
   children: ReactNode;
@@ -27,9 +28,10 @@ function ProtectedAgentCashRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/a/login" replace />;
   }
 
-  // Only cash_agent role allowed
+  // Only cash_agent role allowed — un autre membre du personnel connecté
+  // repart vers SON espace (connexion unique de l'app BONZINI HQ).
   if (currentUser?.role !== 'cash_agent') {
-    return <Navigate to="/a/login" replace />;
+    return <Navigate to={staffHomeFor(currentUser?.role)} replace />;
   }
 
   return <>{children}</>;
