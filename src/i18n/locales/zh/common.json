@@ -561,5 +561,8 @@
     "error": "无法修改透支",
     "availableWithOverdraft": "含透支可用：{{amount}}（授权 {{limit}}）",
     "willOverdraw": "客户将进入透支：操作后余额 {{amount}}。"
-  }
+  },
+  "signInWithPassword": "密码",
+  "signInWithPasswordHint": "开通账号时提供给您的密码",
+  "enterPassword": "请输入密码"
 }

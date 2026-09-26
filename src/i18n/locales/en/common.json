@@ -561,5 +561,8 @@
     "error": "Could not update the overdraft",
     "availableWithOverdraft": "Available with overdraft: {{amount}} (authorised {{limit}})",
     "willOverdraw": "The client goes into overdraft: balance after {{amount}}."
-  }
+  },
+  "signInWithPassword": "Password",
+  "signInWithPasswordHint": "The one you were given with your account",
+  "enterPassword": "Your password"
 }

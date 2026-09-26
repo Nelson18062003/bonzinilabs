@@ -11,7 +11,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 import '@/index.css';
 import '@/i18n';
@@ -83,6 +83,7 @@ import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
 import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception, DesktopCargoAir } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileLoginScreen } from '@/mobile/screens/auth/MobileLoginScreen';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
 import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
@@ -355,6 +356,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
   // Agent-cash sub-app (Phase 2 M8) — routes are /a/*. wrap:'lang' provides useLanguage().
   'agent-login': { Comp: AgentCashLogin, route: '/a/login', wrap: 'lang' },
+  // Connexion unique du personnel (app BONZINI HQ : ajouter « BonziniHQ/1.0 » à l'agent utilisateur).
+  'staff-login': { Comp: MobileLoginScreen, route: '/m/login', path: '/m/login' },
   'agent-payments': { Comp: AgentCashPayments, route: '/a', wrap: 'lang' },
   'agent-scanner': { Comp: AgentCashScanner, route: '/a/scan', wrap: 'lang' },
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
@@ -444,9 +447,11 @@ try { window.localStorage.setItem('theme', theme); } catch { /* ignore */ }
 if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'DM Sans', sans-serif";
 
 // Full-permission fake admin so permission guards pass.
+// ?anon=1 : personne n'est connecté (écran de connexion) ; ?role=… : le rôle simulé.
+const anon = params.get('anon') === '1';
 const fakeAuth = {
-  currentUser: { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: 'super_admin' },
-  isAuthenticated: true,
+  currentUser: anon ? null : { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: params.get('role') ?? 'super_admin' },
+  isAuthenticated: !anon,
   isLoading: false,
   hasPermission: () => true,
   profile: { first_name: 'Demo', last_name: 'Admin' },
@@ -473,11 +478,19 @@ const routed = entry.path ? (
 // Agent-cash screens need LanguageProvider (useLanguage bridge over i18next).
 const inner = entry.wrap === 'lang' ? <LanguageProvider>{routed}</LanguageProvider> : routed;
 
+/** Le chemin du routeur en mémoire, lisible par les tests (window.__routerPath). */
+function LocationProbe() {
+  const loc = useLocation();
+  (window as unknown as { __routerPath?: string }).__routerPath = loc.pathname;
+  return null;
+}
+
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
     <QueryClientProvider client={qc}>
       <AdminAuthContext.Provider value={fakeAuth}>
         <MemoryRouter initialEntries={[entry.route]}>
+          <LocationProbe />
           {inner}
         </MemoryRouter>
       </AdminAuthContext.Provider>

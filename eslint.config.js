@@ -64,7 +64,7 @@ const primitiveFiles = [
 ];
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  { ignores: ["dist", "hq-app"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

@@ -49,6 +49,9 @@ comment on function public.<nom>(<types>) is
 Après toute migration RPC : lancer `/gen-types`. Le test de parité (`eval/assistant/parity.test.ts`) signale les dérives.
 Réf. : `docs/assistant-ops/refonte/` (16, 17, 19) + migrations `*_mola_capability_*`.
 
+## App mobile du personnel — BONZINI HQ (`hq-app/`)
+App Expo (Android + iOS, interne) qui affiche les écrans du site dans une WebView : **une connexion** (`/m/login`), puis `staffHomeFor(role)` (`src/lib/staffHome.ts`) envoie chacun vers `/m`, `/a`, `/r` ou `/w`. Dans l'app, `isNativeApp()` (`src/lib/nativeApp.ts`) masque Google et les clés d'accès et montre le mot de passe. Téléchargements, partage et presse-papiers passent par les API standard du navigateur : l'app les intercepte (`hq-app/src/bridge.ts`) — ne pas les contourner. Guide : `docs/APP_MOBILE_BONZINI_HQ.md`. `hq-app/` est exclu d'ESLint et de Vitest ; il a son propre `npm run typecheck`.
+
 ## Design Rule — ALWAYS APPLY
 Whenever building or modifying any UI (components, pages, screens, modals, forms, layouts), **always invoke the `/frontend-design` skill first** to apply the design thinking framework before writing any code. This ensures every screen is distinctive, production-grade, and avoids generic AI aesthetics.
 
