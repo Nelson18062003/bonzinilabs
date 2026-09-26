@@ -33,6 +33,8 @@ import { tabForPath, tabsFor, type Tab } from '../tabs';
 import { useHQ } from '../store';
 import { C } from '../theme';
 import type { BridgeMessage } from '../bridge';
+import * as Notifications from 'expo-notifications';
+import { pathOf, registerForPush } from '../push';
 
 /** « rgb(30, 30, 30) » → sombre ? (couleur de la barre d'état) */
 function isDark(color: string): boolean {
@@ -170,6 +172,30 @@ export default function Main() {
     setNativeTab(null);
     web.current?.navigate(path);
   }, [setNativeTab, web]);
+
+  // Notifications : ce téléphone est enregistré pour la personne connectée…
+  const pushFor = useRef<string | null>(null);
+  const coldStartHandled = useRef(false);
+  useEffect(() => {
+    if (!user || pushFor.current === user.id) return;
+    pushFor.current = user.id;
+    void registerForPush();
+    // …et une notification touchée alors que l'app était fermée ouvre sa page.
+    if (!coldStartHandled.current) {
+      coldStartHandled.current = true;
+      const path = pathOf(Notifications.getLastNotificationResponse());
+      if (path) open(path);
+    }
+  }, [user, open]);
+
+  // Notification touchée, app ouverte ou en arrière-plan : la page concernée.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((r) => {
+      const path = pathOf(r);
+      if (path) open(path);
+    });
+    return () => sub.remove();
+  }, [open]);
 
   const onTab = useCallback((t: Tab) => {
     if (t.native === 'home') setNativeTab('home');

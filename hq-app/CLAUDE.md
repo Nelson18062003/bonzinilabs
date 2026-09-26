@@ -19,8 +19,11 @@ onglets natifs pilotent sans rechargement.
 - `HQWebView.tsx` : WebView + poignée (navigate, setSession, logout, deliverScan).
 - `bridge.ts` / `files.ts` : script injecté (téléchargements, partage,
   presse-papiers, thème) → fichiers et feuille de partage natifs.
-- `supabase.ts` : `loginClient` (connexion seulement) et `db` (lectures
-  natives avec le jeton transmis par le site).
+- `supabase.ts` : `db` (lectures natives avec le jeton transmis par le site) ;
+  la connexion native (`LoginScreen.tsx`) crée un client jetable.
+- `push.ts` : notifications (autorisation, jeton Expo, RPC
+  `register_staff_push_device`, ouverture de `data.path` au toucher).
+  Envois : déclencheurs Supabase, migration `20260926100000_staff_push_notifications.sql`.
 - `roles.ts`, `tabs.ts`, `scan.ts` : miroir des règles du site — le test
   `src/tests/hqApp/parity.test.ts` (racine) échoue en cas de dérive.
 

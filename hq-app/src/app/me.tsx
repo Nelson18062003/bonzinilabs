@@ -13,6 +13,7 @@ import { ROLE_LABEL, staffHome } from '../roles';
 import { APP_VERSION } from '../config';
 import { canLock } from '../LockScreen';
 import { lockWanted, setLockWanted } from '../lockPref';
+import { unregisterPush } from '../push';
 import { C } from '../theme';
 
 export default function Me() {
@@ -44,7 +45,8 @@ export default function Me() {
         text: 'Se déconnecter',
         style: 'destructive',
         onPress: () => {
-          web.current?.logout();
+          // Ce téléphone ne recevra plus les notifications de la personne.
+          void unregisterPush().finally(() => web.current?.logout());
           router.back();
         },
       },

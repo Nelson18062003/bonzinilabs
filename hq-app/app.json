@@ -68,6 +68,14 @@
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1A1028",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "extra": {

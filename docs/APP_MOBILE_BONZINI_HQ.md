@@ -23,6 +23,34 @@ La personne tape son email, puis choisit **« Recevoir un code par email »**
 ou **« Mot de passe »**. L'app lit son rôle et l'envoie dans **son** espace.
 Personne n'a à choisir « quelle app » ouvrir.
 
+### Ce qui est natif (et ce qui ne l'est pas)
+
+| Natif (code de l'app) | Écrans du site, pilotés par l'app |
+|---|---|
+| Connexion (code email ou mot de passe), contrôle du rôle | Opérations, dépôts, paiements |
+| Barre d'onglets par rôle, scanner au centre | Clients, fiches, relevés |
+| Accueil : dépôts à valider, paiements à traiter, raccourcis | Cargo, réception, entrepôt Douala |
+| Scanner caméra : QR + codes-barres, torche, mode continu | Trésorerie, taux, Mola, support |
+| « Moi » : profil, verrou Face ID, déconnexion | |
+| Notifications push (voir plus bas) | |
+
+### Les notifications
+
+| Événement | Qui est prévenu | Toucher ouvre |
+|---|---|---|
+| Un client envoie la preuve d'un dépôt | qui peut valider les dépôts | la fiche du dépôt |
+| Un paiement est prêt à traiter | qui peut traiter les paiements | la fiche du paiement |
+| Un paiement cash est à remettre | les agents cash | le paiement (agent cash) |
+| Un paiement cash a été scanné | super admin, opérations | la fiche du paiement |
+| Un client écrit au support | la messagerie | la conversation |
+| Un vol / un conteneur arrive à Douala | l'entrepôt de Douala | « Pointer » |
+
+La personne qui fait l'action n'est pas prévenue de sa propre action. À la
+déconnexion, le téléphone ne reçoit plus rien. **À faire une fois** : appliquer
+la migration `supabase/migrations/20260926100000_staff_push_notifications.sql`
+(copie : `migrations/20260926_staff_push_notifications.sql`), et lancer
+`eas init` (sans projet EAS, le téléphone ne peut pas obtenir son jeton).
+
 ### Comment l'app est faite
 
 L'app est une **vraie app native** qui affiche les écrans du site
