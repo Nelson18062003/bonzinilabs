@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "BONZINI HQ",
+    "slug": "bonzini-hq",
+    "scheme": "bonzinihq",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#FFFFFF",
+    "ios": {
+      "bundleIdentifier": "com.bonzinilabs.hq",
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "BONZINI HQ utilise l'appareil photo pour scanner les codes des clients et des cartons, et pour photographier les colis et les preuves de paiement.",
+        "NSPhotoLibraryUsageDescription": "BONZINI HQ ouvre vos photos pour joindre une preuve de paiement ou la photo d'un colis.",
+        "NSPhotoLibraryAddUsageDescription": "BONZINI HQ enregistre dans vos photos les images que vous choisissez de garder (flyer du jour, coordonnées de paiement, étiquettes)."
+      }
+    },
+    "android": {
+      "package": "com.bonzinilabs.hq",
+      "adaptiveIcon": {
+        "backgroundColor": "#1A1028",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["android.permission.CAMERA"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.SYSTEM_ALERT_WINDOW"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#1A1028"
+        }
+      ],
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "BONZINI HQ utilise Face ID pour que vous seul puissiez ouvrir l'app de l'équipe."
+        }
+      ]
+    ],
+    "extra": {
+      "baseUrl": "https://www.bonzinilabs.com",
+      "startPath": "/m/login"
+    }
+  }
+}

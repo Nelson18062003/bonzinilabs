@@ -10,7 +10,7 @@ export default defineConfig({
     setupFiles: ['./src/tests/setup.ts'],
     // Playwright e2e tests live in ./tests/e2e and are driven by
     // `npm run test:e2e`. Keep vitest out of that tree.
-    exclude: ['node_modules', 'dist', 'tests/e2e/**'],
+    exclude: ['node_modules', 'dist', 'tests/e2e/**', 'hq-app/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
