@@ -29,7 +29,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
 import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
-import { carrierSecret } from "../_shared/secrets.ts";
+import { carrierSecret, errorMessage } from "../_shared/secrets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -187,7 +187,7 @@ serve(async (req) => {
       try {
         synced[code][s.container_number] = await syncCarrier(sb, s, carrier.fetch, key);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+        const msg = errorMessage(e);
         synced[code][s.container_number] = `erreur: ${msg}`;
         await sb.from("cargo_shipments").update({ sync_error: msg, last_synced_at: new Date().toISOString() }).eq("id", s.id);
       }
@@ -198,7 +198,7 @@ serve(async (req) => {
   const AISSTREAM_KEY = await carrierSecret(sb, "AISSTREAM_API_KEY");
   if (AISSTREAM_KEY) {
     try { report.positions = await syncPositions(sb, shipments, AISSTREAM_KEY); }
-    catch (e) { report.positionsError = e instanceof Error ? e.message : String(e); }
+    catch (e) { report.positionsError = errorMessage(e); }
   } else {
     (report.skipped as string[]).push("AISSTREAM_API_KEY absent");
   }

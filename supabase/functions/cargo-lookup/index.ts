@@ -15,7 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { containersIn, fetchMaerskEvents, summarizeContainer } from "../_shared/maersk.ts";
 import { fetchCmaCgmEvents } from "../_shared/cmacgm.ts";
 import { isServiceCaller } from "../_shared/caller.ts";
-import { carrierSecret } from "../_shared/secrets.ts";
+import { carrierSecret, errorMessage } from "../_shared/secrets.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -63,6 +63,6 @@ serve(async (req) => {
     await sb.from("cargo_lookups").update({ status: "done", result, error: null, completed_at: new Date().toISOString() }).eq("id", lookup_id);
     return Response.json({ success: true, containers: containers.length });
   } catch (e) {
-    return fail(e instanceof Error ? e.message : String(e));
+    return fail(errorMessage(e));
   }
 });
