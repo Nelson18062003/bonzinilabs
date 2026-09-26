@@ -130,7 +130,7 @@ de ~4 000 USD à 9 265 805 XAF, la Fortuner à 13 855 066 XAF.
 > est une facture d'achat de Bonzini, qui n'existera jamais.
 
 C'est aussi pour cela que la **case 23 « N° de domiciliation » est vide** : la
-domiciliation bancaire (art. 38 du Règlement des changes CEMAC, > 5 000 000 XAF)
+domiciliation bancaire (art. 63 du Règlement des changes CEMAC 02/18, ≥ 5 000 000 XAF)
 suppose un contrat commercial d'achat. Bonzini n'en a pas à domicilier.
 
 ---
@@ -266,6 +266,6 @@ marché sans NIU :
 
 - **Code des douanes CEMAC, révision 2019** — Règlement n° 05/19-UEAC-010A-CM-33.
   Fichier : `cd2019.pdf`. Articles 30, 74, 141-144, 148-155.
-- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 38.
+- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 63 (l'art. 38 cité auparavant venait du Règlement 02/00, abrogé).
 - DAU `SDSD2-2026-IMP-020399-I` du 17/09/2026, bureau SDSD2/CMKP5, déclarant
   BNG TRANS SARL n° H0451.

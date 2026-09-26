@@ -5,6 +5,19 @@
 > **Réponse courte : oui, elle l'est. C'est moi qui avais trop chargé.** Ce document
 > corrige, puis montre ce qui compte réellement — et ce n'est pas la capture d'écran.
 
+> 🔧 **CORRECTION DU 26/09/2026 — à lire avant le reste.** Les articles cités ici comme «
+> Règlement 02/18 » (art. 38, 41, 42, 115-129, Annexe III à 50 %, « définition 14 »)
+> sont ceux du **Règlement 02/00 du 29 avril 2000, abrogé le 1er mars 2019** (art.
+> 194-195 du 02/18). Dans le 02/18 en vigueur : domiciliation **art. 63** (biens) et
+> **art. 68 et 72** (services), **≥ 5 M XAF** ; défaut de domiciliation **10 %** du
+> montant (**art. 159**), et non 50 % ; plafond de 50 % des fonds propres (**art. 176**)
+> ; l'**art. 179 existe** (sanctions non pécuniaires, dont l'interdiction de
+> transférer). Exposition recalculée pour la DAU `SDSD2-2026-IMP-020399-I` : **≈ 2 869
+> 571 XAF** au plus, et non 14 347 852. L'art. 18 (change manuel > 1 M, 20 %) vient lui
+> aussi du texte de 2000. Les citations de l'**Instruction 007/GR/2019** et de
+> l'**Instruction 014/GR/2019** restent justes. Détail et tableau de correspondance :
+> `devises-usd-et-filiale-etrangere.md`, §9.
+
 ---
 
 ## 1. Correction : la facture EST la preuve

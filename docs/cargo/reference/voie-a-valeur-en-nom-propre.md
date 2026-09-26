@@ -210,7 +210,7 @@ descendre l'échelle.
   ni choisies ni achetées restent les siennes.
 - **La fragilité de la méthode 1.** Une facture au nom du client contre une DAU au nom
   de Bonzini : la contradiction reste visible à chaque contrôle.
-- **La domiciliation bancaire** (art. 38 du Règlement des changes CEMAC) reste sans
+- **La domiciliation bancaire** (art. 63 du Règlement des changes CEMAC 02/18) reste sans
   objet, donc la case 23 restera vide ou faible.
 - **Le contrôle a posteriori.** L'exonération `E00` posée sur le tracteur avec un code
   qui ne la justifie pas reste un risque entier, indépendant de la valeur.

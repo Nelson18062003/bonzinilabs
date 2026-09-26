@@ -194,7 +194,7 @@ Manquants, tous rendus obligatoires par l'analyse :
 | `PROOF_OF_PAYMENT` | art. 30.1 — sans elle, la méthode 1 tombe |
 | `DEV` (déclaration des éléments de la valeur) | art. 156.4 — *« doit figurer »* |
 | `DI` (déclaration d'importation e-GUCE) | par importateur et par envoi |
-| `DOMICILIATION` | art. 38 Règlement des changes, au-delà de 5 M XAF |
+| `DOMICILIATION` | art. 63 Règlement des changes 02/18, à partir de 5 M XAF |
 | `RVC` (SGS / PVI) | au-delà de 2 M XAF FOB |
 | `FIMEX` / `NIU` client | prérequis Voie B, à renouveler chaque année |
 
@@ -240,6 +240,6 @@ segmentée suffit longtemps. Au-dessus, C3 devient urgent. **C'est la question n
 - **Code des douanes CEMAC, révision 2019** — art. 30, 31, 32, 33, 37, 41, 42, 75, 113,
   117, 140, 143, 150, 153, 154, 156, 162, 163, 171, 231, 242, 243, 250, 251, 446, 449.
 - **MINCOMMERCE** — [FIMEX](https://www.mincommerce.gov.cm/fr/procedure-dinscription-au-fichier-des-importateurs-et-exportateurs)
-- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 38.
+- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 63 (l'art. 38 cité auparavant venait du Règlement 02/00, abrogé).
 - `src/lib/cargo/model.ts` — `DOCUMENT_KINDS`, `ARRIVAL_STEPS`.
 - DAU `SDSD2-2026-IMP-020399-I` du 17/09/2026.

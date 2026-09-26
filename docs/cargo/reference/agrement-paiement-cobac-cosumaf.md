@@ -5,6 +5,23 @@
 > Ce document expose les textes, marque ce qui n'est pas vérifié, et décrit le montage
 > qui, lui, tient.
 
+> 🔧 **CORRECTION DU 26/09/2026 — à lire avant le reste.** Les articles cités ici comme «
+> Règlement 02/18 » (art. 38, 41, 42, 115-129, Annexe III à 50 %, « définition 14 »)
+> sont ceux du **Règlement 02/00 du 29 avril 2000, abrogé le 1er mars 2019** (art.
+> 194-195 du 02/18). Dans le 02/18 en vigueur : domiciliation **art. 63** (biens) et
+> **art. 68 et 72** (services), **≥ 5 M XAF** ; défaut de domiciliation **10 %** du
+> montant (**art. 159**), et non 50 % ; plafond de 50 % des fonds propres (**art. 176**)
+> ; l'**art. 179 existe** (sanctions non pécuniaires, dont l'interdiction de
+> transférer). Les intermédiaires agréés sont à la **définition 31**. **Autre mise à
+> jour décisive** : le Règlement LBC/FT **02/24/CEMAC/UMAC/CM du 20/12/2024**, art. 42,
+> soumet toute activité de prestataire de services sur actifs virtuels à **autorisation
+> préalable**, même hors COBAC, et côté Chine la circulaire **银发〔2026〕42号** du
+> 06/02/2026 interdit le change monnaie légale ↔ crypto. La conclusion du §3 (« hors du
+> champ de l'interdiction ») est **dépassée** : voir
+> `devises-usd-et-filiale-etrangere.md`, §6. Les citations de l'**Instruction
+> 007/GR/2019** et de l'**Instruction 014/GR/2019** restent justes. Détail et tableau de
+> correspondance : `devises-usd-et-filiale-etrangere.md`, §9.
+
 ---
 
 ## 1. Ce que fait Bonzini Payments est **déjà** un service de paiement réglementé

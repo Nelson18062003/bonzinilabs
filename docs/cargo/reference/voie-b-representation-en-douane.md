@@ -148,7 +148,7 @@ Et l'exigence douanière correspondante :
 S'y ajoutent, par importateur et par envoi, les formalités déjà documentées dans
 `formalites-avant-embarquement.md` : la **DI** (déclaration d'importation) sur e-GUCE à
 partir de la proforma codifiée, la **domiciliation bancaire** au-delà de **5 000 000
-XAF** (art. 38 du Règlement des changes CEMAC n° 02/18 du 21 décembre 2018), et le
+XAF** (art. 63 du Règlement des changes CEMAC n° 02/18 du 21 décembre 2018), et le
 **PVI/SGS** dès **2 000 000 XAF FOB**.
 
 ---
@@ -275,5 +275,5 @@ plafond à l'importation.
   exportateurs](https://www.mincommerce.gov.cm/fr/procedure-dinscription-au-fichier-des-importateurs-et-exportateurs)
 - **Loi de finances 2023 (Cameroun)**, ARTICLE NEUVIÈME —
   [minfi.gov.cm](https://minfi.gov.cm/wp-content/uploads/2023/01/loi-de-finances-2023.pdf)
-- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 38.
+- **Règlement des changes CEMAC** n° 02/18/CEMAC/UMAC/CM du 21 décembre 2018, art. 63 (l'art. 38 cité auparavant venait du Règlement 02/00, abrogé).
 - DAU `SDSD2-2026-IMP-020399-I` du 17/09/2026.
