@@ -98,6 +98,8 @@ export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFir
   }, []);
 
   const onMessage = useCallback((e: WebViewMessageEvent) => {
+    // Seules les pages bonzinilabs.com parlent à l'app (session, fichiers…).
+    if (!isAppUrl(e.nativeEvent.url)) return;
     const msg = parseBridgeMessage(e.nativeEvent.data);
     if (!msg) return;
     if (msg.type === 'auth' || msg.type === 'route' || msg.type === 'scan-open' || msg.type === 'scan-close' || msg.type === 'theme') {

@@ -14,6 +14,7 @@ import { APP_VERSION } from '../config';
 import { canLock } from '../LockScreen';
 import { lockWanted, setLockWanted } from '../lockPref';
 import { pushState, registerForPush, unregisterPush, type PushState } from '../push';
+import { applyUpdate, fetchUpdate, onUpdateReady, runningLabel, updateReady, updatesOn } from '../updates';
 import { C } from '../theme';
 
 export default function Me() {
@@ -21,6 +22,10 @@ export default function Me() {
   const [lockOn, setLockOn] = useState(true);
   const [lockPossible, setLockPossible] = useState(false);
   const [push, setPush] = useState<PushState | null>(pushState());
+  const [update, setUpdate] = useState(updateReady());
+  const [checking, setChecking] = useState(false);
+
+  useEffect(() => onUpdateReady(setUpdate), []);
 
   useEffect(() => {
     void Promise.all([canLock(), lockWanted()]).then(([hw, wanted]) => {
@@ -123,12 +128,39 @@ export default function Me() {
           </>
         )}
 
+        {updatesOn && (
+          <>
+            <Text style={styles.section}>Application</Text>
+            <View style={styles.card}>
+              <Pressable
+                onPress={() => {
+                  if (update) applyUpdate();
+                  else {
+                    setChecking(true);
+                    void fetchUpdate(true).finally(() => setChecking(false));
+                  }
+                }}
+                disabled={checking}
+                style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}
+                accessibilityRole="button"
+              >
+                <Ionicons name={update ? 'rocket' : 'cloud-download'} size={24} color={update ? C.violet : C.ink} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowTitle}>{update ? 'Nouvelle version prête' : 'Mises à jour'}</Text>
+                  <Text style={styles.rowHint}>{update ? 'Toucher pour redémarrer l’app dessus' : checking ? 'Recherche…' : 'Toucher pour chercher une nouvelle version'}</Text>
+                </View>
+                {update && <View style={styles.pill}><Text style={styles.pillText}>Redémarrer</Text></View>}
+              </Pressable>
+            </View>
+          </>
+        )}
+
         <Pressable onPress={logout} style={({ pressed }) => [styles.logout, pressed && { opacity: 0.85 }]} accessibilityRole="button">
           <Ionicons name="log-out" size={20} color={C.red} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </Pressable>
 
-        <Text style={styles.version}>BONZINI HQ · version {APP_VERSION}</Text>
+        <Text style={styles.version}>BONZINI HQ · version {APP_VERSION} · {runningLabel()}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -171,5 +203,7 @@ const styles = StyleSheet.create({
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: C.border },
   logout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 56, borderRadius: 999, borderWidth: 1, borderColor: '#F3B8B4', marginTop: 28 },
   logoutText: { color: C.red, fontSize: 17, fontWeight: '700' },
+  pill: { backgroundColor: C.violet, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  pillText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   version: { textAlign: 'center', color: C.faint, fontSize: 13, marginTop: 20 },
 });

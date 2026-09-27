@@ -12,6 +12,7 @@ import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/
 import { CASH_TO_HAND_OVER_STATUSES } from '@/hooks/useAgentCashPayments';
 import { BADGE_TABS, CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from '../../../hq-app/src/statuses';
 import { tabsFor } from '../../../hq-app/src/tabs';
+import { sitePathFromUrl, staffPath } from '../../../hq-app/src/links';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS) as AppRole[];
 
@@ -67,6 +68,29 @@ describe('BONZINI HQ ↔ site', () => {
     expect(keys('super_admin')).toEqual(expect.arrayContaining([...BADGE_TABS.admin]));
     for (const r of ['receptionist', 'warehouse_agent', 'cash_agent'] as const) {
       expect(keys(r)).toEqual(expect.arrayContaining([...BADGE_TABS[r]]));
+    }
+  });
+
+  it('ouvre les liens entrants vers une page du personnel, et rien d’autre', () => {
+    const id = '0b9f6f0e-1c1a-4c3e-9b1e-2f6a7d9c1e55';
+    expect(sitePathFromUrl(`bonzinihq://open?path=${encodeURIComponent(`/m/deposits/${id}`)}`)).toBe(`/m/deposits/${id}`);
+    expect(sitePathFromUrl(`bonzinihq:///m/payments/${id}`)).toBe(`/m/payments/${id}`);
+    expect(sitePathFromUrl(`bonzinihq://a/payment/${id}`)).toBe(`/a/payment/${id}`);
+    expect(sitePathFromUrl('https://www.bonzinilabs.com/m/cargo/track?ref=BZ-123')).toBe('/m/cargo/track?ref=BZ-123');
+    expect(sitePathFromUrl('/w/arrivees')).toBe('/w/arrivees');
+    // Refusés : autre site, espace client, connexion, remontée, javascript.
+    expect(sitePathFromUrl('https://evil.example/m/deposits')).toBeNull();
+    expect(sitePathFromUrl('https://www.bonzinilabs.com/wallet')).toBeNull();
+    expect(sitePathFromUrl('bonzinihq://open?path=/m/login')).toBeNull();
+    expect(sitePathFromUrl('bonzinihq://open?path=/m/../wallet')).toBeNull();
+    expect(sitePathFromUrl('javascript:alert(1)')).toBeNull();
+    expect(sitePathFromUrl('bonzinihq://open?path=//evil.example')).toBeNull();
+  });
+
+  it('accepte chaque page ouverte par une notification', () => {
+    const id = '0b9f6f0e-1c1a-4c3e-9b1e-2f6a7d9c1e55';
+    for (const p of [`/m/deposits/${id}`, `/m/payments/${id}`, `/a/payment/${id}`, `/m/support/${id}`, '/w/arrivees']) {
+      expect(staffPath(p), p).toBe(p);
     }
   });
 });

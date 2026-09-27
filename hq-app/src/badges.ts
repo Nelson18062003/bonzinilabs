@@ -5,8 +5,8 @@
 //   · réception → « En attente » : reception_my_day.pending (ReceptionTabBar)
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)
 //   · agent cash → « Paiements » : paiements cash en attente (useAgentCashPayments)
-// Rafraîchies toutes les minutes, au retour dans l'app, à chaque
-// notification reçue et quelques secondes après chaque changement de page
+// Le total s'affiche aussi sur l'icône de l'app. Rafraîchies toutes les
+// minutes, au retour dans l'app, à chaque notification reçue et quelques secondes après chaque changement de page
 // (un dépôt validé fait baisser la pastille sans attendre).
 // ============================================================
 import { useCallback, useEffect, useState } from 'react';
@@ -66,7 +66,10 @@ export function useBadges(role: StaffRole | null, route: string): Badges {
   const load = useCallback(async () => {
     if (!role || !hasFreshToken()) return;
     try {
-      setBadges(await fetchBadges(role));
+      const next = await fetchBadges(role);
+      setBadges(next);
+      // Le même total sur l'icône de l'app (écran d'accueil du téléphone).
+      void Notifications.setBadgeCountAsync(Object.values(next).reduce((a, b) => a + b, 0)).catch(() => {});
     } catch {
       // Réseau coupé : on garde les derniers chiffres.
     }
@@ -75,6 +78,7 @@ export function useBadges(role: StaffRole | null, route: string): Badges {
   useEffect(() => {
     if (!role) {
       setBadges({});
+      void Notifications.setBadgeCountAsync(0).catch(() => {});
       return;
     }
     void load();

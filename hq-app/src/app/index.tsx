@@ -36,6 +36,8 @@ import { C } from '../theme';
 import type { BridgeMessage } from '../bridge';
 import * as Notifications from 'expo-notifications';
 import { pathOf, registerForPush } from '../push';
+import { onSitePathQueued, peekSitePath, queueSitePath, staffPath, takeSitePath } from '../links';
+import { applyUpdate, fetchUpdate, updateReady } from '../updates';
 
 /** « rgb(30, 30, 30) » → sombre ? (couleur de la barre d'état) */
 function isDark(color: string): boolean {
@@ -89,7 +91,12 @@ export default function Main() {
         setCovered(false);
         const away = backgroundedAt.current;
         backgroundedAt.current = null;
-        if (lockEnabled && away !== null && Date.now() - away > RELOCK_AFTER_MS) setLocked(true);
+        const longAway = away !== null && Date.now() - away > RELOCK_AFTER_MS;
+        if (lockEnabled && longAway) setLocked(true);
+        // Une mise à jour native est prête et la personne revient d'une longue
+        // absence : on redémarre dessus (l'app repart verrouillée).
+        if (longAway && updateReady()) applyUpdate();
+        else void fetchUpdate();
       } else {
         setCovered(true);
         if (state === 'background' && backgroundedAt.current === null) backgroundedAt.current = Date.now();
@@ -185,19 +192,28 @@ export default function Main() {
     // …et une notification touchée alors que l'app était fermée ouvre sa page.
     if (!coldStartHandled.current) {
       coldStartHandled.current = true;
-      const path = pathOf(Notifications.getLastNotificationResponse());
-      if (path) open(path);
+      queueSitePath(staffPath(pathOf(Notifications.getLastNotificationResponse()) ?? ''));
     }
-  }, [user, open]);
+  }, [user]);
 
   // Notification touchée, app ouverte ou en arrière-plan : la page concernée.
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
-      const path = pathOf(r);
-      if (path) open(path);
+      queueSitePath(staffPath(pathOf(r) ?? ''));
     });
     return () => sub.remove();
-  }, [open]);
+  }, []);
+
+  // Page en attente (notification, lien bonzinihq://) : ouverte dès que la
+  // personne est connectée et que le site a quitté la page de connexion.
+  const [linkTick, setLinkTick] = useState(0);
+  useEffect(() => onSitePathQueued(() => setLinkTick((t) => t + 1)), []);
+  useEffect(() => {
+    if (!user || !peekSitePath()) return;
+    if (!route || LOGIN_PATHS.some((p) => route.startsWith(p))) return;
+    const path = takeSitePath();
+    if (path) open(path);
+  }, [user, route, linkTick, open]);
 
   const onTab = useCallback((t: Tab) => {
     if (t.native === 'home') setNativeTab('home');

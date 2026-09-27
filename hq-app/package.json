@@ -23,6 +23,7 @@
     "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
+    "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -46,7 +47,10 @@
     "build:android": "npx eas-cli@latest build -p android --profile production",
     "build:ios": "npx eas-cli@latest build -p ios --profile production",
     "submit:android": "npx eas-cli@latest submit -p android --profile production",
-    "submit:ios": "npx eas-cli@latest submit -p ios --profile production"
+    "submit:ios": "npx eas-cli@latest submit -p ios --profile production",
+    "update:configure": "npx eas-cli@latest update:configure",
+    "update:production": "npx eas-cli@latest update --channel production --environment production",
+    "update:preview": "npx eas-cli@latest update --channel preview --environment preview"
   },
   "private": true
 }

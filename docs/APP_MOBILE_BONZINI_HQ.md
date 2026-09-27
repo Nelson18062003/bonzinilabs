@@ -31,7 +31,8 @@ Personne n'a à choisir « quelle app » ouvrir.
 | Barre d'onglets par rôle, scanner au centre, **pastilles en direct** (à traiter, en attente, à pointer, à remettre) | Clients, fiches, relevés |
 | Accueil : dépôts à valider, paiements à traiter, raccourcis | Cargo, réception, entrepôt Douala |
 | Scanner caméra : QR + codes-barres, torche, mode continu | Trésorerie, taux, Mola, support |
-| « Moi » : profil, verrou Face ID, état des notifications, déconnexion | |
+| « Moi » : profil, verrou Face ID, état des notifications, mises à jour, déconnexion | |
+| Liens `bonzinihq://…` et pastille sur l'icône de l'app | |
 | Notifications push (voir plus bas) | |
 
 ### Les notifications
@@ -102,7 +103,10 @@ passe** y est proposé. Sur le site, rien ne change.
    npx eas-cli@latest login
    npx eas-cli@latest init        # relie le projet à Expo (ajoute projectId dans app.json)
    ```
-   Poussez ensuite le changement d'`app.json` (le `projectId`) sur GitHub.
+   ```bash
+   npm run update:configure       # active les mises à jour sans store (ajoute updates.url)
+   ```
+   Poussez ensuite les changements d'`app.json` (`projectId`, `updates.url`) sur GitHub.
 
 Les compilations se font **dans le cloud d'Expo (EAS)** : pas besoin de
 Xcode ni d'Android Studio.
@@ -202,7 +206,8 @@ Comme vos comptes sont au nom d'une **société** (BONZINILABS LTD), l'app peut
 |---|---|
 | Un écran, un texte, une règle (tout ce qui est sur le site) | **Rien** : la mise en ligne du site suffit, l'app suit. |
 | Icône, nom, permissions, bibliothèque native | Nouvelle compilation : `npm run build:android` / `build:ios`, puis envoi. Le numéro de build s'incrémente tout seul. |
-| Nouvelle version affichée (1.0.0 → 1.1.0) | Modifier `version` dans `hq-app/app.json`. |
+| Le code de l'app elle-même (`hq-app/src/`), sans nouvelle bibliothèque native | **Mise à jour sans store** : `npm run update:production` (ou `update:preview` pour les APK de test). Les téléphones la téléchargent au lancement ou au retour dans l'app, et l'appliquent au redémarrage suivant — ou tout de suite depuis « Moi ». |
+| Nouvelle version affichée (1.0.0 → 1.1.0) | Modifier `version` dans `hq-app/app.json`, puis recompiler : une mise à jour sans store ne vise que les téléphones de la même version. |
 
 Avant chaque compilation : `npm run typecheck && npm run doctor`.
 
@@ -212,5 +217,21 @@ Avant chaque compilation : `npm run typecheck && npm run doctor`.
 
 1. Passer en natif, un par un, les écrans les plus utilisés sur téléphone
    (d'après les retours de Tina et de Douala).
-2. Mises à jour sans store (`eas update`) pour la partie native.
-3. Plus tard : l'app **clients**, sur le même modèle.
+2. Plus tard : l'app **clients**, sur le même modèle.
+
+---
+
+## 8. Liens vers l'app
+
+Un lien ouvre directement une page de l'app (après connexion si besoin),
+par exemple dans un message WhatsApp à l'équipe :
+
+- `bonzinihq://open?path=/m/deposits/<id>` — ou `bonzinihq:///m/payments/<id>`
+- seules les pages du personnel (`/m`, `/a`, `/r`, `/w`) sont acceptées ; le
+  reste ouvre simplement l'app.
+
+Plus tard, les liens `https://www.bonzinilabs.com/m/…` pourront ouvrir l'app
+directement (liens universels) : il faudra publier sur le site les fichiers
+`assetlinks.json` (Android) et `apple-app-site-association` (iOS), avec
+l'empreinte de signature donnée par EAS et l'identifiant d'équipe Apple.
+

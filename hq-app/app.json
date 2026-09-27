@@ -83,6 +83,13 @@
       "startPath": "/m/login",
       "supabaseUrl": "https://fmhsohrgbznqmcvqktjw.supabase.co",
       "supabaseKey": "sb_publishable_cBhFX7Zcchab5DAXAswfrw_iAIncZOt"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
