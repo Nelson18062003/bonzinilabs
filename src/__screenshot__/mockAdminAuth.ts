@@ -18,16 +18,29 @@ export * from '../contexts/AdminAuthContext';
 
 // Rôle simulé : `localStorage.screenshot-role` (posé par le harnais via
 // ROLE=cash_agent) — la chaîne agent cash n'accepte que ce rôle-là.
-function mockRole(): 'super_admin' | 'cash_agent' {
+// `?role=…` dans l'URL (connexion unique de l'app BONZINI HQ) l'emporte.
+function urlParam(name: string): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get(name);
+  } catch {
+    return null;
+  }
+}
+function mockRole(): string {
+  const fromUrl = urlParam('role');
+  if (fromUrl) return fromUrl;
   try {
     return localStorage.getItem('screenshot-role') === 'cash_agent' ? 'cash_agent' : 'super_admin';
   } catch {
     return 'super_admin';
   }
 }
+/** `?anon=1` : personne n'est connecté (écran de connexion). */
+const anonymous = () => urlParam('anon') === '1';
+const demoRefusal = async () => ({ success: false, error: 'Démo : connexion désactivée' });
 
 export const useAdminAuth = () => ({
-  currentUser: {
+  currentUser: anonymous() ? null : {
     id: 'screenshot-admin',
     email: 'demo@bonzinilabs.test',
     name: 'Demo Admin',
@@ -39,8 +52,14 @@ export const useAdminAuth = () => ({
   // Le shell desktop (AdminRouteWrapper → ProtectedAdminRoute) redirige vers
   // /m/login sans ceci : on se déclare connecté pour capturer les écrans
   // complets, sidebar comprise.
-  isAuthenticated: true,
+  isAuthenticated: !anonymous(),
   permissions: null,
+  lastEmail: null,
+  login: demoRefusal,
+  requestEmailCode: demoRefusal,
+  verifyEmailCode: demoRefusal,
+  loginWithPasskey: demoRefusal,
+  loginWithGoogle: demoRefusal,
   hasPermission: () => true,
   signOut: async () => undefined,
   logout: async () => undefined,

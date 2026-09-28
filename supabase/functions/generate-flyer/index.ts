@@ -1,12 +1,14 @@
 // Supabase Edge Function — generate-flyer
 // Le flyer « Taux du jour » côté serveur, pour Mola (generate_rate_flyer) et le
 // bot Telegram (/flyer). MÊME design et MÊMES chiffres que le flyer de l'app
-// (src/mobile/components/rates/RateFlyer.tsx + src/lib/rateFlyer.ts), validé
-// par le fondateur le 24/09/2026 : au seul nom de NORTON GAUSS BONZINI SARL
-// (ni « Bonzini », ni site, ni WhatsApp), un flyer par pays, les petits
-// paiements dans un bloc rouge.
+// (src/mobile/components/rates/RateFlyer.tsx + src/lib/rateFlyer.ts) : un
+// flyer par pays, les petits paiements dans un bloc rouge ; depuis le
+// 28/09/2026 signé BONZINI, le jour ET l'heure de Guangzhou (fuseau écrit), le pays → la Chine
+// avec les deux drapeaux, plus de phrase en bas, en français OU en anglais.
+// Les mots (FLYER_TEXT) sont copiés de src/lib/rateFlyer.ts — le test
+// src/tests/lib/rateFlyer.test.ts vérifie que chacun est présent ici.
 //
-// Entrée : { country_key?: "cameroun" | "gabon" | … } — rien d'autre. La
+// Entrée : { country_key?: "cameroun" | "gabon" | …, lang?: "fr" | "en" } — rien d'autre. La
 // fonction lit ELLE-MÊME la publication active et rate_adjustments : on ne
 // peut plus lui faire imprimer des taux inventés (elle acceptait des taux
 // quelconques, sans authentification).
@@ -18,7 +20,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import satori from "npm:satori@0.10.11";
 import { Resvg, initWasm } from "npm:@resvg/resvg-wasm@2.6.0";
 
-const LEGAL_NAME = "NORTON GAUSS BONZINI SARL";
+const FLYER_BRAND = "BONZINI";
 const W = 1080;
 const H = 1350;
 
@@ -73,29 +75,65 @@ async function flagDataUrl(iso: string): Promise<string | null> {
   } catch { return null; }
 }
 
-// ── Les chiffres : copie fidèle de src/lib/rateFlyer.ts ────────────────────
+// ── Les mots et les chiffres : copie fidèle de src/lib/rateFlyer.ts ────────
+type Lang = "fr" | "en";
 type MethodKey = "alipay" | "wechat" | "virement" | "cash";
-const METHODS: { key: MethodKey; label: string; col: string }[] = [
-  { key: "alipay", label: "Alipay", col: "rate_alipay" },
-  { key: "wechat", label: "WeChat Pay", col: "rate_wechat" },
-  { key: "virement", label: "Virement", col: "rate_virement" },
-  { key: "cash", label: "Cash", col: "rate_cash" },
+const FLYER_TEXT = {
+  fr: {
+    title: "Taux du jour",
+    forAmount: "Pour",
+    supplierGets: ", votre fournisseur reçoit\u00a0:",
+    china: "Chine",
+    allAmounts: "Tous montants",
+    andAbove: "XAF et plus",
+    under: "Moins de",
+    from: "De",
+    to: "à",
+    payment: "Paiement",
+    paymentOf: "Paiement de",
+    methods: { alipay: "Alipay", wechat: "WeChat Pay", virement: "Virement", cash: "Cash" },
+    countries: { cameroun: "Cameroun", gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" },
+    days: ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"],
+    months: ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
+    colon: " :",
+    zone: "heure de Guangzhou (UTC+8)",
+  },
+  en: {
+    title: "Today's rate",
+    forAmount: "For",
+    supplierGets: ", your supplier receives:",
+    china: "China",
+    allAmounts: "All amounts",
+    andAbove: "XAF and above",
+    under: "Under",
+    from: "From",
+    to: "to",
+    payment: "Payment",
+    paymentOf: "Payment of",
+    methods: { alipay: "Alipay", wechat: "WeChat Pay", virement: "Bank transfer", cash: "Cash" },
+    countries: { cameroun: "Cameroon", gabon: "Gabon", tchad: "Chad", rca: "Central African Rep.", congo: "Congo", guinee: "Equatorial Guinea" },
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    colon: ":",
+    zone: "Guangzhou time (UTC+8)",
+  },
+} as const;
+const METHODS: { key: MethodKey; col: string }[] = [
+  { key: "alipay", col: "rate_alipay" },
+  { key: "wechat", col: "rate_wechat" },
+  { key: "virement", col: "rate_virement" },
+  { key: "cash", col: "rate_cash" },
 ];
-const COUNTRIES: Record<string, { label: string; iso: string }> = {
-  cameroun: { label: "Cameroun", iso: "CM" },
-  gabon: { label: "Gabon", iso: "GA" },
-  tchad: { label: "Tchad", iso: "TD" },
-  rca: { label: "Centrafrique", iso: "CF" },
-  congo: { label: "Congo", iso: "CG" },
-  guinee: { label: "Guinée Équatoriale", iso: "GQ" },
-};
+const COUNTRY_ISO: Record<string, string> = { cameroun: "CM", gabon: "GA", tchad: "TD", rca: "CF", congo: "CG", guinee: "GQ" };
 type Adj = { type: string; key: string; percentage: number; is_reference: boolean };
 type Bracket = { min: number; max: number | null; pct: number; label: string };
 type Group = { keys: MethodKey[]; label: string; rates: number[] };
 
-const fmt = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+const fmtIn = (n: number, lang: Lang) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === "en" ? "," : "\u00a0");
 
-function brackets(adj: Adj[]): Bracket[] {
+function brackets(adj: Adj[], lang: Lang): Bracket[] {
+  const t = FLYER_TEXT[lang];
+  const fmt = (n: number) => fmtIn(n, lang);
   const pctOf = (k: string) => { const t = adj.find((a) => a.type === "tier" && a.key === k); return t && !t.is_reference ? Number(t.percentage) || 0 : 0; };
   const asc = [{ min: 0, pct: pctOf("t1") }, { min: 400_000, pct: pctOf("t2") }, { min: 1_000_000, pct: pctOf("t3") }];
   const merged: { min: number; pct: number }[] = [];
@@ -103,42 +141,58 @@ function brackets(adj: Adj[]): Bracket[] {
   return merged.map((b, i) => {
     const next = merged[i + 1];
     const max = next ? next.min - 1 : null;
-    const label = merged.length === 1 ? "Tous montants"
-      : max === null ? `${fmt(b.min)} XAF et plus`
-      : b.min === 0 ? `Moins de ${fmt(next!.min)} XAF`
-      : `De ${fmt(b.min)} à ${fmt(max)} XAF`;
+    const label = merged.length === 1 ? t.allAmounts
+      : max === null ? `${fmt(b.min)} ${t.andAbove}`
+      : b.min === 0 ? `${t.under} ${fmt(next!.min)} XAF`
+      : `${t.from} ${fmt(b.min)} ${t.to} ${fmt(max)} XAF`;
     return { min: b.min, max, pct: b.pct, label };
   }).reverse();
 }
 /** Comme calculateFinalRate : arrondi à 2 décimales, puis à l'entier sur le flyer. */
 const rateOf = (base: number, c: number, t: number) => base > 0 ? Math.round(Math.round(base * (1 + c / 100) * (1 + t / 100) * 100) / 100) : 0;
-function groupsOf(rate: Record<string, number>, c: number, bs: Bracket[]): Group[] {
+function groupsOf(rate: Record<string, number>, c: number, bs: Bracket[], lang: Lang): Group[] {
   const out: Group[] = [];
   for (const m of METHODS) {
     const rates = bs.map((b) => rateOf(Number(rate[m.col]), c, b.pct));
     const same = m.key === "cash" ? undefined : out.find((g) => !g.keys.includes("cash") && g.rates.every((r, i) => r === rates[i]));
-    if (same) same.keys.push(m.key); else out.push({ keys: [m.key], label: m.label, rates });
+    if (same) same.keys.push(m.key); else out.push({ keys: [m.key], label: "", rates });
   }
-  for (const g of out) g.label = g.keys.map((k) => METHODS.find((m) => m.key === k)!.label).join(" · ");
+  for (const g of out) g.label = g.keys.map((k) => FLYER_TEXT[lang].methods[k]).join(" · ");
   return out;
 }
-const FR_DAYS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-const FR_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-function doualaDay(now: Date): { label: string; iso: string } {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Douala", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(now);
-  const g = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-  const y = g("year"), m = g("month"), d = g("day");
+/** Jour et heure de GUANGZHOU (la Chine : un seul fuseau, UTC+8) — comme src/lib/rateFlyer.ts. */
+const FLYER_TIME_ZONE = "Asia/Shanghai";
+function flyerDay(now: Date, lang: Lang): { label: string; iso: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: FLYER_TIME_ZONE, year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  const y = Number(g("year")), m = Number(g("month")), d = Number(g("day"));
+  const t = FLYER_TEXT[lang];
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return { label: `${FR_DAYS[wd]} ${d} ${FR_MONTHS[m - 1]} ${y}`, iso: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` };
+  return {
+    label: `${t.days[wd]} ${d} ${t.months[m - 1]} ${y}`,
+    iso: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
+    time: `${g("hour")}${lang === "en" ? ":" : "h"}${g("minute")}`,
+  };
 }
-const smallTitle = (b: Bracket) => { const l = b.label.charAt(0).toLowerCase() + b.label.slice(1); return l.startsWith("de ") ? `Paiement ${l}` : `Paiement de ${l}`; };
-function caption(country: string, date: string, bs: Bracket[], gs: Group[]): string {
-  const lines = [`Taux du jour · ${country} · ${date.charAt(0).toLowerCase()}${date.slice(1)}`, "Pour 1 000 000 XAF, votre fournisseur reçoit :"];
-  for (const g of gs) lines.push(`• ${g.label.replace(/ · /g, ", ")} : ${fmt(g.rates[0])} ¥`);
-  bs.slice(1).forEach((b, i) => { lines.push("", `${smallTitle(b)} :`); for (const g of gs) lines.push(`• ${g.label.replace(/ · /g, ", ")} : ${fmt(g.rates[i + 1])} ¥`); });
-  lines.push("", "Taux valables ce jour, confirmés au moment du paiement.", LEGAL_NAME);
+function smallTitle(b: Bracket, lang: Lang): string {
+  const t = FLYER_TEXT[lang];
+  const l = b.label.charAt(0).toLowerCase() + b.label.slice(1);
+  if (lang === "en") return b.min === 0 ? `${t.payment} ${l}` : `${t.paymentOf} ${l.replace(/^from /, "")}`;
+  return l.startsWith("de ") ? `${t.payment} ${l}` : `${t.paymentOf} ${l}`;
+}
+function caption(lang: Lang, country: string, day: { label: string; time: string }, bs: Bracket[], gs: Group[]): string {
+  const t = FLYER_TEXT[lang];
+  const fmt = (n: number) => fmtIn(n, lang);
+  const date = lang === "fr" ? `${day.label.charAt(0).toLowerCase()}${day.label.slice(1)}` : day.label;
+  const line = (g: Group, r: number) => `• ${g.label.replace(/ · /g, ", ")}${t.colon} ${fmt(r)} ¥`;
+  const lines = [`${t.title} · ${country} → ${t.china} · ${date} · ${day.time} ${t.zone}`, `${t.forAmount} ${fmt(1_000_000)} XAF${t.supplierGets}`];
+  for (const g of gs) lines.push(line(g, g.rates[0]));
+  bs.slice(1).forEach((b, i) => { lines.push("", `${smallTitle(b, lang)}${t.colon}`); for (const g of gs) lines.push(line(g, g.rates[i + 1])); });
+  lines.push("", FLYER_BRAND);
   return lines.join("\n").replace(/\u00a0/g, " ");
 }
+/** Taille d'un libellé sur une ligne : réduite quand il est long (anglais) — comme RateFlyer. */
+const fit = (text: string, base: number, room: number, min = 18) => text.length <= room ? base : Math.max(min, Math.floor((base * room) / text.length));
 
 // ── Le dessin : même mise en page que RateFlyer.tsx ───────────────────────
 const INK = "#1a1028", MUTED = "#5f5775", SOFT = "#d6d0e0", LINE = "#e6e1ee", SHEET = "#f5f3f8", GOLD = "#f3a745", ALERT = "#D7261E";
@@ -153,18 +207,21 @@ function tile(method: MethodKey, size: number): El {
   return box("#ECE8F6", h("svg", { viewBox: "0 0 24 24", width: size * 0.5, height: size * 0.5, fill: "none", stroke: INK, strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" },
     ...["M10 18v-7", "M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z", "M14 18v-7", "M18 18v-7", "M3 22h18", "M6 18v-7"].map((d) => h("path", { d }))));
 }
-const num = (value: number, size: number, color = INK) => h("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
-  h("div", { style: { fontSize: size, fontWeight: 900, letterSpacing: -3, lineHeight: 1, color } }, fmt(value)),
+const num = (value: number, size: number, lang: Lang, color = INK) => h("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
+  h("div", { style: { fontSize: size, fontWeight: 900, letterSpacing: -3, lineHeight: 1, color } }, fmtIn(value, lang)),
   h("div", { style: { fontSize: Math.round(size * 0.44), fontWeight: 800, color } }, "¥"));
 
-function row(g: Group, rate: number, size: number, onRed: boolean): El {
+function row(g: Group, rate: number, size: number, onRed: boolean, lang: Lang): El {
   return h("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
     ...(onRed ? [] : g.keys.map((k) => tile(k, 40))),
-    h("div", { style: { display: "flex", flex: 1, fontSize: onRed ? 26 : 30, fontWeight: 800, marginLeft: onRed ? 0 : 6, color: onRed ? "#fff" : INK } }, g.label),
-    num(rate, size, onRed ? "#fff" : INK));
+    h("div", { style: { display: "flex", flex: 1, fontSize: fit(g.label, onRed ? 26 : 30, 30), fontWeight: 800, marginLeft: onRed ? 0 : 6, color: onRed ? "#fff" : INK } }, g.label),
+    num(rate, size, lang, onRed ? "#fff" : INK));
 }
 
-function flyer(country: { label: string }, flag: string | null, date: string, bs: Bracket[], gs: Group[]): El {
+const flagImg = (src: string) => h("img", { src, width: 116, height: 87, style: { borderRadius: 14, border: `2px solid ${LINE}` } });
+
+function flyer(lang: Lang, country: { label: string }, flag: string | null, china: string | null, day: { label: string; time: string }, bs: Bracket[], gs: Group[]): El {
+  const t = FLYER_TEXT[lang];
   const small = bs.slice(1);
   const many = gs.length > 2;
   const compact = (many && small.length > 0) || small.length > 1;
@@ -174,39 +231,42 @@ function flyer(country: { label: string }, flag: string | null, date: string, bs
 
   const cards = compact
     ? [
-      h("div", { style: { display: "flex", flexDirection: "column", gap: 10, margin: "18px 40px 0", background: SHEET, borderRadius: 32, padding: "16px 28px" } }, ...gs.map((g) => row(g, g.rates[0], 60, false))),
+      h("div", { style: { display: "flex", flexDirection: "column", gap: 10, margin: "18px 40px 0", background: SHEET, borderRadius: 32, padding: "16px 28px" } }, ...gs.map((g) => row(g, g.rates[0], 60, false, lang))),
       ...small.map((b, bi) => h("div", { style: { display: "flex", flexDirection: "column", margin: "12px 40px 0", background: ALERT, borderRadius: 32, padding: "14px 28px 16px" } },
-        h("div", { style: { display: "flex", alignItems: "center", gap: 14 } }, bang(40), h("div", { style: { fontSize: 32, fontWeight: 900, color: "#fff" } }, smallTitle(b))),
-        h("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 10 } }, ...gs.map((g) => row(g, g.rates[bi + 1], 44, true))))),
+        h("div", { style: { display: "flex", alignItems: "center", gap: 14 } }, bang(40), h("div", { style: { fontSize: 32, fontWeight: 900, color: "#fff" } }, smallTitle(b, lang))),
+        h("div", { style: { display: "flex", flexDirection: "column", gap: 6, marginTop: 10 } }, ...gs.map((g) => row(g, g.rates[bi + 1], 44, true, lang))))),
     ]
     : [
       h("div", { style: { display: "flex", flexDirection: stacked ? "column" : "row", flexWrap: "wrap", gap: many ? 14 : 20, margin: "22px 40px 0" } },
         ...gs.map((g) => h("div", { style: { display: "flex", flexDirection: "column", flexGrow: 1, flexBasis: many ? 480 : stacked ? "auto" : 0, background: SHEET, borderRadius: 36, padding: many ? "16px 24px 18px" : "24px 26px 26px" } },
           h("div", { style: { display: "flex", alignItems: "center", gap: 8 } }, ...g.keys.map((k) => tile(k, many ? 40 : stacked ? 64 : 52)),
-            stacked ? h("div", { style: { marginLeft: 12, fontSize: g.keys.length > 1 ? 36 : 44, fontWeight: 800, color: INK } }, g.label) : null),
-          stacked ? null : h("div", { style: { fontSize: 27, fontWeight: 800, marginTop: many ? 8 : 12, color: INK } }, g.label),
-          h("div", { style: { display: "flex", marginTop: many ? 4 : 8 } }, num(g.rates[0], bigSize))))),
+            stacked ? h("div", { style: { marginLeft: 12, fontSize: g.keys.length > 1 ? fit(g.label, 36, 32) : 44, fontWeight: 800, color: INK } }, g.label) : null),
+          stacked ? null : h("div", { style: { fontSize: fit(g.label, 27, many ? 22 : 30), fontWeight: 800, marginTop: many ? 8 : 12, color: INK } }, g.label),
+          h("div", { style: { display: "flex", marginTop: many ? 4 : 8 } }, num(g.rates[0], bigSize, lang))))),
       ...small.map((b, bi) => h("div", { style: { display: "flex", flexDirection: "column", margin: "24px 40px 0", background: ALERT, borderRadius: 36, padding: "26px 34px 30px" } },
-        h("div", { style: { display: "flex", alignItems: "center", gap: 16 } }, bang(52), h("div", { style: { fontSize: 40, fontWeight: 900, color: "#fff" } }, smallTitle(b))),
+        h("div", { style: { display: "flex", alignItems: "center", gap: 16 } }, bang(52), h("div", { style: { fontSize: 40, fontWeight: 900, color: "#fff" } }, smallTitle(b, lang))),
         h("div", { style: { display: "flex", flexWrap: "wrap", gap: 14, marginTop: 20 } },
           ...gs.map((g) => h("div", { style: { display: "flex", flexDirection: "column", flexGrow: 1, flexBasis: many ? 440 : 0, background: "rgba(255,255,255,0.14)", borderRadius: 26, padding: many ? "10px 20px 12px" : "16px 22px 18px" } },
-            h("div", { style: { fontSize: 24, fontWeight: 800, color: "#fff" } }, g.label),
-            h("div", { style: { display: "flex", marginTop: 4 } }, num(g.rates[bi + 1], many ? 56 : 84, "#fff"))))))),
+            h("div", { style: { fontSize: fit(g.label, 24, many ? 22 : 30), fontWeight: 800, color: "#fff" } }, g.label),
+            h("div", { style: { display: "flex", marginTop: 4 } }, num(g.rates[bi + 1], many ? 56 : 84, lang, "#fff"))))))),
     ];
 
   return h("div", { style: { width: W, height: H, background: "#ffffff", display: "flex", flexDirection: "column", fontFamily: "DM Sans", color: INK } },
     h("div", { style: { display: "flex", flexDirection: "column", background: INK, padding: "40px 64px 38px" } },
-      h("div", { style: { fontSize: 24, fontWeight: 700, letterSpacing: 5, color: SOFT } }, LEGAL_NAME),
-      h("div", { style: { fontSize: 88, fontWeight: 900, letterSpacing: -2, color: "#fff", lineHeight: 1, marginTop: 16 } }, "Taux du jour"),
-      h("div", { style: { fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 } }, date)),
-    h("div", { style: { display: "flex", alignItems: "center", gap: 30, padding: "36px 64px 0" } },
-      flag ? h("img", { src: flag, width: 116, height: 87, style: { borderRadius: 14, border: `2px solid ${LINE}` } }) : null,
-      h("div", { style: { fontSize: country.label.length > 12 ? 68 : 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1 } }, country.label)),
+      h("div", { style: { fontSize: 30, fontWeight: 800, letterSpacing: 7, color: SOFT } }, FLYER_BRAND),
+      h("div", { style: { fontSize: 88, fontWeight: 900, letterSpacing: -2, color: "#fff", lineHeight: 1, marginTop: 16 } }, t.title),
+      h("div", { style: { fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 } }, day.label),
+      h("div", { style: { display: "flex", alignItems: "baseline", gap: 14, marginTop: 8 } },
+        h("div", { style: { fontSize: 34, fontWeight: 800, color: "#fff" } }, day.time),
+        h("div", { style: { fontSize: 26, fontWeight: 600, color: SOFT } }, t.zone))),
+    h("div", { style: { display: "flex", alignItems: "center", gap: 26, padding: "36px 64px 0" } },
+      flag ? flagImg(flag) : null,
+      h("div", { style: { fontSize: country.label.length <= 12 ? 84 : country.label.length <= 18 ? 54 : 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1 } }, country.label),
+      h("svg", { viewBox: "0 0 24 24", width: 52, height: 52, fill: "none", stroke: MUTED, strokeWidth: 2.6, strokeLinecap: "round", strokeLinejoin: "round" }, h("path", { d: "M4 12h15M13 6l6 6-6 6" })),
+      china ? flagImg(china) : null),
     h("div", { style: { display: "flex", padding: "22px 64px 0", fontSize: 36, fontWeight: 600, color: MUTED } },
-      "Pour\u00a0", h("span", { style: { color: INK, fontWeight: 900 } }, "1\u00a0000\u00a0000 XAF"), ", votre fournisseur reçoit\u00a0:"),
+      `${t.forAmount}\u00a0`, h("span", { style: { color: INK, fontWeight: 900 } }, `${fmtIn(1_000_000, lang)}\u00a0XAF`), t.supplierGets),
     ...cards,
-    h("div", { style: { display: "flex", marginTop: "auto", padding: compact ? "0 64px 32px" : "0 64px 46px" } },
-      h("div", { style: { display: "flex", flex: 1, borderTop: `2px solid ${LINE}`, paddingTop: compact ? 18 : 26, fontSize: 26, color: MUTED } }, "Taux valables ce jour. Le taux est confirmé au moment du paiement.")),
   );
 }
 
@@ -215,11 +275,12 @@ serve(async (req) => {
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
   try {
     // country_slug : nom envoyé par l'ancienne version de Mola, tant qu'elle n'est pas redéployée.
-    const body = await req.json().catch(() => ({})) as { country_key?: string; country_slug?: string };
+    const body = await req.json().catch(() => ({})) as { country_key?: string; country_slug?: string; lang?: string };
+    const lang: Lang = body.lang === "en" ? "en" : "fr";
     const raw = typeof body.country_key === "string" ? body.country_key : typeof body.country_slug === "string" ? body.country_slug : "cameroun";
     const wanted = raw.trim().toLowerCase();
-    const key = COUNTRIES[wanted] ? wanted : "cameroun";
-    const country = COUNTRIES[key];
+    const key = COUNTRY_ISO[wanted] ? wanted : "cameroun";
+    const country = { label: (FLYER_TEXT[lang].countries as Record<string, string>)[key], iso: COUNTRY_ISO[key] };
 
     const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const [{ data: rate, error: rErr }, { data: adj, error: aErr }] = await Promise.all([
@@ -232,12 +293,12 @@ serve(async (req) => {
     const adjs = (adj ?? []) as Adj[];
     const cAdj = adjs.find((a) => a.type === "country" && a.key === key);
     const c = cAdj && !cAdj.is_reference ? Number(cAdj.percentage) || 0 : 0;
-    const bs = brackets(adjs);
-    const gs = groupsOf(rate as Record<string, number>, c, bs);
-    const day = doualaDay(new Date());
+    const bs = brackets(adjs, lang);
+    const gs = groupsOf(rate as Record<string, number>, c, bs, lang);
+    const day = flyerDay(new Date(), lang);
 
-    const [fonts, flag] = await Promise.all([getFonts(), flagDataUrl(country.iso)]);
-    const svg = await satori(flyer(country, flag, day.label, bs, gs) as unknown as Parameters<typeof satori>[0], { width: W, height: H, fonts });
+    const [fonts, flag, china] = await Promise.all([getFonts(), flagDataUrl(country.iso), flagDataUrl("CN")]);
+    const svg = await satori(flyer(lang, country, flag, china, day, bs, gs) as unknown as Parameters<typeof satori>[0], { width: W, height: H, fonts });
     await ensureWasm();
     const png = new Resvg(svg, { fitTo: { mode: "width", value: W * 2 } }).render().asPng();
 
@@ -245,8 +306,8 @@ serve(async (req) => {
       headers: {
         ...CORS,
         "Content-Type": "image/png",
-        "Content-Disposition": `attachment; filename="taux_du_jour_${key}_${day.iso}.png"`,
-        "X-Flyer-Caption": encodeURIComponent(caption(country.label, day.label, bs, gs)),
+        "Content-Disposition": `attachment; filename="${lang === "en" ? "todays_rate" : "taux_du_jour"}_${key}_${day.iso}.png"`,
+        "X-Flyer-Caption": encodeURIComponent(caption(lang, country.label, day, bs, gs)),
         "Cache-Control": "no-cache",
       },
     });

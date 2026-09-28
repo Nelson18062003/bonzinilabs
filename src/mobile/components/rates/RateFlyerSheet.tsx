@@ -2,7 +2,7 @@
 // Ouvert depuis la pilule « Voir le flyer du jour » au bas du module Taux
 // (mobile) ou le bouton d'en-tête (desktop), et depuis « Taux par pays » avec
 // le pays déjà choisi. Un flyer PAR PAYS (Cameroun compris), au seul nom de
-// NORTON GAUSS BONZINI SARL, avec les petits paiements en rouge : tout vient
+// BONZINI, avec les petits paiements en rouge : tout vient
 // de buildFlyerData (publication active + rate_adjustments).
 //
 // Le flyer est dessiné hors écran (RateFlyer, 1080×1350), photographié en PNG
@@ -10,6 +10,8 @@
 // qu'on copie ou télécharge, et le clic droit / appui long « Copier l'image »
 // du navigateur marche dessus. Boutons : Copier l'image · Télécharger (et
 // Partager sur téléphone) · Copier le texte du jour. Plus de PDF (25/09/2026).
+// Langue : Français ou English (28/09/2026) — le flyer ET le texte du jour
+// changent ; le choix est retenu sur cet appareil.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, Download, Loader2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,12 +19,25 @@ import { cn } from '@/lib/utils';
 import { RateFlyer } from './RateFlyer';
 import { flyerPngFile, FLYER_W, FLYER_H } from '@/lib/exportFlyer';
 import { buildCountryRateSheets, formatCountryPct, REFERENCE_COUNTRY_KEY } from '@/lib/countryRates';
-import { buildFlyerData, flyerCaption } from '@/lib/rateFlyer';
+import { FLYER_BRAND, buildFlyerData, flyerCaption, flyerTitle, type FlyerLang } from '@/lib/rateFlyer';
 import { canShareFiles, copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
-import { LEGAL_NAME } from '@/lib/companyIdentity';
 import type { DailyRate, RateAdjustment } from '@/types/rates';
 import { CountryFlag } from '@/components/form/CountryFlag';
-import { TEXT, TYPE, Button, Chip } from '@/mobile/designKit';
+import { TEXT, TYPE, Button, Chip, Segmented } from '@/mobile/designKit';
+
+const LANG_KEY = 'bz.flyer.lang';
+const LANG_OPTIONS: ReadonlyArray<{ value: FlyerLang; label: string }> = [
+  { value: 'fr', label: 'Français' },
+  { value: 'en', label: 'English' },
+];
+
+function savedLang(): FlyerLang {
+  try {
+    return localStorage.getItem(LANG_KEY) === 'en' ? 'en' : 'fr';
+  } catch {
+    return 'fr';
+  }
+}
 
 interface RateFlyerSheetProps {
   /** Publication active — les taux de référence. */
@@ -45,10 +60,16 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   const [countryKey, setCountryKey] = useState<string>(initialCountry ?? REFERENCE_COUNTRY_KEY);
   useEffect(() => { setCountryKey(initialCountry ?? REFERENCE_COUNTRY_KEY); }, [initialCountry]);
 
+  const [lang, setLangState] = useState<FlyerLang>(savedLang);
+  const setLang = (l: FlyerLang) => {
+    setLangState(l);
+    try { localStorage.setItem(LANG_KEY, l); } catch { /* navigation privée : le choix vaut pour la session */ }
+  };
+
   const selected = sheets.find((s) => s.key === countryKey) ?? sheets.find((s) => s.isReference) ?? null;
   const flyer = useMemo(
-    () => (activeRate ? buildFlyerData(activeRate, adjustments ?? [], selected?.key ?? REFERENCE_COUNTRY_KEY) : null),
-    [activeRate, adjustments, selected?.key],
+    () => (activeRate ? buildFlyerData(activeRate, adjustments ?? [], selected?.key ?? REFERENCE_COUNTRY_KEY, new Date(), lang) : null),
+    [activeRate, adjustments, selected?.key, lang],
   );
   // Ce que montre le flyer, en une clé : l'image est refaite quand elle change.
   const flyerKey = flyer ? JSON.stringify(flyer) : '';
@@ -59,6 +80,8 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   const nodeRef = useRef<HTMLDivElement>(null);
   const [image, setImage] = useState<FlyerImage | null>(null);
   const [failed, setFailed] = useState(false);
+  // « Réessayer » après un échec (réseau coupé au chargement de la police…).
+  const [attempt, setAttempt] = useState(0);
   const imageRef = useRef<FlyerImage | null>(null);
   imageRef.current = image;
   useEffect(() => () => { if (imageRef.current) URL.revokeObjectURL(imageRef.current.url); }, []);
@@ -70,6 +93,7 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
     if (!flyer || !node) return;
     const key = flyerKey;
     const countryKey = flyer.country.key;
+    const flyerLang = flyer.lang;
     let cancelled = false;
     setFailed(false);
     // Un court délai : en passant vite d'un pays à l'autre, seul le dernier est photographié.
@@ -80,7 +104,7 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
           // Le navigateur pose d'abord le flyer (et son drapeau).
           await new Promise((r) => requestAnimationFrame(r));
           if (cancelled) return;
-          const file = await flyerPngFile(node, countryKey);
+          const file = await flyerPngFile(node, countryKey, flyerLang);
           if (cancelled) return;
           const url = URL.createObjectURL(file);
           setImage((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { key, file, url }; });
@@ -90,7 +114,7 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
     return () => { cancelled = true; window.clearTimeout(timer); };
     // flyerKey résume flyer : pas besoin de l'objet dans les dépendances.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flyerKey]);
+  }, [flyerKey, attempt]);
 
   const ready = !!image && image.key === flyerKey;
   const desktop = prefersDownload();
@@ -117,7 +141,7 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   const shareImage = () => {
     if (!ready || !image || saving || !flyer) return;
     setSaving(true);
-    void deliverFile(image.file, `${LEGAL_NAME} · Taux du jour · ${flyer.country.label}`)
+    void deliverFile(image.file, `${FLYER_BRAND} · ${flyerTitle(flyer.lang)} · ${flyer.country.label}`)
       .then((o) => { if (o === 'downloaded') toast.success('Image téléchargée'); })
       .finally(() => setSaving(false));
   };
@@ -156,6 +180,12 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
         </div>
       )}
 
+      {/* ── Langue du flyer ── */}
+      <div className="flex items-center gap-3">
+        <span className={cn(TYPE.small, TEXT.muted, 'shrink-0')}>Langue</span>
+        <Segmented options={LANG_OPTIONS} value={lang} onChange={setLang} />
+      </div>
+
       {!flyer ? (
         <p className={cn(TYPE.body, TEXT.muted)}>Aucun taux publié : publiez les taux du jour pour obtenir le flyer.</p>
       ) : (
@@ -187,11 +217,16 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
           {/* L'aperçu EST l'image : le menu du navigateur (Copier l'image, Enregistrer) marche dessus. */}
           <div className="relative overflow-hidden rounded-lg bg-[#f5f3f8]" style={{ aspectRatio: `${FLYER_W} / ${FLYER_H}` }}>
             {image ? (
-              <img src={image.url} alt={`Taux du jour · ${flyer.country.label}`} className={cn('block h-full w-full', !ready && 'opacity-40')} />
+              <img src={image.url} alt={`${flyerTitle(flyer.lang)} · ${flyer.country.label}`} className={cn('block h-full w-full', !ready && 'opacity-40')} />
             ) : null}
             {!ready && (
               <div className={cn('absolute inset-0 flex items-center justify-center gap-2', TYPE.small, TEXT.muted)}>
-                {failed ? 'Image impossible à créer — fermez et rouvrez le flyer.' : <><Loader2 className="h-5 w-5 animate-spin" /> Préparation de l’image…</>}
+                {failed ? (
+                  <div className="flex flex-col items-center gap-3 px-6 text-center">
+                    <span>Image impossible à créer. Vérifiez la connexion.</span>
+                    <Button variant="neutral" onClick={() => setAttempt((a) => a + 1)}>Réessayer</Button>
+                  </div>
+                ) : <><Loader2 className="h-5 w-5 animate-spin" /> Préparation de l’image…</>}
               </div>
             )}
           </div>

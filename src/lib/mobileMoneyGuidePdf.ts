@@ -9,11 +9,13 @@ import { deliverFile, downloadFile } from '@/components/customer-code/exportShip
 import { MOBILE_MONEY_GUIDE_FILENAME, mobileMoneyGuideData, type GuideOrientation } from '@/lib/mobileMoneyGuide';
 import { MobileMoneyGuidePDF } from '@/lib/pdf/templates/MobileMoneyGuidePDF';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
+import { withDocLang, type DocLang } from '@/lib/pdf/docLang';
 
-export async function buildMobileMoneyGuidePdf(orientation: GuideOrientation = 'portrait'): Promise<File> {
-  const el: ReactElement = createElement(MobileMoneyGuidePDF, { data: mobileMoneyGuideData(), orientation });
+/** `lang` : les deux langues (par défaut), ou le français seul, ou l'anglais seul (lib/pdf/docLang.ts). */
+export async function buildMobileMoneyGuidePdf(orientation: GuideOrientation = 'portrait', lang: DocLang = 'bi'): Promise<File> {
+  const el: ReactElement = createElement(MobileMoneyGuidePDF, { data: mobileMoneyGuideData(), orientation, lang });
   const blob = await pdf(el).toBlob();
-  return new File([blob], MOBILE_MONEY_GUIDE_FILENAME[orientation], { type: 'application/pdf' });
+  return new File([blob], withDocLang(MOBILE_MONEY_GUIDE_FILENAME[orientation], lang), { type: 'application/pdf' });
 }
 
 export async function downloadMobileMoneyGuidePdf(orientation: GuideOrientation = 'portrait'): Promise<void> {

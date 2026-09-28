@@ -84,12 +84,12 @@ export function Hero({ id, tone, inset, folio, text, sizes, ghostRight, ghostOpa
       <Text style={[gk.eyebrow, { color: tone.en }]}>{biLabel(eyebrow)}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <Text style={[gk.heroWord, { color: tone.fr, fontSize: sizes.word, marginRight: 14 }]}>{word.fr}</Text>
-        <Text style={[gk.heroEnWord, { color: tone.en, fontSize: sizes.enWord, marginBottom: sizes.word * 0.06 }]}>{word.en}</Text>
+        {word.en !== word.fr ? <Text style={[gk.heroEnWord, { color: tone.en, fontSize: sizes.enWord, marginBottom: sizes.word * 0.06 }]}>{word.en}</Text> : null}
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 8 }}>
         <View style={{ flex: 1, marginRight: 12 }}>
           <Text style={[gk.sentenceFr, { color: tone.fr }]}>{sentence.fr}</Text>
-          <Text style={[gk.sentenceEn, { color: tone.en }, enStrong ? gk.sentenceEnOnViolet : {}]}>{sentence.en}</Text>
+          {sentence.en !== sentence.fr ? <Text style={[gk.sentenceEn, { color: tone.en }, enStrong ? gk.sentenceEnOnViolet : {}]}>{sentence.en}</Text> : null}
         </View>
         <NeedsPill needs={needs} fg={needsFg} bg={needsBg} />
       </View>
@@ -109,11 +109,11 @@ export function Sidebar({ id, tone, folio, text, rule, ghostOpacity, enStrong }:
       <BrandRow color={tone.fr} disc={26} logo={18} gap={8} textStyle={ls.sideBrand} />
       <View style={{ marginTop: 34 }}>
         <Text style={[ls.sideEyebrow, { color: tone.en }]}>{eyebrow.fr}</Text>
-        <Text style={[ls.sideEyebrowEn, { color: tone.en }]}>{eyebrow.en}</Text>
+        {eyebrow.en !== eyebrow.fr ? <Text style={[ls.sideEyebrowEn, { color: tone.en }]}>{eyebrow.en}</Text> : null}
         <Text style={[ls.sideWord, { color: tone.fr, fontSize: fitSize(word.fr, 46, room, 0.66) }]}>{word.fr}</Text>
-        <Text style={[ls.sideEnWord, { color: tone.en, fontSize: fitSize(word.en, 22, room, 0.74) }]}>{word.en}</Text>
+        {word.en !== word.fr ? <Text style={[ls.sideEnWord, { color: tone.en, fontSize: fitSize(word.en, 22, room, 0.74) }]}>{word.en}</Text> : null}
         <Text style={[ls.sideSentenceFr, { color: tone.fr }]}>{balanced(sentence.fr, 15, room)}</Text>
-        <Text style={[ls.sideSentenceEn, { color: tone.en }, enStrong ? { fontSize: 14, fontWeight: 700 } : {}]}>{balanced(sentence.en, enStrong ? 14 : 13, room, 0.5)}</Text>
+        {sentence.en !== sentence.fr ? <Text style={[ls.sideSentenceEn, { color: tone.en }, enStrong ? { fontSize: 14, fontWeight: 700 } : {}]}>{balanced(sentence.en, enStrong ? 14 : 13, room, 0.5)}</Text> : null}
         <View style={{ marginTop: 14, alignSelf: 'flex-start' }}><NeedsPill needs={needs} fg={needsFg} bg={needsBg} /></View>
       </View>
       <SideBottom rule={rule} folio={folio} color={tone.en} />
@@ -138,7 +138,7 @@ export function RuleText({ text, lead }: { text: BiText; lead: ReactNode }) {
       {lead}
       <View style={{ flex: 1 }}>
         <Text style={ls.ruleFr}>{balanced(text.fr, 14, 0)}</Text>
-        <Text style={ls.ruleEn}>{balanced(text.en, 12.5, 0)}</Text>
+        {text.en !== text.fr ? <Text style={ls.ruleEn}>{balanced(text.en, 12.5, 0)}</Text> : null}
       </View>
     </View>
   );
@@ -199,7 +199,7 @@ export function OrDisc({ or, style }: { or: BiText; style?: Style }) {
   return (
     <View style={[gk.orDisc, style ?? {}]}>
       <Text style={gk.orFr}>{or.fr}</Text>
-      <Text style={gk.orEn}>{or.en}</Text>
+      {or.en !== or.fr ? <Text style={gk.orEn}>{or.en}</Text> : null}
     </View>
   );
 }
@@ -235,7 +235,7 @@ export function Ticket({ width, rowH, items, shot }: { width: number; rowH: numb
         </View>
         <View style={gk.ticketTag}>
           <Text style={[gk.label, { marginBottom: 0 }]}>{shot.fr}</Text>
-          <Text style={[gk.label, { marginBottom: 0, fontSize: 11, fontWeight: 700 }]}>{shot.en}</Text>
+          {shot.en !== shot.fr ? <Text style={[gk.label, { marginBottom: 0, fontSize: 11, fontWeight: 700 }]}>{shot.en}</Text> : null}
         </View>
       </View>
       {items.map((item, i) => (
@@ -243,7 +243,7 @@ export function Ticket({ width, rowH, items, shot }: { width: number; rowH: numb
           <View style={gk.goldCheck}><CheckIcon color={INK} size={14} /></View>
           <View>
             <Text style={gk.itemFr}>{item.fr}</Text>
-            <Text style={gk.itemEn}>{item.en}</Text>
+            {item.en !== item.fr ? <Text style={gk.itemEn}>{item.en}</Text> : null}
           </View>
           <View style={[gk.ticketBar, { width: PROOF_BAR_W[i % PROOF_BAR_W.length] }]} />
         </View>
@@ -258,7 +258,7 @@ export function ClearLine({ text }: { text: BiText }) {
       <View style={gk.goldCheck}><CheckIcon color={INK} size={14} /></View>
       <View style={{ flex: 1 }}>
         <Text style={gk.clearFr}>{text.fr}</Text>
-        <Text style={gk.clearEn}>{text.en}</Text>
+        {text.en !== text.fr ? <Text style={gk.clearEn}>{text.en}</Text> : null}
       </View>
     </View>
   );
@@ -270,7 +270,7 @@ export function Thanks({ text }: { text: BiText }) {
       <View style={[gk.markDisc, { width: 38, height: 38, borderRadius: 19, marginRight: 16 }]}><PdfLogo size={26} /></View>
       <View style={{ flex: 1 }}>
         <Text style={gk.thanksFr}>{text.fr}</Text>
-        <Text style={gk.thanksEn}>{text.en}</Text>
+        {text.en !== text.fr ? <Text style={gk.thanksEn}>{text.en}</Text> : null}
         <Text style={gk.thanksSign}>{LEGAL_NAME}</Text>
       </View>
     </View>

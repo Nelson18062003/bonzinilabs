@@ -14,6 +14,7 @@ import { bankGuideData } from '@/lib/bankDetailsGuide';
 import { buildBankDetailsPdf } from '@/lib/bankDetailsPdf';
 import { buildMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
+import type { DocLang } from '@/lib/pdf/docLang';
 
 export type PaymentDoc =
   | { kind: 'banks' }
@@ -23,26 +24,28 @@ export type PaymentDoc =
 export type PaymentDocFormat = 'pdf' | 'png';
 
 /** Un identifiant stable (état « en cours » d'un bouton, clé de liste). */
-export function paymentDocId(doc: PaymentDoc, format: PaymentDocFormat, orientation: GuideOrientation): string {
+export function paymentDocId(doc: PaymentDoc, format: PaymentDocFormat, orientation: GuideOrientation, lang: DocLang = 'bi'): string {
   const what = doc.kind === 'rib' ? `rib-${doc.bank}` : doc.kind;
-  return `${what}:${format}:${orientation}`;
+  return `${what}:${format}:${orientation}${lang === 'bi' ? '' : `:${lang}`}`;
 }
 
-/** Le titre de la feuille de partage : « NORTON GAUSS BONZINI SARL · RIB UBA Cameroun ». */
-export function paymentDocTitle(doc: PaymentDoc): string {
-  if (doc.kind === 'mobile-money') return `${LEGAL_NAME} · Coordonnées Mobile Money`;
-  if (doc.kind === 'banks') return `${LEGAL_NAME} · Coordonnées bancaires`;
+/** Le titre de la feuille de partage : « NORTON GAUSS BONZINI SARL · RIB UBA Cameroun », dans la langue du document. */
+export function paymentDocTitle(doc: PaymentDoc, lang: DocLang = 'bi'): string {
+  const en = lang === 'en';
+  if (doc.kind === 'mobile-money') return `${LEGAL_NAME} · ${en ? 'Mobile Money details' : 'Coordonnées Mobile Money'}`;
+  if (doc.kind === 'banks') return `${LEGAL_NAME} · ${en ? 'Bank details' : 'Coordonnées bancaires'}`;
   const name = bankGuideData().accounts.find((a) => a.key === doc.bank)?.name ?? doc.bank;
   return `${LEGAL_NAME} · RIB ${name}`;
 }
 
-export function paymentDocPdf(doc: PaymentDoc, orientation: GuideOrientation): Promise<File> {
-  if (doc.kind === 'mobile-money') return buildMobileMoneyGuidePdf(orientation);
-  return buildBankDetailsPdf({ orientation, bank: doc.kind === 'rib' ? doc.bank : undefined });
+/** `lang` : les deux langues (par défaut), le français seul ou l'anglais seul. */
+export function paymentDocPdf(doc: PaymentDoc, orientation: GuideOrientation, lang: DocLang = 'bi'): Promise<File> {
+  if (doc.kind === 'mobile-money') return buildMobileMoneyGuidePdf(orientation, lang);
+  return buildBankDetailsPdf({ orientation, bank: doc.kind === 'rib' ? doc.bank : undefined, lang });
 }
 
 /** Tout le document dans UNE image PNG. pdf.js n'est chargé qu'ici, à la demande. */
-export async function paymentDocImage(doc: PaymentDoc, orientation: GuideOrientation): Promise<File> {
-  const [{ pdfToSheetImage }, pdf] = await Promise.all([import('@/lib/pdfToImages'), paymentDocPdf(doc, orientation)]);
+export async function paymentDocImage(doc: PaymentDoc, orientation: GuideOrientation, lang: DocLang = 'bi'): Promise<File> {
+  const [{ pdfToSheetImage }, pdf] = await Promise.all([import('@/lib/pdfToImages'), paymentDocPdf(doc, orientation, lang)]);
   return pdfToSheetImage(pdf);
 }

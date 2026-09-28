@@ -11,7 +11,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 import '@/index.css';
 import '@/i18n';
@@ -59,6 +59,18 @@ import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
 import { PdfDoc, PngDoc } from './pdfDocs';
+import { StatementDoc } from './statementDoc';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+
+/** La fenêtre « Relevé de compte » (?variant=dialog|sheet), ouverte. */
+function StatementPicker() {
+  const q = new URLSearchParams(window.location.search);
+  return (
+    <div style={{ minHeight: '100vh', background: '#EDEBF3' }}>
+      <StatementPeriodSheet open onClose={() => {}} onGenerate={async () => false} isGenerating={false} variant={q.get('variant') === 'dialog' ? 'dialog' : 'sheet'} />
+    </div>
+  );
+}
 import { MobilePaymentDetailsScreen } from '@/mobile/screens/more/MobilePaymentDetailsScreen';
 import { PaymentDetailsHub } from '@/components/payment-details/PaymentDetailsHub';
 import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir, LabelInternalJson } from './shippingLabel';
@@ -83,6 +95,7 @@ import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
 import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception, DesktopCargoAir } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileLoginScreen } from '@/mobile/screens/auth/MobileLoginScreen';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
 import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
@@ -136,6 +149,21 @@ import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/depo
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { RateQuoteCard, QUOTE_W, QUOTE_H } from '@/desktop/screens/rates/RateQuoteCard';
+
+/** La cotation du simulateur (?lang=en, ?theme=light), en taille naturelle. */
+function QuoteCardPreview() {
+  const q = new URLSearchParams(window.location.search);
+  const [fontReady, setFontReady] = React.useState(false);
+  React.useEffect(() => { void import('@/lib/flyerFonts').then((m) => m.loadFlyerFonts()).finally(() => setFontReady(true)); }, []);
+  if (!fontReady) return null;
+  const lang = q.get('lang') === 'en' ? 'en' : 'fr';
+  return (
+    <div id="quote" style={{ width: QUOTE_W, height: QUOTE_H }}>
+      <RateQuoteCard amountXAF={2500000} amountCNY={26730} method="alipay" finalRate={10692} countryLabel={lang === 'en' ? 'Gabon' : 'Gabon'} showCountry theme={q.get('theme') === 'light' ? 'light' : 'dark'} lang={lang} />
+    </div>
+  );
+}
 
 // Le panneau « Flyer du jour », réglé sur le Gabon, avec les chiffres de
 // production du 24/09/2026 (10 700 cash, 10 800 le reste ; pays −1 % ;
@@ -183,6 +211,9 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
   'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
   'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
+  'quote-card': { Comp: QuoteCardPreview, route: '/' },
+  'statement-doc': { Comp: StatementDoc, route: '/' },
+  'statement-picker': { Comp: StatementPicker, route: '/' },
   'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
   'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },
@@ -355,6 +386,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
   // Agent-cash sub-app (Phase 2 M8) — routes are /a/*. wrap:'lang' provides useLanguage().
   'agent-login': { Comp: AgentCashLogin, route: '/a/login', wrap: 'lang' },
+  // Connexion unique du personnel (app BONZINI HQ : ajouter « BonziniHQ/1.0 » à l'agent utilisateur).
+  'staff-login': { Comp: MobileLoginScreen, route: '/m/login', path: '/m/login' },
   'agent-payments': { Comp: AgentCashPayments, route: '/a', wrap: 'lang' },
   'agent-scanner': { Comp: AgentCashScanner, route: '/a/scan', wrap: 'lang' },
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
@@ -444,9 +477,11 @@ try { window.localStorage.setItem('theme', theme); } catch { /* ignore */ }
 if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'DM Sans', sans-serif";
 
 // Full-permission fake admin so permission guards pass.
+// ?anon=1 : personne n'est connecté (écran de connexion) ; ?role=… : le rôle simulé.
+const anon = params.get('anon') === '1';
 const fakeAuth = {
-  currentUser: { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: 'super_admin' },
-  isAuthenticated: true,
+  currentUser: anon ? null : { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: params.get('role') ?? 'super_admin' },
+  isAuthenticated: !anon,
   isLoading: false,
   hasPermission: () => true,
   profile: { first_name: 'Demo', last_name: 'Admin' },
@@ -473,11 +508,19 @@ const routed = entry.path ? (
 // Agent-cash screens need LanguageProvider (useLanguage bridge over i18next).
 const inner = entry.wrap === 'lang' ? <LanguageProvider>{routed}</LanguageProvider> : routed;
 
+/** Le chemin du routeur en mémoire, lisible par les tests (window.__routerPath). */
+function LocationProbe() {
+  const loc = useLocation();
+  (window as unknown as { __routerPath?: string }).__routerPath = loc.pathname;
+  return null;
+}
+
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
     <QueryClientProvider client={qc}>
       <AdminAuthContext.Provider value={fakeAuth}>
         <MemoryRouter initialEntries={[entry.route]}>
+          <LocationProbe />
           {inner}
         </MemoryRouter>
       </AdminAuthContext.Provider>

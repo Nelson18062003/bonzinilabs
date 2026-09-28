@@ -14,18 +14,21 @@ import type { GuideOrientation } from '@/lib/mobileMoneyGuide';
 import type { BankOption } from '@/types/deposit';
 import { BankDetailsPDF } from '@/lib/pdf/templates/BankDetailsPDF';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
+import { withDocLang, type DocLang } from '@/lib/pdf/docLang';
 
 export interface BankDetailsPdfOptions {
   orientation?: GuideOrientation;
   /** Une seule banque : son RIB sur une page. Sans elle : le livret complet. */
   bank?: BankOption;
+  /** Les deux langues (par défaut), ou le français seul, ou l'anglais seul (lib/pdf/docLang.ts). */
+  lang?: DocLang;
 }
 
-export async function buildBankDetailsPdf({ orientation = 'portrait', bank }: BankDetailsPdfOptions = {}): Promise<File> {
-  const el: ReactElement = createElement(BankDetailsPDF, { data: bankGuideData(), orientation, bank });
+export async function buildBankDetailsPdf({ orientation = 'portrait', bank, lang = 'bi' }: BankDetailsPdfOptions = {}): Promise<File> {
+  const el: ReactElement = createElement(BankDetailsPDF, { data: bankGuideData(), orientation, bank, lang });
   const blob = await pdf(el).toBlob();
   const name = bank ? bankRibFilename(bank, orientation) : BANK_GUIDE_FILENAME[orientation];
-  return new File([blob], name, { type: 'application/pdf' });
+  return new File([blob], withDocLang(name, lang), { type: 'application/pdf' });
 }
 
 export async function downloadBankDetailsPdf(options: BankDetailsPdfOptions = {}): Promise<void> {

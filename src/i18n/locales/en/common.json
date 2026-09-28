@@ -327,7 +327,14 @@
       "last_month": "Last month",
       "all_time": "All history",
       "custom": "Custom"
-    }
+    },
+    "hint2": "Opening balance, every deposit and every payment (with its rate and the amount in ¥), then the closing balance.",
+    "periodLabel": "Period",
+    "languageLabel": "Statement language",
+    "fromDate": "From",
+    "toDate": "To",
+    "inverted": "The start date must come before the end date.",
+    "download": "Download the statement (PDF)"
   },
   "clientDetail": "Client detail",
   "clientNotFound": "Client not found",
@@ -561,5 +568,9 @@
     "error": "Could not update the overdraft",
     "availableWithOverdraft": "Available with overdraft: {{amount}} (authorised {{limit}})",
     "willOverdraw": "The client goes into overdraft: balance after {{amount}}."
-  }
+  },
+  "signInWithPassword": "Password",
+  "signInWithPasswordHint": "The one you were given with your account",
+  "enterPassword": "Your password",
+  "scanOpenNative": "Open the scanner"
 }

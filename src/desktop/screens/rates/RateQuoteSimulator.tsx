@@ -8,7 +8,7 @@
  * cotation au langage du flyer, prête à partager : téléchargée en PNG
  * (même pipeline html-to-image que le flyer) ou copiée en texte WhatsApp.
  */
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownUp, Check, Copy, Download, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,9 @@ import { downloadNodePNG } from '@/lib/exportFlyer';
 import { SURFACE, TEXT, Card, CardHeader, Chip, SecLabel, StatusPill, ScreenError, ScreenLoader } from '@/desktop/designKit';
 import { MethodLogo } from '@/mobile/screens/rates/components/MethodLogo';
 import { RateQuoteCard, QUOTE_W, QUOTE_H } from './RateQuoteCard';
+import { QUOTE_TEXT, quoteDate, quoteNumber } from '@/lib/rateQuote';
+import { FLYER_TEXT, type FlyerLang } from '@/lib/rateFlyer';
+import { loadFlyerFonts } from '@/lib/flyerFonts';
 import { CONTACT_PHONE_CM } from '@/lib/companyContacts';
 
 interface Props {
@@ -43,6 +46,14 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   const [country, setCountry] = useState('cameroun');
   const [quoteTheme, setQuoteTheme] = useState<'dark' | 'light'>('dark');
   const [exporting, setExporting] = useState(false);
+  // La langue de la cotation (image + texte), retenue sur cet appareil.
+  const [quoteLang, setQuoteLangState] = useState<FlyerLang>(() => {
+    try { return localStorage.getItem('bz.quote.lang') === 'en' ? 'en' : 'fr'; } catch { return 'fr'; }
+  });
+  const setQuoteLang = (l: FlyerLang) => {
+    setQuoteLangState(l);
+    try { localStorage.setItem('bz.quote.lang', l); } catch { /* navigation privée */ }
+  };
   const [copied, setCopied] = useState(false);
   // Champ dont le montant vient d'être copié (retour visuel ✓).
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -103,6 +114,8 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   // via CALLBACK ref : le conteneur n'existe qu'une fois les taux chargés,
   // un ref classique mesuré au montage resterait à 0 et l'aperçu vide.
   const quoteNodeRef = useRef<HTMLDivElement>(null);
+  // La police de l'image (livrée avec l'app) chargée d'avance : l'aperçu est mesuré avec elle.
+  useEffect(() => { void loadFlyerFonts().catch(() => undefined); }, []);
   const [previewEl, setPreviewEl] = useState<HTMLDivElement | null>(null);
   const [previewW, setPreviewW] = useState(0);
   useLayoutEffect(() => {
@@ -116,16 +129,20 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
 
   const methodLabel = PAYMENT_METHODS.find((p) => p.key === method)?.label ?? method;
   const countryLabel = COUNTRIES.find((c) => c.key === country)?.label ?? country;
+  const quoteCountry = (FLYER_TEXT[quoteLang].countries as Record<string, string>)[country] ?? countryLabel;
 
   const downloadQuote = async () => {
     if (exporting || !quoteNodeRef.current || !result) return;
     setExporting(true);
     try {
+      // La police latine livrée avec l'app, remise à la capture (voir lib/flyerFonts.ts).
+      const extraFontCSS = await loadFlyerFonts().catch(() => '');
       await downloadNodePNG(
         quoteNodeRef.current,
         QUOTE_W,
         QUOTE_H,
-        `bonzini_cotation_${new Date().toISOString().slice(0, 10)}.png`,
+        `bonzini_${quoteLang === 'en' ? 'quote' : 'cotation'}_${new Date().toISOString().slice(0, 10)}.png`,
+        extraFontCSS,
       );
     } catch {
       toast.error("Échec de l'export de la cotation — réessayez");
@@ -137,13 +154,24 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
   const copyQuoteText = async () => {
     if (!result) return;
     const now = new Date();
-    const lines = [
-      `🧾 Cotation Bonzini — ${FR_DAYS[now.getDay()]} ${now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`,
-      `Vous payez : ${result.amountXAF.toLocaleString('fr-FR')} XAF`,
-      `Votre fournisseur reçoit : ¥${Math.round(result.amountCNY).toLocaleString('fr-FR')} (${methodLabel})`,
-      `Taux : ¥${result.finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} / 1M XAF — valable aujourd'hui`,
-      `WhatsApp : ${CONTACT_PHONE_CM} · bonzinilabs.com`,
-    ];
+    const t = QUOTE_TEXT[quoteLang];
+    const n = (v: number) => quoteNumber(v, quoteLang);
+    const colon = quoteLang === 'en' ? ':' : ' :';
+    const lines = quoteLang === 'en'
+      ? [
+        `🧾 Bonzini quote — ${quoteDate(now, 'en')}`,
+        `You pay${colon} ${n(result.amountXAF)} XAF`,
+        `Your supplier receives${colon} ¥${n(result.amountCNY)} (${t.methods[method]})`,
+        `Rate${colon} ¥${n(result.finalRate)} / 1M XAF — valid today`,
+        `WhatsApp${colon} ${CONTACT_PHONE_CM} · bonzinilabs.com`,
+      ]
+      : [
+        `🧾 Cotation Bonzini — ${FR_DAYS[now.getDay()]} ${now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`,
+        `Vous payez${colon} ${n(result.amountXAF)} XAF`,
+        `Votre fournisseur reçoit${colon} ¥${n(result.amountCNY)} (${methodLabel})`,
+        `Taux${colon} ¥${n(result.finalRate)} / 1M XAF — valable aujourd'hui`,
+        `WhatsApp${colon} ${CONTACT_PHONE_CM} · bonzinilabs.com`,
+      ];
     try {
       await navigator.clipboard.writeText(lines.join('\n'));
       setCopied(true);
@@ -369,6 +397,9 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
           title="Cotation à partager"
           meta={
             <span className="inline-flex items-center gap-1.5">
+              <Chip label="Français" active={quoteLang === 'fr'} onClick={() => setQuoteLang('fr')} />
+              <Chip label="English" active={quoteLang === 'en'} onClick={() => setQuoteLang('en')} />
+              <span className="mx-1 h-4 w-px bg-black/10 dark:bg-white/15" aria-hidden />
               <Chip label="Sombre" active={quoteTheme === 'dark'} onClick={() => setQuoteTheme('dark')} />
               <Chip label="Clair" active={quoteTheme === 'light'} onClick={() => setQuoteTheme('light')} />
             </span>
@@ -389,8 +420,10 @@ export function RateQuoteSimulator({ activeRate, adjustments, adjustmentsLoading
                           amountCNY={result.amountCNY}
                           method={method}
                           finalRate={result.finalRate}
-                          countryLabel={countryLabel}
+                          countryLabel={quoteCountry}
+                          showCountry={country !== 'cameroun'}
                           theme={quoteTheme}
+                          lang={quoteLang}
                         />
                       </div>
                     </div>

@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { paymentDocId, paymentDocTitle } from '@/lib/paymentDocuments';
+import { localizeBi, withDocLang } from '@/lib/pdf/docLang';
 import { MAX_CANVAS_AREA, sheetImageName, sheetLayout } from '@/lib/pdfToImages';
 import { getBankInfo, methodFamilies, selectableMethodFamilies, WAVE_ENABLED, waveAccount } from '@/data/depositMethodsData';
 
@@ -8,6 +10,31 @@ describe('les documents « coordonnées de paiement »', () => {
     expect(paymentDocId({ kind: 'banks' }, 'pdf', 'portrait')).toBe('banks:pdf:portrait');
     expect(paymentDocId({ kind: 'rib', bank: 'UBA' }, 'png', 'landscape')).toBe('rib-UBA:png:landscape');
     expect(paymentDocId({ kind: 'mobile-money' }, 'png', 'portrait')).toBe('mobile-money:png:portrait');
+  });
+
+  it('distingue la langue choisie : français seul, anglais seul, ou les deux', () => {
+    expect(paymentDocId({ kind: 'banks' }, 'png', 'portrait', 'en')).toBe('banks:png:portrait:en');
+    expect(paymentDocId({ kind: 'banks' }, 'png', 'portrait', 'bi')).toBe('banks:png:portrait');
+    expect(paymentDocTitle({ kind: 'banks' }, 'en')).toBe('NORTON GAUSS BONZINI SARL · Bank details');
+    expect(paymentDocTitle({ kind: 'mobile-money' }, 'en')).toBe('NORTON GAUSS BONZINI SARL · Mobile Money details');
+    expect(withDocLang('rib-uba.pdf', 'en')).toBe('rib-uba-en.pdf');
+    expect(withDocLang('coordonnees-bancaires-portrait.pdf', 'bi')).toBe('coordonnees-bancaires-portrait.pdf');
+  });
+
+  it('réduit chaque paire { fr, en } à la langue choisie, et rien d’autre', () => {
+    const copy = { title: { fr: 'Titulaire', en: 'Account holder' }, list: [{ fr: 'ou', en: 'or', n: 1 }], color: '#fff', n: 3 };
+    expect(localizeBi(copy, 'en')).toEqual({ title: { fr: 'Account holder', en: 'Account holder' }, list: [{ fr: 'or', en: 'or', n: 1 }], color: '#fff', n: 3 });
+    expect(localizeBi(copy, 'fr').title).toEqual({ fr: 'Titulaire', en: 'Titulaire' });
+    expect(localizeBi(copy, 'bi')).toBe(copy);
+  });
+
+  it('n’affiche une ligne anglaise secondaire que si elle diffère du texte principal', () => {
+    // Sinon, en « anglais seul », chaque texte apparaîtrait deux fois.
+    for (const f of ['src/lib/pdf/templates/BankDetailsPDF.tsx', 'src/lib/pdf/templates/MobileMoneyGuidePDF.tsx', 'src/lib/pdf/components/guideKit.tsx']) {
+      const src = readFileSync(f, 'utf8');
+      const bare = src.split('\n').filter((l) => /^\s*<Text\b[^>]*>\{(?:[A-Za-z]+\()?[A-Za-z_][\w.]*\.en\b/.test(l));
+      expect(bare, f).toEqual([]);
+    }
   });
 
   it('titre la feuille de partage au nom de la société', () => {

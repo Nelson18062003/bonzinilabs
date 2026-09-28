@@ -10,9 +10,15 @@
 // saluer l'adresse mémorisée : impossible d'en changer sans vider le
 // navigateur. C'était le principal reproche en test.
 //
-// PLUS DE MOT DE PASSE ICI — retiré à la demande. Le repli d'urgence existe
-// toujours ailleurs : /a/login (agent-cash) accepte email + mot de passe et
-// ouvre la même session admin.
+// PLUS DE MOT DE PASSE SUR LE SITE — retiré à la demande. Le repli d'urgence
+// existe toujours ailleurs : /a/login (agent-cash) accepte email + mot de
+// passe et ouvre la même session admin.
+//
+// DANS L'APP BONZINI HQ (isNativeApp) : c'est la connexion UNIQUE de tout le
+// personnel. Le mot de passe y revient (comptes partagés, comme celui de
+// l'entrepôt de Guangzhou) ; Google et la clé d'accès disparaissent — ni l'un
+// ni l'autre ne fonctionne dans une WebView. Une fois connecté, chacun part
+// vers SON espace (staffHomeFor) : /m, /a, /r ou /w selon son rôle.
 //
 // LISIBILITÉ AVANT TOUT : une décision par écran, des options en grandes
 // lignes tapables avec un titre et une phrase d'explication. L'utilisateur
@@ -28,8 +34,10 @@ import { PremiumInput } from '@/components/auth/PremiumInput';
 import { StepTransition } from '@/components/auth/StepTransition';
 import { OtpField } from '@/components/form';
 import { isPasskeySupported, hasPasskeyOnThisDevice } from '@/lib/passkey';
+import { isNativeApp } from '@/lib/nativeApp';
+import { staffHomeFor } from '@/lib/staffHome';
 import { TEXT } from '@/mobile/designKit';
-import { Loader2, Mail, ArrowLeft, Fingerprint, ChevronRight, Pencil } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Fingerprint, ChevronRight, Pencil, KeyRound, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
@@ -52,7 +60,7 @@ const RESEND_DELAY = 30;
  */
 const EMAIL_OTP_LENGTH = 6;
 
-type Step = 'email' | 'methods' | 'code';
+type Step = 'email' | 'methods' | 'code' | 'password';
 
 /** Grande ligne tapable : icône, titre, explication. Lisible sans effort. */
 function MethodRow({
@@ -130,25 +138,29 @@ export function MobileLoginScreen() {
   const {
     requestEmailCode,
     verifyEmailCode,
+    login,
     loginWithPasskey,
     loginWithGoogle,
     lastEmail,
     isLoading: authLoading,
     isAuthenticated,
+    currentUser,
   } = useAdminAuth();
+  const inApp = isNativeApp();
 
   // Déjà connecté (rôle arrivé après un réseau lent, retour arrière, lien
   // ouvert alors qu'une session vit) : on ne reste pas sur l'écran de
-  // connexion, on entre.
+  // connexion, on entre — dans l'espace de SON rôle.
   useEffect(() => {
-    if (isAuthenticated) navigate('/m', { replace: true });
-  }, [isAuthenticated, navigate]);
+    if (isAuthenticated) navigate(staffHomeFor(currentUser?.role), { replace: true });
+  }, [isAuthenticated, currentUser?.role, navigate]);
 
   const [step, setStep] = useState<Step>('email');
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   // Pré-remplie si on connaît déjà l'adresse, mais TOUJOURS modifiable.
   const [email, setEmail] = useState(lastEmail ?? '');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -163,8 +175,8 @@ export function MobileLoginScreen() {
   const [passkeyEnrolledHere] = useState(() => hasPasskeyOnThisDevice());
 
   useEffect(() => {
-    void isPasskeySupported().then(setPasskeySupported);
-  }, []);
+    if (!inApp) void isPasskeySupported().then(setPasskeySupported);
+  }, [inApp]);
 
   const isEmailValid = emailSchema.safeParse(email).success;
 
@@ -174,10 +186,11 @@ export function MobileLoginScreen() {
     setStep(next);
   };
 
+  // La navigation suit la session (effet ci-dessus) : elle connaît le rôle,
+  // donc le bon espace. Ici, seulement le retour visuel.
   const enterApp = () => {
     toast.success(t('loginSuccess', { defaultValue: 'Connexion réussie' }));
     setIsFadingOut(true);
-    setTimeout(() => navigate('/m'), 300);
   };
 
   const startCooldown = () => {
@@ -239,6 +252,17 @@ export function MobileLoginScreen() {
     }
   };
 
+  // ── Étape 3 bis : le mot de passe (app BONZINI HQ seulement) ─────────────
+  const submitPassword = async () => {
+    if (!password) return;
+    setError('');
+    setIsLoading(true);
+    const result = await login(email, password);
+    setIsLoading(false);
+    if (result.success) enterApp();
+    else setError(result.error || t('invalidCredentials', { defaultValue: 'Email ou mot de passe incorrect' }));
+  };
+
   // ── Étape 3 : le code ─────────────────────────────────────────────────────
   const submitCode = async (value: string) => {
     setError('');
@@ -267,7 +291,7 @@ export function MobileLoginScreen() {
     );
   }
 
-  const back = () => go(step === 'code' ? 'methods' : 'email', 'back');
+  const back = () => go(step === 'code' || step === 'password' ? 'methods' : 'email', 'back');
 
   return (
     <LoginBackground className={cn(isFadingOut && 'animate-fade-out')}>
@@ -297,7 +321,7 @@ export function MobileLoginScreen() {
                 className="text-center mb-8 animate-slide-up"
                 style={{ animationDelay: '80ms', animationFillMode: 'both' }}
               >
-                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">Administration</h1>
+                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">{inApp ? 'BONZINI HQ' : 'Administration'}</h1>
                 <p className="text-muted-foreground text-[14.5px] leading-snug">
                   {t('enterEmailToContinue', { defaultValue: 'Entrez votre adresse email pour continuer' })}
                 </p>
@@ -368,7 +392,16 @@ export function MobileLoginScreen() {
                   loading={isLoading}
                 />
 
-                {passkeySupported && (
+                {inApp && (
+                  <MethodRow
+                    icon={<KeyRound className="h-5 w-5" />}
+                    title={t('signInWithPassword', { defaultValue: 'Mot de passe' })}
+                    hint={t('signInWithPasswordHint', { defaultValue: 'Celui qui vous a été donné avec votre compte' })}
+                    onClick={() => go('password')}
+                  />
+                )}
+
+                {passkeySupported && !inApp && (
                   <MethodRow
                     icon={<Fingerprint className="h-5 w-5" />}
                     title={t('signInWithPasskey', { defaultValue: 'Utiliser cet appareil' })}
@@ -382,13 +415,15 @@ export function MobileLoginScreen() {
                   />
                 )}
 
-                <MethodRow
-                  icon={<GoogleG className="h-5 w-5" />}
-                  title={t('continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
-                  hint={t('continueWithGoogleHint', { defaultValue: 'Avec votre compte Google habituel' })}
-                  onClick={handleGoogle}
-                  loading={googleLoading}
-                />
+                {!inApp && (
+                  <MethodRow
+                    icon={<GoogleG className="h-5 w-5" />}
+                    title={t('continueWithGoogle', { defaultValue: 'Continuer avec Google' })}
+                    hint={t('continueWithGoogleHint', { defaultValue: 'Avec votre compte Google habituel' })}
+                    onClick={handleGoogle}
+                    loading={googleLoading}
+                  />
+                )}
               </div>
 
               {error && (
@@ -397,6 +432,52 @@ export function MobileLoginScreen() {
                 </p>
               )}
             </div>
+          )}
+
+          {/* ─── 3 bis. Le mot de passe (app BONZINI HQ) ────────────────── */}
+          {step === 'password' && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submitPassword();
+              }}
+              className="max-w-sm mx-auto w-full"
+            >
+              <div className="text-center mb-7">
+                <h1 className="text-[24px] font-bold tracking-tight mb-1.5">
+                  {t('enterPassword', { defaultValue: 'Votre mot de passe' })}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => go('email', 'back')}
+                  className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {email}
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="mb-6">
+                <PremiumInput
+                  id="admin-password"
+                  type="password"
+                  label={t('password', { defaultValue: 'Mot de passe' })}
+                  value={password}
+                  onChange={(val) => {
+                    setPassword(val);
+                    setError('');
+                  }}
+                  icon={<Lock className="w-5 h-5" />}
+                  autoComplete="current-password"
+                  autoFocus
+                />
+              </div>
+              <button type="submit" disabled={!password || isLoading} className={CTA}>
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('signIn', { defaultValue: 'Se connecter' })}
+              </button>
+              {error && (
+                <p className="mt-5 text-center text-[14px] leading-snug text-[#900B09] dark:text-[#FDD3D0]">{error}</p>
+              )}
+            </form>
           )}
 
           {/* ─── 3. Le code ──────────────────────────────────────────────── */}

@@ -7,6 +7,7 @@
 // ============================================================
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
+import { staffHomeFor } from '@/lib/staffHome';
 import { Loader2 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -14,9 +15,13 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AnimatedPage } from '@/components/transitions/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { WarehouseTabBar } from './WarehouseTabBar';
+import { isNativeApp } from '@/lib/nativeApp';
+
+/** Dans l'app BONZINI HQ, la barre d'onglets est native : celle du site se retire. */
+const inApp = isNativeApp();
 
 function Protected({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading, hasPermission } = useAdminAuth();
+  const { isAuthenticated, isLoading, hasPermission, currentUser } = useAdminAuth();
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -24,7 +29,9 @@ function Protected({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!isAuthenticated || !(hasPermission('canReceiveAtDestination') || hasPermission('canReleaseParcels'))) return <Navigate to="/w/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/w/login" replace />;
+  // Connecté mais pas agent d'entrepôt : vers SON espace, pas vers une connexion en boucle.
+  if (!(hasPermission('canReceiveAtDestination') || hasPermission('canReleaseParcels'))) return <Navigate to={staffHomeFor(currentUser?.role)} replace />;
   return <>{children}</>;
 }
 
@@ -34,7 +41,7 @@ export function WarehouseShell({ children, showTabBar = true }: { children: Reac
       <main className={cn('flex-1', showTabBar && 'pb-24')}>
         <AnimatedPage>{children}</AnimatedPage>
       </main>
-      {showTabBar && <WarehouseTabBar />}
+      {showTabBar && !inApp && <WarehouseTabBar />}
     </div>
   );
 }

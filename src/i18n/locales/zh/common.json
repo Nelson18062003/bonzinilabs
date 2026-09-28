@@ -327,7 +327,14 @@
       "last_month": "上月",
       "all_time": "全部历史",
       "custom": "自定义"
-    }
+    },
+    "hint2": "期初余额、每笔充值和每笔付款（含汇率和人民币金额），以及期末余额。",
+    "periodLabel": "期间",
+    "languageLabel": "对账单语言",
+    "fromDate": "从",
+    "toDate": "至",
+    "inverted": "开始日期必须早于结束日期。",
+    "download": "下载对账单（PDF）"
   },
   "clientDetail": "客户详情",
   "clientNotFound": "未找到客户",
@@ -561,5 +568,9 @@
     "error": "无法修改透支",
     "availableWithOverdraft": "含透支可用：{{amount}}（授权 {{limit}}）",
     "willOverdraw": "客户将进入透支：操作后余额 {{amount}}。"
-  }
+  },
+  "signInWithPassword": "密码",
+  "signInWithPasswordHint": "开通账号时提供给您的密码",
+  "enterPassword": "请输入密码",
+  "scanOpenNative": "打开扫码"
 }

@@ -83,6 +83,8 @@ export const MOBILE_MONEY_GUIDE_COPY = {
     retrait: { fr: 'Retrait', en: 'Withdrawal' },
     preuve: { fr: 'Preuve', en: 'Proof' },
   },
+  /** Le mot à remplacer dans le code du Retrait (le code lui-même porte « MONTANT »). */
+  amountWord: { fr: 'MONTANT', en: 'AMOUNT' },
   cover: {
     kicker: { fr: 'Pour vos dépôts', en: 'For your deposits' },
     lead: { fr: 'Deux façons de nous payer.', en: 'Two ways to pay us.' },

@@ -20,11 +20,8 @@ import { formatXAF } from '@/lib/formatters';
 import { whenSentence } from '@/lib/plainTime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  generateStatementForRange,
-  buildMovementFromLedgerEntry,
-  shouldIncludeLedgerEntry,
-} from '@/lib/generateClientStatement';
+import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
+import { downloadAccountStatement } from '@/lib/accountStatementData';
 import { cn } from '@/lib/utils';
 import {
   ArrowDownCircle,
@@ -286,35 +283,31 @@ export function MobileClientDetail() {
   // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
   // les écritures de cette période (plus de plafond à 100), et le solde
   // d'ouverture vient de la dernière écriture avant la période si elle est vide.
-  const handleDownloadStatement = async (range: StatementRange) => {
+  const handleDownloadStatement = async (range: StatementRange, lang: StatementLang) => {
     if (!client) return;
     setIsStatementGenerating(true);
     try {
       const query = statementQueryRange(range);
-      const entries = await fetchLedgerEntriesInRange(client.id, query);
-      const movements = entries
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((entry) => shouldIncludeLedgerEntry({ ...entry, isTest: (entry as any).isTest }))
-        .map((entry) => buildMovementFromLedgerEntry(entry));
-      if (query === null && movements.length === 0) {
+      const entries: StatementEntry[] = await fetchLedgerEntriesInRange(client.id, query);
+      if (query === null && !entries.some(isStatementEntry)) {
         toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
         return false;
       }
-      const lastBefore = query && movements.length === 0
-        ? await fetchLastLedgerEntryBefore(client.id, query.from)
-        : null;
-
-      await generateStatementForRange({
+      // Le solde d'ouverture d'une période sans mouvement : la dernière écriture avant elle.
+      const lastBefore = query ? await fetchLastLedgerEntryBefore(client.id, query.from) : null;
+      await downloadAccountStatement({
+        db: supabaseAdmin,
+        lang,
         client: {
-          name: `${client.firstName} ${client.lastName}`,
+          name: `${client.firstName} ${client.lastName}`.trim(),
+          code: client.customerCode,
           phone: client.phone,
           email: client.email,
           country: client.country,
-          ref: client.customerCode,
         },
+        entries,
         range: query,
-        movements,
-        lastBalanceBefore: lastBefore?.balanceAfter ?? null,
+        balanceBeforeRange: lastBefore?.balanceAfter ?? null,
       });
       return true;
     } catch (err) {
