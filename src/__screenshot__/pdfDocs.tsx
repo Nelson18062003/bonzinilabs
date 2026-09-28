@@ -54,7 +54,8 @@ export function PngDoc({ doc, orientation }: { doc: import('@/lib/paymentDocumen
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     import('@/lib/paymentDocuments')
-      .then((m) => m.paymentDocImage(doc, orientation))
+      // ?doclang=fr|en|bi : la langue du document (bilingue par défaut).
+      .then((m) => m.paymentDocImage(doc, orientation, (new URLSearchParams(window.location.search).get('doclang') ?? 'bi') as import('@/lib/pdf/docLang').DocLang))
       .then((file) => {
         (window as unknown as { __pngNames?: string[]; __pngFile?: File }).__pngNames = [`${file.name} ${file.size}`];
         (window as unknown as { __pngFile?: File }).__pngFile = file;

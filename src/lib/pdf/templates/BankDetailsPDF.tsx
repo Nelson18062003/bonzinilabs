@@ -33,7 +33,15 @@ import {
 } from '../guideTokens';
 import { colors } from '../styles';
 import '../fonts';
-import { BANK_GUIDE_COPY as COPY, type BankGuideAccount, type BankGuideData, type Bi } from '@/lib/bankDetailsGuide';
+import { BANK_GUIDE_COPY, type BankGuideAccount, type BankGuideData, type Bi } from '@/lib/bankDetailsGuide';
+import { localizeBi, type DocLang, type LooseText } from '../docLang';
+
+/**
+ * Le texte du livret DANS LA LANGUE DEMANDÉE (docLang.ts), posé par
+ * BankDetailsPDF avant de dessiner les pages : react-pdf rend l'arbre d'un
+ * seul tenant, et on ne fabrique qu'un document à la fois.
+ */
+let COPY: LooseText<typeof BANK_GUIDE_COPY> = BANK_GUIDE_COPY;
 import type { GuideOrientation } from '@/lib/mobileMoneyGuide';
 import type { BankOption } from '@/types/deposit';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
@@ -209,7 +217,7 @@ function KeyRow({ cells, size, tint }: { cells: Cell[]; size: number; tint: { bg
           {c.label ? (
             <>
               <Text style={bs.cellFr}>{c.label.fr}</Text>
-              <Text style={bs.cellEn}>{c.label.en}</Text>
+              {c.label.en !== c.label.fr ? <Text style={bs.cellEn}>{c.label.en}</Text> : null}
             </>
           ) : null}
           <Text style={[bs.keyText, { fontSize: size, position: 'relative', top: -size * 0.078 }]}>{c.value}</Text>
@@ -262,11 +270,11 @@ function WayCard({ tone, word, sentence, enStrong, children }: { tone: Tone; wor
         <View style={bs.cardDisc}><Text style={[bs.cardDiscText, { color: tone.color }]}>{tone.n}</Text></View>
         <View>
           <Text style={[bs.cardWord, { color: tone.fr }]}>{word.fr}</Text>
-          <Text style={[bs.cardEnWord, { color: tone.en }]}>{word.en}</Text>
+          {word.en !== word.fr ? <Text style={[bs.cardEnWord, { color: tone.en }]}>{word.en}</Text> : null}
         </View>
         <View style={{ flex: 1, marginLeft: 14 }}>
           <Text style={[bs.cardSentFr, { color: tone.fr }]}>{sentence.fr}</Text>
-          <Text style={[bs.cardSentEn, { color: tone.en }, enStrong ? { fontWeight: 700 } : {}]}>{sentence.en}</Text>
+          {sentence.en !== sentence.fr ? <Text style={[bs.cardSentEn, { color: tone.en }, enStrong ? { fontWeight: 700 } : {}]}>{sentence.en}</Text> : null}
         </View>
       </View>
       <View style={bs.cardBody}>{children}</View>
@@ -301,7 +309,7 @@ function VirementCard({ a, size, room, swiftW }: { a: BankGuideAccount; size: nu
           <GlobeIcon color={VIOLET_DEEP} size={24} />
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={bs.hintFr}>{nameLines(v.abroad.fr, 13 * 0.97, hintRoom)}</Text>
-            <Text style={bs.hintEn}>{nameLines(v.abroad.en, 12 * 0.9, hintRoom)}</Text>
+            {v.abroad.en !== v.abroad.fr ? <Text style={bs.hintEn}>{nameLines(v.abroad.en, 12 * 0.9, hintRoom)}</Text> : null}
           </View>
         </View>
       </View>
@@ -325,7 +333,7 @@ function OrRow({ tight }: { tight?: boolean }) {
       <View style={bs.orLine} />
       <View style={[bs.orDisc, tight ? { width: 34, height: 34, borderRadius: 17 } : {}]}>
         <Text style={bs.orFr}>{COPY.cover.or.fr}</Text>
-        <Text style={bs.orEn}>{COPY.cover.or.en}</Text>
+        {COPY.cover.or.en !== COPY.cover.or.fr ? <Text style={bs.orEn}>{COPY.cover.or.en}</Text> : null}
       </View>
       <View style={bs.orLine} />
     </View>
@@ -339,7 +347,7 @@ function MentionStrip() {
       <View style={{ flex: 1 }}>
         <Text style={[gk.label, { marginBottom: 3 }]}>{biLabel(COPY.mention.label)}</Text>
         <Text style={bs.mentionFr}>{COPY.mention.value.fr}</Text>
-        <Text style={bs.mentionEn}>{COPY.mention.value.en}</Text>
+        {COPY.mention.value.en !== COPY.mention.value.fr ? <Text style={bs.mentionEn}>{COPY.mention.value.en}</Text> : null}
       </View>
     </View>
   );
@@ -353,7 +361,7 @@ function ProofStrip() {
       <View style={{ flex: 1 }}>
         <Text style={[gk.label, { marginBottom: 3 }]}>{biLabel(COPY.preuve.after)}</Text>
         <Text style={bs.proofFr}>{COPY.preuve.sentence.fr}</Text>
-        <Text style={bs.proofEn}>{COPY.preuve.sentence.en}</Text>
+        {COPY.preuve.sentence.en !== COPY.preuve.sentence.fr ? <Text style={bs.proofEn}>{COPY.preuve.sentence.en}</Text> : null}
       </View>
     </View>
   );
@@ -412,7 +420,7 @@ function BankPagePortrait(p: BankPageProps) {
               <Text style={bs.eyebrow}>{biLabel(eyebrow)}</Text>
               <Text style={[bs.bankName, { fontSize: 30 }]}>{nameLines(a.name, 30, nameRoom)}</Text>
               <Text style={bs.zoneFr}>{COPY.bank.zone.fr}</Text>
-              <Text style={bs.zoneEn}>{COPY.bank.zone.en}</Text>
+              {COPY.bank.zone.en !== COPY.bank.zone.fr ? <Text style={bs.zoneEn}>{COPY.bank.zone.en}</Text> : null}
             </View>
           </View>
         </View>
@@ -444,11 +452,11 @@ function BankSide(p: BankPageProps) {
       {/* RIB seul : la colonne porte aussi la preuve, le logo et le nom s'y font un peu plus petits. */}
       <View style={{ marginTop: p.single ? 22 : 28 }}>
         <Text style={[ls.sideEyebrow, { color: colors.gold }]}>{eyebrow.fr}</Text>
-        <Text style={[ls.sideEyebrowEn, { color: ON_INK_SOFT }]}>{eyebrow.en}</Text>
+        {eyebrow.en !== eyebrow.fr ? <Text style={[ls.sideEyebrowEn, { color: ON_INK_SOFT }]}>{eyebrow.en}</Text> : null}
         <BankLogo bank={a.key} w={room} h={p.single ? 80 : 100} pad={p.single ? 13 : 16} />
         <Text style={[bs.bankName, { fontSize: p.single ? 24 : 28, marginTop: p.single ? 12 : 16 }]}>{nameLines(a.name, p.single ? 24 : 28, room)}</Text>
         <Text style={bs.zoneFr}>{COPY.bank.zone.fr}</Text>
-        <Text style={bs.zoneEn}>{COPY.bank.zone.en}</Text>
+        {COPY.bank.zone.en !== COPY.bank.zone.fr ? <Text style={bs.zoneEn}>{COPY.bank.zone.en}</Text> : null}
       </View>
       <View style={{ marginTop: 'auto' }}>
         <View style={ls.rule}>
@@ -456,11 +464,11 @@ function BankSide(p: BankPageProps) {
             <View style={[bs.mentionDisc, { width: 24, height: 24, borderRadius: 12, marginRight: 9 }]}><Text style={[bs.mentionMark, { fontSize: 14 }]}>!</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={[gk.label, { marginBottom: 0 }]}>{mention.label.fr}</Text>
-              <Text style={[gk.label, { marginBottom: 0, fontWeight: 700 }]}>{mention.label.en}</Text>
+              {mention.label.en !== mention.label.fr ? <Text style={[gk.label, { marginBottom: 0, fontWeight: 700 }]}>{mention.label.en}</Text> : null}
             </View>
           </View>
           <Text style={ls.ruleFr}>{nameLines(mention.value.fr, 14 * 0.97, room - 28)}</Text>
-          <Text style={ls.ruleEn}>{nameLines(mention.value.en, 12.5 * 0.9, room - 28)}</Text>
+          {mention.value.en !== mention.value.fr ? <Text style={ls.ruleEn}>{nameLines(mention.value.en, 12.5 * 0.9, room - 28)}</Text> : null}
         </View>
         {p.single ? (
           <View style={[ls.rule, { marginTop: 10 }]}>
@@ -468,11 +476,11 @@ function BankSide(p: BankPageProps) {
               <View style={[gk.goldCheck, { width: 24, height: 24, borderRadius: 12, marginRight: 9 }]}><CheckIcon color={INK} size={12} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={[gk.label, { marginBottom: 0 }]}>{COPY.preuve.after.fr}</Text>
-                <Text style={[gk.label, { marginBottom: 0, fontWeight: 700 }]}>{COPY.preuve.after.en}</Text>
+                {COPY.preuve.after.en !== COPY.preuve.after.fr ? <Text style={[gk.label, { marginBottom: 0, fontWeight: 700 }]}>{COPY.preuve.after.en}</Text> : null}
               </View>
             </View>
             <Text style={ls.ruleFr}>{nameLines(COPY.preuve.sentence.fr, 14 * 0.97, room - 28)}</Text>
-            <Text style={ls.ruleEn}>{nameLines(COPY.preuve.sentence.en, 12.5 * 0.9, room - 28)}</Text>
+            {COPY.preuve.sentence.en !== COPY.preuve.sentence.fr ? <Text style={ls.ruleEn}>{nameLines(COPY.preuve.sentence.en, 12.5 * 0.9, room - 28)}</Text> : null}
           </View>
         ) : null}
         {p.folio ? <Text style={[ls.sideFolio, { color: ON_INK_SOFT }]}>{p.folio}</Text> : null}
@@ -510,7 +518,7 @@ function Door({ tone, word, needs, needsFg, wordSize, padV }: { tone: Tone; word
         <NeedsPill needs={needs} fg={needsFg} />
       </View>
       <Text style={[bs.doorWord, { color: tone.fr, fontSize: wordSize }]}>{word.fr}</Text>
-      <Text style={[bs.doorEnWord, { color: tone.en }]}>{word.en}</Text>
+      {word.en !== word.fr ? <Text style={[bs.doorEnWord, { color: tone.en }]}>{word.en}</Text> : null}
     </View>
   );
 }
@@ -541,7 +549,7 @@ function ProofDoor({ page }: { page: number }) {
         <View style={[gk.proofDisc, { width: 36, height: 36, borderRadius: 18 }]}><Text style={gk.proofDiscText}>{PREUVE.n}</Text></View>
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap' }}>
           <Text style={[gk.proofFr, { marginRight: 12 }]}>{COPY.cover.preuve.fr}</Text>
-          <Text style={[gk.proofEn, { marginTop: 0 }]}>{COPY.cover.preuve.en}</Text>
+          {COPY.cover.preuve.en !== COPY.cover.preuve.fr ? <Text style={[gk.proofEn, { marginTop: 0 }]}>{COPY.cover.preuve.en}</Text> : null}
         </View>
         <PagePill page={page} word={COPY.page.fr} color={INK} background={colors.gold} />
       </View>
@@ -612,12 +620,12 @@ function Cover({ L, accounts, total }: { L: Layout; accounts: BankGuideAccount[]
           <View style={{ marginTop: 26 }}>
             <Text style={gk.coverKicker}>{biLabel(COPY.cover.kicker)}</Text>
             <Text style={[gk.coverTitleBottom, { fontSize: fitBlack(title.fr, 44, L.CW, -0.8) }]}>{title.fr}</Text>
-            <Text style={[gk.coverTitleTop, { marginTop: 4 }]}>{title.en}</Text>
+            {title.en !== title.fr ? <Text style={[gk.coverTitleTop, { marginTop: 4 }]}>{title.en}</Text> : null}
           </View>
           <View style={{ marginTop: 20 }}><CoverHolder size={fitBlack(LEGAL_NAME, 26, L.CW - 36)} /></View>
           <View style={{ marginTop: 22, marginBottom: 12 }}>
             <Text style={gk.leadFr}>{COPY.cover.lead.fr}</Text>
-            <Text style={gk.leadEn}>{COPY.cover.lead.en}</Text>
+            {COPY.cover.lead.en !== COPY.cover.lead.fr ? <Text style={gk.leadEn}>{COPY.cover.lead.en}</Text> : null}
           </View>
           <CoverDoors doorW={doorW} />
           <View style={{ marginTop: 14 }}><ProofDoor page={total} /></View>
@@ -636,13 +644,13 @@ function Cover({ L, accounts, total }: { L: Layout; accounts: BankGuideAccount[]
           <View>
             <Text style={[gk.coverKicker, { marginBottom: 8 }]}>{biLabel(COPY.cover.kicker)}</Text>
             <Text style={[gk.coverTitleBottom, { fontSize: 34 }]}>{title.fr}</Text>
-            <Text style={[gk.coverTitleTop, { fontSize: 20, marginTop: 2 }]}>{title.en}</Text>
+            {title.en !== title.fr ? <Text style={[gk.coverTitleTop, { fontSize: 20, marginTop: 2 }]}>{title.en}</Text> : null}
           </View>
           <CoverHolder size={20} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 14, marginBottom: 9 }}>
           <Text style={[gk.leadFr, { fontSize: 17, marginRight: 10 }]}>{COPY.cover.lead.fr}</Text>
-          <Text style={[gk.leadEn, { fontSize: 14, marginTop: 0 }]}>{COPY.cover.lead.en}</Text>
+          {COPY.cover.lead.en !== COPY.cover.lead.fr ? <Text style={[gk.leadEn, { fontSize: 14, marginTop: 0 }]}>{COPY.cover.lead.en}</Text> : null}
         </View>
         <CoverDoors doorW={doorW} padV={13} />
         <View style={{ marginTop: 10 }}><ProofDoor page={total} /></View>
@@ -654,13 +662,14 @@ function Cover({ L, accounts, total }: { L: Layout; accounts: BankGuideAccount[]
 
 /* ─────────────── Preuve ─────────────── */
 
-const PROOF_TEXT = { eyebrow: COPY.preuve.eyebrow, word: COPY.preuve.word, sentence: COPY.preuve.sentence, needs: COPY.preuve.needs, needsFg: colors.gold, needsBg: INK };
+/** Lu au moment du dessin (et non au chargement du module) : COPY suit la langue du document. */
+const proofText = () => ({ eyebrow: COPY.preuve.eyebrow, word: COPY.preuve.word, sentence: COPY.preuve.sentence, needs: COPY.preuve.needs, needsFg: colors.gold, needsBg: INK });
 
 function ProofPortrait({ folio, footer }: { folio: string; footer: FooterItem[] }) {
   const L = PORTRAIT;
   return (
     <Page size="A4" orientation="portrait" style={[gk.page, { backgroundColor: WHITE }]}>
-      <Hero id="preuve" tone={PREUVE} inset={L.M} folio={folio} text={PROOF_TEXT} sizes={{ ghost: 300, word: 54, enWord: 28 }} ghostRight={-40} ghostOpacity={0.22} />
+      <Hero id="preuve" tone={PREUVE} inset={L.M} folio={folio} text={proofText()} sizes={{ ghost: 300, word: 54, enWord: 28 }} ghostRight={-40} ghostOpacity={0.22} />
       <View style={{ paddingHorizontal: L.M, paddingTop: 12 }}>
         <Ticket width={L.CW} rowH={60} items={COPY.preuve.items} shot={COPY.preuve.shot} />
         <View style={{ marginTop: 12 }}><ClearLine text={COPY.preuve.clear} /></View>
@@ -675,7 +684,7 @@ function ProofLandscape({ folio, footer }: { folio: string; footer: FooterItem[]
   return (
     <Page size="A4" orientation="landscape" style={[gk.page, { flexDirection: 'row', backgroundColor: WHITE }]}>
       <Sidebar
-        id="preuve" tone={PREUVE} folio={folio} text={PROOF_TEXT} ghostOpacity={0.18}
+        id="preuve" tone={PREUVE} folio={folio} text={proofText()} ghostOpacity={0.18}
         rule={<RuleText text={COPY.preuve.clear} lead={<View style={[gk.goldCheck, { width: 26, height: 26, borderRadius: 13, marginRight: 10 }]}><CheckIcon color={INK} size={13} /></View>} />}
       />
       <View style={ls.area}>
@@ -693,7 +702,9 @@ function ProofLandscape({ folio, footer }: { folio: string; footer: FooterItem[]
  * Le livret complet (toutes les banques), ou le RIB d'une seule banque quand
  * `bank` est donné : une page, sans folio, avec le rappel de la preuve.
  */
-export function BankDetailsPDF({ data, orientation = 'portrait', bank }: { data: BankGuideData; orientation?: GuideOrientation; bank?: BankOption }) {
+export function BankDetailsPDF({ data: raw, orientation = 'portrait', bank, lang = 'bi' }: { data: BankGuideData; orientation?: GuideOrientation; bank?: BankOption; lang?: DocLang }) {
+  COPY = localizeBi(BANK_GUIDE_COPY, lang);
+  const data = localizeBi(raw, lang);
   const L = orientation === 'landscape' ? LANDSCAPE : PORTRAIT;
   const BankPage = orientation === 'landscape' ? BankPageLandscape : BankPagePortrait;
   const single = bank ? data.accounts.find((a) => a.key === bank) : undefined;
@@ -718,7 +729,7 @@ export function BankDetailsPDF({ data, orientation = 'portrait', bank }: { data:
     { key: 'preuve', label: biLabel(COPY.way.preuve), color: colors.gold, active: active === 'preuve', href: '#preuve' },
   ];
   return (
-    <Document title={`${COPY.docTitle.fr} · ${COPY.docTitle.en} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
+    <Document title={`${biLabel(COPY.docTitle)} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
       <Cover L={L} accounts={accounts} total={total} />
       {accounts.map((a, i) => (
         <BankPage key={a.key} a={a} index={i} count={accounts.length} folio={`${i + 2} / ${total}`} footer={footerFor(a.key)} single={false} accounts={accounts} />

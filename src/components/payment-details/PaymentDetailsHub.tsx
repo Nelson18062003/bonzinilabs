@@ -6,7 +6,8 @@
 //   · MOBILE MONEY : Orange Money et MTN MoMo — la Flotte (numéro +
 //     titulaire) et le Retrait (code à composer).
 // Et en tête de chaque onglet, les documents à envoyer : PDF, ou UNE image
-// qui réunit toutes les pages (pour WhatsApp), en portrait ou en paysage.
+// qui réunit toutes les pages (pour WhatsApp), en portrait ou en paysage,
+// en français, en anglais ou dans les deux langues (choix retenu).
 // L'image s'ouvre en aperçu : on la copie (bouton, ou clic droit / appui
 // long sur l'image elle-même) ou on la télécharge.
 // Les données viennent de la source unique de l'app
@@ -24,6 +25,7 @@ import { mobileMoneyGuideData, type GuideOrientation, type MobileMoneyOperator }
 import { paymentDocId, paymentDocImage, paymentDocPdf, paymentDocTitle, type PaymentDoc, type PaymentDocFormat } from '@/lib/paymentDocuments';
 import { canShareFiles, copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
+import type { DocLang } from '@/lib/pdf/docLang';
 import { MTN_LOGO_PATH, MTN_YELLOW } from '@/lib/brand/mtnLogo';
 import ecobankLogo from '@/assets/bank-logos/ecobank.png';
 import ccaLogo from '@/assets/bank-logos/cca.png';
@@ -32,6 +34,17 @@ import afrilandLogo from '@/assets/bank-logos/afriland.png';
 import orangeMoneyLogo from '@/assets/deposit-logos/orange-money.png';
 
 type Tab = 'banks' | 'momo';
+
+const DOC_LANG_KEY = 'bz.paymentDocs.lang';
+
+/** La langue des documents : celle choisie la dernière fois, sinon celle de l'app. */
+function initialDocLang(uiLang: string): DocLang {
+  try {
+    const saved = localStorage.getItem(DOC_LANG_KEY);
+    if (saved === 'fr' || saved === 'en' || saved === 'bi') return saved;
+  } catch { /* navigation privée */ }
+  return uiLang.startsWith('en') ? 'en' : uiLang.startsWith('fr') ? 'fr' : 'bi';
+}
 
 /** Le livret Mobile Money : couverture, Flotte, Retrait, Preuve. */
 const MOMO_PAGES = 4;
@@ -125,7 +138,7 @@ function busyKey(doc: PaymentDoc, format: PaymentDocFormat): string {
 
 interface Preview { doc: PaymentDoc; orientation: GuideOrientation; title: string; file: File; url: string }
 
-function useDocuments(orientation: GuideOrientation) {
+function useDocuments(orientation: GuideOrientation, lang: DocLang) {
   const { t } = useTranslation('deposits');
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -140,17 +153,18 @@ function useDocuments(orientation: GuideOrientation) {
     if (busy) return;
     // La mise en page choisie AU MOMENT du toucher : la changer ensuite ne mélange rien.
     const layout = orientation;
+    const language = lang;
     setBusy(busyKey(doc, format));
     const done = format === 'pdf'
-      ? paymentDocPdf(doc, layout).then(async (file) => {
+      ? paymentDocPdf(doc, layout, language).then(async (file) => {
         if (prefersDownload()) { downloadFile(file); return 'downloaded' as const; }
-        return deliverFile(file, paymentDocTitle(doc));
+        return deliverFile(file, paymentDocTitle(doc, language));
       }).then((o) => {
         if (o === 'downloaded' && mounted.current) toast.success(t('paymentDetails.downloaded', { defaultValue: 'Document téléchargé' }));
       })
-      : paymentDocImage(doc, layout).then((file) => {
+      : paymentDocImage(doc, layout, language).then((file) => {
         if (!mounted.current) return;
-        setPreview({ doc, orientation: layout, title: paymentDocTitle(doc), file, url: URL.createObjectURL(file) });
+        setPreview({ doc, orientation: layout, title: paymentDocTitle(doc, language), file, url: URL.createObjectURL(file) });
       });
     void done
       .catch(() => {
@@ -390,11 +404,21 @@ function OperatorCard({ op, copier }: { op: MobileMoneyOperator; copier: CopyApi
  * Côté équipe, la mention générale de la fiche envoyée aux clients.
  */
 export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }: { audience: 'client' | 'admin'; initialTab?: Tab; clientCode?: string | null }) {
-  const { t } = useTranslation('deposits');
+  const { t, i18n } = useTranslation('deposits');
   const [tab, setTab] = useState<Tab>(initialTab);
   const [orientation, setOrientation] = useState<GuideOrientation>('portrait');
+  const [docLang, setDocLangState] = useState<DocLang>(() => initialDocLang(i18n.language ?? 'fr'));
+  const setDocLang = (l: DocLang) => {
+    setDocLangState(l);
+    try { localStorage.setItem(DOC_LANG_KEY, l); } catch { /* navigation privée : vaut pour la session */ }
+  };
   const copier = useCopy();
-  const docs = useDocuments(orientation);
+  const docs = useDocuments(orientation, docLang);
+  const pagesIn = (count: number) => docLang === 'bi'
+    ? t('paymentDetails.pages', { count, defaultValue: '{{count}} pages, en français et en anglais' })
+    : docLang === 'en'
+      ? t('paymentDetails.pagesEn', { count, defaultValue: '{{count}} pages, en anglais' })
+      : t('paymentDetails.pagesFr', { count, defaultValue: '{{count}} pages, en français' });
   const accounts = useMemo(() => bankGuideData().accounts, []);
   const operators = useMemo(() => mobileMoneyGuideData().operators, []);
   const mention = audience === 'client'
@@ -434,11 +458,23 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }
             ]}
           />
         </div>
+        <div>
+          <div className={cn('mb-1.5', TYPE.small, TEXT.muted)}>{t('paymentDetails.docLanguage', { defaultValue: 'Langue du document' })}</div>
+          <Segmented<DocLang>
+            value={docLang}
+            onChange={setDocLang}
+            options={[
+              { value: 'fr', label: 'Français' },
+              { value: 'en', label: 'English' },
+              { value: 'bi', label: t('paymentDetails.bothLanguages', { defaultValue: 'Les deux' }) },
+            ]}
+          />
+        </div>
         {tab === 'banks' ? (
           <div className="space-y-2">
             <div>
               <div className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('paymentDetails.allBanks', { defaultValue: 'Toutes nos banques' })}</div>
-              <div className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.pages', { count: accounts.length + 2, defaultValue: '{{count}} pages, en français et en anglais' })}</div>
+              <div className={cn(TYPE.small, TEXT.muted)}>{pagesIn(accounts.length + 2)}</div>
             </div>
             <DocButtons doc={{ kind: 'banks' }} docs={docs} />
             <p className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.ribHint', { defaultValue: 'Le RIB d’une seule banque se trouve sous sa carte, plus bas.' })}</p>
@@ -447,7 +483,7 @@ export function PaymentDetailsHub({ audience, initialTab = 'banks', clientCode }
           <div className="space-y-2">
             <div>
               <div className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('paymentDetails.momoSheet', { defaultValue: 'Fiche Mobile Money' })}</div>
-              <div className={cn(TYPE.small, TEXT.muted)}>{t('paymentDetails.pages', { count: MOMO_PAGES, defaultValue: '{{count}} pages, en français et en anglais' })}</div>
+              <div className={cn(TYPE.small, TEXT.muted)}>{pagesIn(MOMO_PAGES)}</div>
             </div>
             <DocButtons doc={{ kind: 'mobile-money' }} docs={docs} />
           </div>

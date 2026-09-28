@@ -31,7 +31,15 @@ import {
 import { gk, ls } from '../guideStyles';
 import { colors } from '../styles';
 import '../fonts';
-import { MOBILE_MONEY_GUIDE_COPY as COPY } from '@/lib/mobileMoneyGuide';
+import { MOBILE_MONEY_GUIDE_COPY } from '@/lib/mobileMoneyGuide';
+import { localizeBi, type DocLang, type LooseText } from '../docLang';
+
+/**
+ * Le texte de la fiche DANS LA LANGUE DEMANDÉE (docLang.ts), posé par
+ * MobileMoneyGuidePDF avant de dessiner les pages : react-pdf rend l'arbre
+ * d'un seul tenant, et on ne fabrique qu'un document à la fois.
+ */
+let COPY: LooseText<typeof MOBILE_MONEY_GUIDE_COPY> = MOBILE_MONEY_GUIDE_COPY;
 import type { Bi, GuideOrientation, MobileMoneyGuideData, MobileMoneyOperator } from '@/lib/mobileMoneyGuide';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import orangeMoneyLogo from '@/assets/deposit-logos/orange-money.png';
@@ -216,10 +224,10 @@ function Door({ L, section, word, sentence }: { L: Layout; section: 'flotte' | '
         <View style={{ flex: 1 }}>
           <View style={st.doorWordRow}>
             <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
-            <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord }]}>{word.en}</Text>
+            {word.en !== word.fr ? <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord }]}>{word.en}</Text> : null}
           </View>
           <Text style={st.doorFr}>{sentence.fr}</Text>
-          <Text style={[st.doorEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{sentence.en}</Text>
+          {sentence.en !== sentence.fr ? <Text style={[st.doorEn, { color: s.en }, section === 'flotte' ? { fontSize: 14, fontWeight: 700 } : {}]}>{sentence.en}</Text> : null}
         </View>
         <PagePill page={s.page} word={COPY.page.fr} />
       </View>
@@ -235,21 +243,21 @@ function CoverDoors({ L }: { L: Layout }) {
         <View style={st.orLine} />
         <View style={st.orDisc}>
           <Text style={st.orFr}>{COPY.cover.or.fr}</Text>
-          <Text style={st.orEn}>{COPY.cover.or.en}</Text>
+          {COPY.cover.or.en !== COPY.cover.or.fr ? <Text style={st.orEn}>{COPY.cover.or.en}</Text> : null}
         </View>
         <View style={st.orLine} />
       </View>
       <Door L={L} section="retrait" word={COPY.retrait.word} sentence={COPY.cover.retrait} />
       <View style={{ marginTop: 10, marginBottom: 12 }}>
         <Text style={st.chooseFr}>{COPY.cover.choose.fr}</Text>
-        <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text>
+        {COPY.cover.choose.en !== COPY.cover.choose.fr ? <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text> : null}
       </View>
       <Link src="#preuve" style={st.link}>
         <View style={st.proofDoor}>
           <View style={[st.proofDisc, { marginLeft: 5, marginRight: 19 }]}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
-            <Text style={st.proofEn}>{COPY.cover.preuve.en}</Text>
+            {COPY.cover.preuve.en !== COPY.cover.preuve.fr ? <Text style={st.proofEn}>{COPY.cover.preuve.en}</Text> : null}
           </View>
           <PagePill page={SECTION.preuve.page} word={COPY.page.fr} color={INK} background={colors.gold} />
         </View>
@@ -262,11 +270,11 @@ function CoverTitles({ L }: { L: Layout }) {
   return (
     <View>
       <Text style={st.coverKicker}>{biLabel(COPY.cover.kicker)}</Text>
-      <Text style={st.coverTitleTop}>{COPY.titleTop.fr} <Text style={{ color: '#a79fb6' }}>/ {COPY.titleTop.en}</Text></Text>
+      <Text style={st.coverTitleTop}>{COPY.titleTop.fr}{COPY.titleTop.en !== COPY.titleTop.fr ? <Text style={{ color: '#a79fb6' }}> / {COPY.titleTop.en}</Text> : null}</Text>
       <Text style={[st.coverTitleBottom, { fontSize: L.coverTitle }]}>{COPY.titleBottom}</Text>
       <View style={{ marginTop: L.o === 'portrait' ? 22 : 18 }}>
         <Text style={st.leadFr}>{COPY.cover.lead.fr}</Text>
-        <Text style={st.leadEn}>{COPY.cover.lead.en}</Text>
+        {COPY.cover.lead.en !== COPY.cover.lead.fr ? <Text style={st.leadEn}>{COPY.cover.lead.en}</Text> : null}
       </View>
     </View>
   );
@@ -315,7 +323,7 @@ function FlotteCard({ L, op }: { L: Layout; op: MobileMoneyOperator }) {
         <OperatorMark op={op} height={32} />
         <View style={st.kind}>
           <Text style={st.kindFr}>{op.account.fr}</Text>
-          <Text style={st.kindEn}>{op.account.en}</Text>
+          {op.account.en !== op.account.fr ? <Text style={st.kindEn}>{op.account.en}</Text> : null}
         </View>
       </View>
       <View style={st.cardBody}>
@@ -401,7 +409,7 @@ function RetraitCard({ L, op, room }: { L: Layout; op: MobileMoneyOperator; room
                 ? <CodeText key={pi} text={p.text} size={L.code} />
                 : (
                   <View key={pi} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={st.amountBox}><Text style={[st.amountText, { fontSize: L.code * 0.86 }]}>MONTANT</Text></View>
+                    <View style={st.amountBox}><Text style={[st.amountText, { fontSize: L.code * 0.86 }]}>{COPY.amountWord.fr}</Text></View>
                     <CodeText text={p.after} size={L.code} />
                   </View>
                 )))}
@@ -468,10 +476,10 @@ function DoorTall({ L, section, word, sentence }: { L: Layout; section: 'flotte'
         </View>
         <View style={st.doorWordRow}>
           <Text style={[st.doorWord, { fontSize: L.doorWord }]}>{word.fr}</Text>
-          <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord, marginBottom: 0 }]}>{word.en}</Text>
+          {word.en !== word.fr ? <Text style={[st.doorEnWord, { color: s.en, fontSize: L.doorEnWord, marginBottom: 0 }]}>{word.en}</Text> : null}
         </View>
         <Text style={[st.doorFr, { fontSize: 15 }]}>{sentence.fr}</Text>
-        <Text style={[st.doorEn, { color: s.en, fontSize: section === 'flotte' ? 14 : 13.5, fontWeight: section === 'flotte' ? 700 : 500 }]}>{sentence.en}</Text>
+        {sentence.en !== sentence.fr ? <Text style={[st.doorEn, { color: s.en, fontSize: section === 'flotte' ? 14 : 13.5, fontWeight: section === 'flotte' ? 700 : 500 }]}>{sentence.en}</Text> : null}
       </View>
     </Link>
   );
@@ -486,12 +494,12 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16 }}>
           <View>
             <Text style={[st.coverKicker, { marginBottom: 8 }]}>{biLabel(COPY.cover.kicker)}</Text>
-            <Text style={st.coverTitleTop}>{COPY.titleTop.fr} <Text style={{ color: '#a79fb6' }}>/ {COPY.titleTop.en}</Text></Text>
+            <Text style={st.coverTitleTop}>{COPY.titleTop.fr}{COPY.titleTop.en !== COPY.titleTop.fr ? <Text style={{ color: '#a79fb6' }}> / {COPY.titleTop.en}</Text> : null}</Text>
             <Text style={[st.coverTitleBottom, { fontSize: L.coverTitle }]}>{COPY.titleBottom}</Text>
           </View>
           <View style={{ alignItems: 'flex-end', marginBottom: -1.75 }}>
             <Text style={[st.leadFr, { textAlign: 'right' }]}>{COPY.cover.lead.fr}</Text>
-            <Text style={[st.leadEn, { textAlign: 'right' }]}>{COPY.cover.lead.en}</Text>
+            {COPY.cover.lead.en !== COPY.cover.lead.fr ? <Text style={[st.leadEn, { textAlign: 'right' }]}>{COPY.cover.lead.en}</Text> : null}
           </View>
         </View>
         {/* Les deux façons, côte à côte, séparées par « ou / or ». */}
@@ -500,21 +508,21 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
           <View style={{ width: 62, alignItems: 'center' }}>
             <View style={[st.orDisc, { marginHorizontal: 0 }]}>
               <Text style={st.orFr}>{COPY.cover.or.fr}</Text>
-              <Text style={st.orEn}>{COPY.cover.or.en}</Text>
+              {COPY.cover.or.en !== COPY.cover.or.fr ? <Text style={st.orEn}>{COPY.cover.or.en}</Text> : null}
             </View>
           </View>
           <View style={{ flex: 1 }}><DoorTall L={L} section="retrait" word={COPY.retrait.word} sentence={COPY.cover.retrait} /></View>
         </View>
         <View style={{ marginTop: 8, marginBottom: 8 }}>
           <Text style={st.chooseFr}>{COPY.cover.choose.fr}</Text>
-          <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text>
+          {COPY.cover.choose.en !== COPY.cover.choose.fr ? <Text style={st.chooseEn}>{COPY.cover.choose.en}</Text> : null}
         </View>
         <Link src="#preuve" style={st.link}>
           <View style={[st.proofDoor, { paddingVertical: 10 }]}>
             <View style={[st.proofDisc, { width: 36, height: 36, borderRadius: 18 }]}><Text style={st.proofDiscText}>{SECTION.preuve.n}</Text></View>
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={st.proofFr}>{COPY.cover.preuve.fr}</Text>
-              <Text style={[st.proofEn, { marginLeft: 12, marginTop: 0 }]}>{COPY.cover.preuve.en}</Text>
+              {COPY.cover.preuve.en !== COPY.cover.preuve.fr ? <Text style={[st.proofEn, { marginLeft: 12, marginTop: 0 }]}>{COPY.cover.preuve.en}</Text> : null}
             </View>
             <PagePill page={SECTION.preuve.page} word={COPY.page.fr} color={INK} background={colors.gold} />
           </View>
@@ -527,10 +535,11 @@ function CoverLandscape({ L, operators }: { L: Layout; operators: MobileMoneyOpe
 
 /* ─────────────── Le document ─────────────── */
 
-export function MobileMoneyGuidePDF({ data, orientation = 'portrait' }: { data: MobileMoneyGuideData; orientation?: GuideOrientation }) {
-  const { operators } = data;
+export function MobileMoneyGuidePDF({ data, orientation = 'portrait', lang = 'bi' }: { data: MobileMoneyGuideData; orientation?: GuideOrientation; lang?: DocLang }) {
+  COPY = localizeBi(MOBILE_MONEY_GUIDE_COPY, lang);
+  const { operators } = localizeBi(data, lang);
   return (
-    <Document title={`${COPY.docTitle.fr} · ${COPY.docTitle.en} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
+    <Document title={`${biLabel(COPY.docTitle)} — ${LEGAL_NAME}`} subject={COPY.docTitle.en} author={LEGAL_NAME} creator={LEGAL_NAME} producer={LEGAL_NAME}>
       {orientation === 'landscape' ? <LandscapePages operators={operators} /> : <PortraitPages operators={operators} />}
     </Document>
   );
@@ -553,7 +562,7 @@ function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
             <View style={st.alertDisc}><Text style={st.alertMark}>!</Text></View>
             <View>
               <Text style={st.alertFr}>{COPY.flotte.check.fr}</Text>
-              <Text style={st.alertEn}>{COPY.flotte.check.en}</Text>
+              {COPY.flotte.check.en !== COPY.flotte.check.fr ? <Text style={st.alertEn}>{COPY.flotte.check.en}</Text> : null}
             </View>
           </View>
         </View>
@@ -564,12 +573,12 @@ function PortraitPages({ operators }: { operators: MobileMoneyOperator[] }) {
         <View style={body}>
           <OperatorStack>{operators.map((op) => <RetraitCard key={op.key} L={L} op={op} room={codeRoom} />)}</OperatorStack>
           <View style={[st.legend, { marginTop: 10 }]}>
-            <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 14 }]}>MONTANT</Text></View>
+            <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 14 }]}>{COPY.amountWord.fr}</Text></View>
             <View style={{ marginLeft: 10, marginRight: 10 }}><ArrowIcon color={WHITE} size={14} /></View>
             <ExampleBox size={14} />
             <View style={{ flex: 1, marginLeft: 14 }}>
               <Text style={[st.legendFr, { fontSize: 15 }]}>{COPY.retrait.legend.fr}</Text>
-              <Text style={[st.legendEn, { fontSize: 13 }]}>{COPY.retrait.legend.en}</Text>
+              {COPY.retrait.legend.en !== COPY.retrait.legend.fr ? <Text style={[st.legendEn, { fontSize: 13 }]}>{COPY.retrait.legend.en}</Text> : null}
             </View>
           </View>
         </View>
@@ -615,12 +624,12 @@ function LandscapePages({ operators }: { operators: MobileMoneyOperator[] }) {
             rule={(
               <View>
                 <View style={[ls.ruleRow, { marginBottom: 8 }]}>
-                  <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 13 }]}>MONTANT</Text></View>
+                  <View style={[st.amountBox, { marginRight: 0 }]}><Text style={[st.amountText, { fontSize: 13 }]}>{COPY.amountWord.fr}</Text></View>
                   <View style={{ marginLeft: 8, marginRight: 8 }}><ArrowIcon color={INK} size={13} /></View>
                   <ExampleBox size={13} outlined />
                 </View>
                 <Text style={ls.ruleFr}>{balanced(COPY.retrait.legend.fr, 14, 0)}</Text>
-                <Text style={ls.ruleEn}>{balanced(COPY.retrait.legend.en, 12.5, 0)}</Text>
+                {COPY.retrait.legend.en !== COPY.retrait.legend.fr ? <Text style={ls.ruleEn}>{balanced(COPY.retrait.legend.en, 12.5, 0)}</Text> : null}
               </View>
             )}
           />

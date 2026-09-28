@@ -52,6 +52,8 @@ export async function downloadNodePNG(
   width: number,
   height: number,
   name: string,
+  /** CSS @font-face ajoutée à celle collectée (la police du flyer, sans réseau). */
+  extraFontCSS = '',
 ): Promise<void> {
-  triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1 }), name);
+  triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1, extraFontCSS, webkitWarmup: true }), name);
 }

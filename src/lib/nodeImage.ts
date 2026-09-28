@@ -136,6 +136,11 @@ export interface CaptureOptions {
    */
   fontEmbedCSS?: string;
   /**
+   * CSS @font-face AJOUTÉE à la collecte automatique (qui reste faite) : la
+   * police latine livrée avec l'app, quand le bloc mêle aussi du chinois.
+   */
+  extraFontCSS?: string;
+  /**
    * Safari / WebKit (iPhone, iPad, l'app BONZINI HQ sur iOS) : la première
    * peinture d'un foreignObject perd souvent les images et les polices. On
    * peint une fois pour rien, puis on garde la seconde.
@@ -152,14 +157,14 @@ export function isWebKit(): boolean {
 
 /** Le nœud tel qu'il est à l'écran, en PNG (data URL). */
 export async function captureNodePng(node: HTMLElement, options: CaptureOptions = {}): Promise<string> {
-  const { embedFonts = true, fontEmbedCSS: givenCss, webkitWarmup = false, ...rest } = options;
+  const { embedFonts = true, fontEmbedCSS: givenCss, extraFontCSS = '', webkitWarmup = false, ...rest } = options;
   if (givenCss !== undefined) {
     if (webkitWarmup && isWebKit()) await toPng(node, { fontEmbedCSS: givenCss, ...rest }).catch(() => undefined);
     return toPng(node, { fontEmbedCSS: givenCss, ...rest });
   }
   await ensureFontsReady();
   if (!embedFonts) return toPng(node, { skipFonts: true, ...rest });
-  const fontEmbedCSS = await loadFontEmbedCss(node);
+  const fontEmbedCSS = extraFontCSS + (await loadFontEmbedCss(node));
   if (webkitWarmup && isWebKit()) await toPng(node, { fontEmbedCSS, ...rest }).catch(() => undefined);
   return toPng(node, { fontEmbedCSS, ...rest });
 }

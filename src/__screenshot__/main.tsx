@@ -137,6 +137,21 @@ import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/depo
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
+import { RateQuoteCard, QUOTE_W, QUOTE_H } from '@/desktop/screens/rates/RateQuoteCard';
+
+/** La cotation du simulateur (?lang=en, ?theme=light), en taille naturelle. */
+function QuoteCardPreview() {
+  const q = new URLSearchParams(window.location.search);
+  const [fontReady, setFontReady] = React.useState(false);
+  React.useEffect(() => { void import('@/lib/flyerFonts').then((m) => m.loadFlyerFonts()).finally(() => setFontReady(true)); }, []);
+  if (!fontReady) return null;
+  const lang = q.get('lang') === 'en' ? 'en' : 'fr';
+  return (
+    <div id="quote" style={{ width: QUOTE_W, height: QUOTE_H }}>
+      <RateQuoteCard amountXAF={2500000} amountCNY={26730} method="alipay" finalRate={10692} countryLabel={lang === 'en' ? 'Gabon' : 'Gabon'} showCountry theme={q.get('theme') === 'light' ? 'light' : 'dark'} lang={lang} />
+    </div>
+  );
+}
 
 // Le panneau « Flyer du jour », réglé sur le Gabon, avec les chiffres de
 // production du 24/09/2026 (10 700 cash, 10 800 le reste ; pays −1 % ;
@@ -184,6 +199,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
   'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
   'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
+  'quote-card': { Comp: QuoteCardPreview, route: '/' },
   'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
   'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },
