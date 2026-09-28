@@ -32,7 +32,8 @@ describe('le flyer Taux du jour', () => {
     const d = buildFlyerData(rate, prod, 'cameroun', day);
     expect(d.country).toEqual({ key: 'cameroun', label: 'Cameroun', iso: 'CM' });
     expect(d.date).toBe('Jeudi 24 septembre 2026');
-    expect(d.time).toBe('11h00');
+    // 10:00 UTC = 18:00 à Guangzhou (UTC+8).
+    expect(d.time).toBe('18h00');
     expect(d.groups).toEqual([
       { keys: ['alipay', 'wechat', 'virement'], label: 'Alipay · WeChat Pay · Virement', rates: [10800, 10584] },
       { keys: ['cash'], label: 'Cash', rates: [10700, 10486] },
@@ -54,7 +55,7 @@ describe('le flyer Taux du jour', () => {
   it('donne le texte du jour à coller dans WhatsApp, signé BONZINI', () => {
     const text = flyerCaption(buildFlyerData(rate, prod, 'gabon', day)).replace(/\u00a0/g, ' ');
     expect(text).toBe([
-      'Taux du jour · Gabon → Chine · jeudi 24 septembre 2026 · 11h00',
+      'Taux du jour · Gabon → Chine · jeudi 24 septembre 2026 · 18h00 heure de Guangzhou (UTC+8)',
       'Pour 1 000 000 XAF, votre fournisseur reçoit :',
       '• Alipay, WeChat Pay, Virement : 10 692 ¥',
       '• Cash : 10 593 ¥',
@@ -67,20 +68,27 @@ describe('le flyer Taux du jour', () => {
     ].join('\n'));
   });
 
-  it('prend le jour de Douala et nomme le fichier par pays', () => {
+  it('prend le jour et l’heure de Guangzhou, et nomme le fichier par pays', () => {
+    // 23:30 UTC le jeudi = 07:30 le vendredi à Guangzhou : jour et heure restent cohérents.
     expect(flyerDate(new Date('2026-09-24T23:30:00Z'))).toBe('Vendredi 25 septembre 2026');
+    expect(flyerDate(new Date('2026-09-24T15:30:00Z'))).toBe('Jeudi 24 septembre 2026');
+    expect(flyerDate(new Date('2026-09-24T16:30:00Z'))).toBe('Vendredi 25 septembre 2026');
     expect(flyerFileName('gabon', 'png', day)).toBe('taux_du_jour_gabon_2026-09-24.png');
-    // L'heure de Douala, sur 24 h : minuit et demi, pas « 24h30 ».
-    expect(flyerTime(new Date('2026-09-24T23:30:00Z'))).toBe('00h30');
-    expect(flyerTime(new Date('2026-09-24T07:05:00Z'))).toBe('08h05');
+    // L'heure de Guangzhou, sur 24 h : minuit et demi, pas « 24h30 ».
+    expect(flyerTime(new Date('2026-09-24T16:30:00Z'))).toBe('00h30');
+    expect(flyerTime(new Date('2026-09-24T07:05:00Z'))).toBe('15h05');
+    expect(flyerFileName('gabon', 'png', new Date('2026-09-24T16:30:00Z'))).toBe('taux_du_jour_gabon_2026-09-25.png');
   });
 
   it('imprime BONZINI et le drapeau chinois, sans site, ni WhatsApp, ni raison sociale', () => {
     const src = ['src/mobile/components/rates/RateFlyer.tsx', 'src/lib/rateFlyer.ts'].map((f) => readFileSync(f, 'utf8')).join('\n')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
-    for (const forbidden of [/bonzinilabs\.com/i, /bonzini-logo/i, /WhatsApp/, /CONTACT_PHONE/, /Guangzhou/, /LEGAL_NAME/, /NORTON/, /confirmé au moment/]) expect(src, String(forbidden)).not.toMatch(forbidden);
+    for (const forbidden of [/bonzinilabs\.com/i, /bonzini-logo/i, /WhatsApp/, /CONTACT_PHONE/, /LEGAL_NAME/, /NORTON/, /confirmé au moment/]) expect(src, String(forbidden)).not.toMatch(forbidden);
     expect(src).toContain('FLYER_BRAND');
     expect(src).toContain("flagUrl('CN')");
+    // Jour et heure de Guangzhou, fuseau écrit (décision du 28/09/2026, qui remplace « ni heure de Guangzhou »).
+    expect(src).toContain("FLYER_TIME_ZONE = 'Asia/Shanghai'");
+    expect(src).toContain('{t.zone}');
   });
 });
 
@@ -97,18 +105,18 @@ describe('le flyer en anglais', () => {
     const en = buildFlyerData(rate, prod, 'rca', day, 'en');
     expect(en.lang).toBe('en');
     expect(en.date).toBe('Thursday 24 September 2026');
-    expect(en.time).toBe('11:00');
+    expect(en.time).toBe('18:00');
     expect(en.country.label).toBe('Central African Rep.');
     expect(en.groups.map((g) => g.label)).toEqual(['Alipay · WeChat Pay · Bank transfer', 'Cash']);
     expect(en.groups.map((g) => g.rates)).toEqual(fr.groups.map((g) => g.rates));
     expect(flyerDate(day, 'en')).toBe('Thursday 24 September 2026');
-    expect(flyerTime(day, 'en')).toBe('11:00');
+    expect(flyerTime(day, 'en')).toBe('18:00');
     expect(flyerFileName('rca', 'png', day, 'en')).toBe('todays_rate_rca_2026-09-24.png');
   });
 
   it('donne le texte du jour en anglais, signé BONZINI', () => {
     expect(flyerCaption(buildFlyerData(rate, prod, 'cameroun', day, 'en'))).toBe([
-      "Today's rate · Cameroon → China · Thursday 24 September 2026 · 11:00",
+      "Today's rate · Cameroon → China · Thursday 24 September 2026 · 18:00 Guangzhou time (UTC+8)",
       'For 1,000,000 XAF, your supplier receives:',
       '• Alipay, WeChat Pay, Bank transfer: 10,800 ¥',
       '• Cash: 10,700 ¥',
@@ -133,6 +141,8 @@ describe('le flyer en anglais', () => {
     for (const w of words) expect(edge, w).toContain(w.replace(/\u00a0/g, '\\u00a0'));
     expect(edge).toContain('const FLYER_BRAND = "BONZINI"');
     expect(edge).toContain('flagDataUrl("CN")');
+    expect(edge).toContain('const FLYER_TIME_ZONE = "Asia/Shanghai"');
+    expect(edge).not.toMatch(/Africa\/Douala/);
     for (const gone of [/NORTON/, /Taux valables/, /LEGAL_NAME/]) expect(edge).not.toMatch(gone);
   });
 

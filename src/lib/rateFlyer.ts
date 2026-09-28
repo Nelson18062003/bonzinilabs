@@ -9,7 +9,7 @@
 //   · les petits paiements (tranches de montant moins favorables) dans un
 //     bloc ROUGE, qu'on ne peut pas rater ;
 //   · signé BONZINI (28/09/2026 : plus la raison sociale), ni site, ni
-//     WhatsApp ; le jour ET l'heure (Douala) ; le drapeau chinois à côté
+//     WhatsApp ; le jour ET l'heure DE GUANGZHOU, fuseau écrit (UTC+8) ; le drapeau chinois à côté
 //     du pays ; plus de phrase « taux valables ce jour » en bas.
 // Mêmes calculs que la RPC calculate_final_rate et que le paiement :
 // base × (1 + pays) × (1 + tranche), arrondi comme calculateFinalRate puis à
@@ -23,6 +23,13 @@ import { countryMeta, REFERENCE_COUNTRY_KEY } from './countryRates';
 
 /** Le nom en tête du flyer et en signature du message (décision du 28/09/2026). */
 export const FLYER_BRAND = 'BONZINI';
+
+/**
+ * Le jour et l'heure du flyer sont ceux de GUANGZHOU (décision du 28/09/2026),
+ * fuseau écrit sur le flyer. La Chine n'a qu'un fuseau (UTC+8, sans heure
+ * d'été) : l'identifiant IANA est Asia/Shanghai.
+ */
+export const FLYER_TIME_ZONE = 'Asia/Shanghai';
 
 /** La langue du flyer : on bascule FR ↔ EN au moment de le fabriquer (28/09/2026). */
 export type FlyerLang = 'fr' | 'en';
@@ -51,6 +58,7 @@ export const FLYER_TEXT = {
     days: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
     months: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
     colon: ' :',
+    zone: 'heure de Guangzhou (UTC+8)',
   },
   en: {
     title: "Today's rate",
@@ -69,6 +77,7 @@ export const FLYER_TEXT = {
     days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     colon: ':',
+    zone: 'Guangzhou time (UTC+8)',
   },
 } as const;
 
@@ -91,7 +100,7 @@ export interface FlyerData {
   country: { key: string; label: string; iso: string | null };
   /** Jour affiché : « Jeudi 24 septembre 2026 » / « Thursday 24 September 2026 ». */
   date: string;
-  /** Heure de Douala au moment du flyer : « 11h00 » / « 11:00 ». */
+  /** Heure de Guangzhou au moment du flyer : « 17h00 » / « 17:00 » (le fuseau : FLYER_TEXT.zone). */
   time: string;
   /** Tranches, de la meilleure (« 400 000 XAF et plus ») aux petits paiements. */
   brackets: FlyerBracket[];
@@ -170,24 +179,24 @@ function groupMethods(rate: DailyRate, countryPct: number, brackets: FlyerBracke
   return groups;
 }
 
-/** Le jour de Douala en chiffres. */
-function doualaYmd(now: Date): { y: number; m: number; d: number } {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Douala', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(now);
+/** Le jour de Guangzhou en chiffres. */
+function flyerYmd(now: Date): { y: number; m: number; d: number } {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: FLYER_TIME_ZONE, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(now);
   const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
   return { y: get('year'), m: get('month'), d: get('day') };
 }
 
-/** « Jeudi 24 septembre 2026 » / « Thursday 24 September 2026 », jour de Douala. */
+/** « Jeudi 24 septembre 2026 » / « Thursday 24 September 2026 », jour de Guangzhou. */
 export function flyerDate(now: Date = new Date(), lang: FlyerLang = 'fr'): string {
-  const { y, m, d } = doualaYmd(now);
+  const { y, m, d } = flyerYmd(now);
   const t = FLYER_TEXT[lang];
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return `${t.days[wd]} ${d} ${t.months[m - 1]} ${y}`;
 }
 
-/** « 11h00 » / « 11:00 », heure de Douala (la même dans toute la zone CEMAC). */
+/** « 17h00 » / « 17:00 », heure de Guangzhou. */
 export function flyerTime(now: Date = new Date(), lang: FlyerLang = 'fr'): string {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: FLYER_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
   return `${get('hour')}${lang === 'en' ? ':' : 'h'}${get('minute')}`;
 }
@@ -238,7 +247,7 @@ export function flyerCaption(data: FlyerData): string {
   const day = data.lang === 'fr' ? `${data.date.charAt(0).toLowerCase()}${data.date.slice(1)}` : data.date;
   const line = (g: FlyerGroup, r: number) => `• ${g.label.replace(/ · /g, ', ')}${t.colon} ${n(r)} ¥`;
   const lines = [
-    `${t.title} · ${data.country.label} → ${t.china} · ${day} · ${data.time}`,
+    `${t.title} · ${data.country.label} → ${t.china} · ${day} · ${data.time} ${t.zone}`,
     `${t.forAmount} ${n(1_000_000)} XAF${t.supplierGets.replace(/\u00a0/g, ' ')}`,
   ];
   for (const g of data.groups) lines.push(line(g, g.rates[0]));
@@ -250,8 +259,8 @@ export function flyerCaption(data: FlyerData): string {
   return lines.join('\n');
 }
 
-/** Nom de fichier : « taux_du_jour_gabon_2026-09-24.png », « todays_rate_gabon_2026-09-24.png » (date de Douala). */
+/** Nom de fichier : « taux_du_jour_gabon_2026-09-24.png », « todays_rate_gabon_2026-09-24.png » (date de Guangzhou). */
 export function flyerFileName(countryKey: string, ext: 'png' | 'pdf', now: Date = new Date(), lang: FlyerLang = 'fr'): string {
-  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Douala' }).format(now);
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: FLYER_TIME_ZONE }).format(now);
   return `${lang === 'en' ? 'todays_rate' : 'taux_du_jour'}_${countryKey.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${day}.${ext}`;
 }

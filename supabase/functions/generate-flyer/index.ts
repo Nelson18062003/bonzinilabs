@@ -3,7 +3,7 @@
 // bot Telegram (/flyer). MÊME design et MÊMES chiffres que le flyer de l'app
 // (src/mobile/components/rates/RateFlyer.tsx + src/lib/rateFlyer.ts) : un
 // flyer par pays, les petits paiements dans un bloc rouge ; depuis le
-// 28/09/2026 signé BONZINI, le jour ET l'heure (Douala), le pays → la Chine
+// 28/09/2026 signé BONZINI, le jour ET l'heure de Guangzhou (fuseau écrit), le pays → la Chine
 // avec les deux drapeaux, plus de phrase en bas, en français OU en anglais.
 // Les mots (FLYER_TEXT) sont copiés de src/lib/rateFlyer.ts — le test
 // src/tests/lib/rateFlyer.test.ts vérifie que chacun est présent ici.
@@ -96,6 +96,7 @@ const FLYER_TEXT = {
     days: ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"],
     months: ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
     colon: " :",
+    zone: "heure de Guangzhou (UTC+8)",
   },
   en: {
     title: "Today's rate",
@@ -114,6 +115,7 @@ const FLYER_TEXT = {
     days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
     colon: ":",
+    zone: "Guangzhou time (UTC+8)",
   },
 } as const;
 const METHODS: { key: MethodKey; col: string }[] = [
@@ -158,8 +160,10 @@ function groupsOf(rate: Record<string, number>, c: number, bs: Bracket[], lang: 
   for (const g of out) g.label = g.keys.map((k) => FLYER_TEXT[lang].methods[k]).join(" · ");
   return out;
 }
-function doualaDay(now: Date, lang: Lang): { label: string; iso: string; time: string } {
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Douala", year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+/** Jour et heure de GUANGZHOU (la Chine : un seul fuseau, UTC+8) — comme src/lib/rateFlyer.ts. */
+const FLYER_TIME_ZONE = "Asia/Shanghai";
+function flyerDay(now: Date, lang: Lang): { label: string; iso: string; time: string } {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: FLYER_TIME_ZONE, year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
   const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
   const y = Number(g("year")), m = Number(g("month")), d = Number(g("day"));
   const t = FLYER_TEXT[lang];
@@ -181,7 +185,7 @@ function caption(lang: Lang, country: string, day: { label: string; time: string
   const fmt = (n: number) => fmtIn(n, lang);
   const date = lang === "fr" ? `${day.label.charAt(0).toLowerCase()}${day.label.slice(1)}` : day.label;
   const line = (g: Group, r: number) => `• ${g.label.replace(/ · /g, ", ")}${t.colon} ${fmt(r)} ¥`;
-  const lines = [`${t.title} · ${country} → ${t.china} · ${date} · ${day.time}`, `${t.forAmount} ${fmt(1_000_000)} XAF${t.supplierGets}`];
+  const lines = [`${t.title} · ${country} → ${t.china} · ${date} · ${day.time} ${t.zone}`, `${t.forAmount} ${fmt(1_000_000)} XAF${t.supplierGets}`];
   for (const g of gs) lines.push(line(g, g.rates[0]));
   bs.slice(1).forEach((b, i) => { lines.push("", `${smallTitle(b, lang)}${t.colon}`); for (const g of gs) lines.push(line(g, g.rates[i + 1])); });
   lines.push("", FLYER_BRAND);
@@ -251,8 +255,10 @@ function flyer(lang: Lang, country: { label: string }, flag: string | null, chin
     h("div", { style: { display: "flex", flexDirection: "column", background: INK, padding: "40px 64px 38px" } },
       h("div", { style: { fontSize: 30, fontWeight: 800, letterSpacing: 7, color: SOFT } }, FLYER_BRAND),
       h("div", { style: { fontSize: 88, fontWeight: 900, letterSpacing: -2, color: "#fff", lineHeight: 1, marginTop: 16 } }, t.title),
-      h("div", { style: { display: "flex", alignItems: "baseline", fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 } },
-        day.label, h("div", { style: { color: SOFT, margin: "0 14px" } }, "·"), h("div", { style: { color: "#fff" } }, day.time))),
+      h("div", { style: { fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 } }, day.label),
+      h("div", { style: { display: "flex", alignItems: "baseline", gap: 14, marginTop: 8 } },
+        h("div", { style: { fontSize: 34, fontWeight: 800, color: "#fff" } }, day.time),
+        h("div", { style: { fontSize: 26, fontWeight: 600, color: SOFT } }, t.zone))),
     h("div", { style: { display: "flex", alignItems: "center", gap: 26, padding: "36px 64px 0" } },
       flag ? flagImg(flag) : null,
       h("div", { style: { fontSize: country.label.length <= 12 ? 84 : country.label.length <= 18 ? 54 : 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1 } }, country.label),
@@ -289,7 +295,7 @@ serve(async (req) => {
     const c = cAdj && !cAdj.is_reference ? Number(cAdj.percentage) || 0 : 0;
     const bs = brackets(adjs, lang);
     const gs = groupsOf(rate as Record<string, number>, c, bs, lang);
-    const day = doualaDay(new Date(), lang);
+    const day = flyerDay(new Date(), lang);
 
     const [fonts, flag, china] = await Promise.all([getFonts(), flagDataUrl(country.iso), flagDataUrl("CN")]);
     const svg = await satori(flyer(lang, country, flag, china, day, bs, gs) as unknown as Parameters<typeof satori>[0], { width: W, height: H, fonts });

@@ -10,13 +10,13 @@ pour 1 000 000 XAF, en entiers ; un montant en ¥ au centime près, comme l'app.
 
 ## 1. Le message qui accompagne le flyer (un par pays)
 
-Depuis le 28/09/2026 : signé **BONZINI**, avec l'heure (Douala) et « → Chine » ;
+Depuis le 28/09/2026 : signé **BONZINI**, avec le jour et l'heure **de Guangzhou** (fuseau écrit) et « → Chine » ;
 plus de phrase « taux valables ce jour ». Le texte que copie l'app
 (`flyerCaption`, `src/lib/rateFlyer.ts`) suit la même règle.
 
 **Modèle**
 
-> Taux du jour · {Pays} → Chine · {date} · {heure}
+> Taux du jour · {Pays} → Chine · {date} · {heure} heure de Guangzhou (UTC+8)
 > En ¥ pour 1 000 000 XAF :
 > • Alipay, WeChat Pay, virement : {taux} ¥ ({taux petit montant} ¥ en dessous de 400 000 XAF)
 > • Cash : {taux cash} ¥ ({taux cash petit montant} ¥ en dessous de 400 000 XAF)
@@ -24,7 +24,7 @@ plus de phrase « taux valables ce jour ». Le texte que copie l'app
 
 **Cameroun**
 
-> Taux du jour · Cameroun → Chine · jeudi 24 septembre 2026 · 11h00
+> Taux du jour · Cameroun → Chine · jeudi 24 septembre 2026 · 18h00 heure de Guangzhou (UTC+8)
 > En ¥ pour 1 000 000 XAF :
 > • Alipay, WeChat Pay, virement : 10 800 ¥ (10 584 ¥ en dessous de 400 000 XAF)
 > • Cash : 10 700 ¥ (10 486 ¥ en dessous de 400 000 XAF)
@@ -33,7 +33,7 @@ plus de phrase « taux valables ce jour ». Le texte que copie l'app
 **Gabon, Tchad, Centrafrique, Congo, Guinée équatoriale** (même écart, −1 %) —
 seul le nom du pays change :
 
-> Taux du jour · Gabon → Chine · jeudi 24 septembre 2026 · 11h00
+> Taux du jour · Gabon → Chine · jeudi 24 septembre 2026 · 18h00 heure de Guangzhou (UTC+8)
 > En ¥ pour 1 000 000 XAF :
 > • Alipay, WeChat Pay, virement : 10 692 ¥ (10 478 ¥ en dessous de 400 000 XAF)
 > • Cash : 10 593 ¥ (10 381 ¥ en dessous de 400 000 XAF)
@@ -43,7 +43,7 @@ seul le nom du pays change :
 `/flyer en` sur Telegram) — même flyer, mêmes chiffres, milliers avec une
 virgule :
 
-> Today's rate · Cameroon → China · Monday 28 September 2026 · 11:00
+> Today's rate · Cameroon → China · Monday 28 September 2026 · 17:00 Guangzhou time (UTC+8)
 > For 1,000,000 XAF, your supplier receives:
 > • Alipay, WeChat Pay, Bank transfer: 10,800 ¥
 > • Cash: 10,700 ¥

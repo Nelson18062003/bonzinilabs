@@ -3,7 +3,7 @@
 //
 // Design validé par le fondateur le 24/09/2026 (« simple + bloc rouge »),
 // retouché le 28/09/2026 : BONZINI en tête (plus la raison sociale), le jour
-// ET l'heure, le pays → la Chine avec les deux drapeaux, plus de phrase en
+// ET l'heure de Guangzhou avec son fuseau, le pays → la Chine avec les deux drapeaux, plus de phrase en
 // bas. Ni site ni WhatsApp. « Pour 1 000 000 XAF, votre fournisseur
 // reçoit : », un gros chiffre par carte, et les petits paiements dans un
 // bloc ROUGE qu'on ne peut pas rater. En français OU en anglais (data.lang).
@@ -81,10 +81,10 @@ export function RateFlyer({ data }: { data: FlyerData }) {
       <div style={{ background: INK, padding: '40px 64px 38px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '0.24em', color: SOFT }}>{FLYER_BRAND}</div>
         <div style={{ fontSize: 88, fontWeight: 900, letterSpacing: -2, color: '#fff', lineHeight: 1, marginTop: 16 }}>{t.title}</div>
-        <div style={{ fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 }}>
-          {date}
-          <span style={{ color: SOFT, margin: '0 14px' }}>·</span>
-          <span style={{ ...NUM, color: '#fff' }}>{time}</span>
+        <div style={{ fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 }}>{date}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 8, whiteSpace: 'nowrap' }}>
+          <span style={{ ...NUM, fontSize: 34, fontWeight: 800, color: '#fff' }}>{time}</span>
+          <span style={{ fontSize: 26, fontWeight: 600, color: SOFT }}>{t.zone}</span>
         </div>
       </div>
 
