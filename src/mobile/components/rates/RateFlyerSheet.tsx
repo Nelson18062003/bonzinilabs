@@ -2,7 +2,7 @@
 // Ouvert depuis la pilule « Voir le flyer du jour » au bas du module Taux
 // (mobile) ou le bouton d'en-tête (desktop), et depuis « Taux par pays » avec
 // le pays déjà choisi. Un flyer PAR PAYS (Cameroun compris), au seul nom de
-// NORTON GAUSS BONZINI SARL, avec les petits paiements en rouge : tout vient
+// BONZINI, avec les petits paiements en rouge : tout vient
 // de buildFlyerData (publication active + rate_adjustments).
 //
 // Le flyer est dessiné hors écran (RateFlyer, 1080×1350), photographié en PNG
@@ -17,9 +17,8 @@ import { cn } from '@/lib/utils';
 import { RateFlyer } from './RateFlyer';
 import { flyerPngFile, FLYER_W, FLYER_H } from '@/lib/exportFlyer';
 import { buildCountryRateSheets, formatCountryPct, REFERENCE_COUNTRY_KEY } from '@/lib/countryRates';
-import { buildFlyerData, flyerCaption } from '@/lib/rateFlyer';
+import { FLYER_BRAND, buildFlyerData, flyerCaption } from '@/lib/rateFlyer';
 import { canShareFiles, copyImageFile, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
-import { LEGAL_NAME } from '@/lib/companyIdentity';
 import type { DailyRate, RateAdjustment } from '@/types/rates';
 import { CountryFlag } from '@/components/form/CountryFlag';
 import { TEXT, TYPE, Button, Chip } from '@/mobile/designKit';
@@ -117,7 +116,7 @@ export function RateFlyerSheet({ activeRate, adjustments, initialCountry }: Rate
   const shareImage = () => {
     if (!ready || !image || saving || !flyer) return;
     setSaving(true);
-    void deliverFile(image.file, `${LEGAL_NAME} · Taux du jour · ${flyer.country.label}`)
+    void deliverFile(image.file, `${FLYER_BRAND} · Taux du jour · ${flyer.country.label}`)
       .then((o) => { if (o === 'downloaded') toast.success('Image téléchargée'); })
       .finally(() => setSaving(false));
   };

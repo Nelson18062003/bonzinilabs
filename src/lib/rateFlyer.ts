@@ -8,8 +8,9 @@
 //     toujours le même taux : une seule carte ; le cash à part) ;
 //   · les petits paiements (tranches de montant moins favorables) dans un
 //     bloc ROUGE, qu'on ne peut pas rater ;
-//   · au seul nom de NORTON GAUSS BONZINI SARL : ni « Bonzini », ni site, ni
-//     WhatsApp, ni heure de Guangzhou.
+//   · signé BONZINI (28/09/2026 : plus la raison sociale), ni site, ni
+//     WhatsApp ; le jour ET l'heure (Douala) ; le drapeau chinois à côté
+//     du pays ; plus de phrase « taux valables ce jour » en bas.
 // Mêmes calculs que la RPC calculate_final_rate et que le paiement :
 // base × (1 + pays) × (1 + tranche), arrondi comme calculateFinalRate puis à
 // l'entier. Tout vient de la publication active et de rate_adjustments : si
@@ -19,7 +20,9 @@ import { COUNTRIES } from '@/types/rates';
 import type { DailyRate, PaymentMethodKey, RateAdjustment } from '@/types/rates';
 import { calculateFinalRate, getBaseRate } from './rateCalculation';
 import { countryMeta, REFERENCE_COUNTRY_KEY } from './countryRates';
-import { LEGAL_NAME } from './companyIdentity';
+
+/** Le nom en tête du flyer et en signature du message (décision du 28/09/2026). */
+export const FLYER_BRAND = 'BONZINI';
 
 export const FLYER_METHODS: { key: PaymentMethodKey; label: string }[] = [
   { key: 'alipay', label: 'Alipay' },
@@ -38,6 +41,8 @@ export interface FlyerData {
   country: { key: string; label: string; iso: string | null };
   /** Jour affiché : « Jeudi 24 septembre 2026 ». */
   date: string;
+  /** Heure de Douala au moment du flyer : « 11h00 ». */
+  time: string;
   /** Tranches, de la meilleure (« 400 000 XAF et plus ») aux petits paiements. */
   brackets: FlyerBracket[];
   groups: FlyerGroup[];
@@ -124,6 +129,13 @@ export function flyerDate(now: Date = new Date()): string {
   return `${FR_DAYS[wd]} ${d} ${FR_MONTHS[m - 1]} ${y}`;
 }
 
+/** « 11h00 », heure de Douala (la même dans toute la zone CEMAC). */
+export function flyerTime(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
+  return `${get('hour')}h${get('minute')}`;
+}
+
 /** Tout ce que le flyer d'un pays affiche. Pays inconnu : la référence (Cameroun). */
 export function buildFlyerData(
   rate: DailyRate,
@@ -138,6 +150,7 @@ export function buildFlyerData(
   return {
     country: { key: known, label: meta.label, iso: meta.iso },
     date: flyerDate(now),
+    time: flyerTime(now),
     brackets,
     groups: groupMethods(rate, pct, brackets),
   };
@@ -151,17 +164,17 @@ export function smallPaymentTitle(b: FlyerBracket): string {
 
 /**
  * Le message WhatsApp qui accompagne le flyer (docs/PHRASES_taux_du_jour.md, § 1).
- * Pas de « Bonzini », pas de site : la raison sociale en signature.
+ * Pas de site : BONZINI en signature.
  */
 export function flyerCaption(data: FlyerData): string {
   const small = data.brackets.slice(1);
-  const lines = [`Taux du jour · ${data.country.label} · ${data.date.charAt(0).toLowerCase()}${data.date.slice(1)}`, 'Pour 1 000 000 XAF, votre fournisseur reçoit :'];
+  const lines = [`Taux du jour · ${data.country.label} → Chine · ${data.date.charAt(0).toLowerCase()}${data.date.slice(1)} · ${data.time}`, 'Pour 1 000 000 XAF, votre fournisseur reçoit :'];
   for (const g of data.groups) lines.push(`• ${g.label.replace(/ · /g, ', ')} : ${fmtInt(g.rates[0])} ¥`);
   small.forEach((b, i) => {
     lines.push('', `${smallPaymentTitle(b)} :`);
     for (const g of data.groups) lines.push(`• ${g.label.replace(/ · /g, ', ')} : ${fmtInt(g.rates[i + 1])} ¥`);
   });
-  lines.push('', 'Taux valables ce jour, confirmés au moment du paiement.', LEGAL_NAME);
+  lines.push('', FLYER_BRAND);
   return lines.join('\n');
 }
 

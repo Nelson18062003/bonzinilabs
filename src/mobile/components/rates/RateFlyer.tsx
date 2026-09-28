@@ -1,18 +1,18 @@
 // RateFlyer — le flyer « Taux du jour » d'UN pays, 1080×1350 px en taille
 // naturelle (exporté en 2160×2700), réduit via transform:scale dans le parent.
 //
-// Design validé par le fondateur le 24/09/2026 (« simple + bloc rouge ») :
-// raison sociale NORTON GAUSS BONZINI SARL en tête — ni « Bonzini », ni
-// site, ni WhatsApp, ni heure de Guangzhou —, le pays en très gros,
-// « Pour 1 000 000 XAF, votre fournisseur reçoit : », un gros chiffre par
-// carte, et les petits paiements dans un bloc ROUGE qu'on ne peut pas rater.
+// Design validé par le fondateur le 24/09/2026 (« simple + bloc rouge »),
+// retouché le 28/09/2026 : BONZINI en tête (plus la raison sociale), le jour
+// ET l'heure, le pays → la Chine avec les deux drapeaux, plus de phrase en
+// bas. Ni site ni WhatsApp. « Pour 1 000 000 XAF, votre fournisseur
+// reçoit : », un gros chiffre par carte, et les petits paiements dans un
+// bloc ROUGE qu'on ne peut pas rater.
 // Les chiffres viennent de buildFlyerData (src/lib/rateFlyer.ts).
 import type { CSSProperties, ReactNode } from 'react';
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
 import { flagUrl } from '@/components/form/CountryFlag';
-import { LEGAL_NAME } from '@/lib/companyIdentity';
-import { formatFlyerNumber as fmt, smallPaymentTitle } from '@/lib/rateFlyer';
+import { FLYER_BRAND, formatFlyerNumber as fmt, smallPaymentTitle } from '@/lib/rateFlyer';
 import type { FlyerData } from '@/lib/rateFlyer';
 import type { PaymentMethodKey } from '@/types/rates';
 
@@ -51,7 +51,7 @@ function Row({ keys, label, rate, size, onRed }: { keys: PaymentMethodKey[]; lab
 }
 
 export function RateFlyer({ data }: { data: FlyerData }) {
-  const { country, date, brackets, groups } = data;
+  const { country, date, time, brackets, groups } = data;
   const small = brackets.slice(1);
   // Plus de deux taux différents ce jour-là (rare) : quatre cartes plus petites, sur deux lignes.
   const many = groups.length > 2;
@@ -59,6 +59,7 @@ export function RateFlyer({ data }: { data: FlyerData }) {
   // petits paiements) : tout en lignes, pour tenir dans la page.
   const compact = (many && small.length > 0) || small.length > 1;
   const flag = flagUrl(country.iso);
+  const china = flagUrl('CN');
   // Sans petits paiements (un seul taux) : les cartes l'une sous l'autre, chiffres plus grands.
   const stacked = small.length === 0 && !many;
   const bigSize = stacked ? 156 : many ? 76 : 100;
@@ -66,17 +67,25 @@ export function RateFlyer({ data }: { data: FlyerData }) {
 
   return (
     <div style={{ width: FLYER_WIDTH, height: FLYER_HEIGHT, background: '#ffffff', display: 'flex', flexDirection: 'column', fontFamily: '"DM Sans", sans-serif', color: INK }}>
-      {/* En-tête : la raison sociale, « Taux du jour », la date */}
+      {/* En-tête : BONZINI, « Taux du jour », le jour et l'heure */}
       <div style={{ background: INK, padding: '40px 64px 38px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-        <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '0.2em', color: SOFT }}>{LEGAL_NAME}</div>
+        <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '0.24em', color: SOFT }}>{FLYER_BRAND}</div>
         <div style={{ fontSize: 88, fontWeight: 900, letterSpacing: -2, color: '#fff', lineHeight: 1, marginTop: 16 }}>Taux du jour</div>
-        <div style={{ fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 }}>{date}</div>
+        <div style={{ fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 }}>
+          {date}
+          <span style={{ color: SOFT, margin: '0 14px' }}>·</span>
+          <span style={{ ...NUM, color: '#fff' }}>{time}</span>
+        </div>
       </div>
 
-      {/* Le pays */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 30, padding: '36px 64px 0', flexShrink: 0 }}>
+      {/* Le pays → la Chine */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 26, padding: '36px 64px 0', flexShrink: 0 }}>
         {flag && <img src={flag} alt="" width={116} height={87} style={{ borderRadius: 14, boxShadow: `0 0 0 2px ${LINE}`, flexShrink: 0, objectFit: 'cover' }} />}
-        <div style={{ fontSize: country.label.length > 12 ? 68 : 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>{country.label}</div>
+        <div style={{ fontSize: country.label.length > 12 ? 54 : 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1, minWidth: 0 }}>{country.label}</div>
+        <svg viewBox="0 0 24 24" width={52} height={52} fill="none" stroke={MUTED} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <path d="M4 12h15M13 6l6 6-6 6" />
+        </svg>
+        {china && <img src={china} alt="Chine" width={116} height={87} style={{ borderRadius: 14, boxShadow: `0 0 0 2px ${LINE}`, flexShrink: 0, objectFit: 'cover' }} />}
       </div>
 
       <div style={{ padding: '22px 64px 0', fontSize: 36, fontWeight: 600, color: MUTED, flexShrink: 0 }}>
@@ -143,12 +152,6 @@ export function RateFlyer({ data }: { data: FlyerData }) {
           ))}
         </>
       )}
-
-      <div style={{ marginTop: 'auto', padding: compact ? '0 64px 32px' : '0 64px 46px', flexShrink: 0 }}>
-        <div style={{ borderTop: `2px solid ${LINE}`, paddingTop: compact ? 18 : 26, fontSize: 26, lineHeight: 1.4, color: MUTED }}>
-          Taux valables ce jour. Le taux est confirmé au moment du paiement.
-        </div>
-      </div>
     </div>
   );
 }
