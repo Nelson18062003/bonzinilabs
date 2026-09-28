@@ -5,10 +5,10 @@ import '@fontsource/dm-sans/latin-700.css';
 import '@fontsource/dm-sans/latin-800.css';
 import '@fontsource/dm-sans/latin-900.css';
 import { RateFlyer, FLYER_WIDTH, FLYER_HEIGHT } from '@/mobile/components/rates/RateFlyer';
-import { buildFlyerData } from '@/lib/rateFlyer';
+import { buildFlyerData, type FlyerLang } from '@/lib/rateFlyer';
 import type { DailyRate, RateAdjustment } from '@/types/rates';
 
-// /flyer-real-preview.html?rates=cash,alipay,wechat,virement&country=gabon — le VRAI flyer
+// /flyer-real-preview.html?rates=cash,alipay,wechat,virement&country=gabon&lang=en — le VRAI flyer
 // de l'app (RateFlyer), avec les taux et réglages de production du 24/09/2026 par défaut.
 const p = new URLSearchParams(window.location.search);
 const [cash, alipay, wechat, virement] = (p.get('rates') ?? '10700,10800,10800,10800').split(',').map(Number);
@@ -20,7 +20,7 @@ const adjustments: RateAdjustment[] = [
   adj('country', 'cameroun', 0, true), adj('country', 'gabon', -1), adj('country', 'tchad', -1), adj('country', 'rca', -1), adj('country', 'congo', -1), adj('country', 'guinee', -1),
   adj('tier', 't3', 0, true), adj('tier', 't2', Number(p.get('t2') ?? 0)), adj('tier', 't1', flat ? 0 : -2),
 ];
-const data = buildFlyerData(rate, adjustments, p.get('country') ?? 'cameroun', new Date('2026-09-24T10:00:00Z'));
+const data = buildFlyerData(rate, adjustments, p.get('country') ?? 'cameroun', new Date('2026-09-24T10:00:00Z'), (p.get('lang') as FlyerLang) ?? 'fr');
 createRoot(document.getElementById('root')!).render(
   <div id="flyer" style={{ width: FLYER_WIDTH, height: FLYER_HEIGHT }}>
     <RateFlyer data={data} />

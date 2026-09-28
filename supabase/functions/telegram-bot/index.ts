@@ -441,7 +441,8 @@ Pour 1 000 000 XAF.`);
 
 // ─── Command: /flyer ─────────────────────────────────────────────────────────
 
-async function handleFlyer(chatId: number) {
+/** /flyer (français) ou /flyer en (anglais) — même flyer que l'app. */
+async function handleFlyer(chatId: number, lang: "fr" | "en" = "fr") {
   await sendMessage(chatId, "\u23f3 G\u00e9n\u00e9ration du flyer...");
 
   try {
@@ -467,7 +468,7 @@ async function handleFlyer(chatId: number) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
-      body: JSON.stringify({ country_key: "cameroun" }),
+      body: JSON.stringify({ country_key: "cameroun", lang }),
     });
 
     if (!res.ok) {
@@ -603,7 +604,7 @@ async function handleHelp(chatId: number) {
 
 <b>Actions</b>
 /publier \u2014 Publier le taux du jour dans l'app
-/flyer \u2014 G\u00e9n\u00e9rer le flyer du jour
+/flyer \u2014 G\u00e9n\u00e9rer le flyer du jour (/flyer en : en anglais)
 /rapport \u2014 Rapport d\u00e9taill\u00e9
 
 <b>Configuration</b>
@@ -652,8 +653,8 @@ serve(async (req: Request) => {
       await handleTendance(chatId);
     } else if (text === "/publier") {
       await handlePublier(chatId);
-    } else if (text === "/flyer") {
-      await handleFlyer(chatId);
+    } else if (text === "/flyer" || text === "/flyer fr" || text === "/flyer en") {
+      await handleFlyer(chatId, text === "/flyer en" ? "en" : "fr");
     } else if (text === "/rapport") {
       await handleRapport(chatId);
     } else if (text.startsWith("/config")) {

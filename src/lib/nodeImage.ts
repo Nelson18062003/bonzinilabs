@@ -130,14 +130,37 @@ export interface CaptureOptions {
    * des mégaoctets sur une police idéographique et gèle un mobile.
    */
   embedFonts?: boolean;
+  /**
+   * CSS @font-face déjà prête (polices en base64) : remplace la collecte
+   * automatique. Le flyer passe la sienne (lib/flyerFonts.ts) — sans réseau.
+   */
+  fontEmbedCSS?: string;
+  /**
+   * Safari / WebKit (iPhone, iPad, l'app BONZINI HQ sur iOS) : la première
+   * peinture d'un foreignObject perd souvent les images et les polices. On
+   * peint une fois pour rien, puis on garde la seconde.
+   */
+  webkitWarmup?: boolean;
+}
+
+/** Moteur WebKit : Safari, tous les navigateurs iOS, WKWebView (pas Chrome ni Android). */
+export function isWebKit(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /AppleWebKit/.test(ua) && !/Chrome\/|Chromium|Edg\/|Android/.test(ua);
 }
 
 /** Le nœud tel qu'il est à l'écran, en PNG (data URL). */
 export async function captureNodePng(node: HTMLElement, options: CaptureOptions = {}): Promise<string> {
-  const { embedFonts = true, ...rest } = options;
+  const { embedFonts = true, fontEmbedCSS: givenCss, webkitWarmup = false, ...rest } = options;
+  if (givenCss !== undefined) {
+    if (webkitWarmup && isWebKit()) await toPng(node, { fontEmbedCSS: givenCss, ...rest }).catch(() => undefined);
+    return toPng(node, { fontEmbedCSS: givenCss, ...rest });
+  }
   await ensureFontsReady();
   if (!embedFonts) return toPng(node, { skipFonts: true, ...rest });
   const fontEmbedCSS = await loadFontEmbedCss(node);
+  if (webkitWarmup && isWebKit()) await toPng(node, { fontEmbedCSS, ...rest }).catch(() => undefined);
   return toPng(node, { fontEmbedCSS, ...rest });
 }
 

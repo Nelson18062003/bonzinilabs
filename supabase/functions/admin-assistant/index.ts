@@ -859,11 +859,15 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "generate_rate_flyer",
     permission: "canViewPayments",
-    description: "Générer le FLYER (image PNG) du taux du jour d'un pays, prêt à partager sur WhatsApp : au nom de NORTON GAUSS BONZINI SARL, taux pour 1 000 000 XAF (Alipay/WeChat/Virement et Cash), petits paiements (tranches de montant) dans un bloc rouge. Utilise le taux actif et les réglages pays et tranches. Optionnel: country_key (cameroun par défaut ; gabon, tchad, rca, congo, guinee). Renvoie aussi `caption`, le texte du jour à coller sous l'image. L'image est affichée directement dans le chat, téléchargeable.",
-    input_schema: { type: "object", properties: { country_key: { type: "string", description: "Clé pays (rate_adjustments) : cameroun, gabon, tchad, rca, congo, guinee. Absent = Cameroun." } } },
-    execute: async (admin, { country_key }) => {
+    description: "Générer le FLYER (image PNG) du taux du jour d'un pays, prêt à partager sur WhatsApp : signé BONZINI, jour et heure de Douala, pays → Chine (deux drapeaux), taux pour 1 000 000 XAF (Alipay/WeChat/Virement et Cash), petits paiements (tranches de montant) dans un bloc rouge. En français (par défaut) ou en anglais (lang: \"en\"). Utilise le taux actif et les réglages pays et tranches. Optionnel: country_key (cameroun par défaut ; gabon, tchad, rca, congo, guinee). Renvoie aussi `caption`, le texte du jour dans la même langue, à coller sous l'image. L'image est affichée directement dans le chat, téléchargeable.",
+    input_schema: { type: "object", properties: {
+      country_key: { type: "string", description: "Clé pays (rate_adjustments) : cameroun, gabon, tchad, rca, congo, guinee. Absent = Cameroun." },
+      lang: { type: "string", enum: ["fr", "en"], description: "Langue du flyer et du texte : fr (par défaut) ou en." },
+    } },
+    execute: async (admin, { country_key, lang }) => {
       const LABELS: Record<string, string> = { cameroun: "Cameroun", gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
       const key = typeof country_key === "string" && country_key.trim() ? country_key.trim().toLowerCase() : "cameroun";
+      const flyerLang = lang === "en" ? "en" : "fr";
       if (!LABELS[key]) return { error: `Pays inconnu : ${key}. Clés possibles : cameroun, gabon, tchad, rca, congo, guinee.` };
 
       // generate-flyer lit lui-même le taux actif et les réglages (pays, tranches) :
@@ -876,7 +880,7 @@ const READ_TOOLS: ReadTool[] = [
         const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
-          body: JSON.stringify({ country_key: key }),
+          body: JSON.stringify({ country_key: key, lang: flyerLang }),
         });
         if (res.status === 404) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
         if (!res.ok) return { error: `Génération du flyer échouée (${res.status}).` };
@@ -885,16 +889,17 @@ const READ_TOOLS: ReadTool[] = [
       } catch (e) { return { error: `Génération du flyer: ${String((e as Error)?.message ?? e)}` }; }
 
       // Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
-      const path = `flyers/${Date.now()}-taux-du-jour-${key}.png`;
+      const path = `flyers/${Date.now()}-${flyerLang === "en" ? "todays-rate" : "taux-du-jour"}-${key}.png`;
       const up = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, pngBytes, { contentType: "image/png", upsert: true });
       if (up.error) return { error: `Stockage du flyer: ${up.error.message}` };
       const signed = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 3600);
       if (signed.error || !signed.data?.signedUrl) return { error: "URL du flyer indisponible." };
 
-      const title = `Taux du jour · ${LABELS[key]}`;
+      const title = `${flyerLang === "en" ? "Today's rate" : "Taux du jour"} · ${LABELS[key]}`;
       return {
         success: true,
         country: key,
+        lang: flyerLang,
         caption,
         __image: { url: signed.data.signedUrl, name: title, kind: "image" },
         message: `Flyer ${LABELS[key]} généré et affiché dans le chat. Texte du jour à coller sous l'image : fourni dans \`caption\`.`,

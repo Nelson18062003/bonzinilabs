@@ -6,13 +6,16 @@
 // ET l'heure, le pays → la Chine avec les deux drapeaux, plus de phrase en
 // bas. Ni site ni WhatsApp. « Pour 1 000 000 XAF, votre fournisseur
 // reçoit : », un gros chiffre par carte, et les petits paiements dans un
-// bloc ROUGE qu'on ne peut pas rater.
-// Les chiffres viennent de buildFlyerData (src/lib/rateFlyer.ts).
+// bloc ROUGE qu'on ne peut pas rater. En français OU en anglais (data.lang).
+// Les chiffres et les mots viennent de buildFlyerData (src/lib/rateFlyer.ts).
+// Police : celle de lib/flyerFonts.ts, jamais celle de Google Fonts (sinon
+// l'image peut sortir « cassée », voir là-bas).
 import type { CSSProperties, ReactNode } from 'react';
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
 import { flagUrl } from '@/components/form/CountryFlag';
-import { FLYER_BRAND, formatFlyerNumber as fmt, smallPaymentTitle } from '@/lib/rateFlyer';
+import { FLYER_BRAND, FLYER_TEXT, formatFlyerNumber, smallPaymentTitle } from '@/lib/rateFlyer';
+import { FLYER_FONT_STACK } from '@/lib/flyerFonts';
 import type { FlyerData } from '@/lib/rateFlyer';
 import type { PaymentMethodKey } from '@/types/rates';
 
@@ -38,12 +41,17 @@ function Tile({ method, size }: { method: PaymentMethodKey; size: number }) {
   return box('#ECE8F6', <Landmark color={INK} width={size * 0.5} height={size * 0.5} strokeWidth={1.9} />);
 }
 
+/** Taille d'un libellé qui ne passe pas à la ligne : réduite quand il est long (anglais). */
+function fit(text: string, base: number, room: number, min = 18): number {
+  return text.length <= room ? base : Math.max(min, Math.floor((base * room) / text.length));
+}
+
 /** Une ligne « modes · taux » des jours chargés (compact). */
-function Row({ keys, label, rate, size, onRed }: { keys: PaymentMethodKey[]; label: string; rate: number; size: number; onRed?: boolean }) {
+function Row({ keys, label, rate, size, onRed, fmt }: { keys: PaymentMethodKey[]; label: string; rate: number; size: number; onRed?: boolean; fmt: (n: number) => string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
       {!onRed && keys.map((k) => <Tile key={k} method={k} size={40} />)}
-      <div style={{ flex: 1, minWidth: 0, fontSize: onRed ? 26 : 30, fontWeight: 800, marginLeft: onRed ? 0 : 6, whiteSpace: 'nowrap', opacity: onRed ? 0.95 : 1 }}>{label}</div>
+      <div style={{ flex: 1, minWidth: 0, fontSize: fit(label, onRed ? 26 : 30, 30), fontWeight: 800, marginLeft: onRed ? 0 : 6, whiteSpace: 'nowrap', opacity: onRed ? 0.95 : 1 }}>{label}</div>
       <span style={{ ...NUM, fontSize: size, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1 }}>{fmt(rate)}</span>
       <span style={{ fontSize: Math.round(size * 0.45), fontWeight: 800, alignSelf: 'flex-end', marginBottom: 4 }}>¥</span>
     </div>
@@ -51,7 +59,9 @@ function Row({ keys, label, rate, size, onRed }: { keys: PaymentMethodKey[]; lab
 }
 
 export function RateFlyer({ data }: { data: FlyerData }) {
-  const { country, date, time, brackets, groups } = data;
+  const { lang, country, date, time, brackets, groups } = data;
+  const t = FLYER_TEXT[lang];
+  const fmt = (n: number) => formatFlyerNumber(n, lang);
   const small = brackets.slice(1);
   // Plus de deux taux différents ce jour-là (rare) : quatre cartes plus petites, sur deux lignes.
   const many = groups.length > 2;
@@ -66,11 +76,11 @@ export function RateFlyer({ data }: { data: FlyerData }) {
   const redSize = small.length > 1 || many ? 56 : 84;
 
   return (
-    <div style={{ width: FLYER_WIDTH, height: FLYER_HEIGHT, background: '#ffffff', display: 'flex', flexDirection: 'column', fontFamily: '"DM Sans", sans-serif', color: INK }}>
+    <div style={{ width: FLYER_WIDTH, height: FLYER_HEIGHT, background: '#ffffff', display: 'flex', flexDirection: 'column', fontFamily: FLYER_FONT_STACK, color: INK }}>
       {/* En-tête : BONZINI, « Taux du jour », le jour et l'heure */}
       <div style={{ background: INK, padding: '40px 64px 38px', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '0.24em', color: SOFT }}>{FLYER_BRAND}</div>
-        <div style={{ fontSize: 88, fontWeight: 900, letterSpacing: -2, color: '#fff', lineHeight: 1, marginTop: 16 }}>Taux du jour</div>
+        <div style={{ fontSize: 88, fontWeight: 900, letterSpacing: -2, color: '#fff', lineHeight: 1, marginTop: 16 }}>{t.title}</div>
         <div style={{ fontSize: 34, fontWeight: 700, color: GOLD, marginTop: 14 }}>
           {date}
           <span style={{ color: SOFT, margin: '0 14px' }}>·</span>
@@ -81,30 +91,30 @@ export function RateFlyer({ data }: { data: FlyerData }) {
       {/* Le pays → la Chine */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 26, padding: '36px 64px 0', flexShrink: 0 }}>
         {flag && <img src={flag} alt="" width={116} height={87} style={{ borderRadius: 14, boxShadow: `0 0 0 2px ${LINE}`, flexShrink: 0, objectFit: 'cover' }} />}
-        <div style={{ fontSize: country.label.length > 12 ? 54 : 84, fontWeight: 900, letterSpacing: -2, lineHeight: 1, minWidth: 0 }}>{country.label}</div>
+        <div style={{ fontSize: country.label.length <= 12 ? 84 : country.label.length <= 18 ? 54 : 48, fontWeight: 900, letterSpacing: -2, lineHeight: 1, minWidth: 0, whiteSpace: 'nowrap' }}>{country.label}</div>
         <svg viewBox="0 0 24 24" width={52} height={52} fill="none" stroke={MUTED} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
           <path d="M4 12h15M13 6l6 6-6 6" />
         </svg>
-        {china && <img src={china} alt="Chine" width={116} height={87} style={{ borderRadius: 14, boxShadow: `0 0 0 2px ${LINE}`, flexShrink: 0, objectFit: 'cover' }} />}
+        {china && <img src={china} alt={t.china} width={116} height={87} style={{ borderRadius: 14, boxShadow: `0 0 0 2px ${LINE}`, flexShrink: 0, objectFit: 'cover' }} />}
       </div>
 
       <div style={{ padding: '22px 64px 0', fontSize: 36, fontWeight: 600, color: MUTED, flexShrink: 0 }}>
-        Pour <b style={{ color: INK, fontWeight: 900 }}>1&nbsp;000&nbsp;000 XAF</b>, votre fournisseur reçoit&nbsp;:
+        {t.forAmount} <b style={{ color: INK, fontWeight: 900, whiteSpace: 'nowrap' }}>{fmt(1_000_000)}&nbsp;XAF</b>{t.supplierGets}
       </div>
 
       {compact ? (
         <>
           <div style={{ margin: '18px 40px 0', background: SHEET, borderRadius: 32, padding: '16px 28px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
-            {groups.map((g) => <Row key={g.label} keys={g.keys} label={g.label} rate={g.rates[0]} size={60} />)}
+            {groups.map((g) => <Row key={g.label} keys={g.keys} label={g.label} rate={g.rates[0]} size={60} fmt={fmt} />)}
           </div>
           {small.map((b, bi) => (
             <div key={b.label} style={{ margin: '14px 40px 0', background: ALERT, borderRadius: 32, padding: '16px 28px 18px', color: '#fff', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 20, background: '#fff', color: ALERT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 900, flexShrink: 0 }}>!</div>
-                <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: -0.5 }}>{smallPaymentTitle(b)}</div>
+                <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: -0.5 }}>{smallPaymentTitle(b, lang)}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-                {groups.map((g) => <Row key={g.label} keys={g.keys} label={g.label} rate={g.rates[bi + 1]} size={44} onRed />)}
+                {groups.map((g) => <Row key={g.label} keys={g.keys} label={g.label} rate={g.rates[bi + 1]} size={44} onRed fmt={fmt} />)}
               </div>
             </div>
           ))}
@@ -117,9 +127,9 @@ export function RateFlyer({ data }: { data: FlyerData }) {
               <div key={g.label} style={{ flex: many ? '1 1 calc(50% - 7px)' : 1, minWidth: 0, background: SHEET, borderRadius: 36, padding: many ? '16px 24px 18px' : '24px 26px 26px', boxSizing: 'border-box' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {g.keys.map((k) => <Tile key={k} method={k} size={many ? 40 : stacked ? 64 : 52} />)}
-                  {stacked && <div style={{ marginLeft: 12, fontSize: g.keys.length > 1 ? 36 : 44, fontWeight: 800, whiteSpace: 'nowrap' }}>{g.label}</div>}
+                  {stacked && <div style={{ marginLeft: 12, fontSize: g.keys.length > 1 ? fit(g.label, 36, 32) : 44, fontWeight: 800, whiteSpace: 'nowrap' }}>{g.label}</div>}
                 </div>
-                {!stacked && <div style={{ fontSize: 27, fontWeight: 800, marginTop: many ? 8 : 12, whiteSpace: 'nowrap' }}>{g.label}</div>}
+                {!stacked && <div style={{ fontSize: fit(g.label, 27, many ? 22 : 30), fontWeight: 800, marginTop: many ? 8 : 12, whiteSpace: 'nowrap' }}>{g.label}</div>}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: many ? 4 : 8 }}>
                   <span style={{ ...NUM, fontSize: bigSize, fontWeight: 900, letterSpacing: -3, lineHeight: 1 }}>{fmt(g.rates[0])}</span>
                   <span style={{ fontSize: Math.round(bigSize * 0.44), fontWeight: 800 }}>¥</span>
@@ -134,13 +144,13 @@ export function RateFlyer({ data }: { data: FlyerData }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div style={{ width: 52, height: 52, borderRadius: 26, background: '#fff', color: ALERT, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, fontWeight: 900, flexShrink: 0 }}>!</div>
                 <div style={{ fontSize: small.length > 1 ? 34 : 40, fontWeight: 900, letterSpacing: -0.5, lineHeight: 1.1 }}>
-                  {smallPaymentTitle(b)}
+                  {smallPaymentTitle(b, lang)}
                 </div>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: small.length > 1 ? 12 : 20 }}>
                 {groups.map((g) => (
                   <div key={g.label} style={{ flex: many ? '1 1 calc(50% - 7px)' : 1, minWidth: 0, background: 'rgba(255,255,255,0.14)', borderRadius: 26, padding: small.length > 1 || many ? '10px 20px 12px' : '16px 22px 18px', boxSizing: 'border-box' }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, whiteSpace: 'nowrap', opacity: 0.95 }}>{g.label}</div>
+                    <div style={{ fontSize: fit(g.label, 24, many ? 22 : 30), fontWeight: 800, whiteSpace: 'nowrap', opacity: 0.95 }}>{g.label}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
                       <span style={{ ...NUM, fontSize: redSize, fontWeight: 900, letterSpacing: -2, lineHeight: 1 }}>{fmt(g.rates[bi + 1])}</span>
                       <span style={{ fontSize: Math.round(redSize * 0.45), fontWeight: 800 }}>¥</span>

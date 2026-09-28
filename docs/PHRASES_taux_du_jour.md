@@ -39,6 +39,21 @@ seul le nom du pays change :
 > • Cash : 10 593 ¥ (10 381 ¥ en dessous de 400 000 XAF)
 > BONZINI
 
+**En anglais** (bouton « English » du panneau Flyer, « lang: en » pour Mola,
+`/flyer en` sur Telegram) — même flyer, mêmes chiffres, milliers avec une
+virgule :
+
+> Today's rate · Cameroon → China · Monday 28 September 2026 · 11:00
+> For 1,000,000 XAF, your supplier receives:
+> • Alipay, WeChat Pay, Bank transfer: 10,800 ¥
+> • Cash: 10,700 ¥
+>
+> Payment under 400,000 XAF:
+> • Alipay, WeChat Pay, Bank transfer: 10,584 ¥
+> • Cash: 10,486 ¥
+>
+> BONZINI
+
 Le jour où les modes n'ont pas le même taux, une ligne par mode (Alipay,
 WeChat Pay, Virement, Cash). Le jour où le montant ne change rien, la
 parenthèse disparaît.
