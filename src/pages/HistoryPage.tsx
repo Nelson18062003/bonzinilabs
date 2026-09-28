@@ -22,11 +22,9 @@ import {
 import { useMyProfile } from '@/hooks/useProfile';
 import { formatNumber } from '@/lib/formatters';
 import { SURFACE, TEXT, SOFT_PILL } from '@/mobile/designKit';
-import {
-  generateStatementForRange,
-  buildMovementFromWalletOp,
-  shouldIncludeWalletOp,
-} from '@/lib/generateClientStatement';
+import { isStatementEntry, type StatementLang } from '@/lib/accountStatement';
+import { downloadAccountStatement, entryFromWalletOp } from '@/lib/accountStatementData';
+import { supabase } from '@/integrations/supabase/client';
 import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
 import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
 
@@ -93,28 +91,26 @@ const HistoryPage = () => {
   // les écritures de cette période (la liste à l'écran, elle, reste à 100),
   // et le solde d'ouverture vient de la dernière écriture avant la période
   // si elle est vide.
-  const handleDownloadStatement = async (range: StatementRange) => {
+  const handleDownloadStatement = async (range: StatementRange, lang: StatementLang) => {
     setIsGenerating(true);
     try {
       const query = statementQueryRange(range);
-      const entries = await fetchMyLedgerInRange(query);
-      const movements = entries
-        .filter((op) => shouldIncludeWalletOp(op))
-        .map((op) => buildMovementFromWalletOp(op));
-      if (query === null && movements.length === 0) {
+      const entries = (await fetchMyLedgerInRange(query)).map(entryFromWalletOp);
+      if (query === null && !entries.some(isStatementEntry)) {
         toast.error(t('history.noMovements'));
         return false;
       }
-      const lastBefore = query && movements.length === 0
-        ? await fetchMyLastLedgerEntryBefore(query.from)
-        : null;
-      const clientName = profile ? `${profile.first_name} ${profile.last_name}` : 'Client';
+      // Le solde d'ouverture d'une période sans mouvement : la dernière écriture avant elle.
+      const lastBefore = query ? await fetchMyLastLedgerEntryBefore(query.from) : null;
+      const clientName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : 'Client';
 
-      await generateStatementForRange({
-        client: { name: clientName, phone: profile?.phone, email: profile?.email },
+      await downloadAccountStatement({
+        db: supabase,
+        lang,
+        client: { name: clientName, code: (profile as { customer_code?: string | null } | undefined)?.customer_code ?? null, phone: profile?.phone, email: profile?.email },
+        entries,
         range: query,
-        movements,
-        lastBalanceBefore: lastBefore?.balance_after ?? null,
+        balanceBeforeRange: lastBefore?.balance_after ?? null,
       });
       return true;
     } catch (err) {

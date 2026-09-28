@@ -59,6 +59,18 @@ import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
 import { PdfDoc, PngDoc } from './pdfDocs';
+import { StatementDoc } from './statementDoc';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+
+/** La fenêtre « Relevé de compte » (?variant=dialog|sheet), ouverte. */
+function StatementPicker() {
+  const q = new URLSearchParams(window.location.search);
+  return (
+    <div style={{ minHeight: '100vh', background: '#EDEBF3' }}>
+      <StatementPeriodSheet open onClose={() => {}} onGenerate={async () => false} isGenerating={false} variant={q.get('variant') === 'dialog' ? 'dialog' : 'sheet'} />
+    </div>
+  );
+}
 import { MobilePaymentDetailsScreen } from '@/mobile/screens/more/MobilePaymentDetailsScreen';
 import { PaymentDetailsHub } from '@/components/payment-details/PaymentDetailsHub';
 import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir, LabelInternalJson } from './shippingLabel';
@@ -200,6 +212,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
   'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
   'quote-card': { Comp: QuoteCardPreview, route: '/' },
+  'statement-doc': { Comp: StatementDoc, route: '/' },
+  'statement-picker': { Comp: StatementPicker, route: '/' },
   'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
   'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },

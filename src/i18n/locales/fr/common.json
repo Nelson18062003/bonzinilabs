@@ -422,7 +422,14 @@
       "last_month": "Mois dernier",
       "all_time": "Tout l'historique",
       "custom": "Personnalisé"
-    }
+    },
+    "hint2": "Solde d’ouverture, chaque dépôt et chaque paiement (avec son taux et le montant en ¥), puis le solde de clôture.",
+    "periodLabel": "Période",
+    "languageLabel": "Langue du relevé",
+    "fromDate": "Du",
+    "toDate": "Au",
+    "inverted": "La date de début doit précéder la date de fin.",
+    "download": "Télécharger le relevé (PDF)"
   },
   "suspendedStatus": "Suspendu",
   "systemModeNote": "Le mode Système s'adapte automatiquement aux préférences de votre appareil.",
