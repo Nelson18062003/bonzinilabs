@@ -1,6 +1,6 @@
 # Le BESC, fiche de référence
 
-> Vérifié le 23/09/2026 auprès des sources officielles CNCC.
+> Vérifié le 23/09/2026 auprès des sources officielles CNCC. **Complété et corrigé le 29/09/2026 (section 8).**
 > Chaque affirmation porte sa source. Ce qui n'a pas pu être vérifié est marqué 🔵.
 
 ---
@@ -218,8 +218,14 @@ Ne peut pas être opposé à la grille du CNCC.
 
 ## Conclusion
 
-**La question est légitime et fondée.** La seule grille officielle consultable
-tarife au connaissement, y compris pour les véhicules. CITRA facture trois fois.
+> ⚠️ **Corrigé le 29/09/2026.** La conclusion ci-dessous reposait sur une grille
+> reproduite par un tiers. La **grille officielle du CNCC du 09/02/2015** (section 8)
+> dit le contraire pour notre cas : un conteneur venant du « reste du monde » avec
+> véhicules est facturé au **tarif véhicule, 100 € par véhicule**. Facturer par
+> véhicule, comme CITRA, est donc **conforme à la structure officielle**.
+
+~~**La question est légitime et fondée.** La seule grille officielle consultable
+tarife au connaissement, y compris pour les véhicules. CITRA facture trois fois.~~
 
 **Ce qu'il faut demander :** la **ligne de la grille tarifaire CNCC en vigueur** qui
 justifie la multiplication par le nombre de véhicules. Pas une affirmation : la
@@ -233,3 +239,70 @@ application Cosmos). **La grille en vigueur n'a pas pu être lue** : la page
 
 *Source : `logistiqueconseil.org/Fiches/Transit/Tarifs-besc.pdf`, mention
 « Source : Documentation du CNCC – Douala – Cameroun ».*
+
+---
+
+# 8. VÉRIFICATIONS DU 29/09/2026 (sources officielles lues ce jour)
+
+## 8.1 La grille officielle des frais de délivrance
+
+Document : « Frais de délivrance du BESC », CNCC, Douala, **09/02/2015**, signé par le
+directeur général Auguste MBAPPE PENDA. Lié depuis `cncc.cm/fr/besc`. Copie :
+`CNCC_frais_delivrance_BESC_2015-02-09.pdf`.
+
+| **BESC à l'import, conteneur** (par tranche de 10 EVP) | Afrique et Europe | Reste du monde |
+|---|---|---|
+| Sans véhicule | 55 € | 100 € |
+| Avec 1 ou 2 véhicules / châssis | 55 € | **tarif véhicule** |
+| Avec plus de 2 véhicules / châssis | tarif véhicule | **tarif véhicule** |
+| **Véhicule** (Ro-Ro ou en pontée) | 20 € par véhicule | **100 € par véhicule** |
+| Régularisation | frais de délivrance + frais de régularisation | |
+
+**MIEU3611115** (Chine, 3 véhicules) : 3 × 100 € = 300 € ≈ **196 787 XAF** sur la grille
+de 2015. Les montants réels ont augmenté depuis : CITRA a facturé 196 000 XAF en 2026
+pour un conteneur **sans** véhicule (100 € = 65 596 XAF sur la grille). 🔵 La grille en
+vigueur en 2026 n'a pas pu être lue.
+
+## 8.2 Seulement 4 intermédiaires agréés, tous à l'étranger
+
+Liste publiée par l'API du portail (`auth.besc.cncc.cm/api/publish-intermediaries`,
+lue le 29/09/2026) : FOREMOST LINE PTE LTD (Singapour, Shanghai, Hong Kong),
+SCK Representation Foreign Trade (Istanbul, Dubaï, Amsterdam), SOFT CENTRAL LAB
+(Stamford, États-Unis), EASY CTN (Tallinn). Tous agréés le 28/01/2025.
+**Aucun intermédiaire local.** Un déclarant camerounais n'est donc pas un
+« intermédiaire agréé » au sens du CNCC.
+
+## 8.3 Ouvrir un compte chargeur (portail BESC 3.0)
+
+Champs du formulaire d'inscription (code du portail `besc.cncc.cm`) : pays, NIU,
+catégorie (personne physique ou société), raison sociale, téléphone, e-mail,
+représentant légal, **document de contribuable**, **CNI ou passeport**, **lettre de
+désignation** (modèle téléchargeable), puis nom, prénom, téléphone, e-mail et mot de
+passe de l'utilisateur principal. Le compte est ensuite activé par le CNCC. Il existe
+des **sous-comptes** chargeur.
+
+## 8.4 Ce que demande le formulaire du BESC maritime import
+
+**Données** : BL (et sous-BL en groupage), navire (IMO), date d'arrivée estimée,
+chargeur étranger, destinataire (NIU), conteneurs (numéro, taille, plomb, type,
+poids VGM), marchandise (description, classe tarifaire, codes SH, colis, poids,
+volume), **valeur facture et valeur FOB** avec devise, **fret** avec devise
+(et assurance, BAF, CAF, THC), véhicules (**châssis, modèle, date de mise en
+circulation, carte grise** en fichier de 1 Mo au plus), numéros de transaction (DI)
+avec NIU.
+
+**Pièces jointes prévues** (2 Mo au plus chacune) : document de référence (BL),
+**facture commerciale**, **facture de fret**, **liste de colisage**, certificat
+d'empotage, certificat d'origine, FIMEX/ASI, document d'exonération, **certificat
+VGM**, autres. 🔵 Les pièces rendues obligatoires par le portail n'ont pas pu être
+déterminées.
+
+## 8.5 Régularisation : les pièces (officiel)
+
+`cncc.cm/fr/besc` : « Après scanning de ses documents (**BL, facture commerciale,
+fiche GUCE, Tracking e-force ou DI et CNI**), le chargeur saisit son BESC ».
+
+## 8.6 Contact
+
+CNCC : 3ᵉ étage, Immeuble à Grande Hauteur, Centre des Affaires Maritimes, Bonanjo,
+Douala. Tél. +237 233 43 67 67. info@cncc.cm.

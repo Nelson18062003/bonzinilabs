@@ -5,6 +5,18 @@
 >
 > ⚠️ Données d'entreprise. Dépôt privé, ne pas diffuser.
 
+> **Version lisible : `pdf/Guide_pas_a_pas_MIEU3611115.pdf`** (29/09, 23:00). Elle remplace ce fichier pour
+> l'utilisateur. Corrections apportées ce soir-là, sources officielles à l'appui :
+> - **BESC** : le CNCC n'agrée que **4 intermédiaires, tous à l'étranger**. Plan B retenu : ouvrir un
+>   **compte chargeur Bonzini** sur besc.cncc.cm (NIU, carte de contribuable, CNI du gérant, lettre de
+>   désignation). Tarif officiel **par véhicule** dans notre cas (grille CNCC du 09/02/2015).
+> - **Pièces du BESC** : BL, facture commerciale, facture de fret, packing list, VGM, cartes grises
+>   (formulaire BESC 3.0). Voir `reference/besc-cncc.md` section 8.
+> - **DI** : obligatoire dès 2 000 000 F FOB ; facture proforma détaillée, carte de contribuable,
+>   inscription au fichier des importateurs ; taxe de 0,95 % du FOB (guide de l'importateur SGS).
+> - **CIVIC** : copie du BL, carte de contribuable, carte grise d'origine ; 25 000 F HT par véhicule.
+> - Les messages ont été réécrits (plus courts, pièces du BESC ajoutées) : voir le PDF, section 9.
+
 ---
 
 ## 1. En une phrase
