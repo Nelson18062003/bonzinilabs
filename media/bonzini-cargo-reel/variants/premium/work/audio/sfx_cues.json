@@ -1,0 +1,73 @@
+{
+ "cues": [
+  [
+   0.0,
+   "opening bloom"
+  ],
+  [
+   0.12,
+   "opening shimmer"
+  ],
+  [
+   3.67,
+   "chapter air"
+  ],
+  [
+   9.97,
+   "chapter air"
+  ],
+  [
+   25.81,
+   "chapter air"
+  ],
+  [
+   12.0,
+   "whip whoosh"
+  ],
+  [
+   15.45,
+   "suck-in"
+  ],
+  [
+   15.4,
+   "zoom whoosh in"
+  ],
+  [
+   16.0,
+   "soft impact"
+  ],
+  [
+   16.0,
+   "air out"
+  ],
+  [
+   30.62,
+   "pan whoosh"
+  ],
+  [
+   38.2,
+   "confiance chime"
+  ],
+  [
+   39.0,
+   "warm swell"
+  ],
+  [
+   39.5,
+   "logo sweep"
+  ],
+  [
+   40.0,
+   "end impact"
+  ],
+  [
+   40.02,
+   "end shimmer"
+  ],
+  [
+   41.95,
+   "logo sheen"
+  ]
+ ],
+ "lufs": -18.118565169967955
+}

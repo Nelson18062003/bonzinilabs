@@ -1,0 +1,279 @@
+{
+ "fps": 30,
+ "dur": 18.5,
+ "nframes": 555,
+ "pages": [
+  {
+   "text": "Voici votre conteneur",
+   "words": [
+    {
+     "w": "Voici",
+     "s": 1.55,
+     "e": 2.08,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 2.08,
+     "e": 2.32,
+     "emph": false
+    },
+    {
+     "w": "conteneur",
+     "s": 2.32,
+     "e": 2.9,
+     "emph": true
+    }
+   ],
+   "in": 1.45,
+   "out": 2.9,
+   "hero": false
+  },
+  {
+   "text": "qui arrive dans notre entrepôt",
+   "words": [
+    {
+     "w": "qui",
+     "s": 2.9,
+     "e": 3.14,
+     "emph": false
+    },
+    {
+     "w": "arrive",
+     "s": 3.14,
+     "e": 3.5,
+     "emph": true
+    },
+    {
+     "w": "dans",
+     "s": 3.5,
+     "e": 4.4,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 4.4,
+     "e": 4.66,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 4.66,
+     "e": 5.59,
+     "emph": true
+    }
+   ],
+   "in": 2.9,
+   "out": 5.64,
+   "hero": false
+  },
+  {
+   "text": "en toute sécurité.",
+   "words": [
+    {
+     "w": "en",
+     "s": 5.76,
+     "e": 5.88,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 5.88,
+     "e": 6.16,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 6.16,
+     "e": 6.86,
+     "emph": true
+    }
+   ],
+   "in": 5.7,
+   "out": 6.96,
+   "hero": false
+  },
+  {
+   "text": "Vos colis ont été déchargés",
+   "words": [
+    {
+     "w": "Vos",
+     "s": 7.31,
+     "e": 7.55,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 7.57,
+     "e": 7.95,
+     "emph": true
+    },
+    {
+     "w": "ont",
+     "s": 7.95,
+     "e": 8.13,
+     "emph": false
+    },
+    {
+     "w": "été",
+     "s": 8.13,
+     "e": 8.41,
+     "emph": false
+    },
+    {
+     "w": "déchargés",
+     "s": 8.41,
+     "e": 9.43,
+     "emph": true
+    }
+   ],
+   "in": 7.24,
+   "out": 9.62,
+   "hero": false
+  },
+  {
+   "text": "en toute sécurité.",
+   "words": [
+    {
+     "w": "en",
+     "s": 9.79,
+     "e": 9.91,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 9.91,
+     "e": 10.17,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 10.17,
+     "e": 11.2,
+     "emph": true
+    }
+   ],
+   "in": 9.7,
+   "out": 11.34,
+   "hero": false
+  },
+  {
+   "text": "Et nous vous disons merci",
+   "words": [
+    {
+     "w": "Et",
+     "s": 11.57,
+     "e": 11.93,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 11.93,
+     "e": 12.07,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 12.07,
+     "e": 12.19,
+     "emph": false
+    },
+    {
+     "w": "disons",
+     "s": 12.19,
+     "e": 12.55,
+     "emph": false
+    },
+    {
+     "w": "merci",
+     "s": 12.55,
+     "e": 13.21,
+     "emph": true
+    }
+   ],
+   "in": 11.5,
+   "out": 13.21,
+   "hero": true
+  },
+  {
+   "text": "pour votre confiance.",
+   "words": [
+    {
+     "w": "pour",
+     "s": 13.21,
+     "e": 13.81,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 14.14,
+     "e": 14.55,
+     "emph": false
+    },
+    {
+     "w": "confiance.",
+     "s": 14.55,
+     "e": 15.6,
+     "emph": true
+    }
+   ],
+   "in": 13.21,
+   "out": 15.62,
+   "hero": true
+  }
+ ],
+ "cues": {
+  "hook": [
+   0.0,
+   1.34
+  ],
+  "slam1": [
+   2.32,
+   3.95,
+   3.14
+  ],
+  "slam2": [
+   8.41,
+   9.46
+  ],
+  "slam3": [
+   9.79,
+   11.28,
+   10.17
+  ],
+  "end": [
+   15.3,
+   16.0,
+   18.5
+  ],
+  "hud": [
+   1.05,
+   15.35
+  ]
+ },
+ "cuts": [
+  1.0,
+  2.0,
+  3.0,
+  4.0,
+  4.5,
+  5.0,
+  6.0,
+  7.0,
+  8.0,
+  9.0,
+  9.5,
+  10.5,
+  11.5,
+  12.5,
+  13.5,
+  14.5
+ ],
+ "big_hits": [
+  0.0,
+  7.0,
+  16.0
+ ],
+ "brand": "BONZINI TRADING CARGO",
+ "location_line": "Foyer Balengou"
+}

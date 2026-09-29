@@ -25,3 +25,23 @@ node overlay/render.mjs 0 1349 --out ../layers/overlay
 python3 lib/mix.py
 python3 lib/composite.py --workers 3 --out out/reel.mp4
 ```
+
+## Versions
+
+| Version | Folder | Duration | Summary |
+|---|---|---|---|
+| v1 — neon HUD | `lib/`, `overlay/` | 45 s | Container → warehouse, futuristic HUD, glitch transitions |
+| Premium | `variants/premium/` | 45 s | Warm cinematic brand film, light leaks, elegant typography, piano score |
+| Hologramme | `variants/hologramme/` | 45 s | Cyan hologram world, 3D wireframe container, terminal-style captions |
+| Teaser | `variants/teaser/` | 18.5 s | Short beat-cut ad for Stories / WhatsApp status |
+| **Explainer « Le parcours de vos colis »** | `explainer/` | 2 min 07 | Female French voice-over (Kokoro TTS), 6 steps explained, motion-design scenes, large readable text |
+
+### Explainer pipeline (`explainer/`)
+- `data/script.json`: voice-over text (VO) and the team's quotes (SP, cut from the cleaned original audio).
+- `lib/tts_kokoro.py`: narrator voice (Kokoro `ff_siwis`, native French female).
+- `lib/build_timeline.py` → `data/timeline.json`: segments, word timings, chapters snapped to the 100 BPM grid, edit list.
+- `overlay/engine.html` + `overlay/lib.js` + `overlay/scenes/*.js`: one scene per file, all timing read from the timeline.
+- `lib/audio/`: music, sound effects and mix, all derived from the timeline.
+- `lib/composite.py`: picture (grade, slow motion, blur under motion-design scenes) + overlay + encode.
+- `rebuild.sh`: full rebuild (timeline → audio → overlay → video).
+- `SPEC.md`: readability rules (text ≥ 44 px on opaque plates), layout, facts policy.

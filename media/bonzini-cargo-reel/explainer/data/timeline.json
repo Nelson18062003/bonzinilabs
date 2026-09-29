@@ -1,0 +1,2116 @@
+{
+ "fps": 30,
+ "width": 1080,
+ "height": 1920,
+ "duration": 127.0,
+ "frames": 3810,
+ "bpm": 100.0,
+ "vo_source": "kokoro",
+ "chapters": [
+  {
+   "id": "hook",
+   "num": "",
+   "title": "",
+   "kind": "footage",
+   "start": 0.0,
+   "end": 7.2
+  },
+  {
+   "id": "brand",
+   "num": "",
+   "title": "BONZINI TRADING CARGO",
+   "kind": "mg",
+   "start": 7.2,
+   "end": 13.2
+  },
+  {
+   "id": "s1",
+   "num": "01",
+   "title": "L'ACHAT",
+   "kind": "mg",
+   "start": 13.2,
+   "end": 22.8
+  },
+  {
+   "id": "s2",
+   "num": "02",
+   "title": "LE GROUPAGE",
+   "kind": "mg",
+   "start": 22.8,
+   "end": 33.0
+  },
+  {
+   "id": "s3",
+   "num": "03",
+   "title": "LE TRANSPORT",
+   "kind": "mg",
+   "start": 33.0,
+   "end": 45.0
+  },
+  {
+   "id": "s4",
+   "num": "04",
+   "title": "L'ARRIVÉE",
+   "kind": "footage",
+   "start": 45.0,
+   "end": 64.8
+  },
+  {
+   "id": "s5",
+   "num": "05",
+   "title": "LE DÉCHARGEMENT",
+   "kind": "footage",
+   "start": 64.8,
+   "end": 88.2
+  },
+  {
+   "id": "s6",
+   "num": "06",
+   "title": "LE RETRAIT",
+   "kind": "footage",
+   "start": 88.2,
+   "end": 103.8
+  },
+  {
+   "id": "recap",
+   "num": "",
+   "title": "EN RÉSUMÉ",
+   "kind": "mg",
+   "start": 103.8,
+   "end": 114.6
+  },
+  {
+   "id": "outro",
+   "num": "",
+   "title": "",
+   "kind": "footage",
+   "start": 114.6,
+   "end": 127.0
+  }
+ ],
+ "segments": [
+  {
+   "id": "V01",
+   "kind": "vo",
+   "chapter": "hook",
+   "start": 1.0,
+   "end": 6.472,
+   "text": "Vous achetez vos marchandises en Chine ? Découvrez comment elles arrivent jusqu'à vous, étape par étape.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V01.wav",
+   "words": [
+    {
+     "w": "Vous",
+     "s": 1.0,
+     "e": 1.34,
+     "emph": false
+    },
+    {
+     "w": "achetez",
+     "s": 1.34,
+     "e": 1.74,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 1.74,
+     "e": 1.88,
+     "emph": false
+    },
+    {
+     "w": "marchandises",
+     "s": 1.88,
+     "e": 2.46,
+     "emph": false
+    },
+    {
+     "w": "en",
+     "s": 2.46,
+     "e": 2.72,
+     "emph": false
+    },
+    {
+     "w": "Chine",
+     "s": 2.72,
+     "e": 3.16,
+     "emph": true
+    },
+    {
+     "w": "?",
+     "s": 3.16,
+     "e": 3.42,
+     "emph": false
+    },
+    {
+     "w": "Découvrez",
+     "s": 3.42,
+     "e": 3.84,
+     "emph": false
+    },
+    {
+     "w": "comment",
+     "s": 3.84,
+     "e": 4.12,
+     "emph": false
+    },
+    {
+     "w": "elles",
+     "s": 4.12,
+     "e": 4.28,
+     "emph": false
+    },
+    {
+     "w": "arrivent",
+     "s": 4.28,
+     "e": 4.66,
+     "emph": false
+    },
+    {
+     "w": "jusqu'à",
+     "s": 4.66,
+     "e": 5.1,
+     "emph": false
+    },
+    {
+     "w": "vous,",
+     "s": 5.1,
+     "e": 5.34,
+     "emph": false
+    },
+    {
+     "w": "étape",
+     "s": 5.56,
+     "e": 5.78,
+     "emph": false
+    },
+    {
+     "w": "par",
+     "s": 5.78,
+     "e": 5.96,
+     "emph": false
+    },
+    {
+     "w": "étape.",
+     "s": 5.96,
+     "e": 6.44,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "V02",
+   "kind": "vo",
+   "chapter": "brand",
+   "start": 7.8,
+   "end": 11.737,
+   "text": "Suivez avec nous le parcours de vos colis, avec Bonzini Trading Cargo.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V02.wav",
+   "words": [
+    {
+     "w": "Suivez",
+     "s": 7.8,
+     "e": 8.42,
+     "emph": false
+    },
+    {
+     "w": "avec",
+     "s": 8.42,
+     "e": 8.54,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 8.54,
+     "e": 8.7,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 8.7,
+     "e": 8.92,
+     "emph": false
+    },
+    {
+     "w": "parcours",
+     "s": 8.92,
+     "e": 9.24,
+     "emph": false
+    },
+    {
+     "w": "de",
+     "s": 9.24,
+     "e": 9.4,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 9.4,
+     "e": 9.56,
+     "emph": false
+    },
+    {
+     "w": "colis,",
+     "s": 9.56,
+     "e": 10.04,
+     "emph": true
+    },
+    {
+     "w": "avec",
+     "s": 10.04,
+     "e": 10.36,
+     "emph": false
+    },
+    {
+     "w": "Bonzini",
+     "s": 10.36,
+     "e": 10.88,
+     "emph": true
+    },
+    {
+     "w": "Trading",
+     "s": 10.88,
+     "e": 11.26,
+     "emph": true
+    },
+    {
+     "w": "Cargo.",
+     "s": 11.26,
+     "e": 11.7,
+     "emph": true
+    }
+   ]
+  },
+  {
+   "id": "V03",
+   "kind": "vo",
+   "chapter": "s1",
+   "start": 14.7,
+   "end": 21.517,
+   "text": "Étape un : l'achat. Tout commence en Chine, chez vos fournisseurs. Vos marchandises sont emballées et préparées pour le voyage.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V03.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 14.7,
+     "e": 15.26,
+     "emph": false
+    },
+    {
+     "w": "un",
+     "s": 15.26,
+     "e": 15.42,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 15.42,
+     "e": 15.6,
+     "emph": false
+    },
+    {
+     "w": "l'achat.",
+     "s": 15.6,
+     "e": 15.98,
+     "emph": false
+    },
+    {
+     "w": "Tout",
+     "s": 16.08,
+     "e": 16.22,
+     "emph": false
+    },
+    {
+     "w": "commence",
+     "s": 16.22,
+     "e": 16.64,
+     "emph": false
+    },
+    {
+     "w": "en",
+     "s": 16.64,
+     "e": 16.92,
+     "emph": false
+    },
+    {
+     "w": "Chine,",
+     "s": 16.92,
+     "e": 17.22,
+     "emph": true
+    },
+    {
+     "w": "chez",
+     "s": 17.22,
+     "e": 17.4,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 17.4,
+     "e": 17.58,
+     "emph": false
+    },
+    {
+     "w": "fournisseurs.",
+     "s": 17.58,
+     "e": 18.38,
+     "emph": true
+    },
+    {
+     "w": "Vos",
+     "s": 18.62,
+     "e": 18.72,
+     "emph": false
+    },
+    {
+     "w": "marchandises",
+     "s": 18.72,
+     "e": 19.36,
+     "emph": false
+    },
+    {
+     "w": "sont",
+     "s": 19.36,
+     "e": 19.66,
+     "emph": false
+    },
+    {
+     "w": "emballées",
+     "s": 19.66,
+     "e": 20.1,
+     "emph": false
+    },
+    {
+     "w": "et",
+     "s": 20.1,
+     "e": 20.36,
+     "emph": false
+    },
+    {
+     "w": "préparées",
+     "s": 20.36,
+     "e": 20.66,
+     "emph": false
+    },
+    {
+     "w": "pour",
+     "s": 20.66,
+     "e": 20.82,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 20.82,
+     "e": 20.98,
+     "emph": false
+    },
+    {
+     "w": "voyage.",
+     "s": 20.98,
+     "e": 21.38,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "V04",
+   "kind": "vo",
+   "chapter": "s2",
+   "start": 24.3,
+   "end": 31.94,
+   "text": "Étape deux : le groupage. Les colis de plusieurs clients sont réunis dans un même conteneur. Chacun profite ainsi de l'espace partagé.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V04.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 24.3,
+     "e": 24.84,
+     "emph": false
+    },
+    {
+     "w": "deux",
+     "s": 24.84,
+     "e": 24.96,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 24.96,
+     "e": 25.08,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 25.32,
+     "e": 25.46,
+     "emph": false
+    },
+    {
+     "w": "groupage.",
+     "s": 25.46,
+     "e": 26.1,
+     "emph": true
+    },
+    {
+     "w": "Les",
+     "s": 26.38,
+     "e": 26.54,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 26.54,
+     "e": 26.82,
+     "emph": true
+    },
+    {
+     "w": "de",
+     "s": 26.82,
+     "e": 27.08,
+     "emph": false
+    },
+    {
+     "w": "plusieurs",
+     "s": 27.08,
+     "e": 27.42,
+     "emph": false
+    },
+    {
+     "w": "clients",
+     "s": 27.42,
+     "e": 27.74,
+     "emph": false
+    },
+    {
+     "w": "sont",
+     "s": 27.74,
+     "e": 27.96,
+     "emph": false
+    },
+    {
+     "w": "réunis",
+     "s": 27.96,
+     "e": 28.38,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 28.38,
+     "e": 28.58,
+     "emph": false
+    },
+    {
+     "w": "un",
+     "s": 28.58,
+     "e": 28.76,
+     "emph": false
+    },
+    {
+     "w": "même",
+     "s": 28.76,
+     "e": 28.92,
+     "emph": false
+    },
+    {
+     "w": "conteneur.",
+     "s": 28.92,
+     "e": 29.64,
+     "emph": true
+    },
+    {
+     "w": "Chacun",
+     "s": 29.86,
+     "e": 30.14,
+     "emph": false
+    },
+    {
+     "w": "profite",
+     "s": 30.14,
+     "e": 30.62,
+     "emph": false
+    },
+    {
+     "w": "ainsi",
+     "s": 30.62,
+     "e": 30.84,
+     "emph": false
+    },
+    {
+     "w": "de",
+     "s": 30.84,
+     "e": 30.98,
+     "emph": false
+    },
+    {
+     "w": "l'espace",
+     "s": 30.98,
+     "e": 31.4,
+     "emph": false
+    },
+    {
+     "w": "partagé.",
+     "s": 31.4,
+     "e": 31.92,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "V05",
+   "kind": "vo",
+   "chapter": "s3",
+   "start": 34.5,
+   "end": 43.791,
+   "text": "Étape trois : le transport. Le conteneur traverse l'océan par bateau, de la Chine jusqu'en Afrique. Puis il continue sa route par camion, jusqu'à notre entrepôt.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V05.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 34.5,
+     "e": 35.04,
+     "emph": false
+    },
+    {
+     "w": "trois",
+     "s": 35.04,
+     "e": 35.18,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 35.18,
+     "e": 35.32,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 35.54,
+     "e": 35.72,
+     "emph": false
+    },
+    {
+     "w": "transport.",
+     "s": 35.72,
+     "e": 36.28,
+     "emph": true
+    },
+    {
+     "w": "Le",
+     "s": 36.62,
+     "e": 36.84,
+     "emph": false
+    },
+    {
+     "w": "conteneur",
+     "s": 36.84,
+     "e": 37.28,
+     "emph": true
+    },
+    {
+     "w": "traverse",
+     "s": 37.28,
+     "e": 37.7,
+     "emph": false
+    },
+    {
+     "w": "l'océan",
+     "s": 37.7,
+     "e": 38.18,
+     "emph": false
+    },
+    {
+     "w": "par",
+     "s": 38.18,
+     "e": 38.32,
+     "emph": false
+    },
+    {
+     "w": "bateau,",
+     "s": 38.32,
+     "e": 38.8,
+     "emph": true
+    },
+    {
+     "w": "de",
+     "s": 38.8,
+     "e": 38.98,
+     "emph": false
+    },
+    {
+     "w": "la",
+     "s": 38.98,
+     "e": 39.2,
+     "emph": false
+    },
+    {
+     "w": "Chine",
+     "s": 39.2,
+     "e": 39.38,
+     "emph": true
+    },
+    {
+     "w": "jusqu'en",
+     "s": 39.38,
+     "e": 39.86,
+     "emph": false
+    },
+    {
+     "w": "Afrique.",
+     "s": 39.86,
+     "e": 40.36,
+     "emph": false
+    },
+    {
+     "w": "Puis",
+     "s": 40.62,
+     "e": 40.76,
+     "emph": false
+    },
+    {
+     "w": "il",
+     "s": 40.76,
+     "e": 41.02,
+     "emph": false
+    },
+    {
+     "w": "continue",
+     "s": 41.02,
+     "e": 41.48,
+     "emph": false
+    },
+    {
+     "w": "sa",
+     "s": 41.48,
+     "e": 41.7,
+     "emph": false
+    },
+    {
+     "w": "route",
+     "s": 41.7,
+     "e": 41.9,
+     "emph": false
+    },
+    {
+     "w": "par",
+     "s": 41.9,
+     "e": 42.18,
+     "emph": false
+    },
+    {
+     "w": "camion,",
+     "s": 42.18,
+     "e": 42.68,
+     "emph": true
+    },
+    {
+     "w": "jusqu'à",
+     "s": 42.68,
+     "e": 43.14,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 43.14,
+     "e": 43.3,
+     "emph": false
+    },
+    {
+     "w": "entrepôt.",
+     "s": 43.3,
+     "e": 43.76,
+     "emph": true
+    }
+   ]
+  },
+  {
+   "id": "V06",
+   "kind": "vo",
+   "chapter": "s4",
+   "start": 46.2,
+   "end": 51.569,
+   "text": "Étape quatre : l'arrivée. Le voici, devant notre entrepôt ! Écoutez notre équipe sur place.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V06.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 46.2,
+     "e": 46.72,
+     "emph": false
+    },
+    {
+     "w": "quatre",
+     "s": 46.72,
+     "e": 47.04,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 47.2,
+     "e": 47.28,
+     "emph": false
+    },
+    {
+     "w": "l'arrivée.",
+     "s": 47.28,
+     "e": 47.84,
+     "emph": false
+    },
+    {
+     "w": "Le",
+     "s": 48.08,
+     "e": 48.2,
+     "emph": false
+    },
+    {
+     "w": "voici,",
+     "s": 48.2,
+     "e": 48.64,
+     "emph": false
+    },
+    {
+     "w": "devant",
+     "s": 48.64,
+     "e": 48.9,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 48.9,
+     "e": 49.16,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 49.16,
+     "e": 49.72,
+     "emph": true
+    },
+    {
+     "w": "!",
+     "s": 49.72,
+     "e": 49.92,
+     "emph": false
+    },
+    {
+     "w": "Écoutez",
+     "s": 49.92,
+     "e": 50.24,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 50.24,
+     "e": 50.52,
+     "emph": false
+    },
+    {
+     "w": "équipe",
+     "s": 50.52,
+     "e": 50.86,
+     "emph": false
+    },
+    {
+     "w": "sur",
+     "s": 50.86,
+     "e": 51.16,
+     "emph": false
+    },
+    {
+     "w": "place.",
+     "s": 51.16,
+     "e": 51.42,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "Q1",
+   "kind": "sp",
+   "chapter": "s4",
+   "start": 51.969,
+   "end": 57.969,
+   "text": "Voici votre conteneur qui arrive dans notre entrepôt en toute sécurité.",
+   "words": [
+    {
+     "w": "Voici",
+     "s": 52.069,
+     "e": 52.729,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 52.729,
+     "e": 52.969,
+     "emph": false
+    },
+    {
+     "w": "conteneur",
+     "s": 52.969,
+     "e": 53.549,
+     "emph": true
+    },
+    {
+     "w": "qui",
+     "s": 53.549,
+     "e": 53.789,
+     "emph": false
+    },
+    {
+     "w": "arrive",
+     "s": 53.789,
+     "e": 54.149,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 54.149,
+     "e": 55.049,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 55.049,
+     "e": 55.309,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 55.309,
+     "e": 56.049,
+     "emph": true
+    },
+    {
+     "w": "en",
+     "s": 56.049,
+     "e": 56.729,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 56.729,
+     "e": 57.029,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 57.029,
+     "e": 57.709,
+     "emph": true
+    }
+   ],
+   "clip": "B",
+   "src": [
+    3.62,
+    9.62
+   ]
+  },
+  {
+   "id": "Q2",
+   "kind": "sp",
+   "chapter": "s4",
+   "start": 58.369,
+   "end": 64.149,
+   "text": "Il sera déchargé ici, dans notre entrepôt en toute sécurité.",
+   "words": [
+    {
+     "w": "Il",
+     "s": 58.469,
+     "e": 59.129,
+     "emph": false
+    },
+    {
+     "w": "sera",
+     "s": 59.129,
+     "e": 59.389,
+     "emph": false
+    },
+    {
+     "w": "déchargé",
+     "s": 59.389,
+     "e": 60.209,
+     "emph": true
+    },
+    {
+     "w": "ici,",
+     "s": 60.209,
+     "e": 60.529,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 60.669,
+     "e": 61.809,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 61.809,
+     "e": 62.169,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 62.169,
+     "e": 62.889,
+     "emph": true
+    },
+    {
+     "w": "en",
+     "s": 62.889,
+     "e": 63.089,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 63.089,
+     "e": 63.349,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 63.349,
+     "e": 63.889,
+     "emph": true
+    }
+   ],
+   "clip": "B",
+   "src": [
+    9.94,
+    15.72
+   ]
+  },
+  {
+   "id": "V07",
+   "kind": "vo",
+   "chapter": "s5",
+   "start": 66.0,
+   "end": 71.895,
+   "text": "Étape cinq : le déchargement. Le conteneur est vidé, et vos colis sont rangés à l'abri, dans l'entrepôt.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V07.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 66.0,
+     "e": 66.48,
+     "emph": false
+    },
+    {
+     "w": "cinq",
+     "s": 66.48,
+     "e": 66.67,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 66.67,
+     "e": 66.86,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 67.06,
+     "e": 67.22,
+     "emph": false
+    },
+    {
+     "w": "déchargement.",
+     "s": 67.22,
+     "e": 67.84,
+     "emph": true
+    },
+    {
+     "w": "Le",
+     "s": 68.18,
+     "e": 68.38,
+     "emph": false
+    },
+    {
+     "w": "conteneur",
+     "s": 68.38,
+     "e": 68.74,
+     "emph": true
+    },
+    {
+     "w": "est",
+     "s": 68.74,
+     "e": 68.96,
+     "emph": false
+    },
+    {
+     "w": "vidé,",
+     "s": 68.96,
+     "e": 69.2,
+     "emph": false
+    },
+    {
+     "w": "et",
+     "s": 69.2,
+     "e": 69.6,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 69.6,
+     "e": 69.74,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 69.74,
+     "e": 70.08,
+     "emph": true
+    },
+    {
+     "w": "sont",
+     "s": 70.08,
+     "e": 70.28,
+     "emph": false
+    },
+    {
+     "w": "rangés",
+     "s": 70.28,
+     "e": 70.68,
+     "emph": false
+    },
+    {
+     "w": "à",
+     "s": 70.68,
+     "e": 70.8,
+     "emph": false
+    },
+    {
+     "w": "l'abri,",
+     "s": 70.8,
+     "e": 71.16,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 71.16,
+     "e": 71.32,
+     "emph": false
+    },
+    {
+     "w": "l'entrepôt.",
+     "s": 71.32,
+     "e": 71.86,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "Q3",
+   "kind": "sp",
+   "chapter": "s5",
+   "start": 72.295,
+   "end": 77.345,
+   "text": "Voilà, très chers clients, nous sommes ici à l'entrepôt de Bonzini Trading Cargo.",
+   "words": [
+    {
+     "w": "Voilà,",
+     "s": 72.295,
+     "e": 72.675,
+     "emph": false
+    },
+    {
+     "w": "très",
+     "s": 72.735,
+     "e": 72.955,
+     "emph": false
+    },
+    {
+     "w": "chers",
+     "s": 72.955,
+     "e": 73.275,
+     "emph": false
+    },
+    {
+     "w": "clients,",
+     "s": 73.275,
+     "e": 73.575,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 73.835,
+     "e": 74.115,
+     "emph": false
+    },
+    {
+     "w": "sommes",
+     "s": 74.115,
+     "e": 74.335,
+     "emph": false
+    },
+    {
+     "w": "ici",
+     "s": 74.335,
+     "e": 74.595,
+     "emph": false
+    },
+    {
+     "w": "à",
+     "s": 74.595,
+     "e": 74.835,
+     "emph": false
+    },
+    {
+     "w": "l'entrepôt",
+     "s": 74.835,
+     "e": 75.435,
+     "emph": false
+    },
+    {
+     "w": "de",
+     "s": 75.435,
+     "e": 75.555,
+     "emph": false
+    },
+    {
+     "w": "Bonzini",
+     "s": 75.555,
+     "e": 76.135,
+     "emph": true
+    },
+    {
+     "w": "Trading",
+     "s": 76.135,
+     "e": 76.415,
+     "emph": true
+    },
+    {
+     "w": "Cargo.",
+     "s": 76.415,
+     "e": 77.095,
+     "emph": true
+    }
+   ],
+   "clip": "A",
+   "src": [
+    0.0,
+    5.05
+   ]
+  },
+  {
+   "id": "Q4",
+   "kind": "sp",
+   "chapter": "s5",
+   "start": 77.745,
+   "end": 81.855,
+   "text": "Vos colis ont été déchargés en toute sécurité.",
+   "words": [
+    {
+     "w": "Vos",
+     "s": 77.935,
+     "e": 78.255,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 78.255,
+     "e": 78.635,
+     "emph": true
+    },
+    {
+     "w": "ont",
+     "s": 78.635,
+     "e": 78.815,
+     "emph": false
+    },
+    {
+     "w": "été",
+     "s": 78.815,
+     "e": 79.095,
+     "emph": false
+    },
+    {
+     "w": "déchargés",
+     "s": 79.095,
+     "e": 80.155,
+     "emph": true
+    },
+    {
+     "w": "en",
+     "s": 80.155,
+     "e": 80.635,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 80.635,
+     "e": 80.895,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 80.895,
+     "e": 81.355,
+     "emph": true
+    }
+   ],
+   "clip": "A",
+   "src": [
+    5.55,
+    9.66
+   ]
+  },
+  {
+   "id": "V08",
+   "kind": "vo",
+   "chapter": "s5",
+   "start": 82.255,
+   "end": 87.551,
+   "text": "Cartons, sacs, marchandises emballées : tout est rangé en sécurité, en attendant votre passage.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V08.wav",
+   "words": [
+    {
+     "w": "Cartons,",
+     "s": 82.255,
+     "e": 82.835,
+     "emph": false
+    },
+    {
+     "w": "sacs,",
+     "s": 82.955,
+     "e": 83.235,
+     "emph": false
+    },
+    {
+     "w": "marchandises",
+     "s": 83.415,
+     "e": 83.855,
+     "emph": false
+    },
+    {
+     "w": "emballées",
+     "s": 83.855,
+     "e": 84.415,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 84.415,
+     "e": 84.615,
+     "emph": false
+    },
+    {
+     "w": "tout",
+     "s": 84.615,
+     "e": 84.735,
+     "emph": false
+    },
+    {
+     "w": "est",
+     "s": 84.735,
+     "e": 84.955,
+     "emph": false
+    },
+    {
+     "w": "rangé",
+     "s": 84.955,
+     "e": 85.275,
+     "emph": false
+    },
+    {
+     "w": "en",
+     "s": 85.275,
+     "e": 85.515,
+     "emph": false
+    },
+    {
+     "w": "sécurité,",
+     "s": 85.515,
+     "e": 85.955,
+     "emph": true
+    },
+    {
+     "w": "en",
+     "s": 85.955,
+     "e": 86.375,
+     "emph": false
+    },
+    {
+     "w": "attendant",
+     "s": 86.375,
+     "e": 86.615,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 86.615,
+     "e": 86.875,
+     "emph": false
+    },
+    {
+     "w": "passage.",
+     "s": 86.875,
+     "e": 87.395,
+     "emph": false
+    }
+   ]
+  },
+  {
+   "id": "V09",
+   "kind": "vo",
+   "chapter": "s6",
+   "start": 89.4,
+   "end": 93.501,
+   "text": "Étape six : le retrait. Il ne vous reste plus qu'à venir récupérer vos colis.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V09.wav",
+   "words": [
+    {
+     "w": "Étape",
+     "s": 89.4,
+     "e": 89.94,
+     "emph": false
+    },
+    {
+     "w": "six",
+     "s": 89.94,
+     "e": 90.05,
+     "emph": true
+    },
+    {
+     "w": ":",
+     "s": 90.05,
+     "e": 90.16,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 90.22,
+     "e": 90.42,
+     "emph": false
+    },
+    {
+     "w": "retrait.",
+     "s": 90.42,
+     "e": 90.8,
+     "emph": true
+    },
+    {
+     "w": "Il",
+     "s": 91.14,
+     "e": 91.2,
+     "emph": false
+    },
+    {
+     "w": "ne",
+     "s": 91.2,
+     "e": 91.32,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 91.32,
+     "e": 91.44,
+     "emph": false
+    },
+    {
+     "w": "reste",
+     "s": 91.44,
+     "e": 91.74,
+     "emph": false
+    },
+    {
+     "w": "plus",
+     "s": 91.74,
+     "e": 91.96,
+     "emph": false
+    },
+    {
+     "w": "qu'à",
+     "s": 91.96,
+     "e": 92.26,
+     "emph": false
+    },
+    {
+     "w": "venir",
+     "s": 92.26,
+     "e": 92.48,
+     "emph": false
+    },
+    {
+     "w": "récupérer",
+     "s": 92.48,
+     "e": 93.0,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 93.0,
+     "e": 93.16,
+     "emph": false
+    },
+    {
+     "w": "colis.",
+     "s": 93.16,
+     "e": 93.48,
+     "emph": true
+    }
+   ]
+  },
+  {
+   "id": "Q5",
+   "kind": "sp",
+   "chapter": "s6",
+   "start": 93.901,
+   "end": 102.881,
+   "text": "Et nous vous attendons dans notre entrepôt ici, au niveau du foyer Balengou, pour le retrait de vos colis.",
+   "words": [
+    {
+     "w": "Et",
+     "s": 94.001,
+     "e": 94.641,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 94.641,
+     "e": 95.061,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 95.061,
+     "e": 95.201,
+     "emph": false
+    },
+    {
+     "w": "attendons",
+     "s": 95.201,
+     "e": 95.921,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 95.921,
+     "e": 96.501,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 96.501,
+     "e": 96.741,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 96.741,
+     "e": 97.281,
+     "emph": true
+    },
+    {
+     "w": "ici,",
+     "s": 97.281,
+     "e": 97.521,
+     "emph": false
+    },
+    {
+     "w": "au",
+     "s": 98.881,
+     "e": 99.561,
+     "emph": false
+    },
+    {
+     "w": "niveau",
+     "s": 99.561,
+     "e": 99.721,
+     "emph": false
+    },
+    {
+     "w": "du",
+     "s": 99.721,
+     "e": 99.841,
+     "emph": false
+    },
+    {
+     "w": "foyer",
+     "s": 99.841,
+     "e": 100.081,
+     "emph": false
+    },
+    {
+     "w": "Balengou,",
+     "s": 100.081,
+     "e": 100.601,
+     "emph": true
+    },
+    {
+     "w": "pour",
+     "s": 101.201,
+     "e": 101.521,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 101.521,
+     "e": 101.721,
+     "emph": false
+    },
+    {
+     "w": "retrait",
+     "s": 101.721,
+     "e": 102.201,
+     "emph": true
+    },
+    {
+     "w": "de",
+     "s": 102.201,
+     "e": 102.301,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 102.301,
+     "e": 102.441,
+     "emph": false
+    },
+    {
+     "w": "colis.",
+     "s": 102.441,
+     "e": 102.781,
+     "emph": true
+    }
+   ],
+   "clip": "A",
+   "src": [
+    9.7,
+    18.68
+   ]
+  },
+  {
+   "id": "V10",
+   "kind": "vo",
+   "chapter": "recap",
+   "start": 104.8,
+   "end": 113.11,
+   "text": "En résumé : l'achat, le groupage, le transport, l'arrivée, le déchargement… et le retrait. Six étapes, et vos colis arrivent en toute sécurité.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V10.wav",
+   "words": [
+    {
+     "w": "En",
+     "s": 104.8,
+     "e": 105.08,
+     "emph": false
+    },
+    {
+     "w": "résumé",
+     "s": 105.08,
+     "e": 105.66,
+     "emph": false
+    },
+    {
+     "w": ":",
+     "s": 105.88,
+     "e": 105.94,
+     "emph": false
+    },
+    {
+     "w": "l'achat,",
+     "s": 105.94,
+     "e": 106.22,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 106.32,
+     "e": 106.46,
+     "emph": false
+    },
+    {
+     "w": "groupage,",
+     "s": 106.46,
+     "e": 106.96,
+     "emph": true
+    },
+    {
+     "w": "le",
+     "s": 107.16,
+     "e": 107.3,
+     "emph": false
+    },
+    {
+     "w": "transport,",
+     "s": 107.3,
+     "e": 107.72,
+     "emph": true
+    },
+    {
+     "w": "l'arrivée,",
+     "s": 107.94,
+     "e": 108.36,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 108.5,
+     "e": 108.62,
+     "emph": false
+    },
+    {
+     "w": "déchargement…",
+     "s": 108.62,
+     "e": 109.18,
+     "emph": true
+    },
+    {
+     "w": "et",
+     "s": 109.18,
+     "e": 109.32,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 109.32,
+     "e": 109.6,
+     "emph": false
+    },
+    {
+     "w": "retrait.",
+     "s": 109.6,
+     "e": 109.84,
+     "emph": true
+    },
+    {
+     "w": "Six",
+     "s": 110.24,
+     "e": 110.42,
+     "emph": true
+    },
+    {
+     "w": "étapes,",
+     "s": 110.42,
+     "e": 111.06,
+     "emph": true
+    },
+    {
+     "w": "et",
+     "s": 111.06,
+     "e": 111.24,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 111.24,
+     "e": 111.4,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 111.4,
+     "e": 111.74,
+     "emph": true
+    },
+    {
+     "w": "arrivent",
+     "s": 111.74,
+     "e": 112.1,
+     "emph": false
+    },
+    {
+     "w": "en",
+     "s": 112.1,
+     "e": 112.34,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 112.34,
+     "e": 112.46,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 112.46,
+     "e": 112.98,
+     "emph": true
+    }
+   ]
+  },
+  {
+   "id": "Q6",
+   "kind": "sp",
+   "chapter": "outro",
+   "start": 115.1,
+   "end": 119.66,
+   "text": "Et nous vous disons merci pour votre confiance.",
+   "words": [
+    {
+     "w": "Et",
+     "s": 115.12,
+     "e": 115.52,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 115.52,
+     "e": 115.62,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 115.62,
+     "e": 115.74,
+     "emph": false
+    },
+    {
+     "w": "disons",
+     "s": 115.74,
+     "e": 116.1,
+     "emph": false
+    },
+    {
+     "w": "merci",
+     "s": 116.1,
+     "e": 116.82,
+     "emph": true
+    },
+    {
+     "w": "pour",
+     "s": 116.82,
+     "e": 118.22,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 118.22,
+     "e": 118.66,
+     "emph": false
+    },
+    {
+     "w": "confiance.",
+     "s": 118.66,
+     "e": 119.12,
+     "emph": true
+    }
+   ],
+   "clip": "A",
+   "src": [
+    18.64,
+    23.2
+   ]
+  },
+  {
+   "id": "V11",
+   "kind": "vo",
+   "chapter": "outro",
+   "start": 120.06,
+   "end": 123.38,
+   "text": "Bonzini Trading Cargo. Vos colis, en toute sécurité.",
+   "audio": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/explainer/audio/vo_kokoro/V11.wav",
+   "words": [
+    {
+     "w": "Bonzini",
+     "s": 120.06,
+     "e": 120.72,
+     "emph": true
+    },
+    {
+     "w": "Trading",
+     "s": 120.72,
+     "e": 121.08,
+     "emph": true
+    },
+    {
+     "w": "Cargo.",
+     "s": 121.08,
+     "e": 121.7,
+     "emph": true
+    },
+    {
+     "w": "Vos",
+     "s": 121.9,
+     "e": 122.0,
+     "emph": false
+    },
+    {
+     "w": "colis,",
+     "s": 122.0,
+     "e": 122.32,
+     "emph": true
+    },
+    {
+     "w": "en",
+     "s": 122.32,
+     "e": 122.5,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 122.5,
+     "e": 122.7,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 122.7,
+     "e": 123.24,
+     "emph": true
+    }
+   ]
+  }
+ ],
+ "shots": [
+  {
+   "start": 0.0,
+   "end": 1.2,
+   "clip": "B2",
+   "src": 11.3,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 1.2,
+   "end": 2.4,
+   "clip": "A",
+   "src": 16.0,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 2.4,
+   "end": 3.6,
+   "clip": "B",
+   "src": 4.6,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 3.6,
+   "end": 4.8,
+   "clip": "A",
+   "src": 11.4,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 4.8,
+   "end": 6.0,
+   "clip": "B2",
+   "src": 12.6,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 6.0,
+   "end": 7.2,
+   "clip": "A",
+   "src": 21.8,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 7.2,
+   "end": 13.2,
+   "clip": "B2",
+   "src": 11.0,
+   "speed": 0.45,
+   "look": "mg"
+  },
+  {
+   "start": 13.2,
+   "end": 22.8,
+   "clip": "A",
+   "src": 22.0,
+   "speed": 0.35,
+   "look": "mg"
+  },
+  {
+   "start": 22.8,
+   "end": 33.0,
+   "clip": "A",
+   "src": 16.0,
+   "speed": 0.35,
+   "look": "mg"
+  },
+  {
+   "start": 33.0,
+   "end": 45.0,
+   "clip": "B",
+   "src": 4.0,
+   "speed": 0.35,
+   "look": "mg"
+  },
+  {
+   "start": 45.0,
+   "end": 48.484,
+   "clip": "B",
+   "src": 0.0,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 48.484,
+   "end": 51.969,
+   "clip": "B2",
+   "src": 11.0,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 51.969,
+   "end": 58.369,
+   "clip": "B",
+   "src": 3.62,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 58.369,
+   "end": 64.8,
+   "clip": "B",
+   "src": 9.94,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 64.8,
+   "end": 72.295,
+   "clip": "B2",
+   "src": 3.0,
+   "speed": 0.881,
+   "look": "full"
+  },
+  {
+   "start": 72.295,
+   "end": 77.745,
+   "clip": "A",
+   "src": 0.0,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 77.745,
+   "end": 82.255,
+   "clip": "A",
+   "src": 5.55,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 82.255,
+   "end": 88.2,
+   "clip": "A",
+   "src": 9.4,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 88.2,
+   "end": 93.901,
+   "clip": "A",
+   "src": 15.6,
+   "speed": 0.859,
+   "look": "full"
+  },
+  {
+   "start": 93.901,
+   "end": 99.101,
+   "clip": "A",
+   "src": 20.4,
+   "speed": 1.0,
+   "look": "full"
+  },
+  {
+   "start": 99.101,
+   "end": 103.8,
+   "clip": "A",
+   "src": 25.6,
+   "speed": 0.3,
+   "look": "mg"
+  },
+  {
+   "start": 103.8,
+   "end": 114.6,
+   "clip": "B2",
+   "src": 11.2,
+   "speed": 0.4,
+   "look": "mg"
+  },
+  {
+   "start": 114.6,
+   "end": 119.86,
+   "clip": "A",
+   "src": 21.4,
+   "speed": 0.8555133079847901,
+   "look": "full"
+  },
+  {
+   "start": 119.86,
+   "end": 127.0,
+   "clip": "B2",
+   "src": 12.0,
+   "speed": 0.35,
+   "look": "mg"
+  }
+ ],
+ "speech": [
+  [
+   1.0,
+   6.472
+  ],
+  [
+   7.8,
+   11.737
+  ],
+  [
+   14.7,
+   21.517
+  ],
+  [
+   24.3,
+   31.94
+  ],
+  [
+   34.5,
+   43.791
+  ],
+  [
+   46.2,
+   51.569
+  ],
+  [
+   51.969,
+   57.969
+  ],
+  [
+   58.369,
+   64.149
+  ],
+  [
+   66.0,
+   71.895
+  ],
+  [
+   72.295,
+   77.345
+  ],
+  [
+   77.745,
+   81.855
+  ],
+  [
+   82.255,
+   87.551
+  ],
+  [
+   89.4,
+   93.501
+  ],
+  [
+   93.901,
+   102.881
+  ],
+  [
+   104.8,
+   113.11
+  ],
+  [
+   115.1,
+   119.66
+  ],
+  [
+   120.06,
+   123.38
+  ]
+ ]
+}

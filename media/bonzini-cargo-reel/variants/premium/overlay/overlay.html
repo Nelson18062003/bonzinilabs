@@ -1,0 +1,327 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: DM; font-weight: 500; src: url(../assets/fonts/dm-sans-latin-500-normal.woff); }
+@font-face { font-family: DM; font-weight: 700; src: url(../assets/fonts/dm-sans-latin-700-normal.woff); }
+@font-face { font-family: DM; font-weight: 800; src: url(../assets/fonts/dm-sans-latin-800-normal.woff); }
+@font-face { font-family: SG; font-weight: 400; src: url(../assets/fonts/SpaceGrotesk-400.ttf); }
+@font-face { font-family: SG; font-weight: 500; src: url(../assets/fonts/SpaceGrotesk-500.ttf); }
+@font-face { font-family: SG; font-weight: 700; src: url(../assets/fonts/SpaceGrotesk-700.ttf); }
+html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script>
+'use strict';
+// PREMIUM overlay — typography only (no HUD). Every pixel is a pure function of t = n / 30.
+const W = 1080, H = 1920, FPS = 30;
+const AMBER = '#F3A745', ORANGE = '#FE560D', VIOLET = '#A947FE', CREAM = '#FFF3E2';
+const cv = document.getElementById('c'); const ctx = cv.getContext('2d');
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H; const bctx = buf.getContext('2d');
+let CAPS = null, CONFIG = { district: '' }, LOGO = [];
+
+// ---------- math ----------
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOutCubic = x => 1 - Math.pow(1 - x, 3);
+const eOutQuint = x => 1 - Math.pow(1 - x, 5);
+const eOutExpo = x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x);
+const eInOutSine = x => -(Math.cos(Math.PI * x) - 1) / 2;
+const eInOutCubic = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eInCubic = x => x * x * x;
+// smooth in/out envelope
+function env(t, a, b, fin = .4, fout = .4) {
+  if (t <= a || t >= b) return 0;
+  return Math.min(eOutCubic(clamp((t - a) / fin)), eInOutSine(clamp((b - t) / fout)));
+}
+
+// ---------- text helpers ----------
+function setFont(c, font, ls) { c.font = font; c.letterSpacing = (ls || 0) + 'px'; }
+function measure(s, font, ls = 0) { ctx.save(); setFont(ctx, font, ls); const w = ctx.measureText(s).width - (ls || 0); ctx.restore(); return w; }
+// draw text; x is the LEFT edge unless align == 'center' (centre computed without trailing tracking)
+function text(c, s, x, y, o = {}) {
+  c.save();
+  c.globalAlpha *= (o.alpha ?? 1);
+  setFont(c, o.font, o.ls);
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+  let x0 = x;
+  if (o.align === 'center') x0 = x - (c.measureText(s).width - (o.ls || 0)) / 2;
+  if (o.align === 'right') x0 = x - (c.measureText(s).width - (o.ls || 0));
+  if (o.shadow !== false) { c.shadowColor = o.shadowColor || 'rgba(12,7,2,.55)'; c.shadowBlur = o.shadowBlur ?? 22; c.shadowOffsetY = o.shadowY ?? 3; }
+  c.fillStyle = o.color || '#fff';
+  c.fillText(s, x0, y);
+  if (o.glow) { c.shadowColor = o.glow; c.shadowBlur = o.glowBlur ?? 18; c.shadowOffsetY = 0; c.globalAlpha *= o.glowAlpha ?? .6; c.fillText(s, x0, y); }
+  c.restore();
+  return x0;
+}
+// soft-edged horizontal mask wipe: draws fn() into the buffer and keeps only x < edge
+function wiped(fn, x0, x1, p, soft = 160, dir = 1) {
+  if (p <= 0) return;
+  if (p >= 1) { fn(ctx); return; }
+  bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-over'; bctx.globalAlpha = 1;
+  bctx.clearRect(0, 0, W, H);
+  fn(bctx);
+  const e = lerp(x0 - soft, x1 + soft, p);
+  const g = dir > 0 ? bctx.createLinearGradient(e - soft, 0, e, 0) : bctx.createLinearGradient(e + soft, 0, e, 0);
+  g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  bctx.globalCompositeOperation = 'destination-in';
+  bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
+  bctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(buf, 0, 0);
+}
+function hRule(x, y, w, alpha = 1, h = 2, fadeL = false, fadeR = true) {
+  if (w <= .5 || alpha <= 0) return;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  const g = ctx.createLinearGradient(x, 0, x + w, 0);
+  g.addColorStop(0, fadeL ? 'rgba(243,167,69,0)' : AMBER);
+  g.addColorStop(fadeL ? .5 : .75, AMBER);
+  g.addColorStop(1, fadeR ? 'rgba(254,86,13,0)' : ORANGE);
+  ctx.shadowColor = 'rgba(243,167,69,.6)'; ctx.shadowBlur = 8;
+  ctx.fillStyle = g; ctx.fillRect(x, y - h / 2, w, h); ctx.restore();
+}
+// soft elliptical darkening (legibility without boxes)
+function scrim(cx, cy, rx, ry, a) {
+  if (a <= 0) return;
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(rx / ry, 1);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+  g.addColorStop(0, `rgba(10,6,2,${a})`); g.addColorStop(.55, `rgba(10,6,2,${a * .6})`); g.addColorStop(1, 'rgba(10,6,2,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, ry, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+
+// ---------- 1. opening title (synced to "Voilà, chers clients de Bonzini Trading Cargo.") ----------
+function openingTitle(t) {
+  if (t > 3.9) return;
+  const out = 1 - eInOutSine(prog(t, 3.18, 3.72));
+  if (out <= 0) return;
+  const lift = -26 * eInOutSine(prog(t, 3.18, 3.72));
+  ctx.save(); ctx.globalAlpha = out;
+  if (t > 3.18) ctx.filter = `blur(${(6 * prog(t, 3.18, 3.72)).toFixed(2)}px)`;
+  scrim(540, 790, 620, 360, .56 * eOutCubic(prog(t, 0.0, 0.8)));
+  // kicker, word by word as spoken
+  const K = CAPS.hook_title.words.slice(0, 4);                // Voilà, chers clients de
+  const kf = '500 44px SG', kls = 3;
+  const sp = measure(' ', kf, kls) + kls;
+  const ws = K.map(w => measure(w.w, kf, kls));
+  const tot = ws.reduce((a, b) => a + b, 0) + sp * (K.length - 1);
+  let x = 540 - tot / 2;
+  K.forEach((w, i) => {
+    const a = eOutCubic(prog(t, Math.max(w.s, .12), Math.max(w.s, .12) + .45));
+    text(ctx, w.w, x, 650 + lift + 12 * (1 - a), { font: kf, ls: kls, color: CREAM, alpha: .92 * a });
+    x += ws[i] + sp;
+  });
+  // BONZINI: soft mask wipe + tracking settle
+  const bp = prog(t, 1.90, 2.62);
+  const bls = lerp(46, 14, eOutQuint(prog(t, 1.90, 3.1)));
+  const bf = '800 158px DM';
+  if (bp > 0) {
+    const bw = measure('BONZINI', bf, bls);
+    wiped(c => {
+      const g = c.createLinearGradient(0, 700, 0, 830); g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, '#FFE7C4');
+      text(c, 'BONZINI', 540, 818 + lift, { font: bf, ls: bls, color: g, align: 'center', shadowBlur: 34, shadowColor: 'rgba(12,7,2,.5)' });
+    }, 540 - bw / 2, 540 + bw / 2, eOutCubic(bp), 220);
+  }
+  // TRADING CARGO, word by word
+  const tf = '700 42px DM', tls = 19;
+  const tw1 = measure('TRADING', tf, tls), tw2 = measure('CARGO', tf, tls), tsp = measure(' ', tf, tls) + tls;
+  const ttot = tw1 + tsp + tw2;
+  const x1 = 540 - ttot / 2;
+  const a1 = eOutCubic(prog(t, 2.44, 2.9)), a2 = eOutCubic(prog(t, 2.84, 3.3));
+  text(ctx, 'TRADING', x1, 896 + lift + 10 * (1 - a1), { font: tf, ls: tls, color: AMBER, alpha: a1 });
+  text(ctx, 'CARGO', x1 + tw1 + tsp, 896 + lift + 10 * (1 - a2), { font: tf, ls: tls, color: AMBER, alpha: a2 });
+  // thin rule
+  const rw = 240 * eOutQuint(prog(t, 2.7, 3.4));
+  hRule(540 - rw / 2, 946 + lift, rw, 1, 2, true, true);
+  ctx.restore();
+}
+
+// ---------- 2. chapter titles (lower-left, thin amber rule) ----------
+const CHAPTERS = [
+  { n: '01', title: 'L’arrivée', sub: null, a: 3.72, b: 7.45 },
+  { n: '02', title: 'Le déchargement', sub: null, a: 10.02, b: 12.30 },
+  { n: '03', title: 'L’entrepôt', sub: 'Bonzini Trading Cargo', a: 16.28, b: 20.10 },
+  { n: '04', title: 'Le retrait', sub: 'Foyer Balengou', a: 25.86, b: 32.95 },
+];
+const CX = 92, CY = 1030;
+function chapters(t) {
+  for (const c of CHAPTERS) {
+    if (t < c.a || t > c.b) continue;
+    const fo = 1 - eInOutSine(prog(t, c.b - .55, c.b));            // exit
+    const drift = -8 * prog(t, c.a, c.b);                          // imperceptible slow drift
+    ctx.save(); ctx.globalAlpha = fo;
+    if (fo < 1) ctx.filter = `blur(${(4 * (1 - fo)).toFixed(2)}px)`;
+    scrim(CX + 250, CY - 20, 470, 190, .34 * eOutCubic(prog(t, c.a, c.a + .6)));
+    // number + rule
+    const na = eOutCubic(prog(t, c.a, c.a + .5));
+    text(ctx, c.n, CX + drift, CY - 94, { font: '500 31px SG', ls: 6, color: AMBER, alpha: na, shadowBlur: 12 });
+    const rw = 120 * eOutQuint(prog(t, c.a + .08, c.a + .9)) + 40 * (1 - fo);
+    hRule(CX + 60 + drift, CY - 104, rw, na, 2, false, true);
+    // title: soft wipe + tracking settle
+    const tf = '700 80px DM';
+    const ls = lerp(22, 1, eOutQuint(prog(t, c.a + .12, c.a + 1.5))) + 6 * (1 - fo);
+    const tw = measure(c.title, tf, ls);
+    wiped(cx => text(cx, c.title, CX + drift, CY, { font: tf, ls, color: '#fff', shadowBlur: 26 }),
+      CX, CX + tw, eOutCubic(prog(t, c.a + .12, c.a + 1.05)), 180);
+    if (c.sub) {
+      const sa = eOutCubic(prog(t, c.a + .55, c.a + 1.2));
+      text(ctx, c.sub, CX + drift + 2, CY + 54 + 8 * (1 - sa), { font: '500 34px SG', ls: lerp(9, 2, eOutQuint(prog(t, c.a + .55, c.a + 1.8))), color: CREAM, alpha: .92 * sa });
+    }
+    ctx.restore();
+  }
+}
+
+// ---------- 3. captions (sentence case, 1–2 lines, phrase fade/rise, spoken word brightens) ----------
+const CAP_FONT = '700 62px DM', CAP_LS = .5, CAP_Y = 1276, CAP_LH = 78, CAP_MAXW = 860;
+const KEY = w => /^(sécurité|confiance)/i.test(w);
+function layoutPage(p) {
+  if (p._lay) return p._lay;
+  const sp = measure(' ', CAP_FONT, CAP_LS) + CAP_LS;
+  const ws = p.words.map(w => measure(w.w, CAP_FONT, CAP_LS));
+  const total = ws.reduce((a, b) => a + b, 0) + sp * (ws.length - 1);
+  let lines = [[...p.words.keys()]];
+  if (total > CAP_MAXW && p.words.length > 1) {        // balanced two-line split
+    let best = null;
+    for (let k = 1; k < p.words.length; k++) {
+      const w1 = ws.slice(0, k).reduce((a, b) => a + b, 0) + sp * (k - 1);
+      const w2 = ws.slice(k).reduce((a, b) => a + b, 0) + sp * (ws.length - k - 1);
+      const sc = Math.max(w1, w2) + (w2 < w1 ? 0 : 30);  // prefer the longer line on top
+      if (!best || sc < best.sc) best = { k, sc };
+    }
+    lines = [[...Array(best.k).keys()], [...Array(p.words.length - best.k).keys()].map(i => i + best.k)];
+  }
+  const pos = [];
+  lines.forEach((ln, li) => {
+    const lw = ln.reduce((a, i) => a + ws[i], 0) + sp * (ln.length - 1);
+    let x = 540 - lw / 2;
+    const y = CAP_Y + (li - (lines.length - 1) / 2) * CAP_LH + 22;
+    for (const i of ln) { pos[i] = [x, y]; x += ws[i] + sp; }
+  });
+  p._lay = pos;
+  return pos;
+}
+function captions(t) {
+  if (!CAPS) return;
+  for (let pi = 0; pi < CAPS.pages.length; pi++) {
+    const p = CAPS.pages[pi];
+    if (t < p.in || t > p.out) continue;
+    const next = CAPS.pages[pi + 1];
+    const cont = next && Math.abs(next.in - p.out) < .08;
+    const ain = eOutCubic(prog(t, p.in, p.in + .34));
+    const aout = 1 - eInOutSine(prog(t, p.out - (cont ? .16 : .3), p.out));
+    const a = Math.min(ain, aout);
+    if (a <= 0) continue;
+    const rise = 18 * (1 - ain) - 6 * (1 - aout);
+    const pos = layoutPage(p);
+    p.words.forEach((w, i) => {
+      const act = prog(t, w.s - .05, w.s + .12);                 // 0 before spoken, 1 once spoken
+      const cur = act * (1 - prog(t, w.e + .05, w.e + .35));     // currently being spoken
+      let color = '#fff';
+      if (KEY(w.w)) color = act > .5 ? AMBER : '#fff';
+      const al = a * (.70 + .30 * act);
+      const x = pos[i][0], y = pos[i][1] - rise;
+      text(ctx, w.w, x, y, { font: CAP_FONT, ls: CAP_LS, color, alpha: al, shadowBlur: 24, shadowY: 3, shadowColor: 'rgba(10,6,2,.62)',
+        glow: cur > 0.02 ? (KEY(w.w) ? 'rgba(243,167,69,.9)' : 'rgba(255,226,190,.75)') : null, glowBlur: 22, glowAlpha: .55 * cur });
+    });
+  }
+}
+// cinematic bottom scrim behind the caption zone (full width, very soft)
+function captionScrim(t) {
+  const a = env(t, 3.35, 39.4, .5, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const g = ctx.createLinearGradient(0, 1020, 0, 1700);
+  g.addColorStop(0, 'rgba(10,6,2,0)'); g.addColorStop(.38, 'rgba(10,6,2,.30)'); g.addColorStop(.62, 'rgba(10,6,2,.30)'); g.addColorStop(1, 'rgba(10,6,2,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 1020, W, 680); ctx.restore();
+}
+
+// ---------- 4. end card ----------
+const LX = 540, LY = 668, LS = 3.7;   // logo centre + scale (viewBox 100 -> 310 px)
+function logoClip(c) { const p = new Path2D(); for (const pc of LOGO) p.addPath(pc.path); return p; }
+function endCard(t) {
+  if (t < 39.2) return;
+  // warm glow behind the logo
+  const ga = eOutCubic(prog(t, 39.3, 40.2)) * (.85 + .15 * Math.sin((t - 40) * 1.6)) + .5 * Math.exp(-Math.max(0, t - 40) / .5) * (t >= 40 ? 1 : 0);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const gg = ctx.createRadialGradient(LX, LY, 0, LX, LY, 430);
+  gg.addColorStop(0, `rgba(243,167,69,${.20 * ga})`); gg.addColorStop(.45, `rgba(254,86,13,${.08 * ga})`); gg.addColorStop(1, 'rgba(169,71,254,0)');
+  ctx.fillStyle = gg; ctx.fillRect(LX - 440, LY - 440, 880, 880); ctx.restore();
+  // logo pieces: gentle convergence (small offsets) + fade, diagonal light-sweep reveal
+  const q = eOutQuint(prog(t, 39.25, 40.0));
+  const off = { amber: [0, -44], orange: [0, 44], wingTop: [-44, 0], wingBot: [44, 0] };
+  const rev = prog(t, 39.40, 40.0);                             // reveal wipe along the diagonal, completes on the 40.00 hit
+  bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-over'; bctx.globalAlpha = 1; bctx.clearRect(0, 0, W, H);
+  for (const piece of LOGO) {
+    const [ox, oy] = off[piece.role];
+    bctx.save(); bctx.globalAlpha = clamp(q * 1.4);
+    bctx.translate(LX + ox * (1 - q), LY + oy * (1 - q)); bctx.scale(LS, LS); bctx.translate(-50, -50);
+    bctx.shadowColor = piece.fill; bctx.shadowBlur = 30;
+    bctx.fillStyle = piece.fill; bctx.fill(piece.path);
+    bctx.shadowBlur = 0; bctx.fill(piece.path);
+    bctx.restore();
+  }
+  // diagonal reveal mask (bottom-left -> top-right); its edge carries a bright light sweep
+  const D = 220, ex = lerp(-D, D, rev < 1 ? (eInOutSine(rev) * .6 + rev * .4) : 1);
+  if (rev < 1) {
+    const mg = bctx.createLinearGradient(LX + ex - 110, LY - ex + 110, LX + ex + 110, LY - ex - 110);
+    mg.addColorStop(0, 'rgba(0,0,0,1)'); mg.addColorStop(1, 'rgba(0,0,0,0)');
+    bctx.globalCompositeOperation = 'destination-in'; bctx.fillStyle = mg; bctx.fillRect(0, 0, W, H);
+    bctx.globalCompositeOperation = 'source-over';
+  }
+  ctx.drawImage(buf, 0, 0);
+  const sweepAt = (e, strength) => {
+    const cxp = LX + e, cyp = LY - e;
+    ctx.save(); ctx.translate(LX, LY); ctx.scale(LS, LS); ctx.translate(-50, -50); ctx.clip(logoClip()); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const sg = ctx.createLinearGradient(cxp - 62, cyp + 62, cxp + 62, cyp - 62);
+    sg.addColorStop(0, 'rgba(255,240,215,0)'); sg.addColorStop(.5, `rgba(255,246,230,${strength})`); sg.addColorStop(1, 'rgba(255,240,215,0)');
+    ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = sg; ctx.fillRect(LX - 400, LY - 400, 800, 800); ctx.restore();
+  };
+  if (rev > 0 && rev < 1) sweepAt(ex - 30, .72 * Math.sin(Math.PI * rev) ** .4);
+  const post = prog(t, 40.0, 40.55);                              // the sweep carries on across the logo after the hit
+  if (post > 0 && post < 1) sweepAt(lerp(D - 30, D + 200, eOutCubic(post)), .72 * (1 - post));
+  const sh = prog(t, 41.9, 42.9);
+  if (sh > 0 && sh < 1) sweepAt(lerp(-D - 120, D + 120, eInOutCubic(sh)), .5);
+
+  // brand lockup
+  const bp = prog(t, 40.05, 41.1);
+  if (bp > 0) {
+    const bls = lerp(52, 16, eOutQuint(bp));
+    const g = ctx.createLinearGradient(0, 930, 0, 1030); g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, '#FFE6C2');
+    text(ctx, 'BONZINI', 540, 1046, { font: '800 136px DM', ls: bls, color: g, align: 'center', alpha: eOutCubic(clamp(bp * 1.6)), shadowBlur: 30 });
+  }
+  const tp = prog(t, 40.3, 41.3);
+  if (tp > 0) text(ctx, 'TRADING CARGO', 540, 1112, { font: '700 40px DM', ls: lerp(34, 18, eOutQuint(tp)), color: AMBER, align: 'center', alpha: eOutCubic(clamp(tp * 1.5)), shadowBlur: 16 });
+  const ta = eOutCubic(prog(t, 40.85, 41.45));
+  if (ta > 0) text(ctx, 'Vos colis, en toute sécurité.', 540, 1214 + 14 * (1 - ta), { font: '500 50px DM', ls: .3, color: '#fff', align: 'center', alpha: .96 * ta, shadowBlur: 20 });
+  const dw = 280 * eOutQuint(prog(t, 41.2, 41.95));
+  hRule(540 - dw / 2, 1270, dw, 1, 1.6, true, true);
+  const la = eOutCubic(prog(t, 41.4, 42.0));
+  if (la > 0) {
+    const d = (CONFIG.district || '').trim();
+    const loc = d ? `ENTREPÔT · ${d.toUpperCase()} · FOYER BALENGOU` : 'ENTREPÔT · FOYER BALENGOU';
+    text(ctx, loc, 540, 1334 + 10 * (1 - la), { font: '500 32px SG', ls: lerp(12, 6, eOutQuint(la)), color: CREAM, align: 'center', alpha: .86 * la, shadowBlur: 14 });
+  }
+  const ma = eOutCubic(prog(t, 41.8, 42.45));
+  if (ma > 0) text(ctx, 'Merci pour votre confiance.', 540, 1412 + 12 * (1 - ma), { font: '500 46px DM', ls: .4, color: AMBER, align: 'center', alpha: ma, shadowBlur: 18, glow: 'rgba(243,167,69,.5)', glowBlur: 20, glowAlpha: .35 });
+}
+
+// ---------- entry points ----------
+window.setup = (caps, config, logo) => {
+  CAPS = caps; CONFIG = config || {};
+  const roleOf = fill => fill.toUpperCase() === '#F3A745' ? 'amber' : fill.toUpperCase() === '#FE560D' ? 'orange' : 'violet';
+  const pieces = logo.map(p => ({ fill: p.fill, path: new Path2D(p.d), cy: p.cy, cx: p.cx, role: roleOf(p.fill) }));
+  const vi = pieces.filter(p => p.role === 'violet').sort((a, b) => a.cy - b.cy);
+  if (vi[0]) vi[0].role = 'wingTop'; if (vi[1]) vi[1].role = 'wingBot';
+  LOGO = pieces;
+};
+window.renderFrame = (n) => {
+  const t = n / FPS;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.globalAlpha = 1; ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'source-over';
+  captionScrim(t);
+  openingTitle(t);
+  chapters(t);
+  captions(t);
+  endCard(t);
+  return true;
+};
+</script></body></html>

@@ -1,0 +1,597 @@
+{
+ "note": "times are seconds on the final 45 s timeline; words[].emph = highlight word",
+ "hook_title": {
+  "text": "Voilà, chers clients de Bonzini Trading Cargo.",
+  "in": 0.0,
+  "out": 3.3,
+  "words": [
+   {
+    "w": "Voilà,",
+    "s": 0.0,
+    "e": 0.38
+   },
+   {
+    "w": "chers",
+    "s": 0.4,
+    "e": 0.9
+   },
+   {
+    "w": "clients",
+    "s": 0.9,
+    "e": 1.7
+   },
+   {
+    "w": "de",
+    "s": 1.72,
+    "e": 1.92
+   },
+   {
+    "w": "Bonzini",
+    "s": 1.94,
+    "e": 2.46
+   },
+   {
+    "w": "Trading",
+    "s": 2.46,
+    "e": 2.84
+   },
+   {
+    "w": "Cargo.",
+    "s": 2.86,
+    "e": 3.18
+   }
+  ]
+ },
+ "pages": [
+  {
+   "text": "Voici votre conteneur",
+   "clip": "B",
+   "words": [
+    {
+     "w": "Voici",
+     "s": 3.72,
+     "e": 4.38,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 4.38,
+     "e": 4.62,
+     "emph": false
+    },
+    {
+     "w": "conteneur",
+     "s": 4.62,
+     "e": 5.2,
+     "emph": true
+    }
+   ],
+   "in": 3.64,
+   "out": 5.12
+  },
+  {
+   "text": "qui arrive dans notre entrepôt",
+   "clip": "B",
+   "words": [
+    {
+     "w": "qui",
+     "s": 5.2,
+     "e": 5.44,
+     "emph": false
+    },
+    {
+     "w": "arrive",
+     "s": 5.44,
+     "e": 5.8,
+     "emph": false
+    },
+    {
+     "w": "dans",
+     "s": 5.8,
+     "e": 6.7,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 6.7,
+     "e": 6.96,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 6.96,
+     "e": 7.7,
+     "emph": true
+    }
+   ],
+   "in": 5.12,
+   "out": 7.62
+  },
+  {
+   "text": "en toute sécurité.",
+   "clip": "B",
+   "words": [
+    {
+     "w": "en",
+     "s": 7.7,
+     "e": 8.38,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 8.38,
+     "e": 8.68,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 8.68,
+     "e": 9.36,
+     "emph": true
+    }
+   ],
+   "in": 7.62,
+   "out": 9.91
+  },
+  {
+   "text": "Il sera déchargé ici,",
+   "clip": "B",
+   "words": [
+    {
+     "w": "Il",
+     "s": 10.04,
+     "e": 10.7,
+     "emph": false
+    },
+    {
+     "w": "sera",
+     "s": 10.7,
+     "e": 10.96,
+     "emph": false
+    },
+    {
+     "w": "déchargé",
+     "s": 10.96,
+     "e": 11.78,
+     "emph": true
+    },
+    {
+     "w": "ici,",
+     "s": 11.78,
+     "e": 12.1,
+     "emph": false
+    }
+   ],
+   "in": 9.96,
+   "out": 12.16
+  },
+  {
+   "text": "dans notre entrepôt",
+   "clip": "B",
+   "words": [
+    {
+     "w": "dans",
+     "s": 12.24,
+     "e": 13.38,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 13.38,
+     "e": 13.74,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 13.74,
+     "e": 14.46,
+     "emph": true
+    }
+   ],
+   "in": 12.16,
+   "out": 14.38
+  },
+  {
+   "text": "en toute sécurité.",
+   "clip": "B",
+   "words": [
+    {
+     "w": "en",
+     "s": 14.46,
+     "e": 14.66,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 14.66,
+     "e": 14.92,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 14.92,
+     "e": 15.46,
+     "emph": true
+    }
+   ],
+   "in": 14.38,
+   "out": 15.92
+  },
+  {
+   "text": "Voilà, très chers clients,",
+   "clip": "A",
+   "words": [
+    {
+     "w": "Voilà,",
+     "s": 16.0,
+     "e": 16.38,
+     "emph": false
+    },
+    {
+     "w": "très",
+     "s": 16.44,
+     "e": 16.66,
+     "emph": false
+    },
+    {
+     "w": "chers",
+     "s": 16.66,
+     "e": 16.98,
+     "emph": false
+    },
+    {
+     "w": "clients,",
+     "s": 16.98,
+     "e": 17.28,
+     "emph": false
+    }
+   ],
+   "in": 16.12,
+   "out": 17.46
+  },
+  {
+   "text": "nous sommes ici à l'entrepôt",
+   "clip": "A",
+   "words": [
+    {
+     "w": "nous",
+     "s": 17.54,
+     "e": 17.82,
+     "emph": false
+    },
+    {
+     "w": "sommes",
+     "s": 17.82,
+     "e": 18.04,
+     "emph": false
+    },
+    {
+     "w": "ici",
+     "s": 18.04,
+     "e": 18.3,
+     "emph": false
+    },
+    {
+     "w": "à",
+     "s": 18.3,
+     "e": 18.54,
+     "emph": false
+    },
+    {
+     "w": "l'entrepôt",
+     "s": 18.54,
+     "e": 19.14,
+     "emph": false
+    }
+   ],
+   "in": 17.46,
+   "out": 19.06
+  },
+  {
+   "text": "de Bonzini Trading Cargo.",
+   "clip": "A",
+   "words": [
+    {
+     "w": "de",
+     "s": 19.14,
+     "e": 19.26,
+     "emph": false
+    },
+    {
+     "w": "Bonzini",
+     "s": 19.26,
+     "e": 19.84,
+     "emph": true
+    },
+    {
+     "w": "Trading",
+     "s": 19.84,
+     "e": 20.12,
+     "emph": true
+    },
+    {
+     "w": "Cargo.",
+     "s": 20.12,
+     "e": 20.8,
+     "emph": true
+    }
+   ],
+   "in": 19.06,
+   "out": 21.35
+  },
+  {
+   "text": "Vos colis ont été déchargés",
+   "clip": "A",
+   "words": [
+    {
+     "w": "Vos",
+     "s": 21.74,
+     "e": 22.06,
+     "emph": false
+    },
+    {
+     "w": "colis",
+     "s": 22.06,
+     "e": 22.44,
+     "emph": true
+    },
+    {
+     "w": "ont",
+     "s": 22.44,
+     "e": 22.62,
+     "emph": false
+    },
+    {
+     "w": "été",
+     "s": 22.62,
+     "e": 22.9,
+     "emph": false
+    },
+    {
+     "w": "déchargés",
+     "s": 22.9,
+     "e": 23.96,
+     "emph": true
+    }
+   ],
+   "in": 21.66,
+   "out": 23.88
+  },
+  {
+   "text": "en toute sécurité.",
+   "clip": "A",
+   "words": [
+    {
+     "w": "en",
+     "s": 23.96,
+     "e": 24.44,
+     "emph": false
+    },
+    {
+     "w": "toute",
+     "s": 24.44,
+     "e": 24.7,
+     "emph": false
+    },
+    {
+     "w": "sécurité.",
+     "s": 24.7,
+     "e": 25.16,
+     "emph": true
+    }
+   ],
+   "in": 23.88,
+   "out": 25.71
+  },
+  {
+   "text": "Et nous vous attendons",
+   "clip": "A",
+   "words": [
+    {
+     "w": "Et",
+     "s": 25.8,
+     "e": 26.44,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 26.44,
+     "e": 26.86,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 26.86,
+     "e": 27.0,
+     "emph": false
+    },
+    {
+     "w": "attendons",
+     "s": 27.0,
+     "e": 27.72,
+     "emph": false
+    }
+   ],
+   "in": 25.72,
+   "out": 27.64
+  },
+  {
+   "text": "dans notre entrepôt ici,",
+   "clip": "A",
+   "words": [
+    {
+     "w": "dans",
+     "s": 27.72,
+     "e": 28.3,
+     "emph": false
+    },
+    {
+     "w": "notre",
+     "s": 28.3,
+     "e": 28.54,
+     "emph": false
+    },
+    {
+     "w": "entrepôt",
+     "s": 28.54,
+     "e": 29.08,
+     "emph": true
+    },
+    {
+     "w": "ici,",
+     "s": 29.08,
+     "e": 29.32,
+     "emph": false
+    }
+   ],
+   "in": 27.64,
+   "out": 29.87
+  },
+  {
+   "text": "au niveau du foyer Balengou,",
+   "clip": "A",
+   "words": [
+    {
+     "w": "au",
+     "s": 30.68,
+     "e": 31.36,
+     "emph": false
+    },
+    {
+     "w": "niveau",
+     "s": 31.36,
+     "e": 31.52,
+     "emph": false
+    },
+    {
+     "w": "du",
+     "s": 31.52,
+     "e": 31.64,
+     "emph": false
+    },
+    {
+     "w": "foyer",
+     "s": 31.64,
+     "e": 31.88,
+     "emph": false
+    },
+    {
+     "w": "Balengou,",
+     "s": 31.88,
+     "e": 32.4,
+     "emph": true
+    }
+   ],
+   "in": 30.6,
+   "out": 32.92
+  },
+  {
+   "text": "pour le retrait de vos colis.",
+   "clip": "A",
+   "words": [
+    {
+     "w": "pour",
+     "s": 33.0,
+     "e": 33.32,
+     "emph": false
+    },
+    {
+     "w": "le",
+     "s": 33.32,
+     "e": 33.52,
+     "emph": false
+    },
+    {
+     "w": "retrait",
+     "s": 33.52,
+     "e": 34.0,
+     "emph": false
+    },
+    {
+     "w": "de",
+     "s": 34.0,
+     "e": 34.1,
+     "emph": false
+    },
+    {
+     "w": "vos",
+     "s": 34.1,
+     "e": 34.24,
+     "emph": false
+    },
+    {
+     "w": "colis.",
+     "s": 34.24,
+     "e": 34.58,
+     "emph": true
+    }
+   ],
+   "in": 32.92,
+   "out": 34.58
+  },
+  {
+   "text": "Et nous vous disons merci",
+   "clip": "A",
+   "words": [
+    {
+     "w": "Et",
+     "s": 34.66,
+     "e": 35.06,
+     "emph": false
+    },
+    {
+     "w": "nous",
+     "s": 35.06,
+     "e": 35.16,
+     "emph": false
+    },
+    {
+     "w": "vous",
+     "s": 35.16,
+     "e": 35.28,
+     "emph": false
+    },
+    {
+     "w": "disons",
+     "s": 35.28,
+     "e": 35.64,
+     "emph": false
+    },
+    {
+     "w": "merci",
+     "s": 35.64,
+     "e": 36.36,
+     "emph": true
+    }
+   ],
+   "in": 34.58,
+   "out": 36.28
+  },
+  {
+   "text": "pour votre confiance.",
+   "clip": "A",
+   "words": [
+    {
+     "w": "pour",
+     "s": 36.36,
+     "e": 37.76,
+     "emph": false
+    },
+    {
+     "w": "votre",
+     "s": 37.76,
+     "e": 38.2,
+     "emph": false
+    },
+    {
+     "w": "confiance.",
+     "s": 38.2,
+     "e": 38.66,
+     "emph": true
+    }
+   ],
+   "in": 36.28,
+   "out": 39.21
+  }
+ ]
+}

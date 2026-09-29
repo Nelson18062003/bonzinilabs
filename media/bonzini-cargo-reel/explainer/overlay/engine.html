@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Orbitron; font-weight: 700; src: url(../../reel/assets/fonts/Orbitron-700.ttf); }
+@font-face { font-family: Orbitron; font-weight: 900; src: url(../../reel/assets/fonts/Orbitron-900.ttf); }
+@font-face { font-family: Chakra; font-weight: 500; src: url(../../reel/assets/fonts/ChakraPetch-500.ttf); }
+@font-face { font-family: Chakra; font-weight: 600; src: url(../../reel/assets/fonts/ChakraPetch-600.ttf); }
+@font-face { font-family: Chakra; font-weight: 700; src: url(../../reel/assets/fonts/ChakraPetch-700.ttf); }
+@font-face { font-family: Mono; font-weight: 500; src: url(../../reel/assets/fonts/JetBrainsMono-500.ttf); }
+@font-face { font-family: Mono; font-weight: 700; src: url(../../reel/assets/fonts/JetBrainsMono-700.ttf); }
+@font-face { font-family: Grotesk; font-weight: 500; src: url(../../reel/assets/fonts/SpaceGrotesk-500.ttf); }
+@font-face { font-family: Grotesk; font-weight: 700; src: url(../../reel/assets/fonts/SpaceGrotesk-700.ttf); }
+@font-face { font-family: DMSans; font-weight: 500; src: url(../../reel/assets/fonts/dm-sans-latin-500-normal.woff); }
+@font-face { font-family: DMSans; font-weight: 700; src: url(../../reel/assets/fonts/dm-sans-latin-700-normal.woff); }
+@font-face { font-family: DMSans; font-weight: 800; src: url(../../reel/assets/fonts/dm-sans-latin-800-normal.woff); }
+html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="lib.js"></script>
+<script>
+window.setup = (timeline, config, logo) => {
+  TL.data = timeline; CONFIG = config || {};
+  const pieces = logo.map(p => ({ fill: p.fill, path: new Path2D(p.d), cy: p.cy,
+    role: p.fill.toUpperCase() === '#F3A745' ? 'amber' : p.fill.toUpperCase() === '#FE560D' ? 'orange' : 'violet' }));
+  const vi = pieces.filter(p => p.role === 'violet').sort((a, b) => a.cy - b.cy);
+  if (vi[0]) vi[0].role = 'wingTop'; if (vi[1]) vi[1].role = 'wingBot';
+  LOGO = pieces;
+  return SCENES.map(s => s.id);
+};
+window.renderFrame = (n) => {
+  const t = n / FPS;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H); ctx.globalAlpha = 1; ctx.filter = 'none';
+  for (const s of SCENES) {
+    if (s.when && !s.when(t)) continue;
+    ctx.save();
+    try { s.draw(t, n); } catch (e) { console.error('scene', s.id, e); throw e; }
+    ctx.restore();
+  }
+  return true;
+};
+</script>
+<!-- scene files are injected by render.mjs (every overlay/scenes/*.js, sorted by name) -->
+</body></html>
