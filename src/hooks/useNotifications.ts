@@ -20,7 +20,7 @@ export type NotificationType =
   // Cargo : du devis au retrait (phases 1–5)
   | 'parcel_quote_sent' | 'parcel_payment_received' | 'parcel_invoice_issued' | 'parcel_departed' | 'parcel_arrived' | 'parcel_ready' | 'parcel_released'
   // Douane : le commissionnaire agréé a signé, demande une précision, ou a relu une DAU
-  | 'customs_classification_signed' | 'customs_classification_needs_info' | 'customs_audit_reviewed'
+  | 'customs_classification_signed' | 'customs_classification_needs_info' | 'customs_audit_reviewed' | 'customs_notice'
   | 'deposit_validated'
   | 'deposit_rejected'
   | 'deposit_correction_needed'
@@ -50,6 +50,8 @@ export interface Notification {
     /** Douane : la fiche de classement ou l'audit concerné. */
     classification_id?: string;
     audit_id?: string;
+    /** Veille douane : l'avis concerné. */
+    slug?: string;
   };
   is_read: boolean;
   created_at: string;
@@ -158,5 +160,6 @@ export function getNotificationPath(notification: Notification): string {
   // Douane : la fiche signée ou la question du commissionnaire ; l'audit relu.
   if (type.startsWith('customs_classification_') && metadata.classification_id) return `/douane/classer/${metadata.classification_id}`;
   if (type.startsWith('customs_audit_') && metadata.audit_id) return `/douane/audit/${metadata.audit_id}`;
+  if (type === 'customs_notice') return metadata.slug ? `/douane/veille#${metadata.slug}` : '/douane/veille';
   return '/notifications';
 }

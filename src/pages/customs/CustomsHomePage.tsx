@@ -5,7 +5,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calculator, FileSearch, ScanLine, Search } from 'lucide-react';
+import { BellRing, Calculator, FileSearch, ScanLine, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -53,6 +53,12 @@ export function CustomsHomePage({ variant = 'client', desktop = false }: { varia
               onClick={() => navigate('/douane/audit')}
             />
           )}
+          <ListRow
+            leading={<Holder icon={BellRing} />}
+            title={t('hub.watchTitle')}
+            subtitle={t('hub.watchDesc')}
+            onClick={() => navigate(`${base}/veille`)}
+          />
           <ListRow
             leading={<Holder icon={Calculator} />}
             title={t('hub.simulatorTitle')}

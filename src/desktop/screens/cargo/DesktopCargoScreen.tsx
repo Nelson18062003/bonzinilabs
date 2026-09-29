@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Download, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { DesktopCargoParts } from '@/components/cargo/CargoParts';
+import { DisruptionStrip } from '@/components/cargo/DisruptionStrip';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments } from '@/hooks/useCargo';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -107,6 +108,8 @@ export function DesktopCargoScreen() {
     <div className="flex min-h-[calc(100vh-120px)] flex-col">
       {/* ── Les deux parties du module : Container (ici) · Réception ────── */}
       <DesktopCargoParts active="container" className="mb-4" />
+      {/* La veille douane : ce qui touche la flotte (congés en Chine, port, corridor). */}
+      <DisruptionStrip shipments={data ?? []} className="mb-4 max-w-3xl px-0 pt-0" />
 
       {/* ── En-tête de page ─────────────────────────────────────────────── */}
       <header className="flex flex-wrap items-end justify-between gap-4">

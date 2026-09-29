@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { customsKeys } from '@/lib/queryKeys';
 import type { AuditRecord, Classification, ClientCard } from '@/lib/customs/files';
+import type { Notice } from '@/lib/customs/notices';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -183,5 +184,39 @@ export function useAdminReadDau(id: string | undefined) {
       return data;
     },
     onSettled: refresh,
+  });
+}
+
+// ─── La veille (étape 6) ────────────────────────────────────────────────────
+
+/** Tous les avis, brouillons compris (RLS : canViewCustoms). */
+export function useAdminNotices(enabled = true) {
+  return useQuery({
+    queryKey: customsKeys.notices('admin'),
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('customs_notices' as never).select('*').order('starts_on', { ascending: false, nullsFirst: false }).limit(200);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as unknown as Notice[];
+    },
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export type NoticeDraft = Omit<Notice, 'id' | 'published_at' | 'created_at' | 'updated_at'>;
+
+export function useUpsertNotice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (n: NoticeDraft) => rpcJson<{ id: string; published: boolean; notified: number }>('customs_notice_upsert', { p_notice: n }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: [...customsKeys.all, 'notices'] }); },
+  });
+}
+
+export function useArchiveNotice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => rpcJson('customs_notice_archive', { p_id: id }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: [...customsKeys.all, 'notices'] }); },
   });
 }

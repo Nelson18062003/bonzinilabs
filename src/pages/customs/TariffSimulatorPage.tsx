@@ -29,6 +29,7 @@ import { CustomsShell, StepTitle, type CustomsVariant } from './shared';
 import { ratePct, xaf } from './format';
 import { ProductPicker } from './components/ProductPicker';
 import { SimulationResult } from './components/SimulationResult';
+import { CodeNotices } from './components/CodeNotices';
 import { lineTitle, rateLabel } from './components/lineText';
 
 const CURRENCIES: Currency[] = ['CNY', 'USD', 'EUR', 'XAF'];
@@ -170,6 +171,7 @@ export function TariffSimulatorPage({ variant = 'client', desktop = false }: { v
         ) : (
           <>
             <SimulationResult sim={sim} tariff={line} />
+            <CodeNotices code={line.code} variant={variant} />
 
             {/* Comparer deux codes : la version camerounaise du « comparer les origines » de Flexport. */}
             <Card className="space-y-3">

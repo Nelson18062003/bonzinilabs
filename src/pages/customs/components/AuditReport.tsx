@@ -14,7 +14,7 @@ import { Button, Card, Fold, Holder, Line, StatusPill, SURFACE, TEXT, TYPE, type
 import { formatHs } from '@/lib/customs/hsCode';
 import { daysUntil, type ArticleAudit, type AuditResult, type DauExtraction, type Finding, type Route } from '@/lib/customs/audit';
 import { ConfidenceDot } from '../shared';
-import { isSure, xaf } from '../format';
+import { isSure, longDate, xaf } from '../format';
 import { useFindingText } from '../useCustomsText';
 
 const ROUTE_TONE: Record<Route, Tone> = { claim: 'success', reclassify: 'info', risk: 'pending', check: 'neutral' };
@@ -25,7 +25,6 @@ function RoutePill({ route }: { route: Route }) {
   return <StatusPill tone={ROUTE_TONE[route]} label={t(`audit.route.${route}`, { defaultValue: ROUTE_FR[route] })} />;
 }
 
-const longDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 /** Les trois sommes, et ce qu'on en fait. */
 export function AuditSummary({ result, ext }: { result: AuditResult; ext: DauExtraction }) {

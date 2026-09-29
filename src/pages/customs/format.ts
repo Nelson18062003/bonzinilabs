@@ -16,3 +16,10 @@ export const ratePct = (rate: number) =>
 
 /** Vert : officiel ou vérifié sur une DAU. Ambre : estimé ou à confirmer. */
 export const isSure = (c: Confidence) => c === 'officiel' || c === 'observe';
+
+/** « 1er octobre 2026 », « 17 septembre 2029 » — une date AAAA-MM-JJ, dans la langue de l'écran. */
+export const longDate = (iso: string, year = true) => {
+  const locale = getCurrentLocale();
+  const s = new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' });
+  return locale.startsWith('fr') ? s.replace(/^1 /, '1er ') : s;
+};

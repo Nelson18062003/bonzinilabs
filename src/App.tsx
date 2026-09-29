@@ -50,6 +50,7 @@ const CustomsReviewPage = lazy(() => import("./pages/customs/ReviewPage").then(m
 const AuditHomePage = lazy(() => import("./pages/customs/AuditHomePage").then(m => ({ default: m.AuditHomePage })));
 const AuditPage = lazy(() => import("./pages/customs/AuditPage").then(m => ({ default: m.AuditPage })));
 const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").then(m => ({ default: m.AuditReviewPage })));
+const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => ({ default: m.NoticesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -261,6 +262,8 @@ const App = () => (
                 {/* Douane — public : un lien de simulation partagé s'ouvre sans compte. */}
                 <Route path="/douane" element={<CustomsHomePage />} />
                 <Route path="/douane/simulateur" element={<TariffSimulatorPage />} />
+                {/* La veille : publique, comme le simulateur. */}
+                <Route path="/douane/veille" element={<NoticesPage />} />
                 {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
                 <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
                 <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
@@ -347,6 +350,7 @@ const App = () => (
                 <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />

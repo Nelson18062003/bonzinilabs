@@ -81,4 +81,5 @@ export const customsKeys = {
   classification: (id: string | undefined) => [...customsKeys.all, 'classification', id] as const,
   queue: () => [...customsKeys.all, 'queue'] as const,
   audit: (id: string | undefined) => [...customsKeys.all, 'audit', id] as const,
+  notices: (scope: 'public' | 'admin') => [...customsKeys.all, 'notices', scope] as const,
 };
