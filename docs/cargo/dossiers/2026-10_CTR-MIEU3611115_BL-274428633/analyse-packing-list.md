@@ -1,7 +1,9 @@
 # Conteneur MIEU3611115 — BL 274428633
 
-> Premier dossier confié à CITRA SA. Arrivée annoncée **11 octobre 2026**.
-> Plombage `ML-CN4930771`, daté du **26/08/2026**.
+> Dossier confié le 29/09/2026 à la déclarante **Cynthia AKAH** (CITRA avait coté le dossier).
+> **Arrivée confirmée par Maersk : vendredi 02/10/2026 à 22:00, heure de Kribi.** Voir `00_URGENCE_plan-arrivee-kribi.md`.
+> Plomb `ML-CN4930771`. La packing list porte « date:8/26 » : à lire « août 2026 ». Le conteneur a été
+> chargé à bord le 15/08, un plombage le 26/08 serait impossible. *(Correction du 29/09 : nous avions écrit « 26/08/2026 ».)*
 > Packing list reçue en chinois uniquement, **sans aucune valeur**.
 >
 > ⚠️ Données commerciales. Dépôt privé, ne pas diffuser.
@@ -10,7 +12,11 @@
 
 # CE QU'IL Y A DEDANS
 
-**81 colis · 58,56 CBM · 14 lignes, dont 3 véhicules.**
+**85 colis en additionnant les lignes · 58,56 CBM · 14 lignes, dont 3 véhicules.**
+
+> ⚠️ *Correction du 29/09.* La packing list affiche **81** parce que sa formule `=SUM(C9:C18)` oublie
+> 4 lignes. La vraie somme est **85**. Le BL porte **80**. Trois chiffres différents pour le même
+> conteneur : à faire recompter et corriger par le chargeur avant la déclaration.
 
 | # | Libellé chinois | Traduction | Colis | CBM |
 |---|---|---|---|---|
@@ -20,7 +26,7 @@
 | 4 | 机械配件 | pièces mécaniques | 1 | 0,245 |
 | 5 | 洗衣机 | machine à laver | 1 | 1,560 |
 | 6 | 柜子 | meuble de rangement | 1 | 2,500 |
-| 7 | U型双杆拱桥（金属配件） | étriers métalliques en U, double tige | 50 | 0,900 |
+| 7 | U型双杆拱桥（金属配件） | **étendoirs à linge** en U, double barre (晾衣架 lu sur le carton) | 50 | 0,900 |
 | 8 | 衣服 | vêtements | 1 | 5,980 |
 | 9 | 锌板 | **tôles de zinc** | 7 | 3,200 |
 | 10 | 鞋子 | chaussures | 1 | 0,940 |
@@ -28,7 +34,7 @@
 | **12** | 丰田雅力士 | **TOYOTA YARIS** | 1 | 9,820 |
 | **13** | 丰田 RAV4 | **TOYOTA RAV4** | 1 | 14,081 |
 | **14** | 哈弗 | **HAVAL** *(Great Wall)* | 1 | 14,723 |
-| | | **TOTAL** | **81** | **58,559** |
+| | | **TOTAL** | **85** *(81 affiché)* | **58,559** |
 
 **Les trois véhicules occupent 38,62 CBM, soit 66 % du conteneur.** Les marchandises
 diverses n'en représentent que 19,94.
@@ -53,9 +59,14 @@ dimensions hors-tout de chaque modèle, au centième près :
 
 | | CBM déclaré | Dimensions du modèle | Volume calculé |
 |---|---|---|---|
-| Yaris | 9,820 | 3 750 × 1 695 × 1 530 | 9,72 |
-| RAV4 | 14,081 | 4 570 × 1 845 × 1 670 | **14,08** |
-| Haval H6 | 14,723 | 4 640 × 1 825 × 1 735 | 14,69 |
+| Yaris | 9,820 | 3 750 × 1 695 × 1 545 | **9,82** |
+| RAV4 | 14,081 | 4 570 × 1 845 × 1 670 | 14,08 |
+| Haval H6 Sport | 14,723 | 4 649 × 1 852 × 1 710 | **14,72** |
+
+> *Correction du 29/09.* Les cotes Yaris et Haval de la première version étaient fausses ; celles
+> ci-dessus tombent au centième. Pour la RAV4, 1 670 mm est la hauteur des versions 2.0 L. La
+> version 2.5 L 4x4 que désigne le VIN mesure 1 715 mm, soit **14,46 CBM** : le groupeur a pris
+> des cotes génériques. Sans effet sur la taxation, mais à ne pas recopier dans une déclaration.
 
 L'identification est solide. **Les trois sont de fabrication chinoise** — origine
 Chine, provenance Chine, pas de divergence entre les deux cases.
@@ -136,13 +147,15 @@ est régularisable.
 
 ## 2. Le poids déclaré est incohérent
 
-La packing list porte **22 170 kg en poids net sur la seule ligne 1** — les verres
-de lunettes, 4 CBM. Cela donnerait une densité de 5 542 kg/m³, ce qui est
-physiquement impossible.
+> *Correction du 29/09.* Nous avions écrit que 22 170 kg étaient « placés sur la seule ligne 1 ».
+> C'est faux : c'est **une cellule fusionnée (F9:F22)**, donc un **total unique** pour tout le conteneur.
 
-C'est très probablement **le poids total du conteneur placé dans la mauvaise
-cellule**. Toutes les autres lignes sont à zéro. **À faire corriger par le
-groupeur avant transmission** : une déclaration s'appuie sur des poids par ligne.
+La packing list ne donne **aucun poids par ligne**, seulement ce total de **22 170 kg**, présenté
+comme poids net. Le BL porte le même chiffre. Ce total est plausible à une condition : que les
+7 paquets de tôles (锌板) pèsent à eux seuls 12 à 16 tonnes. Rien ne prouve qu'une pesée a eu lieu.
+
+**À faire corriger par le chargeur avant la déclaration** : poids net et brut par ligne, et le
+certificat VGM (pesée du conteneur plein).
 
 ## 3. Les désignations sont trop vagues
 
@@ -178,11 +191,14 @@ client.** Il n'y a pas de filet.
 
 | Date | Événement |
 |---|---|
-| **26/08/2026** | plombage du conteneur en Chine |
+| **03/08/2026** | conteneur plein entré au terminal de Nansha (Maersk) |
+| **15/08/2026** | chargé à bord, départ de Nansha |
+| **18/09/2026** | émission du BL à Chengdu (3 originaux) |
 | **22/09/2026** | reprise du dossier par Bonzini |
-| **11/10/2026** | **arrivée annoncée** |
-| — | manifeste électronique dû **48 h avant l'arrivée** |
+| **29/09/2026** | dossier confié à Cynthia AKAH |
+| **30/09/2026 22:00** | **limite BESC et manifeste (48 h avant l'arrivée)** |
+| **02/10/2026 22:00** | **arrivée annoncée par Maersk à Kribi** *(l'ETA du 11/10 est périmée)* |
 
-**19 jours.** CITRA avait prévenu que DI et RVC se lancent *« dès l'embarquement du
+*Mise à jour du 29/09 : il ne restait plus 19 jours mais 3.* CITRA avait prévenu que DI et RVC se lancent *« dès l'embarquement du
 conteneur pour éviter les pertes de temps »*. L'embarquement est derrière nous :
 c'est le point à leur poser sans détour.
