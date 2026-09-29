@@ -14,8 +14,10 @@ set -euo pipefail
 export PGOPTIONS="-c client_min_messages=warning"
 cd "$(dirname "$0")/../.."
 
+CUSTOMS="supabase/migrations/20260929120000_customs_foundation.sql supabase/migrations/20260929130000_customs_audit_workflow.sql"
 declare -A MIGRATIONS=(
-  [customs_foundation]="supabase/migrations/20260929120000_customs_foundation.sql"
+  [customs_foundation]="$CUSTOMS"
+  [customs_audit_workflow]="$CUSTOMS"
 )
 
 suites=("$@")

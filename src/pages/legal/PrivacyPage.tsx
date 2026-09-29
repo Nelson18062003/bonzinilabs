@@ -228,9 +228,9 @@ const sections: LegalSection[] = [
             </>,
             <>
               <span style={B}>Anthropic</span> — assistant interne d'exploitation, utilisé par notre
-              équipe, et assistant de classement douanier&nbsp;: il lit la description et les photos des
-              produits que vous lui soumettez. Les données qui lui sont soumises ne servent pas à
-              entraîner de modèle.
+              équipe, et assistant douane&nbsp;: il lit la description et les photos des produits à
+              classer, et les déclarations en douane que vous lui soumettez. Les données qui lui sont
+              soumises ne servent pas à entraîner de modèle.
             </>,
             <>
               <span style={B}>Google</span> — uniquement si un membre de notre équipe se connecte à

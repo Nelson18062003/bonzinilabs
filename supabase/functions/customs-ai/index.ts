@@ -19,8 +19,18 @@
 // (public/data/customs/nomenclature-cm.v1.json) ; un code inventé est écarté.
 // Le taux de chaque candidat vient de la nomenclature, jamais du modèle.
 //
+// POST { action: "read_dau", audit_id }  (étape 5 — « Vérifier ma déclaration »)
+//   L'IA RECOPIE la DAU (PDF ou photos) article par article : code, désignation,
+//   valeur, taxes imprimées. Elle ne juge rien : le moteur de l'app
+//   (src/lib/customs/audit.ts) recalcule, et le CAD relit.
+//   Appelant : le client propriétaire, ou l'équipe (canViewCustoms).
+//   Statut : uploaded, read ou failed (ou reading bloqué depuis 7 min).
+//   Répond 202 tout de suite ; la lecture continue (EdgeRuntime.waitUntil) et
+//   écrit reading → read (extraction, n°, bureau, dates) ou failed (error).
+//
 // Fichier autonome (sans _shared) : déployable depuis l'éditeur du dashboard.
 // Secrets : ANTHROPIC_API_KEY. Optionnels : CUSTOMS_AI_MODEL, CUSTOMS_AI_EFFORT,
+// CUSTOMS_AI_READ_EFFORT (défaut medium : recopier n'est pas raisonner),
 // SITE_URL (défaut https://www.bonzinilabs.com).
 // ============================================================================
 import Anthropic from "npm:@anthropic-ai/sdk@0.129.0";
@@ -34,6 +44,11 @@ const MAX_ASSISTANT_TURNS = 30;
 /** Tours d'outils par appel (recherche, lecture d'une position) avant de conclure. */
 const MAX_TOOL_ROUNDS = 8;
 const MAX_PHOTOS = 4;
+const READ_EFFORT = (Deno.env.get("CUSTOMS_AI_READ_EFFORT") ?? "medium") as typeof EFFORT;
+/** Les pièces d'une DAU, toutes ensemble : sous la limite d'une requête (32 Mo encodés). */
+const MAX_DAU_BYTES = 18 * 1024 * 1024;
+/** Une lecture qui n'a rien écrit depuis 7 min est morte (limite d'exécution dépassée). */
+const STALE_READING_MS = 7 * 60_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -258,6 +273,12 @@ export function renderFile(c: Classification, msgs: Msg[], lang: string, hints: 
   ].filter((l) => l != null).join("\n");
 }
 
+function toBase64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
 async function photoBlocks(admin: SupabaseClient, paths: string[]): Promise<Anthropic.Beta.BetaImageBlockParam[]> {
   const out: Anthropic.Beta.BetaImageBlockParam[] = [];
   for (const path of paths.slice(0, MAX_PHOTOS)) {
@@ -265,10 +286,7 @@ async function photoBlocks(admin: SupabaseClient, paths: string[]): Promise<Anth
     if (error || !data) continue;
     const type = data.type;
     if (!["image/jpeg", "image/png", "image/webp"].includes(type) || data.size > 5 * 1024 * 1024) continue;
-    const bytes = new Uint8Array(await data.arrayBuffer());
-    let bin = "";
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    out.push({ type: "image", source: { type: "base64", media_type: type as "image/jpeg" | "image/png" | "image/webp", data: btoa(bin) } });
+    out.push({ type: "image", source: { type: "base64", media_type: type as "image/jpeg" | "image/png" | "image/webp", data: toBase64(new Uint8Array(await data.arrayBuffer())) } });
   }
   return out;
 }
@@ -352,6 +370,277 @@ export function cleanProposal(nom: Nomenclature, p: Proposal) {
   };
 }
 
+// ─── Lire une DAU (étape 5) ──────────────────────────────────────────────────
+
+const READ_SYSTEM = `Tu lis des déclarations en douane camerounaises (DAU imprimées par CAMCIS, ou bulletins de liquidation) pour Bonzini Labs.
+
+Ta seule tâche : RECOPIER ce qui est imprimé, article par article, avec record_dau. Tu ne juges rien et ne corriges rien : un moteur de calcul, puis un commissionnaire agréé en douane, s'en chargent.
+
+Règles :
+- Recopie les chiffres EXACTEMENT. Montants en francs CFA, entiers, sans espaces ni séparateurs de milliers. Un chiffre illisible : null, et dis-le dans unreadable. N'invente jamais un montant.
+- Le code SH de chaque article : tous ses chiffres (souvent 11 ou 12), sans points ni espaces.
+- La désignation commerciale, telle qu'elle est saisie (« REGULATEUR », « CHAISE DE SALLE A MANGER »).
+- La valeur en douane de l'article (valeur CAF, valeur imposable), en francs CFA.
+- Les taxes de l'article : une ligne par code imprimé (DDI, DAC, DEA, TVA, CAM, CAD, CAF, TCI, TIB, CCI, CCB, CIA, CIB, PRO, DEV, DEW, DEX, DEY…), avec le taux en % quand il est imprimé et le montant. Une taxe à zéro : ne la recopie pas.
+- Le code additionnel de l'article s'il y en a un (A30, E00…).
+- Dates au format AAAA-MM-JJ : l'enregistrement de la déclaration ; le paiement (quittance) s'il figure.
+- released : true si la DAU porte un bon à enlever ou une mainlevée ; false si elle dit qu'elle n'est pas accordée ; null sinon.
+- Plusieurs pièces peuvent former une seule DAU (pages photographiées) : fusionne-les, sans doublon d'article.
+- Si le document n'est pas une déclaration en douane, renvoie une liste d'articles vide et explique-le dans unreadable.
+
+Termine par UN appel à record_dau.`;
+
+const orNull = (type: "string" | "number" | "boolean", description?: string) =>
+  ({ anyOf: [{ type }, { type: "null" }], ...(description ? { description } : {}) });
+
+const READ_TOOL = {
+  name: "record_dau",
+  description: "Enregistre le contenu de la déclaration, tel qu'imprimé. Termine la lecture.",
+  strict: true,
+  // La requête est diffusée (stream) : l'entrée arrive sans validation par l'API, on la vérifie ici.
+  eager_input_streaming: true,
+  input_schema: {
+    type: "object",
+    properties: {
+      dau_number: orNull("string", "Numéro de la déclaration, ex. SDSD2-2026-IMP-020399-I."),
+      office: orNull("string", "Bureau de douane."),
+      regime: orNull("string", "Régime douanier imprimé."),
+      registered_on: orNull("string", "Date d'enregistrement, AAAA-MM-JJ."),
+      paid_on: orNull("string", "Date de paiement, AAAA-MM-JJ."),
+      released: orNull("boolean", "Mainlevée ou bon à enlever mentionné."),
+      importer_name: orNull("string"),
+      importer_niu: orNull("string"),
+      declarant: orNull("string", "Le déclarant ou commissionnaire en douane."),
+      total_taxes_xaf: orNull("number", "Total des droits et taxes de la déclaration."),
+      articles: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            n: { type: "integer", description: "Numéro de l'article." },
+            code: { type: "string", description: "Code SH, chiffres seuls." },
+            description: { type: "string" },
+            origin: orNull("string"),
+            quantity: orNull("number"),
+            gross_kg: orNull("number"),
+            net_kg: orNull("number"),
+            customs_value_xaf: orNull("number"),
+            additional_code: orNull("string"),
+            taxes: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  code: { type: "string", description: "Code imprimé : DDI, DAC, DEA, TVA, CAM…" },
+                  rate_pct: orNull("number"),
+                  amount_xaf: { type: "number" },
+                },
+                required: ["code", "rate_pct", "amount_xaf"],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ["n", "code", "description", "origin", "quantity", "gross_kg", "net_kg", "customs_value_xaf", "additional_code", "taxes"],
+          additionalProperties: false,
+        },
+      },
+      unreadable: { type: "array", items: { type: "string" }, description: "Ce qui n'a pas pu être lu. Vide si tout est lisible." },
+    },
+    required: ["dau_number", "office", "regime", "registered_on", "paid_on", "released", "importer_name", "importer_niu", "declarant", "total_taxes_xaf", "articles", "unreadable"],
+    additionalProperties: false,
+  },
+} as unknown as Anthropic.Beta.BetaTool;
+
+export type ReadOutcome =
+  | { kind: "extraction"; extraction: Extraction }
+  | { kind: "refusal" | "truncated" | "invalid" };
+
+export interface Extraction {
+  dau_number: string | null; office: string | null; regime: string | null; registered_on: string | null; paid_on: string | null;
+  released: boolean | null; importer_name: string | null; importer_niu: string | null; declarant: string | null;
+  total_taxes_xaf: number | null; unreadable: string[];
+  articles: {
+    n: number; code: string; description: string; origin: string | null; quantity: number | null; gross_kg: number | null;
+    net_kg: number | null; customs_value_xaf: number | null; additional_code: string | null;
+    taxes: { code: string; base_xaf: null; rate_pct: number | null; amount_xaf: number }[];
+  }[];
+}
+
+const n0 = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const s0 = (v: unknown, max = 300): string | null => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+const d0 = (v: unknown): string | null => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) ? v : null);
+
+/**
+ * L'entrée du modèle, vérifiée champ par champ (l'API ne l'a pas validée : voir
+ * eager_input_streaming). Même règles que cleanExtraction côté app
+ * (src/lib/customs/audit.ts), qui la nettoie encore avant de juger.
+ * null : ce n'est pas une lecture exploitable.
+ */
+export function sanitizeExtraction(raw: unknown): Extraction | null {
+  if (!raw || typeof raw !== "object" || !Array.isArray((raw as { articles?: unknown }).articles)) return null;
+  const r = raw as Record<string, unknown>;
+  const articles = (r.articles as unknown[]).slice(0, 200).flatMap((x, i) => {
+    if (!x || typeof x !== "object") return [];
+    const a = x as Record<string, unknown>;
+    const code = String(a.code ?? "").replace(/\D/g, "").slice(0, 12);
+    if (code.length < 6) return [];
+    const value = n0(a.customs_value_xaf);
+    return [{
+      n: Math.round(n0(a.n) ?? i + 1), code, description: s0(a.description, 400) ?? "", origin: s0(a.origin, 40),
+      quantity: n0(a.quantity), gross_kg: n0(a.gross_kg), net_kg: n0(a.net_kg),
+      customs_value_xaf: value != null && value > 0 ? Math.round(value) : null,
+      additional_code: s0(a.additional_code, 8)?.toUpperCase() ?? null,
+      taxes: (Array.isArray(a.taxes) ? a.taxes : []).slice(0, 40).flatMap((t) => {
+        const tx = (t ?? {}) as Record<string, unknown>;
+        const c = String(tx.code ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+        const amount = n0(tx.amount_xaf);
+        return c && amount != null && amount >= 0 ? [{ code: c, base_xaf: null, rate_pct: n0(tx.rate_pct), amount_xaf: Math.round(amount) }] : [];
+      }),
+    }];
+  });
+  const total = n0(r.total_taxes_xaf);
+  return {
+    dau_number: s0(r.dau_number, 80), office: s0(r.office, 80), regime: s0(r.regime, 40),
+    registered_on: d0(r.registered_on), paid_on: d0(r.paid_on),
+    released: typeof r.released === "boolean" ? r.released : null,
+    importer_name: s0(r.importer_name, 160), importer_niu: s0(r.importer_niu, 40), declarant: s0(r.declarant, 160),
+    total_taxes_xaf: total != null && total >= 0 ? Math.round(total) : null,
+    articles,
+    unreadable: (Array.isArray(r.unreadable) ? r.unreadable : []).map((u) => s0(u)).filter((u): u is string => !!u).slice(0, 20),
+  };
+}
+
+/** Une lecture : un appel, diffusé ; une seconde chance si l'entrée est illisible. */
+export async function runReading(anthropic: Anthropic, content: Anthropic.Beta.BetaContentBlockParam[]): Promise<ReadOutcome> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let res: Anthropic.Beta.BetaMessage;
+    try {
+      res = await anthropic.beta.messages.stream({
+        model: MODEL,
+        max_tokens: 32000,
+        thinking: { type: "adaptive" },
+        output_config: { effort: READ_EFFORT },
+        system: [{ type: "text", text: READ_SYSTEM, cache_control: { type: "ephemeral" } }],
+        tools: [READ_TOOL],
+        tool_choice: { type: "auto" },
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        messages: [{ role: "user", content }],
+      }).finalMessage();
+    } catch (e) {
+      // Les erreurs de l'API (quota, clé, surcharge) remontent ; seul un JSON d'outil illisible est rejoué.
+      if (e instanceof Anthropic.APIError) throw e;
+      if (attempt === 0) continue;
+      return { kind: "invalid" };
+    }
+    if (res.stop_reason === "refusal") return { kind: "refusal" };
+    if (res.stop_reason === "max_tokens") return { kind: "truncated" };
+    const use = res.content.find((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use" && b.name === "record_dau");
+    const extraction = use ? sanitizeExtraction(use.input) : null;
+    if (extraction) return { kind: "extraction", extraction };
+  }
+  return { kind: "invalid" };
+}
+
+async function dauBlocks(admin: SupabaseClient, paths: string[]): Promise<Anthropic.Beta.BetaContentBlockParam[]> {
+  const out: Anthropic.Beta.BetaContentBlockParam[] = [];
+  let total = 0;
+  for (const path of paths.slice(0, 10)) {
+    const { data, error } = await admin.storage.from("customs-documents").download(path);
+    if (error || !data) continue;
+    total += data.size;
+    if (total > MAX_DAU_BYTES) throw new ReadError("Les pièces sont trop lourdes pour une lecture (18 Mo au plus) : envoyez la déclaration au commissionnaire.");
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    const type = data.type || (path.toLowerCase().endsWith(".pdf") ? "application/pdf" : "");
+    if (type === "application/pdf") {
+      out.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: toBase64(bytes) } });
+    } else if (["image/jpeg", "image/png", "image/webp"].includes(type)) {
+      out.push({ type: "image", source: { type: "base64", media_type: type as "image/jpeg" | "image/png" | "image/webp", data: toBase64(bytes) } });
+    }
+  }
+  return out;
+}
+
+class ReadError extends Error {}
+
+interface AuditRow {
+  id: string; ref: string; client_user_id: string; file_paths: string[]; status: string; updated_at: string;
+  dau_number: string | null; paid_on: string | null; claim_deadline: string | null;
+}
+
+const plusYears = (iso: string, years: number) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  const last = new Date(Date.UTC(y + years, m, 0)).getUTCDate();
+  return `${y + years}-${String(m).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+};
+
+/** La lecture complète, jusqu'à l'écriture en base — lancée en arrière-plan du runtime. */
+export async function readJob(admin: SupabaseClient, anthropic: Anthropic, a: AuditRow): Promise<void> {
+  const fail = async (message: string) => {
+    await admin.from("customs_audits").update({ status: "failed", error: message.slice(0, 500) }).eq("id", a.id).eq("status", "reading");
+  };
+  try {
+    const blocks = await dauBlocks(admin, a.file_paths ?? []);
+    if (!blocks.length) return await fail("Aucune pièce lisible : déposez la DAU en PDF, JPG, PNG ou WebP.");
+    const outcome = await runReading(anthropic, [...blocks, { type: "text", text: `Déclaration ${a.ref} : ${blocks.length} pièce(s). Recopie-la avec record_dau.` }]);
+    if (outcome.kind !== "extraction") {
+      return await fail({
+        refusal: "L'assistant n'a pas pu lire ce document. Envoyez-le au commissionnaire.",
+        truncated: "La déclaration est trop longue pour une lecture automatique : envoyez-la au commissionnaire.",
+        invalid: "La lecture n'a pas abouti. Réessayez, ou envoyez la déclaration au commissionnaire.",
+      }[outcome.kind]);
+    }
+    const ext = outcome.extraction;
+    if (!ext.articles.length) return await fail(ext.unreadable[0] ?? "Aucun article n'a été trouvé : est-ce bien une déclaration en douane ?");
+    const today = new Date().toISOString().slice(0, 10);
+    const paidOn = a.paid_on ?? (ext.paid_on && ext.paid_on <= today ? ext.paid_on : null);
+    const start = paidOn ?? (ext.registered_on && ext.registered_on <= today ? ext.registered_on : null);
+    const { error } = await admin.from("customs_audits").update({
+      status: "read", extraction: ext, ai_model: MODEL, error: null,
+      // Une relecture remet les constats à zéro : l'app les recalcule sur la nouvelle lecture.
+      findings: [], total_paid_xaf: null, overpaid_xaf: null,
+      dau_number: a.dau_number ?? ext.dau_number, customs_office: ext.office,
+      registered_on: ext.registered_on && ext.registered_on <= today ? ext.registered_on : null,
+      paid_on: paidOn,
+      claim_deadline: a.claim_deadline ?? (start ? plusYears(start, 3) : null),
+    }).eq("id", a.id).eq("status", "reading");
+    if (error) throw new Error(error.message);
+  } catch (e) {
+    console.error("customs-ai read_dau:", e);
+    await fail(e instanceof ReadError ? e.message
+      : e instanceof Anthropic.RateLimitError ? "L'assistant est très sollicité : réessayez dans une minute."
+      : "La lecture a échoué. Réessayez, ou envoyez la déclaration au commissionnaire.");
+  }
+}
+
+async function readDau(admin: SupabaseClient, userId: string, auditId: string, anthropic: Anthropic): Promise<Response> {
+  const { data: a } = await admin.from("customs_audits")
+    .select("id, ref, client_user_id, file_paths, status, updated_at, dau_number, paid_on, claim_deadline")
+    .eq("id", auditId).maybeSingle<AuditRow>();
+  if (!a) return json({ success: false, error: "Audit introuvable" }, 404);
+  if (a.client_user_id !== userId) {
+    const { data: staff } = await admin.rpc("admin_has_permission", { _user_id: userId, _permission: "canViewCustoms" });
+    if (staff !== true) return json({ success: false, error: "Audit introuvable" }, 404);
+  }
+  const stale = a.status === "reading" && Date.now() - Date.parse(a.updated_at) > STALE_READING_MS;
+  if (!["uploaded", "read", "failed"].includes(a.status) && !stale) {
+    return json({ success: false, error: a.status === "reading" ? "La déclaration est en cours de lecture." : "La déclaration est entre les mains du commissionnaire." }, 409);
+  }
+  // Verrou : un seul lecteur. La mise à jour ne passe que si personne n'a changé le statut entre-temps.
+  const { data: locked } = await admin.from("customs_audits").update({ status: "reading", error: null }).eq("id", a.id).eq("status", a.status).select("id");
+  if (!locked?.length) return json({ success: false, error: "Une lecture est déjà en cours." }, 409);
+
+  const job = readJob(admin, anthropic, a);
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (runtime?.waitUntil) {
+    runtime.waitUntil(job);
+    return json({ success: true, status: "reading" }, 202);
+  }
+  await job;
+  const { data: after } = await admin.from("customs_audits").select("status, error").eq("id", a.id).maybeSingle<{ status: string; error: string | null }>();
+  return json({ success: after?.status === "read", status: after?.status ?? null, error: after?.error ?? undefined });
+}
+
 // ─── Le serveur ─────────────────────────────────────────────────────────────
 
 async function handler(req: Request): Promise<Response> {
@@ -365,7 +654,7 @@ async function handler(req: Request): Promise<Response> {
   if (!apiKey) {
     // Le détail de configuration reste dans les journaux ; le client, lui, a une issue.
     console.error("customs-ai: ANTHROPIC_API_KEY manquante (secret Supabase Edge Functions)");
-    return json({ success: false, error: "L'assistant n'est pas disponible pour le moment. Envoyez la fiche au commissionnaire : il la classera lui-même." }, 503);
+    return json({ success: false, error: "L'assistant n'est pas disponible pour le moment. Envoyez le dossier au commissionnaire : il s'en chargera lui-même." }, 503);
   }
 
   const authHeader = req.headers.get("authorization") ?? "";
@@ -373,11 +662,14 @@ async function handler(req: Request): Promise<Response> {
   const { data: { user } } = await userClient.auth.getUser();
   if (!user) return json({ success: false, error: "Connexion requise" }, 401);
 
-  let body: { action?: string; classification_id?: string; hints?: unknown };
+  let body: { action?: string; classification_id?: string; audit_id?: string; hints?: unknown };
   try { body = await req.json(); } catch { return json({ success: false, error: "JSON invalide" }, 400); }
-  if (body.action !== "classify" || !body.classification_id) return json({ success: false, error: "Action inconnue" }, 400);
 
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  if (body.action === "read_dau" && body.audit_id) {
+    return await readDau(admin, user.id, body.audit_id, new Anthropic({ apiKey, timeout: 600_000, maxRetries: 1 }));
+  }
+  if (body.action !== "classify" || !body.classification_id) return json({ success: false, error: "Action inconnue" }, 400);
 
   const { data: c } = await admin.from("customs_classifications")
     .select("id, ref, client_user_id, product_name, description, facts, photo_paths, status")

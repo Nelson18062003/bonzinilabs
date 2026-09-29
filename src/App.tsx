@@ -47,6 +47,9 @@ const TariffSimulatorPage = lazy(() => import("./pages/customs/TariffSimulatorPa
 const ClassifyHomePage = lazy(() => import("./pages/customs/ClassifyHomePage").then(m => ({ default: m.ClassifyHomePage })));
 const ClassificationPage = lazy(() => import("./pages/customs/ClassificationPage").then(m => ({ default: m.ClassificationPage })));
 const CustomsReviewPage = lazy(() => import("./pages/customs/ReviewPage").then(m => ({ default: m.ReviewPage })));
+const AuditHomePage = lazy(() => import("./pages/customs/AuditHomePage").then(m => ({ default: m.AuditHomePage })));
+const AuditPage = lazy(() => import("./pages/customs/AuditPage").then(m => ({ default: m.AuditPage })));
+const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").then(m => ({ default: m.AuditReviewPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -261,6 +264,9 @@ const App = () => (
                 {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
                 <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
                 <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
+                {/* Vérifier une déclaration (DAU) : l'IA lit, le moteur recalcule, le CAD rend l'avis. */}
+                <Route path="/douane/audit" element={<ProtectedRoute><AuditHomePage /></ProtectedRoute>} />
+                <Route path="/douane/audit/:id" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
 
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
@@ -341,6 +347,7 @@ const App = () => (
                 <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />

@@ -6,8 +6,9 @@
 // ============================================================
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
 import { customsKeys } from '@/lib/queryKeys';
-import type { Classification, ClientCard } from '@/lib/customs/files';
+import type { AuditRecord, Classification, ClientCard } from '@/lib/customs/files';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -31,7 +32,7 @@ export interface ReviewQueue {
   is_broker: boolean;
   classifications: QueueClassification[];
   audits: QueueAudit[];
-  recent: { kind: string; id: string; ref: string; label: string; status: string; final_code: string | null; reviewed_at: string }[];
+  recent: { kind: 'classification' | 'audit'; id: string; ref: string; label: string; status: string; final_code: string | null; amount_xaf: number | null; reviewed_at: string }[];
 }
 
 export function useCustomsReviewQueue(enabled = true) {
@@ -115,5 +116,72 @@ export function useBrokerProfile(userId: string | undefined) {
       return data as unknown as { company: string; license_no: string; representative_no: string | null; active: boolean } | null;
     },
     enabled: !!userId,
+  });
+}
+
+// ─── Les audits de déclaration (étape 5) ────────────────────────────────────
+
+export function useAdminAudit(id: string | undefined) {
+  return useQuery({
+    queryKey: [...customsKeys.audit(id), 'admin'] as const,
+    queryFn: async () => (await rpcJson<{ audit: AuditRecord }>('customs_audit_get', { p_id: id })).audit,
+    enabled: !!id,
+    refetchInterval: (q) => (q.state.data?.status === 'reading' ? 3_000 : false),
+  });
+}
+
+/** Les pièces d'un dossier (PDF, photos), signées pour une heure avec la session de l'équipe. */
+export function useCustomsDocumentUrls(paths: string[] | undefined) {
+  return useQuery({
+    queryKey: [...customsKeys.all, 'documents', ...(paths ?? [])] as const,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.storage.from('customs-documents').createSignedUrls(paths ?? [], 3600);
+      if (error) throw new Error(error.message);
+      return (data ?? []).map((d) => ({ path: d.path ?? '', url: d.signedUrl })).filter((d) => !!d.url);
+    },
+    enabled: !!paths?.length,
+    staleTime: 30 * 60_000,
+  });
+}
+
+function useAuditRefresh(id: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    void qc.invalidateQueries({ queryKey: customsKeys.audit(id) });
+    void qc.invalidateQueries({ queryKey: customsKeys.queue() });
+  };
+}
+
+export function useClaimAudit(id: string | undefined) {
+  const refresh = useAuditRefresh(id);
+  return useMutation({ mutationFn: () => rpcJson('customs_audit_claim', { p_id: id }), onSuccess: refresh });
+}
+
+export function useReviewAudit(id: string | undefined) {
+  const refresh = useAuditRefresh(id);
+  return useMutation({
+    mutationFn: (v: { note: string; recoverable: number | null }) =>
+      rpcJson('customs_audit_review', { p_id: id, p_note: v.note, p_recoverable_xaf: v.recoverable }),
+    onSuccess: refresh,
+  });
+}
+
+/** L'équipe relance la lecture d'une DAU (session de l'équipe, jamais celle du client). */
+export function useAdminReadDau(id: string | undefined) {
+  const refresh = useAuditRefresh(id);
+  return useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabaseAdmin.auth.getSession();
+      if (!session?.access_token) throw new Error('Connexion requise');
+      const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/customs-ai`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: VITE_SUPABASE_PUBLISHABLE_KEY },
+        body: JSON.stringify({ action: 'read_dau', audit_id: id }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
+      if (!res.ok || data.success !== true) throw new Error(data.error || `La lecture n'a pas démarré (${res.status})`);
+      return data;
+    },
+    onSettled: refresh,
   });
 }

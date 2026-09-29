@@ -11,7 +11,7 @@ import { validateUploadFile } from '@/lib/utils';
 import { uploadWithRetry } from '@/lib/storageUpload';
 import { compressImages } from '@/lib/imageCompression';
 import { customsKeys } from '@/lib/queryKeys';
-import type { Classification, ClassificationSummary } from '@/lib/customs/files';
+import type { AuditSummary, Classification, ClassificationSummary } from '@/lib/customs/files';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -44,7 +44,7 @@ export async function uploadCustomsFiles(files: File[]): Promise<string[]> {
 export function useMyCustomsFiles(enabled = true) {
   return useQuery({
     queryKey: customsKeys.myFiles(),
-    queryFn: () => rpcJson<{ classifications: ClassificationSummary[]; audits: unknown[] }>('customs_my_files'),
+    queryFn: () => rpcJson<{ classifications: ClassificationSummary[]; audits: AuditSummary[] }>('customs_my_files'),
     enabled,
     staleTime: 15_000,
   });
@@ -102,25 +102,27 @@ export function useCancelClassification(id: string | undefined) {
 }
 
 /**
- * Un tour de l'assistant. Appel direct à l'edge function avec le JWT client
- * (pas .invoke() : voir .claude/rules/supabase-clients.md). Les pistes du
- * vocabulaire du marché (« régulateur » → 85.04…) partent avec la demande.
+ * L'edge function customs-ai, appelée avec le JWT du client (pas .invoke() :
+ * voir .claude/rules/supabase-clients.md).
  */
+export async function callCustomsAi(body: Record<string, unknown>): Promise<{ success: true; status?: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error('Connexion requise');
+  const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/customs-ai`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: VITE_SUPABASE_PUBLISHABLE_KEY },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string; status?: string };
+  if (!res.ok || data.success !== true) throw new Error(data.error || `L'assistant n'a pas répondu (${res.status})`);
+  return { success: true, status: data.status };
+}
+
+/** Un tour de l'assistant. Les pistes du vocabulaire du marché (« régulateur » → 85.04…) partent avec la demande. */
 export function useClassify(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (hints: { code: string; tip?: string }[]) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error('Connexion requise');
-      const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/customs-ai`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ action: 'classify', classification_id: id, hints }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
-      if (!res.ok || data.success !== true) throw new Error(data.error || `L'assistant n'a pas répondu (${res.status})`);
-      return data;
-    },
+    mutationFn: (hints: { code: string; tip?: string }[]) => callCustomsAi({ action: 'classify', classification_id: id, hints }),
     onSettled: () => { void qc.invalidateQueries({ queryKey: customsKeys.classification(id) }); },
   });
 }

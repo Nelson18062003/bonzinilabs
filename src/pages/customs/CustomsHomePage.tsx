@@ -5,7 +5,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calculator, FileSearch, Search } from 'lucide-react';
+import { Calculator, FileSearch, ScanLine, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -43,6 +43,14 @@ export function CustomsHomePage({ variant = 'client', desktop = false }: { varia
               title={t('hub.classifyTitle')}
               subtitle={t('hub.classifyDesc')}
               onClick={() => navigate('/douane/classer')}
+            />
+          )}
+          {variant === 'client' && (
+            <ListRow
+              leading={<Holder icon={ScanLine} />}
+              title={t('hub.auditTitle')}
+              subtitle={t('hub.auditDesc')}
+              onClick={() => navigate('/douane/audit')}
             />
           )}
           <ListRow

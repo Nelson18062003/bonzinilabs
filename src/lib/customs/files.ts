@@ -204,3 +204,64 @@ export function advanceRulingLetter(c: Classification, today = new Date()): stri
     `Référence Bonzini : ${c.ref}`,
   ].filter((l) => l !== null).join('\n');
 }
+
+// ─── Les audits de déclaration (étape 5) ────────────────────────────────────
+
+export type AuditStatus = 'uploaded' | 'reading' | 'read' | 'failed' | 'submitted' | 'in_review' | 'reviewed' | 'cancelled';
+
+export interface AuditRecord {
+  id: string;
+  ref: string;
+  client_user_id: string;
+  dau_number: string | null;
+  customs_office: string | null;
+  registered_on: string | null;
+  paid_on: string | null;
+  file_paths: string[];
+  status: AuditStatus;
+  /** Ce que l'IA a lu (edge function customs-ai, read_dau) — à repasser par cleanExtraction. */
+  extraction: unknown;
+  findings: unknown[];
+  total_paid_xaf: number | null;
+  overpaid_xaf: number | null;
+  recoverable_xaf: number | null;
+  claim_deadline: string | null;
+  ai_model: string | null;
+  error: string | null;
+  submitted_at: string | null;
+  broker_note: string | null;
+  claimed_by: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  broker_company: string | null;
+  broker_license_no: string | null;
+  created_at: string;
+  updated_at: string;
+  client?: ClientCard | null;
+}
+
+export interface AuditSummary {
+  id: string;
+  ref: string;
+  dau_number: string | null;
+  status: AuditStatus;
+  overpaid_xaf: number | null;
+  recoverable_xaf: number | null;
+  claim_deadline: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const AUDIT_STATUS: Record<AuditStatus, { fr: string; tone: Tone }> = {
+  uploaded: { fr: 'Déposée', tone: 'neutral' },
+  reading: { fr: 'Lecture en cours', tone: 'info' },
+  read: { fr: 'Lue — à faire relire', tone: 'neutral' },
+  failed: { fr: 'Lecture impossible', tone: 'danger' },
+  submitted: { fr: 'Chez le commissionnaire', tone: 'pending' },
+  in_review: { fr: 'En relecture', tone: 'pending' },
+  reviewed: { fr: 'Avis rendu', tone: 'success' },
+  cancelled: { fr: 'Abandonnée', tone: 'neutral' },
+};
+
+/** Le client peut encore relancer la lecture, ou envoyer au CAD. */
+export const auditOpen = (s: AuditStatus) => s === 'uploaded' || s === 'read' || s === 'failed';

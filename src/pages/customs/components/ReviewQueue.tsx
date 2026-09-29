@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Line, ListRow, ScreenError, SectionTitle, StatusPill, SURFACE, TEXT } from '@/mobile/designKit';
 import { formatHs } from '@/lib/customs/hsCode';
 import { useCustomsReviewQueue, type QueueClassification } from '@/hooks/useCustomsReview';
+import { xaf } from '../format';
 
 const clientName = (c: QueueClassification['client']) =>
   c?.company_name || [c?.first_name, c?.last_name].filter(Boolean).join(' ') || '—';
@@ -28,7 +29,7 @@ export function ReviewQueue() {
 
   if (queue.isError) return <ScreenError className="min-h-0 py-6" description={(queue.error as Error).message} onRetry={() => queue.refetch()} />;
   if (!queue.data) return null;
-  const { classifications, recent, is_broker } = queue.data;
+  const { classifications, audits, recent, is_broker } = queue.data;
 
   return (
     <div className="space-y-6">
@@ -65,6 +66,34 @@ export function ReviewQueue() {
         )}
       </section>
 
+      {audits.length > 0 && (
+        <section>
+          <SectionTitle>
+            {t('audit.queueTitle', { defaultValue: 'Déclarations à relire' })}
+            <span className={cn('ml-2 tabular-nums', TEXT.muted)}>{audits.length}</span>
+          </SectionTitle>
+          <div className={cn('rounded-lg px-4', SURFACE.card, SURFACE.shadow)}>
+            {audits.map((a) => (
+              <ListRow
+                key={a.id}
+                title={a.dau_number ?? a.ref}
+                subtitle={[
+                  clientName(a.client),
+                  a.overpaid_xaf ? t('audit.atStake', { amount: xaf(a.overpaid_xaf), defaultValue: `enjeu ${xaf(a.overpaid_xaf)}` }) : null,
+                  waited(a.submitted_at, i18n.language || 'fr'),
+                ].filter(Boolean).join(' · ')}
+                trailing={
+                  a.mine ? <StatusPill tone="info" label={t('review.mine', { defaultValue: 'À vous' })} />
+                  : a.claimed_by ? <StatusPill tone="neutral" label={t('review.taken', { defaultValue: 'Pris' })} />
+                  : <StatusPill tone="pending" label={t('review.toTake', { defaultValue: 'À prendre' })} />
+                }
+                onClick={() => navigate(`/m/douane/audit/${a.id}`)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {recent.length > 0 && (
         <section>
           <SectionTitle>{t('review.recentTitle', { defaultValue: 'Signés récemment' })}</SectionTitle>
@@ -73,11 +102,11 @@ export function ReviewQueue() {
               <ListRow
                 key={r.id}
                 title={r.label}
-                subtitle={[r.ref, r.final_code ? formatHs(r.final_code) : null].filter(Boolean).join(' · ')}
+                subtitle={[r.ref, r.final_code ? formatHs(r.final_code) : null, r.kind === 'audit' && r.amount_xaf != null ? xaf(r.amount_xaf) : null].filter(Boolean).join(' · ')}
                 trailing={r.status === 'needs_info'
                   ? <StatusPill tone="pending" label={t('files.status.needs_info', { defaultValue: 'Précision demandée' })} />
                   : <StatusPill tone="success" label={t('review.signedShort', { defaultValue: 'Signé' })} />}
-                onClick={() => navigate(`/m/douane/revue/${r.id}`)}
+                onClick={() => navigate(r.kind === 'audit' ? `/m/douane/audit/${r.id}` : `/m/douane/revue/${r.id}`)}
               />
             ))}
           </div>

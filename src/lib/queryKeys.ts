@@ -80,4 +80,5 @@ export const customsKeys = {
   myFiles: () => [...customsKeys.all, 'my-files'] as const,
   classification: (id: string | undefined) => [...customsKeys.all, 'classification', id] as const,
   queue: () => [...customsKeys.all, 'queue'] as const,
+  audit: (id: string | undefined) => [...customsKeys.all, 'audit', id] as const,
 };
