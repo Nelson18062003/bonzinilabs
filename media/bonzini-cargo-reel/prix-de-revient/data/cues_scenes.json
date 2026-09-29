@@ -1,0 +1,2108 @@
+[
+{
+"seg": "S2",
+"word": "ce",
+"nth": 0,
+"offset": -0.35,
+"sound": "thud",
+"gain": 0.45,
+"pan": -0.6
+},
+{
+"seg": "S2",
+"word": "ce",
+"nth": 0,
+"offset": 0.13,
+"sound": "thud",
+"gain": 0.35,
+"pan": -0.2
+},
+{
+"seg": "S2",
+"word": "baskets",
+"nth": 0,
+"offset": -0.1,
+"sound": "whoosh",
+"gain": 0.4,
+"pan": 0.6
+},
+{
+"seg": "S2",
+"word": "baskets",
+"nth": 0,
+"offset": 0.35,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S2",
+"word": "junior",
+"nth": 0,
+"offset": -0.08,
+"sound": "pop",
+"gain": 0.6,
+"pan": -0.5
+},
+{
+"seg": "S2",
+"word": "junior",
+"nth": 0,
+"offset": 0.1,
+"sound": "flick",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S2",
+"word": "mboppi",
+"nth": 0,
+"offset": 0.32,
+"sound": "flick",
+"gain": 0.35,
+"pan": -0.1
+},
+{
+"seg": "S2",
+"word": "chine",
+"nth": 0,
+"offset": -0.12,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": -0.3
+},
+{
+"seg": "S2",
+"word": "chine",
+"nth": 0,
+"offset": 0,
+"sound": "marker_long",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S3",
+"word": "prix",
+"nth": 0,
+"offset": -0.95,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0.6
+},
+{
+"seg": "S3",
+"word": "prix",
+"nth": 0,
+"offset": -0.2,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "prix",
+"nth": 0,
+"offset": 0,
+"sound": "marker_long",
+"gain": 0.5,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "deux",
+"nth": 0,
+"offset": 0.1,
+"sound": "coin",
+"gain": 0.5,
+"pan": 0.6
+},
+{
+"seg": "S3",
+"word": "5",
+"nth": 0,
+"offset": -0.06,
+"sound": "marker_long",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "benefice",
+"nth": 0,
+"offset": 0.15,
+"sound": "coins",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S3",
+"word": "500",
+"nth": 0,
+"offset": -0.06,
+"sound": "marker_long",
+"gain": 0.5,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "500",
+"nth": 0,
+"offset": 0.3,
+"sound": "register",
+"gain": 0.55,
+"pan": -0.5
+},
+{
+"seg": "S3",
+"word": "paires",
+"nth": 0,
+"offset": -0.1,
+"sound": "coins",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S3",
+"word": "pagne",
+"nth": 0,
+"offset": -0.45,
+"sound": "flick",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "pagne",
+"nth": 0,
+"offset": -0.14,
+"sound": "riffle",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S3",
+"word": "mars",
+"nth": 0,
+"offset": -0.25,
+"sound": "pop",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S3",
+"word": "maman",
+"nth": 0,
+"offset": -0.2,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S3",
+"word": "promis",
+"nth": 0,
+"offset": 0,
+"sound": "correct",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S4",
+"word": "vous",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S4",
+"word": "il",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "gagne",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "combien",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "vraiment",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "ecrivez",
+"nth": 0,
+"offset": -0.1,
+"sound": "flick",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S4",
+"word": "ecrivez",
+"nth": 0,
+"offset": 0.3,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S4",
+"word": "votre",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "chiffre",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S4",
+"word": "commentaire",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S5",
+"word": "le",
+"nth": 0,
+"offset": -0.9,
+"sound": "whoosh_long",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S5",
+"word": "taux",
+"nth": 0,
+"offset": -0.02,
+"sound": "thud",
+"gain": 0.4,
+"pan": -0.5
+},
+{
+"seg": "S5",
+"word": "taux",
+"nth": 1,
+"offset": -0.06,
+"sound": "marker",
+"gain": 0.35,
+"pan": -0.5
+},
+{
+"seg": "S5",
+"word": "google",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.5
+},
+{
+"seg": "S5",
+"word": "paie",
+"nth": 0,
+"offset": 0.02,
+"sound": "thud",
+"gain": 0.4,
+"pan": 0.5
+},
+{
+"seg": "S5",
+"word": "taux",
+"nth": 2,
+"offset": -0.08,
+"sound": "printer_short",
+"gain": 0.45,
+"pan": 0.5
+},
+{
+"seg": "S5",
+"word": "applique",
+"nth": 0,
+"offset": -0.08,
+"sound": "printer_short",
+"gain": 0.45,
+"pan": 0.5
+},
+{
+"seg": "S5",
+"word": "frais",
+"nth": 0,
+"offset": -0.08,
+"sound": "printer_short",
+"gain": 0.4,
+"pan": 0.5
+},
+{
+"seg": "S5",
+"word": "compris",
+"nth": 0,
+"offset": -0.12,
+"sound": "marker_long",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S5",
+"word": "compris",
+"nth": 0,
+"offset": 0.55,
+"sound": "pop",
+"gain": 0.35,
+"pan": -0.4
+},
+{
+"seg": "S5",
+"word": "150",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.5
+},
+{
+"seg": "S6",
+"word": "le",
+"nth": 0,
+"offset": -1,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S6",
+"word": "le",
+"nth": 0,
+"offset": -0.45,
+"sound": "riffle",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S6",
+"word": "camion",
+"nth": 0,
+"offset": -0.25,
+"sound": "whoosh",
+"gain": 0.5,
+"pan": -0.6
+},
+{
+"seg": "S6",
+"word": "usine",
+"nth": 0,
+"offset": -0.12,
+"sound": "pop",
+"gain": 0.45,
+"pan": -0.7
+},
+{
+"seg": "S6",
+"word": "usine",
+"nth": 0,
+"offset": 0.2,
+"sound": "whoosh_long",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S6",
+"word": "usine",
+"nth": 0,
+"offset": 1.15,
+"sound": "coin",
+"gain": 0.5,
+"pan": -0.2
+},
+{
+"seg": "S6",
+"word": "guangzhou",
+"nth": 0,
+"offset": -0.12,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S6",
+"word": "200",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": -0.1
+},
+{
+"seg": "S7",
+"word": "le",
+"nth": 0,
+"offset": -1.45,
+"sound": "whoosh",
+"gain": 0.4,
+"pan": 0.6
+},
+{
+"seg": "S7",
+"word": "le",
+"nth": 0,
+"offset": -0.45,
+"sound": "whoosh_long",
+"gain": 0.45,
+"pan": -0.5
+},
+{
+"seg": "S7",
+"word": "bateau",
+"nth": 0,
+"offset": 0,
+"sound": "thud",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S7",
+"word": "800",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.6
+},
+{
+"seg": "S7",
+"word": "800",
+"nth": 0,
+"offset": 0.5,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": 0.6
+},
+{
+"seg": "S7",
+"word": "maritime",
+"nth": 0,
+"offset": 0.1,
+"sound": "thud",
+"gain": 0.45,
+"pan": -0.3
+},
+{
+"seg": "S7",
+"word": "metre",
+"nth": 0,
+"offset": -0.08,
+"sound": "flick",
+"gain": 0.5,
+"pan": -0.4
+},
+{
+"seg": "S7",
+"word": "cube",
+"nth": 0,
+"offset": 0.05,
+"sound": "stamp",
+"gain": 0.8,
+"pan": 0.5
+},
+{
+"seg": "S7",
+"word": "air",
+"nth": 0,
+"offset": -0.12,
+"sound": "marker_long",
+"gain": 0.35,
+"pan": -0.1
+},
+{
+"seg": "S7",
+"word": "air",
+"nth": 0,
+"offset": 0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": -0.1
+},
+{
+"seg": "S7",
+"word": "boites",
+"nth": 0,
+"offset": 0.1,
+"sound": "register",
+"gain": 0.5,
+"pan": -0.1
+},
+{
+"seg": "S7",
+"word": "chaussures",
+"nth": 0,
+"offset": -0.1,
+"sound": "pop",
+"gain": 0.3,
+"pan": -0.3
+},
+{
+"seg": "S8",
+"word": "le",
+"nth": 0,
+"offset": -1.12,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "le",
+"nth": 0,
+"offset": -0.32,
+"sound": "thud",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "douane",
+"nth": 0,
+"offset": -1.2,
+"sound": "drumroll",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "douane",
+"nth": 0,
+"offset": 0.04,
+"sound": "stamp",
+"gain": 1,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "douane",
+"nth": 0,
+"offset": 0.06,
+"sound": "thud",
+"gain": 0.8,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "exemple",
+"nth": 0,
+"offset": -0.38,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S8",
+"word": "exemple",
+"nth": 0,
+"offset": -0.1,
+"sound": "marker_long",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "3",
+"nth": 0,
+"offset": -0.05,
+"sound": "marker",
+"gain": 0.5,
+"pan": -0.2
+},
+{
+"seg": "S8",
+"word": "inclus",
+"nth": 0,
+"offset": -0.5,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": 0.6
+},
+{
+"seg": "S8",
+"word": "inclus",
+"nth": 0,
+"offset": -0.1,
+"sound": "thud",
+"gain": 0.35,
+"pan": -0.6
+},
+{
+"seg": "S8",
+"word": "inclus",
+"nth": 0,
+"offset": 0,
+"sound": "flick",
+"gain": 0.45,
+"pan": -0.6
+},
+{
+"seg": "S8",
+"word": "inclus",
+"nth": 0,
+"offset": 0.15,
+"sound": "pop",
+"gain": 0.45,
+"pan": -0.6
+},
+{
+"seg": "S8",
+"word": "payes",
+"nth": 0,
+"offset": -0.1,
+"sound": "thud",
+"gain": 0.35,
+"pan": 0.6
+},
+{
+"seg": "S8",
+"word": "payes",
+"nth": 0,
+"offset": 0,
+"sound": "flick",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S8",
+"word": "payes",
+"nth": 0,
+"offset": 0.15,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S8",
+"word": "ils",
+"nth": 0,
+"offset": -0.08,
+"sound": "whoosh",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "votre",
+"nth": 0,
+"offset": 0,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S8",
+"word": "dans",
+"nth": 1,
+"offset": -0.06,
+"sound": "thud",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": -1.22,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": -0.72,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": -0.5
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": -0.09,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": 0.25,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": 0.58,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": 1.25,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": 1.59,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "les",
+"nth": 0,
+"offset": 1.92,
+"sound": "beep",
+"gain": 0.25,
+"pan": -0.4
+},
+{
+"seg": "S9",
+"word": "petits",
+"nth": 0,
+"offset": 0.3,
+"sound": "pop",
+"gain": 0.4,
+"pan": 0.6
+},
+{
+"seg": "S9",
+"word": "credit",
+"nth": 0,
+"offset": -0.12,
+"sound": "thud",
+"gain": 0.3,
+"pan": 0.6
+},
+{
+"seg": "S9",
+"word": "credit",
+"nth": 0,
+"offset": -0.05,
+"sound": "riffle",
+"gain": 0.45,
+"pan": 0.6
+},
+{
+"seg": "S9",
+"word": "brule",
+"nth": 0,
+"offset": 0,
+"sound": "whoosh",
+"gain": 0.4,
+"pan": 0.6
+},
+{
+"seg": "S9",
+"word": "pousseur",
+"nth": 0,
+"offset": -0.66,
+"sound": "whoosh_long",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S9",
+"word": "taxi",
+"nth": 0,
+"offset": -0.25,
+"sound": "whoosh",
+"gain": 0.5,
+"pan": 0.7
+},
+{
+"seg": "S9",
+"word": "taxi",
+"nth": 0,
+"offset": 0.27,
+"sound": "thud",
+"gain": 0.3,
+"pan": -0.1
+},
+{
+"seg": "S9",
+"word": "taxi",
+"nth": 0,
+"offset": 0.48,
+"sound": "thud",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S9",
+"word": "taxi",
+"nth": 0,
+"offset": 0.7,
+"sound": "thud",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S9",
+"word": "taxi",
+"nth": 0,
+"offset": 0.65,
+"sound": "whoosh",
+"gain": 0.4,
+"pan": 0.5
+},
+{
+"seg": "S9",
+"word": "mboppi",
+"nth": 0,
+"offset": -0.12,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.7
+},
+{
+"seg": "S9",
+"word": "350",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": -0.6
+},
+{
+"seg": "S10",
+"word": "il",
+"nth": 0,
+"offset": -1.42,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S10",
+"word": "il",
+"nth": 0,
+"offset": -0.75,
+"sound": "pop",
+"gain": 0.35,
+"pan": -0.6
+},
+{
+"seg": "S10",
+"word": "il",
+"nth": 0,
+"offset": -0.35,
+"sound": "thud",
+"gain": 0.55,
+"pan": 0.1
+},
+{
+"seg": "S10",
+"word": "500",
+"nth": 0,
+"offset": 0,
+"sound": "schling",
+"gain": 0.45,
+"pan": 0.55
+},
+{
+"seg": "S10",
+"word": "junior",
+"nth": 0,
+"offset": 0.05,
+"sound": "flick",
+"gain": 0.3,
+"pan": -0.6
+},
+{
+"seg": "S10",
+"word": "respire",
+"nth": 0,
+"offset": 0.2,
+"sound": "marker",
+"gain": 0.35,
+"pan": -0.35
+},
+{
+"seg": "S10",
+"word": "ouvre",
+"nth": 0,
+"offset": -0.12,
+"sound": "flick",
+"gain": 0.45,
+"pan": 0.1
+},
+{
+"seg": "S10",
+"word": "ouvre",
+"nth": 0,
+"offset": 0,
+"sound": "riffle",
+"gain": 0.55,
+"pan": 0.1
+},
+{
+"seg": "S10",
+"word": "cartons",
+"nth": 0,
+"offset": 0.3,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": -0.3
+},
+{
+"seg": "S11",
+"word": "5",
+"nth": 0,
+"offset": -0.22,
+"sound": "pop",
+"gain": 0.45,
+"pan": -0.4
+},
+{
+"seg": "S11",
+"word": "5",
+"nth": 0,
+"offset": 0.02,
+"sound": "pop",
+"gain": 0.45,
+"pan": -0.2
+},
+{
+"seg": "S11",
+"word": "5",
+"nth": 0,
+"offset": 0.26,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S11",
+"word": "5",
+"nth": 0,
+"offset": 0.5,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S11",
+"word": "5",
+"nth": 0,
+"offset": 0.74,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.4
+},
+{
+"seg": "S11",
+"word": "deux",
+"nth": 0,
+"offset": 0,
+"sound": "marker_long",
+"gain": 0.5,
+"pan": 0.1
+},
+{
+"seg": "S11",
+"word": "gauches",
+"nth": 0,
+"offset": 0,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S11",
+"word": "gauches",
+"nth": 0,
+"offset": 0.1,
+"sound": "pop",
+"gain": 0.4,
+"pan": 0.15
+},
+{
+"seg": "S11",
+"word": "payees",
+"nth": 0,
+"offset": -0.04,
+"sound": "coin",
+"gain": 0.5,
+"pan": -0.3
+},
+{
+"seg": "S11",
+"word": "transportees",
+"nth": 0,
+"offset": -0.04,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.1
+},
+{
+"seg": "S11",
+"word": "dedouanees",
+"nth": 0,
+"offset": -0.04,
+"sound": "stamp",
+"gain": 0.4,
+"pan": 0.3
+},
+{
+"seg": "S11",
+"word": "invendables",
+"nth": 0,
+"offset": 0,
+"sound": "stamp",
+"gain": 1,
+"pan": 0
+},
+{
+"seg": "S11",
+"word": "invendables",
+"nth": 0,
+"offset": 0.02,
+"sound": "thud",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S11",
+"word": "cout",
+"nth": 0,
+"offset": -0.28,
+"sound": "flick",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S11",
+"word": "cout",
+"nth": 0,
+"offset": -0.05,
+"sound": "marker_long",
+"gain": 0.4,
+"pan": -0.1
+},
+{
+"seg": "S11",
+"word": "95",
+"nth": 0,
+"offset": 0,
+"sound": "marker_long",
+"gain": 0.4,
+"pan": -0.1
+},
+{
+"seg": "S11",
+"word": "500",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.5,
+"pan": 0.1
+},
+{
+"seg": "S11",
+"word": "paire",
+"nth": 1,
+"offset": -0.05,
+"sound": "marker",
+"gain": 0.35,
+"pan": 0.1
+},
+{
+"seg": "S13",
+"word": "sur",
+"nth": 0,
+"offset": -0.5,
+"sound": "thud",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "sur",
+"nth": 0,
+"offset": -0.4,
+"sound": "printer",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "sur",
+"nth": 0,
+"offset": -0.25,
+"sound": "stamp",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "950",
+"nth": 0,
+"offset": -0.02,
+"sound": "printer_short",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "950",
+"nth": 0,
+"offset": 0.15,
+"sound": "register",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S13",
+"word": "95",
+"nth": 1,
+"offset": -0.02,
+"sound": "printer_short",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "10",
+"nth": 0,
+"offset": -0.02,
+"sound": "printer_short",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "la",
+"nth": 0,
+"offset": -0.05,
+"sound": "marker",
+"gain": 0.45,
+"pan": 0.1
+},
+{
+"seg": "S13",
+"word": "son",
+"nth": 0,
+"offset": -0.05,
+"sound": "flick",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "son",
+"nth": 0,
+"offset": 0.05,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": -0.5
+},
+{
+"seg": "S13",
+"word": "son",
+"nth": 0,
+"offset": 0.15,
+"sound": "pop",
+"gain": 0.45,
+"pan": -0.4
+},
+{
+"seg": "S13",
+"word": "revient",
+"nth": 0,
+"offset": -0.1,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.4
+},
+{
+"seg": "S13",
+"word": "cest",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "vente",
+"nth": 0,
+"offset": 0,
+"sound": "stamp",
+"gain": 0.9,
+"pan": 0
+},
+{
+"seg": "S13",
+"word": "vente",
+"nth": 0,
+"offset": 0.15,
+"sound": "buzzer",
+"gain": 0.4,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "la",
+"nth": 0,
+"offset": -0.84,
+"sound": "whoosh_long",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "la",
+"nth": 0,
+"offset": 0.08,
+"sound": "thud",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "cliente",
+"nth": 0,
+"offset": -0.1,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": -0.6
+},
+{
+"seg": "S14",
+"word": "mon",
+"nth": 0,
+"offset": -0.1,
+"sound": "pop",
+"gain": 0.5,
+"pan": -0.3
+},
+{
+"seg": "S14",
+"word": "accepte",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.55,
+"pan": 0.4
+},
+{
+"seg": "S14",
+"word": "accepte",
+"nth": 0,
+"offset": 0.22,
+"sound": "marker_long",
+"gain": 0.45,
+"pan": 0.4
+},
+{
+"seg": "S14",
+"word": "accepte",
+"nth": 0,
+"offset": 0.88,
+"sound": "register",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "plus",
+"nth": 0,
+"offset": 0.1,
+"sound": "coins",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "vend",
+"nth": 0,
+"offset": -0.08,
+"sound": "thud",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "vend",
+"nth": 0,
+"offset": 0.3,
+"sound": "coins",
+"gain": 0.5,
+"pan": 0.1
+},
+{
+"seg": "S14",
+"word": "perd",
+"nth": 0,
+"offset": -0.08,
+"sound": "stamp",
+"gain": 0.9,
+"pan": 0
+},
+{
+"seg": "S14",
+"word": "perd",
+"nth": 0,
+"offset": 0.1,
+"sound": "trombone",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "la",
+"nth": 0,
+"offset": -0.62,
+"sound": "pop",
+"gain": 0.4,
+"pan": -0.8
+},
+{
+"seg": "S15",
+"word": "la",
+"nth": 0,
+"offset": -0.45,
+"sound": "whoosh_long",
+"gain": 0.3,
+"pan": -0.2
+},
+{
+"seg": "S15",
+"word": "regle",
+"nth": 0,
+"offset": -0.1,
+"sound": "riffle",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "tout",
+"nth": 0,
+"offset": -0.25,
+"sound": "pop",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "boutique",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.8
+},
+{
+"seg": "S15",
+"word": "divise",
+"nth": 0,
+"offset": 0,
+"sound": "schling",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "pieces",
+"nth": 0,
+"offset": -0.2,
+"sound": "riffle",
+"gain": 0.45,
+"pan": -0.1
+},
+{
+"seg": "S15",
+"word": "vraiment",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "vendables",
+"nth": 0,
+"offset": 0,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "vendables",
+"nth": 0,
+"offset": 0.05,
+"sound": "pop",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S15",
+"word": "vendables",
+"nth": 0,
+"offset": 0.3,
+"sound": "stamp",
+"gain": 0.85,
+"pan": 0.4
+},
+{
+"seg": "S15",
+"word": "cest",
+"nth": 0,
+"offset": 0.2,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": 0.5
+},
+{
+"seg": "S15",
+"word": "cest",
+"nth": 0,
+"offset": 0.36,
+"sound": "riffle",
+"gain": 0.4,
+"pan": -0.7
+},
+{
+"seg": "S15",
+"word": "plancher",
+"nth": 0,
+"offset": 0,
+"sound": "thud",
+"gain": 1,
+"pan": -0.1
+},
+{
+"seg": "S15",
+"word": "dessous",
+"nth": 0,
+"offset": -0.2,
+"sound": "marker",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S15",
+"word": "vous",
+"nth": 1,
+"offset": -0.05,
+"sound": "marker_long",
+"gain": 0.45,
+"pan": 0.1
+},
+{
+"seg": "S15",
+"word": "travailler",
+"nth": 0,
+"offset": 0,
+"sound": "buzzer",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S16",
+"word": "prix",
+"nth": 0,
+"offset": -0.12,
+"sound": "pop",
+"gain": 0.5,
+"pan": -0.2
+},
+{
+"seg": "S16",
+"word": "apres",
+"nth": 0,
+"offset": -0.1,
+"sound": "marker",
+"gain": 0.4,
+"pan": 0.2
+},
+{
+"seg": "S16",
+"word": "pour",
+"nth": 0,
+"offset": -0.05,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": -0.5
+},
+{
+"seg": "S16",
+"word": "pour",
+"nth": 0,
+"offset": 0.36,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": 0.4
+},
+{
+"seg": "S16",
+"word": "20",
+"nth": 0,
+"offset": -0.08,
+"sound": "flick",
+"gain": 0.5,
+"pan": 0.1
+},
+{
+"seg": "S16",
+"word": "20",
+"nth": 0,
+"offset": 0.05,
+"sound": "marker",
+"gain": 0.35,
+"pan": -0.3
+},
+{
+"seg": "S16",
+"word": "du",
+"nth": 0,
+"offset": -0.05,
+"sound": "marker",
+"gain": 0.3,
+"pan": 0.1
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 0,
+"offset": 0.02,
+"sound": "key",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 0,
+"offset": 0.3,
+"sound": "key",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 0,
+"offset": 0.58,
+"sound": "key",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 0,
+"offset": 0.86,
+"sound": "key",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 0,
+"offset": 1.14,
+"sound": "key",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "1,20",
+"nth": 0,
+"offset": 0.66,
+"sound": "beep",
+"gain": 0.45,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "1,20",
+"nth": 0,
+"offset": 0.74,
+"sound": "flick",
+"gain": 0.35,
+"pan": -0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 0.4,
+"sound": "buzzer",
+"gain": 0.4,
+"pan": -0.3
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 0.02,
+"sound": "key",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 0.3,
+"sound": "key",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 0.58,
+"sound": "key",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 0.86,
+"sound": "key",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "fois",
+"nth": 1,
+"offset": 1.14,
+"sound": "key",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "1,25",
+"nth": 0,
+"offset": -0.05,
+"sound": "pop",
+"gain": 0.4,
+"pan": 0.3
+},
+{
+"seg": "S16",
+"word": "1,25",
+"nth": 0,
+"offset": 0.66,
+"sound": "beep",
+"gain": 0.45,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "1,25",
+"nth": 0,
+"offset": 0.74,
+"sound": "flick",
+"gain": 0.35,
+"pan": 0.25
+},
+{
+"seg": "S16",
+"word": "12",
+"nth": 2,
+"offset": 0,
+"sound": "thud",
+"gain": 0.7,
+"pan": -0.7
+},
+{
+"seg": "S16",
+"word": "12",
+"nth": 2,
+"offset": 0.05,
+"sound": "correct",
+"gain": 0.6,
+"pan": 0.3
+},
+{
+"seg": "S16",
+"word": "12",
+"nth": 2,
+"offset": 0.3,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.6
+},
+{
+"seg": "S17",
+"word": "2",
+"nth": 0,
+"offset": -0.9,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": 0
+},
+{
+"seg": "S17",
+"word": "2",
+"nth": 0,
+"offset": -0.5,
+"sound": "pop",
+"gain": 0.4,
+"pan": -0.4
+},
+{
+"seg": "S17",
+"word": "2",
+"nth": 0,
+"offset": -0.26,
+"sound": "marker",
+"gain": 0.45,
+"pan": -0.4
+},
+{
+"seg": "S17",
+"word": "2",
+"nth": 0,
+"offset": 0,
+"sound": "coins",
+"gain": 0.55,
+"pan": 0.6
+},
+{
+"seg": "S17",
+"word": "2",
+"nth": 0,
+"offset": 0.25,
+"sound": "pop",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S17",
+"word": "junior",
+"nth": 0,
+"offset": -0.5,
+"sound": "pop",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S17",
+"word": "junior",
+"nth": 0,
+"offset": 0.05,
+"sound": "register",
+"gain": 0.7,
+"pan": 0.4
+},
+{
+"seg": "S17",
+"word": "pagne",
+"nth": 0,
+"offset": -0.25,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": 0.2
+},
+{
+"seg": "S17",
+"word": "paye",
+"nth": 0,
+"offset": -0.04,
+"sound": "riffle",
+"gain": 0.45,
+"pan": 0.5
+},
+{
+"seg": "S17",
+"word": "paye",
+"nth": 0,
+"offset": 0,
+"sound": "stamp",
+"gain": 0.8,
+"pan": 0
+},
+{
+"seg": "S18",
+"word": "mboppi",
+"nth": 0,
+"offset": 0,
+"sound": "pop",
+"gain": 0.35,
+"pan": 0.1
+},
+{
+"seg": "S18",
+"word": "suit",
+"nth": 0,
+"offset": -0.08,
+"sound": "pop",
+"gain": 0.55,
+"pan": -0.5
+},
+{
+"seg": "S18",
+"word": "pas",
+"nth": 0,
+"offset": 0,
+"sound": "trombone",
+"gain": 0.35,
+"pan": 0.5
+},
+{
+"seg": "S18",
+"word": "ne",
+"nth": 1,
+"offset": -0.25,
+"sound": "whoosh",
+"gain": 0.45,
+"pan": 0.8
+},
+{
+"seg": "S18",
+"word": "ne",
+"nth": 1,
+"offset": -0.06,
+"sound": "stamp",
+"gain": 0.7,
+"pan": 0
+},
+{
+"seg": "S18",
+"word": "pas",
+"nth": 1,
+"offset": -0.05,
+"sound": "buzzer",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S18",
+"word": "pas",
+"nth": 1,
+"offset": 0.1,
+"sound": "whoosh_long",
+"gain": 0.45,
+"pan": -0.2
+},
+{
+"seg": "S18",
+"word": "coupez",
+"nth": 1,
+"offset": -0.06,
+"sound": "stamp",
+"gain": 0.7,
+"pan": 0
+},
+{
+"seg": "S18",
+"word": "coupez",
+"nth": 1,
+"offset": 0.2,
+"sound": "snip",
+"gain": 0.8,
+"pan": -0.7
+},
+{
+"seg": "S18",
+"word": "les",
+"nth": 0,
+"offset": 0.1,
+"sound": "snip",
+"gain": 0.8,
+"pan": 0
+},
+{
+"seg": "S18",
+"word": "morceaux",
+"nth": 0,
+"offset": 0.12,
+"sound": "snip",
+"gain": 0.8,
+"pan": 0.6
+},
+{
+"seg": "S18",
+"word": "morceaux",
+"nth": 0,
+"offset": 0.28,
+"sound": "flick",
+"gain": 0.5,
+"pan": -0.4
+},
+{
+"seg": "S18",
+"word": "morceaux",
+"nth": 0,
+"offset": 0.32,
+"sound": "marker_long",
+"gain": 0.4,
+"pan": -0.4
+},
+{
+"seg": "S19",
+"word": "negociez",
+"nth": 0,
+"offset": -0.82,
+"sound": "whoosh",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S19",
+"word": "negociez",
+"nth": 0,
+"offset": 0.16,
+"sound": "flick",
+"gain": 0.55,
+"pan": -0.3
+},
+{
+"seg": "S19",
+"word": "negociez",
+"nth": 0,
+"offset": 0.2,
+"sound": "marker",
+"gain": 0.35,
+"pan": -0.3
+},
+{
+"seg": "S19",
+"word": "negociez",
+"nth": 0,
+"offset": 0.58,
+"sound": "snip",
+"gain": 0.7,
+"pan": 0.5
+},
+{
+"seg": "S19",
+"word": "photos",
+"nth": 0,
+"offset": 0.16,
+"sound": "flick",
+"gain": 0.55,
+"pan": -0.3
+},
+{
+"seg": "S19",
+"word": "photos",
+"nth": 0,
+"offset": 0.26,
+"sound": "key",
+"gain": 0.5,
+"pan": 0
+},
+{
+"seg": "S19",
+"word": "photos",
+"nth": 0,
+"offset": 0.58,
+"sound": "snip",
+"gain": 0.7,
+"pan": 0.5
+},
+{
+"seg": "S19",
+"word": "total",
+"nth": 0,
+"offset": 0.16,
+"sound": "flick",
+"gain": 0.55,
+"pan": -0.3
+},
+{
+"seg": "S19",
+"word": "total",
+"nth": 0,
+"offset": 0.3,
+"sound": "marker",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S19",
+"word": "total",
+"nth": 0,
+"offset": 0.58,
+"sound": "snip",
+"gain": 0.7,
+"pan": 0.5
+},
+{
+"seg": "S19",
+"word": "pas",
+"nth": 0,
+"offset": 0.1,
+"sound": "flick",
+"gain": 0.55,
+"pan": -0.3
+},
+{
+"seg": "S19",
+"word": "pas",
+"nth": 0,
+"offset": 0.52,
+"sound": "snip",
+"gain": 0.7,
+"pan": 0.5
+}
+]

@@ -1,0 +1,153 @@
+{
+ "title": "Votre vrai prix de revient — Tchac, le billet maigrit !",
+ "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0)",
+ "example": "EXEMPLE FICTIF (pas des tarifs Bonzini) — 100 paires, 5 000 F/paire en Chine, revendue 10 000 (× 2). Par paire commandée : fournisseur 5 000, taux+frais 150, camion Chine 200, bateau 800, douane 3 000, petits frais 350 = 9 500 ; lot 950 000. 5 paires invendables → 950 000 ÷ 95 = 10 000 (pertes 500/paire). × 2 = 0 de bénéfice ; à 9 000 : −95 000 ; × 1,25 → 12 500, 2 500/paire, 237 500 sur le lot ; marché 11 000 → coût visé 8 800.",
+ "facts": "Valeur en douane = marchandise + transport + assurance (CGI art. 138, OMC s445 §3.26). Bonzini : paiement fournisseurs en XAF, taux appliqué affiché avant confirmation (NewPaymentAmountStep / écran de confirmation), colis scannés, photographiés, pesés, mesurés à la réception de Guangzhou (parcel_reception). Aucun tarif, taux ¥ ou délai Bonzini.",
+ "segments": [
+  {
+   "id": "S1",
+   "chapter": "hook",
+   "gap": 0.6,
+   "text": "Ce billet de 10 000 francs… je vais le découper. Devant vous.",
+   "tts": "Ce billet de dix mille francs… je vais le découper. Devant vous."
+  },
+  {
+   "id": "S2",
+   "chapter": "junior",
+   "text": "Ce billet, c'est une paire de baskets que Junior revend à Mboppi. En Chine, elle coûte 5 000… Tchac, le billet maigrit !",
+   "tts": "Ce billet, c'est une paire de baskets que Junior revend à Mbopi. En Chine, elle coûte cinq mille… Tchak ! Le billet maigrit !"
+  },
+  {
+   "id": "S3",
+   "chapter": "dream",
+   "text": "Prix chinois fois deux, comme beaucoup : 5 000 de bénéfice, 500 000 sur 100 paires. Le pagne du 8 mars pour maman ? Promis.",
+   "tts": "Prix chinois fois deux, comme beaucoup : cinq mille de bénéfice, cinq cent mille sur cent paires. Le pagne du huit mars pour maman ? Promis.",
+   "take": 3
+  },
+  {
+   "id": "S4",
+   "chapter": "dare",
+   "text": "Et vous : il gagne combien, vraiment ? Écrivez votre chiffre en commentaire. Maintenant.",
+   "tts": "Et vous : il gagne combien, vraiment ? Écrivez votre chiffre en commentaire. Maintenant."
+  },
+  {
+   "id": "S5",
+   "chapter": "taux",
+   "text": "Le taux. Junior a compté au taux Google… mais on paie au taux vraiment appliqué, frais compris. Exemple : 150… tchac !",
+   "tts": "Le taux. Junior a compté au taux Google… mais on paie au taux vraiment appliqué, frais compris. Exemple : cent cinquante… Tchak !",
+   "take": 3
+  },
+  {
+   "id": "S6",
+   "chapter": "camion",
+   "text": "Le camion, de l'usine à l'entrepôt de Guangzhou : 200… tchac !",
+   "tts": "Le camion, de l'usine à l'entrepôt de Gouangzou : deux cents… Tchak !"
+  },
+  {
+   "id": "S7",
+   "chapter": "bateau",
+   "text": "Le bateau : 800. Au maritime, on paie le mètre cube… même l'air des boîtes à chaussures ! Tchac, le billet maigrit !",
+   "tts": "Le bateau : huit cents. Au maritime, on paie le mètre cube… même l'air des boîtes à chaussures ! Tchak ! Le billet maigrit !"
+  },
+  {
+   "id": "S8",
+   "chapter": "douane",
+   "text": "Le gros morceau : droits et taxes de douane. Exemple : 3 000… tchac, tchac ! Inclus dans le groupage ou payés à part, ils sont dans votre prix.",
+   "tts": "Le gros morceau : droits et taxes de douane. Exemple : trois mille… Tchak, tchak ! Inclus dans le groupage ou payés à part, ils sont dans votre prix."
+  },
+  {
+   "id": "S9",
+   "chapter": "frais",
+   "text": "Les petits frais : le crédit brûlé à négocier sur WhatsApp, le pousseur, le taxi jusqu'à Mboppi. 350… tchac !",
+   "tts": "Les petits frais : le crédit brûlé à négocier sur ouatsape, le pousseur, le taxi jusqu'à Mbopi. Trois cent cinquante… Tchak !"
+  },
+  {
+   "id": "S10",
+   "chapter": "repit",
+   "text": "Il reste 500. Junior respire… et ouvre les cartons.",
+   "tts": "Il reste cinq cents. Junior respire… et ouvre les cartons."
+  },
+  {
+   "id": "S11",
+   "chapter": "twist",
+   "text": "5 paires… deux pieds gauches ! Payées, transportées, dédouanées : invendables. Leur coût retombe sur les 95 autres, 500 par paire… tchac.",
+   "tts": "Cinq paires… deux pieds gauches ! Payées, transportées, dédouanées : invendables. Leur coût retombe sur les quatre-vingt-quinze autres, cinq cents par paire… tchak."
+  },
+  {
+   "id": "S12",
+   "chapter": "zero",
+   "gap": 0.8,
+   "text": "Regardez le billet. Il ne reste… rien. Prix chinois fois deux… égale zéro.",
+   "tts": "Regardez le billet. Il ne reste… rien. … Prix chinois fois deux… égale zéro."
+  },
+  {
+   "id": "S13",
+   "chapter": "ticket",
+   "text": "Sur le lot : 950 000 payés, 95 paires à vendre, 10 000 la paire. Son vrai prix de revient… c'est son prix de vente.",
+   "tts": "Sur le lot : neuf cent cinquante mille payés, quatre-vingt-quinze paires à vendre, dix mille la paire. Son vrai prix de revient… c'est son prix de vente.",
+   "take": 2
+  },
+  {
+   "id": "S14",
+   "chapter": "haggle",
+   "text": "La cliente négocie : « Mon fils, laisse à 9 000 ! » Junior accepte. Plus il vend… plus il perd.",
+   "tts": "La cliente négocie : « Mon fils, laisse à neuf mille ! » Junior accepte. Plus il vend… plus il perd."
+  },
+  {
+   "id": "S15",
+   "chapter": "formule",
+   "text": "La règle : tout ce que vous payez jusqu'à la boutique, divisé par les pièces vraiment vendables. C'est votre plancher : en dessous, vous payez pour travailler.",
+   "tts": "La règle : tout ce que vous payez jusqu'à la boutique, divisé par les pièces vraiment vendables. C'est votre plancher : en dessous, vous payez pour travailler."
+  },
+  {
+   "id": "S16",
+   "chapter": "prix",
+   "text": "Le prix de vente vient après. Pour garder 20 % du prix de vente : pas fois 1,20… fois 1,25. 12 500.",
+   "tts": "Le prix de vente vient après. Pour garder vingt pour cent du prix de vente : pas fois un virgule vingt… fois un virgule vingt-cinq. Douze mille cinq cents."
+  },
+  {
+   "id": "S17",
+   "chapter": "happy",
+   "text": "2 500 par paire pour Junior. Cette fois, le beau pagne est payé.",
+   "tts": "Deux mille cinq cents par paire pour Junior. Cette fois, le beau pagne est payé.",
+   "take": 11
+  },
+  {
+   "id": "S18",
+   "chapter": "marche",
+   "text": "Mboppi ne suit pas ? Ne coupez pas la marge : coupez les morceaux.",
+   "tts": "Mbopi ne suit pas ? Ne coupez pas la marge : coupez les morceaux."
+  },
+  {
+   "id": "S19",
+   "chapter": "reflexes",
+   "text": "Négociez, exigez des photos avant expédition, et comparez le total en francs CFA, pas le taux.",
+   "tts": "Négociez, exigez des photos avant expédition, et comparez le total en francs CFA, pas le taux."
+  },
+  {
+   "id": "S20",
+   "chapter": "bonzini",
+   "text": "Chez Bonzini, vous payez vos fournisseurs en francs CFA, et le taux appliqué s'affiche avant de confirmer.",
+   "tts": "Chez Bonzini, vous payez vos fournisseurs en francs CFA, et le taux appliqué s'affiche avant de confirmer."
+  },
+  {
+   "id": "S21",
+   "chapter": "bonzini",
+   "text": "À Guangzhou, chaque colis est scanné, photographié, pesé, mesuré dès réception : vous connaissez votre volume avant l'arrivée.",
+   "tts": "À Gouangzou, chaque colis est scanné, photographié, pesé, mesuré dès réception : vous connaissez votre volume avant l'arrivée."
+  },
+  {
+   "id": "S22",
+   "chapter": "cta",
+   "text": "Vous aviez écrit 5 000 ? Écrivez « TCHAC » en commentaire… et partagez à l'ami qui calcule encore « fois deux ».",
+   "tts": "Vous aviez écrit cinq mille ? Écrivez « Tchak » en commentaire… et partagez à l'ami qui calcule encore « fois deux »."
+  },
+  {
+   "id": "S23",
+   "chapter": "sign",
+   "text": "Bonzini Trading Cargo. Payez vos fournisseurs… et connaissez votre vrai prix.",
+   "tts": "Bonzini Trading Cargo. Payez vos fournisseurs… et connaissez votre vrai prix.",
+   "take": 2
+  }
+ ]
+}

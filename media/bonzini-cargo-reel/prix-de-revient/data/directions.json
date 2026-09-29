@@ -1,0 +1,140 @@
+{
+ "S1": {
+  "chapter": "hook",
+  "vo": "Ce billet de 10 000 francs… je vais le découper. Devant vous.",
+  "visual": "Plan fixe vu du dessus, table kraft plein cadre, légère avancée caméra de 3 % en continu. Image 0 déjà en mouvement : le billet-accessoire SPÉCIMEN claque au centre à l'image 3 (écrasement de 2 images, secousse de 6 px). Des lignes de coupe au crayon, proportionnelles aux 7 coûts, se dessinent sur le billet sans légende. Les ciseaux de tailleur glissent depuis la droite, déjà ouverts (reflet, « schling »). Sur « découper », TCHAC : un petit coin de la moitié gauche vole vers la caméra. Sur « Devant vous. », les lames restent ouvertes au-dessus du billet, 4 images de silence, puis un groove makossa/afropop léger démarre (~100 BPM, guitare claire). Les coupes suivantes tombent sur le temps fort. Zones sûres 9:16 : aucun texte clé dans les 320 px du bas ni les 140 px de droite.",
+  "onscreen": "« OÙ PARTENT VOS 10 000 F ? » (bande déchirée, 10 000 F en orange) · tampon « EXEMPLE FICTIF » en haut à gauche, pendant toute la vidéo · calculatrice en haut à droite : « RESTE SUR LE BILLET : 10 000 »"
+ },
+ "S2": {
+  "chapter": "junior",
+  "vo": "Ce billet, c'est une paire de baskets que Junior revend à Mboppi. En Chine, elle coûte 5 000… Tchac, le billet maigrit !",
+  "visual": "Léger dézoom en 2 poses. En bas à gauche apparaît Junior : personnage plat en papier, tête ronde brun foncé, casquette ambre, t-shirt violet, attaches parisiennes visibles aux épaules et aux coudes, pose « pouce levé ». Derrière lui, une pile de boîtes à chaussures. INDICE PLANTÉ : pendant 8 images, le couvercle d'une boîte est entrouvert et laisse voir deux chaussures gauches identiques, puis il se referme. Une basket pend au fil violet avec une étiquette « 10 000 F ». Un téléphone en carton affiche une bulle de discussion générique, sans logo : « 5 000 F / paire ». Sur « Tchac », les ciseaux coupent la moitié gauche du billet (50 %). L'impact est lourd, le papier tremble. La moitié glisse dans une enveloppe kraft « FOURNISSEUR » fermée au fil violet, posée en bas du cadre (1re d'une rangée de 7 emplacements). La calculatrice bascule de 10 000 à 5 000 (chiffres en rouleau).",
+  "onscreen": "« JUNIOR · Mboppi, Douala » · tranche « FOURNISSEUR 5 000 F » · calculatrice « RESTE : 5 000 » · grande bande « TCHAC ! LE BILLET MAIGRIT. » (1re apparition)"
+ },
+ "S3": {
+  "chapter": "dream",
+  "vo": "Prix chinois fois deux, comme beaucoup : 5 000 de bénéfice, 500 000 sur 100 paires. Le pagne du 8 mars pour maman ? Promis.",
+  "visual": "Une bulle de pensée en papier crème gonfle au-dessus de Junior. Dedans, un morceau de page Seyès où le feutre écrit en direct « 5 000 × 2 = 10 000 », puis « 10 000 − 5 000 = 5 000 F / paire », puis « × 100 = 500 000 F ». Une pile de pièces grandit à chaque ligne, avec des tintements. Un pagne wax (cercles concentriques violet/ambre/orange) se déplie avec l'étiquette « Pagne du 8 mars ». La maman, découpe plate avec un foulard orange, lève le pouce. Gag : pendant un demi-temps, les yeux de Junior deviennent deux pièces marquées « F ». Une petite mention « (dans sa tête) » s'affiche sous la bulle.",
+  "onscreen": "« 5 000 × 2 = 10 000 F » · « +5 000 F / paire » · grande plaque ambre « × 100 = 500 000 F » · « Pagne du 8 mars : promis »"
+ },
+ "S4": {
+  "chapter": "dare",
+  "vo": "Et vous : il gagne combien, vraiment ? Écrivez votre chiffre en commentaire. Maintenant.",
+  "visual": "La bulle de pensée se fige. En bas à gauche, au-dessus de la zone sûre, une bulle de commentaire en papier découpé surgit avec un curseur qui clignote et une flèche dessinée à la main vers le bas. Sur « Maintenant. », un tampon orange « MAINTENANT » claque, secousse de 3 px. Les ciseaux se rouvrent au-dessus de la moitié restante du billet (« schling » menaçant). La bulle de commentaire rétrécit dans son coin et y reste, curseur clignotant, jusqu'à la révélation de S12 : c'est la boucle ouverte.",
+  "onscreen": "« IL GAGNE COMBIEN, VRAIMENT ? » · « Votre chiffre en commentaire ↓ » · tampon « MAINTENANT »"
+ },
+ "S5": {
+  "chapter": "taux",
+  "vo": "Le taux. Junior a compté au taux Google… mais on paie au taux vraiment appliqué, frais compris. Exemple : 150… tchac !",
+  "visual": "Deux fiches en papier côte à côte au-dessus du billet. À gauche, une barre de recherche générique, sans logo, avec « taux Google » écrit au crayon gris. À droite, un talon de reçu « taux appliqué + frais » à l'encre. AUCUN chiffre de taux. Le feutre trace un grand « ≠ » entre les deux. Les ciseaux coupent une lamelle fine (1,5 %) qui s'enroule comme un ruban et tombe dans l'enveloppe « TAUX + FRAIS ». La calculatrice passe de 5 000 à 4 850. Aucune étiquette Bonzini dans cette scène.",
+  "onscreen": "« Taux Google ≠ taux APPLIQUÉ + frais » · tranche « TAUX + FRAIS 150 F (exemple) » · petit : « quel que soit votre moyen de paiement » · calculatrice « 4 850 »"
+ },
+ "S6": {
+  "chapter": "camion",
+  "vo": "Le camion, de l'usine à l'entrepôt de Guangzhou : 200… tchac !",
+  "visual": "Temps court et sec. Une mini-carte kraft porte deux épingles, « USINE » et « GUANGZHOU », reliées par le fil violet. Un camion en papier roule le long du fil (poses par deux, traînée de mouvement), chargé de cartons kraft marqués au feutre « JUNIOR · DOUALA », sans étiquette BZ. Une pièce tombe du camion (tintement). Les ciseaux coupent une lamelle de 2 % qui tombe dans l'enveloppe « CAMION CHINE ». La calculatrice passe de 4 850 à 4 650.",
+  "onscreen": "tranche « CAMION CHINE 200 F » · calculatrice « 4 650 »"
+ },
+ "S7": {
+  "chapter": "bateau",
+  "vo": "Le bateau : 800. Au maritime, on paie le mètre cube… même l'air des boîtes à chaussures ! Tchac, le billet maigrit !",
+  "visual": "Un porte-conteneurs en papier glisse sur une bande de mer en papier bleu déchiré, avec les cartons « JUNIOR · DOUALA », toujours sans étiquette BZ. Plan vu du dessus sur une boîte à chaussures ouverte : la basket en occupe la moitié. Le vide se remplit de hachures bleu clair et un petit nuage en papier marqué « AIR » y apparaît, avec sa propre étiquette de prix au fil violet. Junior serre le nuage dans ses bras, penaud. Le mètre ruban claque autour de la boîte, SANS aucun chiffre visible, puis un tampon « AU m³ » tombe. Les ciseaux coupent 8 % du billet, qui glisse dans l'enveloppe « BATEAU ». La calculatrice passe de 4 650 à 3 850. Aucun volume, aucun prix au m³.",
+  "onscreen": "tranche « BATEAU 800 F » · « Au m³ : même l'AIR se paie » · calculatrice « 3 850 » · bande « TCHAC ! LE BILLET MAIGRIT. » (2e)"
+ },
+ "S8": {
+  "chapter": "douane",
+  "vo": "Le gros morceau : droits et taxes de douane. Exemple : 3 000… tchac, tchac ! Inclus dans le groupage ou payés à part, ils sont dans votre prix.",
+  "visual": "La musique tombe sur une basse sourde. L'ombre d'un tampon géant « DOUANE » grandit au-dessus de la table (suspense), puis le tampon s'abat : éclaboussure d'encre, secousse de 6 px. Les ciseaux peinent : la tranche de 30 % demande DEUX coups, plus lents et plus lourds (« tchac, tchac »). Le morceau tombe avec un bruit sourd dans l'enveloppe « DOUANE », qui gonfle. La calculatrice passe de 3 850 à 850 avec un flash rouge. Un post-it jaune en biais, lisible sur pause, pose l'assiette [FACT?]. Sur la dernière phrase, deux petites boîtes kraft s'ouvrent ensemble, l'une marquée « inclus dans le groupage ? », l'autre « payé à part ? ». Dans les deux, la même main en papier pointe vers la caméra, avec « DANS VOTRE PRIX ». Pas d'étiquette BZ, aucun pourcentage lu.",
+  "onscreen": "tranche « DOUANE 3 000 F (exemple) » · post-it : « En général* : calculés sur marchandise + transport (+ assurance) → ici 5 000 + 200 + 800 = 6 000 F. Exemple droits + taxes : 3 000 F. *Dépend du produit. » · « Inclus ou à part → DANS VOTRE PRIX » · calculatrice « 850 »"
+ },
+ "S9": {
+  "chapter": "frais",
+  "vo": "Les petits frais : le crédit brûlé à négocier sur WhatsApp, le pousseur, le taxi jusqu'à Mboppi. 350… tchac !",
+  "visual": "Un téléphone en carton (bulles vertes génériques, sans logo) fait défiler des messages en poses par deux : « Last price boss ? » · « Fais un effort ! » · « Encore une photo ? ». Un compteur court en coin, « +214 messages ». Une pièce gratte une carte de recharge et fait apparaître « CRÉDIT ». Coupe sur une bande de rue de Douala en papier : un pousseur tire un pousse-pousse en bois chargé de cartons kraft simples, un taxi jaune découpé le prend en relais, un bendskin file à l'arrière-plan, et le fil violet mène à une épingle « MBOPPI ». Les ciseaux coupent une lamelle de 3,5 % qui tombe dans l'enveloppe « PETITS FRAIS ». La calculatrice passe de 850 à 500.",
+  "onscreen": "« +214 messages » · tranche « PETITS FRAIS 350 F » · calculatrice « 500 »"
+ },
+ "S10": {
+  "chapter": "repit",
+  "vo": "Il reste 500. Junior respire… et ouvre les cartons.",
+  "visual": "La calculatrice « 500 » brille en ambre. Junior s'essuie le front (bras qui pivote sur l'attache parisienne) et la musique s'éclaircit un instant. Un carton kraft vu du dessus : ses 4 rabats s'ouvrent en stop-motion, en 4 poses. Les 7 enveloppes sont alignées en bas du cadre ; la dernière, « PERTES », est encore vide.",
+  "onscreen": "calculatrice « RESTE : 500 » · petit : « ouf ? »"
+ },
+ "S11": {
+  "chapter": "twist",
+  "vo": "5 paires… deux pieds gauches ! Payées, transportées, dédouanées : invendables. Leur coût retombe sur les 95 autres, 500 par paire… tchac.",
+  "visual": "Une main plate sort 5 paires du carton. Chaque paire est la MÊME chaussure gauche dessinée deux fois, dans le même sens, pas en miroir. Le feutre entoure une paire : « 2 pieds gauches ». Le tampon orange « INVENDABLES » tombe, suivi de 0,4 s de silence. Petit encart en haut, 1 s : l'image de l'indice de 0:06 revient, « Vous l'aviez vu ? ». Sur un bout de page Seyès, trois lignes s'écrivent au rythme de la voix. Les ciseaux coupent les derniers 5 %, doucement : le billet n'existe plus. Le « tchac » est plus doux, final.",
+  "onscreen": "« 5 paires INVENDABLES » · « 950 000 ÷ 100 = 9 500 F / paire commandée » · « 5 × 9 500 = 47 500 F » · « 47 500 ÷ 95 = 500 F / paire » · tranche « PERTES 500 F » · calculatrice « 0 »"
+ },
+ "S12": {
+  "chapter": "zero",
+  "vo": "Regardez le billet. Il ne reste… rien. Prix chinois fois deux… égale zéro.",
+  "visual": "À la place du billet, la table kraft vide : son contour au crayon et quelques miettes de papier. Les ciseaux se ferment dans le vide (petit clic). Après « rien », 1,5 s de SILENCE TOTAL : la musique est coupée, on n'entend que l'ambiance de la pièce. Sur « égale zéro », une grande plaque de chiffres en papier découpé s'abat, confettis violet/ambre/orange. Dans la bulle de Junior, le pagne se dégonfle comme un ballon. La bulle de commentaire du coin se met à taper « 0 ? ».",
+  "onscreen": "calculatrice « IL RESTE : 0 F » · grande plaque « PRIX CHINOIS × 2 = 0 F DE BÉNÉFICE »"
+ },
+ "S13": {
+  "chapter": "ticket",
+  "vo": "Sur le lot : 950 000 payés, 95 paires à vendre, 10 000 la paire. Son vrai prix de revient… c'est son prix de vente.",
+  "visual": "L'imprimante à tickets se met en marche (crépitement). C'est le SEUL moment où les chiffres du lot s'affichent. Le ticket imprime, déborde de la table et se déroule jusqu'en bas du cadre, puis se déchire. Tenir le ticket entier 1 s pour la capture d'écran. Une deuxième étiquette est agrafée à côté de l'étiquette « 10 000 F » : « PRIX DE REVIENT : 10 000 F ». Les deux sont identiques ; le feutre trace un « = » entre elles.",
+  "onscreen": "Ticket « LOT : 100 PAIRES · EXEMPLE » : Fournisseur 500 000 / Taux + frais 15 000 / Camion Chine 20 000 / Bateau 80 000 / Douane 300 000 / Petits frais 35 000 / TOTAL 950 000 F / ÷ 95 paires vendables = 10 000 F · étiquettes « PRIX DE VENTE 10 000 F = PRIX DE REVIENT 10 000 F »"
+ },
+ "S14": {
+  "chapter": "haggle",
+  "vo": "La cliente négocie : « Mon fils, laisse à 9 000 ! » Junior accepte. Plus il vend… plus il perd.",
+  "visual": "Une cliente en papier découpé entre, foulard de tête, robe en pagne, sac à main, avec une bulle en lettrage manuscrit. La narratrice lit la réplique sur un ton de marché, joueur. Junior hoche la tête ; l'étiquette est barrée au feutre et réécrite « 9 000 » (grincement du feutre). La caisse de Junior est une vieille boîte de biscuits en métal, marquée « CAISSE », percée au fond d'un trou étiqueté « −1 000 ». À chaque vente, des billets de 9 000 F tombent dedans, mais le niveau BAISSE. En accéléré, 95 ventes, avec un compteur qui file de −1 000 à −95 000.",
+  "onscreen": "bulle « Mon fils, laisse à 9 000 ! » · « 9 000 − 10 000 = −1 000 F / paire » · « 95 × −1 000 = −95 000 F » · grande bande « PLUS IL VEND… PLUS IL PERD »"
+ },
+ "S15": {
+  "chapter": "formule",
+  "vo": "La règle : tout ce que vous payez jusqu'à la boutique, divisé par les pièces vraiment vendables. C'est votre plancher : en dessous, vous payez pour travailler.",
+  "visual": "La musique revient, plus lumineuse. Les 7 enveloppes s'alignent, reliées par le fil violet de « USINE » à « BOUTIQUE ». Le fil se tend et devient une barre de fraction : les enveloppes au-dessus, en dessous la pile des 95 bonnes boîtes (les 5 paires « gauche-gauche » s'effacent). La carte de formule se monte en lettres de papier déchiré, puis le tampon « À GARDER » tombe. Deuxième temps : un mètre ruban se déroule à la verticale et sert de règle de prix. À 10 000, une planche de kraft veiné comme du bois claque, marquée « PLANCHER ». En dessous, une zone hachurée rouge : « vous payez pour travailler ».",
+  "onscreen": "« VRAI PRIX DE REVIENT = TOUT CE QUE VOUS PAYEZ JUSQU'À LA BOUTIQUE ÷ PIÈCES VRAIMENT VENDABLES » · « exemple : 950 000 ÷ 95 = 10 000 F » · « PLANCHER : 10 000 F » · tampon « À GARDER »"
+ },
+ "S16": {
+  "chapter": "prix",
+  "vo": "Le prix de vente vient après. Pour garder 20 % du prix de vente : pas fois 1,20… fois 1,25. 12 500.",
+  "visual": "La table se partage en deux, avec deux étiquettes au fil violet et la calculatrice au milieu. À gauche, l'écran tape 10000 × 1.20 = 12000 ; un post-it indique « marge 2 000 = 20 % du COÛT… mais 16,7 % du PRIX » ; petit tampon orange « ✗ pas l'objectif ». À droite, l'écran tape 10000 × 1.25 = 12500 ; post-it « marge 2 500 = 20 % du PRIX DE VENTE » ; tampon violet ✓ et un « ding ». Sur la règle verticale, un drapeau ambre se plante à 12 500, au-dessus de la planche du plancher.",
+  "onscreen": "« × 1,20 → 12 000 F → 2 000 = 16,7 % du prix ✗ » · « × 1,25 → 12 500 F → 2 500 = 20 % du prix ✓ » · bande « 20 % DU PRIX DE VENTE = × 1,25 »"
+ },
+ "S17": {
+  "chapter": "happy",
+  "vo": "2 500 par paire pour Junior. Cette fois, le pagne est payé.",
+  "visual": "L'étiquette de la basket est réécrite « 12 500 F ». Le compteur monte jusqu'à 237 500 pendant qu'une pile de pièces grandit. Junior tend le pagne wax plié à sa maman ; elle le déplie, confettis de papier aux trois couleurs. La bulle de pensée se referme, le rêve est remplacé par le vrai.",
+  "onscreen": "« 95 × 2 500 = 237 500 F de VRAI bénéfice (exemple) » · « Pagne du 8 mars : PAYÉ »"
+ },
+ "S18": {
+  "chapter": "marche",
+  "vo": "Mboppi ne suit pas ? Ne coupez pas la marge : coupez les morceaux.",
+  "visual": "Un étal de Mboppi en papier découpé, auvent en triangles de wax. L'étiquette d'un voisin affiche « 11 000 F » ; notre étiquette « 12 500 » transpire (3 gouttes de papier) et vacille. Les ciseaux se retournent, passent AU-DESSUS de l'étiquette sans la toucher et piquent vers la rangée d'enveloppes de coûts. Le renversement de la métaphore devient visible.",
+  "onscreen": "bande « NE COUPEZ PAS LA MARGE : COUPEZ LES MORCEAUX » · post-it : « Mboppi paie 11 000 ? Prix de revient visé : 11 000 × 0,80 = 8 800 F (−1 200 F / paire) »"
+ },
+ "S19": {
+  "chapter": "reflexes",
+  "vo": "Négociez, exigez des photos avant expédition, et comparez le total en francs CFA, pas le taux.",
+  "visual": "Des post-it tombent en rythme ; à chacun, une mini-paire de ciseaux affine l'enveloppe correspondante, qui maigrit à son tour. ① « NÉGOCIER » : une étiquette de prix pincée entre deux doigts, enveloppe FOURNISSEUR. ② « PHOTOS DES PAIRES AVANT EXPÉDITION (fournisseur) » : un appareil photo en papier et une paire gauche-gauche barrée, enveloppe PERTES. ③ « COMPARER LE TOTAL EN F CFA, PAS LE TAUX » : deux reçus côte à côte, le feutre entoure les TOTAUX, enveloppe TAUX + FRAIS. ④, à l'écran seulement : « MOINS DE VIDE DANS LES CARTONS », enveloppe BATEAU.",
+  "onscreen": "① NÉGOCIER · ② PHOTOS AVANT EXPÉDITION · ③ LE TOTAL EN F CFA, PAS LE TAUX · ④ MOINS DE VIDE DANS LES CARTONS"
+ },
+ "S20": {
+  "chapter": "bonzini",
+  "vo": "Chez Bonzini, vous payez vos fournisseurs en francs CFA, et le taux appliqué s'affiche avant de confirmer.",
+  "visual": "Premier plan de marque, et première étiquette Bonzini de toute la vidéo, SANS aucun chiffre à côté. Une liasse de billets FCFA stylisés entre dans une fente en papier à gauche ; un reçu « PAYÉ » marqué ¥ sort à droite, sans taux. Coupe sur la vignette de l'entrepôt de Guangzhou : un carton kraft avec l'étiquette maritime bleue de la série et le code fictif « BZ-XXXXXX ». Un temps par verbe : faisceau de scanner violet (bip) ; flash d'appareil photo (2 images blanches) ; balance dont l'aiguille oscille sur un cadran FLOU ; mètre ruban le long de 3 arêtes, sans chiffres. Quatre cases se cochent en rythme. Sur une mini-carte, le fil violet va de Guangzhou à Douala ; pendant que le bateau est encore en mer, Junior tape déjà sur sa calculatrice.",
+  "onscreen": "« Payez vos fournisseurs en F CFA » · « GUANGZHOU : scanné ✓ photographié ✓ pesé ✓ mesuré ✓ » · « Volume connu AVANT l'arrivée »"
+ },
+ "S21": {
+  "chapter": "bonzini",
+  "vo": "À Guangzhou, chaque colis est scanné, photographié, pesé, mesuré dès réception : vous connaissez votre volume avant l'arrivée.",
+  "visual": "Premier plan de marque, et première étiquette Bonzini de toute la vidéo, SANS aucun chiffre à côté. Une liasse de billets FCFA stylisés entre dans une fente en papier à gauche ; un reçu « PAYÉ » marqué ¥ sort à droite, sans taux. Coupe sur la vignette de l'entrepôt de Guangzhou : un carton kraft avec l'étiquette maritime bleue de la série et le code fictif « BZ-XXXXXX ». Un temps par verbe : faisceau de scanner violet (bip) ; flash d'appareil photo (2 images blanches) ; balance dont l'aiguille oscille sur un cadran FLOU ; mètre ruban le long de 3 arêtes, sans chiffres. Quatre cases se cochent en rythme. Sur une mini-carte, le fil violet va de Guangzhou à Douala ; pendant que le bateau est encore en mer, Junior tape déjà sur sa calculatrice.",
+  "onscreen": "« Payez vos fournisseurs en F CFA » · « GUANGZHOU : scanné ✓ photographié ✓ pesé ✓ mesuré ✓ » · « Volume connu AVANT l'arrivée »"
+ },
+ "S22": {
+  "chapter": "cta",
+  "vo": "Vous aviez écrit 5 000 ? Écrivez « TCHAC » en commentaire… et partagez à l'ami qui calcule encore « fois deux ».",
+  "visual": "Un billet neuf de 10 000 SPÉCIMEN sur la table, les ciseaux ouverts en suspens au-dessus. La bulle de commentaire du coin (celle de S4) revient en grand et tape « TCHAC » lettre par lettre, un bruit de tampon par lettre, avec une icône de ciseaux. Junior surgit du bas avec une ardoise « TCHAC ». Une flèche de partage se déplie comme un papier plié, vers la découpe d'un ami qui écrit encore « × 2 » dans son cahier, sûr de lui.",
+  "onscreen": "« Vous aviez écrit 5 000 ? » · « Commentez : TCHAC ✂ » · « Partagez à l'ami du « × 2 » »"
+ },
+ "S23": {
+  "chapter": "sign",
+  "vo": "Bonzini Trading Cargo. Payez vos fournisseurs… et connaissez votre vrai prix.",
+  "visual": "Les 7 tranches ressortent des enveloppes et reforment le billet en stop-motion inversé ; le fil violet recoud les jointures. Le billet se retourne et révèle le logo Bonzini tamponné sur du kraft, encadré de deux cartons à étiquettes bleue (maritime) et rouge (aérien). Un dernier « tchac » des ciseaux qui se referment accompagne la pose du logo. La signature s'affiche sur une bande déchirée. La dernière image reprend exactement la composition de l'image 0 (billet + ciseaux ouverts) pour que la vidéo boucle.",
+  "onscreen": "« BONZINI TRADING CARGO » · « Payez vos fournisseurs. Connaissez votre vrai prix. » · petits caractères : « Exemple fictif : chiffres illustratifs, pas des tarifs. »"
+ }
+}
