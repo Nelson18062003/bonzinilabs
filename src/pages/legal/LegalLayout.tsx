@@ -164,11 +164,14 @@ export function LegalLayout({
   title,
   intro,
   sections,
+  updated = LAST_UPDATED,
 }: {
   eyebrow: string;
   title: string;
   intro: string;
   sections: LegalSection[];
+  /** La date de la dernière modification DE CE document (chacun la sienne). */
+  updated?: string;
 }) {
   // Le titre de l'onglet double le H1 : ces pages sont souvent ouvertes dans un
   // onglet parmi dix, par un relecteur qui compare des documents.
@@ -277,7 +280,7 @@ export function LegalLayout({
           {intro}
         </p>
         <p style={{ fontFamily: F.body, fontSize: 13, color: C.dim, margin: '0 0 40px' }}>
-          Dernière mise à jour : {LAST_UPDATED} · Éditeur : {COMPANY.name}
+          Dernière mise à jour : {updated} · Éditeur : {COMPANY.name}
         </p>
 
         {/* Sommaire — un document de cette longueur se parcourt d'abord. */}

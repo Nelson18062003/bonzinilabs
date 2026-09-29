@@ -597,10 +597,8 @@ BEGIN
   END IF;
   INSERT INTO public.customs_classification_messages (classification_id, author, author_user_id, body, payload)
   VALUES (p_id, 'broker', v_uid,
-          CASE p_decision
-            WHEN 'approved' THEN 'Code validé : ' || v_code || COALESCE(E'\n' || v_note, '')
-            WHEN 'changed' THEN 'Code retenu : ' || v_code || E'\n' || v_note
-            ELSE v_note END,
+          -- Le code est dans payload.final_code (l'écran l'écrit formaté, 8504.40) ; le corps garde les mots du CAD.
+          CASE p_decision WHEN 'approved' THEN COALESCE(v_note, 'Code validé.') ELSE v_note END,
           jsonb_build_object('decision', p_decision, 'final_code', v_code, 'broker_company', v_broker.company, 'broker_license_no', v_broker.license_no));
 
   PERFORM public.customs_notify_client(v_row.client_user_id,
@@ -808,6 +806,39 @@ REVOKE ALL ON FUNCTION public.customs_audit_review(UUID, TEXT, BIGINT) FROM PUBL
 GRANT EXECUTE ON FUNCTION public.customs_audit_review(UUID, TEXT, BIGINT) TO authenticated;
 COMMENT ON FUNCTION public.customs_audit_review(UUID, TEXT, BIGINT) IS
   '@mola:{"expose":true,"kind":"write","permission":"canSignCustoms","confirm":true,"danger":true,"label":"Rendre l''avis du CAD sur un audit de déclaration (montant récupérable)"}';
+
+-- 8.6 Les dossiers douane du client connecté : ses fiches et ses audits.
+CREATE OR REPLACE FUNCTION public.customs_my_files()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Connexion requise'); END IF;
+  RETURN jsonb_build_object(
+    'success', true,
+    'classifications', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', c.id, 'ref', c.ref, 'product_name', c.product_name, 'status', c.status,
+        'proposed_code', c.proposed_code, 'final_code', c.final_code, 'broker_company', c.broker_company,
+        'created_at', c.created_at, 'updated_at', c.updated_at) ORDER BY c.updated_at DESC)
+      FROM public.customs_classifications c WHERE c.client_user_id = v_uid AND c.status <> 'cancelled'), '[]'::jsonb),
+    'audits', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', a.id, 'ref', a.ref, 'dau_number', a.dau_number, 'status', a.status, 'overpaid_xaf', a.overpaid_xaf,
+        'recoverable_xaf', a.recoverable_xaf, 'claim_deadline', a.claim_deadline,
+        'created_at', a.created_at, 'updated_at', a.updated_at) ORDER BY a.updated_at DESC)
+      FROM public.customs_audits a WHERE a.client_user_id = v_uid AND a.status <> 'cancelled'), '[]'::jsonb)
+  );
+END;
+$fn$;
+REVOKE ALL ON FUNCTION public.customs_my_files() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.customs_my_files() TO authenticated;
+COMMENT ON FUNCTION public.customs_my_files() IS
+  '@mola:{"expose":false,"kind":"read","permission":"canViewCustoms","confirm":false,"danger":false,"label":"Les dossiers douane du client connecté (vue du client)"}';
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 9. RPC — l'équipe

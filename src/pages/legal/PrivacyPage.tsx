@@ -9,7 +9,8 @@
 // vérifiés dans le code, pas supposés :
 //   Supabase   → base de données, authentification, stockage des pièces
 //   Resend     → emails transactionnels (supabase/functions/send-email)
-//   Anthropic  → assistant Mola, côté administration (functions/admin-assistant)
+//   Anthropic  → assistant Mola, côté administration (functions/admin-assistant),
+//                et assistant de classement douanier (functions/customs-ai)
 //   Telegram   → alertes internes aux administrateurs (functions/telegram-bot)
 //   Vercel     → hébergement du site et mesure d'audience (@vercel/analytics)
 //   Google     → connexion des administrateurs par compte Google (OAuth)
@@ -78,6 +79,11 @@ const sections: LegalSection[] = [
               (nom du bénéficiaire, banque ou compte Alipay/WeChat concerné).
             </>,
             <>
+              <span style={B}>Dossiers douane</span> — si vous utilisez nos outils douane&nbsp;: la
+              description et les photos des produits à classer, la conversation avec l'assistant, et les
+              déclarations en douane que vous nous confiez.
+            </>,
+            <>
               <span style={B}>Échanges avec nous</span> — messages du support, pièces jointes, historique
               des demandes.
             </>,
@@ -118,6 +124,11 @@ const sections: LegalSection[] = [
               <em style={{ color: C.muted }}>Base : intérêt légitime.</em>
             </>,
             <>
+              <span style={B}>Classer vos marchandises</span> — proposer le code tarifaire d'un produit,
+              le faire valider par un commissionnaire agréé en douane, et vérifier vos déclarations.{' '}
+              <em style={{ color: C.muted }}>Base : exécution du contrat.</em>
+            </>,
+            <>
               <span style={B}>Vous informer</span> — notifications d'opérations, alertes de sécurité,
               messages de service.{' '}
               <em style={{ color: C.muted }}>Base : exécution du contrat.</em>
@@ -147,6 +158,11 @@ const sections: LegalSection[] = [
           attente d'une opération qui s'écarte de vos habitudes. Ces mécanismes peuvent{' '}
           <span style={B}>retarder</span> une opération, jamais la refuser définitivement sans qu'une
           personne de notre équipe l'examine.
+        </P>
+        <P>
+          Le code douanier proposé par notre assistant n'est qu'une <span style={B}>proposition</span>&nbsp;:
+          il ne devient une référence qu'une fois examiné et signé par un commissionnaire agréé en douane,
+          qui peut le valider, le corriger ou vous poser une question.
         </P>
         <P>
           Vous pouvez toujours demander ce réexamen humain, contester la décision et faire valoir votre
@@ -212,7 +228,9 @@ const sections: LegalSection[] = [
             </>,
             <>
               <span style={B}>Anthropic</span> — assistant interne d'exploitation, utilisé par notre
-              équipe. Les données qui lui sont soumises ne servent pas à entraîner de modèle.
+              équipe, et assistant de classement douanier&nbsp;: il lit la description et les photos des
+              produits que vous lui soumettez. Les données qui lui sont soumises ne servent pas à
+              entraîner de modèle.
             </>,
             <>
               <span style={B}>Google</span> — uniquement si un membre de notre équipe se connecte à
@@ -226,7 +244,9 @@ const sections: LegalSection[] = [
         <P>
           Nous transmettons également des informations aux <span style={B}>établissements financiers et
           partenaires de paiement</span> nécessaires à l'exécution de votre règlement en Chine — sans quoi
-          l'opération ne peut aboutir — ainsi qu'aux <span style={B}>autorités compétentes</span> lorsque
+          l'opération ne peut aboutir —, au <span style={B}>commissionnaire agréé en douane</span> à qui
+          vous envoyez une fiche de classement ou une déclaration à relire (il voit votre nom, votre société
+          et le dossier concerné), ainsi qu'aux <span style={B}>autorités compétentes</span> lorsque
           la loi nous y oblige.
         </P>
       </>
@@ -411,6 +431,7 @@ export default function PrivacyPage() {
       title="Politique de confidentialité"
       intro="Ce que nous collectons, pourquoi, combien de temps nous le gardons, et ce que vous pouvez exiger de nous à tout moment."
       sections={sections}
+      updated="29 septembre 2026"
     />
   );
 }

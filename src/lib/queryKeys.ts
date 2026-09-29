@@ -77,4 +77,7 @@ export const dashboardKeys = {
 export const customsKeys = {
   all: ['customs'] as const,
   nomenclature: (version: number) => [...customsKeys.all, 'nomenclature', version] as const,
+  myFiles: () => [...customsKeys.all, 'my-files'] as const,
+  classification: (id: string | undefined) => [...customsKeys.all, 'classification', id] as const,
+  queue: () => [...customsKeys.all, 'queue'] as const,
 };

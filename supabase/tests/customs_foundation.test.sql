@@ -174,6 +174,12 @@ SELECT _assert((customs_audit_review((SELECT id FROM customs_audits WHERE ref = 
 SELECT _assert((customs_audit_review((SELECT id FROM customs_audits WHERE ref = 'AU-000001'), 'Articles 5, 8, 9, 10 : récupérables sur les prochains conteneurs ; mainlevée à vérifier.', 307078) ->> 'status') = 'reviewed', 'le CAD rend son avis');
 SELECT _assert((customs_audit_review((SELECT id FROM customs_audits WHERE ref = 'AU-000001'), 'encore', 1) ->> 'success')::boolean = false, 'un avis rendu ne se refait pas');
 
+-- Chaque client ne liste que ses dossiers.
+SELECT _as('00000000-0000-0000-0000-00000000000a');
+SELECT _assert(jsonb_array_length(customs_my_files() -> 'classifications') = 2 AND jsonb_array_length(customs_my_files() -> 'audits') = 1, 'Awa voit ses 2 fiches et son audit');
+SELECT _as('00000000-0000-0000-0000-00000000000b');
+SELECT _assert(jsonb_array_length(customs_my_files() -> 'classifications') = 0 AND jsonb_array_length(customs_my_files() -> 'audits') = 0, 'Jean ne voit rien d''Awa');
+
 -- ── 7. Les pièces dans le stockage ─────────────────────────────────────────
 SELECT _as('00000000-0000-0000-0000-00000000000a');
 INSERT INTO storage.objects (bucket_id, name) VALUES ('customs-documents', '00000000-0000-0000-0000-00000000000a/dau.pdf');

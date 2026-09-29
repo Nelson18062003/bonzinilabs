@@ -5,28 +5,46 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calculator, Search } from 'lucide-react';
+import { Calculator, FileSearch, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, Holder, ListRow, Line, SURFACE, TEXT, TYPE } from '@/mobile/designKit';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { Card, Holder, ListRow, Line, SectionTitle, SURFACE, TEXT, TYPE } from '@/mobile/designKit';
 import { CustomsShell, type CustomsVariant } from './shared';
+import { ReviewQueue } from './components/ReviewQueue';
 
 export function CustomsHomePage({ variant = 'client', desktop = false }: { variant?: CustomsVariant; desktop?: boolean } = {}) {
   const { t } = useTranslation('customs');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { hasPermission } = useAdminAuth();
+  const staffQueue = variant === 'admin' && hasPermission('canViewCustoms');
   const base = variant === 'admin' ? '/m/douane' : '/douane';
   const back = variant === 'admin' ? '/m/more' : user ? '/wallet' : '/';
 
   return (
     <CustomsShell title={t('hub.title')} backTo={back} variant={variant} desktop={desktop}>
       <div className="mx-auto max-w-2xl space-y-6 px-4 pb-12 pt-3">
-        <Card className="space-y-3 p-5">
-          <p className={cn(TYPE.title, TEXT.strong)}>{t('hub.tagline')}</p>
-          <Line>{t('hub.intro')}</Line>
-        </Card>
+        {/* Le commissionnaire agréé arrive ici : sa file passe avant tout le reste. */}
+        {staffQueue ? (
+          <ReviewQueue />
+        ) : (
+          <Card className="space-y-3 p-5">
+            <p className={cn(TYPE.title, TEXT.strong)}>{t('hub.tagline')}</p>
+            <Line>{t('hub.intro')}</Line>
+          </Card>
+        )}
 
+        {staffQueue && <SectionTitle className="-mb-4">{t('hub.tools', { defaultValue: 'Outils' })}</SectionTitle>}
         <div className={cn('rounded-lg px-4', SURFACE.card, SURFACE.shadow)}>
+          {variant === 'client' && (
+            <ListRow
+              leading={<Holder icon={FileSearch} />}
+              title={t('hub.classifyTitle')}
+              subtitle={t('hub.classifyDesc')}
+              onClick={() => navigate('/douane/classer')}
+            />
+          )}
           <ListRow
             leading={<Holder icon={Calculator} />}
             title={t('hub.simulatorTitle')}
