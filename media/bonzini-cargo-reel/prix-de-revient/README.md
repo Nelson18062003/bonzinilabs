@@ -1,4 +1,4 @@
-# « Votre vrai prix de revient » — Tchac, le billet maigrit ! (3 min 04)
+# « Votre vrai prix de revient » — Tchac, le billet maigrit ! (3 min 06)
 
 Kraft & Fil world, money edition. A 10 000 F spécimen note (stylised, never a BEAC replica) is cut live into
 seven slices sized to each cost; a « RESTE SUR LE BILLET » calculator falls from 10 000 to 0; Junior, a sneaker

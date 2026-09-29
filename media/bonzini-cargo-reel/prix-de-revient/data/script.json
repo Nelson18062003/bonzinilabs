@@ -85,7 +85,8 @@
    "chapter": "ticket",
    "text": "Sur le lot : 950 000 payés, 95 paires à vendre, 10 000 la paire. Son vrai prix de revient… c'est son prix de vente.",
    "tts": "Sur le lot : neuf cent cinquante mille payés, quatre-vingt-quinze paires à vendre, dix mille la paire. Son vrai prix de revient… c'est son prix de vente.",
-   "take": 2
+   "take": 2,
+   "gap": 2.6
   },
   {
    "id": "S14",

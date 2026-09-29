@@ -165,7 +165,7 @@ const BILLET = {
       strip('TCHAC ! LE BILLET MAIGRIT.', 1150, Math.max(r2, r7), { size: 70, color: C.ink, fill: C.amber, rot: .02, seed: 23 });
       // S12 reveal plate
       const z = spring(t - (T.zero - .05), 10, .45);
-      if (z > 0 && t < T.s12.end + 1.0) { const a = 1 - prog(t, T.s12.end + .6, T.s12.end + 1.0);
+      if (z > 0) { const a = 1;                                                        // held until the receipt wipe covers it
         ctx.save(); ctx.globalAlpha *= a;
         at(W / 2, 1000, 0, 1, 1, () => confetti(t - T.zero, 50, 7));
         at(W / 2, 1000, -.03, clamp(z, 0, 1.15), clamp(z, 0, 1.15), () => { withShadow(16, () => { ctx.fillStyle = M.red; rrect(-470, -130, 940, 260, 26); ctx.fill(); });
@@ -175,5 +175,5 @@ const BILLET = {
     },
   });
   registerScene({ id: 'exemple', z: 79, when: t => t < TL.seg('S19').end + .7 && !(t >= TL.ch('ticket').start && t < TL.ch('formule').start), draw(t, n) { if (!T) T = times(); exempleStamp(t, n); } });   // the lot ticket carries its own stamp
-  captionHide(t => T && t >= T.zero - .1 && t < T.s12.end + .8);    // the red plate carries the line
+  captionHide(t => T && t >= T.zero - .1 && t < TL.ch('ticket').start + .4);    // the red plate carries the line
 })();

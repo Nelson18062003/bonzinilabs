@@ -1,0 +1,22 @@
+{
+ "segments": [
+  {
+   "id": "S13",
+   "chapter": "ticket",
+   "tts": "Sur le lot : neuf-cent-cinquante-mille francs payés. Quatre-vingt-quinze paires à vendre. Dix mille la paire. Son vrai prix de revient… c'est son prix de vente.",
+   "text": "Sur le lot : neuf-cent-cinquante-mille francs payés. Quatre-vingt-quinze paires à vendre. Dix mille la paire. Son vrai prix de revient… c'est son prix de vente."
+  },
+  {
+   "id": "S17",
+   "chapter": "happy",
+   "tts": "Deux mille cinq cents par paire pour Junior. Cette fois, le beau pagne est payé.",
+   "text": "Deux mille cinq cents par paire pour Junior. Cette fois, le beau pagne est payé."
+  },
+  {
+   "id": "S23",
+   "chapter": "sign",
+   "tts": "Bonzini Trading Cargo. Payez vos fournisseurs… et connaissez votre vrai prix.",
+   "text": "Bonzini Trading Cargo. Payez vos fournisseurs… et connaissez votre vrai prix."
+  }
+ ]
+}

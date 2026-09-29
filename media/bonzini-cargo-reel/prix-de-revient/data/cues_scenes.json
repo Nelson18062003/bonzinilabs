@@ -2104,5 +2104,392 @@
 "sound": "snip",
 "gain": 0.7,
 "pan": 0.5
+},
+{
+"seg": "S20",
+"word": "chez",
+"nth": 0,
+"offset": -0.15,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0
+},
+{
+"seg": "S20",
+"word": "bonzini",
+"nth": 0,
+"offset": 0,
+"sound": "pop",
+"gain": 0.55,
+"pan": -0.1
+},
+{
+"seg": "S20",
+"word": "bonzini",
+"nth": 0,
+"offset": 0.08,
+"sound": "stamp",
+"gain": 0.5,
+"pan": -0.1
+},
+{
+"seg": "S20",
+"word": "vous",
+"nth": 0,
+"offset": -0.28,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": -0.7
+},
+{
+"seg": "S20",
+"word": "payez",
+"nth": 0,
+"offset": -0.05,
+"sound": "flick",
+"gain": 0.35,
+"pan": 0
+},
+{
+"seg": "S20",
+"word": "payez",
+"nth": 0,
+"offset": 0.1,
+"sound": "riffle",
+"gain": 0.5,
+"pan": -0.3
+},
+{
+"seg": "S20",
+"word": "fournisseurs",
+"nth": 0,
+"offset": 0,
+"sound": "printer_short",
+"gain": 0.5,
+"pan": 0.5
+},
+{
+"seg": "S20",
+"word": "fournisseurs",
+"nth": 0,
+"offset": 0.62,
+"sound": "stamp",
+"gain": 0.35,
+"pan": 0.5
+},
+{
+"seg": "S20",
+"word": "francs",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.4,
+"pan": -0.4
+},
+{
+"seg": "S20",
+"word": "cfa",
+"nth": 0,
+"offset": 0.22,
+"sound": "pop",
+"gain": 0.35,
+"pan": 0.4
+},
+{
+"seg": "S20",
+"word": "taux",
+"nth": 0,
+"offset": -0.32,
+"sound": "whoosh_long",
+"gain": 0.4,
+"pan": 0.3
+},
+{
+"seg": "S20",
+"word": "applique",
+"nth": 0,
+"offset": -0.1,
+"sound": "pop",
+"gain": 0.45,
+"pan": 0.2
+},
+{
+"seg": "S20",
+"word": "affiche",
+"nth": 0,
+"offset": 0,
+"sound": "marker",
+"gain": 0.4,
+"pan": 0.3
+},
+{
+"seg": "S20",
+"word": "avant",
+"nth": 0,
+"offset": -0.06,
+"sound": "stamp",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S20",
+"word": "confirmer",
+"nth": 0,
+"offset": -0.3,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0.7
+},
+{
+"seg": "S20",
+"word": "confirmer",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.6,
+"pan": 0.3
+},
+{
+"seg": "S20",
+"word": "confirmer",
+"nth": 0,
+"offset": 0.12,
+"sound": "correct",
+"gain": 0.5,
+"pan": -0.2
+},
+{
+"seg": "S20",
+"word": "confirmer",
+"nth": 0,
+"offset": 0.6,
+"sound": "whoosh_long",
+"gain": 0.4,
+"pan": -0.3
+},
+{
+"seg": "S21",
+"word": "guangzhou",
+"nth": 0,
+"offset": -0.04,
+"sound": "stamp",
+"gain": 0.6,
+"pan": 0
+},
+{
+"seg": "S21",
+"word": "guangzhou",
+"nth": 0,
+"offset": 0.3,
+"sound": "flick",
+"gain": 0.25,
+"pan": -0.6
+},
+{
+"seg": "S21",
+"word": "colis",
+"nth": 0,
+"offset": 0.12,
+"sound": "thud",
+"gain": 0.6,
+"pan": 0.3
+},
+{
+"seg": "S21",
+"word": "scanne",
+"nth": 0,
+"offset": -0.3,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0.7
+},
+{
+"seg": "S21",
+"word": "scanne",
+"nth": 0,
+"offset": 0,
+"sound": "beep",
+"gain": 0.6,
+"pan": 0.4
+},
+{
+"seg": "S21",
+"word": "scanne",
+"nth": 0,
+"offset": 0.24,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.5
+},
+{
+"seg": "S21",
+"word": "photographie",
+"nth": 0,
+"offset": -0.25,
+"sound": "whoosh",
+"gain": 0.25,
+"pan": 0.7
+},
+{
+"seg": "S21",
+"word": "photographie",
+"nth": 0,
+"offset": 0.18,
+"sound": "key",
+"gain": 0.6,
+"pan": 0.3
+},
+{
+"seg": "S21",
+"word": "photographie",
+"nth": 0,
+"offset": 0.18,
+"sound": "schling",
+"gain": 0.35,
+"pan": 0.3
+},
+{
+"seg": "S21",
+"word": "photographie",
+"nth": 0,
+"offset": 0.32,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.5
+},
+{
+"seg": "S21",
+"word": "pese",
+"nth": 0,
+"offset": -0.4,
+"sound": "whoosh",
+"gain": 0.3,
+"pan": 0.6
+},
+{
+"seg": "S21",
+"word": "pese",
+"nth": 0,
+"offset": 0,
+"sound": "thud",
+"gain": 0.6,
+"pan": 0.3
+},
+{
+"seg": "S21",
+"word": "pese",
+"nth": 0,
+"offset": 0.26,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.5
+},
+{
+"seg": "S21",
+"word": "mesure",
+"nth": 0,
+"offset": 0,
+"sound": "flick",
+"gain": 0.4,
+"pan": 0.1
+},
+{
+"seg": "S21",
+"word": "mesure",
+"nth": 0,
+"offset": 0.22,
+"sound": "flick",
+"gain": 0.35,
+"pan": 0.6
+},
+{
+"seg": "S21",
+"word": "mesure",
+"nth": 0,
+"offset": 0.44,
+"sound": "flick",
+"gain": 0.3,
+"pan": 0.2
+},
+{
+"seg": "S21",
+"word": "mesure",
+"nth": 0,
+"offset": 0.5,
+"sound": "marker",
+"gain": 0.3,
+"pan": -0.5
+},
+{
+"seg": "S21",
+"word": "des",
+"nth": 0,
+"offset": 0.15,
+"sound": "whoosh",
+"gain": 0.35,
+"pan": -0.3
+},
+{
+"seg": "S21",
+"word": "vous",
+"nth": 0,
+"offset": -0.1,
+"sound": "pop",
+"gain": 0.5,
+"pan": 0.6
+},
+{
+"seg": "S21",
+"word": "connaissez",
+"nth": 0,
+"offset": 0,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.7
+},
+{
+"seg": "S21",
+"word": "connaissez",
+"nth": 0,
+"offset": 0.13,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.7
+},
+{
+"seg": "S21",
+"word": "connaissez",
+"nth": 0,
+"offset": 0.27,
+"sound": "key",
+"gain": 0.3,
+"pan": 0.7
+},
+{
+"seg": "S21",
+"word": "avant",
+"nth": 0,
+"offset": -0.06,
+"sound": "stamp",
+"gain": 0.55,
+"pan": 0
+},
+{
+"seg": "S21",
+"word": "avant",
+"nth": 0,
+"offset": 0.12,
+"sound": "marker",
+"gain": 0.35,
+"pan": -0.2
+},
+{
+"seg": "S21",
+"word": "arrivee",
+"nth": 0,
+"offset": 0.3,
+"sound": "correct",
+"gain": 0.35,
+"pan": 0
 }
 ]

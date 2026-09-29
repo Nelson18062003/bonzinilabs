@@ -8,8 +8,8 @@ ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -i final_mix.wav -map
 AUD=160
 VB=$(python3 -c "print(int(27.5*8*1024*1024/$DUR/1000 - $AUD))")
 echo "duration $DUR s → video ${VB}k"
-ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -c:v libx264 -preset slow -b:v ${VB}k -pass 1 -passlogfile pass -pix_fmt yuv420p -an -f mp4 /dev/null
-ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -i final_mix.wav -map 0:v -map 1:a -c:v libx264 -preset slow -b:v ${VB}k -pass 2 -passlogfile pass \
+ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -c:v libx264 -preset slow -tune animation -b:v ${VB}k -pass 1 -passlogfile pass -pix_fmt yuv420p -an -f mp4 /dev/null
+ffmpeg -y -loglevel error -framerate 30 -i frames/%05d.jpg -i final_mix.wav -map 0:v -map 1:a -c:v libx264 -preset slow -tune animation -b:v ${VB}k -pass 2 -passlogfile pass \
   -pix_fmt yuv420p -profile:v high -c:a aac -b:a ${AUD}k -shortest -movflags +faststart prix_share.mp4
 rm -f pass-0.log pass-0.log.mbtree
 ls -la prix_master.mp4 prix_share.mp4
