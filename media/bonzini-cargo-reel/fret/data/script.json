@@ -1,0 +1,16 @@
+{
+  "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0)",
+  "segments": [
+    {"id": "S1", "chapter": "hook",   "text": "En Chine, tous les cartons se ressemblent. Alors, comment on retrouve le vôtre ?"},
+    {"id": "S2", "chapter": "code",   "text": "Chez Bonzini, chaque client reçoit un code unique : BZ, suivi de six chiffres. Un code à vous, pour toujours.",
+                                      "tts": "Chez Bonzini, chaque client reçoit un code unique : Bé Zède, suivi de six chiffres. Un code à vous, pour toujours."},
+    {"id": "S3", "chapter": "label",  "text": "Quand vous commandez, votre fournisseur colle votre étiquette sur chaque carton."},
+    {"id": "S4", "chapter": "track",  "text": "À Guangzhou, un scan, et le colis est à votre nom. Pesé, mesuré, suivi à chaque étape… jusqu'au retrait à Douala."},
+    {"id": "S5", "chapter": "resell", "text": "Vous revendez ? Chacun de vos clients a aussi son propre code. Transparence totale."},
+    {"id": "S6", "chapter": "modes",  "text": "Ensuite, deux façons de voyager."},
+    {"id": "S7", "chapter": "sea",    "text": "Le maritime : en conteneur, facturé au mètre cube. Plus économique pour les gros volumes."},
+    {"id": "S8", "chapter": "air",    "text": "L'aérien : en avion, facturé au kilo. Plus rapide pour l'urgent et les petits colis."},
+    {"id": "S9", "chapter": "tip",    "text": "Et retenez : étiquette bleue pour le bateau, rouge pour l'avion."},
+    {"id": "S10","chapter": "outro",  "text": "Bonzini Trading Cargo. Votre code, vos colis, en toute transparence."}
+  ]
+}
