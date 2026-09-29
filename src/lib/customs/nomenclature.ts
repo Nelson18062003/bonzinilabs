@@ -126,22 +126,51 @@ function index(nom: Nomenclature): Index {
   return ix;
 }
 
-/** Les termes du marché qui correspondent à la requête (mot entier, ou idéogrammes contenus). */
-export function matchTerms(query: string): MarketTerm[] {
+/**
+ * Qualité d'une correspondance avec le vocabulaire du marché :
+ *   3 — la requête EST le terme (« moto », « sac à main ») ;
+ *   2 — la requête contient le terme en mots entiers (« pneus rechapés » contient « pneus ») ;
+ *   1 — la requête est le début du terme (on est en train de taper : « motop… »).
+ * `full` : le terme couvre toute la requête — rien d'autre n'a été demandé.
+ */
+interface TermMatch { term: MarketTerm; quality: 1 | 2 | 3; full: boolean }
+
+function rankTerms(query: string): TermMatch[] {
   const q = normalize(query);
   if (!q) return [];
   const qPadded = ` ${q} `;
-  const out: MarketTerm[] = [];
+  const qStems = new Set(tokens(q));
+  const out: TermMatch[] = [];
   for (const t of MARKET_TERMS) {
-    const hit = t.terms.some((term) => {
+    let best: TermMatch | null = null;
+    for (const term of t.terms) {
       const n = normalize(term);
-      if (!n) return false;
-      if (hasCjk(n)) return q.includes(n) || (hasCjk(q) && n.includes(q));
-      return qPadded.includes(` ${n} `) || (q.length >= 4 && n.startsWith(q)) || stem(q) === stem(n);
-    });
-    if (hit) out.push(t);
+      if (!n) continue;
+      let m: TermMatch | null = null;
+      if (hasCjk(n)) {
+        if (q === n) m = { term: t, quality: 3, full: true };
+        else if (q.includes(n)) m = { term: t, quality: 2, full: false };
+        else if (hasCjk(q) && n.includes(q)) m = { term: t, quality: 1, full: true };
+      } else if (q === n || stem(q) === stem(n) || tokens(q).join(' ') === tokens(n).join(' ')) {
+        m = { term: t, quality: 3, full: true };
+      } else if (qPadded.includes(` ${n} `)) {
+        const nStems = tokens(n);
+        m = { term: t, quality: 2, full: [...qStems].every((w) => nStems.includes(w)) };
+      } else if (q.length >= 4 && n.startsWith(q)) {
+        m = { term: t, quality: 1, full: true };
+      }
+      if (m && (!best || m.quality > best.quality)) best = m;
+    }
+    if (best) out.push(best);
   }
-  return out;
+  out.sort((a, b) => b.quality - a.quality);
+  // Un terme exact rend inutiles les termes qu'on n'a fait qu'effleurer (« moto » ≠ « motopompe »).
+  return out[0]?.quality === 3 ? out.filter((m) => m.quality > 1) : out;
+}
+
+/** Les termes du marché qui correspondent à la requête, du plus exact au plus lâche. */
+export function matchTerms(query: string): MarketTerm[] {
+  return rankTerms(query).map((m) => m.term);
 }
 
 export function searchTariff(nom: Nomenclature, query: string, limit = 20): SearchHit[] {
@@ -163,15 +192,22 @@ export function searchTariff(nom: Nomenclature, query: string, limit = 20): Sear
     return [...hits.values()].sort((a, b) => a.line.code.localeCompare(b.line.code)).slice(0, limit);
   }
 
-  // 2. Le vocabulaire du marché, dans l'ordre des codes proposés.
-  for (const term of matchTerms(q)) {
-    term.codes.forEach((c, k) => {
+  // 2. Le vocabulaire du marché : d'abord les termes exacts, dans l'ordre des codes proposés.
+  const terms = rankTerms(q);
+  for (const m of terms) {
+    m.term.codes.forEach((c, k) => {
       const line = nom.byCode.get(c);
-      if (line) add({ line, score: 500 - k, via: 'term', term });
+      if (line) add({ line, score: 300 + m.quality * 100 - k, via: 'term', term: m.term });
     });
   }
+  const covered = terms.some((m) => m.full && m.quality >= 2);
 
   // 3. Le texte des libellés : on classe par nombre de mots trouvés, puis par rareté.
+  // Si un terme du marché couvre toute la requête, le texte ne fait que compléter —
+  // « groupe électrogène » ne doit pas tomber sur le 85.01, dont le libellé dit
+  // « à l'exclusion des groupes électrogènes ». Si le terme n'en couvre qu'une
+  // partie (« pneus rechapés »), le texte qui a TOUS les mots passe devant.
+  const textHits: SearchHit[] = [];
   const ix = index(nom);
   const qTokens = [...new Set(tokens(q))];
   if (qTokens.length) {
@@ -193,8 +229,17 @@ export function searchTariff(nom: Nomenclature, query: string, limit = 20): Sear
     const need = qTokens.length > 1 ? Math.max(1, qTokens.length - 1) : 1;
     for (const [i, s] of scores) {
       if (s.matched < need) continue;
-      add({ line: nom.lines[i], score: s.matched * 20 + s.weight, via: 'text' });
+      const all = qTokens.length > 1 && s.matched === qTokens.length;
+      const score = (all ? 700 : s.matched * 20) + s.weight;
+      textHits.push({ line: nom.lines[i], score, via: 'text' });
     }
+  }
+  const byScore = (a: SearchHit, b: SearchHit) => b.score - a.score || a.line.code.localeCompare(b.line.code);
+  if (!covered) {
+    const complete = textHits.filter((h) => h.score >= 700);
+    const partial = textHits.filter((h) => h.score < 700);
+    complete.sort(byScore).forEach(add);
+    partial.sort(byScore).filter((h) => !hits.has(h.line.code)).slice(0, terms.length ? 3 : limit).forEach(add);
   }
 
   return [...hits.values()].sort((a, b) => b.score - a.score || a.line.code.localeCompare(b.line.code)).slice(0, limit);

@@ -221,7 +221,7 @@ export function exciseFor(q: ExciseQuery): ExciseResult {
     const otherRate = vehicleExciseRate({ ...v, kind }, age, other);
     return {
       rate, basis: VEHICLE_BASIS[rule], confidence: rule === 'cgi2024' ? 'observe' : 'a_verifier', certainty: 'sure',
-      note: `${age} an${age > 1 ? 's' : ''}${isCar ? `, ${v.engineCc} cm³` : ''}.${tractorNote}`,
+      note: `Accise calculée pour un véhicule de ${age} an${age > 1 ? 's' : ''}${isCar ? ` et ${Math.round(v.engineCc ?? 0).toLocaleString('fr-FR').replace(/[\u202F\u00A0]/g, ' ')} cm³` : ''}.${tractorNote}`,
       otherRule: otherRate !== rate ? { rule: other, rate: otherRate } : undefined,
     };
   }

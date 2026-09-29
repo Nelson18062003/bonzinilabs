@@ -19,6 +19,7 @@ import {
   Sparkles,
   Newspaper,
   Banknote,
+  Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -136,6 +137,12 @@ export function MobileMoreScreen() {
               label={t('exchangeRate', { defaultValue: 'Taux de change' })}
               description={t('manageRates', { defaultValue: 'Gérer les taux XAF/RMB' })}
               onClick={() => navigate('/m/more/rates')}
+            />
+            <MenuRow
+              icon={Landmark}
+              label="Douane"
+              description="Simulateur de droits et taxes, codes SH du Cameroun"
+              onClick={() => navigate('/m/douane')}
             />
             {canViewTreasury && (
               <MenuRow

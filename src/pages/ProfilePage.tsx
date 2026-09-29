@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronRight, Bell, Shield, HelpCircle, LogOut, Smartphone, Globe, FileText, Palette, QrCode, Banknote,
+  Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -101,6 +102,7 @@ const ProfilePage = () => {
           <div className={cn('overflow-hidden rounded-[22px]', SURFACE.card, SURFACE.shadow)}>
             <MenuRow icon={QrCode} label={t('profile.customerCode', { defaultValue: 'Mon identifiant client' })} desc={profile?.customer_code ?? '—'} onClick={() => navigate('/my-code')} />
             <MenuRow icon={Banknote} label={t('profile.paymentDetails', { defaultValue: 'Coordonnées de paiement' })} desc={t('profile.paymentDetailsDesc', { defaultValue: 'Banques et Mobile Money · PDF et image' })} onClick={() => navigate('/payment-details')} />
+            <MenuRow icon={Landmark} label={t('profile.customs', { defaultValue: 'Douane' })} desc={t('profile.customsDesc', { defaultValue: 'Droits et taxes, codes SH' })} onClick={() => navigate('/douane')} />
             <MenuRow icon={Bell} label={t('profile.notifications')} desc={t('profile.notificationsDesc')} onClick={() => navigate('/notifications')} />
             <MenuRow icon={Shield} label={t('profile.security')} desc={t('profile.securityDesc')} onClick={comingSoon} />
             <MenuRow icon={Smartphone} label={t('profile.devices')} desc={t('profile.devicesDesc')} onClick={comingSoon} />

@@ -210,6 +210,11 @@ const ENV_TAX_PER_TONNE: { specs: string[]; xafPerTonne: number; label: string }
   { specs: ['6907', '6908'], xafPerTonne: 15_000, label: 'carreaux et céramiques' },
 ];
 
+/** Le code porte une taxe au poids : il faut demander le poids net. */
+export function needsWeight(code: string): boolean {
+  return ENV_TAX_PER_TONNE.some((e) => matchAny(code, e.specs) !== 'no');
+}
+
 export function simulate(s: SimulationInput): Simulation {
   const notes: SimNote[] = [];
   const code = hsDigits(s.code);
@@ -261,7 +266,7 @@ export function simulate(s: SimulationInput): Simulation {
       fr: excise.otherRule.rule === 'lf2026'
         ? `La loi de finances 2026 prévoit ${excise.otherRule.rate} % d'accises pour ce véhicule (CAMCIS applique encore ${excise.rate} %) : ${fmt(alt)} F de droits et taxes au lieu de ${fmt(dau.total)} F.`
         : `L'ancienne règle du CGI donnerait ${excise.otherRule.rate} % d'accises : ${fmt(alt)} F au lieu de ${fmt(dau.total)} F.`,
-      params: { rate: excise.otherRule.rate, total: alt },
+      params: { rate: excise.otherRule.rate, total: alt, current: dau.total },
     });
   }
   if (vat.exempt === 'maybe' && vat.condition) notes.push({ id: 'vat_maybe', kind: 'warning', fr: `TVA : ${vat.condition}` });
@@ -271,7 +276,7 @@ export function simulate(s: SimulationInput): Simulation {
     notes.push({
       id: 'tec_40', kind: 'warning',
       fr: `Le TEC CEEAC en vigueur depuis le 1er janvier 2026 peut porter ce produit à 40 % : ce serait ${fmt(at40)} F au lieu de ${fmt(dau.total)} F. Faites confirmer le taux au tarif intégré CAMCIS.`,
-      params: { total: at40 },
+      params: { total: at40, current: dau.total },
     });
   }
   if (/^85171[34]/.test(code)) {

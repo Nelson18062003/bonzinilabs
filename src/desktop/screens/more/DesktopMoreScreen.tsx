@@ -26,6 +26,7 @@ import {
   Sparkles,
   Newspaper,
   Banknote,
+  Landmark,
 } from 'lucide-react';
 import { useAdminAuth, type RolePermission } from '@/contexts/AdminAuthContext';
 import { useAdminNotificationCount } from '@/hooks/useAdminNotifications';
@@ -88,6 +89,7 @@ export function DesktopMoreScreen() {
         { icon: Banknote, label: 'Coordonnées de paiement', desc: 'Banques et Mobile Money · PDF et image', to: '/m/more/payment-details' },
         { icon: BarChart3, label: 'Dashboard', desc: 'Rapports et indicateurs clés', to: '/m/dashboard' },
         { icon: TrendingUp, label: 'Taux de change', desc: 'Gérer les taux XAF/RMB', to: '/m/more/rates', perm: 'canManageRates' },
+        { icon: Landmark, label: 'Douane', desc: 'Simulateur de droits et taxes, codes SH du Cameroun', to: '/m/douane' },
         { icon: Coins, label: 'Trésorerie', desc: 'Achats/ventes USDT, soldes, inventaire', to: '/m/more/treasury', perm: 'canViewTreasury' },
       ],
     },

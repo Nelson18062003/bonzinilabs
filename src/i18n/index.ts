@@ -12,6 +12,7 @@ import frClient from './locales/fr/client.json';
 import frPayments from './locales/fr/payments.json';
 import frDeposits from './locales/fr/deposits.json';
 import frSupport from './locales/fr/support.json';
+import frCustoms from './locales/fr/customs.json';
 
 // English
 import enCommon from './locales/en/common.json';
@@ -23,6 +24,7 @@ import enClient from './locales/en/client.json';
 import enPayments from './locales/en/payments.json';
 import enDeposits from './locales/en/deposits.json';
 import enSupport from './locales/en/support.json';
+import enCustoms from './locales/en/customs.json';
 
 // Chinese
 import zhCommon from './locales/zh/common.json';
@@ -34,6 +36,7 @@ import zhClient from './locales/zh/client.json';
 import zhPayments from './locales/zh/payments.json';
 import zhDeposits from './locales/zh/deposits.json';
 import zhSupport from './locales/zh/support.json';
+import zhCustoms from './locales/zh/customs.json';
 
 export const supportedLanguages = ['fr', 'en', 'zh'] as const;
 export type SupportedLanguage = (typeof supportedLanguages)[number];
@@ -82,22 +85,22 @@ i18n
       fr: {
         common: frCommon, landing: frLanding, auth: frAuth, formatters: frFormatters,
         agent: frAgent, client: frClient, payments: frPayments, deposits: frDeposits,
-        support: frSupport,
+        support: frSupport, customs: frCustoms,
       },
       en: {
         common: enCommon, landing: enLanding, auth: enAuth, formatters: enFormatters,
         agent: enAgent, client: enClient, payments: enPayments, deposits: enDeposits,
-        support: enSupport,
+        support: enSupport, customs: enCustoms,
       },
       zh: {
         common: zhCommon, landing: zhLanding, auth: zhAuth, formatters: zhFormatters,
         agent: zhAgent, client: zhClient, payments: zhPayments, deposits: zhDeposits,
-        support: zhSupport,
+        support: zhSupport, customs: zhCustoms,
       },
     },
     fallbackLng: 'fr',
     defaultNS: 'common',
-    ns: ['common', 'landing', 'auth', 'formatters', 'agent', 'client', 'payments', 'deposits', 'support'],
+    ns: ['common', 'landing', 'auth', 'formatters', 'agent', 'client', 'payments', 'deposits', 'support', 'customs'],
     interpolation: {
       escapeValue: false, // React already escapes
     },

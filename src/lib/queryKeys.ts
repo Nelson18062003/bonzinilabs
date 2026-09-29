@@ -72,3 +72,9 @@ export const dashboardKeys = {
   all: ['dashboard'] as const,
   stats: () => [...dashboardKeys.all, 'stats'] as const,
 };
+
+/** Module Douane (docs/douane/00-plan.md). */
+export const customsKeys = {
+  all: ['customs'] as const,
+  nomenclature: (version: number) => [...customsKeys.all, 'nomenclature', version] as const,
+};

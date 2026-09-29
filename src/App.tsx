@@ -41,6 +41,9 @@ const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
+// Douane (docs/douane/00-plan.md) — public côté client, comme le simulateur de Flexport.
+const CustomsHomePage = lazy(() => import("./pages/customs/CustomsHomePage").then(m => ({ default: m.CustomsHomePage })));
+const TariffSimulatorPage = lazy(() => import("./pages/customs/TariffSimulatorPage").then(m => ({ default: m.TariffSimulatorPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -249,6 +252,10 @@ const App = () => (
                 <Route path="/confidentialite" element={<PrivacyPage />} />
                 <Route path="/conditions" element={<TermsPage />} />
 
+                {/* Douane — public : un lien de simulation partagé s'ouvre sans compte. */}
+                <Route path="/douane" element={<CustomsHomePage />} />
+                <Route path="/douane/simulateur" element={<TariffSimulatorPage />} />
+
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
                 <Route path="/deposits" element={<ProtectedRoute><DepositsPage /></ProtectedRoute>} />
@@ -325,6 +332,8 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
+                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
