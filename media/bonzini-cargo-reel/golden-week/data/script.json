@@ -1,0 +1,14 @@
+{
+  "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0)",
+  "facts": "Golden Week 2026 = fête nationale RPC, congé officiel du 1er au 7 octobre 2026 (Conseil des affaires d'État, 4 nov. 2025 ; rattrapages 20 sept. et 10 oct.). Nouvel An chinois 2027 = samedi 6 février 2027.",
+  "segments": [
+    {"id": "S1", "chapter": "hook",    "text": "Alerte importateurs ! Du premier au sept octobre, la Chine s'arrête."},
+    {"id": "S2", "chapter": "what",    "text": "C'est la Golden Week, la fête nationale chinoise. Usines, fournisseurs, bureaux : la plupart ferment toute la semaine."},
+    {"id": "S3", "chapter": "effects", "text": "Résultat : production à l'arrêt, messages sans réponse… et des retards qui continuent même après le sept."},
+    {"id": "S4", "chapter": "tip1",    "text": "Alors, trois réflexes. Un : appelez votre fournisseur aujourd'hui. Confirmez ce qui est prêt, et ce qui attendra après la fête."},
+    {"id": "S5", "chapter": "tip2",    "text": "Deux : ne promettez aucune date à vos clients sans marge."},
+    {"id": "S6", "chapter": "tip3",    "text": "Trois : anticipez vos stocks pour les fêtes de fin d'année."},
+    {"id": "S7", "chapter": "cny",     "text": "Et notez déjà : le Nouvel An chinois, c'est le six février."},
+    {"id": "S8", "chapter": "outro",   "text": "Partagez à un importateur qui doit savoir. Bonzini Trading Cargo : on vous prévient avant."}
+  ]
+}
