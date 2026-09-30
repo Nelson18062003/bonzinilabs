@@ -52,6 +52,12 @@ export function tabsFor(role: StaffRole): Tab[] {
         { key: 'handover', label: 'Remettre', icon: 'hand-left', path: '/w/remise/liste', match: ['/w/remise'] },
         ME,
       ];
+    case 'customs_broker':
+      return [
+        { key: 'review', label: 'À signer', icon: 'document-text', path: '/m/douane', exact: true, match: ['/m/douane', '/m/douane/revue'] },
+        { key: 'simulator', label: 'Simulateur', icon: 'calculator', path: '/m/douane/simulateur', match: ['/m/douane/simulateur'] },
+        ME,
+      ];
     case 'treasurer':
       return [
         HOME,

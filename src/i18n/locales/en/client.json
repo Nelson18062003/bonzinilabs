@@ -80,7 +80,9 @@
     "sectionPreferences": "Preferences",
     "customerCode": "My customer ID",
     "paymentDetails": "Payment details",
-    "paymentDetailsDesc": "Banks and Mobile Money · PDF and image"
+    "paymentDetailsDesc": "Banks and Mobile Money · PDF and image",
+    "customs": "Customs",
+    "customsDesc": "Duties and taxes, HS codes"
   },
   "beneficiaries": {
     "title": "Beneficiaries",
@@ -165,7 +167,8 @@
     "history": "History",
     "profile": "Profile",
     "notifications": "Notifications",
-    "theme": "Theme"
+    "theme": "Theme",
+    "customs": "Customs"
   },
   "rates": {
     "title": "Exchange rate",

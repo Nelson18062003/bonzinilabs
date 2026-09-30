@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { BrokerLicenseCard } from './BrokerLicenseCard';
 import { useAdminUsers } from '@/hooks/useAdminData';
 import {
   useUpdateAdminProfile,
@@ -46,7 +47,7 @@ import {
   ScreenLoader,
 } from '@/mobile/designKit';
 
-const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent', 'receptionist', 'warehouse_agent'];
+const MANAGEABLE_ROLES: AppRole[] = ['super_admin', 'ops', 'cash_agent', 'receptionist', 'warehouse_agent', 'customs_broker'];
 
 // Action row in the Ofspace/Mola language: toned round holder + label/desc +
 // chevron. No divider hairlines (the card groups items). Mirrors MobileClientDetail.
@@ -279,6 +280,9 @@ export function MobileAdminDetail() {
             </div>
           </div>
         </Card>
+
+        {/* Le commissionnaire agréé : sans agrément enregistré, il ne signe pas. */}
+        {admin.role === 'customs_broker' && <BrokerLicenseCard userId={admin.id} canEdit={canManageUsers} />}
 
         {/* Action Cards */}
         {canManageUsers && (

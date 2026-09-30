@@ -1696,3 +1696,64 @@
   .c3d-hint { font-size: 16px; }
   .cargo-gauge__head { font-size: 16px; }
 }
+
+
+/* ── Site public Douane (bonzinilabs.com/douane) ─────────────────────────────
+ * Un site, pas un écran d'app : même ADN que la page d'accueil (DM Sans, logo,
+ * violet · or · orange), mais une base claire et calme pour les formulaires et
+ * les chiffres. L'encre sert aux actions ; le violet signale (lien, focus,
+ * élément actif) ; l'or et l'orange ne servent qu'à la bande d'accueil sombre.
+ * Canaux RVB pour Tailwind (`bg-dz-soft`, `text-dz-ink/60`…). */
+.dz {
+  --dz-bg: 255 255 255;
+  --dz-soft: 248 246 251;
+  --dz-card: 255 255 255;
+  --dz-line: 232 228 240;
+  --dz-ink: 19 13 30;
+  --dz-ink2: 61 54 77;
+  --dz-ink3: 99 92 116;
+  --dz-brand: 116 40 232;
+  --dz-brand-soft: 244 238 255;
+  --dz-primary: 19 13 30;
+  --dz-on-primary: 255 255 255;
+  --dz-good: 10 122 66;
+  --dz-good-soft: 226 246 234;
+  --dz-warn: 150 84 0;
+  --dz-warn-soft: 255 243 219;
+  --dz-bad: 190 28 18;
+  --dz-gold: 243 167 69;
+  --dz-orange: 254 86 13;
+  --dz-night: 8 4 14;
+  font-family: 'DM Sans', 'Noto Sans SC', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.dark .dz {
+  --dz-bg: 11 8 18;
+  --dz-soft: 19 15 28;
+  --dz-card: 23 19 34;
+  --dz-line: 46 40 62;
+  --dz-ink: 245 242 250;
+  --dz-ink2: 210 204 222;
+  --dz-ink3: 165 157 182;
+  --dz-brand: 184 142 255;
+  --dz-brand-soft: 40 28 66;
+  --dz-primary: 245 242 250;
+  --dz-on-primary: 19 13 30;
+  --dz-good: 88 208 142;
+  --dz-good-soft: 16 50 34;
+  --dz-warn: 242 186 92;
+  --dz-warn-soft: 58 40 12;
+  --dz-bad: 252 146 136;
+}
+.dz ::selection { background: rgb(var(--dz-brand) / 0.18); }
+.dz :focus-visible { outline: 2px solid rgb(var(--dz-brand)); outline-offset: 2px; }
+/* La bande sombre de l'accueil : le halo de la page d'accueil Bonzini. */
+.dz-night {
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, rgb(169 71 254 / 0.28), transparent 60%),
+    radial-gradient(40rem 24rem at 95% 10%, rgb(254 86 13 / 0.16), transparent 60%),
+    radial-gradient(30rem 20rem at 60% 120%, rgb(243 167 69 / 0.10), transparent 60%),
+    rgb(8 4 14);
+}
+.dz-scroll-x { scrollbar-width: none; }
+.dz-scroll-x::-webkit-scrollbar { display: none; }

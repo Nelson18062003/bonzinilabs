@@ -16,6 +16,7 @@ import { QueryError } from '@/components/ui/QueryError';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
 import { MobileCargoParts } from '@/components/cargo/CargoParts';
+import { DisruptionStrip } from '@/components/cargo/DisruptionStrip';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
@@ -81,6 +82,9 @@ export function MobileCargoScreen() {
 
       {/* Les deux parties du module : Container (ici) · Réception. */}
       <MobileCargoParts active="container" />
+
+      {/* La veille douane : congés en Chine, port, corridor — ce qui touche la flotte. */}
+      <DisruptionStrip shipments={all} />
 
       {/* Les filtres : gros, à 40 px, avec le compte dans le mot. */}
       <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pt-3">

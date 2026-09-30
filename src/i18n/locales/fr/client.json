@@ -80,7 +80,9 @@
     "sectionPreferences": "Préférences",
     "customerCode": "Mon identifiant client",
     "paymentDetails": "Coordonnées de paiement",
-    "paymentDetailsDesc": "Banques et Mobile Money · PDF et image"
+    "paymentDetailsDesc": "Banques et Mobile Money · PDF et image",
+    "customs": "Douane",
+    "customsDesc": "Droits et taxes, codes SH"
   },
   "beneficiaries": {
     "title": "Bénéficiaires",
@@ -165,7 +167,8 @@
     "history": "Historique",
     "profile": "Profil",
     "notifications": "Notifications",
-    "theme": "Thème"
+    "theme": "Thème",
+    "customs": "Douane"
   },
   "rates": {
     "title": "Taux de change",

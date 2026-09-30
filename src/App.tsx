@@ -41,6 +41,20 @@ const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
+// Douane (docs/douane/00-plan.md) — public côté client, comme le simulateur de Flexport.
+const CustomsHomePage = lazy(() => import("./pages/customs/CustomsHomePage").then(m => ({ default: m.CustomsHomePage })));
+const TariffSimulatorPage = lazy(() => import("./pages/customs/TariffSimulatorPage").then(m => ({ default: m.TariffSimulatorPage })));
+const ClassifyHomePage = lazy(() => import("./pages/customs/ClassifyHomePage").then(m => ({ default: m.ClassifyHomePage })));
+const ClassificationPage = lazy(() => import("./pages/customs/ClassificationPage").then(m => ({ default: m.ClassificationPage })));
+const CustomsReviewPage = lazy(() => import("./pages/customs/ReviewPage").then(m => ({ default: m.ReviewPage })));
+const AuditHomePage = lazy(() => import("./pages/customs/AuditHomePage").then(m => ({ default: m.AuditHomePage })));
+const AuditPage = lazy(() => import("./pages/customs/AuditPage").then(m => ({ default: m.AuditPage })));
+const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").then(m => ({ default: m.AuditReviewPage })));
+const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => ({ default: m.NoticesPage })));
+const SuppliersPage = lazy(() => import("./pages/customs/SuppliersPage").then(m => ({ default: m.SuppliersPage })));
+const SupplierUploadPage = lazy(() => import("./pages/customs/SupplierUploadPage").then(m => ({ default: m.SupplierUploadPage })));
+const RoutesPage = lazy(() => import("./pages/customs/RoutesPage").then(m => ({ default: m.RoutesPage })));
+const CustomsSpacePage = lazy(() => import("./pages/customs/site/MySpacePage").then(m => ({ default: m.MySpacePage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -249,6 +263,23 @@ const App = () => (
                 <Route path="/confidentialite" element={<PrivacyPage />} />
                 <Route path="/conditions" element={<TermsPage />} />
 
+                {/* Douane — public : un lien de simulation partagé s'ouvre sans compte. */}
+                <Route path="/douane" element={<CustomsHomePage />} />
+                <Route path="/douane/simulateur" element={<TariffSimulatorPage />} />
+                {/* La veille : publique, comme le simulateur. */}
+                <Route path="/douane/veille" element={<NoticesPage />} />
+                <Route path="/douane/routes" element={<RoutesPage />} />
+                <Route path="/douane/espace" element={<ProtectedRoute><CustomsSpacePage /></ProtectedRoute>} />
+                {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
+                <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
+                <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
+                {/* Vérifier une déclaration (DAU) : l'IA lit, le moteur recalcule, le CAD rend l'avis. */}
+                <Route path="/douane/audit" element={<ProtectedRoute><AuditHomePage /></ProtectedRoute>} />
+                <Route path="/douane/audit/:id" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
+                {/* Les fournisseurs : le client invite ; le fournisseur dépose par un lien, sans compte. */}
+                <Route path="/douane/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                <Route path="/f/:token" element={<SupplierUploadPage />} />
+
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
                 <Route path="/deposits" element={<ProtectedRoute><DepositsPage /></ProtectedRoute>} />
@@ -325,6 +356,12 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
+                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><RoutesPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />

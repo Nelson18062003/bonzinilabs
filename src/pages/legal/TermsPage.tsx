@@ -158,6 +158,32 @@ const sections: LegalSection[] = [
     ),
   },
   {
+    id: 'douane',
+    title: 'Outils douane',
+    body: (
+      <>
+        <UL
+          items={[
+            <>
+              Le <span style={B}>simulateur de droits et taxes</span> donne une estimation. Le montant dû
+              est celui que liquide l'administration des douanes sur votre déclaration.
+            </>,
+            <>
+              Le code tarifaire proposé par notre assistant est une <span style={B}>proposition</span>. Il
+              ne devient une référence qu'une fois signé par un commissionnaire agréé en douane, dont la
+              société et le numéro d'agrément figurent sur la fiche.
+            </>,
+            <>
+              Seule une <span style={B}>décision anticipée</span> de l'administration des douanes
+              (article&nbsp;75 du Code des douanes CEMAC) engage celle-ci sur un classement. Nous vous
+              aidons à la demander ; nous ne pouvons pas la garantir.
+            </>,
+          ]}
+        />
+      </>
+    ),
+  },
+  {
     id: 'interdits',
     title: 'Usages interdits',
     body: (
@@ -357,6 +383,7 @@ export default function TermsPage() {
       title="Conditions d'utilisation"
       intro="Le cadre de notre relation : ce que le service fait, ce qu'il ne fait pas, ce que nous attendons de vous et ce que vous pouvez attendre de nous."
       sections={sections}
+      updated="29 septembre 2026"
     />
   );
 }
