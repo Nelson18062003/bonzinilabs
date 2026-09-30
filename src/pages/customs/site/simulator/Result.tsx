@@ -20,6 +20,7 @@ import { useAdminNotices } from '@/hooks/useCustomsReview';
 import { isSure, pct, ratePct, xaf } from '../../format';
 import { useLevyLabel, useNoteText } from '../../useCustomsText';
 import { CountUp, Disclosure } from '../ui';
+import { dauGroups } from './groups';
 import { EASE } from '../styles';
 
 function lineSure(l: LiquidationLine, sim: Simulation, tariff: TariffLine): boolean {
@@ -34,25 +35,15 @@ const Dot = ({ sure }: { sure: boolean }) => (
 );
 
 /** Les quatre familles de la barre : ce que le client comprend d'un coup d'œil. */
-const GROUPS = [
-  { key: 'duty', codes: ['DDI'], color: 'bg-[#7428e8]' },
-  { key: 'excise', codes: ['DAC'], color: 'bg-[#fe560d]' },
-  { key: 'vat', codes: ['TVA', 'CAC'], color: 'bg-[#f3a745]' },
-  { key: 'other', codes: [] as string[], color: 'bg-dz-ink3/50' },
-] as const;
-
 function Breakdown({ sim }: { sim: Simulation }) {
   const { t } = useTranslation('customs');
   const total = sim.dau.total || 1;
-  const parts = GROUPS.map((g) => ({
-    ...g,
-    amount: sim.dau.lines.filter((l) => (g.key === 'other' ? !GROUPS.some((x) => (x.codes as readonly string[]).includes(l.code)) : (g.codes as readonly string[]).includes(l.code))).reduce((n, l) => n + l.amount, 0),
-  })).filter((p) => p.amount > 0);
+  const parts = dauGroups(sim);
   return (
     <div className="space-y-3">
-      <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-dz-on-primary/15">
+      <div className="flex h-2.5 gap-1 overflow-hidden rounded-full">
         {parts.map((p) => (
-          <motion.span key={p.key} className={cn('h-full first:rounded-l-full last:rounded-r-full', p.color)}
+          <motion.span key={p.key} className={cn('h-full rounded-full', p.color)}
             initial={{ width: 0 }} animate={{ width: `${(p.amount / total) * 100}%` }} transition={{ duration: 0.6, ease: EASE }} />
         ))}
       </div>
@@ -61,7 +52,7 @@ function Breakdown({ sim }: { sim: Simulation }) {
           <li key={p.key} className="flex min-w-0 items-center gap-2">
             <span aria-hidden className={cn('h-2 w-2 shrink-0 rounded-full', p.color)} />
             <span className="min-w-0 opacity-75">{t(`site.sim.group.${p.key}`)}</span>
-            <span className="ml-auto shrink-0 whitespace-nowrap font-semibold tabular-nums">{xaf(p.amount)}</span>
+            <span className="ml-auto shrink-0 whitespace-nowrap font-bold tabular-nums">{xaf(p.amount)}</span>
           </li>
         ))}
       </ul>
@@ -101,7 +92,7 @@ function CodeNews({ code, admin }: { code: string; admin: boolean }) {
   if (!hits.length) return null;
   const base = admin ? '/m/douane/veille' : '/douane/veille';
   return (
-    <div className="rounded-2xl border border-dz-line bg-dz-card">
+    <div className="rounded-3xl bg-dz-card">
       <p className="flex items-center gap-2 px-4 pt-4 text-[15px] font-semibold text-dz-ink">
         <BellRing aria-hidden className="h-[18px] w-[18px] text-dz-brand" /> {t('watch.onCode', { count: hits.length })}
       </p>
@@ -173,7 +164,7 @@ export function SimResult({ sim, tariff, admin = false }: { sim: Simulation; tar
 
       <CodeNews code={tariff.code} admin={admin} />
 
-      <div className="rounded-2xl border border-dz-line bg-dz-card px-4 sm:px-5">
+      <div className="rounded-3xl bg-dz-card px-4 sm:px-5">
         <Disclosure title={t('sim.dauTitle')} meta={t('site.sim.lines', { count: sim.dau.lines.length })} className="border-b border-dz-line">
           <LevyRows lines={sim.dau.lines} sim={sim} tariff={tariff} />
           <div className="flex justify-between gap-3 border-t border-dz-line pt-2.5 text-[15px] font-semibold">

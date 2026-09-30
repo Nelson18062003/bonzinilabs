@@ -68,12 +68,12 @@ export function AuditHomePage() {
     <SiteLayout>
       <PageIntro title={t('audit.homeTitle')} subtitle={t('audit.homeTagline')} back={{ to: '/douane', label: t('site.badge') }} />
       <Container className="grid gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
-        <section aria-labelledby="dz-new-audit" className="min-w-0 rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-7">
+        <section aria-labelledby="dz-new-audit" className="min-w-0 rounded-[28px] bg-dz-card p-5 sm:p-7">
           <h2 id="dz-new-audit" className="text-[20px] font-bold">{t('audit.newTitle')}</h2>
           <div className="mt-5 space-y-5">
             <div className="space-y-2">
               {picked.length > 0 && (
-                <ul className="overflow-hidden rounded-2xl border border-dz-line">
+                <ul className="overflow-hidden rounded-2xl bg-dz-soft">
                   {picked.map((f, i) => (
                     <li key={`${f.name}-${i}`} className="flex items-center gap-3 border-b border-dz-line px-4 py-2.5 last:border-b-0">
                       <FileText aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3" />
@@ -118,7 +118,7 @@ export function AuditHomePage() {
           {audits.length > 0 && (
             <section aria-labelledby="dz-audits">
               <h2 id="dz-audits" className="text-[18px] font-bold">{t('audit.mine')}</h2>
-              <ul className="mt-3 overflow-hidden rounded-2xl border border-dz-line bg-dz-card">
+              <ul className="mt-3 overflow-hidden rounded-3xl bg-dz-card">
                 {audits.map((a, i) => (
                   <Reveal as="li" key={a.id} delay={Math.min(i, 5) * 0.04} y={6} className="border-b border-dz-line last:border-b-0">
                     <Link to={`/douane/audit/${a.id}`} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-dz-soft">

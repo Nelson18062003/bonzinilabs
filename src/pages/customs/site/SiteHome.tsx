@@ -1,28 +1,36 @@
 // ============================================================
 // bonzinilabs.com/douane — l'accueil du site Douane.
 //
-// Une question, une réponse : « quel produit importez-vous ? » mène droit au
-// calcul. Puis les quatre outils, la preuve (une vraie DAU), l'actualité, et
-// le paiement du fournisseur. Rien d'autre.
+// Direction « premium » (Apple, Wise, Revolut, Stripe, Linear, Qonto) :
+//   1. le héros centré — un titre en deux temps (noir, puis gris), une
+//      recherche, et le produit en vrai : un téléphone qui affiche un calcul
+//      du moteur, qui change toutes les quelques secondes ;
+//   2. quatre tuiles « bento », chacune avec une miniature de l'outil ;
+//   3. la preuve en aplat violet (une vraie DAU) ;
+//   4. ce qui change en ce moment ;
+//   5. le paiement du fournisseur, en noir.
+// Aucun dégradé de texte, aucune lueur, pas d'icône dans un carré de couleur.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Calculator, ChevronRight, FileSearch, Route, ScanLine, Search, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { simulate } from '@/lib/customs/engine';
 import { formatHs } from '@/lib/customs/hsCode';
 import { customsTasks } from '@/lib/customs/tasks';
 import { phaseOf, sortNotices } from '@/lib/customs/notices';
+import { planRoute } from '@/lib/logistics/atlas';
 import { useCustomsNotices } from '@/hooks/useCustomsNotices';
 import { useMyCustomsFiles } from '@/hooks/useCustomsFiles';
 import { useMyInvites } from '@/hooks/useCustomsInvites';
-import { xaf, pct } from '../format';
+import { num, xaf } from '../format';
 import { SiteLayout } from './SiteLayout';
-import { Badge, ButtonLink, Container, CountUp, Eyebrow, Input, Reveal } from './ui';
-import { EASE } from './styles';
+import { dauGroups } from './simulator/groups';
+import { ButtonLink, Container, CountUp, Reveal } from './ui';
+import { EASE, buttonClass } from './styles';
 
 // Trois cas réels, calculés par le moteur (valeur CIF, entreprise au réel, taux du tarif).
 const EXAMPLES = [
@@ -36,58 +44,73 @@ const POPULAR = [
   { q: 'moto', key: 'moto' }, { q: 'friperie', key: 'thrift' }, { q: 'carreaux', key: 'tiles' },
 ] as const;
 
-function ExampleCard() {
+const simOf = (e: (typeof EXAMPLES)[number]) =>
+  simulate({ code: e.code, dutyRate: e.rate, goodsAmount: e.amount, currency: 'XAF', xafPerUnit: 1, incoterm: 'CIF', declarationYear: 2026, regime: 'reel' });
+
+/** Le téléphone : un vrai écran de résultat, qui passe d'un exemple à l'autre. */
+function PhoneResult() {
   const { t } = useTranslation('customs');
   const [i, setI] = useState(0);
   useEffect(() => {
-    const id = window.setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), 4200);
+    const id = window.setInterval(() => setI((n) => (n + 1) % EXAMPLES.length), 4500);
     return () => window.clearInterval(id);
   }, []);
-  const rows = useMemo(() => EXAMPLES.map((e) => ({
-    ...e,
-    sim: simulate({ code: e.code, dutyRate: e.rate, goodsAmount: e.amount, currency: 'XAF', xafPerUnit: 1, incoterm: 'CIF', declarationYear: 2026, regime: 'reel' }),
-  })), []);
+  const rows = useMemo(() => EXAMPLES.map((e) => ({ ...e, sim: simOf(e) })), []);
   const ex = rows[i];
+  const total = ex.sim.dau.total || 1;
+  const parts = dauGroups(ex.sim);
   return (
-    <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,.8)] backdrop-blur-xl sm:p-7">
-      <div className="flex items-center justify-between">
-        <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-white/50">{t('site.home.example')}</p>
-        <span className="inline-flex items-center gap-2 text-[13px] font-medium text-white/60">
-          <span className="h-2 w-2 rounded-full bg-[#4ade80]" />{t('site.home.camcis')}
-        </span>
-      </div>
-      <div className="relative mt-5 min-h-[208px]">
-        <AnimatePresence mode="wait">
-          <motion.div key={ex.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35, ease: EASE }}>
-            <p className="text-[20px] font-semibold text-white">{t(`site.home.ex.${ex.key}`)}</p>
-            <p className="mt-1 text-[15px] text-white/60">
-              <span className="font-semibold tabular-nums text-white/80">{formatHs(ex.code)}</span> · {t('site.home.dutyRate', { rate: ex.rate })}
-            </p>
-            <dl className="mt-6 space-y-3 border-t border-white/10 pt-5 text-[15px]">
-              <div className="flex justify-between gap-4">
-                <dt className="text-white/60">{t('site.home.cifValue')}</dt>
-                <dd className="tabular-nums text-white/80">{xaf(ex.amount)}</dd>
+    <div className="relative mx-auto h-[600px] w-[300px]">
+      {/* L'ombre : un halo flou sous le téléphone (une box-shadow laissait un rectangle pâle en capture). */}
+      <span aria-hidden className="absolute inset-x-6 bottom-2 top-24 rounded-[60px] bg-[#281450]/25 blur-[40px]" />
+      <div className="relative h-full w-full rounded-[52px] bg-[#111] p-[11px] ring-1 ring-black/40">
+      <div className="relative h-full w-full overflow-hidden rounded-[42px] bg-white text-left text-[#0d0d12]">
+        <span aria-hidden className="absolute left-1/2 top-3 h-7 w-24 -translate-x-1/2 rounded-full bg-[#111]" />
+        <div className="px-5 pt-[52px]">
+          <div className="flex items-center justify-between text-[13px] font-medium text-[#86868f]">
+            <span>‹ {t('site.home.phoneBack')}</span><span>{t('site.home.phoneShare')}</span>
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div key={ex.key} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.35, ease: EASE }}>
+              <p className="mt-4 text-[19px] font-bold leading-tight tracking-[-0.02em]">{t(`site.home.ex.${ex.key}`)}</p>
+              <p className="mt-1 text-[13px] font-medium text-[#86868f]"><span className="tabular-nums">{formatHs(ex.code)}</span> · {t('site.home.dutyRate', { rate: ex.rate })}</p>
+              <p className="mt-6 text-[13px] font-medium text-[#86868f]">{t('site.home.toPay')}</p>
+              <p className="mt-1 text-[38px] font-black leading-none tracking-[-0.04em] tabular-nums">
+                <CountUp value={ex.sim.dau.total} format={(n) => num(Math.round(n))} />
+                <span className="ml-1 text-[14px] font-bold tracking-normal text-[#86868f]">F CFA</span>
+              </p>
+              <div className="mt-4 flex h-2 gap-1">
+                {parts.map((p) => <span key={p.key} className={cn('h-full rounded-full', p.color)} style={{ width: `${(p.amount / total) * 100}%` }} />)}
               </div>
-              <div className="flex items-baseline justify-between gap-4">
-                <dt className="text-white/60">{t('site.home.toPay')}</dt>
-                <dd className="text-[26px] font-bold tabular-nums text-white"><CountUp value={ex.sim.dau.total} format={xaf} /></dd>
-              </div>
-            </dl>
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <motion.div className="h-full rounded-full bg-gradient-to-r from-[#f3a745] to-[#fe560d]"
-                initial={{ width: 0 }} animate={{ width: `${Math.min(100, ex.sim.effectiveRate * 100)}%` }} transition={{ duration: 0.8, ease: EASE }} />
-            </div>
-            <p className="mt-2 text-[14px] text-white/60">{t('site.home.ofValue', { pct: pct(ex.sim.effectiveRate) })}</p>
-          </motion.div>
-        </AnimatePresence>
+              <ul className="mt-3 text-[14px]">
+                {parts.map((p) => (
+                  <li key={p.key} className="flex items-center justify-between border-b border-[#ececf0] py-2.5">
+                    <span className="flex items-center gap-2 font-medium text-[#3a3a44]"><span aria-hidden className={cn('h-2 w-2 rounded-full', p.color)} />{t(`site.sim.group.${p.key}`)}</span>
+                    <span className="font-bold tabular-nums">{num(p.amount)}</span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between py-2.5">
+                  <span className="font-medium text-[#3a3a44]">{t('site.home.cifValue')}</span>
+                  <span className="font-bold tabular-nums">{num(ex.amount)}</span>
+                </li>
+              </ul>
+            </motion.div>
+          </AnimatePresence>
+          <div className="mt-3 flex h-12 items-center justify-center rounded-full bg-dz-violet text-[15px] font-bold text-white">{t('site.home.payCta')}</div>
+        </div>
       </div>
-      <div className="mt-5 flex gap-1.5" aria-hidden>
-        {EXAMPLES.map((e, n) => (
-          <button key={e.key} type="button" tabIndex={-1} onClick={() => setI(n)}
-            className={cn('h-1.5 rounded-full transition-all duration-300', n === i ? 'w-6 bg-white' : 'w-1.5 bg-white/30')} />
-        ))}
       </div>
     </div>
+  );
+}
+
+function Floating({ className, label, children, delay }: { className: string; label: string; children: ReactNode; delay: number }) {
+  return (
+    <motion.div aria-hidden className={cn('absolute hidden rounded-[22px] bg-white px-4 py-3.5 text-left shadow-[0_20px_50px_-18px_rgba(30,15,60,.35),0_0_0_1px_rgba(0,0,0,.05)] md:block', className)}
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay, ease: EASE }}>
+      <p className="text-[13px] font-medium text-[#86868f]">{label}</p>
+      <div className="mt-0.5 flex items-center gap-1.5 text-[16px] font-black tracking-[-0.01em] text-[#0d0d12]">{children}</div>
+    </motion.div>
   );
 }
 
@@ -97,167 +120,68 @@ function Hero() {
   const [q, setQ] = useState('');
   const go = (query: string) => navigate(`/douane/simulateur${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''}`);
   return (
-    <Container className="grid grid-cols-[minmax(0,1fr)] items-center gap-12 pb-16 pt-10 sm:pb-20 sm:pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16 lg:pb-28 lg:pt-20">
-      <div className="min-w-0">
-        <motion.p className="text-[13px] font-semibold uppercase tracking-[0.14em] text-white/60"
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}>
-          {t('site.home.eyebrow')}
-        </motion.p>
-        <motion.h1 className="mt-4 [text-wrap:balance] text-[38px] font-bold leading-[1.02] tracking-[-0.035em] text-white sm:text-[52px] lg:text-[64px]"
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.05, ease: EASE }}>
-          {t('site.home.titleA')}
-          <span className="bg-gradient-to-r from-[#f3a745] to-[#fe560d] bg-clip-text text-transparent">{t('site.home.titleB')}</span>
+    <section className="overflow-hidden bg-[linear-gradient(rgb(var(--dz-card))_62%,rgb(var(--dz-bg))_62%)]">
+      <Container className="pt-12 text-center sm:pt-20 lg:pt-24">
+        <motion.h1 className="mx-auto max-w-[16ch] [text-wrap:balance] text-[44px] font-black leading-[1] tracking-[-0.045em] text-dz-ink sm:max-w-none sm:text-[64px] lg:text-[84px]"
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }}>
+          {t('site.home.h1')}<span className="block text-dz-mute">{t('site.home.h1Muted')}</span>
         </motion.h1>
-        <motion.p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-white/70 sm:text-[19px]"
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.12, ease: EASE }}>
+        <motion.p className="mx-auto mt-5 max-w-[42ch] text-[18px] font-medium leading-relaxed text-dz-ink2 sm:mt-6 sm:text-[21px]"
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.08, ease: EASE }}>
           {t('site.home.lead')}
         </motion.p>
 
-        <motion.form onSubmit={(e) => { e.preventDefault(); go(q); }} className="mt-8 max-w-[560px]"
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2, ease: EASE }}>
+        <motion.form onSubmit={(e) => { e.preventDefault(); go(q); }} className="mx-auto mt-8 max-w-[560px]"
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.16, ease: EASE }}>
           <label htmlFor="dz-hero-q" className="sr-only">{t('site.home.searchLabel')}</label>
-          <div className="flex flex-col gap-2 rounded-2xl bg-white p-2 shadow-[0_20px_60px_-20px_rgba(169,71,254,.5)] sm:flex-row sm:items-center sm:rounded-full sm:pl-5">
-            <div className="flex min-w-0 flex-1 items-center gap-3 px-3 sm:px-0">
-              <Search aria-hidden className="h-5 w-5 shrink-0 text-[#635c74]" />
-              <Input id="dz-hero-q" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" enterKeyHint="search"
-                placeholder={t('site.home.searchPlaceholder')}
-                className="h-12 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 text-[17px] text-[#130d1e] placeholder:text-[#8a8398] focus:ring-0" />
-            </div>
-            <button type="submit" className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#130d1e] px-6 text-[16px] font-semibold text-white transition-transform active:scale-[0.98] sm:rounded-full">
-              {t('site.home.searchCta')} <ArrowRight aria-hidden className="h-[18px] w-[18px]" />
-            </button>
+          <div className="flex h-[60px] items-center gap-2 rounded-full bg-dz-card pl-5 pr-2 shadow-[0_1px_2px_rgba(0,0,0,.04),0_12px_40px_-12px_rgba(20,10,40,.22),inset_0_0_0_1px_rgba(0,0,0,.06)] sm:h-[68px] sm:pl-6">
+            <Search aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3" />
+            {/* eslint-disable-next-line no-restricted-syntax -- 18 px, pas de zoom iOS ; champ nu dans la pilule */}
+            <input id="dz-hero-q" value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" enterKeyHint="search"
+              placeholder={t('site.home.searchPlaceholder')}
+              className="h-full min-w-0 flex-1 bg-transparent text-[18px] font-medium text-dz-ink outline-none placeholder:font-normal placeholder:text-dz-ink3/80" />
+            <button type="submit" className={buttonClass('primary', 'md', 'h-11 px-5 sm:h-[52px] sm:px-6')}>{t('site.home.searchCta')}</button>
           </div>
         </motion.form>
 
-        <motion.div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 dz-scroll-x sm:mx-0 sm:flex-wrap sm:px-0"
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}>
+        <motion.div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 dz-scroll-x sm:mx-0 sm:flex-wrap sm:justify-center sm:px-0"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.25 }}>
           {POPULAR.map((p) => (
             <button key={p.key} type="button" onClick={() => go(p.q)}
-              className="h-10 shrink-0 rounded-full border border-white/15 bg-white/[0.06] px-4 text-[15px] font-medium text-white/85 transition-colors hover:bg-white/15">
+              className="h-9 shrink-0 rounded-full bg-dz-soft px-4 text-[14px] font-bold text-dz-ink2 transition-colors hover:bg-dz-fill hover:text-dz-ink">
               {t(`site.home.popular.${p.key}`)}
             </button>
           ))}
         </motion.div>
-      </div>
 
-      <motion.div className="hidden md:block" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.25, ease: EASE }}>
-        <ExampleCard />
-      </motion.div>
-    </Container>
-  );
-}
+        <motion.ul className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-[14px] font-medium text-dz-ink3"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.3 }}>
+          {(['a', 'b', 'c'] as const).map((k) => (
+            <li key={k}><b className="font-bold text-dz-ink">{t(`site.home.trust.${k}`)}</b> {t(`site.home.trust.${k}More`)}</li>
+          ))}
+        </motion.ul>
 
-const TOOLS: { key: string; to: string; icon: LucideIcon; account: boolean }[] = [
-  { key: 'simulator', to: '/douane/simulateur', icon: Calculator, account: false },
-  { key: 'classify', to: '/douane/classer', icon: FileSearch, account: true },
-  { key: 'audit', to: '/douane/audit', icon: ScanLine, account: true },
-  { key: 'routes', to: '/douane/routes', icon: Route, account: false },
-];
+        <MineLink />
 
-function Tools() {
-  const { t } = useTranslation('customs');
-  return (
-    <Container className="py-16 lg:py-24">
-      <Reveal className="max-w-[640px]">
-        <Eyebrow>{t('site.home.toolsEyebrow')}</Eyebrow>
-        <h2 className="mt-3 [text-wrap:balance] text-[30px] font-bold leading-tight tracking-[-0.02em] sm:text-[38px]">{t('site.home.toolsTitle')}</h2>
-      </Reveal>
-      <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-        {TOOLS.map((tool, i) => (
-          <Reveal as="li" key={tool.key} delay={0.06 * i} className="h-full">
-              <Link to={tool.to}
-                className="group flex h-full items-center gap-4 rounded-2xl border border-dz-line bg-dz-card p-4 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-dz-ink/20 hover:shadow-[0_18px_40px_-24px_rgba(19,13,30,.35)] sm:flex-col sm:items-start sm:gap-0 sm:p-6">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-dz-brand-soft text-dz-brand"><tool.icon aria-hidden className="h-6 w-6" /></span>
-                <span className="min-w-0 flex-1 sm:mt-6">
-                  <span className="block text-[18px] font-semibold leading-snug text-dz-ink">{t(`site.home.tools.${tool.key}.title`)}</span>
-                  <span className="mt-1 block text-[15px] leading-snug text-dz-ink3">{t(`site.home.tools.${tool.key}.desc`)}</span>
-                  <span className="mt-4 hidden sm:block">
-                    <Badge tone={tool.account ? 'neutral' : 'good'}>{t(tool.account ? 'site.home.withAccount' : 'site.home.noAccount')}</Badge>
-                  </span>
-                </span>
-                <ChevronRight aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3 transition-transform group-hover:translate-x-0.5 sm:hidden" />
-              </Link>
-          </Reveal>
-        ))}
-      </ul>
-    </Container>
-  );
-}
-
-function Proof() {
-  const { t } = useTranslation('customs');
-  return (
-    <section className="bg-dz-soft">
-      <Container className="grid items-center gap-8 py-16 lg:grid-cols-2 lg:gap-16 lg:py-24">
-        <Reveal>
-          <Eyebrow>{t('site.home.proofEyebrow')}</Eyebrow>
-          <p className="mt-4 text-[52px] font-bold leading-none tracking-[-0.04em] tabular-nums text-dz-ink sm:text-[72px]">307 078 F</p>
-          <p className="mt-3 text-[18px] text-dz-ink2">{t('site.home.proofSub')}</p>
-        </Reveal>
-        <Reveal delay={0.08} className="space-y-6">
-          <p className="max-w-[52ch] text-[17px] leading-relaxed text-dz-ink2">{t('site.home.proofBody')}</p>
-          <ButtonLink to="/douane/audit" variant="primary" size="lg">{t('site.home.proofCta')} <ArrowRight aria-hidden /></ButtonLink>
-        </Reveal>
+        <div className="relative mx-auto mt-12 h-[520px] max-w-[760px] sm:mt-16 sm:h-[600px]">
+          <motion.div className="origin-top scale-[.86] sm:scale-100" initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: EASE }}>
+            <PhoneResult />
+          </motion.div>
+          <Floating className="left-0 top-[150px]" label={t('site.home.floatSigned')} delay={0.7}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-dz-good text-white"><Check aria-hidden className="h-3 w-3" strokeWidth={3.5} /></span>
+            {t('site.home.floatSignedBy')}
+          </Floating>
+          <Floating className="right-0 top-[300px]" label={t('site.home.floatBack')} delay={0.85}>
+            <span className="tabular-nums text-dz-brand">+ {xaf(58_136)}</span>
+          </Floating>
+        </div>
       </Container>
     </section>
   );
 }
 
-function News() {
-  const { t } = useTranslation('customs');
-  const q = useCustomsNotices();
-  const list = useMemo(() => sortNotices((q.data ?? []).filter((n) => n.published && phaseOf(n) !== 'past')).slice(0, 3), [q.data]);
-  if (list.length === 0) return null;
-  return (
-    <Container className="py-16 lg:py-24">
-      <Reveal className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Eyebrow>{t('site.home.newsEyebrow')}</Eyebrow>
-          <h2 className="mt-3 [text-wrap:balance] text-[30px] font-bold leading-tight tracking-[-0.02em] sm:text-[38px]">{t('site.home.newsTitle')}</h2>
-        </div>
-        <Link to="/douane/veille" className="inline-flex items-center gap-1 text-[16px] font-semibold text-dz-brand hover:underline">
-          {t('site.home.newsAll')} <ArrowRight aria-hidden className="h-4 w-4" />
-        </Link>
-      </Reveal>
-      <ul className="mt-10 grid gap-3 md:grid-cols-3 md:gap-5">
-        {list.map((n, i) => {
-          const phase = phaseOf(n);
-          return (
-            <Reveal as="li" key={n.id} delay={0.06 * i} className="h-full">
-                <Link to={`/douane/veille#${n.slug}`} className="flex h-full flex-col gap-4 rounded-2xl border border-dz-line bg-dz-card p-5 transition-colors hover:border-dz-ink/20 sm:p-6">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <Badge tone={n.kind === 'disruption' ? 'warn' : 'brand'}>{t(n.kind === 'disruption' ? 'site.home.kindDisruption' : 'site.home.kindRule')}</Badge>
-                    <span className="text-[14px] text-dz-ink3">{t(`watch.phase.${phase}`)}</span>
-                  </span>
-                  <span className="text-[17px] font-semibold leading-snug text-dz-ink">{n.title}</span>
-                </Link>
-            </Reveal>
-          );
-        })}
-      </ul>
-    </Container>
-  );
-}
-
-function PayBand() {
-  const { t } = useTranslation('customs');
-  return (
-    <Container className="pb-16 lg:pb-24">
-      <Reveal>
-        <div className="dz-night flex flex-col items-start gap-6 overflow-hidden rounded-3xl px-6 py-10 sm:px-10 lg:flex-row lg:items-center lg:justify-between lg:px-14 lg:py-14">
-          <div className="max-w-[560px]">
-            <h2 className="[text-wrap:balance] text-[26px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[32px]">{t('site.home.payTitle')}</h2>
-            <p className="mt-3 text-[17px] text-white/70">{t('site.home.payBody')}</p>
-          </div>
-          <ButtonLink to="/" variant="brand" size="lg">{t('site.home.payCta')} <ArrowRight aria-hidden /></ButtonLink>
-        </div>
-      </Reveal>
-    </Container>
-  );
-}
-
-/** Pour un client connecté : ce qui l'attend, en une ligne. */
-function MineStrip() {
+/** Pour un client connecté : ce qui l'attend, en une pilule sous le héros. */
+function MineLink() {
   const { t } = useTranslation('customs');
   const { user } = useAuth();
   const on = !!user;
@@ -269,23 +193,212 @@ function MineStrip() {
   }).length : 0), [on, files.data, invites.data, notices.data]);
   if (!on) return null;
   return (
-    <Container className="pt-8">
-      <Link to="/douane/espace" className="flex items-center justify-between gap-4 rounded-2xl border border-dz-line bg-dz-card px-5 py-4 transition-colors hover:border-dz-ink/20">
-        <span className="min-w-0">
-          <span className="block text-[17px] font-semibold text-dz-ink">{t('site.mySpace')}</span>
-          <span className="block text-[15px] text-dz-ink3">{count > 0 ? t('site.home.tasks', { count }) : t('site.home.noTasks')}</span>
+    <Link to="/douane/espace" className="mx-auto mt-6 inline-flex h-10 items-center gap-2 rounded-full bg-dz-brand-soft pl-4 pr-3 text-[15px] font-bold text-dz-brand transition-colors hover:bg-dz-violet/15">
+      {t('site.mySpace')} · {count > 0 ? t('site.home.tasks', { count }) : t('site.home.noTasksShort')}
+      <ChevronRight aria-hidden className="h-4 w-4" />
+    </Link>
+  );
+}
+
+// ─── Les tuiles ─────────────────────────────────────────────────────────────
+
+function Tile({ to, span, tag, title, desc, more, children, delay = 0 }: {
+  to: string; span: string; tag: string; title: string; desc: string; more: string; children: ReactNode; delay?: number;
+}) {
+  return (
+    <Reveal delay={delay} className={span}>
+      <Link to={to} className="group flex h-full flex-col overflow-hidden rounded-[28px] bg-dz-card p-6 transition-transform duration-300 hover:-translate-y-1 sm:p-8">
+        <span className="self-start rounded-full bg-dz-soft px-2.5 py-1 text-[13px] font-bold text-dz-ink2">{tag}</span>
+        <h3 className="mt-4 text-[24px] font-black leading-tight tracking-[-0.03em] text-dz-ink sm:text-[26px]">{title}</h3>
+        <p className="mt-2 max-w-[36ch] text-[16px] font-medium leading-snug text-dz-ink3">{desc}</p>
+        <div className="mt-6 flex-1">{children}</div>
+        <span className="mt-6 inline-flex items-center gap-1.5 text-[15px] font-bold text-dz-ink">
+          {more} <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </span>
-        <ChevronRight aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3" />
       </Link>
-    </Container>
+    </Reveal>
+  );
+}
+
+function Bento() {
+  const { t } = useTranslation('customs');
+  const wigs = useMemo(() => simOf(EXAMPLES[1]), []);
+  const route = useMemo(() => planRoute({ mode: 'sea', origin: 'CNSHA', destination: 'douala', port: 'CMDLA', weightKg: 1000 }), []);
+  return (
+    <section className="bg-dz-bg">
+      <Container className="py-20 sm:py-28">
+        <Reveal>
+          <h2 className="[text-wrap:balance] text-[36px] font-black leading-[1.02] tracking-[-0.04em] text-dz-ink sm:text-[56px]">
+            {t('site.home.bentoTitle')}<span className="block text-dz-mute">{t('site.home.bentoMuted')}</span>
+          </h2>
+        </Reveal>
+        <div className="mt-10 grid gap-4 sm:mt-14 lg:grid-cols-6 lg:gap-5">
+          <Tile to="/douane/simulateur" span="lg:col-span-4" tag={t('site.home.noAccount')} title={t('site.home.b1Title')} desc={t('site.home.b1Desc')} more={t('site.home.tools.simulator.title')}>
+            <div className="rounded-[20px] bg-dz-soft p-4 sm:p-5">
+              <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr]">
+                <MiniField label={t('site.home.b1Product')} value={t('site.home.ex.wigs')} />
+                <MiniField label={t('site.home.b1Price')} value={num(EXAMPLES[1].amount)} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {['CNY', 'USD', 'XAF'].map((c) => <MiniPill key={c} on={c === 'XAF'}>{c}</MiniPill>)}
+                <span className="w-2" />
+                {['FOB', 'CIF'].map((c) => <MiniPill key={c} on={c === 'CIF'}>{c}</MiniPill>)}
+              </div>
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-2 rounded-2xl bg-dz-primary px-5 py-4 text-dz-on-primary">
+                <div>
+                  <p className="text-[13px] font-medium opacity-60">{t('site.home.toPay')}</p>
+                  <p className="text-[30px] font-black leading-none tracking-[-0.03em] tabular-nums">{xaf(wigs.dau.total)}</p>
+                </div>
+                <p className="text-[13px] font-medium tabular-nums opacity-60">{formatHs(EXAMPLES[1].code)} · {t('site.home.dutyRate', { rate: EXAMPLES[1].rate })}</p>
+              </div>
+            </div>
+          </Tile>
+
+          <Tile to="/douane/classer" span="lg:col-span-2" tag={t('site.home.withAccount')} title={t('site.home.b2Title')} desc={t('site.home.b2Desc')} more={t('site.home.b2More')} delay={0.06}>
+            <div className="flex flex-col gap-2">
+              <span className="max-w-[88%] self-start rounded-[18px] rounded-bl-md bg-dz-soft px-3.5 py-2.5 text-[14px] font-medium text-dz-ink">{t('site.home.b2Ask')}</span>
+              <span className="max-w-[88%] self-end rounded-[18px] rounded-br-md bg-dz-primary px-3.5 py-2.5 text-[14px] font-medium text-dz-on-primary">{t('site.home.b2Answer')}</span>
+            </div>
+            <div className="mt-4 flex items-center gap-3 rounded-2xl p-3.5 ring-[1.5px] ring-dz-good">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-dz-good text-white"><Check aria-hidden className="h-4 w-4" strokeWidth={3.5} /></span>
+              <span className="min-w-0">
+                <span className="block text-[22px] font-black leading-none tracking-[-0.02em] tabular-nums text-dz-ink">{formatHs('850440')}</span>
+                <span className="mt-1 block text-[13px] font-medium text-dz-ink3">{t('site.home.b2Signed')}</span>
+              </span>
+            </div>
+          </Tile>
+
+          <Tile to="/douane/audit" span="lg:col-span-2" tag={t('site.home.withAccount')} title={t('site.home.b3Title')} desc={t('site.home.b3Desc')} more={t('site.home.tools.audit.title')} delay={0.06}>
+            <p className="text-[48px] font-black leading-none tracking-[-0.045em] tabular-nums text-dz-violet sm:text-[52px]">{xaf(58_136)}</p>
+            <p className="mt-2 text-[15px] font-medium text-dz-ink3">{t('site.home.b3Until')}</p>
+            <div className="mt-4 space-y-1 rounded-2xl bg-dz-soft p-3.5 text-[13px] font-medium text-dz-ink2">
+              <p className="flex justify-between gap-3"><span>{t('site.home.b3Line1')}</span><s className="tabular-nums text-dz-ink3">{num(36_084)}</s></p>
+              <p className="flex justify-between gap-3"><span>{t('site.home.b3Line2')}</span><s className="tabular-nums text-dz-ink3">{num(193_782)}</s></p>
+            </div>
+          </Tile>
+
+          <Tile to="/douane/routes" span="lg:col-span-4" tag={t('site.home.noAccount')} title={t('site.home.b4Title')} desc={t('site.home.b4Desc')} more={t('site.home.tools.routes.title')} delay={0.12}>
+            <p className="flex flex-wrap items-baseline gap-x-3">
+              <span className="text-[44px] font-black leading-none tracking-[-0.04em] tabular-nums text-dz-ink">{route.days[0]}–{route.days[1]}</span>
+              <span className="text-[15px] font-medium text-dz-ink3">{t('site.home.b4Days', { from: route.origin.name, to: route.destination.name })}</span>
+            </p>
+            <div className="relative mt-6 h-[96px]">
+              <svg viewBox="0 0 600 96" preserveAspectRatio="none" className="h-full w-full" aria-hidden>
+                <path d="M16 76 C 160 6, 330 6, 584 58" fill="none" stroke="rgb(var(--dz-line))" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                <motion.path d="M16 76 C 160 6, 330 6, 584 58" fill="none" stroke="rgb(var(--dz-violet))" strokeWidth="3" strokeLinecap="round" vectorEffect="non-scaling-stroke"
+                  initial={{ pathLength: 0 }} whileInView={{ pathLength: 0.68 }} viewport={{ once: true }} transition={{ duration: 1.4, ease: EASE }} />
+              </svg>
+              <span className="absolute bottom-0 left-0 flex items-center gap-2 text-[13px] font-bold text-dz-ink"><span className="h-3 w-3 rounded-full bg-dz-ink" />{route.origin.name}</span>
+              <span className="absolute bottom-3 right-0 flex items-center gap-2 text-[13px] font-bold text-dz-ink">{route.destination.name}<span className="h-3 w-3 rounded-full border-[3px] border-dz-ink bg-dz-card" /></span>
+            </div>
+          </Tile>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+function MiniField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-dz-card px-4 py-3">
+      <p className="text-[13px] font-medium text-dz-ink3">{label}</p>
+      <p className="mt-0.5 truncate text-[16px] font-bold tabular-nums text-dz-ink">{value}</p>
+    </div>
+  );
+}
+
+function MiniPill({ on, children }: { on?: boolean; children: ReactNode }) {
+  return <span className={cn('inline-flex h-8 items-center rounded-full px-3 text-[13px] font-bold', on ? 'bg-dz-primary text-dz-on-primary' : 'bg-dz-card text-dz-ink2')}>{children}</span>;
+}
+
+// ─── La preuve, l'actualité, le paiement ────────────────────────────────────
+
+function Proof() {
+  const { t } = useTranslation('customs');
+  return (
+    <section className="bg-dz-card">
+      <Container className="py-16 sm:py-24">
+        <Reveal>
+          <div className="grid gap-8 rounded-[32px] bg-dz-violet px-6 py-12 text-white sm:rounded-[40px] sm:px-12 sm:py-16 lg:grid-cols-[1.3fr_0.7fr] lg:items-end lg:gap-12 lg:px-16 lg:py-20">
+            <div>
+              <p className="whitespace-nowrap text-[60px] font-black leading-[0.9] tracking-[-0.055em] tabular-nums sm:text-[96px] lg:text-[120px]">{num(307_078)} F</p>
+              <p className="mt-5 max-w-[30ch] text-[18px] font-medium leading-snug text-white/90 sm:text-[22px]">{t('site.home.proofSub')}</p>
+            </div>
+            <div>
+              <p className="text-[16px] font-medium leading-relaxed text-white/85 sm:text-[17px]">{t('site.home.proofBody')}</p>
+              <Link to="/douane/audit" className="mt-6 inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[16px] font-bold text-[#0d0d12] transition-transform active:scale-[0.98]">
+                {t('site.home.proofCta')} <ArrowRight aria-hidden className="h-[18px] w-[18px]" />
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+function News() {
+  const { t } = useTranslation('customs');
+  const q = useCustomsNotices();
+  const list = useMemo(() => sortNotices((q.data ?? []).filter((n) => n.published && phaseOf(n) !== 'past')).slice(0, 3), [q.data]);
+  if (list.length === 0) return null;
+  const when = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '');
+  return (
+    <section className="bg-dz-card">
+      <Container className="pb-16 sm:pb-24">
+        <Reveal className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="[text-wrap:balance] text-[36px] font-black leading-[1.02] tracking-[-0.04em] text-dz-ink sm:text-[56px]">
+            {t('site.home.newsTitle')}<span className="block text-dz-mute">{t('site.home.newsMuted')}</span>
+          </h2>
+          <Link to="/douane/veille" className="inline-flex items-center gap-1 text-[16px] font-bold text-dz-ink hover:text-dz-brand">
+            {t('site.home.newsAll')} <ArrowRight aria-hidden className="h-4 w-4" />
+          </Link>
+        </Reveal>
+        <ul className="mt-10 border-t border-dz-line">
+          {list.map((n, i) => (
+            <Reveal as="li" key={n.id} delay={0.05 * i} className="border-b border-dz-line">
+              <Link to={`/douane/veille#${n.slug}`} className="group grid items-center gap-x-6 gap-y-1 py-6 sm:grid-cols-[200px_minmax(0,1fr)_24px]">
+                <span className="text-[14px] font-medium text-dz-ink3">{when(n.starts_on) || t(`watch.phase.${phaseOf(n)}`)}</span>
+                <span className="min-w-0">
+                  <span className={cn('mb-2 inline-flex h-6 items-center rounded-full px-2.5 text-[13px] font-bold',
+                    n.kind === 'disruption' ? 'bg-dz-warn-soft text-dz-warn' : 'bg-dz-brand-soft text-dz-brand')}>
+                    {t(n.kind === 'disruption' ? 'site.home.kindDisruption' : 'site.home.kindRule')}
+                  </span>
+                  <span className="block text-[19px] font-bold leading-snug tracking-[-0.015em] text-dz-ink sm:text-[21px]">{n.title}</span>
+                </span>
+                <ArrowRight aria-hidden className="hidden h-5 w-5 text-dz-ink3 transition-transform group-hover:translate-x-1 group-hover:text-dz-ink sm:block" />
+              </Link>
+            </Reveal>
+          ))}
+        </ul>
+      </Container>
+    </section>
+  );
+}
+
+function PayBand() {
+  const { t } = useTranslation('customs');
+  return (
+    <section className="bg-dz-card">
+      <Container className="pb-16 sm:pb-24">
+        <Reveal>
+          <div className="flex flex-col items-start gap-8 rounded-[32px] bg-[#0d0d12] px-6 py-12 text-white sm:rounded-[40px] sm:px-12 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:px-16">
+            <h2 className="[text-wrap:balance] text-[32px] font-black leading-[1.05] tracking-[-0.04em] sm:text-[48px]">
+              {t('site.home.payTitle')}<span className="block text-white/45">{t('site.home.payMuted')}</span>
+            </h2>
+            <ButtonLink to="/" variant="brand" size="lg" className="shrink-0">{t('site.home.payCta')} <ArrowRight aria-hidden /></ButtonLink>
+          </div>
+        </Reveal>
+      </Container>
+    </section>
   );
 }
 
 export function SiteHome() {
   return (
-    <SiteLayout hero={<Hero />}>
-      <MineStrip />
-      <Tools />
+    <SiteLayout>
+      <Hero />
+      <Bento />
       <Proof />
       <News />
       <PayBand />

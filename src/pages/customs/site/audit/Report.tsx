@@ -8,10 +8,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BadgeCheck, Calculator, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatNumber } from '@/lib/formatters';
 import { formatHs } from '@/lib/customs/hsCode';
 import { daysUntil, type ArticleAudit, type AuditResult, type DauExtraction, type Finding, type Route } from '@/lib/customs/audit';
-import { isSure, longDate, xaf } from '../../format';
+import { isSure, longDate, num, xaf } from '../../format';
 import { useFindingText } from '../../useCustomsText';
 import { Badge, CountUp, Disclosure, Reveal } from '../ui';
 
@@ -59,7 +58,7 @@ export function AuditRoutes({ result, ext }: { result: AuditResult; ext: DauExtr
   if (totals.claimable === 0 && totals.reclassify === 0 && totals.risk === 0) return null;
   const days = result.deadline ? daysUntil(result.deadline) : null;
   return (
-    <section className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <h2 className="text-[18px] font-bold">{t('audit.routesTitle')}</h2>
       <div className="mt-4 space-y-4">
         {totals.claimable > 0 && (
@@ -73,7 +72,7 @@ export function AuditRoutes({ result, ext }: { result: AuditResult; ext: DauExtr
                 {result.deadline
                   ? days! < 0
                     ? t('audit.deadlinePassed', { date: longDate(result.deadline) })
-                    : t('audit.deadline', { date: longDate(result.deadline), count: days!, days: formatNumber(days!) })
+                    : t('audit.deadline', { date: longDate(result.deadline), count: days!, days: num(days!) })
                   : t('audit.deadlineUnknown')}
               </p>
             </div>
@@ -113,7 +112,7 @@ function FindingRow({ f, value, simulateBase }: { f: Finding; value: number | nu
       <p className="text-[15px] leading-relaxed text-dz-ink2">{text(f)}</p>
       {f.proposed_code && value != null && (
         <Link to={`${simulateBase}?c=${f.proposed_code}&vs=${f.declared_code?.slice(0, 6) ?? ''}&a=${value}&cur=XAF&inc=CIF`}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-dz-line px-4 text-[14px] font-semibold text-dz-ink transition-colors hover:bg-dz-soft">
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-dz-soft px-4 text-[14px] font-bold text-dz-ink transition-colors hover:bg-dz-soft">
           <Calculator aria-hidden className="h-4 w-4" /> {t('audit.compare', { code: formatHs(f.proposed_code) })}
         </Link>
       )}
@@ -124,7 +123,7 @@ function FindingRow({ f, value, simulateBase }: { f: Finding; value: number | nu
 function ArticleCard({ a, simulateBase }: { a: ArticleAudit; simulateBase: string }) {
   const { t } = useTranslation('customs');
   return (
-    <article className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <article className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-dz-ink3">{t('audit.article', { n: a.n })}</p>
@@ -154,7 +153,7 @@ export function AuditArticleList({ result, ext, simulateBase }: { result: AuditR
       {noisy.length > 0 && <h2 className="pt-2 text-[22px] font-bold tracking-[-0.01em]">{t('audit.remarks', { count: noisy.length })}</h2>}
       {noisy.map((a, i) => <Reveal key={a.n} delay={Math.min(i, 4) * 0.04}><ArticleCard a={a} simulateBase={simulateBase} /></Reveal>)}
       {quiet.length > 0 && (
-        <div className="rounded-3xl border border-dz-line bg-dz-card px-5 sm:px-6">
+        <div className="rounded-[28px] bg-dz-card px-5 sm:px-6">
           <Disclosure title={t('audit.quiet', { count: quiet.length })}>
             <ul>
               {quiet.map((a) => (
@@ -187,7 +186,7 @@ export function AuditVerdictCard({ note, recoverable, company, license, at }: {
   const { t } = useTranslation('customs');
   const when = at ? new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
   return (
-    <section className="rounded-3xl border-2 border-dz-good bg-dz-card p-5 sm:p-6">
+    <section className="rounded-[28px] bg-dz-card p-5 ring-2 ring-dz-good sm:p-6">
       <p className="flex items-center gap-2 text-[16px] font-semibold text-dz-good"><BadgeCheck aria-hidden className="h-5 w-5" />{t('audit.verdictTitle')}</p>
       {recoverable != null && (
         <div className="mt-4">

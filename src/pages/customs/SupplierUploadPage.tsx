@@ -46,7 +46,7 @@ function DocCard({ kind, lang, uploaded, token }: { kind: DocKind; lang: Lang; u
 
   const done = uploaded.length > 0;
   return (
-    <article className={cn('rounded-3xl border bg-dz-card p-5 transition-colors sm:p-6', done ? 'border-dz-good' : 'border-dz-line')}>
+    <article className={cn('rounded-[28px] bg-dz-card p-5 transition-shadow sm:p-6', done && 'ring-2 ring-dz-good')}>
       <div className="flex items-start gap-4">
         <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', done ? 'bg-dz-good-soft text-dz-good' : 'bg-dz-soft text-dz-ink2')}>
           {done ? <CheckCircle2 aria-hidden className="h-5 w-5" /> : <FileUp aria-hidden className="h-5 w-5" />}
@@ -105,11 +105,11 @@ export function SupplierUploadPage() {
         <main className="mx-auto max-w-[640px] px-5 pb-20 pt-8 sm:pt-12">
           {q.isLoading ? (
             <div className="space-y-4" aria-busy="true">
-              <div className="h-24 animate-pulse rounded-3xl bg-dz-soft" />
-              {[0, 1].map((i) => <div key={i} className="h-44 animate-pulse rounded-3xl bg-dz-soft" />)}
+              <div className="h-24 animate-pulse rounded-[28px] bg-dz-fill" />
+              {[0, 1].map((i) => <div key={i} className="h-44 animate-pulse rounded-[28px] bg-dz-fill" />)}
             </div>
           ) : !inv ? (
-            <div className="rounded-3xl border border-dz-line bg-dz-card p-6">
+            <div className="rounded-[28px] bg-dz-card p-6">
               <h1 className="text-[22px] font-bold">{tt('supplier.invalidTitle')}</h1>
               <p className="mt-2 text-[16px] leading-relaxed text-dz-ink2">{tt('supplier.error.invalid_or_expired')}</p>
             </div>
@@ -124,14 +124,14 @@ export function SupplierUploadPage() {
                 </p>
               )}
               {inv.message && (
-                <div className="mt-6 rounded-3xl bg-dz-soft p-5">
+                <div className="mt-6 rounded-3xl bg-dz-card p-5">
                   <p className="text-[14px] font-semibold text-dz-ink3">{tt('supplier.messageFrom', { importer: inv.importer ?? '' })}</p>
                   <p className="mt-1 whitespace-pre-line text-[16px] leading-relaxed">{inv.message}</p>
                 </div>
               )}
 
               <div className="mt-8 flex items-center gap-3" aria-hidden>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-dz-soft">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-dz-fill">
                   <div className="h-full rounded-full bg-dz-good transition-[width] duration-500" style={{ width: `${inv.requested.length ? (got / inv.requested.length) * 100 : 0}%` }} />
                 </div>
                 <span className="shrink-0 text-[14px] font-semibold tabular-nums text-dz-ink2">{got}/{inv.requested.length}</span>

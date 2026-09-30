@@ -130,17 +130,27 @@ reste la même que celle de l'app de paiement. Tout ce que voit le client passe
 par `site/SiteLayout.tsx` et les pièces de `site/ui.tsx`, sous la portée `.dz`
 (couleurs `dz.*` dans `tailwind.config.ts`, jetons dans `src/index.css`).
 
-- **Une action principale à la fois** : bouton encre plein. Le violet Bonzini
-  (`variant="brand"`) est réservé à « Payer mon fournisseur ».
-- **Le chiffre avant le détail** : la somme clé sur la carte sombre
-  (`bg-dz-primary`) ; le détail se déplie (`Disclosure`).
-- **Texte ≥ 14 px, champs 17 px** (pas de zoom d'iOS) ; animations ≤ 400 ms,
-  coupées par `MotionConfig reducedMotion="user"`.
-- **Par écran** — téléphone (< 640) : en-tête 56 px et menu plein écran, une
-  colonne, la somme en premier, barre de total collée en bas du simulateur ;
-  tablette (640–1279) : grilles à deux colonnes, menu gardé ; ordinateur
-  (≥ 1024 pour les pages outils, ≥ 1280 pour la navigation) : deux colonnes, le
-  panneau de droite collant (somme + action), navigation à cinq liens.
+Direction « premium », choisie sur références (Wise, Revolut, Stripe, Linear,
+Apple, Qonto) :
+
+- **Satoshi** (Fontshare, hébergée dans `public/fonts/satoshi/`), titres très
+  gras et serrés, en deux temps : une ligne noire, une ligne grise (`dz-mute`).
+- **Fond gris clair, cartes blanches sans bordure**, rayons de 28 px ; les
+  champs sont gris pleins dans les cartes, blancs au focus.
+- **Le produit montré en vrai** : l'accueil affiche un calcul du moteur dans un
+  téléphone, et chaque outil a sa miniature (tuiles « bento »).
+- **Les couleurs du logo pour signifier** : violet `#A947FE` en aplat (preuve,
+  « Payer mon fournisseur »), violet foncé `dz-brand` pour les liens, or et
+  orange dans la barre de répartition des taxes. Jamais de lueur ni de
+  dégradé de texte, pas d'icône dans un carré de couleur.
+- **Une action principale à la fois** : pilule noire ; secondaire en gris plein.
+- **Chiffres** : `num()` / `xaf()` de `format.ts` remplacent l'espace fine
+  insécable par une insécable ordinaire — Satoshi n'a pas la fine, et le
+  moteur de rendu la synthétise trop étroite (« 302557 »).
+- **Par écran** — téléphone : barre de 56 px et menu plein écran en grandes
+  lignes de texte, une colonne ; tablette (≥ 640) : l'action « Estimer mes
+  droits » dans la barre ; ordinateur : deux colonnes, panneau de droite
+  collant, navigation à cinq liens (≥ 1280).
 - `text-balance` est une **taille** de police dans ce projet : utiliser
   `[text-wrap:balance]`.
 

@@ -54,7 +54,7 @@ export function ProductSearch({ nom, onPick, exclude, initialQuery = '', autoFoc
         <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 dz-scroll-x sm:mx-0 sm:flex-wrap sm:px-0">
           {POPULAR.map((p) => (
             <button key={p.key} type="button" onClick={() => setQuery(p.q)}
-              className="h-10 shrink-0 rounded-full border border-dz-line bg-dz-card px-4 text-[15px] font-medium text-dz-ink2 transition-colors hover:border-dz-ink/25 hover:text-dz-ink">
+              className="h-10 shrink-0 rounded-full bg-dz-soft px-4 text-[15px] font-bold text-dz-ink2 transition-colors hover:bg-dz-fill hover:text-dz-ink">
               {t(`site.home.popular.${p.key}`)}
             </button>
           ))}
@@ -62,7 +62,7 @@ export function ProductSearch({ nom, onPick, exclude, initialQuery = '', autoFoc
       ) : hits.length === 0 ? (
         <p className="rounded-2xl bg-dz-soft px-4 py-3 text-[15px] text-dz-ink2">{t('sim.noResult')}</p>
       ) : (
-        <ul className="overflow-hidden rounded-2xl border border-dz-line bg-dz-card">
+        <ul className="overflow-hidden rounded-3xl bg-dz-card">
           <AnimatePresence initial={false}>
             {hits.map((h, i) => {
               const tip = h.term?.tip && !tipShown.has(h.term) ? h.term.tip : null;

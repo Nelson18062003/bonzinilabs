@@ -21,7 +21,7 @@ import {
 import {
   useCancelClassification, useClassification, useClassify, useMyCustomsPhotoUrls, usePostClassification, useSubmitClassification,
 } from '@/hooks/useCustomsFiles';
-import { Thread, ThinkingBubble } from './components/ClassificationParts';
+import { Conversation, Thinking } from './site/classify/Conversation';
 import { SiteLayout } from './site/SiteLayout';
 import { Button, ButtonLink, Container, PageIntro, Sheet, StatusBadge, Textarea } from './site/ui';
 
@@ -138,12 +138,12 @@ export function ClassificationPage() {
 
   if (q.isLoading) {
     return <Shell><div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]" aria-busy="true">
-      <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-3xl bg-dz-soft" />)}</div>
-      <div className="hidden h-60 animate-pulse rounded-3xl bg-dz-soft lg:block" />
+      <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-[28px] bg-dz-fill" />)}</div>
+      <div className="hidden h-60 animate-pulse rounded-[28px] bg-dz-fill lg:block" />
     </div></Shell>;
   }
   if (q.isError || !c) {
-    return <Shell><div className="rounded-3xl border border-dz-line p-6">
+    return <Shell><div className="rounded-[28px] bg-dz-card p-6">
       <p className="text-[16px]">{(q.error as Error | null)?.message}</p>
       <Button className="mt-4" variant="secondary" onClick={() => { void q.refetch(); }}>{t('site.retry')}</Button>
     </div></Shell>;
@@ -182,7 +182,7 @@ export function ClassificationPage() {
   const actions = (
     <div className="space-y-2">
       {canSubmit && (
-        <div className="rounded-3xl border border-dz-line bg-dz-card p-5">
+        <div className="rounded-[28px] bg-dz-card p-5">
           <p className="text-[16px] font-semibold">{c.status === 'needs_info' ? t('files.resubmitTitle') : t('files.submitTitle')}</p>
           <p className="mt-1 text-[15px] leading-snug text-dz-ink3">{t('files.submitDesc')}</p>
           <Button className="mt-4 h-auto min-h-12 w-full whitespace-normal py-3" onClick={() => setSheet('submit')}>
@@ -213,7 +213,7 @@ export function ClassificationPage() {
 
           {/* Le produit tel que le client l'a décrit. */}
           {(c.description || c.photo_paths.length > 0) && (
-            <div className="rounded-3xl border border-dz-line bg-dz-card p-5">
+            <div className="rounded-[28px] bg-dz-card p-5">
               {c.description && <p className="whitespace-pre-line text-[16px] leading-relaxed text-dz-ink2">{c.description}</p>}
               {photos.data && photos.data.length > 0 && (
                 <div className="mt-4 grid grid-cols-4 gap-2 sm:max-w-[420px]">
@@ -229,10 +229,10 @@ export function ClassificationPage() {
 
           {/* La conversation. */}
           <section aria-label={t('files.thread')} className="space-y-3">
-            <Thread messages={c.messages} simulateBase={SIMULATE} optionsEnabled={editable && !busy} onOption={(o) => void send(o)} />
-            {busy && <ThinkingBubble />}
+            <Conversation messages={c.messages} simulateBase={SIMULATE} optionsEnabled={editable && !busy} onOption={(o) => void send(o)} />
+            {busy && <Thinking />}
             {classify.isError && !busy && (
-              <div className="rounded-3xl bg-dz-soft p-5">
+              <div className="rounded-3xl bg-dz-card p-5">
                 <p className="text-[15px] font-semibold text-dz-bad">{(classify.error as Error).message}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button size="sm" variant="secondary" onClick={() => classify.mutate(hintsOf(c))}>{t('files.retry')}</Button>
@@ -247,13 +247,13 @@ export function ClassificationPage() {
 
           {/* Écrire : en bas, toujours à portée du pouce. */}
           {editable && (
-            <form className="sticky bottom-0 z-20 -mx-5 flex items-end gap-2 border-t border-dz-line bg-dz-bg/95 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:-mx-8 sm:px-8 lg:mx-0 lg:rounded-3xl lg:border lg:px-3 lg:pb-3"
+            <form className="sticky bottom-0 z-20 -mx-5 flex items-end gap-2 bg-dz-bg/90 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:bottom-4 lg:mx-0 lg:rounded-[28px] lg:bg-dz-card lg:p-2 lg:shadow-[0_12px_40px_-12px_rgba(20,10,40,.25),0_0_0_1px_rgba(0,0,0,.05)]"
               onSubmit={(e) => { e.preventDefault(); void send(draft); }}>
               <label htmlFor="cl-reply" className="sr-only">{t('files.reply')}</label>
               <Textarea id="cl-reply" rows={1} value={draft} onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(draft); } }}
                 placeholder={question ? t('files.replyQuestion') : t('files.replyFree')} maxLength={4000}
-                className="max-h-40 min-h-12 flex-1 resize-none py-3" />
+                className="max-h-40 min-h-12 flex-1 resize-none rounded-[22px] bg-dz-card py-3 ring-1 ring-dz-ink/10 lg:bg-dz-soft lg:ring-0" />
               <button type="submit" aria-label={t('files.send')} disabled={!draft.trim() || busy}
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-dz-primary text-dz-on-primary transition-opacity disabled:opacity-30">
                 {busy ? <Loader2 aria-hidden className="h-5 w-5 animate-spin" /> : <ArrowUp aria-hidden className="h-5 w-5" />}

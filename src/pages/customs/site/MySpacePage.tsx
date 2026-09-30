@@ -50,15 +50,15 @@ export function MySpacePage() {
           </h2>
           {loading ? (
             <div className="mt-4 space-y-2" aria-hidden>
-              {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-dz-soft" />)}
+              {[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-3xl bg-dz-fill" />)}
             </div>
           ) : tasks.length === 0 ? (
-            <div className="mt-4 flex items-center gap-3 rounded-2xl border border-dz-line bg-dz-card p-5">
+            <div className="mt-4 flex items-center gap-3 rounded-3xl bg-dz-card p-5">
               <CheckCircle2 aria-hidden className="h-6 w-6 shrink-0 text-dz-good" />
               <p className="text-[16px] text-dz-ink2">{t('site.space.nothing')}</p>
             </div>
           ) : (
-            <ul className="mt-4 overflow-hidden rounded-2xl border border-dz-line bg-dz-card">
+            <ul className="mt-4 overflow-hidden rounded-3xl bg-dz-card">
               {tasks.map((task, i) => (
                 <Reveal as="li" key={task.id} delay={Math.min(i, 6) * 0.04} y={8} className="border-b border-dz-line last:border-b-0">
                   <Link to={task.path} className="flex min-h-[64px] items-center gap-4 px-4 py-3.5 transition-colors hover:bg-dz-soft sm:px-5">
@@ -83,7 +83,7 @@ export function MySpacePage() {
           <ul className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
             {dossiers.map((d, i) => (
               <Reveal as="li" key={d.key} delay={0.05 * i}>
-                <Link to={d.to} className="flex items-center gap-4 rounded-2xl border border-dz-line bg-dz-card p-4 transition-colors hover:border-dz-ink/20">
+                <Link to={d.to} className="flex items-center gap-4 rounded-3xl bg-dz-card p-4 transition-colors hover:border-dz-ink/20">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-dz-brand-soft text-dz-brand"><d.icon aria-hidden className="h-5 w-5" /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[16px] font-semibold text-dz-ink">{t(`site.space.dossier.${d.key}`)}</span>

@@ -60,7 +60,7 @@ type Set = <K extends keyof SimState>(k: K, v: SimState[K]) => void;
 /** Une étape : son numéro (coché quand elle est faite), son titre, son contenu. */
 function Step({ n, title, done, children, aside }: { n: number; title: string; done?: boolean; children: ReactNode; aside?: ReactNode }) {
   return (
-    <section className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <header className="mb-4 flex items-center gap-3">
         <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold transition-colors',
           done ? 'bg-dz-primary text-dz-on-primary' : 'bg-dz-soft text-dz-ink2')}>
@@ -218,7 +218,7 @@ function Compare({ nom, lang, a, b, onRemove }: {
 function EmptyResult({ onExample }: { onExample: (e: typeof EXAMPLES[number]) => void }) {
   const { t } = useTranslation('customs');
   return (
-    <div className="rounded-3xl border border-dashed border-dz-line bg-dz-soft p-6 sm:p-7">
+    <div className="rounded-[28px] bg-dz-card p-6 sm:p-7">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-dz-card text-dz-brand"><Calculator aria-hidden className="h-6 w-6" /></span>
       <p className="mt-5 text-[18px] font-semibold text-dz-ink">{t('site.sim.emptyTitle')}</p>
       <p className="mt-1 text-[15px] text-dz-ink3">{t('site.sim.emptyBody')}</p>
@@ -227,7 +227,7 @@ function EmptyResult({ onExample }: { onExample: (e: typeof EXAMPLES[number]) =>
         {EXAMPLES.map((e) => (
           <li key={e.key}>
             <button type="button" onClick={() => onExample(e)}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-dz-line bg-dz-card px-4 py-3 text-left transition-colors hover:border-dz-ink/25">
+              className="flex w-full items-center justify-between gap-3 rounded-3xl bg-dz-card px-4 py-3 text-left transition-colors hover:border-dz-ink/25">
               <span className="min-w-0">
                 <span className="block text-[15px] font-semibold text-dz-ink">{t(`site.home.ex.${e.key}`)}</span>
                 <span className="block text-[14px] tabular-nums text-dz-ink3">{formatHs(e.code)} · {xaf(Number(e.amount))} CIF</span>
@@ -247,14 +247,14 @@ export function SimulatorView({ admin = false }: { admin?: boolean }) {
   if (isLoading) {
     return (
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]" aria-busy="true" aria-label={t('sim.loading')}>
-        <div className="space-y-4">{[0, 1].map((i) => <div key={i} className="h-48 animate-pulse rounded-3xl bg-dz-soft" />)}</div>
-        <div className="hidden h-80 animate-pulse rounded-3xl bg-dz-soft lg:block" />
+        <div className="space-y-4">{[0, 1].map((i) => <div key={i} className="h-48 animate-pulse rounded-[28px] bg-dz-fill" />)}</div>
+        <div className="hidden h-80 animate-pulse rounded-[28px] bg-dz-fill lg:block" />
       </div>
     );
   }
   if (isError || !nom) {
     return (
-      <div className="rounded-3xl border border-dz-line bg-dz-card p-6">
+      <div className="rounded-[28px] bg-dz-card p-6">
         <p className="text-[17px] font-semibold">{t('sim.loadError')}</p>
         <Button className="mt-4" variant="secondary" onClick={() => { void refetch(); }}><RotateCcw aria-hidden /> {t('site.retry')}</Button>
       </div>
@@ -363,7 +363,7 @@ function SimulatorBody({ nom, admin }: { nom: Nomenclature; admin: boolean }) {
 
           <Step n={3} title={t('sim.step4')} done>
             <button type="button" onClick={() => setSituationOpen((o) => !o)} aria-expanded={situationOpen}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-dz-line px-4 py-3 text-left transition-colors hover:border-dz-ink/25">
+              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-dz-soft px-4 py-3 text-left transition-colors hover:border-dz-ink/25">
               <span className="min-w-0">
                 <span className="block text-[16px] font-semibold text-dz-ink">{t(`sim.regime.${state.regime}`)}</span>
                 <span className="block text-[14px] text-dz-ink3">{t('site.sim.situationHint')}</span>
@@ -397,7 +397,7 @@ function SimulatorBody({ nom, admin }: { nom: Nomenclature; admin: boolean }) {
           ) : (
             <>
               <SimResult sim={sim} tariff={line} admin={admin} />
-              <div className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+              <div className="rounded-[28px] bg-dz-card p-5 sm:p-6">
                 <h3 className="flex items-center gap-2 text-[16px] font-semibold"><Scale aria-hidden className="h-[18px] w-[18px] text-dz-brand" /> {t('sim.compareTitle')}</h3>
                 <div className="mt-4">
                   {picking === 'compare' ? (

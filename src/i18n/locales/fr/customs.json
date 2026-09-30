@@ -708,7 +708,7 @@
       "eyebrow": "Douane Cameroun · tarif 2026",
       "titleA": "Payez ",
       "titleB": "le juste droit.",
-      "lead": "Estimez vos droits avant d'acheter. Faites signer vos codes par un commissionnaire agréé. Récupérez ce qui a été payé en trop.",
+      "lead": "Estimez vos droits avant d'acheter en Chine, faites signer vos codes, récupérez ce qui a été payé en trop.",
       "searchLabel": "Quel produit importez-vous ?",
       "searchPlaceholder": "Quel produit importez-vous ?",
       "searchCta": "Estimer",
@@ -754,21 +754,59 @@
       "noAccount": "Sans compte",
       "withAccount": "Compte gratuit",
       "proofEyebrow": "Sur une vraie déclaration",
-      "proofSub": "payés en trop sur 900 000 F de marchandises.",
-      "proofBody": "Quatre codes sur dix étaient faux : un régulateur déclaré comme réfrigérateur, des chaises comme « autres meubles ». Notre moteur recalcule chaque ligne comme CAMCIS et vous dit ce qui se récupère.",
+      "proofSub": "payés en trop sur une seule déclaration de 900 000 F. Quatre codes sur dix étaient faux.",
+      "proofBody": "Un régulateur déclaré comme réfrigérateur, des chaises comme « autres meubles ». Le moteur recalcule chaque ligne comme CAMCIS et vous dit ce qui se récupère.",
       "proofCta": "Vérifier ma DAU",
       "newsEyebrow": "Actualités",
-      "newsTitle": "Ce qui change en ce moment",
+      "newsTitle": "Ce qui change",
       "newsAll": "Toutes les actualités",
       "kindRule": "Réglementation",
       "kindDisruption": "Perturbation",
-      "payTitle": "Et pour payer votre fournisseur ?",
+      "payTitle": "Dédouané ?",
       "payBody": "Alipay, WeChat ou virement : votre fournisseur est payé en yuan, avec la preuve.",
       "payCta": "Payer mon fournisseur",
       "tasks": "{{count}} choses à faire",
       "tasks_one": "{{count}} chose à faire",
       "tasks_other": "{{count}} choses à faire",
-      "noTasks": "Vos produits, vos déclarations, vos fournisseurs."
+      "noTasks": "Vos produits, vos déclarations, vos fournisseurs.",
+      "h1": "Payez le juste droit.",
+      "h1Muted": "Pas un franc de plus.",
+      "trust": {
+        "a": "Tarif 2026",
+        "aMore": "· calcul CAMCIS",
+        "b": "Commissionnaires",
+        "bMore": "agréés",
+        "c": "Sans compte",
+        "cMore": "pour estimer"
+      },
+      "noTasksShort": "rien en attente",
+      "phoneBack": "Estimer",
+      "phoneShare": "Partager",
+      "floatSigned": "Code signé par",
+      "floatSignedBy": "un commissionnaire agréé",
+      "floatBack": "À récupérer sur votre DAU",
+      "bentoTitle": "Tout pour dédouaner",
+      "bentoMuted": "sans mauvaise surprise.",
+      "b1Title": "Vos droits en 30 secondes.",
+      "b1Desc": "Le montant exact, ligne par ligne, comme CAMCIS le calculera. Avant de commander.",
+      "b1Product": "Produit",
+      "b1Price": "Prix fournisseur",
+      "b2Title": "Un code signé.",
+      "b2Desc": "L'assistant propose, un commissionnaire agréé signe.",
+      "b2More": "Classer un produit",
+      "b2Ask": "Relais ou servomoteur ?",
+      "b2Answer": "Relais électronique",
+      "b2Signed": "Signé par un commissionnaire agréé",
+      "b3Title": "Le trop-payé, récupéré.",
+      "b3Desc": "On relit votre DAU, taxe par taxe.",
+      "b3Until": "réclamables, sur une vraie DAU",
+      "b3Line1": "Mouchoirs · accises 25 %",
+      "b3Line2": "Chaises · 9403.70",
+      "b4Title": "Sachez quand ça arrive.",
+      "b4Desc": "De l'usine en Chine à votre porte : les jours réels, mesurés sur nos expéditions.",
+      "b4Days": "jours · {{from}} → {{to}}",
+      "newsMuted": "en ce moment.",
+      "payMuted": "Payez votre fournisseur en Chine."
     },
     "space": {
       "title": "Mon espace douane",
@@ -839,7 +877,9 @@
     },
     "classify": {
       "subtitle": "Décrivez le produit : l'assistant propose le code, un commissionnaire agréé le signe.",
-      "how": "Comment ça marche"
+      "how": "Comment ça marche",
+      "you": "Vous",
+      "assistant": "Assistant"
     },
     "audit": {
       "what": "Ce que nous vérifions",
@@ -856,6 +896,7 @@
       "how3Desc": "Les fichiers arrivent ici, prêts pour la SGS et votre transitaire.",
       "received": "{{n}} sur {{total}} reçus",
       "emptyTitle": "Aucune invitation pour l’instant"
-    }
+    },
+    "cta": "Estimer mes droits"
   }
 }

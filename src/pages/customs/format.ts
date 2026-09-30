@@ -3,12 +3,22 @@ import { formatNumber } from '@/lib/formatters';
 import { getCurrentLocale } from '@/i18n';
 import type { Confidence } from '@/lib/customs/levies';
 
+/**
+ * L'espace fine insécable (U+202F) du français devient une insécable
+ * ordinaire : Satoshi, la police du site, n'a pas la fine, et le moteur de
+ * rendu la synthétise si étroite que « 302 557 » se lisait « 302557 ».
+ */
+const wide = (s: string) => s.replace(/\u202f/g, '\u00a0');
+
+/** « 302 557 » dans la langue de l'écran, milliers bien séparés. */
+export const num = (n: number, decimals = 0) => wide(formatNumber(n, decimals));
+
 /** « 5 746 750 XAF » dans la langue de l'écran. */
-export const xaf = (n: number) => `${formatNumber(Math.round(n))} XAF`;
+export const xaf = (n: number) => `${num(Math.round(n))} XAF`;
 
 /** « 57,5 % » / « 57.5% » */
 export const pct = (ratio: number) =>
-  new Intl.NumberFormat(getCurrentLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(ratio);
+  wide(new Intl.NumberFormat(getCurrentLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(ratio));
 
 /** Un taux légal en % : « 12,5 % », « 0,95 % », « 0,05 % » — jamais arrondi. */
 export const ratePct = (rate: number) =>

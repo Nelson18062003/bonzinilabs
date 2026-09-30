@@ -30,6 +30,9 @@ export default {
         dz: {
           bg: "rgb(var(--dz-bg) / <alpha-value>)",
           soft: "rgb(var(--dz-soft) / <alpha-value>)",
+          fill: "rgb(var(--dz-fill) / <alpha-value>)",
+          mute: "rgb(var(--dz-mute) / <alpha-value>)",
+          violet: "rgb(var(--dz-violet) / <alpha-value>)",
           card: "rgb(var(--dz-card) / <alpha-value>)",
           line: "rgb(var(--dz-line) / <alpha-value>)",
           ink: "rgb(var(--dz-ink) / <alpha-value>)",

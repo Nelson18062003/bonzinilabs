@@ -61,7 +61,7 @@ function InviteCard({ inv, urls, onRotate, onRevoke, rotating }: {
   const got = inv.requested.filter((k) => received.has(k)).length;
   const late = inv.status === 'open' && !!inv.due_on && inv.due_on < new Date().toISOString().slice(0, 10) && got < inv.requested.length;
   return (
-    <article className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <article className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="break-words text-[18px] font-semibold leading-snug">{inv.supplier_name}</p>
@@ -193,14 +193,14 @@ export function SuppliersPage() {
         <div className="min-w-0 space-y-4">
           {list.length > 0 && inviteButton('w-full sm:hidden')}
           {invites.isLoading ? (
-            <div className="space-y-4" aria-busy="true">{[0, 1].map((i) => <div key={i} className="h-44 animate-pulse rounded-3xl bg-dz-soft" />)}</div>
+            <div className="space-y-4" aria-busy="true">{[0, 1].map((i) => <div key={i} className="h-44 animate-pulse rounded-[28px] bg-dz-fill" />)}</div>
           ) : invites.isError ? (
-            <div className="rounded-3xl border border-dz-line p-6">
+            <div className="rounded-[28px] bg-dz-card p-6">
               <p className="text-[16px]">{(invites.error as Error).message}</p>
               <Button className="mt-4" variant="secondary" onClick={() => { void invites.refetch(); }}>{t('site.retry')}</Button>
             </div>
           ) : list.length === 0 ? (
-            <div className="flex flex-col items-center rounded-3xl border border-dashed border-dz-ink3/40 px-6 py-12 text-center sm:py-16">
+            <div className="flex flex-col items-center rounded-[28px] bg-dz-card px-6 py-12 text-center sm:py-16">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-dz-brand-soft text-dz-brand"><UserPlus aria-hidden className="h-6 w-6" /></span>
               <p className="mt-4 text-[19px] font-semibold">{t('site.suppliers.emptyTitle')}</p>
               <p className="mt-1.5 max-w-[42ch] text-[15px] leading-snug text-dz-ink3">{t('suppliers.none')}</p>
@@ -221,7 +221,7 @@ export function SuppliersPage() {
         </div>
 
         <aside className="min-w-0 space-y-8 lg:sticky lg:top-24 lg:self-start">
-          <section aria-labelledby="dz-sp-why" className="rounded-3xl bg-dz-soft p-6">
+          <section aria-labelledby="dz-sp-why" className="rounded-[28px] bg-dz-card p-6">
             <h2 id="dz-sp-why" className="text-[18px] font-bold">{t('site.suppliers.why')}</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-dz-ink2">{t('suppliers.intro')}</p>
           </section>
@@ -257,7 +257,7 @@ export function SuppliersPage() {
                 return (
                   <button key={k} type="button" aria-pressed={on} onClick={() => toggle(k)}
                     className={cn('flex min-h-11 items-center gap-1.5 rounded-2xl px-3 py-2 text-left text-[15px] font-semibold leading-tight transition-colors sm:inline-flex sm:h-11 sm:rounded-full sm:px-4 sm:py-0',
-                      on ? 'bg-dz-primary text-dz-on-primary' : 'border border-dz-line bg-dz-card text-dz-ink2 hover:border-dz-ink/25 hover:text-dz-ink')}>
+                      on ? 'bg-dz-primary text-dz-on-primary' : 'bg-dz-soft text-dz-ink2 hover:bg-dz-fill hover:text-dz-ink')}>
                     {on && <Check aria-hidden className="h-4 w-4 shrink-0" />}{t(`supplier.kind.${k}`)}
                   </button>
                 );

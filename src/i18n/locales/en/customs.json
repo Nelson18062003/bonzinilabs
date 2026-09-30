@@ -748,7 +748,7 @@
       "eyebrow": "Cameroon customs · 2026 tariff",
       "titleA": "Pay ",
       "titleB": "the right duty.",
-      "lead": "Estimate your duties before you buy. Get your codes signed by a licensed broker. Recover what was overpaid.",
+      "lead": "Estimate your duties before buying in China, get your codes signed, recover what was overpaid.",
       "searchLabel": "What are you importing?",
       "searchPlaceholder": "What are you importing?",
       "searchCta": "Estimate",
@@ -794,21 +794,59 @@
       "noAccount": "No account",
       "withAccount": "Free account",
       "proofEyebrow": "On a real declaration",
-      "proofSub": "overpaid on 900,000 F of goods.",
-      "proofBody": "Four codes out of ten were wrong: a regulator declared as a refrigerator, chairs as “other furniture”. Our engine recalculates every line like CAMCIS and tells you what can be recovered.",
+      "proofSub": "overpaid on a single 900,000 F declaration. Four codes out of ten were wrong.",
+      "proofBody": "A voltage regulator declared as a refrigerator, chairs as \"other furniture\". The engine recalculates every line like CAMCIS and tells you what can be recovered.",
       "proofCta": "Check my declaration",
       "newsEyebrow": "News",
-      "newsTitle": "What is changing right now",
+      "newsTitle": "What is changing",
       "newsAll": "All news",
       "kindRule": "Regulation",
       "kindDisruption": "Disruption",
-      "payTitle": "And to pay your supplier?",
+      "payTitle": "Cleared?",
       "payBody": "Alipay, WeChat or bank transfer: your supplier is paid in yuan, with proof.",
       "payCta": "Pay my supplier",
       "tasks": "{{count}} things to do",
       "tasks_one": "{{count}} thing to do",
       "tasks_other": "{{count}} things to do",
-      "noTasks": "Your products, declarations and suppliers."
+      "noTasks": "Your products, declarations and suppliers.",
+      "h1": "Pay the right duty.",
+      "h1Muted": "Not a franc more.",
+      "trust": {
+        "a": "2026 tariff",
+        "aMore": "· CAMCIS calculation",
+        "b": "Licensed",
+        "bMore": "customs brokers",
+        "c": "No account",
+        "cMore": "to estimate"
+      },
+      "noTasksShort": "nothing pending",
+      "phoneBack": "Estimate",
+      "phoneShare": "Share",
+      "floatSigned": "Code signed by",
+      "floatSignedBy": "a licensed broker",
+      "floatBack": "To recover on your declaration",
+      "bentoTitle": "Everything to clear customs",
+      "bentoMuted": "without bad surprises.",
+      "b1Title": "Your duties in 30 seconds.",
+      "b1Desc": "The exact amount, line by line, as CAMCIS will calculate it. Before you order.",
+      "b1Product": "Product",
+      "b1Price": "Supplier price",
+      "b2Title": "A signed code.",
+      "b2Desc": "The assistant suggests, a licensed broker signs.",
+      "b2More": "Classify a product",
+      "b2Ask": "Relay or servo motor?",
+      "b2Answer": "Electronic relay",
+      "b2Signed": "Signed by a licensed broker",
+      "b3Title": "Overpayments, recovered.",
+      "b3Desc": "We re-read your declaration, tax by tax.",
+      "b3Until": "claimable, on a real declaration",
+      "b3Line1": "Tissues · 25% excise",
+      "b3Line2": "Chairs · 9403.70",
+      "b4Title": "Know when it arrives.",
+      "b4Desc": "From the factory in China to your door: real days, measured on our shipments.",
+      "b4Days": "days · {{from}} → {{to}}",
+      "newsMuted": "right now.",
+      "payMuted": "Pay your supplier in China."
     },
     "space": {
       "title": "My customs space",
@@ -879,7 +917,9 @@
     },
     "classify": {
       "subtitle": "Describe the product: the assistant suggests the code, a licensed broker signs it.",
-      "how": "How it works"
+      "how": "How it works",
+      "you": "You",
+      "assistant": "Assistant"
     },
     "audit": {
       "what": "What we check",
@@ -896,6 +936,7 @@
       "how3Desc": "Files land here, ready for SGS and your forwarder.",
       "received": "{{n}} of {{total}} received",
       "emptyTitle": "No invitations yet"
-    }
+    },
+    "cta": "Estimate my duties"
   }
 }

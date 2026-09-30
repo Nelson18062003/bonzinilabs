@@ -43,7 +43,7 @@ function Reading({ stale, onRetry, retrying }: { stale: boolean; onRetry: () => 
   const { t } = useTranslation('customs');
   const reduce = useReducedMotion();
   return (
-    <div role="status" aria-live="polite" className="overflow-hidden rounded-3xl border border-dz-line bg-dz-card">
+    <div role="status" aria-live="polite" className="overflow-hidden rounded-[28px] bg-dz-card">
       <div className="flex gap-4 p-5 sm:p-6">
         <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dz-brand-soft text-dz-brand">
           {!stale && !reduce && <span aria-hidden className="absolute inset-0 animate-ping rounded-full bg-dz-brand/15" />}
@@ -95,7 +95,7 @@ function StateCard({ a, stale, onRelaunch, relaunching, onSubmit }: {
     case 'uploaded': {
       const failed = a.status === 'failed';
       return (
-        <div className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+        <div className="rounded-[28px] bg-dz-card p-5 sm:p-6">
           <div className="flex gap-4">
             <span className={failed ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dz-bad/10 text-dz-bad' : 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dz-soft text-dz-ink2'}>
               {failed ? <AlertTriangle aria-hidden className="h-5 w-5" /> : <ScanLine aria-hidden className="h-5 w-5" />}
@@ -116,7 +116,7 @@ function StateCard({ a, stale, onRelaunch, relaunching, onSubmit }: {
     }
     case 'cancelled':
       return (
-        <div className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+        <div className="rounded-[28px] bg-dz-card p-5 sm:p-6">
           <p className="text-[17px] font-semibold">{t('audit.status.cancelled')}</p>
           <ButtonLink to="/douane/audit" variant="secondary" className="mt-4">{t('audit.newTitle')}</ButtonLink>
         </div>
@@ -130,7 +130,7 @@ function StateCard({ a, stale, onRelaunch, relaunching, onSubmit }: {
 function SubmitCard({ onSubmit }: { onSubmit: () => void }) {
   const { t } = useTranslation('customs');
   return (
-    <div className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <div className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <p className="text-[17px] font-semibold leading-snug">{t('audit.submitTitle')}</p>
       <p className="mt-1.5 text-[15px] leading-snug text-dz-ink3">{t('audit.submitDesc')}</p>
       <Button size="lg" className="mt-5 h-auto min-h-14 w-full whitespace-normal py-3" onClick={onSubmit}>
@@ -169,8 +169,8 @@ export function AuditPage() {
     return (
       <Shell>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-10" aria-busy="true">
-          <div className="space-y-4">{[0, 1, 2].map((i) => <div key={i} className="h-32 animate-pulse rounded-3xl bg-dz-soft" />)}</div>
-          <div className="hidden h-72 animate-pulse rounded-3xl bg-dz-soft lg:block" />
+          <div className="space-y-4">{[0, 1, 2].map((i) => <div key={i} className="h-32 animate-pulse rounded-[28px] bg-dz-fill" />)}</div>
+          <div className="hidden h-72 animate-pulse rounded-[28px] bg-dz-fill lg:block" />
         </div>
       </Shell>
     );
@@ -178,7 +178,7 @@ export function AuditPage() {
   if (q.isError || !a) {
     return (
       <Shell>
-        <div className="max-w-[640px] rounded-3xl border border-dz-line p-6">
+        <div className="max-w-[640px] rounded-[28px] bg-dz-card p-6">
           <p className="text-[16px]">{(q.error as Error | null)?.message}</p>
           <Button className="mt-4" variant="secondary" onClick={() => { void q.refetch(); }}>{t('site.retry')}</Button>
         </div>
@@ -195,7 +195,7 @@ export function AuditPage() {
   );
 
   const documents = docs.data && docs.data.length > 0 && (
-    <div className="rounded-3xl border border-dz-line bg-dz-card px-5 sm:px-6">
+    <div className="rounded-[28px] bg-dz-card px-5 sm:px-6">
       <Disclosure title={t('audit.documents')} meta={<span className="tabular-nums">{docs.data.length}</span>}>
         <ul>
           {docs.data.map((d, i) => (
@@ -246,7 +246,7 @@ export function AuditPage() {
       <Shell a={a}>
         <div className="max-w-[720px] space-y-4">
           {state}
-          {!!a.extraction && nom.isLoading && <div className="h-48 animate-pulse rounded-3xl bg-dz-soft" aria-busy="true" />}
+          {!!a.extraction && nom.isLoading && <div className="h-48 animate-pulse rounded-[28px] bg-dz-fill" aria-busy="true" />}
           {documents}
           {cancelLink('px-1')}
         </div>

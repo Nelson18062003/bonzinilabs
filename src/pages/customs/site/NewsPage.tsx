@@ -37,7 +37,7 @@ function NewsCard({ n, open, onToggle, mineCodes }: { n: Notice; open: boolean; 
   const inDays = phase === 'upcoming' ? daysUntilStart(n) : null;
   const date = when(n, t);
   return (
-    <article id={n.slug} className="scroll-mt-24 rounded-3xl border border-dz-line bg-dz-card p-5 transition-colors sm:p-6">
+    <article id={n.slug} className="scroll-mt-24 rounded-[28px] bg-dz-card p-5 transition-colors sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={n.kind === 'disruption' ? 'warn' : 'brand'}>{t(`watch.phase.${phase}`)}</Badge>
         {inDays != null && inDays >= 0 && (
@@ -164,14 +164,14 @@ export function NewsPage() {
           )}
           <div className="lg:hidden">{tabs}</div>
           {q.isLoading ? (
-            <div className="space-y-3" aria-hidden>{[0, 1, 2].map((i) => <div key={i} className="h-44 animate-pulse rounded-3xl bg-dz-soft" />)}</div>
+            <div className="space-y-3" aria-hidden>{[0, 1, 2].map((i) => <div key={i} className="h-44 animate-pulse rounded-[28px] bg-dz-fill" />)}</div>
           ) : q.isError ? (
-            <div className="rounded-3xl border border-dz-line p-6">
+            <div className="rounded-[28px] bg-dz-card p-6">
               <p className="text-[16px]">{(q.error as Error).message}</p>
               <Button className="mt-4" variant="secondary" onClick={() => { void q.refetch(); }}>{t('site.retry')}</Button>
             </div>
           ) : visible.length === 0 ? (
-            <p className="rounded-3xl bg-dz-soft p-6 text-[16px] text-dz-ink2">
+            <p className="rounded-[28px] bg-dz-card p-6 text-[16px] text-dz-ink2">
               {current === 'disruption' ? t('watch.noDisruption') : t('watch.noRegulation')}
             </p>
           ) : (

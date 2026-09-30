@@ -732,7 +732,7 @@
       "eyebrow": "喀麦隆海关 · 2026 税则",
       "titleA": "只缴",
       "titleB": "该缴的税。",
-      "lead": "购买前估算税费。请持牌报关员签字确认编码。追回多缴的税费。",
+      "lead": "在中国采购前估算税费，让持牌报关员签字确认编码，追回多缴的税款。",
       "searchLabel": "您进口什么商品？",
       "searchPlaceholder": "您进口什么商品？",
       "searchCta": "估算",
@@ -778,20 +778,58 @@
       "noAccount": "无需账户",
       "withAccount": "免费账户",
       "proofEyebrow": "一份真实报关单",
-      "proofSub": "在 900,000 法郎的货物上多缴。",
-      "proofBody": "十个编码中有四个是错的：稳压器被申报为冰箱，椅子被申报为“其他家具”。我们的引擎像 CAMCIS 一样逐行重算，并告诉您哪些可以追回。",
+      "proofSub": "一份 900,000 中非法郎的报关单多缴的税款。十个编码中有四个是错的。",
+      "proofBody": "稳压器被申报为冰箱，椅子被申报为“其他家具”。引擎按 CAMCIS 重新计算每一项，并告诉您哪些可以追回。",
       "proofCta": "核查我的报关单",
       "newsEyebrow": "动态",
-      "newsTitle": "正在发生的变化",
+      "newsTitle": "正在发生的",
       "newsAll": "全部动态",
       "kindRule": "法规",
       "kindDisruption": "延误",
-      "payTitle": "如何向供应商付款？",
+      "payTitle": "清关完成？",
       "payBody": "支付宝、微信或银行转账：供应商以人民币收款，并有付款凭证。",
       "payCta": "向供应商付款",
       "tasks": "{{count}} 项待办",
       "tasks_other": "{{count}} 项待办",
-      "noTasks": "您的商品、报关单和供应商。"
+      "noTasks": "您的商品、报关单和供应商。",
+      "h1": "只缴该缴的税。",
+      "h1Muted": "一分不多。",
+      "trust": {
+        "a": "2026 税则",
+        "aMore": "· CAMCIS 计算",
+        "b": "持牌",
+        "bMore": "报关员",
+        "c": "无需账户",
+        "cMore": "即可估算"
+      },
+      "noTasksShort": "暂无待办",
+      "phoneBack": "估算",
+      "phoneShare": "分享",
+      "floatSigned": "编码签字人",
+      "floatSignedBy": "持牌报关员",
+      "floatBack": "您的报关单可追回",
+      "bentoTitle": "清关所需的一切，",
+      "bentoMuted": "不再有意外。",
+      "b1Title": "30 秒算出税费。",
+      "b1Desc": "与 CAMCIS 一致的逐项精确金额。下单之前就知道。",
+      "b1Product": "商品",
+      "b1Price": "供应商价格",
+      "b2Title": "签字确认的编码。",
+      "b2Desc": "助手建议编码，持牌报关员签字。",
+      "b2More": "商品归类",
+      "b2Ask": "继电器式还是伺服电机式？",
+      "b2Answer": "电子继电器",
+      "b2Signed": "持牌报关员已签字",
+      "b3Title": "多缴的税，追回来。",
+      "b3Desc": "我们逐项复核您的报关单。",
+      "b3Until": "可申请退还（真实报关单）",
+      "b3Line1": "纸巾 · 消费税 25%",
+      "b3Line2": "椅子 · 9403.70",
+      "b4Title": "知道货何时到。",
+      "b4Desc": "从中国工厂到您家门口：基于我们实际货运的真实天数。",
+      "b4Days": "天 · {{from}} → {{to}}",
+      "newsMuted": "变化。",
+      "payMuted": "向中国供应商付款。"
     },
     "space": {
       "title": "我的海关空间",
@@ -860,7 +898,9 @@
     },
     "classify": {
       "subtitle": "描述商品：助手建议编码，持牌报关员签字确认。",
-      "how": "如何运作"
+      "how": "如何运作",
+      "you": "您",
+      "assistant": "助手"
     },
     "audit": {
       "what": "我们核查什么",
@@ -877,6 +917,7 @@
       "how3Desc": "文件直接到这里，可交给 SGS 和您的货代。",
       "received": "已收到 {{n}}/{{total}}",
       "emptyTitle": "还没有邀请"
-    }
+    },
+    "cta": "估算税费"
   }
 }

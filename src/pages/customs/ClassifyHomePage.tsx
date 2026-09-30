@@ -69,7 +69,7 @@ export function ClassifyHomePage() {
       <PageIntro title={t('files.homeTitle')} subtitle={t('site.classify.subtitle')} back={{ to: '/douane', label: t('site.badge') }} />
       <Container className="grid gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
         {/* La nouvelle fiche. */}
-        <section aria-labelledby="dz-new" className="min-w-0 rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-7">
+        <section aria-labelledby="dz-new" className="min-w-0 rounded-[28px] bg-dz-card p-5 sm:p-7">
           <h2 id="dz-new" className="text-[20px] font-bold">{t('files.newTitle')}</h2>
           <div className="mt-5 space-y-5">
             <Field label={t('files.name')} htmlFor="cl-name" hint={nameError ?? t('files.nameHint')}>
@@ -115,7 +115,7 @@ export function ClassifyHomePage() {
           {list.length > 0 && (
             <section aria-labelledby="dz-mine">
               <h2 id="dz-mine" className="text-[18px] font-bold">{t('files.mine')}</h2>
-              <ul className="mt-3 overflow-hidden rounded-2xl border border-dz-line bg-dz-card">
+              <ul className="mt-3 overflow-hidden rounded-3xl bg-dz-card">
                 {list.map((f, i) => {
                   const code = f.final_code ?? f.proposed_code;
                   const meta = CLASSIFICATION_STATUS[f.status];

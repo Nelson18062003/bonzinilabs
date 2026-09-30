@@ -25,20 +25,22 @@ export function Container({ className, children }: { className?: string; childre
 }
 
 /** L'en-tête d'une page outil : d'où l'on vient, le titre, une phrase. */
-export function PageIntro({ title, subtitle, back, actions, className }: {
-  title: ReactNode; subtitle?: ReactNode; back?: { to: string; label: string }; actions?: ReactNode; className?: string;
+export function PageIntro({ title, muted, subtitle, back, actions, className }: {
+  title: ReactNode; muted?: ReactNode; subtitle?: ReactNode; back?: { to: string; label: string }; actions?: ReactNode; className?: string;
 }) {
   return (
-    <Container className={cn('pb-6 pt-6 sm:pb-8 sm:pt-10 lg:pt-12', className)}>
+    <Container className={cn('pb-6 pt-6 sm:pb-10 sm:pt-10 lg:pt-14', className)}>
       {back && (
-        <Link to={back.to} className="-ml-1 inline-flex h-9 items-center gap-1.5 rounded-full px-1 text-[15px] font-medium text-dz-ink3 transition-colors hover:text-dz-ink">
+        <Link to={back.to} className="-ml-1 inline-flex h-9 items-center gap-1.5 rounded-full px-1 text-[15px] font-bold text-dz-ink3 transition-colors hover:text-dz-ink">
           <ArrowLeft aria-hidden className="h-4 w-4" /> {back.label}
         </Link>
       )}
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="[text-wrap:balance] text-[30px] font-bold leading-[1.08] tracking-[-0.03em] text-dz-ink sm:text-[40px]">{title}</h1>
-          {subtitle && <p className="mt-2 max-w-[60ch] text-[17px] leading-relaxed text-dz-ink3">{subtitle}</p>}
+          <h1 className="[text-wrap:balance] text-[34px] font-black leading-[1.02] tracking-[-0.04em] text-dz-ink sm:text-[48px] lg:text-[56px]">
+            {title}{muted && <span className="block text-dz-mute">{muted}</span>}
+          </h1>
+          {subtitle && <p className="mt-3 max-w-[56ch] text-[17px] font-medium leading-relaxed text-dz-ink3 sm:text-[19px]">{subtitle}</p>}
         </div>
         {actions}
       </div>
@@ -48,11 +50,11 @@ export function PageIntro({ title, subtitle, back, actions, className }: {
 
 /** Un petit libellé au-dessus d'un titre. */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn('text-[13px] font-semibold uppercase tracking-[0.12em] text-dz-ink3', className)}>{children}</p>;
+  return <p className={cn('text-[15px] font-bold text-dz-ink3', className)}>{children}</p>;
 }
 
 export function Panel({ className, children, as: Tag = 'div', id }: { className?: string; children: ReactNode; as?: 'div' | 'section' | 'article' | 'aside'; id?: string }) {
-  return <Tag id={id} className={cn('rounded-2xl border border-dz-line bg-dz-card', className)}>{children}</Tag>;
+  return <Tag id={id} className={cn('rounded-[28px] bg-dz-card', className)}>{children}</Tag>;
 }
 
 // ─── Boutons ────────────────────────────────────────────────────────────────
@@ -71,7 +73,7 @@ export function ButtonLink({ variant = 'primary', size = 'md', className, ...pro
 export function Field({ label, hint, htmlFor, children, className }: { label: ReactNode; hint?: ReactNode; htmlFor?: string; children: ReactNode; className?: string }) {
   return (
     <div className={cn('space-y-2', className)}>
-      <label htmlFor={htmlFor} className="block text-[15px] font-semibold text-dz-ink">{label}</label>
+      <label htmlFor={htmlFor} className="block text-[15px] font-bold text-dz-ink">{label}</label>
       {children}
       {hint && <p className="text-[14px] leading-snug text-dz-ink3">{hint}</p>}
     </div>
@@ -115,8 +117,8 @@ export function Pills<T extends string>({ options, value, onChange, className, l
         const on = o.value === value;
         return (
           <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => onChange(o.value)}
-            className={cn('relative inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-semibold transition-colors',
-              on ? 'text-dz-on-primary' : 'border border-dz-line bg-dz-card text-dz-ink2 hover:border-dz-ink/25 hover:text-dz-ink')}>
+            className={cn('relative inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-[15px] font-bold transition-colors',
+              on ? 'text-dz-on-primary' : 'bg-dz-soft text-dz-ink2 hover:bg-dz-fill hover:text-dz-ink')}>
             {on && <motion.span layoutId={`pill-${id}`} className="absolute inset-0 rounded-full bg-dz-primary" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
             <span className="relative inline-flex items-center gap-2">{o.label}</span>
           </button>
@@ -168,7 +170,7 @@ export function Disclosure({ title, meta, children, defaultOpen = false, classNa
     <div className={className}>
       <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-3 py-3 text-left">
-        <span className="text-[16px] font-semibold text-dz-ink">{title}</span>
+        <span className="text-[16px] font-bold text-dz-ink">{title}</span>
         <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[15px] text-dz-ink3">
           {meta}
           <ChevronDown aria-hidden className={cn('h-5 w-5 transition-transform duration-300', open && 'rotate-180')} />
@@ -189,13 +191,13 @@ export function Disclosure({ title, meta, children, defaultOpen = false, classNa
 /** Un statut en toutes lettres (jamais la couleur seule). */
 export function Badge({ tone = 'neutral', children, className }: { tone?: 'neutral' | 'good' | 'warn' | 'brand' | 'bad'; children: ReactNode; className?: string }) {
   const t = {
-    neutral: 'bg-dz-soft text-dz-ink2',
+    neutral: 'bg-dz-fill text-dz-ink2',
     good: 'bg-dz-good-soft text-dz-good',
     warn: 'bg-dz-warn-soft text-dz-warn',
     brand: 'bg-dz-brand-soft text-dz-brand',
     bad: 'bg-dz-bad/10 text-dz-bad',
   }[tone];
-  return <span className={cn('inline-flex h-7 items-center rounded-full px-3 text-[14px] font-semibold', t, className)}>{children}</span>;
+  return <span className={cn('inline-flex h-7 items-center whitespace-nowrap rounded-full px-3 text-[14px] font-bold', t, className)}>{children}</span>;
 }
 
 /** Le statut d'un dossier (même vocabulaire que l'app : succès, en attente, à faire…). */
@@ -230,10 +232,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
           <motion.div className="absolute inset-0 bg-[#08040e]/50 backdrop-blur-[2px]" onClick={onClose}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
           <motion.div ref={box} role="dialog" aria-modal="true" aria-labelledby={id} tabIndex={-1}
-            className="relative max-h-[92dvh] w-full max-w-[560px] overflow-y-auto rounded-t-3xl bg-dz-card p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-dz-ink shadow-2xl focus:outline-none sm:rounded-3xl sm:p-7"
+            className="relative max-h-[92dvh] w-full max-w-[560px] overflow-y-auto rounded-t-[32px] bg-dz-card p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-dz-ink shadow-2xl focus:outline-none sm:rounded-[32px] sm:p-8"
             initial={{ y: 48, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 48, opacity: 0 }} transition={{ duration: 0.3, ease: EASE }}>
             <div className="mb-4 flex items-start justify-between gap-4">
-              <h2 id={id} className="text-[20px] font-bold leading-snug">{title}</h2>
+              <h2 id={id} className="text-[22px] font-black leading-snug tracking-[-0.02em]">{title}</h2>
               <button type="button" onClick={onClose} aria-label={t('site.close')} className="-mr-2 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-dz-ink3 hover:bg-dz-soft hover:text-dz-ink">
                 <CloseIcon aria-hidden className="h-5 w-5" />
               </button>

@@ -15,7 +15,6 @@ import {
   ArrowRight, CheckCircle2, ChevronRight, Factory, FileCheck2, Plane, Share2, Ship, Stamp, TrainFront, Truck, Warehouse, type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatNumber } from '@/lib/formatters';
 import { getCurrentLocale } from '@/i18n';
 import { copyToClipboard } from '@/lib/clipboard';
 import {
@@ -28,7 +27,7 @@ import { useObservedTransit, type ObservedLane } from '@/hooks/useObservedTransi
 import { useCustomsNotices } from '@/hooks/useCustomsNotices';
 import { useAdminNotices } from '@/hooks/useCustomsReview';
 import { CustomsShell, type CustomsVariant } from './shared';
-import { isSure } from './format';
+import { isSure, num } from './format';
 import { SiteLayout } from './site/SiteLayout';
 import { Badge, Container, CountUp, Input, PageIntro, Pills, Reveal, Select } from './site/ui';
 
@@ -39,10 +38,10 @@ const ICON: Record<Leg['kind'], LucideIcon> = {
   pickup: Factory, origin_port: Warehouse, sea: Ship, air: Plane, port: FileCheck2, transit: Stamp, road: Truck, rail: TrainFront, final_clearance: FileCheck2,
 };
 
-const kmText = (km: number) => `${formatNumber(km)} km`;
+const kmText = (km: number) => `${num(km)} km`;
 /** « 314 kg », « 12,4 t » — de CO₂e. */
-const co2Text = (kg: number) => (kg < 1000 ? `${formatNumber(kg)} kg` : `${formatNumber(kg / 1000, kg < 100_000 ? 1 : 0)} t`);
-const weightText = (kg: number) => (kg < 1000 ? `${formatNumber(kg)} kg` : `${formatNumber(kg / 1000, kg % 1000 ? 1 : 0)} t`);
+const co2Text = (kg: number) => (kg < 1000 ? `${num(kg)} kg` : `${num(kg / 1000, kg < 100_000 ? 1 : 0)} t`);
+const weightText = (kg: number) => (kg < 1000 ? `${num(kg)} kg` : `${num(kg / 1000, kg % 1000 ? 1 : 0)} t`);
 /** « Guangzhou », « Douala », « 广州 » : la ville seule (l'icône dit déjà port ou aéroport). */
 const cityName = (code: string, lang: string) => {
   const place = [...SEA_ORIGINS, ...SEA_PORTS, ...AIR_ORIGINS, ...AIRPORTS].find((p) => p.code === code);
@@ -111,7 +110,7 @@ function RoutesView({ admin = false }: { admin?: boolean }) {
   return (
     <div className="space-y-6">
       {/* Les questions, sur une ligne à l'ordinateur. */}
-      <section className="space-y-5 rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+      <section className="space-y-5 rounded-[28px] bg-dz-card p-5 sm:p-6">
         <Pills label={t('routes.step1')} value={state.mode} onChange={(m) => setState((s) => switchMode(s, m))}
           options={[
             { value: 'sea', label: <><Ship aria-hidden className="h-[18px] w-[18px]" /> {t('routes.mode.sea')}</> },
@@ -177,7 +176,7 @@ function RoutesView({ admin = false }: { admin?: boolean }) {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-dz-line bg-dz-card">
+          <div className="overflow-hidden rounded-[28px] bg-dz-card">
             <Suspense fallback={<div className="h-64 w-full animate-pulse bg-dz-soft sm:h-80 lg:h-[420px]" />}>
               <RouteMap plan={plan} lang={lang} focusLabels={{ all: t('routes.mapAll'), arrival: t('routes.mapArrival') }}
                 className="h-64 w-full bg-dz-soft sm:h-80 lg:h-[420px]" ariaLabel={t('routes.mapLabel', { from: placeLabel(plan.origin, lang), to: placeLabel(plan.destination, lang) })} />
@@ -224,7 +223,7 @@ function Steps({ plan }: { plan: RoutePlan }) {
   const lang = i18n.language ?? 'fr';
   let lo = 0, hi = 0;
   return (
-    <section className="rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="rounded-[28px] bg-dz-card p-5 sm:p-6">
       <h2 className="text-[20px] font-bold tracking-[-0.01em]">{t('routes.stepsTitle')}</h2>
       <p className="mt-1 text-[14px] text-dz-ink3">{t('site.routes.stepsHint')}</p>
       <ol className="mt-5">
@@ -297,7 +296,7 @@ function ObservedCard({ plan, lanes, months, min, failed, onPick }: {
   ] : [];
 
   return (
-    <section className="h-full rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="h-full rounded-[28px] bg-dz-card p-5 sm:p-6">
       <h2 className="text-[18px] font-bold">{t('routes.obsTitle')}</h2>
       {o ? (
         <>
@@ -348,7 +347,7 @@ function EmissionsCard({ plan, other, kg }: { plan: RoutePlan; other: RoutePlan;
   const { t, i18n } = useTranslation('customs');
   if (kg <= 0) {
     return (
-      <section className="h-full rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+      <section className="h-full rounded-[28px] bg-dz-card p-5 sm:p-6">
         <h2 className="text-[18px] font-bold">{t('routes.co2Title')}</h2>
         <p className="mt-3 text-[15px] text-dz-ink2">{t('routes.co2NoWeight')}</p>
       </section>
@@ -359,7 +358,7 @@ function EmissionsCard({ plan, other, kg }: { plan: RoutePlan; other: RoutePlan;
   const max = Math.max(sea.co2eKg, air.co2eKg, 1);
   const ratio = sea.co2eKg > 0 ? Math.round(air.co2eKg / sea.co2eKg) : null;
   return (
-    <section className="h-full rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="h-full rounded-[28px] bg-dz-card p-5 sm:p-6">
       <h2 className="text-[18px] font-bold">{t('routes.co2Title')}</h2>
       <p className="mt-1 text-[14px] text-dz-ink3">{t('routes.co2For', { weight: weightText(kg), dest: placeLabel(plan.destination, i18n.language ?? 'fr') })}</p>
       <div className="mt-5 space-y-4">
@@ -396,7 +395,7 @@ function EmissionsCard({ plan, other, kg }: { plan: RoutePlan; other: RoutePlan;
 function RouteNotices({ notices, base }: { notices: Notice[]; base: string }) {
   const { t } = useTranslation('customs');
   return (
-    <section className="h-full rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-6">
+    <section className="h-full rounded-[28px] bg-dz-card p-5 sm:p-6">
       <h2 className="text-[18px] font-bold">{t('routes.noticesTitle')}</h2>
       {notices.length === 0 ? (
         <p className="mt-3 flex items-center gap-2 text-[15px] text-dz-ink2">
