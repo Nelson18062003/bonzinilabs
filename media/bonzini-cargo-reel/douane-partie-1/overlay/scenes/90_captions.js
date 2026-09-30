@@ -9,25 +9,38 @@
     // glue lone punctuation tokens (« » : ! ? ;) to their word with a no-break space, so no page is just « » »
     const glue = (ws) => { const out = [];
       ws.forEach(w => { const last = out[out.length - 1];
-        if (/^[»:!?;%]$/.test(w.w) && last) { last.w += '\u00A0' + w.w; last.e = w.e; }
+        if (/^[»:!?;%][,.]?$/.test(w.w) && last) { last.w += '\u00A0' + w.w; last.e = w.e; }
         else if (last && last.w === '«') { out[out.length - 1] = { ...w, w: '«\u00A0' + w.w }; }
         else out.push({ ...w }); });
       return out; };
+    const LIM = MAXW * 1.85, width = ws => measure(ws.map(x => x.w).join(' '), F());
+    const PAUSE = w => END.test(w.w) || /,$/.test(w.w);
+    // a page never ends on a small linking word (« …une boîte en | fer »)
+    const WEAK = /^(le|la|les|un|une|des|de|du|en|à|au|aux|et|ou|dans|sur|par|pour|sans|avec|que|qui|ce|sa|son|ses|votre|vos|notre|nos|leur|se|ne|plus|pas|il|elle|est|c'est)$/i;
     for (const s of TLD.segments) {
-      let cur = []; const SW = glue(s.words);
-      const flush = () => { if (cur.length) { pages.push({ seg: s.id, words: cur }); cur = []; } };
-      SW.forEach((w, i) => {
-        cur.push(w);
-        const txt = cur.map(x => x.w).join(' ');
-        const endPunct = END.test(w.w), comma = /,$/.test(w.w);
-        const next = SW[i + 1];
-        if (!next) return flush();
-        const tooLong = measure(txt + ' ' + next.w, F()) > MAXW * 1.85;
-        const rest = SW.slice(i + 1); const restSentence = rest.findIndex(x => END.test(x.w)) + 1 || rest.length;
-        if (endPunct || tooLong || (comma && cur.length >= 3 && restSentence >= 3)) flush();
-      });
-      flush();
+      const SW = glue(s.words); let i = 0;
+      while (i < SW.length) {
+        let j = i, cur = [];
+        while (j < SW.length) {
+          const w = SW[j], next = SW[j + 1]; cur.push(w); j++;
+          if (!next) break;
+          const rest = SW.slice(j); const restSentence = rest.findIndex(x => END.test(x.w)) + 1 || rest.length;
+          if (END.test(w.w) || (/,$/.test(w.w) && cur.length >= 3 && restSentence >= 3)) break;
+          if (width(cur.concat(next)) <= LIM) continue;
+          // too long: if the clause ends within a few words, split clause into two balanced pages; else back off weak words
+          const tail = []; for (let q = j; q < SW.length; q++) { tail.push(SW[q]); if (PAUSE(SW[q])) break; }
+          if (tail.length <= 4) {
+            const all = cur.concat(tail); let best = null;
+            for (let k = 2; k <= all.length - 2; k++) { const la = width(all.slice(0, k)), lb = width(all.slice(k)); if (la > LIM || lb > LIM) continue;
+              const m = Math.max(la, lb) + (WEAK.test(all[k - 1].w) ? 600 : 0); if (!best || m < best.m) best = { m, k }; }
+            if (best) { pages.push({ seg: s.id, words: all.slice(0, best.k) }); cur = all.slice(best.k); j = i + all.length; }
+          } else while (cur.length > 2 && WEAK.test(cur[cur.length - 1].w)) { cur.pop(); j--; }
+          break;
+        }
+        pages.push({ seg: s.id, words: cur }); i = j;
+      }
     }
+    window.CAP_PAGES = pages;
     // timing: page shows from first word - .12 to next page start (or last word end + .5)
     pages.forEach((p, i) => { p.t0 = p.words[0].s - .12; const nx = pages[i + 1];
       p.t1 = nx && nx.seg === p.seg ? nx.words[0].s - .12 : p.words[p.words.length - 1].e + .45; });
