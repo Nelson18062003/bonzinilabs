@@ -7,10 +7,12 @@
 import { useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { MotionConfig } from 'framer-motion';
 import { CheckCircle2, FileUp, Loader2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, Line, ScreenLoader, SURFACE, TEXT, TYPE, TOGGLE_OFF, TOGGLE_ON, FOCUS_RING } from '@/mobile/designKit';
+import { BonziniLogo } from '@/components/brand/BonziniLogo';
 import { useSupplierInvite, useSupplierUpload, type DocKind } from '@/hooks/useCustomsInvites';
+import { Button, Pills, Reveal } from './site/ui';
 
 type Lang = 'zh' | 'en' | 'fr';
 const LANGS: { value: Lang; label: string; locale: string }[] = [
@@ -44,39 +46,35 @@ function DocCard({ kind, lang, uploaded, token }: { kind: DocKind; lang: Lang; u
 
   const done = uploaded.length > 0;
   return (
-    <Card className={cn('space-y-3 p-4', done && 'border-[#14AE5C] dark:border-[#14AE5C]')}>
-      <div className="flex items-start gap-3">
-        <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-          done ? 'bg-[#CFF7D3] text-[#02542D] dark:bg-[#02542D] dark:text-[#CFF7D3]' : SURFACE.holder)}>
-          {done ? <CheckCircle2 className="h-5 w-5" /> : <FileUp className="h-5 w-5" />}
+    <article className={cn('rounded-3xl border bg-dz-card p-5 transition-colors sm:p-6', done ? 'border-dz-good' : 'border-dz-line')}>
+      <div className="flex items-start gap-4">
+        <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', done ? 'bg-dz-good-soft text-dz-good' : 'bg-dz-soft text-dz-ink2')}>
+          {done ? <CheckCircle2 aria-hidden className="h-5 w-5" /> : <FileUp aria-hidden className="h-5 w-5" />}
         </span>
         <div className="min-w-0">
-          <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{tt(`supplier.kind.${kind}`)}</p>
-          <p className={cn(TYPE.body, TEXT.muted)}>{tt(`supplier.hint.${kind}`)}</p>
+          <h2 className="text-[17px] font-semibold leading-snug">{tt(`supplier.kind.${kind}`)}</h2>
+          <p className="mt-0.5 text-[15px] leading-snug text-dz-ink3">{tt(`supplier.hint.${kind}`)}</p>
         </div>
       </div>
       {uploaded.length > 0 && (
-        <ul className={cn('space-y-1 rounded-lg p-3', SURFACE.inset)}>
+        <ul className="mt-4 rounded-2xl bg-dz-soft px-4">
           {uploaded.map((d, i) => (
-            <li key={i} className={cn('flex items-center justify-between gap-3', TYPE.small, TEXT.body)}>
-              <span className="min-w-0 truncate">{d.file_name ?? tt('supplier.file')}</span>
-              <span className={cn('shrink-0 tabular-nums', TEXT.muted)}>{new Date(d.created_at).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+            <li key={i} className="flex items-center justify-between gap-3 border-b border-dz-line py-2.5 text-[14px] last:border-b-0">
+              <span className="min-w-0 truncate font-medium">{d.file_name ?? tt('supplier.file')}</span>
+              <span className="shrink-0 tabular-nums text-dz-ink3">{new Date(d.created_at).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
             </li>
           ))}
         </ul>
       )}
-      {kind === 'final_invoice' && <p className={cn(TYPE.small, TEXT.muted)}>{tt('supplier.sgsTip')}</p>}
-      <button type="button" disabled={busy} onClick={() => input.current?.click()}
-        className={cn('flex min-h-12 w-full items-center justify-center gap-2 rounded-lg px-4 text-[16px] font-semibold', FOCUS_RING,
-          done ? 'border border-[#767676] bg-[#E3E3E3] text-[#303030] dark:bg-[#444444] dark:text-[#F5F5F5]' : 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]',
-          busy && 'opacity-70')}>
-        {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileUp className="h-5 w-5" />}
+      {kind === 'final_invoice' && <p className="mt-4 rounded-2xl bg-dz-warn-soft p-4 text-[14px] leading-snug text-dz-ink2">{tt('supplier.sgsTip')}</p>}
+      <Button variant={done ? 'secondary' : 'primary'} className="mt-4 w-full" disabled={busy} onClick={() => input.current?.click()}>
+        {busy ? <Loader2 aria-hidden className="animate-spin" /> : <FileUp aria-hidden />}
         {busy ? tt('supplier.uploading') : done ? tt('supplier.addAnother') : tt('supplier.upload')}
-      </button>
+      </Button>
       <input ref={input} type="file" className="hidden" multiple={kind === 'photos' || kind === 'other'}
         accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => { void send(e.target.files); e.target.value = ''; }} />
-      {error && <p className="text-[15px] font-semibold text-[#900B09] dark:text-[#FCB3AD]" role="alert">{error}</p>}
-    </Card>
+      {error && <p className="mt-3 text-[15px] font-semibold text-dz-bad" role="alert">{error}</p>}
+    </article>
   );
 }
 
@@ -89,56 +87,71 @@ export function SupplierUploadPage() {
   const lang: Lang = chosen ?? inv?.language ?? 'zh';
   const tt = (k: string, o: Record<string, unknown> = {}) => t(k, { ...o, lng: lang });
   const locale = LANGS.find((l) => l.value === lang)!.locale;
+  const got = inv ? inv.requested.filter((k) => inv.documents.some((d) => d.kind === k)).length : 0;
 
   return (
-    <div className={cn('min-h-[100dvh]', SURFACE.canvas)} lang={locale}>
-      <div className="mx-auto max-w-xl space-y-5 px-4 pb-16 pt-5">
-        <header className="flex items-center justify-between gap-3">
-          <p className={cn('text-[18px] font-bold tracking-tight', TEXT.strong)}>Bonzini Labs</p>
-          <div className="flex gap-1" role="group" aria-label="Language">
-            {LANGS.map((l) => (
-              <button key={l.value} type="button" onClick={() => setChosen(l.value)} aria-pressed={lang === l.value}
-                className={cn('h-9 min-w-11 px-2 text-[15px] font-semibold', FOCUS_RING, lang === l.value ? TOGGLE_ON : TOGGLE_OFF)}>{l.label}</button>
-            ))}
+    <MotionConfig reducedMotion="user">
+      <div className="dz min-h-[100dvh] bg-dz-bg text-dz-ink antialiased" lang={locale}>
+        <header className="border-b border-dz-line">
+          <div className="mx-auto flex h-16 max-w-[640px] items-center justify-between gap-3 px-5">
+            <span className="flex min-w-0 items-center gap-2.5">
+              <BonziniLogo size={30} />
+              <span className="whitespace-nowrap text-[17px] font-bold tracking-[-0.01em]">Bonzini Labs</span>
+            </span>
+            <Pills<Lang> options={LANGS} value={lang} onChange={setChosen} label="Language" className="shrink-0 flex-nowrap gap-1 [&_button]:h-9 [&_button]:px-2.5 [&_button]:text-[14px] sm:[&_button]:px-3" />
           </div>
         </header>
 
-        {q.isLoading ? <ScreenLoader label="…" /> : !inv ? (
-          <Card className="space-y-2 p-5">
-            <p className={cn(TYPE.lead, TEXT.strong)}>{tt('supplier.invalidTitle')}</p>
-            <Line>{tt('supplier.error.invalid_or_expired')}</Line>
-          </Card>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <p className={cn(TYPE.small, TEXT.muted)}>{tt('supplier.hello', { name: inv.supplier_name })}</p>
-              <h1 className={cn(TYPE.heading, TEXT.strong)}>{tt('supplier.title', { importer: inv.importer ?? '—' })}</h1>
-              <Line>{tt('supplier.intro')}</Line>
+        <main className="mx-auto max-w-[640px] px-5 pb-20 pt-8 sm:pt-12">
+          {q.isLoading ? (
+            <div className="space-y-4" aria-busy="true">
+              <div className="h-24 animate-pulse rounded-3xl bg-dz-soft" />
+              {[0, 1].map((i) => <div key={i} className="h-44 animate-pulse rounded-3xl bg-dz-soft" />)}
+            </div>
+          ) : !inv ? (
+            <div className="rounded-3xl border border-dz-line bg-dz-card p-6">
+              <h1 className="text-[22px] font-bold">{tt('supplier.invalidTitle')}</h1>
+              <p className="mt-2 text-[16px] leading-relaxed text-dz-ink2">{tt('supplier.error.invalid_or_expired')}</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[15px] text-dz-ink3">{tt('supplier.hello', { name: inv.supplier_name })}</p>
+              <h1 className="mt-2 [text-wrap:balance] text-[28px] font-bold leading-[1.15] tracking-[-0.02em] sm:text-[34px]">{tt('supplier.title', { importer: inv.importer ?? '—' })}</h1>
+              <p className="mt-3 text-[16px] leading-relaxed text-dz-ink2">{tt('supplier.intro')}</p>
               {inv.due_on && (
-                <p className={cn(TYPE.bodyStrong, TEXT.strong)}>
+                <p className="mt-3 inline-flex rounded-full bg-dz-brand-soft px-4 py-1.5 text-[15px] font-semibold text-dz-brand">
                   {tt('supplier.due', { date: new Date(`${inv.due_on}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) })}
                 </p>
               )}
-            </div>
-            {inv.message && (
-              <Card className={cn('space-y-1 p-4', SURFACE.inset)}>
-                <p className={cn(TYPE.smallStrong, TEXT.muted)}>{tt('supplier.messageFrom', { importer: inv.importer ?? '' })}</p>
-                <p className={cn('whitespace-pre-line', TYPE.body, TEXT.body)}>{inv.message}</p>
-              </Card>
-            )}
-            <div className="space-y-3">
-              {inv.requested.map((k) => (
-                <DocCard key={k} kind={k} lang={lang} token={token!} uploaded={inv.documents.filter((d) => d.kind === k)} />
-              ))}
-            </div>
-            <p className={cn('flex items-start gap-2', TYPE.small, TEXT.muted)}>
-              <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{tt('supplier.privacy', { importer: inv.importer ?? '' })}</span>
-            </p>
-          </>
-        )}
+              {inv.message && (
+                <div className="mt-6 rounded-3xl bg-dz-soft p-5">
+                  <p className="text-[14px] font-semibold text-dz-ink3">{tt('supplier.messageFrom', { importer: inv.importer ?? '' })}</p>
+                  <p className="mt-1 whitespace-pre-line text-[16px] leading-relaxed">{inv.message}</p>
+                </div>
+              )}
+
+              <div className="mt-8 flex items-center gap-3" aria-hidden>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-dz-soft">
+                  <div className="h-full rounded-full bg-dz-good transition-[width] duration-500" style={{ width: `${inv.requested.length ? (got / inv.requested.length) * 100 : 0}%` }} />
+                </div>
+                <span className="shrink-0 text-[14px] font-semibold tabular-nums text-dz-ink2">{got}/{inv.requested.length}</span>
+              </div>
+              <div className="mt-4 space-y-4">
+                {inv.requested.map((k, i) => (
+                  <Reveal key={k} delay={Math.min(i, 4) * 0.05} y={10}>
+                    <DocCard kind={k} lang={lang} token={token!} uploaded={inv.documents.filter((d) => d.kind === k)} />
+                  </Reveal>
+                ))}
+              </div>
+              <p className="mt-8 flex items-start gap-2 text-[14px] leading-snug text-dz-ink3">
+                <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{tt('supplier.privacy', { importer: inv.importer ?? '' })}</span>
+              </p>
+            </>
+          )}
+        </main>
       </div>
-    </div>
+    </MotionConfig>
   );
 }
 

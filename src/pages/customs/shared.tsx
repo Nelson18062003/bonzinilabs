@@ -1,20 +1,18 @@
 /**
  * Les pièces communes des pages Douane (docs/douane/00-plan.md).
  *
- * Le simulateur est public, comme celui de Flexport : un lien partagé sur
- * WhatsApp doit s'ouvrir sans compte. Le même écran vit donc dans deux
- * coquilles — celle de l'app client quand on est connecté, une coquille nue
- * avec « Se connecter » sinon — et dans l'espace équipe (variant 'admin').
+ * Côté client, chaque page vit dans le site Douane (bonzinilabs.com/douane) :
+ * même barre, même pied de page, connecté ou non — un lien partagé sur
+ * WhatsApp s'ouvre sans compte. Côté équipe (variant 'admin'), la coquille
+ * de l'espace équipe.
  */
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MobileLayout } from '@/components/layout/MobileLayout';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAuth } from '@/contexts/AuthContext';
-import { IconButton, Button, SURFACE, TEXT, TYPE } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE } from '@/mobile/designKit';
+import { SiteLayout } from './site/SiteLayout';
+import { PageIntro } from './site/ui';
 
 export type CustomsVariant = 'client' | 'admin';
 
@@ -29,8 +27,6 @@ export function CustomsShell({
   desktop?: boolean;
   children: ReactNode;
 }) {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const { t } = useTranslation('customs');
 
   if (variant === 'admin') {
@@ -49,38 +45,12 @@ export function CustomsShell({
     );
   }
 
-  const header = (
-    <div className="flex items-center gap-3 px-4 pb-1 pt-4">
-      <IconButton icon={ArrowLeft} ariaLabel={t('sim.back', { defaultValue: 'Retour' })} onClick={() => navigate(backTo)} size="sm" />
-      <div className="min-w-0 flex-1">
-        <h1 className={cn('text-[18px] font-semibold leading-tight', TEXT.strong)}>{title}</h1>
-        {subtitle && <p className={cn('text-[14px]', TEXT.muted)}>{subtitle}</p>}
-      </div>
-      {!user && (
-        <Button size="sm" variant="neutral" onClick={() => navigate('/auth')} className="shrink-0 px-3">
-          {t('hub.signIn', { defaultValue: 'Se connecter' })}
-        </Button>
-      )}
-    </div>
-  );
-
-  if (user) {
-    return (
-      <MobileLayout showNav={false} showHeader={false}>
-        <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-          {header}
-          {children}
-        </div>
-      </MobileLayout>
-    );
-  }
+  // Côté client : le site Douane (bonzinilabs.com/douane), connecté ou non.
   return (
-    <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-      <div className="mx-auto w-full max-w-5xl">
-        {header}
-        {children}
-      </div>
-    </div>
+    <SiteLayout>
+      <PageIntro title={title} subtitle={subtitle} back={{ to: backTo, label: backTo === '/douane' ? t('site.badge') : t('sim.back', { defaultValue: 'Retour' }) }} />
+      <div className="mx-auto w-full max-w-[1200px] pb-16 sm:px-4">{children}</div>
+    </SiteLayout>
   );
 }
 
@@ -90,15 +60,5 @@ export function ConfidenceDot({ sure, className }: { sure: boolean; className?: 
       aria-hidden
       className={cn('inline-block h-2.5 w-2.5 shrink-0 rounded-full', sure ? 'bg-[#14AE5C]' : 'bg-[#E8B931]', className)}
     />
-  );
-}
-
-/** Un titre de section numéroté, comme une question posée au client. */
-export function StepTitle({ n, children }: { n: number; children: ReactNode }) {
-  return (
-    <h2 className={cn('flex items-baseline gap-2', TYPE.lead, TEXT.strong)}>
-      <span className={cn('tabular-nums', TEXT.muted)}>{n}.</span>
-      <span>{children}</span>
-    </h2>
   );
 }

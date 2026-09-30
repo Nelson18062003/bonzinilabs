@@ -73,7 +73,9 @@ src/lib/customs/
   engine.ts        la liquidation d'un article, puis le coût de revient rendu
   nomenclature.ts  chargement + recherche (vocabulaire du marché FR/EN/中文)
   marketTerms.ts   « friperie », « mèches », « okada », « 手机 »… → codes SH
-src/pages/customs/                       app client (public pour le simulateur)
+src/pages/customs/                       le site bonzinilabs.com/douane (client) et
+                                          les pages de l'espace équipe (variant admin)
+src/pages/customs/site/                  le kit du site : SiteLayout, ui.tsx, styles.ts
 src/mobile/screens/customs/ + desktop    espace équipe : file CAD, audits, veille
 supabase/migrations/*_customs_*.sql      classements, revues CAD, audits, veille,
                                           tâches, invitations
@@ -93,6 +95,7 @@ supabase/functions/customs-ai/           Claude : conversation de classement,
 | 6 | Veille + perturbations | journal des changements, couche carte |
 | 7 | Tâches + invitations fournisseurs | boîte de tâches, page fournisseur en chinois |
 | 8 | Routes et émissions | Chine → Douala/Kribi → hinterland, transit observé |
+| 9 | Le site `bonzinilabs.com/douane` | une seule mise en page pour tous les outils, pensée par écran (§ 7) |
 
 ## 6. Faits retenus pour le moteur (détail et sources : `docs/douane/01-sources.md`)
 
@@ -119,3 +122,27 @@ Taux TEC par sous-position : **tarif appliqué du Cameroun, OMC/CNUCED TRAINS 20
 porte. Le **TEC CEEAC** en vigueur depuis le 01/01/2026 ajoute des bandes 0 % et
 40 % (vêtements confectionnés, mèches, tissus…) : ces familles sont signalées
 « peut passer à 40 % — à confirmer au tarif intégré CAMCIS ».
+
+## 7. Le site `bonzinilabs.com/douane`
+
+Un chemin du site principal, pas un sous-domaine : la session (localStorage)
+reste la même que celle de l'app de paiement. Tout ce que voit le client passe
+par `site/SiteLayout.tsx` et les pièces de `site/ui.tsx`, sous la portée `.dz`
+(couleurs `dz.*` dans `tailwind.config.ts`, jetons dans `src/index.css`).
+
+- **Une action principale à la fois** : bouton encre plein. Le violet Bonzini
+  (`variant="brand"`) est réservé à « Payer mon fournisseur ».
+- **Le chiffre avant le détail** : la somme clé sur la carte sombre
+  (`bg-dz-primary`) ; le détail se déplie (`Disclosure`).
+- **Texte ≥ 14 px, champs 17 px** (pas de zoom d'iOS) ; animations ≤ 400 ms,
+  coupées par `MotionConfig reducedMotion="user"`.
+- **Par écran** — téléphone (< 640) : en-tête 56 px et menu plein écran, une
+  colonne, la somme en premier, barre de total collée en bas du simulateur ;
+  tablette (640–1279) : grilles à deux colonnes, menu gardé ; ordinateur
+  (≥ 1024 pour les pages outils, ≥ 1280 pour la navigation) : deux colonnes, le
+  panneau de droite collant (somme + action), navigation à cinq liens.
+- `text-balance` est une **taille** de police dans ce projet : utiliser
+  `[text-wrap:balance]`.
+
+Contrôle : 16 pages × 7 largeurs (360 → 1920), clair/sombre, fr/en/zh — aucun
+débordement horizontal, aucun texte sous 13 px.

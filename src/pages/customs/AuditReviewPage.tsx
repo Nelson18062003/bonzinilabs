@@ -18,9 +18,8 @@ import {
   useAdminAudit, useAdminReadDau, useClaimAudit, useCustomsDocumentUrls, useCustomsReviewQueue, useReviewAudit,
 } from '@/hooks/useCustomsReview';
 import { CustomsShell } from './shared';
-import { AuditArticles, AuditSummary, AuditVerdict } from './components/AuditReport';
+import { AuditArticles, AuditSummary, AuditVerdict, ReadingCard } from './components/AuditReport';
 import { AuditStatusPill } from './AuditHomePage';
-import { ReadingCard } from './AuditPage';
 import { useAuditResult } from './useAuditResult';
 import { xaf } from './format';
 

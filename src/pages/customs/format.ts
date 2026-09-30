@@ -23,3 +23,6 @@ export const longDate = (iso: string, year = true) => {
   const s = new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'long', ...(year ? { year: 'numeric' } : {}), timeZone: 'UTC' });
   return locale.startsWith('fr') ? s.replace(/^1 /, '1er ') : s;
 };
+
+/** Typographie française : espace insécable avant ? ! : ; » et après « (textes du moteur, écrits avec des espaces simples). */
+export const frSpaces = (s: string) => s.replace(/ ([?!:;»])/g, '\u00A0$1').replace(/« /g, '«\u00A0');

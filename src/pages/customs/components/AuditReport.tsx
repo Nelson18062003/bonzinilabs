@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Calculator, CalendarClock } from 'lucide-react';
+import { Calculator, CalendarClock, RefreshCw, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatNumber } from '@/lib/formatters';
 import { Button, Card, Fold, Holder, Line, StatusPill, SURFACE, TEXT, TYPE, type Tone } from '@/mobile/designKit';
@@ -25,6 +25,30 @@ function RoutePill({ route }: { route: Route }) {
   return <StatusPill tone={ROUTE_TONE[route]} label={t(`audit.route.${route}`, { defaultValue: ROUTE_FR[route] })} />;
 }
 
+
+/** L'assistant lit : une attente dite, pas un sablier muet (espace équipe). */
+export function ReadingCard({ stale, onRetry, retrying }: { stale: boolean; onRetry: () => void; retrying: boolean }) {
+  const { t } = useTranslation('customs');
+  return (
+    <Card className="space-y-3 p-5" role="status" aria-live="polite">
+      <div className="flex items-center gap-3">
+        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]">
+          {!stale && <span className="absolute inset-0 animate-ping rounded-full bg-[#2C6ECB]/20" aria-hidden />}
+          <ScanLine className={cn('h-5 w-5', TEXT.strong)} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className={cn(TYPE.bodyStrong, TEXT.strong)}>
+            {stale ? t('audit.readingSlow', { defaultValue: 'La lecture prend plus de temps que prévu' }) : t('audit.reading', { defaultValue: 'L’assistant lit votre déclaration…' })}
+          </p>
+          <p className={cn(TYPE.body, TEXT.muted)}>
+            {stale ? t('audit.readingSlowDesc', { defaultValue: 'Relancez-la : les pièces sont gardées.' }) : t('audit.readingDesc', { defaultValue: 'Article par article : une à trois minutes. Vous pouvez quitter cet écran.' })}
+          </p>
+        </div>
+      </div>
+      {stale && <Button variant="neutral" className="w-full" loading={retrying} onClick={onRetry}><RefreshCw aria-hidden /> {t('audit.retryRead', { defaultValue: 'Relancer la lecture' })}</Button>}
+    </Card>
+  );
+}
 
 /** Les trois sommes, et ce qu'on en fait. */
 export function AuditSummary({ result, ext }: { result: AuditResult; ext: DauExtraction }) {

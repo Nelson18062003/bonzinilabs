@@ -697,5 +697,186 @@
     "noticeDelay": "最多延误 {{count}} 天",
     "obsCount": "{{count}} 票",
     "obsGap": "实际比出发时公布的多 {{count}} 天：请预留时间。"
+  },
+  "site": {
+    "badge": "海关",
+    "homeLabel": "Bonzini Labs 海关首页",
+    "navLabel": "海关工具",
+    "language": "语言",
+    "menu": "菜单",
+    "close": "关闭",
+    "mySpace": "我的空间",
+    "signIn": "登录",
+    "nav": {
+      "simulator": "关税估算",
+      "classify": "商品归类",
+      "audit": "报关单核查",
+      "routes": "运输时效",
+      "news": "海关动态"
+    },
+    "navDesc": {
+      "simulator": "海关将向您收取的税费。",
+      "classify": "由持牌报关员签字的编码。",
+      "audit": "多缴了哪些税费。",
+      "routes": "从中国工厂到您的门口。",
+      "news": "政策变化与延误。"
+    },
+    "footerTagline": "Bonzini Labs 海关工具，服务向中国供应商付款的进口商。",
+    "footerTools": "工具",
+    "footerPay": "向供应商付款",
+    "footerLegal": "信息",
+    "privacy": "隐私",
+    "terms": "条款",
+    "footerNote": "估算结果请由持牌报关员确认。",
+    "home": {
+      "eyebrow": "喀麦隆海关 · 2026 税则",
+      "titleA": "只缴",
+      "titleB": "该缴的税。",
+      "lead": "购买前估算税费。请持牌报关员签字确认编码。追回多缴的税费。",
+      "searchLabel": "您进口什么商品？",
+      "searchPlaceholder": "您进口什么商品？",
+      "searchCta": "估算",
+      "popular": {
+        "wigs": "假发",
+        "solar": "太阳能板",
+        "phones": "手机",
+        "moto": "摩托车",
+        "thrift": "旧衣服",
+        "tiles": "瓷砖"
+      },
+      "example": "真实示例",
+      "camcis": "CAMCIS 计算",
+      "ex": {
+        "regulator": "稳压器",
+        "wigs": "化纤假发",
+        "chairs": "椅子"
+      },
+      "dutyRate": "关税 {{rate}}%",
+      "cifValue": "货值",
+      "toPay": "应缴海关",
+      "ofValue": "占货值 {{pct}}",
+      "toolsEyebrow": "我们的工具",
+      "toolsTitle": "从下单到清关。",
+      "tools": {
+        "simulator": {
+          "title": "估算税费",
+          "desc": "购买前就知道要准备多少。"
+        },
+        "classify": {
+          "title": "确认商品编码",
+          "desc": "AI 建议，持牌报关员签字。"
+        },
+        "audit": {
+          "title": "核查报关单",
+          "desc": "多缴了什么，如何追回。"
+        },
+        "routes": {
+          "title": "运输时效",
+          "desc": "从中国工厂到您的门口。"
+        }
+      },
+      "noAccount": "无需账户",
+      "withAccount": "免费账户",
+      "proofEyebrow": "一份真实报关单",
+      "proofSub": "在 900,000 法郎的货物上多缴。",
+      "proofBody": "十个编码中有四个是错的：稳压器被申报为冰箱，椅子被申报为“其他家具”。我们的引擎像 CAMCIS 一样逐行重算，并告诉您哪些可以追回。",
+      "proofCta": "核查我的报关单",
+      "newsEyebrow": "动态",
+      "newsTitle": "正在发生的变化",
+      "newsAll": "全部动态",
+      "kindRule": "法规",
+      "kindDisruption": "延误",
+      "payTitle": "如何向供应商付款？",
+      "payBody": "支付宝、微信或银行转账：供应商以人民币收款，并有付款凭证。",
+      "payCta": "向供应商付款",
+      "tasks": "{{count}} 项待办",
+      "tasks_other": "{{count}} 项待办",
+      "noTasks": "您的商品、报关单和供应商。"
+    },
+    "space": {
+      "title": "我的海关空间",
+      "subtitle": "待办事项和您的档案。",
+      "todo": "待办",
+      "nothing": "暂时没有待办事项。",
+      "files": "我的档案",
+      "urgency": {
+        "now": "紧急",
+        "soon": "待办",
+        "later": "待读"
+      },
+      "dossier": {
+        "classify": "已归类商品",
+        "audit": "已核查报关单",
+        "suppliers": "供应商"
+      },
+      "count": "{{count}} 份",
+      "count_other": "{{count}} 份"
+    },
+    "retry": "重试",
+    "sim": {
+      "title": "估算税费",
+      "subtitle": "海关将向您收取的税费，逐行列出。2026 税则。",
+      "clear": "清除",
+      "stepProduct": "商品",
+      "stepPrice": "价格",
+      "currency": "币种",
+      "ratePer": "1 {{cur}} =",
+      "includes": "价格包含",
+      "situationHint": "如有需要请修改：预扣税取决于此。",
+      "extras": "该商品还需要",
+      "withOutside": "含 SGS 检验费和预扣税",
+      "group": {
+        "duty": "关税",
+        "excise": "消费税",
+        "vat": "增值税及附加",
+        "other": "其他税费"
+      },
+      "lines": "{{count}} 行",
+      "lines_other": "{{count}} 行",
+      "emptyTitle": "结果将显示在这里",
+      "emptyBody": "选择商品并填写价格。",
+      "tryExample": "试试示例",
+      "see": "查看",
+      "share": "分享",
+      "reset": "重新开始"
+    },
+    "routes": {
+      "title": "运输时效",
+      "subtitle": "从中国工厂到您的门口：天数、路线、排放。",
+      "from": "出发地",
+      "to": "目的地",
+      "weight": "毛重",
+      "days": "天",
+      "stepsHint": "J+：从货物在供应商处备妥之日起的天数。",
+      "promised": "出发时公布",
+      "late": "晚于公布日期"
+    },
+    "news": {
+      "title": "海关动态",
+      "subtitle": "法规变化与货物延误。",
+      "more": "展开",
+      "less": "收起",
+      "filter": "显示"
+    },
+    "classify": {
+      "subtitle": "描述商品：助手建议编码，持牌报关员签字确认。",
+      "how": "如何运作"
+    },
+    "audit": {
+      "what": "我们核查什么",
+      "paid": "已缴海关"
+    },
+    "suppliers": {
+      "why": "为什么有用",
+      "how": "如何运作",
+      "how1": "您创建链接",
+      "how1Desc": "选择所需文件和对方的语言。",
+      "how2": "对方上传，无需账户",
+      "how2Desc": "在微信或 WhatsApp 中打开链接即可。",
+      "how3": "您收到通知",
+      "how3Desc": "文件直接到这里，可交给 SGS 和您的货代。",
+      "received": "已收到 {{n}}/{{total}}",
+      "emptyTitle": "还没有邀请"
+    }
   }
 }

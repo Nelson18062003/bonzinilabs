@@ -7,14 +7,14 @@ import { useTranslation } from 'react-i18next';
 import type { LiquidationLine, SimNote } from '@/lib/customs/engine';
 import type { Finding } from '@/lib/customs/audit';
 import type { CustomsTask } from '@/lib/customs/tasks';
-import { xaf } from './format';
+import { xaf, frSpaces } from './format';
 
 /** Le texte d'une note dans la langue de l'écran ; le français fait foi. */
 export function useNoteText() {
   const { t, i18n } = useTranslation('customs');
   const fr = (i18n.language ?? 'fr').startsWith('fr');
   return (n: SimNote) => {
-    if (fr) return n.fr;
+    if (fr) return frSpaces(n.fr);
     const params = Object.fromEntries(Object.entries(n.params ?? {}).map(([k, v]) => [k, typeof v === 'number' && k !== 'rate' ? xaf(v).replace(' XAF', '') : v]));
     return t(`notes.${n.id}`, { ...params, defaultValue: n.fr });
   };
@@ -31,7 +31,7 @@ export function useFindingText() {
   const { t, i18n } = useTranslation('customs');
   const fr = (i18n.language ?? 'fr').startsWith('fr');
   return (f: Finding) => {
-    if (fr) return f.fr;
+    if (fr) return frSpaces(f.fr);
     const params = Object.fromEntries(Object.entries(f.params).map(([k, v]) =>
       [k, typeof v === 'number' && !['applied', 'official', 'n'].includes(k) ? xaf(v) : v]));
     const variant = f.kind === 'classification' || f.kind === 'used_goods' ? `${f.kind}_${f.route}` : f.kind;
@@ -44,7 +44,7 @@ export function useTaskText() {
   const { t, i18n } = useTranslation('customs');
   const fr = (i18n.language ?? 'fr').startsWith('fr');
   return (task: CustomsTask) => {
-    if (fr) return task.fr;
+    if (fr) return frSpaces(task.fr);
     const params = Object.fromEntries(Object.entries(task.params).map(([k, v]) => [k, k === 'amount' && typeof v === 'number' ? xaf(v) : v]));
     return t(`tasks.${task.kind}`, { ...params, count: typeof task.params.count === 'number' ? task.params.count : typeof task.params.days === 'number' ? task.params.days : undefined, defaultValue: task.fr });
   };

@@ -1,24 +1,28 @@
 // ============================================================
 // Vérifier une déclaration — /douane/audit (client connecté).
-// Le « compliance audit » de Flexport pour CAMCIS : la DAU en PDF ou en
-// photos, l'IA la lit, le moteur recalcule chaque taxe et confronte chaque
-// code à sa désignation, le commissionnaire agréé rend son avis.
+// Le client dépose sa DAU ; l'IA la lit, le moteur recalcule chaque taxe et
+// confronte chaque code à sa désignation (docs/douane/00-plan.md, étape 5).
+//
+// Ordinateur : le dépôt à gauche, mes vérifications et ce que nous
+// vérifions à droite. Téléphone : le dépôt, puis mes vérifications.
 // ============================================================
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { FileText, ListChecks, Scale, ScanLine, Upload, X } from 'lucide-react';
+import { ChevronRight, FileText, Loader2, ScanLine, Upload, X } from 'lucide-react';
 import { cn, validateUploadFile } from '@/lib/utils';
-import { Button, Card, FormField, Holder, IconButton, ListRow, Line, ScreenError, SectionTitle, StatusPill, TextInput, SURFACE, TEXT, TYPE, FOCUS_RING } from '@/mobile/designKit';
+import { StatusPill } from '@/mobile/designKit';
 import { AUDIT_STATUS, type AuditStatus } from '@/lib/customs/files';
 import { useMyCustomsFiles } from '@/hooks/useCustomsFiles';
 import { useCreateAudit } from '@/hooks/useCustomsAudits';
-import { CustomsShell } from './shared';
 import { xaf } from './format';
+import { SiteLayout } from './site/SiteLayout';
+import { Button, Container, Field, Input, PageIntro, Reveal, StatusBadge } from './site/ui';
 
 const MAX_FILES = 10;
 
+/** Le statut d'une vérification, pour l'espace équipe (kit de l'app). */
 export function AuditStatusPill({ status }: { status: AuditStatus }) {
   const { t } = useTranslation('customs');
   return <StatusPill tone={AUDIT_STATUS[status].tone} label={t(`audit.status.${status}`, { defaultValue: AUDIT_STATUS[status].fr })} />;
@@ -40,7 +44,7 @@ export function AuditHomePage() {
     if (!list) return;
     const next = [...picked];
     for (const f of Array.from(list)) {
-      if (next.length >= MAX_FILES) { toast.error(t('audit.filesMax', { max: MAX_FILES, defaultValue: `${MAX_FILES} pièces au plus` })); break; }
+      if (next.length >= MAX_FILES) { toast.error(t('audit.filesMax', { max: MAX_FILES })); break; }
       try { validateUploadFile(f); } catch (e) { toast.error((e as Error).message); continue; }
       next.push(f);
     }
@@ -50,7 +54,7 @@ export function AuditHomePage() {
   const submit = () => {
     setTried(true);
     if (!picked.length) return;
-    if (paidOn && paidOn > today) { toast.error(t('audit.paidFuture', { defaultValue: 'La date de paiement ne peut pas être dans le futur.' })); return; }
+    if (paidOn && paidOn > today) { toast.error(t('audit.paidFuture')); return; }
     create.mutate(
       { files: picked, dauNumber, paidOn: paidOn || null },
       { onSuccess: (res) => navigate(`/douane/audit/${res.id}`), onError: (e) => toast.error((e as Error).message) },
@@ -58,98 +62,99 @@ export function AuditHomePage() {
   };
 
   const audits = files.data?.audits ?? [];
+  const checks = [t('audit.check1'), t('audit.check2'), t('audit.check3')];
 
   return (
-    <CustomsShell title={t('audit.homeTitle', { defaultValue: 'Vérifier une déclaration' })} backTo="/douane">
-      <div className="mx-auto max-w-2xl space-y-6 px-4 pb-12 pt-3">
-        <Card className="space-y-4 p-5">
-          <p className={cn(TYPE.title, TEXT.strong)}>{t('audit.homeTagline', { defaultValue: 'Avez-vous payé le juste droit ?' })}</p>
-          <Line>{t('audit.homeIntro', { defaultValue: 'Sur une seule DAU réelle de septembre 2026, quatre articles sur sept étaient mal taxés : 307 078 F sur 900 000 F de marchandises.' })}</Line>
-          <ul className="space-y-3">
-            {[
-              { icon: ScanLine, text: t('audit.check1', { defaultValue: 'Chaque taxe recalculée comme CAMCIS la calcule, article par article.' }) },
-              { icon: ListChecks, text: t('audit.check2', { defaultValue: 'Chaque code confronté à sa désignation : un « régulateur » n’est pas un réfrigérateur.' }) },
-              { icon: Scale, text: t('audit.check3', { defaultValue: 'Accises et exonérations lues dans le CGI, et la voie de recours avec son délai.' }) },
-            ].map((x, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <Holder icon={x.icon} size="sm" />
-                <p className={cn('pt-1.5', TYPE.body, TEXT.body)}>{x.text}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <section className="space-y-4" aria-labelledby="new-audit">
-          <h2 id="new-audit" className={cn(TYPE.lead, TEXT.strong)}>{t('audit.newTitle', { defaultValue: 'Votre déclaration' })}</h2>
-          <div className="space-y-2">
-            {picked.length > 0 && (
-              <ul className={cn('overflow-hidden rounded-lg', SURFACE.card, SURFACE.shadow)}>
-                {picked.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className={cn('flex items-center gap-3 border-b px-3 py-2 last:border-b-0', SURFACE.divider)}>
-                    <FileText aria-hidden className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-                    <span className={cn('min-w-0 flex-1 truncate', TYPE.body, TEXT.strong)}>{f.name}</span>
-                    <IconButton icon={X} size="sm" variant="subtle" ariaLabel={t('audit.fileRemove', { name: f.name, defaultValue: `Retirer ${f.name}` })} onClick={() => setPicked(picked.filter((_, k) => k !== i))} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {picked.length < MAX_FILES && (
-              <button type="button" onClick={() => inputRef.current?.click()}
-                className={cn('flex min-h-[88px] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-4 py-4 text-center',
-                  tried && !picked.length ? 'border-[#900B09] dark:border-[#FCB3AD]' : 'border-[#949494] dark:border-[#6E6E6E]', FOCUS_RING)}>
-                <Upload aria-hidden className={cn('h-6 w-6', TEXT.body)} />
-                <span className={cn(TYPE.bodyStrong, TEXT.strong)}>{picked.length ? t('audit.addMore', { defaultValue: 'Ajouter une page' }) : t('audit.addFiles', { defaultValue: 'Ajouter la DAU' })}</span>
-                <span className={cn(TYPE.small, TEXT.muted)}>{t('audit.filesHint', { defaultValue: 'Le PDF de CAMCIS, ou une photo nette de chaque page.' })}</span>
-              </button>
-            )}
-            {tried && !picked.length && <p className="text-[16px] text-[#900B09] dark:text-[#FCB3AD]">{t('audit.filesRequired', { defaultValue: 'Ajoutez la déclaration.' })}</p>}
-            <input ref={inputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple className="hidden"
-              onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
+    <SiteLayout>
+      <PageIntro title={t('audit.homeTitle')} subtitle={t('audit.homeTagline')} back={{ to: '/douane', label: t('site.badge') }} />
+      <Container className="grid gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-12">
+        <section aria-labelledby="dz-new-audit" className="min-w-0 rounded-3xl border border-dz-line bg-dz-card p-5 sm:p-7">
+          <h2 id="dz-new-audit" className="text-[20px] font-bold">{t('audit.newTitle')}</h2>
+          <div className="mt-5 space-y-5">
+            <div className="space-y-2">
+              {picked.length > 0 && (
+                <ul className="overflow-hidden rounded-2xl border border-dz-line">
+                  {picked.map((f, i) => (
+                    <li key={`${f.name}-${i}`} className="flex items-center gap-3 border-b border-dz-line px-4 py-2.5 last:border-b-0">
+                      <FileText aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3" />
+                      <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{f.name}</span>
+                      <button type="button" onClick={() => setPicked(picked.filter((_, k) => k !== i))} aria-label={t('audit.fileRemove', { name: f.name })}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-dz-ink3 hover:bg-dz-soft hover:text-dz-ink">
+                        <X aria-hidden className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {picked.length < MAX_FILES && (
+                <button type="button" onClick={() => inputRef.current?.click()}
+                  className={cn('flex min-h-[120px] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-6 text-center transition-colors hover:bg-dz-soft',
+                    tried && !picked.length ? 'border-dz-bad' : 'border-dz-ink3/40 hover:border-dz-ink/40')}>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-dz-brand-soft text-dz-brand"><Upload aria-hidden className="h-5 w-5" /></span>
+                  <span className="text-[16px] font-semibold">{picked.length ? t('audit.addMore') : t('audit.addFiles')}</span>
+                  <span className="text-[14px] text-dz-ink3">{t('audit.filesHint')}</span>
+                </button>
+              )}
+              {tried && !picked.length && <p className="text-[15px] font-medium text-dz-bad">{t('audit.filesRequired')}</p>}
+              <input ref={inputRef} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple className="hidden"
+                onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('audit.dauNumber')} htmlFor="au-number">
+                <Input id="au-number" value={dauNumber} onChange={(e) => setDauNumber(e.target.value)} maxLength={80} placeholder="SDSD2-2026-IMP-…" autoComplete="off" />
+              </Field>
+              <Field label={t('audit.paidOnLabel')} htmlFor="au-paid" hint={t('audit.paidOnHint')}>
+                <Input id="au-paid" type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />
+              </Field>
+            </div>
+            <Button size="lg" className="w-full" onClick={submit} disabled={create.isPending}>
+              {create.isPending ? <Loader2 aria-hidden className="animate-spin" /> : <ScanLine aria-hidden />} {t('audit.start')}
+            </Button>
+            <p className="text-[14px] leading-relaxed text-dz-ink3">{t('audit.privacy')}</p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label={t('audit.dauNumber', { defaultValue: 'Numéro de la DAU (facultatif)' })} htmlFor="au-number">
-              <TextInput id="au-number" value={dauNumber} onChange={(e) => setDauNumber(e.target.value)} maxLength={80} placeholder="SDSD2-2026-IMP-…" autoComplete="off" />
-            </FormField>
-            <FormField label={t('audit.paidOnLabel', { defaultValue: 'Payée le (facultatif)' })} htmlFor="au-paid"
-              hint={t('audit.paidOnHint', { defaultValue: 'Fixe le délai de réclamation : trois ans.' })}>
-              <TextInput id="au-paid" type="date" value={paidOn} max={today} onChange={(e) => setPaidOn(e.target.value)} />
-            </FormField>
-          </div>
-          <Button className="w-full" loading={create.isPending} onClick={submit}>
-            <ScanLine aria-hidden /> {t('audit.start', { defaultValue: 'Vérifier ma déclaration' })}
-          </Button>
-          <p className={cn(TYPE.small, TEXT.faint)}>
-            {t('audit.privacy', { defaultValue: 'La déclaration est lue par notre assistant (Claude, d’Anthropic), puis par le commissionnaire agréé si vous la lui envoyez. Elle ne sert qu’à cette vérification.' })}
-          </p>
         </section>
 
-        {files.isError ? (
-          <ScreenError className="min-h-0 py-6" description={(files.error as Error).message} onRetry={() => files.refetch()} />
-        ) : audits.length > 0 ? (
-          <section>
-            <SectionTitle>{t('audit.mine', { defaultValue: 'Mes vérifications' })}</SectionTitle>
-            <div className={cn('rounded-lg px-4', SURFACE.card, SURFACE.shadow)}>
-              {audits.map((a) => (
-                <ListRow
-                  key={a.id}
-                  title={a.dau_number ?? a.ref}
-                  subtitle={
-                    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                      <AuditStatusPill status={a.status} />
-                      {a.dau_number && <span className="tabular-nums">{a.ref}</span>}
-                      {a.recoverable_xaf != null
-                        ? <span className="tabular-nums">· {t('audit.recoverableShort', { amount: xaf(a.recoverable_xaf), defaultValue: `récupérable ${xaf(a.recoverable_xaf)}` })}</span>
-                        : a.overpaid_xaf ? <span className="tabular-nums">· {t('audit.atStake', { amount: xaf(a.overpaid_xaf), defaultValue: `enjeu ${xaf(a.overpaid_xaf)}` })}</span> : null}
-                    </span>
-                  }
-                  onClick={() => navigate(`/douane/audit/${a.id}`)}
-                />
+        <div className="min-w-0 space-y-8 lg:sticky lg:top-24 lg:self-start">
+          {audits.length > 0 && (
+            <section aria-labelledby="dz-audits">
+              <h2 id="dz-audits" className="text-[18px] font-bold">{t('audit.mine')}</h2>
+              <ul className="mt-3 overflow-hidden rounded-2xl border border-dz-line bg-dz-card">
+                {audits.map((a, i) => (
+                  <Reveal as="li" key={a.id} delay={Math.min(i, 5) * 0.04} y={6} className="border-b border-dz-line last:border-b-0">
+                    <Link to={`/douane/audit/${a.id}`} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-dz-soft">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-semibold tabular-nums">{a.dau_number ?? a.ref}</span>
+                        <span className="mt-1.5 flex flex-wrap items-center gap-2 text-[14px] text-dz-ink3">
+                          <StatusBadge tone={AUDIT_STATUS[a.status].tone}>{t(`audit.status.${a.status}`, { defaultValue: AUDIT_STATUS[a.status].fr })}</StatusBadge>
+                          {a.recoverable_xaf != null
+                            ? <span className="tabular-nums">{t('audit.recoverableShort', { amount: xaf(a.recoverable_xaf) })}</span>
+                            : a.overpaid_xaf ? <span className="tabular-nums">{t('audit.atStake', { amount: xaf(a.overpaid_xaf) })}</span> : null}
+                        </span>
+                      </span>
+                      <ChevronRight aria-hidden className="h-5 w-5 shrink-0 text-dz-ink3" />
+                    </Link>
+                  </Reveal>
+                ))}
+              </ul>
+            </section>
+          )}
+          {files.isError && <p className="rounded-2xl bg-dz-soft p-4 text-[15px]">{(files.error as Error).message}</p>}
+
+          <section aria-labelledby="dz-checks">
+            <h2 id="dz-checks" className="text-[18px] font-bold">{t('site.audit.what')}</h2>
+            <p className="mt-2 text-[15px] leading-snug text-dz-ink3">{t('audit.homeIntro')}</p>
+            <ol className="mt-4 space-y-4">
+              {checks.map((c, i) => (
+                <li key={c} className="flex gap-4">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-dz-brand-soft text-[14px] font-bold text-dz-brand">{i + 1}</span>
+                  <span className="pt-1 text-[15px] leading-snug text-dz-ink2">{c}</span>
+                </li>
               ))}
-            </div>
+            </ol>
           </section>
-        ) : null}
-      </div>
-    </CustomsShell>
+        </div>
+      </Container>
+    </SiteLayout>
   );
 }
 

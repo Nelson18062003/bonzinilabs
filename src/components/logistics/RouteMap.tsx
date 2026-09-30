@@ -140,7 +140,7 @@ function RouteCanvas({ plan, lang, className, ariaLabel, focus }: { plan: RouteP
               {/* Le départ est à l'est : son nom s'écrit à gauche du point, pour rester dans le cadre.
                   Zoomé sur l'arrivée, chaque étape porte son nom (sauf la Chine, hors cadre). */}
               {(focus === 'arrival' ? i > 0 : i === 0 || i === stops.length - 1) && (
-                <span className="cargo-port__label" style={i === 0 ? { left: 'auto', right: 9 } : undefined}>{placeLabel(p, lang)}</span>
+                <span className="cargo-port__label" style={{ fontSize: 13, ...(i === 0 ? { left: 'auto', right: 9 } : {}) }}>{placeLabel(p, lang)}</span>
               )}
             </span>
           </Marker>

@@ -24,10 +24,17 @@ import { useCargoShipments } from '@/hooks/useCargo';
 import { CustomsShell, type CustomsVariant } from './shared';
 import { NoticeCard } from './components/NoticeCard';
 import { NoticeEditor } from './components/NoticeEditor';
+import { NewsPage } from './site/NewsPage';
 
 const shortDate = (d: Date | null) => (d ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : '—');
 
+/** Le client lit les actualités sur le site ; l'équipe publie ici. */
 export function NoticesPage({ variant = 'client', desktop = false }: { variant?: CustomsVariant; desktop?: boolean } = {}) {
+  if (variant === 'client') return <NewsPage />;
+  return <StaffNoticesPage variant={variant} desktop={desktop} />;
+}
+
+function StaffNoticesPage({ variant, desktop }: { variant: CustomsVariant; desktop: boolean }) {
   const { t } = useTranslation('customs');
   const navigate = useNavigate();
   const location = useLocation();

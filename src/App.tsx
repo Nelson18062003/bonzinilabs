@@ -54,6 +54,7 @@ const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => (
 const SuppliersPage = lazy(() => import("./pages/customs/SuppliersPage").then(m => ({ default: m.SuppliersPage })));
 const SupplierUploadPage = lazy(() => import("./pages/customs/SupplierUploadPage").then(m => ({ default: m.SupplierUploadPage })));
 const RoutesPage = lazy(() => import("./pages/customs/RoutesPage").then(m => ({ default: m.RoutesPage })));
+const CustomsSpacePage = lazy(() => import("./pages/customs/site/MySpacePage").then(m => ({ default: m.MySpacePage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -268,6 +269,7 @@ const App = () => (
                 {/* La veille : publique, comme le simulateur. */}
                 <Route path="/douane/veille" element={<NoticesPage />} />
                 <Route path="/douane/routes" element={<RoutesPage />} />
+                <Route path="/douane/espace" element={<ProtectedRoute><CustomsSpacePage /></ProtectedRoute>} />
                 {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
                 <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
                 <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
