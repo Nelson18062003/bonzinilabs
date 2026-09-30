@@ -6,6 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import type { LiquidationLine, SimNote } from '@/lib/customs/engine';
 import type { Finding } from '@/lib/customs/audit';
+import type { CustomsTask } from '@/lib/customs/tasks';
 import { xaf } from './format';
 
 /** Le texte d'une note dans la langue de l'écran ; le français fait foi. */
@@ -35,5 +36,16 @@ export function useFindingText() {
       [k, typeof v === 'number' && !['applied', 'official', 'n'].includes(k) ? xaf(v) : v]));
     const variant = f.kind === 'classification' || f.kind === 'used_goods' ? `${f.kind}_${f.route}` : f.kind;
     return t(`audit.f.${variant}`, { ...params, defaultValue: t(`audit.f.${f.kind}`, { ...params, defaultValue: f.fr }) });
+  };
+}
+
+/** Le texte d'une tâche « À faire » dans la langue de l'écran ; le français (du moteur) fait foi. */
+export function useTaskText() {
+  const { t, i18n } = useTranslation('customs');
+  const fr = (i18n.language ?? 'fr').startsWith('fr');
+  return (task: CustomsTask) => {
+    if (fr) return task.fr;
+    const params = Object.fromEntries(Object.entries(task.params).map(([k, v]) => [k, k === 'amount' && typeof v === 'number' ? xaf(v) : v]));
+    return t(`tasks.${task.kind}`, { ...params, count: typeof task.params.count === 'number' ? task.params.count : typeof task.params.days === 'number' ? task.params.days : undefined, defaultValue: task.fr });
   };
 }

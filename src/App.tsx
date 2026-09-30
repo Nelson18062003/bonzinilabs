@@ -51,6 +51,8 @@ const AuditHomePage = lazy(() => import("./pages/customs/AuditHomePage").then(m 
 const AuditPage = lazy(() => import("./pages/customs/AuditPage").then(m => ({ default: m.AuditPage })));
 const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").then(m => ({ default: m.AuditReviewPage })));
 const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => ({ default: m.NoticesPage })));
+const SuppliersPage = lazy(() => import("./pages/customs/SuppliersPage").then(m => ({ default: m.SuppliersPage })));
+const SupplierUploadPage = lazy(() => import("./pages/customs/SupplierUploadPage").then(m => ({ default: m.SupplierUploadPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -270,6 +272,9 @@ const App = () => (
                 {/* Vérifier une déclaration (DAU) : l'IA lit, le moteur recalcule, le CAD rend l'avis. */}
                 <Route path="/douane/audit" element={<ProtectedRoute><AuditHomePage /></ProtectedRoute>} />
                 <Route path="/douane/audit/:id" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
+                {/* Les fournisseurs : le client invite ; le fournisseur dépose par un lien, sans compte. */}
+                <Route path="/douane/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                <Route path="/f/:token" element={<SupplierUploadPage />} />
 
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />

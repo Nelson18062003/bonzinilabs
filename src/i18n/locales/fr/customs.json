@@ -20,7 +20,9 @@
     "auditTitle": "Vérifier une déclaration (DAU)",
     "auditDesc": "Chaque taxe recalculée, chaque code confronté à sa désignation. Ce qui se réclame, et jusqu'à quand.",
     "watchTitle": "Veille douane",
-    "watchDesc": "Ce qui change dans les textes, ce qui retarde la marchandise."
+    "watchDesc": "Ce qui change dans les textes, ce qui retarde la marchandise.",
+    "suppliersTitle": "Mes fournisseurs",
+    "suppliersDesc": "Un lien pour que votre fournisseur dépose la facture définitive, le colisage, la fiche technique."
   },
   "sim": {
     "title": "Simulateur de droits et taxes",
@@ -209,7 +211,8 @@
     "letterDownload": "Télécharger",
     "brokerApproved": "Code validé : {{code}}",
     "brokerChanged": "Code retenu : {{code}}",
-    "proposedCodes": "Codes proposés :"
+    "proposedCodes": "Codes proposés :",
+    "askSupplier": "Demander la fiche technique au fournisseur"
   },
   "review": {
     "title": "Revue du classement",
@@ -475,5 +478,88 @@
       "publishedNotified": "Avis publié : {{count}} clients prévenus",
       "saved": "Brouillon enregistré"
     }
+  },
+  "supplier": {
+    "hello": "Bonjour {{name}},",
+    "title": "{{importer}} (Cameroun) vous demande quelques documents",
+    "intro": "Ils servent au dédouanement de votre marchandise au Cameroun. Déposez chaque fichier ci-dessous : l'importateur est prévenu tout de suite. Pas besoin de compte.",
+    "due": "À déposer avant le {{date}}",
+    "messageFrom": "Message de {{importer}}",
+    "upload": "Déposer le fichier",
+    "addAnother": "Ajouter un autre fichier",
+    "uploading": "Envoi…",
+    "file": "Fichier",
+    "sgsTip": "Déposez-la aussi sur export-cm.sgs.com dès l'expédition : la SGS Cameroun la vérifie avant l'arrivée.",
+    "privacy": "Vos fichiers ne vont qu'à {{importer}} et à son commissionnaire en douane agréé au Cameroun. Formats : PDF, JPG, PNG, WebP ; 10 Mo au plus.",
+    "invalidTitle": "Lien expiré",
+    "kind": {
+      "final_invoice": "Facture définitive",
+      "proforma": "Facture proforma",
+      "packing_list": "Liste de colisage",
+      "product_sheet": "Fiche technique",
+      "photos": "Photos du produit",
+      "certificate_origin": "Certificat d'origine",
+      "other": "Autre document"
+    },
+    "hint": {
+      "final_invoice": "Avec les montants réels, les quantités et les codes SH. L'inspection SGS au Cameroun la vérifie.",
+      "proforma": "Le devis d'avant paiement.",
+      "packing_list": "Nombre de colis, poids et dimensions.",
+      "product_sheet": "Ce qu'est le produit, sa matière, son fonctionnement, sa puissance : c'est ce qui décide du code en douane.",
+      "photos": "Le produit, son étiquette et sa plaque signalétique.",
+      "certificate_origin": "Délivré par le CCPIT ou la douane chinoise.",
+      "other": "Tout autre document demandé par l'importateur."
+    },
+    "error": {
+      "invalid_or_expired": "Ce lien n'est plus valable. Demandez-en un nouveau à l'importateur.",
+      "file_type": "PDF, JPG, PNG ou WebP uniquement.",
+      "file_size": "10 Mo au plus par fichier.",
+      "too_many_files": "Trop de fichiers sur ce lien.",
+      "kind_not_requested": "Ce document n'a pas été demandé.",
+      "no_file": "Choisissez un fichier.",
+      "bad_request": "L'envoi a échoué. Réessayez.",
+      "server": "L'envoi a échoué. Réessayez."
+    }
+  },
+  "suppliers": {
+    "title": "Mes fournisseurs",
+    "tagline": "Les bons documents, directement de votre fournisseur.",
+    "intro": "Sans facture définitive déposée à temps, la SGS peut retenir une valeur bien plus élevée : 2 311 829 F de trop sur une Toyota Fortuner. Envoyez un lien à votre fournisseur : il dépose, vous êtes prévenu.",
+    "invite": "Inviter un fournisseur",
+    "none": "Vos invitations et les documents reçus apparaîtront ici.",
+    "formTitle": "Inviter un fournisseur",
+    "linkedTo": "Pour la fiche « {{product}} »",
+    "name": "Le fournisseur",
+    "nameRequired": "Son nom ou celui de sa société.",
+    "contact": "WeChat, e-mail ou téléphone (facultatif)",
+    "contactHint": "Pour vous : le fournisseur ne voit pas ce champ.",
+    "language": "Sa langue",
+    "docs": "Les documents à déposer",
+    "docsRequired": "Choisissez au moins un document.",
+    "message": "Un mot pour lui (facultatif)",
+    "messageHint": "Il le lit tel quel : écrivez-le dans sa langue, ou en anglais.",
+    "due": "Pour quand (facultatif)",
+    "create": "Créer le lien",
+    "dueShort": "pour le {{date}}",
+    "status": {
+      "open": "Ouvert",
+      "expired": "Expiré",
+      "revoked": "Fermé"
+    },
+    "newLink": "Nouveau lien",
+    "revoke": "Fermer le lien",
+    "revokeTitle": "Fermer ce lien ?",
+    "revokeText": "Le fournisseur ne pourra plus rien déposer. Les documents déjà reçus restent dans votre dossier.",
+    "shareTitle": "Envoyez ce lien à votre fournisseur",
+    "shareIntro": "Collez le message dans WeChat ou WhatsApp. Votre fournisseur n’a pas besoin de compte.",
+    "shareCta": "Partager le message",
+    "copyLink": "Copier le lien seul",
+    "linkOnce": "Pour votre sécurité, ce lien ne sera plus affiché. Perdu ? Créez-en un nouveau depuis l’invitation : l’ancien cessera de marcher.",
+    "linkLabel": "Lien",
+    "messageLabel": "Message",
+    "shareMessage": "Bonjour {{supplier}},\n{{importer}} vous demande de déposer ces documents : {{docs}}.\n{{link}}\nPas besoin de compte. Merci !"
+  },
+  "tasks": {
+    "title": "À faire"
   }
 }

@@ -80,8 +80,9 @@ const sections: LegalSection[] = [
             </>,
             <>
               <span style={B}>Dossiers douane</span> — si vous utilisez nos outils douane&nbsp;: la
-              description et les photos des produits à classer, la conversation avec l'assistant, et les
-              déclarations en douane que vous nous confiez.
+              description et les photos des produits à classer, la conversation avec l'assistant, les
+              déclarations en douane que vous nous confiez, et les documents que vos fournisseurs déposent
+              par le lien que vous leur envoyez (factures, colisage, fiches techniques).
             </>,
             <>
               <span style={B}>Échanges avec nous</span> — messages du support, pièces jointes, historique

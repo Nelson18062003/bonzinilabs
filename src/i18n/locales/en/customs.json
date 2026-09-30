@@ -20,7 +20,9 @@
     "auditTitle": "Check a customs declaration (DAU)",
     "auditDesc": "Every tax recomputed, every code checked against its description. What can be claimed back, and by when.",
     "watchTitle": "Customs watch",
-    "watchDesc": "What is changing in the rules, what is delaying goods."
+    "watchDesc": "What is changing in the rules, what is delaying goods.",
+    "suppliersTitle": "My suppliers",
+    "suppliersDesc": "A link for your supplier to upload the final invoice, packing list and product sheet."
   },
   "sim": {
     "title": "Duty and tax simulator",
@@ -222,7 +224,8 @@
     "letterDownload": "Download",
     "brokerApproved": "Code approved: {{code}}",
     "brokerChanged": "Code retained: {{code}}",
-    "proposedCodes": "Proposed codes:"
+    "proposedCodes": "Proposed codes:",
+    "askSupplier": "Ask the supplier for the product sheet"
   },
   "review": {
     "title": "Classification review",
@@ -503,5 +506,100 @@
       "publishedNotified": "Notice published: {{count}} clients notified",
       "saved": "Draft saved"
     }
+  },
+  "supplier": {
+    "hello": "Hello {{name}},",
+    "title": "{{importer}} (Cameroon) is asking you for a few documents",
+    "intro": "They are needed to clear your goods through customs in Cameroon. Upload each file below: the importer is notified immediately. No account needed.",
+    "due": "Please upload by {{date}}",
+    "messageFrom": "Message from {{importer}}",
+    "upload": "Upload file",
+    "addAnother": "Add another file",
+    "uploading": "Uploading…",
+    "file": "File",
+    "sgsTip": "Please also upload it on export-cm.sgs.com as soon as the goods ship: SGS Cameroon checks it before arrival.",
+    "privacy": "Your files go only to {{importer}} and their licensed customs broker in Cameroon. Formats: PDF, JPG, PNG, WebP; 10 MB max.",
+    "invalidTitle": "Link expired",
+    "kind": {
+      "final_invoice": "Final commercial invoice",
+      "proforma": "Proforma invoice",
+      "packing_list": "Packing list",
+      "product_sheet": "Product specification sheet",
+      "photos": "Product photos",
+      "certificate_origin": "Certificate of origin",
+      "other": "Other document"
+    },
+    "hint": {
+      "final_invoice": "With the real amounts, quantities and HS codes. The SGS inspection in Cameroon checks it.",
+      "proforma": "The quotation issued before payment.",
+      "packing_list": "Number of packages, weights and dimensions.",
+      "product_sheet": "What the product is, its material, how it works, its power: this decides the customs code.",
+      "photos": "The product, its label and its nameplate.",
+      "certificate_origin": "Issued by CCPIT or Chinese customs.",
+      "other": "Any other document the importer asked for."
+    },
+    "error": {
+      "invalid_or_expired": "This link is no longer valid. Ask the importer for a new one.",
+      "file_type": "PDF, JPG, PNG or WebP only.",
+      "file_size": "10 MB maximum per file.",
+      "too_many_files": "Too many files on this link.",
+      "kind_not_requested": "This document was not requested.",
+      "no_file": "Choose a file.",
+      "bad_request": "Upload failed. Please try again.",
+      "server": "Upload failed. Please try again."
+    }
+  },
+  "suppliers": {
+    "title": "My suppliers",
+    "tagline": "The right documents, straight from your supplier.",
+    "intro": "Without a final invoice filed in time, SGS may use a much higher value: 2,311,829 F too much on a Toyota Fortuner. Send your supplier a link: they upload, you are notified.",
+    "invite": "Invite a supplier",
+    "none": "Your invitations and the documents received will appear here.",
+    "formTitle": "Invite a supplier",
+    "linkedTo": "For the file “{{product}}”",
+    "name": "The supplier",
+    "nameRequired": "Their name or their company's.",
+    "contact": "WeChat, e-mail or phone (optional)",
+    "contactHint": "For you: the supplier does not see this field.",
+    "language": "Their language",
+    "docs": "Documents to upload",
+    "docsRequired": "Choose at least one document.",
+    "message": "A note for them (optional)",
+    "messageHint": "They read it as is: write it in their language, or in English.",
+    "due": "By when (optional)",
+    "create": "Create the link",
+    "dueShort": "by {{date}}",
+    "status": {
+      "open": "Open",
+      "expired": "Expired",
+      "revoked": "Closed"
+    },
+    "newLink": "New link",
+    "revoke": "Close the link",
+    "revokeTitle": "Close this link?",
+    "revokeText": "The supplier will not be able to upload anything. Documents already received stay in your folder.",
+    "shareTitle": "Send this link to your supplier",
+    "shareIntro": "Paste the message into WeChat or WhatsApp. Your supplier does not need an account.",
+    "shareCta": "Share the message",
+    "copyLink": "Copy the link only",
+    "linkOnce": "For your security, this link will not be shown again. Lost it? Create a new one from the invitation: the old one will stop working.",
+    "linkLabel": "Link",
+    "messageLabel": "Message",
+    "shareMessage": "Hello {{supplier}},\n{{importer}} asks you to upload these documents: {{docs}}.\n{{link}}\nNo account needed. Thank you!"
+  },
+  "tasks": {
+    "title": "To do",
+    "answer_broker": "The broker is waiting for your answer on “{{product}}”.",
+    "sign_code": "Have the code for “{{product}}” signed by a licensed broker.",
+    "retry_read": "Reading of declaration {{dau}} did not succeed: retry, or send it to the broker.",
+    "review_dau": "Declaration {{dau}}: {{amount}} at stake. Have it reviewed by a licensed broker.",
+    "claim_deadline_one": "Claim {{amount}} on declaration {{dau}}: {{days}} day left.",
+    "claim_deadline_other": "Claim {{amount}} on declaration {{dau}}: {{days}} days left.",
+    "claim_deadline": "Claim {{amount}} on declaration {{dau}}: {{days}} days left.",
+    "supplier_docs_one": "{{supplier}} uploaded {{count}} document.",
+    "supplier_docs_other": "{{supplier}} uploaded {{count}} documents.",
+    "supplier_docs": "{{supplier}} uploaded {{count}} documents.",
+    "supplier_waiting": "{{supplier}} has not uploaded anything yet: follow up.",
+    "read_notice": "Watch: “{{title}}” concerns your products."
   }
 }

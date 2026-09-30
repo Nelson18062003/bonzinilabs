@@ -82,4 +82,6 @@ export const customsKeys = {
   queue: () => [...customsKeys.all, 'queue'] as const,
   audit: (id: string | undefined) => [...customsKeys.all, 'audit', id] as const,
   notices: (scope: 'public' | 'admin') => [...customsKeys.all, 'notices', scope] as const,
+  invites: () => [...customsKeys.all, 'invites'] as const,
+  supplierInvite: (token: string | undefined) => [...customsKeys.all, 'supplier-invite', token] as const,
 };

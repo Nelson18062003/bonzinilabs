@@ -20,7 +20,9 @@
     "auditTitle": "核查报关单（DAU）",
     "auditDesc": "逐项重算税费，逐条核对编码与品名。可申请退还的金额及截止日期。",
     "watchTitle": "海关动态",
-    "watchDesc": "法规变化与影响货物的延误。"
+    "watchDesc": "法规变化与影响货物的延误。",
+    "suppliersTitle": "我的供应商",
+    "suppliersDesc": "给供应商一个链接，上传最终发票、装箱单和产品规格书。"
   },
   "sim": {
     "title": "关税与税费模拟器",
@@ -222,7 +224,8 @@
     "letterDownload": "下载",
     "brokerApproved": "编码已确认：{{code}}",
     "brokerChanged": "最终编码：{{code}}",
-    "proposedCodes": "推荐编码："
+    "proposedCodes": "推荐编码：",
+    "askSupplier": "向供应商索取产品规格书"
   },
   "review": {
     "title": "归类审核",
@@ -493,5 +496,98 @@
       "publishedNotified": "动态已发布：已通知 {{count}} 位客户",
       "saved": "草稿已保存"
     }
+  },
+  "supplier": {
+    "hello": "{{name}}，您好：",
+    "title": "{{importer}}（喀麦隆）请您提供以下文件",
+    "intro": "这些文件用于您的货物在喀麦隆清关。请在下方逐一上传，进口商会立即收到通知。无需注册。",
+    "due": "请在 {{date}} 前上传",
+    "messageFrom": "{{importer}} 的留言",
+    "upload": "上传文件",
+    "addAnother": "再上传一个文件",
+    "uploading": "上传中……",
+    "file": "文件",
+    "sgsTip": "发货后请同时上传至 export-cm.sgs.com：SGS 喀麦隆会在货物到港前核对。",
+    "privacy": "您的文件仅提供给 {{importer}} 及其在喀麦隆的持证报关行。格式：PDF、JPG、PNG、WebP，最大 10 MB。",
+    "invalidTitle": "链接已失效",
+    "kind": {
+      "final_invoice": "最终商业发票",
+      "proforma": "形式发票",
+      "packing_list": "装箱单",
+      "product_sheet": "产品规格书",
+      "photos": "产品照片",
+      "certificate_origin": "原产地证书",
+      "other": "其他文件"
+    },
+    "hint": {
+      "final_invoice": "请填写实际金额、数量和 HS 编码。喀麦隆 SGS 检验会核对此发票。",
+      "proforma": "付款前出具的报价单。",
+      "packing_list": "件数、重量和尺寸。",
+      "product_sheet": "产品是什么、材质、工作原理、功率——这决定海关编码。",
+      "photos": "产品本身、标签和铭牌。",
+      "certificate_origin": "由中国贸促会或海关签发。",
+      "other": "进口商要求的其他文件。"
+    },
+    "error": {
+      "invalid_or_expired": "此链接已失效，请向进口商索取新链接。",
+      "file_type": "仅限 PDF、JPG、PNG 或 WebP 文件。",
+      "file_size": "每个文件最大 10 MB。",
+      "too_many_files": "此链接上传的文件过多。",
+      "kind_not_requested": "未要求此文件。",
+      "no_file": "请选择文件。",
+      "bad_request": "上传失败，请重试。",
+      "server": "上传失败，请重试。"
+    }
+  },
+  "suppliers": {
+    "title": "我的供应商",
+    "tagline": "正确的文件，直接来自您的供应商。",
+    "intro": "如果没有按时提交最终发票，SGS 可能采用高得多的价值：一辆丰田 Fortuner 因此多缴了 2,311,829 中非法郎。给供应商发一个链接：对方上传，您即时收到通知。",
+    "invite": "邀请供应商",
+    "none": "您的邀请和收到的文件将显示在这里。",
+    "formTitle": "邀请供应商",
+    "linkedTo": "用于归类单“{{product}}”",
+    "name": "供应商",
+    "nameRequired": "请填写供应商或其公司名称。",
+    "contact": "微信、邮箱或电话（可选）",
+    "contactHint": "仅供您参考：供应商看不到此栏。",
+    "language": "供应商语言",
+    "docs": "需要上传的文件",
+    "docsRequired": "请至少选择一种文件。",
+    "message": "给供应商的留言（可选）",
+    "messageHint": "供应商会看到原文：请用其语言或英文书写。",
+    "due": "截止日期（可选）",
+    "create": "生成链接",
+    "dueShort": "截至 {{date}}",
+    "status": {
+      "open": "开放",
+      "expired": "已过期",
+      "revoked": "已关闭"
+    },
+    "newLink": "新链接",
+    "revoke": "关闭链接",
+    "revokeTitle": "关闭此链接？",
+    "revokeText": "供应商将无法再上传。已收到的文件仍保留在您的档案中。",
+    "shareTitle": "把链接发给您的供应商",
+    "shareIntro": "把消息粘贴到微信或 WhatsApp。供应商无需注册。",
+    "shareCta": "分享消息",
+    "copyLink": "仅复制链接",
+    "linkOnce": "为了安全，此链接不会再次显示。丢失了？可在邀请中生成新链接，旧链接随即失效。",
+    "linkLabel": "链接",
+    "messageLabel": "消息",
+    "shareMessage": "{{supplier}}，您好！\n{{importer}} 请您上传以下文件：{{docs}}。\n{{link}}\n无需注册。谢谢！"
+  },
+  "tasks": {
+    "title": "待办",
+    "answer_broker": "报关行正在等您回复“{{product}}”的问题。",
+    "sign_code": "请持证报关行签署“{{product}}”的编码。",
+    "retry_read": "报关单 {{dau}} 识别未成功：请重试，或交给报关行。",
+    "review_dau": "报关单 {{dau}}：涉及 {{amount}}。请持证报关行审核。",
+    "claim_deadline_other": "报关单 {{dau}} 可申请退还 {{amount}}：还剩 {{days}} 天。",
+    "claim_deadline": "报关单 {{dau}} 可申请退还 {{amount}}：还剩 {{days}} 天。",
+    "supplier_docs_other": "{{supplier}} 上传了 {{count}} 个文件。",
+    "supplier_docs": "{{supplier}} 上传了 {{count}} 个文件。",
+    "supplier_waiting": "{{supplier}} 还没有上传任何文件：请催促。",
+    "read_notice": "动态：“{{title}}”涉及您的商品。"
   }
 }

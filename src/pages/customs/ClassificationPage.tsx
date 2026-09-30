@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ArrowUp, Copy, Download, Hourglass, MessageCircleQuestion, Send } from 'lucide-react';
+import { ArrowUp, Copy, Download, Hourglass, MessageCircleQuestion, Send, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { copyToClipboard } from '@/lib/clipboard';
 import {
@@ -189,6 +189,12 @@ export function ClassificationPage() {
 
       {editable && !proposal && !busy && !question && c.status === 'draft' && !classify.isError && c.messages.some((m) => m.author === 'assistant') && (
         <Button variant="subtle" className="w-full" onClick={() => setSheet('submit')}>{t('files.sendDirect', { defaultValue: 'Envoyer au commissionnaire' })}</Button>
+      )}
+
+      {editable && (
+        <Button variant="subtle" className="w-full" onClick={() => navigate(`/douane/fournisseurs?classification=${c.id}`)}>
+          <Users aria-hidden /> {t('files.askSupplier', { defaultValue: 'Demander la fiche technique au fournisseur' })}
+        </Button>
       )}
 
       {c.status !== 'cancelled' && !isSigned(c.status) && (
