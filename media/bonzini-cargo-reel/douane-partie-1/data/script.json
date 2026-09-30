@@ -1,0 +1,112 @@
+{
+ "title": "DOUANE · Apprends à faire — Partie 1 : « Votre carton a un passeport »",
+ "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0)",
+ "facts": "Éléments de taxation = espèce (code SH), valeur, origine (Code CEMAC ch. IV ; fausse déclaration dans l'espèce, la valeur ou l'origine). Valeur en douane = marchandise + transport + assurance (CAF). TVA 19,25 % (17,5 % + 10 % CAC) sur valeur + droit + accises. Tout se déclare, import comme export, même sans droits à payer. Origine = pays de fabrication, pas de provenance. HS 6403 = chaussures dessus cuir, 6404 = dessus textile. Simulateur Bonzini : branche non fusionnée → « bientôt », « d'abord le Cameroun ». Aucun taux par produit, aucun numéro d'article, aucun tarif Bonzini.",
+ "segments": [
+  {
+   "id": "S1",
+   "chapter": "hook",
+   "text": "Votre carton aussi a un passeport. S'il manque une page… il reste bloqué au port.",
+   "tts": "Votre carton aussi a un passeport. S'il manque une page… il reste bloqué au port."
+  },
+  {
+   "id": "S2",
+   "chapter": "bete",
+   "text": "La douane ? La bête noire de tout le monde. Pourtant… vous la connaissez déjà.",
+   "tts": "La douane ? La bête noire de tout le monde. Pourtant… vous la connaissez déjà."
+  },
+  {
+   "id": "S3",
+   "chapter": "bete",
+   "text": "À l'aéroport : passeport, questions, rayons X. Vos cartons ? Pareil.",
+   "tts": "À l'aéroport : passeport, questions, rayons ixe. Vos cartons ? Pareil."
+  },
+  {
+   "id": "S4",
+   "chapter": "porte",
+   "text": "La douane, c'est la porte du pays pour les marchandises. Ce qui entre… et ce qui sort.",
+   "tts": "La douane, c'est la porte du pays pour les marchandises. Ce qui entre… et ce qui sort."
+  },
+  {
+   "id": "S5",
+   "chapter": "papiers",
+   "text": "Son passeport ? Les papiers : la facture, le connaissement, la déclaration.",
+   "tts": "Son passeport ? Les papiers : la facture, le connaissement, la déclaration."
+  },
+  {
+   "id": "S6",
+   "chapter": "questions",
+   "text": "Et au guichet, trois questions. Quoi ? Combien ? D'où ?",
+   "tts": "Et au guichet, trois questions. Quoi ? Combien ? D'où ?"
+  },
+  {
+   "id": "S7",
+   "chapter": "quoi",
+   "text": "Quoi ? Des baskets en cuir ou en tissu : deux codes. Et chaque code a son taux.",
+   "tts": "Quoi ? Des baskets en cuir… ou en tissu : deux codes. Et chaque code a son taux.",
+   "take": 5
+  },
+  {
+   "id": "S8",
+   "chapter": "combien",
+   "text": "Combien ? Marchandise, plus transport, plus assurance. Oui… même le bateau est taxé !",
+   "tts": "Combien ? Marchandise, plus transport, plus assurance. Oui… même le bateau est taxé !"
+  },
+  {
+   "id": "S9",
+   "chapter": "dou",
+   "text": "D'où ? Du pays de fabrication… pas du port de départ.",
+   "tts": "D'où ? Du pays de fabrication… pas du port de départ."
+  },
+  {
+   "id": "S10",
+   "chapter": "note",
+   "text": "La note : le droit de douane, selon le code. Puis la TVA, 19,25 %, sur le tout… droit compris.",
+   "tts": "La note : le droit de douane, selon le code. Puis la TVA, dix-neuf virgule vingt-cinq pour cent, sur le tout… droit compris."
+  },
+  {
+   "id": "S11",
+   "chapter": "conformite",
+   "text": "Mauvais code, valeur trop basse ? Vous risquez une amende… et des retards. Le secret : des papiers vrais, complets, prêts à l'avance.",
+   "tts": "Mauvais code, valeur trop basse ? Vous risquez une amende… et des retards. Le secret : des papiers vrais, complets, prêts à l'avance.",
+   "take": 5
+  },
+  {
+   "id": "S12",
+   "chapter": "export",
+   "text": "Vous exportez ? Ça se déclare aussi, même sans rien à payer.",
+   "tts": "Vous exportez ? Ça se déclare aussi, même sans rien à payer."
+  },
+  {
+   "id": "S13",
+   "chapter": "bonzini",
+   "text": "Chez Bonzini, on veut que vous réussissiez. Bientôt dans l'application : vos frais de douane estimés en quelques questions.",
+   "tts": "Chez Bonzini, on veut que vous réussissiez. Bientôt dans l'application : vos frais de douane estimés en quelques questions.",
+   "take": 4
+  },
+  {
+   "id": "S14",
+   "chapter": "bonzini",
+   "text": "D'abord au Cameroun, puis ailleurs en Afrique.",
+   "tts": "D'abord au Cameroun, puis ailleurs en Afrique."
+  },
+  {
+   "id": "S15",
+   "chapter": "partie2",
+   "text": "Partie 2 : les taxes une par une, la conformité, la simulation… et choisir votre transitaire.",
+   "tts": "Partie deux : les taxes une par une, la conformité, la simulation… et choisir votre transitaire."
+  },
+  {
+   "id": "S16",
+   "chapter": "cta",
+   "text": "Quoi, combien, d'où : laquelle vous bloque ? Dites-le en commentaire.",
+   "tts": "Quoi, combien, d'où : laquelle vous bloque ? Dites-le en commentaire."
+  },
+  {
+   "id": "S17",
+   "chapter": "sign",
+   "text": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.",
+   "tts": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins."
+  }
+ ]
+}
