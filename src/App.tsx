@@ -53,6 +53,7 @@ const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").the
 const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => ({ default: m.NoticesPage })));
 const SuppliersPage = lazy(() => import("./pages/customs/SuppliersPage").then(m => ({ default: m.SuppliersPage })));
 const SupplierUploadPage = lazy(() => import("./pages/customs/SupplierUploadPage").then(m => ({ default: m.SupplierUploadPage })));
+const RoutesPage = lazy(() => import("./pages/customs/RoutesPage").then(m => ({ default: m.RoutesPage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -266,6 +267,7 @@ const App = () => (
                 <Route path="/douane/simulateur" element={<TariffSimulatorPage />} />
                 {/* La veille : publique, comme le simulateur. */}
                 <Route path="/douane/veille" element={<NoticesPage />} />
+                <Route path="/douane/routes" element={<RoutesPage />} />
                 {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
                 <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
                 <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
@@ -356,6 +358,7 @@ const App = () => (
                 <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
                 <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><RoutesPage variant="admin" /></AdminRouteWrapper>} />
                 <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />

@@ -84,4 +84,5 @@ export const customsKeys = {
   notices: (scope: 'public' | 'admin') => [...customsKeys.all, 'notices', scope] as const,
   invites: () => [...customsKeys.all, 'invites'] as const,
   supplierInvite: (token: string | undefined) => [...customsKeys.all, 'supplier-invite', token] as const,
+  observedTransit: (scope: 'public' | 'admin') => [...customsKeys.all, 'observed-transit', scope] as const,
 };

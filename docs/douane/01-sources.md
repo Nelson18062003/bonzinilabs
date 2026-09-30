@@ -99,3 +99,20 @@ signale sur les familles concernées.
 - WITS / TRAINS — <https://wits.worldbank.org>
 - Eurostat Comext, classifications — <https://ec.europa.eu/eurostat/api/dissemination/files/?sort=1&dir=comext%2FCOMEXT_METADATA%2FCLASSIFICATIONS_AND_RELATIONS%2FCLASSIFICATIONS>
 - Dépôt : `docs/cargo/reference/`, `docs/cargo/dossiers/`, `docs/cargo/simulations/`
+- DESNZ, *Greenhouse gas reporting: conversion factors 2023* — <https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2023>
+- GLEC Framework / ISO 14083 — <https://www.smartfreightcentre.org/en/our-programs/emissions-accounting/global-logistics-emissions-council/>
+
+## 7. Routes, délais et émissions (étape 8, `src/lib/logistics/atlas.ts`)
+
+Tout ce qui suit est un **ordre de grandeur**, marqué comme tel à l'écran.
+
+| Donnée | Valeur retenue | Statut |
+|---|---|---|
+| Distance mer | points de passage Chine → Singapour → cap de Bonne-Espérance → golfe de Guinée (tracé de la carte Cargo, sans escales) : Nansha – Kribi ≈ 17 800 km | calculée |
+| Distance air | grand cercle + 95 km (convention GLEC / EN 16258) | calculée |
+| Arrière-pays | Douala – N'Djamena ≈ 1 800 km, Douala – Bangui ≈ 1 450 km, Douala – Yaoundé ≈ 245 km ; rail Camrail Douala – Ngaoundéré ≈ 885 km | à vérifier |
+| Délais | mer 35–50 j, air 3–8 j, port et dédouanement 7–18 j (air 2–5 j), transit 5–12 j, dédouanement à destination 3–10 j | fourchettes de marché, remplacées par nos mesures dès 3 expéditions sur la ligne (RPC `logistics_observed_transit`) |
+| Facteurs d'émission (kg CO₂e / t·km) | mer 0,016 · air 1,1 (avec forçage radiatif) · route 0,107 · rail 0,028 | DESNZ 2023 « freighting goods », arrondis — **à confirmer** avant tout usage déclaratif |
+
+Méthode : ISO 14083 / GLEC Framework (tonnes × km × facteur par tronçon). Le
+pré-acheminement usine → port en Chine n'est pas compté (distance inconnue).

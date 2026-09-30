@@ -20,6 +20,7 @@ declare -A MIGRATIONS=(
   [customs_audit_workflow]="$CUSTOMS"
   [customs_notices]="$CUSTOMS"
   [customs_supplier_invites]="$CUSTOMS"
+  [logistics_observed_transit]="supabase/tests/stub_cargo.sql supabase/migrations/20260930150000_logistics_observed_transit.sql"
 )
 
 suites=("$@")

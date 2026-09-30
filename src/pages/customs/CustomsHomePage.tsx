@@ -6,7 +6,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BellRing, Calculator, FileSearch, ScanLine, Search, Users } from 'lucide-react';
+import { BellRing, Calculator, FileSearch, Route, ScanLine, Search, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -81,6 +81,12 @@ export function CustomsHomePage({ variant = 'client', desktop = false }: { varia
             title={t('hub.watchTitle')}
             subtitle={t('hub.watchDesc')}
             onClick={() => navigate(`${base}/veille`)}
+          />
+          <ListRow
+            leading={<Holder icon={Route} />}
+            title={t('hub.routesTitle')}
+            subtitle={t('hub.routesDesc')}
+            onClick={() => navigate(`${base}/routes`)}
           />
           <ListRow
             leading={<Holder icon={Calculator} />}
