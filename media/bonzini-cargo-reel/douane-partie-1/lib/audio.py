@@ -79,7 +79,9 @@ def main():
     g = dsp.onepole_lp(g, 6.0)
     gf = dsp.onepole_lp(np.where(g < 1, undb(-5), 1.0), 6.0)
     fxb = dsp.lp(fxb, 9500)
-    mu *= undb(-21 - dsp.lufs_integrated(mu)); fxb *= undb(-24.5 - dsp.lufs_integrated(fxb))
+    mu *= undb(-21 - dsp.lufs_integrated(mu))
+    lf = dsp.lufs_integrated(fxb)
+    if np.isfinite(lf): fxb *= undb(-24.5 - lf)
     mix = V + mu * g[:, None] + fxb * gf[:, None]
     mix = dsp.compressor(mix, thr_db=-16, ratio=1.8, att=.01, rel=.2)
     mix = mix * undb(-14 - dsp.lufs_integrated(mix))

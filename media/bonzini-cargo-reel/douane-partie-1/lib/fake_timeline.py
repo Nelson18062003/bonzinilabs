@@ -4,9 +4,9 @@ F = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 script = json.load(open(os.path.join(F, 'data', 'script.json')))['segments']
 t = 0.0; segs = []; prev = None
 for s in script:
-    toks = s['text'].split(' '); dur = len(toks) / 2.79 + .3
+    toks = s['text'].split(' '); nw = sum(1 for x in toks if any(ch.isalnum() for ch in x)); dur = nw / 2.79 + .3
     gap = s['gap'] if 'gap' in s else 1.0 if not segs else 0.9 if s['chapter'] != prev else 0.5
-    start = math.ceil((t + gap) / .5 - 1e-6) * .5; prev = s['chapter']
+    start = math.ceil((t + gap) / .25 - 1e-6) * .25; prev = s['chapter']
     L = [max(1, len(x)) + 3 for x in toks]; tot = sum(L); c = 0; ws = []
     for tok, l in zip(toks, L):
         a = start + dur * c / tot; c += l; ws.append({'w': tok, 's': round(a, 3), 'e': round(start + dur * c / tot, 3)})

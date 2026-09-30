@@ -14,7 +14,7 @@ const svg = fs.readFileSync(path.join(F, 'assets/logo.svg'), 'utf8');
 const logo = [...svg.matchAll(/<path\s+d="([^"]+)"[^>]*fill="([^"]+)"/g)].map(m => { const ys = [...m[1].matchAll(/[-\d.]+,([-\d.]+)/g)].map(q => +q[1]); return { d: m[1], fill: m[2], cy: ys.reduce((a, b) => a + b, 0) / ys.length }; });
 let files = fs.readdirSync(path.join(HERE, 'scenes')).filter(f => f.endsWith('.js') && !f.startsWith('zz_')).sort();
 // --scenes 30_costs,15_junior : load only the shared kit (0x_), the listed scenes, wipes (80_) and captions (90_)
-if (opt('--scenes')) { const want = opt('--scenes').split(','); files = files.filter(f => /^0\d_|^80_|^90_/.test(f) || want.some(w => f.includes(w))); }
+if (opt('--scenes')) { const want = opt('--scenes').split(','); files = files.filter(f => /^[01]\d_|^80_|^90_/.test(f) || want.some(w => f.includes(w))); }
 // real-world photos: every image in assets/photos is handed to the page as a data URL (keeps the canvas untainted)
 const PDIR = path.join(F, 'assets/photos');
 const photos = fs.existsSync(PDIR) ? fs.readdirSync(PDIR).filter(f => /\.(jpe?g|png|webp)$/i.test(f)).map(f => ({ name: f.replace(/\.[^.]+$/, ''), url: `data:image/${/png$/i.test(f) ? 'png' : /webp$/i.test(f) ? 'webp' : 'jpeg'};base64,` + fs.readFileSync(path.join(PDIR, f)).toString('base64') })) : [];
@@ -41,6 +41,7 @@ await Promise.all(Array.from({ length: PAGES }, async (_, w) => {
     await canvas.screenshot({ path: path.join(OUT, String(n).padStart(5, '0') + (JPG ? '.jpg' : '.png')), type: JPG ? 'jpeg' : 'png', quality: JPG ? 92 : undefined });
     if (++done % 150 === 0) console.log(`${done}/${frames.length} ${((Date.now() - t0) / done).toFixed(0)} ms/f`);
   }
+  if (opt('--dump-imbalance') && w === 0) console.log('IMB', await page.evaluate(() => JSON.stringify(window.__imb || {})));
   if (opt('--dump-shakes') && w === 0) fs.writeFileSync(path.resolve(HERE, opt('--dump-shakes')), await page.evaluate(() => JSON.stringify(typeof _shakes !== 'undefined' ? _shakes : [])));   // impacts → sound cues
 }));
 await browser.close(); console.log(`DONE ${done} frames in ${((Date.now() - t0) / 1000).toFixed(1)} s`);

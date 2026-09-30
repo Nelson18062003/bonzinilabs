@@ -5,17 +5,25 @@
   let PAGES = null;
   function paginate() {
     const pages = [];
+    const END = /[.?!…:][\s\u00A0]*»?$/;
+    // glue lone punctuation tokens (« » : ! ? ;) to their word with a no-break space, so no page is just « » »
+    const glue = (ws) => { const out = [];
+      ws.forEach(w => { const last = out[out.length - 1];
+        if (/^[»:!?;%]$/.test(w.w) && last) { last.w += '\u00A0' + w.w; last.e = w.e; }
+        else if (last && last.w === '«') { out[out.length - 1] = { ...w, w: '«\u00A0' + w.w }; }
+        else out.push({ ...w }); });
+      return out; };
     for (const s of TLD.segments) {
-      let cur = [];
+      let cur = []; const SW = glue(s.words);
       const flush = () => { if (cur.length) { pages.push({ seg: s.id, words: cur }); cur = []; } };
-      s.words.forEach((w, i) => {
+      SW.forEach((w, i) => {
         cur.push(w);
         const txt = cur.map(x => x.w).join(' ');
-        const endPunct = /[.?!…:]$/.test(w.w), comma = /,$/.test(w.w);
-        const next = s.words[i + 1];
+        const endPunct = END.test(w.w), comma = /,$/.test(w.w);
+        const next = SW[i + 1];
         if (!next) return flush();
         const tooLong = measure(txt + ' ' + next.w, F()) > MAXW * 1.85;
-        const rest = s.words.slice(i + 1); const restSentence = rest.findIndex(x => /[.?!…:]$/.test(x.w)) + 1 || rest.length;
+        const rest = SW.slice(i + 1); const restSentence = rest.findIndex(x => END.test(x.w)) + 1 || rest.length;
         if (endPunct || tooLong || (comma && cur.length >= 3 && restSentence >= 3)) flush();
       });
       flush();

@@ -1,112 +1,338 @@
 {
- "title": "DOUANE · Apprends à faire — Partie 1 : « Votre carton a un passeport »",
- "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0)",
- "facts": "Éléments de taxation = espèce (code SH), valeur, origine (Code CEMAC ch. IV ; fausse déclaration dans l'espèce, la valeur ou l'origine). Valeur en douane = marchandise + transport + assurance (CAF). TVA 19,25 % (17,5 % + 10 % CAC) sur valeur + droit + accises. Tout se déclare, import comme export, même sans droits à payer. Origine = pays de fabrication, pas de provenance. HS 6403 = chaussures dessus cuir, 6404 = dessus textile. Simulateur Bonzini : branche non fusionnée → « bientôt », « d'abord le Cameroun ». Aucun taux par produit, aucun numéro d'article, aucun tarif Bonzini.",
+ "title": "DOUANE · Apprends à faire — Partie 1 : « Le premier conteneur de Junior »",
+ "voice": "Kyutai TTS 1.6B (CC-BY 4.0) · voix unmute-prod-website/developpeuse-3 (CC0) · tempo naturel",
+ "version": "V2 (story) — V1 rejected: too fast, no coherence, no storytelling",
  "segments": [
   {
    "id": "S1",
    "chapter": "hook",
-   "text": "Votre carton aussi a un passeport. S'il manque une page… il reste bloqué au port.",
-   "tts": "Votre carton aussi a un passeport. S'il manque une page… il reste bloqué au port."
+   "gap": 0.5,
+   "text": "Presque tout l'argent de Junior tient dans une boîte en fer : son premier conteneur, arrivé ce matin à Kribi.",
+   "tts": "Presque tout l'argent de Junior tient dans une boîte en fer : son premier conteneur, arrivé ce matin à Kribi.",
+   "station": "⑧ Mboppi, étal de Junior → début du travelling",
+   "camera": "0:00–0:07 · Plan fixe z 1,0 sur l'étal (x 8200) pendant 2,5 s. Sur « boîte en fer » : dézoom à z 0,3 et départ de l'unique travelling DROITE→GAUCHE le long du fil violet (≈ 370 px/s à l'écran, de 0:03 à 0:09), qui se poursuit en S2.",
+   "visual": "Image 0 déjà pleine : l'étal de Junior, étagères nues (contours de boîtes à la craie), enseigne peinte « JUNIOR · BASKETS ». Junior (t-shirt violet) lit son téléphone de papier : notification « Votre conteneur est arrivé · Kribi ». Juste en dessous, une ancienne notification de l'app Bonzini « Fournisseur réglé en FCFA ✓ » (graine de S26). Un fil de laine violet, noué à l'étagère vide, file hors champ à gauche au bord de la scène. Junior attrape son sac et sort. Au dézoom, on découvre tout le diorama en miniature : la route, la barrière baissée, les guichets, l'arche, le quai.",
+   "onscreen": "MBOPPI · ÉTAGÈRES VIDES"
   },
   {
    "id": "S2",
-   "chapter": "bete",
-   "text": "La douane ? La bête noire de tout le monde. Pourtant… vous la connaissez déjà.",
-   "tts": "La douane ? La bête noire de tout le monde. Pourtant… vous la connaissez déjà."
+   "chapter": "hook",
+   "gap": 0.8,
+   "text": "Dedans, ses baskets pour les fêtes. Devant, sa bête noire : la douane.",
+   "tts": "Dedans, ses baskets pour les fêtes. Devant, sa bête noire : la douane.",
+   "station": "⑦→① toute la route jusqu'au quai de Kribi",
+   "camera": "0:07–0:12 · Fin du travelling à z 0,3 (un minibus de papier avec Junior à la fenêtre nous double vers la gauche). Arrivée sur ① et zoom à z 1,0, cadré entre le conteneur et le bâtiment de douane (x ≈ 850). Sur « bête noire » : légère montée (y −250) pour découvrir le fond.",
+   "visual": "Au fond, le tirage du port de Kribi (duotone vert-crème, scotché, crédit). Une grue de papier pose un conteneur uni, sans marque d'armateur, étiqueté à la main « JUNIOR · MBOPPI » ; le fil violet est noué à sa poignée. Sur « baskets », le flanc coulisse comme un calendrier de l'Avent : piles de boîtes à chaussures, guirlande « FÊTES ». Sur « bête noire », à DROITE, derrière le bâtiment de douane (plan de fond, jamais devant la photo), une immense silhouette de papier noir se déplie vers le haut : gros yeux, dents de travers, étiquette « DOUANE ? » ; comique, pas effrayante. Junior descend du minibus et lève les yeux ; goutte de sueur.",
+   "onscreen": "PORT DE KRIBI · CE MATIN / LA BÊTE NOIRE"
   },
   {
    "id": "S3",
-   "chapter": "bete",
-   "text": "À l'aéroport : passeport, questions, rayons X. Vos cartons ? Pareil.",
-   "tts": "À l'aéroport : passeport, questions, rayons ixe. Vos cartons ? Pareil."
+   "chapter": "secret",
+   "gap": 1.1,
+   "text": "Son secret : le message d'un grand frère. « Petit prix sur facture, mets juste chaussures… moins de douane ! »",
+   "tts": "Son secret : le message d'un grand frère. « Petit prix sur facture, mets juste chaussures… moins de douane ! »",
+   "station": "① Quai → dans le téléphone de Junior",
+   "camera": "0:12–0:20 · Poussée continue (z 1,0 → 3,5) dans le téléphone que Junior sort de sa poche, jusqu'à ce que l'écran remplisse le cadre. Pas de coupe.",
+   "visual": "Tampon « IL Y A 3 MOIS ». Messagerie générique (aucun logo). Contact « Grand frère » : avatar en silhouette à lunettes noires, ton amical. Sa bulle s'écrit mot à mot : « Petit prix sur facture, mets juste ‹ chaussures ›… moins de douane ! ». Sous elle, la bulle de réponse de Junior existe, mais elle est cachée sous un rabat de kraft scotché, scellé d'une pastille ronde violette « ? ».",
+   "onscreen": "IL Y A 3 MOIS"
   },
   {
    "id": "S4",
-   "chapter": "porte",
-   "text": "La douane, c'est la porte du pays pour les marchandises. Ce qui entre… et ce qui sort.",
-   "tts": "La douane, c'est la porte du pays pour les marchandises. Ce qui entre… et ce qui sort."
+   "chapter": "secret",
+   "gap": 0.9,
+   "text": "Qu'a répondu Junior ? Vous le saurez avant la barrière.",
+   "tts": "Qu'a répondu Junior ? Vous le saurez avant la barrière.",
+   "station": "Téléphone → ① quai",
+   "camera": "0:20–0:24 · Le doigt hésite, puis recul hors du téléphone jusqu'au quai (z 3,5 → 1,0). Tenue silencieuse de 0,5 s à la fin.",
+   "visual": "Le rabat frémit, le doigt de Junior hésite au-dessus, puis il range le téléphone dans sa poche arrière : la pastille « ? » dépasse, bien lisible. Elle restera visible pendant tout l'acte 2. La bête, au fond, cligne des yeux.",
+   "onscreen": "SA RÉPONSE ? AVANT LA BARRIÈRE"
   },
   {
    "id": "S5",
-   "chapter": "papiers",
-   "text": "Son passeport ? Les papiers : la facture, le connaissement, la déclaration.",
-   "tts": "Son passeport ? Les papiers : la facture, le connaissement, la déclaration."
+   "chapter": "appel",
+   "gap": 2.0,
+   "text": "Il appelle Tantine Mireille, déjà à Kribi : son poivre doit entrer au port vendredi. Elle répond : « J'arrive ! Au port, chaque jour de trop se paie. »",
+   "tts": "Il appelle Tantine Mireille, déjà à Kribi : son poivre doit entrer au port vendredi. Elle répond : « J'arrive ! Au port, chaque jour de trop se paie. »",
+   "station": "① Quai (appel) — la marge de la table",
+   "camera": "0:24–0:32 · Caméra immobile (z 1,0). Tout arrive par la marge (bord de table, P0) : pas d'aller-retour vers Penja.",
+   "visual": "Junior compose un numéro : du téléphone, un fin cordon violet serpente vers la droite et tire un polaroid dessiné qui glisse depuis la marge. On y voit Mireille (pagne wax, foulard) sur la route, près de son camion chargé de sacs de jute « POIVRE DE PENJA ». Sur « vendredi », son petit agenda de papier s'ouvre dans le polaroid : « VENDREDI · POIVRE → KRIBI », entouré d'orange. Bulle « J'arrive ! ». Le polaroid repart par la marge ; pendant la pause qui suit, Mireille entre dans le champ par la droite, son agenda à la main (page « MER. », note « Au port, chaque jour de trop se paie »).",
+   "onscreen": "TANTINE MIREILLE · EXPORTATRICE / « J'arrive ! »"
   },
   {
    "id": "S6",
-   "chapter": "questions",
-   "text": "Et au guichet, trois questions. Quoi ? Combien ? D'où ?",
-   "tts": "Et au guichet, trois questions. Quoi ? Combien ? D'où ?"
+   "chapter": "porte",
+   "gap": 1.1,
+   "text": "Mireille explique : la douane, c'est la porte du pays pour les marchandises, dans les deux sens.",
+   "tts": "Mireille explique : la douane, c'est la porte du pays pour les marchandises, dans les deux sens.",
+   "station": "① Quai → le bâtiment de douane = LA PORTE DU PAYS",
+   "camera": "0:33–0:39 · Premier mouvement GAUCHE→DROITE, au pas des deux personnages : du conteneur (x 520) au bâtiment de douane du quai (x 1300). À partir d'ici la caméra n'ira plus que vers la droite.",
+   "visual": "Mireille prend Junior par le bras ; groove de marche. Le bâtiment de douane du quai est une arche de papier à deux voies. Une flèche violette « ENTRÉE » y fait passer une boîte à chaussures depuis la mer ; une flèche orange « SORTIE » y fait passer un sac de poivre vers la mer. Bulle de Mireille : un petit dessin de porte. Au fond, un navire de papier arrive pendant qu'un autre repart, devant le tirage de Kribi.",
+   "onscreen": "LA PORTE DU PAYS / ENTRÉE ⇄ SORTIE"
   },
   {
    "id": "S7",
-   "chapter": "quoi",
-   "text": "Quoi ? Des baskets en cuir ou en tissu : deux codes. Et chaque code a son taux.",
-   "tts": "Quoi ? Des baskets en cuir… ou en tissu : deux codes. Et chaque code a son taux.",
-   "take": 5
+   "chapter": "porte",
+   "gap": 0.6,
+   "text": "Cette porte encaisse les droits et taxes pour l'État… et contrôle ce qui passe.",
+   "tts": "Cette porte encaisse les droits et taxes pour l'État… et contrôle ce qui passe.",
+   "station": "① Porte du pays (fronton)",
+   "camera": "0:39–0:44 · Légère poussée sur le fronton (z 1,0 → 1,15).",
+   "visual": "Deux icônes surgissent sur le fronton. Une bourse de tissu glisse le long d'un fil vers un petit bâtiment de papier « ÉTAT » (aucun emblème). Une loupe écarte une boîte à pictogramme de danger et tamponne une boîte ordinaire « CONFORME ». Premier pli de la bête (bruit de papier plié) : 85 %.",
+   "onscreen": "DROITS ET TAXES → ÉTAT / CONTRÔLE : SÛR · CONFORME"
   },
   {
    "id": "S8",
-   "chapter": "combien",
-   "text": "Combien ? Marchandise, plus transport, plus assurance. Oui… même le bateau est taxé !",
-   "tts": "Combien ? Marchandise, plus transport, plus assurance. Oui… même le bateau est taxé !"
+   "chapter": "transitaire",
+   "gap": 1.0,
+   "text": "Premier arrêt : son transitaire, un commissionnaire agréé en douane. Au Cameroun, c'est lui qui déclare.",
+   "tts": "Premier arrêt : son transitaire, un commissionnaire agréé en douane. Au Cameroun, c'est lui qui déclare.",
+   "station": "② Kiosque « TRANSIT »",
+   "camera": "0:44–0:50 · Travelling GAUCHE→DROITE jusqu'au kiosque (x 2300), z 1,0.",
+   "visual": "Petit bureau de papier « TRANSIT » : le transitaire (chemise bleue, lunettes rondes) ; au mur, un cadre « AGRÉÉ EN DOUANE » (texte seul, sans emblème). Bulle de Mireille : « Tes papiers ? ». Junior sort une chemise kraft impeccable ; Mireille hausse les sourcils, bulle « Bien rangé ! » (petit gag).",
+   "onscreen": "COMMISSIONNAIRE AGRÉÉ EN DOUANE = LE TRANSITAIRE"
   },
   {
    "id": "S9",
-   "chapter": "dou",
-   "text": "D'où ? Du pays de fabrication… pas du port de départ.",
-   "tts": "D'où ? Du pays de fabrication… pas du port de départ."
+   "chapter": "transitaire",
+   "gap": 0.8,
+   "text": "Junior lui avait tout transmis à l'avance : facture, connaissement, liste de colisage, et les autres pièces obligatoires. Déclaration déposée avant l'arrivée !",
+   "tts": "Junior lui avait tout transmis à l'avance : facture, connaissement, liste de colisage, et les autres pièces obligatoires. Déclaration déposée avant l'arrivée !",
+   "station": "② Comptoir du transitaire",
+   "camera": "0:50–0:56 · Poussée sur le comptoir (z 1,3), vu de face.",
+   "visual": "Trois feuilles tombent de face sur le comptoir, une par mot, avec un léger écrasement : FACTURE ; CONNAISSEMENT (BL), note manuscrite « papier du bateau » ; LISTE DE COLISAGE, « carton par carton ». Étiquette en coin : « + d'autres pièces, selon le cas ». Le transitaire glisse la DÉCLARATION dans le passeport vert de la marchandise (ruban violet), qui porte déjà un petit tampon discret « AVANT LE DÉPART ✓ ». Nouveau tampon : « DÉCLARÉ · avant l'arrivée ». La bête passe à 75 %.",
+   "onscreen": "FACTURE · CONNAISSEMENT · COLISAGE / DÉCLARÉ AVANT L'ARRIVÉE"
   },
   {
    "id": "S10",
-   "chapter": "note",
-   "text": "La note : le droit de douane, selon le code. Puis la TVA, 19,25 %, sur le tout… droit compris.",
-   "tts": "La note : le droit de douane, selon le code. Puis la TVA, dix-neuf virgule vingt-cinq pour cent, sur le tout… droit compris."
+   "chapter": "questions",
+   "gap": 1.1,
+   "text": "La déclaration répond à trois questions. Quoi ? « Des baskets, dessus en toile », avait précisé Junior. Une description précise donne le bon code… et c'est le code qui fixe le taux.",
+   "tts": "La déclaration répond à trois questions. Quoi ? « Des baskets, dessus en toile », avait précisé Junior. Une description précise donne le bon code… et c'est le code qui fixe le taux.",
+   "station": "③ Guichet des douanes — carte QUOI",
+   "camera": "0:56–1:04 · Travelling GAUCHE→DROITE jusqu'au guichet (x 3300), puis petite poussée sur la carte QUOI (z 1,2).",
+   "visual": "Au-dessus du comptoir pendent trois cartes kraft sur des fils violets : QUOI (violet) · COMBIEN (ambre foncé) · D'OÙ (orange). QUOI se retourne : deux baskets de papier, l'une en cuir brun, l'autre en toile. Junior pointe lui-même celle en toile ; bulle « Dessus en toile ! ». Étiquettes en Martian Mono : « 64 04 · dessus textile » (allumée) et « 64 03 · dessus cuir » (grisée). Sur « le taux », l'étiquette allumée glisse dans un gros livre de papier « TARIF » et se range sous UN seul rabat « TAUX · selon le code ». Aucun chiffre, pas d'échelle, rien qui suggère deux taux différents.",
+   "onscreen": "QUOI ? → LE CODE → LE TAUX / 64 04 TOILE · 64 03 CUIR"
   },
   {
    "id": "S11",
-   "chapter": "conformite",
-   "text": "Mauvais code, valeur trop basse ? Vous risquez une amende… et des retards. Le secret : des papiers vrais, complets, prêts à l'avance.",
-   "tts": "Mauvais code, valeur trop basse ? Vous risquez une amende… et des retards. Le secret : des papiers vrais, complets, prêts à l'avance.",
-   "take": 5
+   "chapter": "questions",
+   "gap": 2.2,
+   "text": "Combien ? Les baskets, plus le transport, plus l'assurance. Et la douane compare les prix.",
+   "tts": "Combien ? Les baskets, plus le transport, plus l'assurance. Et la douane compare les prix.",
+   "station": "③ Guichet — carte COMBIEN",
+   "camera": "1:04–1:10 · Recadrage sur la carte COMBIEN (z 1,2). Pendant la pause qui suit (1,5 s), plan serré sur le transitaire puis sur la poche de Junior.",
+   "visual": "COMBIEN se retourne : une addition de blocs se construit sur le comptoir. Une boîte à chaussures, plus un petit navire découpé dans une vraie photo (légende « photo d'illustration »), plus un parapluie de papier « ASSURANCE », donnent un bloc « VALEUR ». Sur « compare les prix », une règle de papier « LA DOUANE COMPARE » vient se poser contre le bloc. Puis le transitaire regarde par-dessus ses lunettes, bulle « C'est le vrai prix ? ». La main de Junior frôle sa poche ; la pastille « ? » frémit.",
+   "onscreen": "LA BASE : MARCHANDISE + TRANSPORT + ASSURANCE / LA DOUANE COMPARE"
   },
   {
    "id": "S12",
-   "chapter": "export",
-   "text": "Vous exportez ? Ça se déclare aussi, même sans rien à payer.",
-   "tts": "Vous exportez ? Ça se déclare aussi, même sans rien à payer."
+   "chapter": "questions",
+   "gap": 1.5,
+   "text": "D'où ? Du pays de fabrication, pas du port de départ.",
+   "tts": "D'où ? Du pays de fabrication, pas du port de départ.",
+   "station": "③ Guichet — carte D'OÙ",
+   "camera": "1:11–1:15 · Recadrage sur la carte D'OÙ (z 1,2).",
+   "visual": "D'OÙ se retourne : un fil violet relie une petite usine de papier « USINE » (punaise lumineuse « ORIGINE ») à la boîte de baskets. Une seconde punaise est plantée sur une carte postale de port (vraie photo de grue, légende « photo d'illustration ») ; un trait de feutre la barre. Deuxième pli de la bête : 65 %.",
+   "onscreen": "D'OÙ ? L'USINE, PAS LE PORT"
   },
   {
    "id": "S13",
-   "chapter": "bonzini",
-   "text": "Chez Bonzini, on veut que vous réussissiez. Bientôt dans l'application : vos frais de douane estimés en quelques questions.",
-   "tts": "Chez Bonzini, on veut que vous réussissiez. Bientôt dans l'application : vos frais de douane estimés en quelques questions.",
-   "take": 4
+   "chapter": "export",
+   "gap": 1.0,
+   "text": "Le poivre de Mireille passe par les mêmes questions : l'export aussi se déclare, avec ou sans droit de sortie.",
+   "tts": "Le poivre de Mireille passe par les mêmes questions : l'export aussi se déclare, avec ou sans droit de sortie.",
+   "station": "③ Guichet — les cartes pivotent pour Mireille",
+   "camera": "1:15–1:22 · Même cadre, légère montée (z 1,1) pour voir les trois cartes et Mireille.",
+   "visual": "Mireille s'avance. Les trois cartes pivotent de 180° sur leurs fils, verso orange. QUOI : un sac de poivre. COMBIEN : sa facture à son client étranger. D'OÙ : punaise « CAMEROUN · Penja ». Son propre passeport vert (ruban orange) reçoit « DÉCLARÉ · EXPORT ». Deux certificats génériques, sans emblème ni nom d'organisme, glissent dans son dossier : une feuille « PHYTOSANITAIRE · selon le produit » et un globe « ORIGINE · selon le pays du client ». Aucun « 0 F ». La bête passe à 60 %.",
+   "onscreen": "L'EXPORT SE DÉCLARE AUSSI / + CERTIFICATS, SELON LE CAS"
   },
   {
    "id": "S14",
-   "chapter": "bonzini",
-   "text": "D'abord au Cameroun, puis ailleurs en Afrique.",
-   "tts": "D'abord au Cameroun, puis ailleurs en Afrique."
+   "chapter": "note",
+   "gap": 1.2,
+   "text": "La note prévue : le droit de douane, selon le code. Puis la TVA, 19,25 % au taux général, sur le tout, droit compris. Et d'autres lignes, selon le produit et votre situation.",
+   "tts": "La note prévue : le droit de douane, selon le code. Puis la TVA, dix-neuf virgule vingt-cinq pour cent au taux général, sur le tout, droit compris. Et d'autres lignes, selon le produit et votre situation.",
+   "station": "③ Guichet — la note prévue",
+   "camera": "1:22–1:31 · Poussée sur le comptoir (z 1,3), vu de face.",
+   "visual": "Le transitaire imprime un ticket « NOTE PRÉVUE · estimation ». Des blocs de papier s'empilent : « VALEUR » à la base, puis « DROIT DE DOUANE », dont la hauteur est réglée par l'étiquette 64 04 agrafée dessus (aucun chiffre). Sur « TVA », un film violet translucide « TVA 19,25 % · taux général » enveloppe toute la pile, bloc du droit compris. Petit bordereau en marge : « + petites lignes → partie 2 ». Aucun montant.",
+   "onscreen": "DROIT : SELON LE CODE / TVA 19,25 % SUR LE TOUT"
   },
   {
    "id": "S15",
-   "chapter": "partie2",
-   "text": "Partie 2 : les taxes une par une, la conformité, la simulation… et choisir votre transitaire.",
-   "tts": "Partie deux : les taxes une par une, la conformité, la simulation… et choisir votre transitaire."
+   "chapter": "doute",
+   "gap": 2.0,
+   "text": "Junior devient tout pâle… et repense au grand frère.",
+   "tts": "Junior devient tout pâle… et repense au grand frère.",
+   "station": "③ Guichet — gros plan sur Junior",
+   "camera": "1:31–1:35 · Poussée serrée sur Junior (z 1,8).",
+   "visual": "Gag : le visage de papier de Junior est remplacé par une pièce plus pâle ; goutte de sueur. Dans sa poche, le rabat « ? » se soulève d'un millimètre puis retombe. Derrière, la bête regonfle à 90 % et se penche au-dessus de la scène. La musique tombe sur une seule note tenue.",
+   "onscreen": "—",
+   "take": 2
   },
   {
    "id": "S16",
-   "chapter": "cta",
-   "text": "Quoi, combien, d'où : laquelle vous bloque ? Dites-le en commentaire.",
-   "tts": "Quoi, combien, d'où : laquelle vous bloque ? Dites-le en commentaire."
+   "chapter": "scanner",
+   "gap": 1.5,
+   "text": "Le lendemain, son conteneur est choisi pour le scanner. Mireille souffle : « C'est un contrôle normal. Respire. »",
+   "tts": "Le lendemain, son conteneur est choisi pour le scanner. Mireille souffle : « C'est un contrôle normal. Respire. »",
+   "station": "Coupe franche (agenda) → ④ arche du scanner",
+   "camera": "1:35–1:42 · SEULE COUPE FRANCHE du film : la page « MER. → JEU. » de l'agenda de Mireille balaie tout le cadre au premier plan (P0) et révèle la caméra déjà à ④ (x 4300), z 1,0.",
+   "visual": "Jeudi. Le conteneur, sur un camion de papier, roule sous l'arche du scanner, dans une lueur cyan. Aucun code couleur de circuit, aucune ouverture. Bulle de Mireille : « Ça arrive. Respire. ». Junior retient son souffle, joues gonflées. La bête, à 110 %, se penche au-dessus de l'arche.",
+   "onscreen": "CONTRÔLE / « Ça arrive. »"
   },
   {
    "id": "S17",
+   "chapter": "scanner",
+   "gap": 1.5,
+   "text": "Le douanier compare l'image à la liste… et le prix à ce que la douane connaît.",
+   "tts": "Le douanier compare l'image à la liste… et le prix à ce que la douane connaît.",
+   "station": "④ Poste du douanier",
+   "camera": "1:42–1:49 · Glissement vers le poste du douanier (z 1,3). Tenue d'au moins 1 s à la fin (quasi-silence).",
+   "visual": "Le faisceau cyan balaie le conteneur : en négatif apparaissent des rangées de boîtes à chaussures, des baskets dedans. Le douanier (casquette verte, sans insigne, calme, aimable) tient le tirage radio à côté de la liste de colisage et descend les lignes du doigt. Puis il ouvre un livre de papier « LA DOUANE COMPARE » à côté de la facture, sur la ligne du prix. Quasi-silence : battement de cœur, froissement de papier.",
+   "onscreen": "L'IMAGE ↔ LA LISTE / LE PRIX ↔ LA DOUANE COMPARE"
+  },
+  {
+   "id": "S18",
+   "chapter": "revelation",
+   "gap": 2.2,
+   "text": "Tout correspond. Car Junior avait répondu : « Non merci. Vrai prix, vraie description. »",
+   "tts": "Tout correspond. Car Junior avait répondu : « Non merci. Vrai prix, vraie description. »",
+   "station": "④ → téléphone de Junior (révélation)",
+   "camera": "1:50–1:55 · Raccord de forme en mouvement : du tampon rond « CONTRÔLÉ » à la pastille ronde « ? » du téléphone (même taille, même place dans le cadre), z 3,0 ; puis léger recul.",
+   "visual": "Le douanier hoche la tête ; tampon rond « CONTRÔLÉ » sur le passeport. La caméra glisse du tampon rond à la pastille ronde « ? », qui se décolle et libère le rabat. Le rabat se déplie : on lit la bulle de Junior, datée d'il y a 3 mois, « Non merci. Vrai prix, vraie description. ». La musique revient, chaude. Grand pli de la bête : 45 %.",
+   "onscreen": "TOUT CORRESPOND / « Non merci. Vrai prix, vraie description. »"
+  },
+  {
+   "id": "S19",
+   "chapter": "conformite",
+   "gap": 1.1,
+   "text": "Fausse valeur, fausse description pour payer moins : la loi prévoit une amende qui peut aller jusqu'à la valeur de la marchandise.",
+   "tts": "Fausse valeur, fausse description pour payer moins : la loi prévoit une amende qui peut aller jusqu'à la valeur de la marchandise.",
+   "station": "④ Comptoir du douanier",
+   "camera": "1:56–2:01 · Recul sur le comptoir (z 1,1).",
+   "visual": "Bulle de Mireille : « Bien joué ! ». Une balance de papier descend sur le comptoir. Sur un plateau, une seule petite pièce « le droit en moins ». Dans l'autre tombe le conteneur de papier entier, étiqueté « AMENDE » : la balance claque. La bête passe à 35 %. Aucun montant, aucun numéro d'article.",
+   "onscreen": "FAUSSE DÉCLARATION → AMENDE JUSQU'À LA VALEUR"
+  },
+  {
+   "id": "S20",
+   "chapter": "conformite",
+   "gap": 0.8,
+   "text": "Une erreur de bonne foi, signalée à temps, n'est pas lourdement sanctionnée. Le vrai secret : des papiers vrais, complets, prêts à l'avance.",
+   "tts": "Une erreur de bonne foi, signalée à temps, n'est pas lourdement sanctionnée. Le vrai secret : des papiers vrais, complets, prêts à l'avance.",
+   "station": "④ Comptoir — passeport de la marchandise",
+   "camera": "2:01–2:09 · Poussée sur le passeport (z 1,4), puis recul sur Junior.",
+   "visual": "Une petite erreur au crayon, sur une feuille, est gommée par une main levée (« signalée à temps »), dans une douce lumière verte. Puis trois mots se tamponnent un à un sur la couverture du passeport vert : VRAIS · COMPLETS · À L'AVANCE. Junior se redresse, fier.",
+   "onscreen": "BONNE FOI ≠ TRICHE / VRAIS · COMPLETS · À L'AVANCE"
+  },
+  {
+   "id": "S21",
+   "chapter": "sortie",
+   "gap": 1.2,
+   "text": "Junior règle la note par un canal officiel : voici sa quittance.",
+   "tts": "Junior règle la note par un canal officiel : voici sa quittance.",
+   "station": "⑤ Kiosque de paiement",
+   "camera": "2:10–2:14 · Travelling GAUCHE→DROITE jusqu'au kiosque (x 5200), z 1,0. Lumière de vendredi, fin d'après-midi.",
+   "visual": "Le ticket de note reçoit le tampon « CALCULÉE PAR LA DOUANE ». Icônes génériques de canaux officiels (guichet de banque, carte, mobile), sans marque et sans vrai reçu. Un reçu s'imprime, « QUITTANCE », tampon « PAYÉ ». Junior le plie dans son passeport. La bête passe à 25 %.",
+   "onscreen": "CANAL OFFICIEL → QUITTANCE"
+  },
+  {
+   "id": "S22",
+   "chapter": "sortie",
+   "gap": 0.6,
+   "text": "Puis le bon à enlever : sans lui, rien ne sort.",
+   "tts": "Puis le bon à enlever : sans lui, rien ne sort.",
+   "station": "⑤ Kiosque de paiement",
+   "camera": "2:14–2:19 · Plan fixe, z 1,1 ; secousse au tampon.",
+   "visual": "Un grand tampon « BON À ENLEVER » claque sur le passeport (secousse de 4 images). Au premier plan, l'agenda de Mireille : page « VEN. », entourée d'orange. La bête passe à 15 %.",
+   "onscreen": "BON À ENLEVER / SANS LUI, RIEN NE SORT"
+  },
+  {
+   "id": "S23",
+   "chapter": "sortie",
+   "gap": 2.0,
+   "text": "Vendredi, la barrière se lève. La bête noire n'est plus qu'un petit margouillat.",
+   "tts": "Vendredi, la barrière se lève. La bête noire n'est plus qu'un petit margouillat.",
+   "station": "⑥ Barrière de sortie",
+   "camera": "2:19–2:24 · Travelling GAUCHE→DROITE jusqu'à la barrière (x 6100), z 1,0.",
+   "visual": "La barrière se lève sur son attache parisienne, en grinçant ; le camion de Junior sort. La bête achève de se replier jusqu'à devenir un petit margouillat de papier noir, tête orange pliée. Il hoche la tête (comme les margouillats) et saute sur le camion. Bulle de Mireille : « Tu vois ? ». Temps musical d'une seconde.",
+   "onscreen": "SORTIE !"
+  },
+  {
+   "id": "S24",
+   "chapter": "miroir",
+   "gap": 0.8,
+   "text": "En sens inverse, le poivre de Mireille entre au port : déclaré à l'avance, il est prêt à embarquer.",
+   "tts": "En sens inverse, le poivre de Mireille entre au port : déclaré à l'avance, il est prêt à embarquer.",
+   "station": "⑥ Carrefour — voie d'entrée",
+   "camera": "2:25–2:29 · La caméra monte un peu et recule (z 0,85) pour voir les deux voies.",
+   "visual": "Sur la voie d'en face, le camion de Mireille arrive par la route de Penja (lianes de poivre en papier, sacs de jute « POIVRE DE PENJA ») et entre au port ; les deux camions se croisent en miroir. Au fond, second recadrage du tirage de Kribi : un navire à quai (moment positif). Dans l'agenda, « VEN. » reçoit sa coche.",
+   "onscreen": "MÊME PORTE, AUTRE SENS"
+  },
+  {
+   "id": "S25",
+   "chapter": "mboppi",
+   "gap": 2.0,
+   "text": "Samedi, à Mboppi, les étagères sont pleines. Au mur, comme un diplôme : sa première quittance.",
+   "tts": "Samedi, à Mbopi, les étagères sont pleines. Au mur, comme un diplôme : sa première quittance.",
+   "station": "⑦ Route → ⑧ Mboppi",
+   "camera": "2:30–2:36 · La caméra suit le camion GAUCHE→DROITE sur la route ; le ciel de papier passe du soir ambre à la nuit violette, puis au matin crème ; arrivée à l'étal (x 8200), z 1,0.",
+   "visual": "La route de papier passe sur le tirage « Douala vu du ciel » (duotone ambre) ; borne « DOUALA · MBOPPI → ». Samedi matin, à l'étal du début : en stop-motion, les boîtes remplissent les étagères et Junior renoue le fil violet à l'étagère pleine. Il accroche la quittance dans un petit cadre au mur ; le margouillat s'installe juste à côté. Une première cliente essaie une paire.",
+   "onscreen": "SAMEDI · MBOPPI / SA PREMIÈRE QUITTANCE"
+  },
+  {
+   "id": "S26",
+   "chapter": "bonzini",
+   "gap": 1.1,
+   "text": "Chez Bonzini, où vous réglez vos fournisseurs en francs CFA, on veut que vous réussissiez.",
+   "tts": "Chez Bonzini, où vous réglez vos fournisseurs en francs CFA, on veut que vous réussissiez.",
+   "station": "⑧ Comptoir → dans le téléphone (app Bonzini)",
+   "camera": "2:37–2:42 · Poussée dans le téléphone de Junior (z 1,0 → 3,5).",
+   "visual": "Bulle de Junior : « La prochaine fois, je saurai avant. ». Poussée dans son téléphone : vraie capture masquée de l'accueil de l'app Bonzini, la même que la notification de S1, où il règle ses fournisseurs en FCFA. Aucun taux, aucun montant.",
+   "onscreen": "VOS FOURNISSEURS, RÉGLÉS EN FCFA"
+  },
+  {
+   "id": "S27",
+   "chapter": "bonzini",
+   "gap": 0.5,
+   "text": "Bientôt dans l'application : vos droits et taxes d'importation, estimés en quelques questions. D'abord au Cameroun ; ensuite, c'est notre ambition, ailleurs en Afrique.",
+   "tts": "Bientôt dans l'application : vos droits et taxes d'importation, estimés en quelques questions. D'abord au Cameroun ; ensuite, c'est notre ambition, ailleurs en Afrique.",
+   "station": "Téléphone → mur de l'étal (carte)",
+   "camera": "2:43–2:50 · Dans le téléphone pendant 4,5 s, puis recul hors du téléphone vers le mur de l'étal (z 1,2).",
+   "visual": "Une carte monte dans l'app : « Combien à la douane ? », avec un autocollant de papier « BIENTÔT · APERÇU ». Deux écrans masqués du simulateur en préparation : le produit tapé avec les mots du marché (« mèches »), puis le résultat ligne par ligne, flouté. Mention permanente en bas : « Estimation · à faire confirmer par un commissionnaire agréé en douane ». Sur « Cameroun », recul vers le mur : la carte du Cameroun en papier s'allume en violet, puis glisse et révèle dessous une Afrique de papier, baignée d'une lueur ambre. Aucun autre pays nommé.",
+   "onscreen": "BIENTÔT · APERÇU / D'ABORD LE CAMEROUN, PUIS L'AFRIQUE"
+  },
+  {
+   "id": "S28",
+   "chapter": "partie2",
+   "gap": 1.0,
+   "text": "Partie 2 : les taxes, la conformité, la simulation, le transitaire.",
+   "tts": "Partie deux : les taxes, la conformité, la simulation, le transitaire.",
+   "station": "⑧ Comptoir de l'étal (dossier Partie 2)",
+   "camera": "2:51–2:56 · Plan fixe sur le comptoir (z 1,2).",
+   "visual": "Sur le comptoir, un dossier kraft « PARTIE 2 » à quatre onglets : TAXES · CONFORMITÉ · SIMULATION · TRANSITAIRE. Chaque onglet se soulève sur son mot. Les trois cartes QUOI · COMBIEN · D'OÙ et le passeport vert glissent dans le dossier.",
+   "onscreen": "PARTIE 2 / TAXES · CONFORMITÉ · SIMULATION · TRANSITAIRE"
+  },
+  {
+   "id": "S29",
+   "chapter": "cta",
+   "gap": 0.9,
+   "text": "Et vous, quelle étape vous fait encore peur ? Dites-le en commentaire.",
+   "tts": "Et vous, quelle étape vous fait encore peur ? Dites-le en commentaire.",
+   "station": "⑧ Devant l'étal",
+   "camera": "2:57–3:00 · Plan d'ensemble de l'étal (z 1,0).",
+   "visual": "La vieille bulle du grand frère réapparaît en grand, en papier, avec deux boutons de papier : « OUI » / « NON MERCI ». Une grande bulle de commentaire vide s'ouvre à côté. Sur le mur, le margouillat tourne la tête vers nous.",
+   "onscreen": "VOUS AURIEZ RÉPONDU QUOI ? / EN COMMENTAIRE"
+  },
+  {
+   "id": "S30",
    "chapter": "sign",
+   "gap": 1.0,
    "text": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.",
-   "tts": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins."
+   "tts": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.",
+   "station": "Tout le diorama (grue finale)",
+   "camera": "3:00–3:07 · Recul lent + rotation de 90° (r = −π/2) : tout le diorama tient en hauteur dans le 9:16, quai en bas, Mboppi en haut. Repli : recul limité à ⑥→⑧. Tenue finale de 2 s.",
+   "visual": "Le monde entier se lit comme une carte : la mer, le quai, les guichets, l'arche, la barrière, la route, l'étal. Le fil violet trace tout le voyage en une seule ligne. Le logo Bonzini Trading Cargo se pose sur le kraft à côté, puis la promesse s'écrit en lettres de papier découpé.",
+   "onscreen": "BONZINI TRADING CARGO / PAYEZ LE JUSTE DROIT. / NI PLUS, NI MOINS."
   }
  ]
 }

@@ -174,13 +174,14 @@ const CREDIT = {
   kribi_crane: 'Port de Kribi · BACHELOR45 (© Le Sorcier) · CC BY 4.0',
   douala_port: 'Port de Douala · gd6d · CC BY 2.0',
   douala_city: 'Douala · christing-O- · CC BY 2.0',
-  douala_satellite: 'Douala · migmasat · domaine public',
+  douala_satellite: 'Douala · migmasat · domaine public · données Copernicus Sentinel',
   containers_cranes: "Photo d'illustration · roy.luck · CC BY 2.0",
   ships_cranes: "Photo d'illustration · foxypar4 · CC BY 2.0",
   port_hazy: "Photo d'illustration · yuukin · CC BY 2.0",
   crane_silhouette: "Photo d'illustration · Bernard Spragg · CC0",
   inspection_dog: "Photo d'illustration · USDA · domaine public",
   ship_cranes_night: "Photo d'illustration · elbfoto · CC BY 2.0",
+  container_ship_deck_aerial_01: "Photo d'illustration · Daniel Ramirez (jdnx) · CC BY 2.0",
 };
 
 // ---------- recurring cast & shared blocks (keep every chapter consistent) -----------------------------

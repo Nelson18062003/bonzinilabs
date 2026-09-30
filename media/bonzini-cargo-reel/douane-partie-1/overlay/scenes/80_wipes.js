@@ -41,7 +41,8 @@
       const chs = TLD.chapters;
       for (let i = 1; i < chs.length; i++) {
         const c = chs[i], k = prog(t, c.start - DUR / 2, c.start + DUR / 2); if (k <= 0 || k >= 1) continue;
-        const st = (window.WIPE_STYLE && window.WIPE_STYLE[c.id]) || STY[(i - 1) % STY.length];
+        if (window.WIPE_CUTS && !window.WIPE_CUTS[c.id]) continue;          // V2: wipes only on the declared hard cuts
+        const st = (window.WIPE_CUTS && window.WIPE_CUTS[c.id]) || (window.WIPE_STYLE && window.WIPE_STYLE[c.id]) || STY[(i - 1) % STY.length];
         if (st === 'none') continue;
         if (st === 'page') pageWipe(k, i); else if (st === 'stripes') stripesWipe(k, i); else tapeWipe(k, i);
       }

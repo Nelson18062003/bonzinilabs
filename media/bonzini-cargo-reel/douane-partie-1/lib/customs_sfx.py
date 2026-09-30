@@ -7,7 +7,7 @@ F = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, os.path.join(F, '..', 'explainer', 'lib', 'audio')); sys.path.insert(0, os.path.dirname(__file__))
 import dsp
 from dsp import SR, ns
-from money_sfx import nz, ex, mix_at, bell, stamp_hit, whoosh_s, pop_s, thud_s, paper_flick, calc_key, calc_beep, marker_squeak, snip, drumroll
+from money_sfx import nz, ex, mix_at, bell, stamp_hit, whoosh_s, pop_s, thud_s, paper_flick, calc_key, calc_beep, marker_squeak, snip, drumroll, printer, coins_pour, coin_drop
 
 def paper_rip(dur=.45, seed=0):
     """tearing paper: dense crackle bursts through a moving band-pass, getting faster"""
@@ -86,6 +86,24 @@ def heart_pops(n=4, seed=0):
     y = np.zeros(ns(.2 * n + .1))
     for k in range(n): mix_at(y, pop_s(seed + k) * .8, k * .14)
     return y
+
+
+def heartbeat(n=6, bpm=72, seed=0):
+    """lub-dub heartbeat (low, soft), n beats"""
+    per = 60 / bpm; y = np.zeros(ns(n * per + .4))
+    for k in range(n):
+        for d, g in ((0, 1.0), (.18, .7)):
+            m = ns(.16); t = np.arange(m) / SR; f = 48 + 30 * np.exp(-t / .03)
+            mix_at(y, np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / .05) * g, k * per + d)
+    return dsp.lp(y, 180) * 1.4
+
+def pad(freqs=(164.8, 246.9, 329.6), dur=4.0, seed=0):
+    """soft held chord (detuned sines, slow attack/release) — the « single held note » of the doubt"""
+    n = ns(dur); t = np.arange(n) / SR; y = np.zeros(n)
+    for i, f in enumerate(freqs):
+        for d in (-.004, .004): y += np.sin(2 * np.pi * f * (1 + d) * t + i) / len(freqs)
+    env = np.minimum(1, t / .8) * np.minimum(1, (dur - t) / 1.2).clip(0, 1)
+    return y * env * .5
 
 def _normed(fn, pk=.9):
     def w(*a, **k):

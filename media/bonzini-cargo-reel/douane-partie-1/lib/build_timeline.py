@@ -6,7 +6,7 @@ from scipy.signal import resample_poly
 
 F = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 SR, BEAT = 48000, 0.25          # quarter-beat grid (still on the 8th-note pulse of the groove)
-TEMPO = float(os.environ.get('TEMPO', '1.04'))   # pitch-preserving speed-up of the narration (ffmpeg atempo)
+TEMPO = float(os.environ.get('TEMPO', '1.0'))    # V2: natural pace (V1 used 1.04 and was judged too fast)
 script = json.load(open(os.path.join(F, 'data', 'script.json')))['segments']
 if os.environ.get('PARTIAL'):   # provisional timeline: only the segments already voiced
     script = [s for s in script if os.path.exists(os.path.join(F, 'audio', 'vo', f"{s['id']}_s1.wav"))]

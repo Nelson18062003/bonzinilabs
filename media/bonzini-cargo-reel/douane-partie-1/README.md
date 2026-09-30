@@ -1,59 +1,73 @@
-# « DOUANE · Apprends à faire — Partie 1 » : « Votre carton a un passeport » (1 min 32)
+# « DOUANE · Apprends à faire — Partie 1 » : « Le premier conteneur de Junior » (3 min 35)
 
-Kraft & Fil world, customs edition: real photos (printed, duotone, x-rayed) + cut-paper motion design.
-One metaphor holds the whole film: **your goods have a passport**. Customs = the airport for goods (passport, questions,
-x-rays), at the entrance *and* the exit. The customs officer always asks **3 questions — QUOI ? · COMBIEN ? · D'OÙ ?**
-(the three elements of taxation: species/HS code, value, origin). Then the bill (duty per code, then VAT 19.25 % on the
-whole, duty included), compliance (« des papiers vrais, complets, prêts à l'avance »), exporters, the Bonzini promise
-and the teaser for part 2. The « bête noire » monster rises at 5 s and flies away as a paper plane at 60 s.
-Same voice as the series (Kyutai TTS 1.6B, CC-BY 4.0 · voice `unmute-prod-website/developpeuse-3`, CC0), sped up 4 %
-(pitch-preserving). Music: bikutsi-flavoured groove synthesised in `lib/bikutsi.py` (12/8 feel, muted-guitar ostinato,
-FM balafon), customs foley in `lib/customs_sfx.py`; impact sounds are placed on the camera shakes the scenes register
-(`render.mjs --dump-shakes data/shakes.json`).
+V2 of the customs episode. V1 (1 min 32, « Votre carton a un passeport », still in git history: commits `2db038e8`,
+`83f90068`) was rejected by the owner: « trop rapide, pas de cohérence, aucun storytelling ». V2 is a full rewrite
+around **one story, one continuous world, one camera**, at a calm pace, with no length cap.
 
-## Voice-over (data/script.json)
-Votre carton aussi a un passeport. S'il manque une page… il reste bloqué au port. · La douane ? La bête noire de tout le
-monde. Pourtant… vous la connaissez déjà. · À l'aéroport : passeport, questions, rayons X. Vos cartons ? Pareil. · La
-douane, c'est la porte du pays pour les marchandises. Ce qui entre… et ce qui sort. · Son passeport ? Les papiers : la
-facture, le connaissement, la déclaration. · Et au guichet, trois questions. Quoi ? Combien ? D'où ? · Quoi ? Des baskets
-en cuir ou en tissu : deux codes. Et chaque code a son taux. · Combien ? Marchandise, plus transport, plus assurance.
-Oui… même le bateau est taxé ! · D'où ? Du pays de fabrication… pas du port de départ. · La note : le droit de douane,
-selon le code. Puis la TVA, 19,25 %, sur le tout… droit compris. · Mauvais code, valeur trop basse ? Vous risquez une
-amende… et des retards. Le secret : des papiers vrais, complets, prêts à l'avance. · Vous exportez ? Ça se déclare aussi,
-même sans rien à payer. · Chez Bonzini, on veut que vous réussissiez. Bientôt dans l'application : vos frais de douane
-estimés en quelques questions. · D'abord au Cameroun, puis ailleurs en Afrique. · Partie 2 : les taxes une par une, la
-conformité, la simulation… et choisir votre transitaire. · Quoi, combien, d'où : laquelle vous bloque ? Dites-le en
-commentaire. · Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.
+**The story.** Junior, a young trader from Mboppi (Douala), has almost all his money in one tin box: his first container,
+just arrived at Kribi. Inside: his sneakers for the holidays. In front of it: his « bête noire », customs. Three months
+earlier a « grand frère » texted him « Petit prix sur facture, mets juste "chaussures"… moins de douane ! »; Junior's
+answer stays hidden under a kraft flap sealed with a violet « ? » sticker (open loop, revealed after the scanner, 2:12). Tantine Mireille,
+a pepper exporter already at Kribi for her Friday shipment, walks him through the port, station by station:
+the gate of the country (both directions) → his transitaire, a licensed customs broker who declares for him
+(papers sent in advance, declaration filed before arrival) → the counter's three questions **QUOI ? · COMBIEN ? · D'OÙ ?**
+(precise description → code → rate; goods + transport + insurance, « la douane compare »; country of manufacture, not
+port of departure) → Mireille's export declaration → the expected bill (duty by code, then VAT 19.25 % general rate on
+the whole, duty included, + other lines → part 2) → doubt → the scanner the next day (« C'est un contrôle normal.
+Respire. ») → everything matches, the flap opens: « Non merci. Vrai prix, vraie description. » → the balance (fraud: a fine
+up to the value of the goods; a good-faith error reported in time is not heavily punished) → payment through an official
+channel, receipt, « bon à enlever » → Friday the barrier lifts, the beast shrinks into a paper « margouillat » → Mireille's
+pepper goes in the other way → Saturday in Mboppi, full shelves, the first receipt framed « comme un diplôme ». Then
+Bonzini (« où vous réglez vos fournisseurs en francs CFA ») and the customs-fee estimate coming **bientôt** in the app,
+Cameroon first, Africa as an ambition; part 2 teaser; comment prompt; signature « Payez le juste droit. Ni plus, ni moins. »
 
-## Facts used (verified by a research + adversarial-verification pass)
-- Taxation elements = species (HS code), value, origin (CEMAC customs code, ch. IV; false declaration « dans l'espèce,
-  la valeur ou l'origine »). Customs value = goods + transport + insurance (CAF). Origin = country of manufacture, not of shipment.
-- VAT 19.25 % (17.5 % + 10 % communal additional cents), general rate, charged on value + duty + excise.
-- HS headings 6403 (footwear, leather uppers) / 6404 (textile uppers) — the only codes shown for the example; **no duty rate per product**
-  is ever shown (TEC CEEAC-CEMAC 2026 applies 0–40 %, line-level rates still unclear) and **no article number** (the
-  harmonised CEEAC-CEMAC customs code in force since 1/1/2026 may have renumbered the 2019 code).
-- Exports are declared too; most finished goods leave without duty; certificates depend on the product.
-- In Cameroon the declaration goes through a licensed customs broker (« commissionnaire agréé en douane ») — the
-  on-screen note says « faite par un commissionnaire agréé ».
-- Bonzini customs module: built on branch `claude/bonzini-cameroon-tariff-3b9uli` (not merged, not in production) →
-  « bientôt », « d'abord au Cameroun » (other countries = ambition, no written roadmap), « en quelques questions » (4 questions),
-  promise « Payez le juste droit. Ni plus, ni moins. » (customs.json). On screen: real screenshots of that branch, **masked**
-  (`lib/mask_app.py`: no product rate, no computed amount, no CNY rate field, no unverified claim), stamped « BIENTÔT · APERÇU »,
-  with « Estimation indicative : le montant final est fixé par la douane ». An official simulator (SIMPA, Guichet unique) exists:
-  Bonzini is never called « the first ».
-- Groupage: nothing is said about whose name groupage declarations carry; no BZ label on a blocked/scanned carton
-  (Junior's carton has a handwritten « JUNIOR · MBOPPI » label).
+**The world.** A single paper diorama laid along the table (`GROUND = 1150`), stations placed in world x:
+sea −700 · quai 520 · porte 1300 · transit 2300 · guichet 3300 · scanner 4300 · caisse 5200 · barrière 6100 · route 7150 ·
+Mboppi 8200. The camera travels right→left once (the hook: Mboppi stall → the quay), then only left→right at the
+characters' walking pace, and ends on a crane shot where the whole journey becomes one line. Things put down stay put;
+the only hard cut is Mireille's diary page « MER. → JEU. ». Time of day tints the sky (Wednesday morning → golden
+Friday → evening road → Saturday morning). Real photos appear as prints pinned into the set (Kribi quay, Douala seen
+from space on the road, captioned illustrations at the counter, masked app captures for the Bonzini beat).
+
+Voice: Kyutai TTS 1.6B (CC-BY 4.0), voice `unmute-prod-website/developpeuse-3` (CC0), same voice as the series, natural
+tempo (1.0). Music: the bikutsi groove of `lib/bikutsi.py`, with a story-driven level map (silence under the doubt,
+heartbeat under the scanner, bass under the balance, full band at the barrier); customs foley in `lib/customs_sfx.py`;
+impacts placed on the camera shakes the scenes register. Mix −14 LUFS, voice ≈ 12 LU over the bed.
+
+## Voice-over (data/script.json, 30 segments)
+See `data/script.json` (fields `text`, `tts`, `station`, `camera`, `visual`, `onscreen` per segment) and the real
+timeline `data/timeline.json` (215.25 s, word timings). Chapters: hook 0:00 · secret 0:12 · appel 0:25 · porte 0:35 ·
+transitaire 0:46 · questions 1:04 · export 1:28 · note 1:36 · doute 1:49 · scanner 1:54 · révélation 2:09 ·
+conformité 2:16 · sortie 2:33 · miroir 2:48 · Mboppi 2:54 · Bonzini 3:01 · partie 2 3:18 · CTA 3:23 · signature 3:28.
+
+## Facts and brand rules (research + adversarial checks; `data/v2_deltas.md` overrides the bible)
+- Only figures on screen: VAT **19.25 %** (general rate) and the heading **« 64 04 »** (textile uppers). No duty rate per
+  product, no real customs amount, no article number.
+- In Cameroon the declaration is made by a **commissionnaire agréé en douane** (said in the voice-over; never written
+  « commissionnaire = transitaire »). Exports are declared too, « avec ou sans droit de sortie ».
+- Fraud: « la loi prévoit une amende qui peut aller jusqu'à la valeur de la marchandise »; good faith reported in time
+  « n'est pas lourdement sanctionnée ». Delays: « ici, tout était prêt · les délais varient ».
+- Payment « par un canal officiel » at a generic kiosk (bank / card / mobile icons), generic receipt (never the real one).
+- Bonzini: no payment link to this container; the customs estimate is **bientôt** (never « disponible », never « le
+  premier »: the official SIMPA simulator exists), « en quelques questions », masked captures stamped « BIENTÔT · APERÇU »
+  + « Estimation · à faire confirmer par un commissionnaire agréé en douane »; Africa = « notre ambition ».
+- No official emblems, no carrier marks, no « BZ » label on the container (handwritten « JUNIOR · MBOPPI »); nothing
+  said about whose name groupage is declared in.
 
 ## Photos (not committed — sources and licences in `PHOTO_CREDITS.md`)
-Real Cameroonian ports only where the picture is positive (Kribi deep-sea port, port of Douala, Wouri estuary); foreign
-ports are captioned « photo d'illustration ». Carrier marks and port-authority signs are painted out in the scenes' processed copies.
 
 ## Part 2
-Plan + draft voice-over: `PARTIE_2.md` (taxes one by one, compliance before shipment, simulation, choosing a licensed customs broker).
+Plan + draft voice-over: `PARTIE_2.md` (taxes one by one, compliance, simulation, choosing the transitaire).
 
 ## Pipeline
-`lib/tts_kyutai.py` (takes) → `lib/check_takes.py` (ASR check) → `lib/build_timeline.py` (TEMPO=1.04, 0.25 s grid) →
-`overlay/render.mjs --mb 3 --jpg [--dump-shakes ../data/shakes.json]` → `lib/audio.py` (+ `cues.py`, `bikutsi.py`, `customs_sfx.py`)
-→ `lib/encode.sh`. Scenes: `20_hook` · `22_bete` · `30_porte` · `32_papiers` · `34_questions` · `40_quoi` · `42_combien` · `44_dou` ·
-`50_note` · `52_conformite` · `60_export` · `65_bonzini` · `70_partie2` · `72_cta` · `74_sign`; shared props in `06_photo`, `07_customs`,
-`08_props`; rules and shot list in `SCENE_GUIDE.md` and `data/shots.md`.
+`lib/tts_kyutai.py` (takes) → `lib/check_takes.py` (ASR check, faster-whisper) → `lib/build_timeline.py` (TEMPO 1.0,
+0.25 s grid) → `overlay/render.mjs --dump-shakes ../data/shakes.json` (sound cues) → `lib/audio.py` (+ `cues.py`,
+`bikutsi.py`, `customs_sfx.py`, word cues in `data/cues_scenes.json`) → `overlay/render.mjs --out ../out/frames --pages 3
+--mb 3 --jpg` → `lib/encode.sh`.
+Scenes: shared kit `00–08`, the world engine `09_world` (camera, actors, route) · `10_layout` (the plan, word-time helpers,
+camera and walking keys) · `11_ground` · `12_cast` (full-body figures, walk cycle) · `13_stage` · `14_backdrop` (sky, time of
+day) · `15_motifs` (Junior's phone with the « ? » flap, Mireille's diary); stations `20_quai` · `22_porte` · `24_transit` ·
+`26_guichet` · `28_scanner` · `30_caisse` · `32_barriere` · `33_route` · `34_mboppi`; threads `44_bete` (the beast, its
+size per segment) · `46_passeport` (the goods' passport and its stamps); ending `50_bonzini` · `52_partie2` · `54_cta` ·
+`56_sign`. Animator guide: `SCENE_GUIDE_V2.md` (+ `SCENE_GUIDE.md` for the kit API). Story sources: `data/story_brief.md`,
+`data/world_bible_v2.txt`, `data/story_v2_final.json`.

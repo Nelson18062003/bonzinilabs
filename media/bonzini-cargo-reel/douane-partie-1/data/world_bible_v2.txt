@@ -1,0 +1,127 @@
+« LA ROUTE DU CONTENEUR » : UN SEUL MONDE CONTINU
+
+Un seul diorama de papier (théâtre de papier à 4 plans) posé sur la table kraft de l'atelier Kraft & Fil. Il mesure environ 8 700 px monde (≈ 8 écrans à z 1) et se lit de GAUCHE (la mer) à DROITE (Mboppi). Le sol, où posent les pieds des personnages, est à y monde 1150 (y écran ≈ 1150 à z 1). Au-dessus : le décor et le ciel. En dessous : le bord de la table (la « marge »), sous la bande des sous-titres.
+
+PLANS ET PARALLAXE
+- P0, bord de table / marge (p 1,15) : téléphones, polaroid, agenda de Mireille, grands tampons au premier plan.
+- P1, scène (p 1) : personnages, conteneur, camions, guichets, fil violet.
+- P2, décor (p 0,7) : bâtiments, grues, kiosques, route de Penja, tirage satellite.
+- P3, fond (p 0,3) : ciel de papier, tirages photo, la bête noire.
+
+STATIONS, DANS L'ORDRE (x monde du centre)
+① QUAI DE KRIBI (x 0–1500)
+- Bande de mer en papier bleu à gauche, grue portique de papier.
+- Conteneur posé en x 520.
+- Le bâtiment de douane du quai est « LA PORTE DU PAYS » (x 1300) : une arche à deux voies, flèche violette « ENTRÉE » et flèche orange « SORTIE ».
+- P3 : tirage du port de Kribi, seulement à gauche de x 1100.
+② KIOSQUE « TRANSIT » (x 2300) : comptoir, transitaire, cadre « AGRÉÉ EN DOUANE » (texte seul).
+③ GUICHET DES DOUANES (x 3300)
+- Comptoir long et livre « TARIF ».
+- Trois cartes pendues à des fils violets : QUOI (violet), COMBIEN (ambre foncé #C77A12), D'OÙ (orange). Recto = import ; verso orange = export.
+④ ARCHE DU SCANNER (x 4300) : arche, lueur cyan. À droite, le poste du douanier et son livre « LA DOUANE COMPARE ».
+⑤ KIOSQUE DE PAIEMENT (x 5200) : icônes génériques de canaux officiels, imprimante à quittance, tampon « BON À ENLEVER ».
+⑥ BARRIÈRE DE SORTIE + CARREFOUR (x 6100)
+- Barrière rouge et blanc sur attache parisienne, guérite.
+- Deux voies : sortie devant, entrée derrière.
+- La route de Penja descend du fond (P2), avec des lianes de poivre en papier vert.
+- P3 : second recadrage du tirage de Kribi (navire à quai), visible seulement en S23–S24.
+⑦ LA ROUTE (x 6700–7600) : route de papier ocre posée sur le tirage « Douala vu du ciel » (P2, duotone ambre), borne « DOUALA · MBOPPI → ».
+⑧ MBOPPI (x 8200)
+- Étal de Junior : auvent violet, enseigne peinte « JUNIOR · BASKETS », étagères, clou au mur pour le cadre, petite carte du Cameroun punaisée.
+- Étals voisins en silhouette.
+
+LE FIL VIOLET (le chemin)
+Un fil de laine violet est noué à l'étagère vide et court au bord de la scène jusqu'à la poignée du conteneur. C'est le chemin que suit le conteneur.
+- Il est planté en S1–S2, suivi pendant tout l'acte 2 et renoué à l'étagère pleine en S25.
+- Dans le plan final, il trace tout le voyage en une seule ligne.
+- Il ne se tend ni ne se relâche : ce gadget est supprimé.
+
+CAMÉRA
+Une seule caméra 2D (x, y, zoom, rotation), avec une légère respiration « à la main ».
+- Acte 1 : plan fixe sur l'étal pendant 2,5 s, puis dézoom à z 0,3. UN travelling DROITE→GAUCHE lisible (≈ 370 px/s à l'écran) de ⑧ à ① présente tout le monde : route, barrière baissée, guichets, quai. Zoom à z 1 sur le conteneur. S3 pousse dans le téléphone, S4 en ressort, S5 reste immobile (le polaroid arrive par la marge : pas d'aller-retour vers Penja).
+- Actes 2 à 4 : la caméra ne va plus que de GAUCHE à DROITE, au pas des personnages : ①→②→③→④→⑤→⑥→⑦→⑧. Dans une station, seulement de petites poussées (z 1,1 à 1,8) et des retours ; jamais de marche arrière. Les feuilles tombent de face : aucune plongée.
+- Épilogue : poussée dans le téléphone (S26–S27), recul vers le mur, puis le comptoir (S28–S29).
+- Grue finale (S30) : recul et rotation de 90° (r = −π/2). Tout le diorama tient en hauteur dans le 9:16, le quai en bas et Mboppi en haut. Repli si c'est illisible : recul limité à ⑥→⑧.
+
+COUPES FRANCHES : UNE SEULE
+En S16, la page « MER. → JEU. » de l'agenda de Mireille balaie le cadre au premier plan et révèle la caméra déjà à ④. On n'utilise aucun volet (80_wipes.js est désactivé). Tout le reste passe par des mouvements ou des raccords sur objet : poussées dans le téléphone, et en S18 le tampon rond « CONTRÔLÉ » qui devient la pastille ronde « ? ».
+
+LUMIÈRE ET TEMPS
+- Mercredi matin (S1–S15) : crème et bleu pâle, ombres courtes.
+- Jeudi (S16–S20) : même lumière. La lueur cyan reste locale à l'arche ; le reste garde le papier chaud.
+- Vendredi (S21–S24) : fin d'après-midi dorée.
+- S25 : trajet du soir (ciel ambre, puis violet de nuit), puis samedi matin crème à Mboppi, jusqu'à la fin.
+
+MOTIFS (5, pas un de plus)
+1) LA BÊTE NOIRE (monster() : papier noir, yeux ronds, dents de travers, étiquette « DOUANE ? »).
+- Sur P3, toujours dans le tiers droit de l'écran, derrière la station suivante (entre Junior et la sortie). Jamais devant une photo réelle.
+- Taille (100 % ≈ 900 px de haut à z 1) : S2 surgit à 100 · S7 → 85 · S9 → 75 · S12 → 65 · S13 → 60 · S15 regonfle à 90 · S16–S17 à 110, penchée sur l'arche · S18 grand pli → 45 · S19 → 35 · S21 → 25 · S22 → 15.
+- S23 : elle se replie en margouillat de papier noir (≈ 60 px, tête orange pliée) qui hoche la tête et saute sur le camion. S25 : il est posé près du cadre. S29 : il tourne la tête vers nous.
+- Chaque pli s'accompagne d'un bruit de papier plié.
+2) LE PASSEPORT VERT DE LA MARCHANDISE (goodsPassport)
+- Celui de Junior (ruban violet) reçoit ses tampons dans l'ordre : « AVANT LE DÉPART ✓ » (déjà là, discret : les formalités d'avant départ sont pour la partie 2), « DÉCLARÉ · avant l'arrivée » (S9), « CONTRÔLÉ » (S18), « PAYÉ » (S21), « BON À ENLEVER » (S22). En S20, la couverture reçoit « VRAIS · COMPLETS · À L'AVANCE ».
+- Celui de Mireille (ruban orange) reçoit « DÉCLARÉ · EXPORT » (S13).
+3) LE TÉLÉPHONE ET SON RABAT
+- La réponse au grand frère est cachée sous un rabat de kraft scellé d'une pastille ronde violette « ? ».
+- Le téléphone reste dans la poche arrière pendant tout l'acte 2, pastille lisible.
+- Il frémit en S11 et S15 ; la pastille se décolle en S18.
+4) L'AGENDA DE MIREILLE (petit carnet à spirale)
+- S5 : page « MER. », avec la note « Au port, chaque jour de trop se paie », et une languette « VENDREDI · POIVRE → KRIBI » entourée d'orange.
+- S16 : page « JEU. » (la seule coupe). S22 : « VEN. » entouré. S24 : coché.
+- Il remplace le calendrier par station et le feu tricolore, tous deux supprimés.
+5) LE FIL VIOLET (le chemin, voir plus haut).
+Les 3 cartes QUOI · COMBIEN · D'OÙ ne sont pas un motif mais un accessoire de ③, au même dessin qu'en partie 2 : retournées une à une (S10–S12), pivotées de 180° pour Mireille (S13), rangées dans le dossier « PARTIE 2 » (S28).
+
+DISTRIBUTION
+- JUNIOR (juniorFig) : peau SKIN[1], t-shirt violet #A947FE, cheveux courts, pantalon bleu nuit, baskets crème. C'est le costume de « Votre vrai prix de revient ». Accessoires : téléphone à rabat, chemise kraft impeccable, sac. Expressions : smile, worry, shock ; une pièce de visage plus pâle en S15 ; grin.
+- TANTINE MIREILLE (mireilleFig) : peau SKIN[3], pagne wax orange, vert, ambre et violet foncé, foulard noué, jupe, chaussures brunes. Accessoires : agenda, dossier à ruban orange, passeport vert. Son dessin est identique d'un plan à l'autre. Bulles : « J'arrive ! », « Tes papiers ? », « Bien rangé ! », « Ça arrive. Respire. », « Bien joué ! », « Tu vois ? ».
+- LE TRANSITAIRE (brokerFig) : peau SKIN[0], chemise bleue, lunettes rondes. Calme et sérieux, jamais complice. Bulle : « C'est le vrai prix ? ».
+- LE DOUANIER (officerFig) : chemise crème, casquette verte unie, pantalon vert, AUCUN insigne. Aimable, il hoche la tête ; aucune scène de corruption.
+- LE GRAND FRÈRE : seulement un avatar générique dans la messagerie (silhouette à lunettes noires). C'est un pair bien intentionné, jamais le fournisseur ni un agent.
+- FIGURANTS (chauffeurs, la cliente de Mboppi, silhouettes du marché) : génériques.
+
+ACCESSOIRES
+- Conteneur uni, sans armateur, étiqueté à la main « JUNIOR · MBOPPI ». Jamais d'étiquette BZ ni de groupage.
+- Grue ; minibus ; 2 camions (truck).
+- Documents (docSheet) : facture, connaissement, colisage, déclaration.
+- Baskets en cuir et en toile (sneaker), avec les étiquettes « 64 03 · dessus cuir » et « 64 04 · dessus textile ».
+- Livre « TARIF » avec UN SEUL rabat « TAUX · selon le code » (aucun chiffre).
+- Blocs (stackBlock) VALEUR et DROIT DE DOUANE, film violet translucide « TVA 19,25 % · taux général », ticket « NOTE PRÉVUE · estimation », règle et livre « LA DOUANE COMPARE ».
+- Arche (scannerArch) et négatif cyan en papier pur. Balance (pièce « le droit en moins » contre conteneur « AMENDE »). Gomme.
+- Icônes génériques de paiement ; quittance générique (jamais le vrai reçu CAMPOST). Barrière (barrier).
+- Sacs de jute « POIVRE DE PENJA » (sack) ; certificats génériques (feuille « PHYTOSANITAIRE · selon le produit », globe « ORIGINE · selon le pays du client »), sans emblème ni organisme.
+- Cadre pour la quittance ; carte du Cameroun (cmrMap) qui glisse sur une Afrique de papier ; dossier « PARTIE 2 » (folder) ; téléphone (phoneFrame).
+
+PHOTOS RÉELLES
+Ce sont toujours des tirages scotchés à leur place, en duotone, avec le crédit sur le tirage. Jamais en plein écran.
+- kribi_crane (Port autonome de Kribi, BACHELOR45 / Le Sorcier, CC BY 4.0) : fond du quai en S2–S7, pour l'arrivée (moment positif). Second recadrage (navire à quai) derrière la barrière en S23–S24, quand le poivre embarque (positif). Jamais au scanner, à l'amende, ni sous la bête.
+- douala_satellite (migmasat, marque du domaine public) : terrain sous la route en S25, le retour à la maison.
+- ships_cranes (Malte, foxypar4, CC BY 2.0) : petit navire du bloc TRANSPORT en S11, légendé « photo d'illustration ».
+- crane_silhouette (Bernard Spragg, CC0) : carte postale « port de départ » barrée en S12, légendée « photo d'illustration ».
+- Non utilisées : containers_cranes et douala_port (gardées pour la partie 2). Le scanner, l'amende et le doute restent en papier pur.
+- Captures Bonzini : uniquement les versions masquées (app_home, app_m_sugg, app_m_product, app_sim_05_filled, app_m_result), en S26–S27. Elles portent l'autocollant « BIENTÔT · APERÇU » et la mention « Estimation · à faire confirmer par un commissionnaire agréé en douane ».
+- Crédits complets dans la description (PHOTO_CREDITS.md).
+
+PALETTE
+- Fonds : table #F2EADB, crème #FBF6EC, kraft #C79E6C et #9C7447, encre #231629.
+- Couleurs du logo : violet #A947FE (Junior, import, fil), ambre #F3A745 (COMBIEN, soir), orange #FE560D (Mireille, export).
+- Vert douane #0E6B4E (passeports, casquette) ; rouge #C8102E (barrière, tampons) ; cyan XRAY (scanner seulement) ; noir #17111B (bête, margouillat).
+
+TYPOGRAPHIE
+- Big Shoulders Stencil : titres et tampons, 96 px minimum.
+- Bricolage Grotesque : textes à l'écran, 44 px minimum, sur papier opaque.
+- Shantell Sans : bulles et notes manuscrites.
+- Martian Mono : codes 64 03 / 64 04, agenda, quittance.
+- DM Sans : carton Bonzini final.
+- Sous-titres : 90_captions.js (centre à y 1340).
+- Zones sûres : haut 150 px, bas 380 px, pas de texte au-delà de x 960, rien sous la puce de série (x 40–460, y 160–232).
+
+SON
+- Musique : makossa feutré (S1–S4) ; groove de marche dès « J'arrive ! » (S5–S14) ; une seule note tenue (S15) ; quasi-silence et battement de cœur (S16–S17) ; retour chaleureux (S18) ; petit temps triomphal à la barrière (S23) ; ambiance du soir (S25) ; signature.
+- Bruitages : pli de papier, « clac » et secousse de 4 images pour les tampons, page d'agenda, grincement de barrière.
+
+VOIX
+- Voix 3, TEMPO 1,0, sans aucune accélération.
+- Prononciations : Mboppi se dit « Mbopi » ; 19,25 % se lit en toutes lettres ; « Ni plus » se lit « pluss ».
+- Citations du grand frère, de Mireille et de Junior : même voix, léger changement de ton, micro-pause avant les guillemets. Chaque citation est aussi affichée en bulle avec les mêmes mots.
+- Durée estimée à 2,79 mots/s (débit mesuré de la voix 3 sur « prix ») : ≈ 3:05 de parole et de pauses, plus 2 s de tenue finale, soit ≈ 3:07. Si la prise est plus lente, raccourcir les tenues visuelles, jamais les pauses avant S5, S16 et S18.
