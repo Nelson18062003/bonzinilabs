@@ -1,0 +1,59 @@
+{
+ "segments": [
+  {
+   "id": "V01",
+   "text": "Vous achetez vos marchandises en Chine ? Découvrez comment elles arrivent jusqu'à vous, étape par étape.",
+   "tts": "Vous achetez vos marchandises en Chine ? Découvrez comment elles arrivent jusqu'à vous, étape par étape."
+  },
+  {
+   "id": "V02",
+   "text": "Suivez avec nous le parcours de vos colis, avec Bonzini Trading Cargo.",
+   "tts": "Suivez avec nous le parcours de vos colis, avec Bonzini Trading Cargo."
+  },
+  {
+   "id": "V03",
+   "text": "Étape un : l'achat. Tout commence en Chine, chez vos fournisseurs. Vos marchandises sont emballées et préparées pour le voyage.",
+   "tts": "Étape un : l'achat. Tout commence en Chine, chez vos fournisseurs. Vos marchandises sont emballées et préparées pour le voyage."
+  },
+  {
+   "id": "V04",
+   "text": "Étape deux : le groupage. Les colis de plusieurs clients sont réunis dans un même conteneur. Chacun profite ainsi de l'espace partagé.",
+   "tts": "Étape deux : le groupage. Les colis de plusieurs clients sont réunis dans un même conteneur. Chacun profite ainsi de l'espace partagé."
+  },
+  {
+   "id": "V05",
+   "text": "Étape trois : le transport. Le conteneur traverse l'océan par bateau, de la Chine jusqu'en Afrique. Puis il continue sa route par camion, jusqu'à notre entrepôt.",
+   "tts": "Étape trois : le transport. Le conteneur traverse l'océan par bateau, de la Chine jusqu'en Afrique. Puis il continue sa route par camion, jusqu'à notre entrepôt."
+  },
+  {
+   "id": "V06",
+   "text": "Étape quatre : l'arrivée. Le voici, devant notre entrepôt ! Écoutez notre équipe sur place.",
+   "tts": "Étape quatre : l'arrivée. Le voici, devant notre entrepôt ! Écoutez notre équipe sur place."
+  },
+  {
+   "id": "V07",
+   "text": "Étape cinq : le déchargement. Le conteneur est vidé, et vos colis sont rangés à l'abri, dans l'entrepôt.",
+   "tts": "Étape cinq : le déchargement. Le conteneur est vidé, et vos colis sont rangés à l'abri, dans l'entrepôt."
+  },
+  {
+   "id": "V08",
+   "text": "Cartons, sacs, marchandises emballées : tout est rangé en sécurité, en attendant votre passage.",
+   "tts": "Cartons, sacs, marchandises emballées : tout est rangé en sécurité, en attendant votre passage."
+  },
+  {
+   "id": "V09",
+   "text": "Étape six : le retrait. Il ne vous reste plus qu'à venir récupérer vos colis.",
+   "tts": "Étape six : le retrait. Il ne vous reste plus qu'à venir récupérer vos colis."
+  },
+  {
+   "id": "V10",
+   "text": "En résumé : l'achat, le groupage, le transport, l'arrivée, le déchargement… et le retrait. Six étapes, et vos colis arrivent en toute sécurité.",
+   "tts": "En résumé : l'achat, le groupage, le transport, l'arrivée, le déchargement… et le retrait. Six étapes, et vos colis arrivent en toute sécurité."
+  },
+  {
+   "id": "V11",
+   "text": "Bonzini Trading Cargo. Vos colis, en toute sécurité.",
+   "tts": "Bonzini Trading Cargo. Vos colis, en toute sécurité."
+  }
+ ]
+}

@@ -1,0 +1,137 @@
+{
+  "note": "Voix off (VO, voix féminine de synthèse) + citations de l'équipe (SP, audio d'origine nettoyé). Ordre = ordre de diffusion.",
+  "segments": [
+    {
+      "id": "V01",
+      "kind": "vo",
+      "chapter": "hook",
+      "text": "Vous achetez vos marchandises en Chine ? Découvrez comment elles arrivent jusqu'à vous, étape par étape."
+    },
+    {
+      "id": "V02",
+      "kind": "vo",
+      "chapter": "brand",
+      "text": "Suivez avec nous le parcours de vos colis, avec Bonzini Trading Cargo."
+    },
+    {
+      "id": "V03",
+      "kind": "vo",
+      "chapter": "s1",
+      "text": "Étape un : l'achat. Tout commence en Chine, chez vos fournisseurs. Vos marchandises sont emballées et préparées pour le voyage."
+    },
+    {
+      "id": "V04",
+      "kind": "vo",
+      "chapter": "s2",
+      "text": "Étape deux : le groupage. Les colis de plusieurs clients sont réunis dans un même conteneur. Chacun profite ainsi de l'espace partagé."
+    },
+    {
+      "id": "V05",
+      "kind": "vo",
+      "chapter": "s3",
+      "text": "Étape trois : le transport. Le conteneur traverse l'océan par bateau, de la Chine jusqu'en Afrique. Puis il continue sa route par camion, jusqu'à notre entrepôt."
+    },
+    {
+      "id": "V06",
+      "kind": "vo",
+      "chapter": "s4",
+      "text": "Étape quatre : l'arrivée. Le voici, devant notre entrepôt ! Écoutez notre équipe sur place."
+    },
+    {
+      "id": "Q1",
+      "kind": "sp",
+      "chapter": "s4",
+      "clip": "B",
+      "src": [
+        3.62,
+        9.62
+      ],
+      "text": "Voici votre conteneur qui arrive dans notre entrepôt en toute sécurité."
+    },
+    {
+      "id": "Q2",
+      "kind": "sp",
+      "chapter": "s4",
+      "clip": "B",
+      "src": [
+        9.94,
+        15.72
+      ],
+      "text": "Il sera déchargé ici, dans notre entrepôt en toute sécurité."
+    },
+    {
+      "id": "V07",
+      "kind": "vo",
+      "chapter": "s5",
+      "text": "Étape cinq : le déchargement. Le conteneur est vidé, et vos colis sont rangés à l'abri, dans l'entrepôt."
+    },
+    {
+      "id": "Q3",
+      "kind": "sp",
+      "chapter": "s5",
+      "clip": "A",
+      "src": [
+        0.0,
+        5.05
+      ],
+      "text": "Voilà, très chers clients, nous sommes ici à l'entrepôt de Bonzini Trading Cargo."
+    },
+    {
+      "id": "Q4",
+      "kind": "sp",
+      "chapter": "s5",
+      "clip": "A",
+      "src": [
+        5.55,
+        9.66
+      ],
+      "text": "Vos colis ont été déchargés en toute sécurité."
+    },
+    {
+      "id": "V08",
+      "kind": "vo",
+      "chapter": "s5",
+      "text": "Cartons, sacs, marchandises emballées : tout est rangé en sécurité, en attendant votre passage."
+    },
+    {
+      "id": "V09",
+      "kind": "vo",
+      "chapter": "s6",
+      "text": "Étape six : le retrait. Il ne vous reste plus qu'à venir récupérer vos colis."
+    },
+    {
+      "id": "Q5",
+      "kind": "sp",
+      "chapter": "s6",
+      "clip": "A",
+      "src": [
+        9.7,
+        18.68
+      ],
+      "text": "Et nous vous attendons dans notre entrepôt ici, au niveau du foyer Balengou, pour le retrait de vos colis."
+    },
+    {
+      "id": "V10",
+      "kind": "vo",
+      "chapter": "recap",
+      "text": "En résumé : l'achat, le groupage, le transport, l'arrivée, le déchargement… et le retrait. Six étapes, et vos colis arrivent en toute sécurité."
+    },
+    {
+      "id": "Q6",
+      "kind": "sp",
+      "chapter": "outro",
+      "clip": "A",
+      "src": [
+        18.64,
+        23.2
+      ],
+      "text": "Et nous vous disons merci pour votre confiance."
+    },
+    {
+      "id": "V11",
+      "kind": "vo",
+      "chapter": "outro",
+      "text": "Bonzini Trading Cargo. Vos colis, en toute sécurité."
+    }
+  ]
+}
