@@ -12,7 +12,7 @@
  * Desktop d'abord ; sur téléphone tout s'empile et les filtres se replient.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBinanceP2PBook } from '@/hooks/useBinanceP2PBook';
 import {
@@ -144,7 +144,15 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
             </button>
           ))}
         </div>
-        <LiveBadge live={live} fetchedAt={book?.fetchedAt} fetching={q.isFetching} stale={q.isError && !!book} />
+        <LiveBadge fiat={fiat} live={live} fetchedAt={book?.fetchedAt} fetching={q.isFetching} stale={q.isError && !!book} />
+        {/* Actualiser : relevé neuf tout de suite, sans attendre les 30 s (les
+            deux côtés, car le taux affiché dépend des deux) */}
+        <button type="button" disabled={cny.isFetching || xaf.isFetching}
+          onClick={() => { cny.refresh(); xaf.refresh(); }}
+          className={cn(chipCls(true), 'h-9 gap-2 px-4 font-bold disabled:opacity-60')}>
+          <RefreshCw className={cn('h-4 w-4', (cny.isFetching || xaf.isFetching) && 'animate-spin')} />
+          {cny.isFetching || xaf.isFetching ? 'Actualisation…' : 'Actualiser'}
+        </button>
         <button type="button" onClick={() => setLive((l) => !l)} className={cn(chipCls(false), 'h-9 px-4 font-bold')}>
           {live ? 'Pause' : 'Reprendre'}
         </button>
@@ -160,7 +168,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
         <div className="rounded-[10px] border border-border bg-card p-10 text-center">
           <p className="text-[16px] font-bold text-foreground">Impossible de lire le carnet Binance</p>
           <p className="mt-1 text-[14px] text-muted-foreground">{(q.error as Error)?.message}</p>
-          <button type="button" onClick={() => q.refetch()} className={cn(chipCls(true), 'mt-4 h-9 px-4')}>Réessayer</button>
+          <button type="button" onClick={() => q.refresh()} className={cn(chipCls(true), 'mt-4 h-9 px-4')}>Réessayer</button>
         </div>
       ) : !book || !v ? (
         <div className="flex items-center justify-center gap-2 rounded-[10px] border border-border bg-card p-16 text-[14px] text-muted-foreground">
@@ -329,7 +337,10 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function LiveBadge({ live, fetchedAt, fetching, stale }: { live: boolean; fetchedAt?: string; fetching: boolean; stale: boolean }) {
+function LiveBadge({ fiat, live, fetchedAt, fetching, stale }: { fiat: P2PFiat; live: boolean; fetchedAt?: string; fetching: boolean; stale: boolean }) {
+  // Heure du relevé dans le pays du marché affiché (Chine → heure de Chine),
+  // avec l'heure de l'autre pays en rappel.
+  const here = MARKET[fiat], other = MARKET[fiat === 'CNY' ? 'XAF' : 'CNY'];
   // stale : la dernière mise à jour a échoué, on montre l'ancien relevé — le
   // dire, plutôt que d'afficher « En direct » sur des chiffres qui ont vieilli
   const ok = live && !stale;
@@ -340,7 +351,13 @@ function LiveBadge({ live, fetchedAt, fetching, stale }: { live: boolean; fetche
         : stale ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400' : 'bg-muted text-muted-foreground',
     )}>
       <span className={cn('h-2 w-2 rounded-full', ok ? 'bg-emerald-500 animate-pulse' : stale ? 'bg-amber-500' : 'bg-muted-foreground')} />
-      {stale ? 'Mise à jour en échec' : live ? 'En direct' : 'En pause'}{fetchedAt ? ` · relevé de ${fmtClock(fetchedAt)}` : ''}
+      {stale ? 'Mise à jour en échec' : live ? 'En direct' : 'En pause'}
+      {fetchedAt && (
+        <>
+          {` · relevé à ${fmtClock(fetchedAt, here.timeZone)} heure ${here.hourOf}`}
+          <span className="font-medium opacity-75">{`(${fmtClock(fetchedAt, other.timeZone, false)} ${other.placeIn})`}</span>
+        </>
+      )}
       {fetching && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Mise à jour" />}
     </span>
   );

@@ -13,5 +13,5 @@ export function useBinanceP2PBook(fiat: P2PFiat, { live = true }: { live?: boole
     return () => clearInterval(t);
   }, [live, books.length]);
   const data = books[i];
-  return { data, isError: !data, error: data ? null : new Error('Aucun relevé'), isFetching: false, refetch: async () => undefined };
+  return { data, isError: !data, error: data ? null : new Error('Aucun relevé'), isFetching: false, refetch: async () => undefined, refresh: async () => setI((n) => (n + 1) % Math.max(1, books.length)) };
 }

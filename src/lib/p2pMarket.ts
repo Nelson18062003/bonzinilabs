@@ -49,6 +49,11 @@ export interface P2PFilters {
 
 export const MARKET: Record<P2PFiat, {
   label: string;
+  /** fuseau du marché : l'heure d'un relevé se lit dans le pays du marché */
+  timeZone: string;
+  /** « heure de Chine » / « heure du Cameroun » ; « en Chine » / « au Cameroun » */
+  hourOf: string;
+  placeIn: string;
   short: string;
   best: 'max' | 'min';
   bins: number[];
@@ -57,11 +62,11 @@ export const MARKET: Record<P2PFiat, {
   bonziniPay: string[];
 }> = {
   CNY: {
-    label: 'Vente en Chine', short: 'CNY', best: 'max', bins: [0.01, 0.02, 0.05], defaultBin: 0.01,
+    label: 'Vente en Chine', timeZone: 'Asia/Shanghai', hourOf: 'de Chine', placeIn: 'en Chine', short: 'CNY', best: 'max', bins: [0.01, 0.02, 0.05], defaultBin: 0.01,
     amounts: [5_000, 20_000, 100_000, 500_000], bonziniPay: ['ALIPAY', 'WECHAT'],
   },
   XAF: {
-    label: 'Achat au Cameroun', short: 'XAF', best: 'min', bins: [0.5, 1, 2, 5], defaultBin: 1,
+    label: 'Achat au Cameroun', timeZone: 'Africa/Douala', hourOf: 'du Cameroun', placeIn: 'au Cameroun', short: 'XAF', best: 'min', bins: [0.5, 1, 2, 5], defaultBin: 1,
     amounts: [500_000, 1_000_000, 5_000_000, 20_000_000], bonziniPay: [],
   },
 };
