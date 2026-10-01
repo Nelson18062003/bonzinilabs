@@ -97,6 +97,7 @@ const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
 const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
+const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesMarketScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
@@ -329,6 +330,7 @@ const App = () => (
                 <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />

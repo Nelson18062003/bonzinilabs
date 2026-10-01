@@ -106,6 +106,8 @@ import {
 } from '@/mobile/screens/deposits';
 import { MobileNewPayment, BulkPaymentCreate } from '@/mobile/screens/payments';
 import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
+import { MobileRatesMarketScreen } from '@/mobile/screens/rates/MobileRatesMarketScreen';
+import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import {
   MobileAdminsScreen,
   MobileCreateAdmin,
@@ -210,6 +212,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-client-new': { Comp: ShippedCreateClient, route: '/m/clients/new' },
   // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
   'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
+  'real-rates-market': { Comp: () => <DesktopAppShell><DesktopRatesScreen initialView="market" /></DesktopAppShell>, route: '/m/more/rates/market' },
+  'real-rates-market-m': { Comp: MobileRatesMarketScreen, route: '/m/more/rates/market' },
   'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
   'quote-card': { Comp: QuoteCardPreview, route: '/' },
   'statement-doc': { Comp: StatementDoc, route: '/' },
