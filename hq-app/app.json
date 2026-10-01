@@ -2,6 +2,7 @@
   "expo": {
     "name": "BONZINI HQ",
     "slug": "bonzini-hq",
+    "owner": "bonzinilabss-team",
     "scheme": "bonzinihq",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -82,12 +83,16 @@
       "baseUrl": "https://www.bonzinilabs.com",
       "startPath": "/m/login",
       "supabaseUrl": "https://fmhsohrgbznqmcvqktjw.supabase.co",
-      "supabaseKey": "sb_publishable_cBhFX7Zcchab5DAXAswfrw_iAIncZOt"
+      "supabaseKey": "sb_publishable_cBhFX7Zcchab5DAXAswfrw_iAIncZOt",
+      "eas": {
+        "projectId": "d87bbd77-fb5b-4f08-8741-e2dab0755865"
+      }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
+      "url": "https://u.expo.dev/d87bbd77-fb5b-4f08-8741-e2dab0755865",
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     }
