@@ -1,0 +1,212 @@
+[
+{
+"t": 0,
+"inst": "tchak",
+"role": "tchak"
+},
+{
+"t": 1.0,
+"inst": "printer",
+"role": "talk"
+},
+{
+"t": 1.0,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 1.5,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 2.0,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 2.0,
+"inst": "stamp",
+"role": "due_line"
+},
+{
+"t": 2.25,
+"inst": "calc",
+"role": "due_line"
+},
+{
+"t": 2.5,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 2.5,
+"inst": "printer",
+"role": "due_line"
+},
+{
+"t": 2.75,
+"inst": "keys",
+"role": "due_line"
+},
+{
+"t": 3.0,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 3.0,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 3.5,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 3.5,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 3.75,
+"inst": "wood",
+"role": "due_rule"
+},
+{
+"t": 4.0,
+"inst": "stamp",
+"role": "due_kick"
+},
+{
+"t": 4,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 4.125,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 4.5,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 4.625,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 5.0,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 5.125,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 5.5,
+"inst": "taximeter",
+"role": "taxi"
+},
+{
+"t": 5.5,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 5.625,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 6,
+"inst": "riser",
+"role": "rise"
+},
+{
+"t": 7.2333,
+"inst": "bitcrush",
+"role": "glitch"
+},
+{
+"t": 7.8,
+"inst": "stamp",
+"role": "revstamp"
+},
+{
+"t": 8,
+"inst": "sub",
+"role": "drop"
+},
+{
+"t": 8.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 9.5,
+"inst": "voice",
+"role": "niplus"
+},
+{
+"t": 10,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 10.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 10.5,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 11.0,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 11.5,
+"inst": "elastic",
+"role": "snap"
+},
+{
+"t": 11.5,
+"inst": "voice",
+"role": "nimoins"
+},
+{
+"t": 12.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 12.5,
+"inst": "balafon",
+"role": "logo"
+},
+{
+"t": 13.3,
+"inst": "voice",
+"role": "bonzini"
+},
+{
+"t": 14.0,
+"inst": "tchak",
+"role": "tchak_end"
+},
+{
+"t": 14.5,
+"inst": "printer",
+"role": "pickup"
+}
+]

@@ -1,0 +1,44 @@
+{
+ "segments": [
+  {
+   "id": "S1",
+   "text": "Ni plus."
+  },
+  {
+   "id": "S2",
+   "text": "Ni moins."
+  },
+  {
+   "id": "S3",
+   "text": "Bonzini Labs."
+  },
+  {
+   "id": "S4",
+   "text": "Payez le juste droit."
+  },
+  {
+   "id": "S5",
+   "text": "Encore ?"
+  },
+  {
+   "id": "S6",
+   "text": "On verra à l'arrivée."
+  },
+  {
+   "id": "S7",
+   "text": "Combien, vraiment ?"
+  },
+  {
+   "id": "S8",
+   "text": "Le juste droit."
+  },
+  {
+   "id": "S9",
+   "text": "Bientôt."
+  },
+  {
+   "id": "S10",
+   "text": "Payez le juste droit. Ni plus, ni moins."
+  }
+ ]
+}

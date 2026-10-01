@@ -1,0 +1,302 @@
+[
+{
+"t": 0,
+"inst": "tchak",
+"role": "tchak"
+},
+{
+"t": 1.0,
+"inst": "printer",
+"role": "talk"
+},
+{
+"t": 1.0,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 1.5,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 2.0,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 2.0,
+"inst": "stamp",
+"role": "due_line"
+},
+{
+"t": 2.25,
+"inst": "calc",
+"role": "due_line"
+},
+{
+"t": 2.5,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 2.5,
+"inst": "printer",
+"role": "due_line"
+},
+{
+"t": 2.75,
+"inst": "keys",
+"role": "due_line"
+},
+{
+"t": 3.0,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 3.0,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 3.5,
+"inst": "stamp",
+"role": "due"
+},
+{
+"t": 3.5,
+"inst": "paper",
+"role": "line"
+},
+{
+"t": 3.75,
+"inst": "wood",
+"role": "due_rule"
+},
+{
+"t": 4.0,
+"inst": "stamp",
+"role": "due_kick"
+},
+{
+"t": 4,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 4.125,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 4.5,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 4.625,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 5.0,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 5.125,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 5.5,
+"inst": "taximeter",
+"role": "taxi"
+},
+{
+"t": 5.5,
+"inst": "paper",
+"role": "q"
+},
+{
+"t": 5.625,
+"inst": "whisper",
+"role": "plus"
+},
+{
+"t": 6.0,
+"inst": "kick",
+"role": "half"
+},
+{
+"t": 6,
+"inst": "crumple",
+"role": "pull"
+},
+{
+"t": 7.5,
+"inst": "thud",
+"role": "fold"
+},
+{
+"t": 8,
+"inst": "riser",
+"role": "rise"
+},
+{
+"t": 9.2333,
+"inst": "bitcrush",
+"role": "glitch"
+},
+{
+"t": 9.8,
+"inst": "stamp",
+"role": "revstamp"
+},
+{
+"t": 10,
+"inst": "sub",
+"role": "drop"
+},
+{
+"t": 10.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 11.5,
+"inst": "voice",
+"role": "niplus"
+},
+{
+"t": 12,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 12.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 12.5,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 13.0,
+"inst": "rubber",
+"role": "stretch"
+},
+{
+"t": 13.5,
+"inst": "elastic",
+"role": "snap"
+},
+{
+"t": 13.5,
+"inst": "voice",
+"role": "nimoins"
+},
+{
+"t": 14.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 14.375,
+"inst": "clave",
+"role": "seg"
+},
+{
+"t": 14.5,
+"inst": "kick",
+"role": "seg"
+},
+{
+"t": 14.75,
+"inst": "log",
+"role": "seg"
+},
+{
+"t": 14.875,
+"inst": "clave",
+"role": "seg"
+},
+{
+"t": 15.0,
+"inst": "kick",
+"role": "lock"
+},
+{
+"t": 16.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 16.0,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.125,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.25,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.375,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.5,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.625,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 16.75,
+"inst": "keyboard",
+"role": "key"
+},
+{
+"t": 18.9,
+"inst": "voice",
+"role": "niplus_nimoins"
+},
+{
+"t": 20.0,
+"inst": "kick",
+"role": "kick3"
+},
+{
+"t": 20.0,
+"inst": "balafon",
+"role": "logo"
+},
+{
+"t": 20.8,
+"inst": "voice",
+"role": "bonzini"
+},
+{
+"t": 21.5,
+"inst": "tchak",
+"role": "tchak_end"
+},
+{
+"t": 23.5,
+"inst": "printer",
+"role": "pickup"
+}
+]
