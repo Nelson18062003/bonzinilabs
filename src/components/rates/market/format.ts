@@ -9,5 +9,6 @@ export const fmtPct = (v: number, dec?: number) => `${nf(dec ?? (v > 0 && v < 1 
 export const fmtUsdt = (v: number) =>
   v >= 1e6 ? `${nf(1).format(v / 1e6)}\u202fM` : v >= 1e4 ? `${nf(0).format(v / 1e3)}\u202fk` : nf(0).format(v);
 
-export const fmtClock = (iso: string) =>
-  new Date(iso).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Douala', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+/** Heure d'un relevé dans un fuseau donné (Asia/Shanghai côté Chine, Africa/Douala côté Cameroun). */
+export const fmtClock = (iso: string, timeZone: string, seconds = true) =>
+  new Date(iso).toLocaleTimeString('fr-FR', { timeZone, hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) });

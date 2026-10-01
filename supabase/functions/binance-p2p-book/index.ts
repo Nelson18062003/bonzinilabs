@@ -3,7 +3,8 @@
 // « Marché Binance » (Taux de change). Le navigateur ne peut pas appeler
 // Binance (CORS) : cette fonction relève le carnet et le renvoie compacté.
 //
-//   POST { fiat: "CNY" | "XAF" }
+//   POST { fiat: "CNY" | "XAF", fresh?: boolean }
+//   fresh = bouton « Actualiser » : on ignore le cache et on relit Binance.
 //   CNY → tradeType SELL : annonceurs qui ACHÈTENT l'USDT (là où l'on vend en Chine)
 //   XAF → tradeType BUY  : annonceurs qui VENDENT l'USDT (là où l'on achète au Cameroun)
 //
@@ -188,11 +189,14 @@ serve(async (req) => {
     const fiat = body?.fiat === "XAF" ? "XAF" : body?.fiat === "CNY" ? "CNY" : null;
     if (!fiat) return json({ success: false, error: "Devise inconnue (CNY ou XAF)" }, 400);
 
+    // « Actualiser » saute les deux caches, mais rejoint un relevé déjà en
+    // cours (pas de double rafale vers Binance).
+    const fresh = body?.fresh === true;
     const hit = bookCache.get(fiat);
-    if (hit && Date.now() - hit.at < CACHE_MS) return json({ success: true, book: hit.book });
+    if (!fresh && hit && Date.now() - hit.at < CACHE_MS) return json({ success: true, book: hit.book });
 
     const failed = failCache.get(fiat);
-    if (failed && Date.now() - failed.at < FAIL_MS) return json({ success: false, error: failed.error }, 502);
+    if (!fresh && failed && Date.now() - failed.at < FAIL_MS) return json({ success: false, error: failed.error }, 502);
 
     let pending = inflight.get(fiat);
     if (!pending) {

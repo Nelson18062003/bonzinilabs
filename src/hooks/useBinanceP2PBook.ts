@@ -4,6 +4,9 @@
 // Rafraîchi toutes les 30 s tant que l'écran est visible ; l'ancien relevé
 // reste affiché pendant le chargement du suivant (react-query garde `data`
 // pendant un refetch), et chaque devise a son propre cache.
+// `refresh()` (bouton « Actualiser ») demande un relevé NEUF : il passe outre
+// le cache de 20 s de la fonction serveur.
+import { useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
@@ -11,7 +14,7 @@ import type { P2PBook, P2PFiat } from '@/lib/p2pMarket';
 
 export const P2P_REFRESH_MS = 30_000;
 
-async function fetchBook(fiat: P2PFiat): Promise<P2PBook> {
+async function fetchBook(fiat: P2PFiat, fresh: boolean): Promise<P2PBook> {
   const { data: { session } } = await supabaseAdmin.auth.getSession();
   if (!session) throw new Error('Session admin requise');
   const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/binance-p2p-book`, {
@@ -21,7 +24,7 @@ async function fetchBook(fiat: P2PFiat): Promise<P2PBook> {
       apikey: VITE_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ fiat }),
+    body: JSON.stringify({ fiat, fresh }),
   });
   const json = await res.json().catch(() => ({ success: false, error: res.statusText }));
   if (!res.ok || !json.success) throw new Error(json.error || `Erreur ${res.status}`);
@@ -29,12 +32,16 @@ async function fetchBook(fiat: P2PFiat): Promise<P2PBook> {
 }
 
 export function useBinanceP2PBook(fiat: P2PFiat, { live = true }: { live?: boolean } = {}) {
-  return useQuery({
+  const fresh = useRef(false);
+  const q = useQuery({
     queryKey: ['binance-p2p-book', fiat],
-    queryFn: () => fetchBook(fiat),
+    queryFn: () => { const f = fresh.current; fresh.current = false; return fetchBook(fiat, f); },
     refetchInterval: live ? P2P_REFRESH_MS : false,
     refetchIntervalInBackground: false,
     staleTime: 15_000,
     retry: 1,
   });
+  const { refetch } = q;
+  const refresh = useCallback(() => { fresh.current = true; return refetch(); }, [refetch]);
+  return { ...q, refresh };
 }
