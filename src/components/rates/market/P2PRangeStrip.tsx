@@ -53,6 +53,7 @@ export function P2PRangeStrip({
       className="relative cursor-crosshair touch-none select-none"
       onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); const p = local(e); setDrag({ a: p, b: p }); }}
       onPointerMove={(e) => drag && setDrag({ ...drag, b: local(e) })}
+      onPointerCancel={() => setDrag(null)}
       onPointerUp={() => {
         if (!drag) return;
         const a = Math.min(drag.a, drag.b), b = Math.max(drag.a, drag.b);

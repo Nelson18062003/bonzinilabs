@@ -16,7 +16,7 @@ import { ChevronDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBinanceP2PBook } from '@/hooks/useBinanceP2PBook';
 import {
-  AD, MARKET, bestPrice, blankFilters, bonziniFilters, histogram, impliedRate, levels as toLevels, median, passes, sameFilters, zoomOf,
+  AD, MARKET, bestPrice, priceDecimals, blankFilters, bonziniFilters, histogram, impliedRate, levels as toLevels, matcher, median, sameFilters, zoomOf,
   type P2PFiat, type P2PFilters,
 } from '@/lib/p2pMarket';
 import { P2PHistogram } from './P2PHistogram';
@@ -25,17 +25,40 @@ import { P2PFilterPanel } from './P2PFilterPanel';
 import { chipCls } from './styles';
 import { fmtClock, fmtCount, fmtPct, fmtPrice, fmtUsdt } from './format';
 
-const STORE = 'bz-p2p-market-v1';
+const STORE = 'bz-p2p-market-v2';
 interface Prefs { fiat: P2PFiat; unit: 'count' | 'usdt'; bin: Record<P2PFiat, number>; filters: Record<P2PFiat, P2PFilters> }
 const DEFAULT_PREFS: Prefs = {
   fiat: 'CNY', unit: 'count',
   bin: { CNY: MARKET.CNY.defaultBin, XAF: MARKET.XAF.defaultBin },
   filters: { CNY: blankFilters(), XAF: blankFilters() },
 };
+// Préférences relues champ par champ : une valeur absente ou fausse (palier
+// 0, champ manquant) viderait le graphique. Le zoom n'est pas restauré — le
+// prix aura bougé d'ici la prochaine ouverture.
+const num = (v: unknown, ok: number[] | null, d: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 && (!ok || ok.includes(v)) ? v : d);
+function cleanFilters(x: unknown): P2PFilters {
+  const o = (x ?? {}) as Partial<Record<keyof P2PFilters, unknown>>;
+  return {
+    ...blankFilters(),
+    pay: Array.isArray(o.pay) ? o.pay.filter((id): id is string => typeof id === 'string') : [],
+    amount: Number.isSafeInteger(o.amount) && (o.amount as number) > 0 ? (o.amount as number) : 0,
+    kind: num(o.kind, [0, 1, 2], 0) as 0 | 1 | 2,
+    minOrders: num(o.minOrders, null, 0),
+    minFinish: num(o.minFinish, null, 0),
+    maxTime: num(o.maxTime, null, 0),
+  };
+}
 function loadPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (p && p.filters?.CNY && p.filters?.XAF) return { ...DEFAULT_PREFS, ...p };
+    if (p && typeof p === 'object') {
+      return {
+        fiat: p.fiat === 'XAF' ? 'XAF' : 'CNY',
+        unit: p.unit === 'usdt' ? 'usdt' : 'count',
+        bin: { CNY: num(p.bin?.CNY, MARKET.CNY.bins, MARKET.CNY.defaultBin), XAF: num(p.bin?.XAF, MARKET.XAF.bins, MARKET.XAF.defaultBin) },
+        filters: { CNY: cleanFilters(p.filters?.CNY), XAF: cleanFilters(p.filters?.XAF) },
+      };
+    }
   } catch { /* stockage indisponible : réglages par défaut */ }
   return DEFAULT_PREFS;
 }
@@ -74,10 +97,10 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
 
   const v = useMemo(() => {
     if (!book) return null;
-    const ads = book.ads.filter((a) => passes(a, f));
+    const ads = book.ads.filter(matcher(f, book.methods));
     const lv = toLevels(ads, bin);
     const zoom = zoomOf(ads, fiat, f, full[fiat]);
-    const bars = zoom ? histogram(lv, bin, zoom) : [];
+    const bars = zoom ? histogram(lv, bin, zoom, fiat) : [];
     const shown = bars.reduce((s, l) => s + l.count, 0);
     // part cumulée « à ce prix ou mieux » (du meilleur prix vers le pire)
     const cumulative = new Map<number, number>();
@@ -97,16 +120,17 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
   const rate = useMemo(() => {
     const c = cny.data, x = xaf.data;
     if (!c || !x) return NaN;
-    const fc = bonziniFilters('CNY', c.methods), fx = bonziniFilters('XAF', x.methods);
-    const mc = median(c.ads.filter((a) => passes(a, fc)));
-    const mx = median(x.ads.filter((a) => passes(a, fx)));
+    const mc = median(c.ads.filter(matcher(bonziniFilters('CNY', c.methods), c.methods)));
+    const mx = median(x.ads.filter(matcher(bonziniFilters('XAF', x.methods), x.methods)));
     return impliedRate(mc, mx);
   }, [cny.data, xaf.data]);
 
-  const selKey = v && selected[fiat] != null && v.lv.some((l) => l.key === selected[fiat]) ? selected[fiat] : v?.mode?.key ?? null;
+  // palier choisi encore présent dans le relevé ? sinon on retombe sur le plus fréquent
+  const picked = v && selected[fiat] != null && v.lv.some((l) => l.key === selected[fiat]) ? selected[fiat] : null;
+  const selKey = picked ?? v?.mode?.key ?? null;
   const selLevel = v?.lv.find((l) => l.key === selKey) ?? null;
-  const dec = bin < 0.1 ? 2 : bin < 1 ? 1 : fiat === 'XAF' ? 0 : 2;
-  const activeCount = [f.pay, f.amount, f.kind, f.minOrders, f.minFinish, f.maxTime].filter(Boolean).length;
+  const dec = priceDecimals(fiat, bin);
+  const activeCount = [f.pay.length, f.amount, f.kind, f.minOrders, f.minFinish, f.maxTime].filter(Boolean).length;
 
   return (
     <div className="space-y-4">
@@ -120,7 +144,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
             </button>
           ))}
         </div>
-        <LiveBadge live={live} fetchedAt={book?.fetchedAt} fetching={q.isFetching} />
+        <LiveBadge live={live} fetchedAt={book?.fetchedAt} fetching={q.isFetching} stale={q.isError && !!book} />
         <button type="button" onClick={() => setLive((l) => !l)} className={cn(chipCls(false), 'h-9 px-4 font-bold')}>
           {live ? 'Pause' : 'Reprendre'}
         </button>
@@ -188,7 +212,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                     {MARKET[fiat].bins.map((b) => (
                       <button key={b} type="button" className={segSm(b === bin)}
                         onClick={() => { setPrefs((p) => ({ ...p, bin: { ...p.bin, [fiat]: b } })); setSelected((s) => ({ ...s, [fiat]: null })); }}>
-                        {fmtPrice(b, b < 0.1 ? 2 : b < 1 ? 1 : 0)}
+                        {fmtPrice(b, priceDecimals('XAF', b))}
                       </button>
                     ))}
                   </div>
@@ -199,7 +223,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                 <>
                   <P2PHistogram
                     fiat={fiat} bars={v.bars} bin={bin} unit={prefs.unit} median={v.med}
-                    selected={selected[fiat]} onSelect={(k) => setSelected((s) => ({ ...s, [fiat]: k }))} cumulative={v.cumulative}
+                    selected={picked} onSelect={(k) => setSelected((s) => ({ ...s, [fiat]: k }))} cumulative={v.cumulative}
                   />
                   <div className="mt-1.5 border-t border-border pt-2.5">
                     <div className="mb-1 flex items-start justify-between gap-4 text-[13px] text-muted-foreground">
@@ -221,7 +245,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                       )}
                     </div>
                     <P2PRangeStrip levels={v.lv} bin={bin} lo={v.bars[0].price} hi={v.bars[v.bars.length - 1].price}
-                      onRange={(lo, hi) => setFilters({ ...f, lo, hi })} dec={fiat === 'XAF' ? 0 : 2} />
+                      onRange={(lo, hi) => setFilters({ ...f, lo, hi })} dec={priceDecimals(fiat, 1)} />
                   </div>
                 </>
               ) : (
@@ -266,7 +290,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                 </h3>
                 <p className="mx-[18px] mb-2.5 mt-0.5 text-[13px] text-muted-foreground">
                   {selLevel
-                    ? `${fmtCount(selLevel.count)} annonces · ${fmtPct(selLevel.shareCount)} du total · ${fmtUsdt(selLevel.usdt)} USDT disponibles.${selected[fiat] == null ? ' Palier le plus fréquent ; cliquez une barre pour en voir un autre.' : ''}`
+                    ? `${fmtCount(selLevel.count)} annonces · ${fmtPct(selLevel.shareCount)} du total · ${fmtUsdt(selLevel.usdt)} USDT disponibles.${picked == null ? ' Palier le plus fréquent ; cliquez une barre pour en voir un autre.' : ''}`
                     : 'Cliquez une barre du graphique.'}
                 </p>
                 <div className="max-h-[440px] overflow-auto">
@@ -282,7 +306,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                             )}
                           </Td>
                           <Td>{fmtCount(a[AD.orders])}</Td>
-                          <Td>{fmtPrice(a[AD.finish] / 10, 1)}&#8239;%</Td>
+                          <Td>{fmtPct(a[AD.finish] / 10, 1)}</Td>
                           <Td>{fmtUsdt(a[AD.usdt])}</Td>
                           <Td>{fmtUsdt(a[AD.min])} – {fmtUsdt(a[AD.max])}</Td>
                         </tr>
@@ -305,14 +329,18 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function LiveBadge({ live, fetchedAt, fetching }: { live: boolean; fetchedAt?: string; fetching: boolean }) {
+function LiveBadge({ live, fetchedAt, fetching, stale }: { live: boolean; fetchedAt?: string; fetching: boolean; stale: boolean }) {
+  // stale : la dernière mise à jour a échoué, on montre l'ancien relevé — le
+  // dire, plutôt que d'afficher « En direct » sur des chiffres qui ont vieilli
+  const ok = live && !stale;
   return (
     <span className={cn(
       'inline-flex h-[30px] items-center gap-2 rounded-lg px-3 text-[13px] font-bold',
-      live ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-muted text-muted-foreground',
+      ok ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+        : stale ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400' : 'bg-muted text-muted-foreground',
     )}>
-      <span className={cn('h-2 w-2 rounded-full', live ? 'bg-emerald-500' : 'bg-muted-foreground', live && 'animate-pulse')} />
-      {live ? 'En direct' : 'En pause'}{fetchedAt ? ` · relevé de ${fmtClock(fetchedAt)}` : ''}
+      <span className={cn('h-2 w-2 rounded-full', ok ? 'bg-emerald-500 animate-pulse' : stale ? 'bg-amber-500' : 'bg-muted-foreground')} />
+      {stale ? 'Mise à jour en échec' : live ? 'En direct' : 'En pause'}{fetchedAt ? ` · relevé de ${fmtClock(fetchedAt)}` : ''}
       {fetching && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Mise à jour" />}
     </span>
   );

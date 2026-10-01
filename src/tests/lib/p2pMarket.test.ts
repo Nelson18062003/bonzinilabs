@@ -1,7 +1,7 @@
 // Marché Binance (01/10/2026) : distribution du carnet P2P, filtres et zoom.
 import { describe, expect, it } from 'vitest';
 import {
-  binKey, blankFilters, bonziniFilters, bestPrice, histogram, impliedRate, levels, median, passes, payMask, zoomOf,
+  binKey, blankFilters, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
   type P2PAd,
 } from '@/lib/p2pMarket';
 
@@ -26,32 +26,49 @@ describe('paliers', () => {
 
   it('l’histogramme garde les paliers vides de la fenêtre', () => {
     const ads = [ad(6.6), ad(6.63)];
-    const h = histogram(levels(ads, 0.01), 0.01, { lo: 6.6, hi: 6.63, mode: 'full', hidden: 0 });
+    const h = histogram(levels(ads, 0.01), 0.01, { lo: 6.6, hi: 6.63, mode: 'full' }, 'CNY');
     expect(h.map((l) => l.count)).toEqual([1, 0, 0, 1]);
+  });
+
+  it('plafond de barres : garde le côté du meilleur prix', () => {
+    const ls = levels([ad(1), ad(6.64)], 0.01);
+    const cny = histogram(ls, 0.01, { lo: 1, hi: 6.64, mode: 'full' }, 'CNY', 10);
+    expect(cny[cny.length - 1].price).toBe(6.64);
+    const xaf = histogram(ls, 0.01, { lo: 1, hi: 6.64, mode: 'full' }, 'XAF', 10);
+    expect(xaf[0].price).toBe(1);
   });
 });
 
 describe('filtres', () => {
   it('Bonzini = Alipay ou WeChat, 200 ordres, 95 %', () => {
     const f = bonziniFilters('CNY', METHODS);
-    expect(f.pay).toBe(payMask(METHODS, ['ALIPAY', 'WECHAT']));
-    expect(passes(ad(6.6, { pay: 0b100 }), f)).toBe(true); // WeChat seul
-    expect(passes(ad(6.6, { pay: 0b010 }), f)).toBe(false); // virement seul
-    expect(passes(ad(6.6, { orders: 199 }), f)).toBe(false);
-    expect(passes(ad(6.6, { finish: 949 }), f)).toBe(false);
+    expect(f.pay).toEqual(['ALIPAY', 'WECHAT']);
+    const ok = matcher(f, METHODS);
+    expect(ok(ad(6.6, { pay: 0b100 }))).toBe(true); // WeChat seul
+    expect(ok(ad(6.6, { pay: 0b010 }))).toBe(false); // virement seul
+    expect(ok(ad(6.6, { orders: 199 }))).toBe(false);
+    expect(ok(ad(6.6, { finish: 949 }))).toBe(false);
+  });
+
+  it('le filtre de paiement suit les ids, même si Binance réordonne ses méthodes', () => {
+    const f = { ...blankFilters(), pay: ['WECHAT'] };
+    const reordered = [METHODS[2], METHODS[0], METHODS[1]]; // WeChat passe en position 0
+    expect(matcher(f, reordered)(ad(6.6, { pay: 0b001 }))).toBe(true);
+    expect(matcher(f, reordered)(ad(6.6, { pay: 0b010 }))).toBe(false);
+    expect(sameFilters({ ...blankFilters(), pay: ['A', 'B'] }, { ...blankFilters(), pay: ['B', 'A'] })).toBe(true);
   });
 
   it('le montant doit tenir dans les limites de l’annonce', () => {
-    const f = { ...blankFilters(), amount: 50_000 };
-    expect(passes(ad(6.6, { min: 1_000, max: 60_000 }), f)).toBe(true);
-    expect(passes(ad(6.6, { min: 1_000, max: 40_000 }), f)).toBe(false);
-    expect(passes(ad(6.6, { min: 60_000, max: 90_000 }), f)).toBe(false);
+    const ok = matcher({ ...blankFilters(), amount: 50_000 }, METHODS);
+    expect(ok(ad(6.6, { min: 1_000, max: 60_000 }))).toBe(true);
+    expect(ok(ad(6.6, { min: 1_000, max: 40_000 }))).toBe(false);
+    expect(ok(ad(6.6, { min: 60_000, max: 90_000 }))).toBe(false);
   });
 
   it('« Pro » exclut les marchands simples, « Marchands » garde les pro', () => {
-    expect(passes(ad(6.6, { kind: 1 }), { ...blankFilters(), kind: 2 })).toBe(false);
-    expect(passes(ad(6.6, { kind: 2 }), { ...blankFilters(), kind: 1 })).toBe(true);
-    expect(passes(ad(6.6, { kind: 0 }), { ...blankFilters(), kind: 1 })).toBe(false);
+    expect(matcher({ ...blankFilters(), kind: 2 }, METHODS)(ad(6.6, { kind: 1 }))).toBe(false);
+    expect(matcher({ ...blankFilters(), kind: 1 }, METHODS)(ad(6.6, { kind: 2 }))).toBe(true);
+    expect(matcher({ ...blankFilters(), kind: 1 }, METHODS)(ad(6.6, { kind: 0 }))).toBe(false);
   });
 });
 
@@ -64,7 +81,6 @@ describe('zoom', () => {
     expect(z.mode).toBe('auto');
     expect(z.lo).toBeGreaterThan(6.03);
     expect(z.hi).toBe(6.66);
-    expect(z.hidden).toBe(3);
   });
 
   it('auto côté Cameroun : coupe la traîne HAUTE, garde le meilleur prix (le plus bas)', () => {

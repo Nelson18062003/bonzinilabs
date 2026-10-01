@@ -13,7 +13,8 @@
 
 export type P2PFiat = 'CNY' | 'XAF';
 
-/** [prix, usdtDispo, minFiat, maxFiat, ordresMois, réussite‰, masquePaiement, délaiMin, type, pseudo] */
+/** Tenir en phase avec supabase/functions/binance-p2p-book (type Ad).
+ *  [prix, usdtDispo, minFiat, maxFiat, ordresMois, réussite‰, masquePaiement, délaiMin, type, pseudo] */
 export type P2PAd = [number, number, number, number, number, number, number, number, 0 | 1 | 2, string];
 
 export interface P2PBook {
@@ -28,8 +29,10 @@ export interface P2PBook {
 export const AD = { price: 0, usdt: 1, min: 2, max: 3, orders: 4, finish: 5, pay: 6, time: 7, kind: 8, nick: 9 } as const;
 
 export interface P2PFilters {
-  /** masque des modes de paiement (0 = tous) */
-  pay: number;
+  /** identifiants Binance des modes de paiement (vide = tous). Des ids et
+   *  non des positions : l'ordre des méthodes de Binance peut changer entre
+   *  deux relevés, un masque mémorisé désignerait alors d'autres méthodes. */
+  pay: string[];
   /** montant fiat à traiter (0 = tous) : l'annonce doit l'accepter dans ses limites */
   amount: number;
   /** 0 tous · 1 marchands (et pro) · 2 pro seulement */
@@ -63,26 +66,33 @@ export const MARKET: Record<P2PFiat, {
   },
 };
 
-export const blankFilters = (): P2PFilters => ({ pay: 0, amount: 0, kind: 0, minOrders: 0, minFinish: 0, maxTime: 0, lo: null, hi: null });
+export const blankFilters = (): P2PFilters => ({ pay: [], amount: 0, kind: 0, minOrders: 0, minFinish: 0, maxTime: 0, lo: null, hi: null });
+
+/** Bit d'une méthode dans le masque d'une annonce (le serveur s'arrête à 31). */
+export const methodBit = (i: number) => (i >= 0 && i < 31 ? 1 << i : 0);
 
 export function payMask(methods: P2PBook['methods'], ids: string[]): number {
-  return ids.reduce((mask, id) => {
-    const i = methods.findIndex((m) => m.id === id);
-    return i >= 0 ? mask | (1 << i) : mask;
-  }, 0);
+  return ids.reduce((mask, id) => mask | methodBit(methods.findIndex((m) => m.id === id)), 0);
 }
 
 /** Filtre Bonzini : ≥ 200 ordres/mois, ≥ 95 % de réussite (+ Alipay/WeChat côté Chine). */
 export function bonziniFilters(fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters {
-  return { ...blankFilters(), pay: payMask(methods, MARKET[fiat].bonziniPay), minOrders: 200, minFinish: 950 };
+  return { ...blankFilters(), pay: MARKET[fiat].bonziniPay.filter((id) => methods.some((m) => m.id === id)), minOrders: 200, minFinish: 950 };
 }
 
 export const sameFilters = (a: P2PFilters, b: P2PFilters) =>
-  a.pay === b.pay && a.amount === b.amount && a.kind === b.kind && a.minOrders === b.minOrders
+  a.pay.length === b.pay.length && a.pay.every((id) => b.pay.includes(id)) && a.amount === b.amount && a.kind === b.kind && a.minOrders === b.minOrders
   && a.minFinish === b.minFinish && a.maxTime === b.maxTime && a.lo === b.lo && a.hi === b.hi;
 
-export function passes(ad: P2PAd, f: P2PFilters): boolean {
-  return (!f.pay || (ad[AD.pay] & f.pay) !== 0)
+/** Prédicat d'un jeu de filtres pour un carnet (le masque est résolu une fois). */
+export function matcher(f: P2PFilters, methods: P2PBook['methods']): (ad: P2PAd) => boolean {
+  const mask = payMask(methods, f.pay);
+  // ids absents du carnet (méthode retirée par Binance) : ignorés plutôt que de tout masquer
+  return (ad) => passes(ad, f, mask);
+}
+
+export function passes(ad: P2PAd, f: P2PFilters, mask: number): boolean {
+  return (!mask || (ad[AD.pay] & mask) !== 0)
     && (!f.amount || (ad[AD.min] <= f.amount && ad[AD.max] >= f.amount))
     && ad[AD.kind] >= f.kind
     && ad[AD.orders] >= f.minOrders
@@ -104,6 +114,9 @@ export function bestPrice(ads: P2PAd[], fiat: P2PFiat): number {
   for (const a of ads) best = MARKET[fiat].best === 'max' ? Math.max(best, a[AD.price]) : Math.min(best, a[AD.price]);
   return best;
 }
+
+/** Décimales d'affichage d'un prix de palier (6,64 · 614,5 · 611). */
+export const priceDecimals = (fiat: P2PFiat, bin: number) => (bin < 0.1 ? 2 : bin < 1 ? 1 : fiat === 'XAF' ? 0 : 2);
 
 /** Indice de palier : floor robuste aux erreurs flottantes (6.64 / 0.01 = 663.999…). */
 export const binKey = (price: number, bin: number) => Math.floor(price / bin + 1e-6);
@@ -144,8 +157,6 @@ export interface P2PZoom {
   lo: number;
   hi: number;
   mode: 'auto' | 'full' | 'custom';
-  /** annonces filtrées hors du graphique (toujours comptées dans les %) */
-  hidden: number;
 }
 
 /**
@@ -172,18 +183,22 @@ export function zoomOf(ads: P2PAd[], fiat: P2PFiat, f: P2PFilters, full: boolean
       if (q < hi) { hi = q; mode = 'auto'; }
     }
   }
-  const hidden = ads.filter((a) => a[AD.price] < lo - 1e-9 || a[AD.price] > hi + 1e-9).length;
-  return { lo, hi, mode, hidden };
+  return { lo, hi, mode };
 }
 
 /**
  * Tous les paliers de la fenêtre, VIDES COMPRIS (c'est un histogramme : un
- * trou de prix doit se voir). Les parts restent celles de `levels`.
+ * trou de prix doit se voir). Les parts restent celles de `levels`. Au-delà
+ * de `maxBars`, on garde le côté du MEILLEUR prix (le haut pour le CNY).
  */
-export function histogram(all: P2PLevel[], bin: number, zoom: P2PZoom, maxBars = 400): P2PLevel[] {
+export function histogram(all: P2PLevel[], bin: number, zoom: P2PZoom, fiat: P2PFiat, maxBars = 400): P2PLevel[] {
   const byKey = new Map(all.map((l) => [l.key, l]));
-  const k0 = binKey(zoom.lo, bin);
-  const k1 = Math.min(Math.max(k0, binKey(zoom.hi, bin)), k0 + maxBars - 1);
+  let k0 = binKey(zoom.lo, bin);
+  let k1 = Math.max(k0, binKey(zoom.hi, bin));
+  if (k1 - k0 + 1 > maxBars) {
+    if (MARKET[fiat].best === 'max') k0 = k1 - maxBars + 1;
+    else k1 = k0 + maxBars - 1;
+  }
   const out: P2PLevel[] = [];
   for (let k = k0; k <= k1; k++) {
     out.push(byKey.get(k) ?? { key: k, price: binLow(k, bin), count: 0, usdt: 0, shareCount: 0, shareUsdt: 0, ads: [] });

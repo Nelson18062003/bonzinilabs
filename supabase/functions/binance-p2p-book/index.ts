@@ -15,7 +15,12 @@
 // (jamais is_admin seul — .claude/rules/security.md).
 //
 // Cache mémoire 20 s par devise : plusieurs écrans ouverts en même temps ne
-// multiplient pas les appels à Binance.
+// multiplient pas les appels à Binance. Les relevés simultanés partagent la
+// même promesse, et un échec est retenu 10 s (pas de rafale pendant que
+// Binance limite). Un carnet troué (> 5 % de pages perdues) est refusé
+// plutôt que montré avec un total et une médiane faux.
+//
+// Types : tenir en phase avec src/lib/p2pMarket.ts (P2PAd, P2PBook).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -30,6 +35,8 @@ const FILTERS = "https://p2p.binance.com/bapi/c2c/v2/public/c2c/adv/filter-condi
 const ROWS = 20;
 const CONCURRENCY = 6;
 const CACHE_MS = 20_000;
+const FAIL_MS = 10_000;
+const MAX_LOST_PAGES = 0.05;
 const METHODS_CACHE_MS = 3_600_000;
 
 type Fiat = "CNY" | "XAF";
@@ -54,6 +61,8 @@ interface Book {
 }
 
 const bookCache = new Map<Fiat, { at: number; book: Book }>();
+const inflight = new Map<Fiat, Promise<Book>>();
+const failCache = new Map<Fiat, { at: number; error: string }>();
 const methodsCache = new Map<Fiat, { at: number; methods: { id: string; name: string }[] }>();
 
 async function binance(url: string, body: unknown) {
@@ -77,18 +86,18 @@ async function methodsOf(fiat: Fiat) {
 }
 
 // deno-lint-ignore no-explicit-any
-async function page(fiat: Fiat, p: number): Promise<{ total: number; data: any[] }> {
+async function page(fiat: Fiat, p: number): Promise<{ total: number; data: any[]; ok: boolean }> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const json = await binance(SEARCH, {
         asset: "USDT", fiat, tradeType: SIDE[fiat], page: p, rows: ROWS,
         payTypes: [], publisherType: null,
       });
-      if (Array.isArray(json?.data)) return { total: Number(json.total) || 0, data: json.data };
+      if (Array.isArray(json?.data)) return { total: Number(json.total) || 0, data: json.data, ok: true };
     } catch { /* nouvel essai */ }
     await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
   }
-  return { total: 0, data: [] };
+  return { total: 0, data: [], ok: false };
 }
 
 async function fetchBook(fiat: Fiat): Promise<Book> {
@@ -96,6 +105,7 @@ async function fetchBook(fiat: Fiat): Promise<Book> {
   const ids = methods.map((m) => m.id);
 
   const first = await page(fiat, 1);
+  if (!first.ok) throw new Error("Binance ne répond pas. Réessayez dans un instant.");
   const pages = Math.min(MAX_PAGES[fiat], Math.max(1, Math.ceil(first.total / ROWS)));
   const results = [first];
   // Pages 2..n en parallèle, par vagues de CONCURRENCY.
@@ -103,6 +113,11 @@ async function fetchBook(fiat: Fiat): Promise<Book> {
     const wave = [];
     for (let p = start; p < start + CONCURRENCY && p <= pages; p++) wave.push(page(fiat, p));
     results.push(...await Promise.all(wave));
+  }
+
+  const lost = results.filter((r) => !r.ok).length;
+  if (lost > Math.max(1, pages * MAX_LOST_PAGES)) {
+    throw new Error(`Carnet incomplet (${lost} pages sur ${pages} perdues). Réessayez dans un instant.`);
   }
 
   // Une annonce peut glisser d'une page à l'autre pendant le relevé : dédoublonnage.
@@ -170,11 +185,28 @@ serve(async (req) => {
     const hit = bookCache.get(fiat);
     if (hit && Date.now() - hit.at < CACHE_MS) return json({ success: true, book: hit.book });
 
-    const book = await fetchBook(fiat);
-    if (book.ads.length === 0) return json({ success: false, error: "Binance n'a renvoyé aucune annonce. Réessayez." }, 502);
-    bookCache.set(fiat, { at: Date.now(), book });
-    return json({ success: true, book });
+    const failed = failCache.get(fiat);
+    if (failed && Date.now() - failed.at < FAIL_MS) return json({ success: false, error: failed.error }, 502);
+
+    let pending = inflight.get(fiat);
+    if (!pending) {
+      pending = fetchBook(fiat).finally(() => inflight.delete(fiat));
+      inflight.set(fiat, pending);
+    }
+    try {
+      const book = await pending;
+      if (book.ads.length === 0) throw new Error("Binance n'a renvoyé aucune annonce. Réessayez.");
+      bookCache.set(fiat, { at: Date.now(), book });
+      failCache.delete(fiat);
+      return json({ success: true, book });
+    } catch (e) {
+      const error = e instanceof Error && e.message.length < 160 ? e.message : "Lecture du carnet impossible";
+      console.error("binance-p2p-book", fiat, e);
+      failCache.set(fiat, { at: Date.now(), error });
+      return json({ success: false, error }, 502);
+    }
   } catch (e) {
-    return json({ success: false, error: e instanceof Error ? e.message : "Erreur inconnue" }, 500);
+    console.error("binance-p2p-book", e);
+    return json({ success: false, error: "Erreur interne" }, 500);
   }
 });

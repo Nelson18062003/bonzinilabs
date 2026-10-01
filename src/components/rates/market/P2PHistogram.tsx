@@ -8,8 +8,7 @@
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { binKey, type P2PFiat, type P2PLevel, MARKET } from '@/lib/p2pMarket';
+import { binKey, priceDecimals, type P2PFiat, type P2PLevel, MARKET } from '@/lib/p2pMarket';
 import { fmtCount, fmtPct, fmtPrice, fmtUsdt } from './format';
 
 const H = 360;
@@ -38,6 +37,8 @@ export function P2PHistogram({
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(800);
+  // survol : on ne re-rend qu'au changement de palier ; l'infobulle s'ancre
+  // sur la barre (pas sur la souris) pour ne pas re-rendre à chaque pixel
   const [hover, setHover] = useState<{ key: number; x: number; y: number } | null>(null);
   const reduce = useReducedMotion();
   const clipId = `p2p-clip-${useId().replace(/:/g, '')}`;
@@ -75,7 +76,7 @@ export function P2PHistogram({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bars, W, unit]);
 
-  const dec = bin < 0.1 ? 2 : bin < 1 ? 1 : fiat === 'XAF' ? 0 : 2;
+  const dec = priceDecimals(fiat, bin);
   const k0 = bars[0]?.key ?? 0;
   const medIdx = Number.isFinite(median) ? binKey(median, bin) - k0 : -1;
   const hovered = hover ? bars.find((l) => l.key === hover.key) : null;
@@ -154,10 +155,7 @@ export function P2PHistogram({
             key={`hit-${l.key}`}
             x={g.x(i)} y={M.t - 20} width={g.bw} height={H - M.b - M.t + 20}
             fill="transparent" className="cursor-pointer"
-            onMouseMove={(e) => {
-              const r = wrap.current!.getBoundingClientRect();
-              setHover({ key: l.key, x: e.clientX - r.left, y: e.clientY - r.top });
-            }}
+            onMouseEnter={() => setHover({ key: l.key, x: g.x(i) + g.bw / 2, y: Math.min(g.y(share(l)), H - M.b - 40) })}
             onClick={() => onSelect(selected === l.key ? null : l.key)}
           />
         ))}
@@ -167,7 +165,7 @@ export function P2PHistogram({
         <div
           role="status"
           className="pointer-events-none absolute z-10 min-w-[200px] rounded-lg border border-border bg-card px-3 py-2.5 text-[13px] shadow-lg"
-          style={{ left: hover.x + 16 + 220 > W ? hover.x - 232 : hover.x + 16, top: Math.max(0, hover.y - 70) }}
+          style={{ left: hover.x + 16 + 220 > W ? hover.x - 232 : hover.x + 16, top: Math.max(0, Math.min(hover.y - 150, H - 170)) }}
         >
           <p className="mb-1.5 text-[16px] font-extrabold text-foreground">{range(hovered)} {fiat}</p>
           <Row k="Annonces" v={fmtCount(hovered.count)} />
@@ -187,7 +185,7 @@ export function P2PHistogram({
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className={cn('flex justify-between gap-4 text-muted-foreground')}>
+    <div className="flex justify-between gap-4 text-muted-foreground">
       {k} <b className="font-bold text-foreground">{v}</b>
     </div>
   );

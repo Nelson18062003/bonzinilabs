@@ -4,8 +4,6 @@
 import { useEffect, useState } from 'react';
 import type { P2PBook, P2PFiat } from '@/lib/p2pMarket';
 
-export const P2P_REFRESH_MS = 30_000;
-
 export function useBinanceP2PBook(fiat: P2PFiat, { live = true }: { live?: boolean } = {}) {
   const books = ((window as unknown as { __P2P_BOOKS__?: Record<P2PFiat, P2PBook[]> }).__P2P_BOOKS__ ?? { CNY: [], XAF: [] })[fiat];
   const [i, setI] = useState(0);

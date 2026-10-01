@@ -4,9 +4,9 @@
  * montant, type d'annonceur, ordres/mois, réussite, délai — plus le zoom de
  * prix. Chaque mode de paiement affiche son nombre d'annonces.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { AD, MARKET, blankFilters, bonziniFilters, sameFilters, type P2PBook, type P2PFiat, type P2PFilters } from '@/lib/p2pMarket';
+import { AD, MARKET, methodBit, blankFilters, bonziniFilters, sameFilters, type P2PBook, type P2PFiat, type P2PFilters } from '@/lib/p2pMarket';
 import { fmtCount, fmtPrice, fmtUsdt } from './format';
 import { chipCls } from './styles';
 import { TextField } from '@/components/form/TextField';
@@ -33,10 +33,10 @@ export function P2PFilterPanel({
   const f = filters;
   const set = (patch: Partial<P2PFilters>) => onChange({ ...f, ...patch });
   const bz = bonziniFilters(fiat, book.methods);
-  const counts = book.methods.map((_, i) => book.ads.filter((a) => a[AD.pay] & (1 << i)).length);
+  const counts = useMemo(() => book.methods.map((_, i) => book.ads.filter((a) => a[AD.pay] & methodBit(i)).length), [book]);
   const methods = book.methods
     .map((m, i) => ({ ...m, i, n: counts[i] }))
-    .filter((m) => m.n > 0 || (f.pay & (1 << m.i)))
+    .filter((m) => m.n > 0 || f.pay.includes(m.id))
     .sort((a, b) => b.n - a.n);
 
   // champs texte : saisie libre, valeur appliquée au fil de la frappe (montant)
@@ -67,9 +67,9 @@ export function P2PFilterPanel({
       <Group label="Mode de paiement" hint="vide = tous">
         <div className="flex flex-wrap gap-1.5">
           {methods.map((m) => {
-            const on = (f.pay & (1 << m.i)) !== 0;
+            const on = f.pay.includes(m.id);
             return (
-              <button key={m.id} type="button" aria-pressed={on} className={chipCls(on)} onClick={() => set({ pay: f.pay ^ (1 << m.i) })}>
+              <button key={m.id} type="button" aria-pressed={on} className={chipCls(on)} onClick={() => set({ pay: on ? f.pay.filter((id) => id !== m.id) : [...f.pay, m.id] })}>
                 {m.name.replace(/\s*-\s*OM$/, '')} <small className="text-[12px] font-medium opacity-75">{fmtCount(m.n)}</small>
               </button>
             );
