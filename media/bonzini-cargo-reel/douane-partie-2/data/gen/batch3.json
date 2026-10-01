@@ -1,0 +1,68 @@
+[
+ {
+  "id": "s3_nadege_a",
+  "w": 1152,
+  "h": 640,
+  "seed": 11,
+  "steps": 6,
+  "init": "art/init_sheet_christelle.png",
+  "strength": 0.68,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same slim young Cameroonian woman drawn five times in a row, full body, very short natural black afro hair, small gold stud earrings, a knee-length red dress with a small white flower pattern and short sleeves, flat brown sandals, holding a smartphone, confident smart expression"
+ },
+ {
+  "id": "s3_nadege_b",
+  "w": 1152,
+  "h": 640,
+  "seed": 12,
+  "steps": 6,
+  "init": "art/init_sheet_christelle.png",
+  "strength": 0.8,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same slim young Cameroonian woman drawn five times in a row, full body, very short natural black afro hair, small gold stud earrings, a knee-length red dress with a small white flower pattern and short sleeves, flat brown sandals, holding a smartphone, confident smart expression"
+ },
+ {
+  "id": "s3_boris_a",
+  "w": 1152,
+  "h": 640,
+  "seed": 21,
+  "steps": 6,
+  "init": "art/init_sheet_junior.png",
+  "strength": 0.72,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same stocky cheerful young Cameroonian man drawn five times in a row, full body, round friendly face, short hair, small moustache, a mustard yellow short-sleeved button shirt, dark brown trousers, brown leather shoes, big grin"
+ },
+ {
+  "id": "s3_mireille_a",
+  "w": 1152,
+  "h": 640,
+  "seed": 31,
+  "steps": 6,
+  "init": "art/init_sheet_christelle.png",
+  "strength": 0.74,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same warm plump Cameroonian woman in her fifties drawn five times in a row, full body, an orange head wrap, round reading glasses, a long ankle-length orange and royal blue wax print dress with elbow sleeves, flat sandals, motherly authoritative smile"
+ },
+ {
+  "id": "s3_ekambi_a",
+  "w": 1152,
+  "h": 640,
+  "seed": 41,
+  "steps": 6,
+  "init": "art/init_sheet_christelle.png",
+  "strength": 0.74,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same Cameroonian businesswoman in her fifties drawn five times in a row, full body, black hair in a neat low bun, thin reading glasses, a colourful orange and green wax print blouse with short sleeves, a long straight dark brown skirt below the knee, low heels, holding papers, dry humorous look"
+ },
+ {
+  "id": "s3_roi_a",
+  "w": 1152,
+  "h": 640,
+  "seed": 51,
+  "steps": 6,
+  "init": "art/init_sheet_junior.png",
+  "strength": 0.74,
+  "style": "character model sheet, hand-drawn African comic book illustration, confident black ink outlines with fine hatching, warm gouache colours, cream paper background, consistent character, stylized not realistic",
+  "prompt": "the same friendly flashy Cameroonian man in his forties drawn five times in a row, full body, sunglasses pushed up on his forehead, a shiny purple and gold patterned short-sleeved shirt, cream trousers, brown loafers, a mobile phone in hand, showman smile"
+ }
+]

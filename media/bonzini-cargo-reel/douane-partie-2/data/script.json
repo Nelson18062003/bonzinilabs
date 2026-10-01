@@ -1,0 +1,300 @@
+{
+ "title": "DOUANE · Apprends à faire — Partie 2 : « La tontine de Christelle »",
+ "voice": "unmute-prod-website/developpeuse-3",
+ "bonzini_line_B": "Bientôt dans Bonzini : vos droits et taxes d'importation, estimés en quelques questions, avant de payer votre fournisseur.",
+ "segments": [
+  {
+   "id": "S1",
+   "orig": "S01",
+   "chapter": "accroche",
+   "gap": 0.4,
+   "text": "La tontine de la bande tombe sur Christelle… mais Tantine Mireille garde l'enveloppe.",
+   "tts": "La tontine de la bande tombe sur Christelle… mais Tantine Mireille garde l'enveloppe.",
+   "shot": "P1"
+  },
+  {
+   "id": "S2",
+   "orig": "S02",
+   "chapter": "accroche",
+   "gap": 0.8,
+   "text": "De quoi payer sa première grande commande de mèches en Chine, pour les fêtes.",
+   "tts": "De quoi payer sa première grande commande de mèches en Chine, pour les fêtes.",
+   "shot": "P2"
+  },
+  {
+   "id": "S3",
+   "orig": "S03",
+   "chapter": "accroche",
+   "gap": 0.9,
+   "text": "Junior, lui, pense à sa promesse : « La prochaine fois, je saurai avant. »",
+   "tts": "Junior, lui, pense à sa promesse : « La prochaine fois, je saurai avant. »",
+   "shot": "P2"
+  },
+  {
+   "id": "S4",
+   "orig": "S04",
+   "chapter": "accroche",
+   "gap": 1.2,
+   "text": "Son fournisseur tient son prix jusqu'à samedi : une semaine pour faire la vraie note.",
+   "tts": "Son fournisseur tient son prix jusqu'à samedi : une semaine pour faire la vraie note.",
+   "shot": "P3"
+  },
+  {
+   "id": "S5",
+   "orig": "S05",
+   "chapter": "les taxes",
+   "gap": 1.2,
+   "text": "Lundi, la note suit l'ordre de la loi : d'abord le droit de douane, selon le code.",
+   "tts": "Lundi, la note suit l'ordre de la loi : d'abord le droit de douane, selon le code.",
+   "shot": "P4",
+   "take": 2
+  },
+  {
+   "id": "S6",
+   "orig": "S06",
+   "chapter": "les taxes",
+   "gap": 0.8,
+   "text": "Puis les accises, pour certains produits : les mèches en ont ; les baskets neuves, non.",
+   "tts": "Puis les aksizes, pour certains produits : les mèches en ont. Les baskets neuves, non.",
+   "shot": "P5",
+   "take": 2
+  },
+  {
+   "id": "S7",
+   "orig": "S07",
+   "chapter": "les taxes",
+   "gap": 1,
+   "text": "Ensuite la TVA : 19,25 % au taux général, sur le tout, droit compris. Et quelques petites taxes.",
+   "tts": "Ensuite la TVA : dix-neuf virgule vingt-cinq pour cent au taux général, sur le tout, droit compris. Et quelques petites taxes.",
+   "shot": "P6"
+  },
+  {
+   "id": "S8",
+   "orig": "S08",
+   "chapter": "les taxes",
+   "gap": 1,
+   "text": "Selon votre situation : au réel, la TVA de la douane se récupère, et le précompte, une avance d'impôt prise à la douane, s'impute sur vos impôts.",
+   "tts": "Selon votre situation : au réel, la TVA de la douane se récupère, et le précompte, une avance d'impôt prise à la douane, s'impute sur vos impôts.",
+   "shot": "P7"
+  },
+  {
+   "id": "S9",
+   "orig": "S09",
+   "chapter": "les taxes",
+   "gap": 1.8,
+   "text": "À l'IGS, comme Christelle, comptez les deux dans votre prix.",
+   "tts": "À l'i-gé-esse, comme Christelle, comptez les deux dans votre prix.",
+   "shot": "P8"
+  },
+  {
+   "id": "S10",
+   "orig": "S10",
+   "chapter": "la conformité",
+   "gap": 1.4,
+   "text": "Mardi, Tantine lit la proforma : son propre conteneur, plus de 2 millions de francs FOB, sans le fret maritime. Deux contrôles se préparent donc avant le départ : la valeur d'un côté, la qualité de l'autre.",
+   "tts": "Mardi, Tantine lit la proforma : son propre conteneur, plus de deux millions de francs èf-o-bé, sans le fret maritime. Deux contrôles se préparent donc avant le départ : la valeur d'un côté, la qualité de l'autre.",
+   "shot": "P9"
+  },
+  {
+   "id": "S11",
+   "orig": "S12",
+   "chapter": "la conformité",
+   "gap": 1.2,
+   "text": "Le fournisseur veut charger vite ? D'abord la déclaration d'importation et le contrôle de la qualité ; au chargement, il dépose la facture définitive.",
+   "tts": "Le fournisseur veut charger vite ? D'abord la déclaration d'importation et le contrôle de la qualité. Au chargement, il dépose la facture définitive.",
+   "shot": "P10",
+   "take": 3
+  },
+  {
+   "id": "S12",
+   "orig": "S13",
+   "chapter": "la conformité",
+   "gap": 1.4,
+   "text": "Quand la déclaration d'importation et le rapport de valeur sont obligatoires, les oublier coûte 25 % de la valeur taxable, en amende.",
+   "tts": "Quand la déclaration d'importation et le rapport de valeur sont obligatoires, les oublier coûte vingt-cinq pour cent de la valeur taxable, en amende.",
+   "shot": "P11"
+  },
+  {
+   "id": "S13",
+   "orig": "S14",
+   "chapter": "la conformité",
+   "gap": 0.9,
+   "text": "Et découper une commande pour passer sous le seuil est interdit.",
+   "tts": "Et découper une commande pour passer sous le seuil est interdit.",
+   "shot": "P11"
+  },
+  {
+   "id": "S14",
+   "orig": "S15",
+   "chapter": "la simulation",
+   "gap": 1.2,
+   "text": "Mercredi, chez Junior, Nadège estime la note sur la proforma, avant de payer.",
+   "tts": "Mercredi, chez Junior, Nadège estime la note sur la proforma, avant de payer.",
+   "shot": "P12"
+  },
+  {
+   "id": "S15",
+   "orig": "S16",
+   "chapter": "la simulation",
+   "gap": 0.8,
+   "text": "Un : le code. Deux : la valeur, transport et assurance compris. Trois : les taxes, dans l'ordre. Quatre : votre situation.",
+   "tts": "Un : le code. Deux : la valeur, transport et assurance compris. Trois : les taxes, dans l'ordre. Quatre : votre situation.",
+   "shot": "P13"
+  },
+  {
+   "id": "S16",
+   "orig": "S17",
+   "chapter": "la simulation",
+   "gap": 0.6,
+   "text": "Il existe aussi un simulateur officiel, SIMPA, accessible à tous.",
+   "tts": "Il existe aussi un simulateur officiel, Simpa, accessible à tous.",
+   "shot": "P13"
+  },
+  {
+   "id": "S17",
+   "orig": "S18",
+   "chapter": "la simulation",
+   "gap": 1.2,
+   "text": "Mais ça reste une estimation : l'outil estime, le commissionnaire agréé déclare, la douane vérifie et calcule.",
+   "tts": "Mais ça reste une estimation : l'outil estime, le commissionnaire agréé déclare, la douane vérifie et calcule.",
+   "shot": "P14"
+  },
+  {
+   "id": "S18",
+   "orig": "S19",
+   "chapter": "le transitaire",
+   "gap": 2.2,
+   "text": "Jeudi, Boris amène son « gars » : le Roi du forfait.",
+   "tts": "Jeudi, Boris amène son gars : le Roi du forfait.",
+   "shot": "P15, P16"
+  },
+  {
+   "id": "S19",
+   "orig": "S20",
+   "chapter": "le transitaire",
+   "gap": 6.8,
+   "text": "Un nom sur une enseigne ne prouve rien. L'agrément, oui.",
+   "tts": "Un nom sur une enseigne ne prouve rien. L'agrément, oui.",
+   "shot": "P17"
+  },
+  {
+   "id": "S20",
+   "orig": "S21",
+   "chapter": "le transitaire",
+   "gap": 2.8,
+   "text": "Vendredi, chez Madame Ekambi, transitaire agréée en douane, qu'on appelle aussi commissionnaire agréée.",
+   "tts": "Vendredi, chez Madame Ékambi, transitaire agréée en douane, qu'on appelle aussi commissionnaire agréée.",
+   "shot": "P18"
+  },
+  {
+   "id": "S21",
+   "orig": "S22",
+   "chapter": "le transitaire",
+   "gap": 1,
+   "text": "Boris, vexé, demande sa décision d'agrément et son code de déclarant.",
+   "tts": "Boris, vexé, demande sa décision d'agrément et son code de déclarant.",
+   "shot": "P19",
+   "take": 3
+  },
+  {
+   "id": "S22",
+   "orig": "S23",
+   "chapter": "le transitaire",
+   "gap": 1,
+   "text": "Son devis sépare ce qui va à l'État de ses honoraires officiels, payés eux aussi dans le système de la douane.",
+   "tts": "Son devis sépare ce qui va à l'État de ses honoraires officiels, payés eux aussi dans le système de la douane.",
+   "shot": "P20"
+  },
+  {
+   "id": "S23",
+   "orig": "S24",
+   "chapter": "le transitaire",
+   "gap": 1,
+   "text": "On paie l'État par un canal officiel, jamais une personne, contre une quittance électronique.",
+   "tts": "On paie l'État par un canal officiel, jamais une personne, contre une quittance électronique.",
+   "shot": "P21"
+  },
+  {
+   "id": "S24",
+   "orig": "S25",
+   "chapter": "le transitaire",
+   "gap": 1,
+   "text": "Le transitaire signe. Mais la marchandise, c'est la vôtre.",
+   "tts": "Le transitaire signe. Mais la marchandise, c'est la vôtre.",
+   "shot": "P22"
+  },
+  {
+   "id": "S25",
+   "orig": "S26",
+   "chapter": "dénouement",
+   "gap": 1.4,
+   "text": "Samedi soir, Tantine rend l'enveloppe ; Christelle met de côté la part de la douane.",
+   "tts": "Samedi soir, Tantine rend l'enveloppe ; Christelle met de côté la part de la douane.",
+   "shot": "P23",
+   "take": 2
+  },
+  {
+   "id": "S26",
+   "orig": "S27",
+   "chapter": "dénouement",
+   "gap": 0.8,
+   "text": "Et Boris, pour une fois, ouvre son carton.",
+   "tts": "Et Boris, pour une fois, ouvre son carton.",
+   "shot": "P24"
+  },
+  {
+   "id": "S27",
+   "orig": "S28",
+   "chapter": "dénouement",
+   "gap": 1,
+   "text": "Cette fois, la bande a su avant.",
+   "tts": "Cette fois, la bande a su avant.",
+   "shot": "P25"
+  },
+  {
+   "id": "S28",
+   "orig": "S29",
+   "chapter": "épilogue",
+   "gap": 2.8,
+   "text": "Plus tard, la douane calcule la note. Pas de mauvaise surprise : la part était mise de côté.",
+   "tts": "Plus tard, la douane calcule la note. Pas de mauvaise surprise : la part était mise de côté.",
+   "shot": "P26"
+  },
+  {
+   "id": "S29",
+   "orig": "S30",
+   "chapter": "bonzini",
+   "gap": 1,
+   "text": "Chez Bonzini, où vous réglez vos fournisseurs en francs CFA, on veut que vous réussissiez.",
+   "tts": "Chez Bonzini, où vous réglez vos fournisseurs en francs CFA, on veut que vous réussissiez.",
+   "shot": "P27"
+  },
+  {
+   "id": "S30",
+   "orig": "S31",
+   "chapter": "bonzini",
+   "gap": 0.5,
+   "text": "Dans Bonzini : vos droits et taxes d'importation, estimés en quelques questions, avant de payer votre fournisseur.",
+   "tts": "Dans Bonzini : vos droits et taxes d'importation, estimés en quelques questions, avant de payer votre fournisseur.",
+   "shot": "P27"
+  },
+  {
+   "id": "S31",
+   "orig": "S32",
+   "chapter": "question",
+   "gap": 1,
+   "text": "Et vous : la douane, vous l'estimez avant ou après avoir payé le fournisseur ? Dites-le en commentaire.",
+   "tts": "Et vous : la douane, vous l'estimez avant ou après avoir payé le fournisseur ? Dites-le en commentaire.",
+   "shot": "P28"
+  },
+  {
+   "id": "S32",
+   "orig": "S33",
+   "chapter": "signature",
+   "gap": 0.8,
+   "text": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.",
+   "tts": "Bonzini Trading Cargo. Payez le juste droit. Ni plus, ni moins.",
+   "shot": "P28"
+  }
+ ]
+}
