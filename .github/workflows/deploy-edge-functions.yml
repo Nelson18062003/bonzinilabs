@@ -83,3 +83,10 @@ jobs:
           supabase functions deploy telegram-bot \
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt
+
+      # Marché Binance (module Taux) : carnet P2P complet pour l'écran admin.
+      # JWT admin exigé (verify_jwt actif) + garde canManageRates dans la fonction.
+      - name: Déployer la fonction binance-p2p-book
+        run: |
+          supabase functions deploy binance-p2p-book \
+            --project-ref "$PROJECT_REF"

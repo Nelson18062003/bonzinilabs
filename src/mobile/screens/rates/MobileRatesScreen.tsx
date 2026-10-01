@@ -9,11 +9,15 @@
 //   · Simulateur (RateSimulatorTab)
 //   · Historique (RateHistoryTab) + graphique d'évolution (repli)
 //   · Ajustements pays & tranches (RateConfigTab — repli, usage avancé)
+//   · Marché Binance → sous-module /m/more/rates/market (distribution en
+//     direct du carnet Binance P2P), réservé à canManageRates
 // Logique 100% préservée (hooks, RPC, calculs, exports).
 // ============================================================
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { cn } from '@/lib/utils';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
@@ -57,6 +61,7 @@ function Collapsible({ title, children, defaultOpen = false }: { title: string; 
 
 export function MobileRatesScreen() {
   const queryClient = useQueryClient();
+  const { hasPermission } = useAdminAuth();
 
   const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
@@ -114,6 +119,23 @@ export function MobileRatesScreen() {
               <RateChartTab />
             </Collapsible>
           </section>
+
+          {/* ── Marché Binance — sous-module ── */}
+          {hasPermission('canManageRates') && (
+            <section>
+              <Caption>Marché Binance</Caption>
+              <Link
+                to="/m/more/rates/market"
+                className={cn('flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
+              >
+                <span>
+                  <span className={cn('block text-[16px] font-bold', TEXT.strong)}>Distribution des prix en direct</span>
+                  <span className={cn('block text-[14px]', TEXT.muted)}>Toutes les annonces Binance P2P, Chine et Cameroun, avec filtres</span>
+                </span>
+                <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+              </Link>
+            </section>
+          )}
 
           {/* ── Ajustements pays & tranches (avancé, repli) ── */}
           <section>
