@@ -1,7 +1,8 @@
 // Marché Binance (01/10/2026) : distribution du carnet P2P, filtres et zoom.
 import { describe, expect, it } from 'vitest';
+import { fmtClock } from '@/components/rates/market/format';
 import {
-  binKey, blankFilters, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
+  MARKET, binKey, blankFilters, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
   type P2PAd,
 } from '@/lib/p2pMarket';
 
@@ -94,6 +95,15 @@ describe('zoom', () => {
     expect(zoomOf(book, 'CNY', blankFilters(), true)!.lo).toBe(6.03);
     const z = zoomOf(book, 'CNY', { ...blankFilters(), lo: 6.6, hi: 6.62 }, false)!;
     expect([z.mode, z.lo, z.hi]).toEqual(['custom', 6.6, 6.62]);
+  });
+});
+
+describe('heure des relevés', () => {
+  it('se lit dans le pays du marché : Chine (UTC+8) et Cameroun (UTC+1)', () => {
+    const iso = '2026-10-01T16:38:46Z';
+    expect(fmtClock(iso, MARKET.CNY.timeZone)).toBe('00:38:46');
+    expect(fmtClock(iso, MARKET.XAF.timeZone)).toBe('17:38:46');
+    expect(fmtClock(iso, MARKET.XAF.timeZone, false)).toBe('17:38');
   });
 });
 
