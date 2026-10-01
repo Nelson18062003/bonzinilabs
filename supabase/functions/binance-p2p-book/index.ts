@@ -78,7 +78,13 @@ async function binance(url: string, body: unknown) {
 async function methodsOf(fiat: Fiat) {
   const hit = methodsCache.get(fiat);
   if (hit && Date.now() - hit.at < METHODS_CACHE_MS) return hit.methods;
-  const json = await binance(FILTERS, { fiat });
+  // Liste des modes de paiement : utile aux filtres, pas indispensable au
+  // carnet — si Binance ne la sert pas, on continue sans (ou avec l'ancienne).
+  let json;
+  try { json = await binance(FILTERS, { fiat }); } catch (e) {
+    console.error("binance-p2p-book filter-conditions", fiat, e);
+    return hit?.methods ?? [];
+  }
   const methods = ((json?.data?.tradeMethods ?? []) as { identifier: string; tradeMethodName: string }[])
     .map((m) => ({ id: m.identifier, name: m.tradeMethodName }));
   methodsCache.set(fiat, { at: Date.now(), methods });
