@@ -98,6 +98,19 @@ l'organisation **bonzinilabss-team** (ID `d07bbd77-fb5b-4f08-8741-e2dab0755865`)
 `owner`, `extra.eas.projectId` et `updates.url` sont dans `app.json`. Les
 étapes ci-dessous ne servent que pour repartir de zéro.
 
+**Fait le 02/10/2026** (tout est stocké sur les serveurs d'Expo, rien dans le dépôt) :
+- Android : clé de signature créée par EAS ; premier APK de test installé et vérifié.
+- iOS : équipe Apple `X5HMB2LPQ3` (BONZINILABS LTD) ; identifiant `com.bonzinilabs.hq`
+  avec Push Notifications ; certificat de distribution et profil créés par EAS
+  (clé API App Store Connect `HP2K9DA8W7`) ; clé APNs `JMGY7285V6` rattachée.
+- Fiche App Store Connect : Apple ID `6818365985` (`submit.production.ios.ascAppId`
+  dans `eas.json`) ; premier build envoyé vers TestFlight.
+- Reste : Firebase (FCM) pour les notifications Android.
+
+La clé API App Store Connect n'est pas dans le dépôt : pour `eas submit` en mode
+non interactif, la passer au moment de la commande (`ascApiKeyPath`,
+`ascApiKeyIssuerId`, `ascApiKeyId`), sans la committer.
+
 1. **Compte Expo** (gratuit) : https://expo.dev/signup — créez une
    organisation **bonzinilabs** et utilisez-la pour tout.
 2. Sur votre ordinateur (Mac ou PC), avec Node.js installé :
