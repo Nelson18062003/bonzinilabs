@@ -94,7 +94,7 @@ passe** y est proposé. Sur le site, rien ne change.
 ## 2. Avant de commencer (une seule fois, ~15 min)
 
 **Fait le 01/10/2026** : projet EAS `bonzini-hq` créé sur expo.dev dans
-l'organisation **bonzinilabss-team** (ID `d87bbd77-fb5b-4f08-8741-e2dab0755865`) ;
+l'organisation **bonzinilabss-team** (ID `d07bbd77-fb5b-4f08-8741-e2dab0755865`) ;
 `owner`, `extra.eas.projectId` et `updates.url` sont dans `app.json`. Les
 étapes ci-dessous ne servent que pour repartir de zéro.
 
