@@ -28,6 +28,12 @@ export interface WarehouseLabelData {
   parcel: Pick<Parcel, 'parcel_no' | 'seq' | 'kind' | 'description' | 'weight_kg' | 'length_cm' | 'width_cm' | 'height_cm' | 'cbm'>;
   /** Combien de cartons dans ce dépôt : « 3 / 10 ». */
   count: number;
+  /**
+   * Le rang du carton dans le dépôt (1…count). Par défaut, son numéro d'ordre —
+   * mais un colis supprimé ne rend pas son numéro (RC-…-04 reste -04) : sans
+   * ce rang, l'étiquette afficherait « 4 / 3 ». Voir labelPosition().
+   */
+  position?: number;
   depositNo: string;
   client: ReceptionClient | null;
   supplier: SupplierInfo | null;
@@ -183,7 +189,7 @@ export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): O
     ops.push({ kind: 'qr', x: CX0 + 6, y: y + (BLOCK - QR) / 2, size: QR });
     const rx = CX0 + QR + 26, rw = CX1 - rx;
     const big = f(900, 66, FONT_LATIN);
-    const n = String(d.parcel.seq);
+    const n = String(d.position ?? d.parcel.seq);
     const nW = text(n, rx, y + 44, big, INK, rw, 'left', 'big');
     text(`/ ${d.count}`, rx + nW + 4, y + 52, f(800, 28, FONT_LATIN), '#444444', rw - nW - 4, 'left', 'big');
     text('货物编号 · PARCEL NO.', rx, y + 90, f(700, 11, FONT_ZH), MUTED, rw, 'left', 'pno-k');

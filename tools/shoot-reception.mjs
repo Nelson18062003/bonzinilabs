@@ -35,6 +35,8 @@ const dep2 = {
   parcel_count: 10, total_weight_kg: 84, total_cbm: 0.62,
   parcels: Array.from({ length: 10 }, (_, i) => parcel(i + 1, 'RC-000122', { description: ['Chaussures, 40 paires', 'Tissus wax', 'Sacs à main, 30 pièces'][i % 3], weight_kg: 8.4, photo_path: i < 7 ? `dep2/carton-${(i % 3) + 1}.jpg` : null })),
 };
+// Plusieurs photos par colis (migration 20261002100000) : la couverture, puis d'autres vues du carton.
+dep2.parcels = dep2.parcels.map((p, i) => (p.photo_path ? { ...p, photos: [p.photo_path, ...(i % 3 === 0 ? [`dep2/carton-${(i % 3) + 4}.jpg`, `dep2/carton-${((i + 1) % 3) + 1}.jpg`] : i % 3 === 1 ? [`dep2/carton-${(i % 3) + 4}.jpg`] : [])].map((path, k) => ({ id: `ph-${p.id}-${k}`, path, position: k, created_at: p.created_at })) } : { ...p, photos: [] }));
 const dep3 = { ...dep2, id: 'dep3', deposit_no: 'RC-000121', client: client2, brought_by: 'courier', parcel_count: 3, total_weight_kg: 21, total_cbm: 0.18, opened_at: today(13, 10), closed_at: today(13, 18), parcels: dep2.parcels.slice(0, 3).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000121') })) };
 const dep4 = { ...dep2, id: 'dep4', deposit_no: 'RC-000120', client: client3, brought_by: 'representative', representative_name: 'Paul Fotso', parcel_count: 2, total_weight_kg: 9, total_cbm: 0.05, opened_at: today(11, 47), closed_at: today(11, 52), parcels: dep2.parcels.slice(0, 2).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000120') })) };
 const pend1 = { ...dep0, id: 'pend1', deposit_no: 'RC-000119', status: 'closed', closed_at: today(10, 24), opened_at: today(10, 20), parcel_count: 1, total_weight_kg: 12, total_cbm: 0.08, parcels: [parcel(1, 'RC-000119', { weight_kg: 12, length_cm: 50, width_cm: 40, height_cm: 40, cbm: 0.08, courier_waybill: 'SF2884193055221', description: 'Fournisseur Yiwu Hengda (sur le bordereau)' })] };
@@ -51,6 +53,7 @@ const shipment = {
 const withDep = (p, d) => ({ ...p, deposit_id: d.id, deposit_no: d.deposit_no, location: d.location, opened_at: d.opened_at, client: d.client });
 const loadedParcels = dep3.parcels.map((p) => withDep({ ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number }, { ...dep3, client }));
 const dep2Loaded = { ...dep2, parcels: dep2.parcels.map((p, i) => (i < 4 ? { ...p, status: 'loaded', shipment_id: 'ct1', container_number: shipment.container_number } : p)) };
+const gone1 = { ...dep4, id: 'gone1', deposit_no: 'RC-000118', status: 'cancelled', cancelled_at: today(12, 5), cancel_reason: 'Saisi en double (voir RC-000120)', cancelled_by_name: 'Nelson Ngango' };
 
 
 // ── Phase 1 : le devis d'un dépôt (prix par colis) ──
@@ -176,7 +179,13 @@ const RPC = {
       quotes: mine.length ? [{ id: q.id, quote_no: q.quote_no, deposit_id: q.deposit_id, deposit_no: q.deposit_no, status: q.status, total_xaf: q.total_xaf, amount_paid_xaf: q.amount_paid_xaf, balance_xaf: Math.max(0, q.total_xaf - q.amount_paid_xaf), invoice_no: q.invoice_no ?? null }] : [] }; },
   warehouse_release_parcels: { success: true, release: whRelease },
   warehouse_release_get: { success: true, release: whRelease },
-  reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2 }[body?.p_deposit_id] ?? dep1 }),
+  reception_get_deposit: (body) => ({ success: true, deposit: { dep0, dep1, dep2, dep3, dep4, pend1, pend2, gone1 }[body?.p_deposit_id] ?? dep1 }),
+  // La console : en stock, sur une période, ou supprimés.
+  reception_board: (b) => {
+    const list = b?.p_scope === 'cancelled' ? [gone1] : b?.p_scope === 'all' ? [dep1, dep2Loaded, dep3, dep4, pend1, pend2] : [dep1, dep2Loaded, dep4, pend1, pend2];
+    const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withQuote);
+    return { success: true, scope: b?.p_scope ?? 'stock', total: rows.length, truncated: false, deposits: rows };
+  },
 };
 
 // DESKTOP=1 : 1440×900, sans émulation mobile — pour les écrans admin desktop dans le shell.
@@ -219,6 +228,13 @@ await ctx.route(/\/storage\/v1\/object\/sign\/parcel-photos\//, (route) => {
   const m = /carton-(\d)\.jpg/.exec(url); const file = process.env.PHOTOS_DIR && m ? join(process.env.PHOTOS_DIR, `carton-${m[1]}.jpg`) : null;
   try { return route.fulfill({ status: 200, contentType: 'image/jpeg', headers: { 'access-control-allow-origin': '*' }, body: readFileSync(file) }); } catch { return route.fulfill({ status: 404, body: '' }); }
 });
+// Les URL signées PAR LOTS (createSignedUrls) : un POST sur le seau, la liste des chemins.
+await ctx.route(/\/storage\/v1\/object\/sign\/parcel-photos(\?.*)?$/, (route) => {
+  const req = route.request();
+  if (req.method() !== 'POST') return route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }, body: '' });
+  const paths = req.postDataJSON()?.paths ?? [];
+  route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(paths.map((path) => ({ path, signedURL: `/object/sign/parcel-photos/${path}?token=demo`, error: null }))) });
+});
 // Le portefeuille du client (solde), pour « régler depuis le solde ».
 await ctx.route(/\/rest\/v1\/wallets\?/, (route) => {
   const single = (route.request().headers()['accept'] ?? '').includes('pgrst.object');
@@ -257,6 +273,9 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
   const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen === 'payment-details-desktop-pdf' ? 'payment-details-desktop' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
+  // La vue de la console Réception (Dépôts, Colis, Photos, Par client) est mémorisée sur l'appareil.
+  const deskView = { 'cargo-desk-parcels': 'parcels', 'cargo-desk-parcels-selected': 'parcels', 'cargo-desk-photos': 'photos', 'cargo-desk-client': 'clients' }[screen] ?? 'deposits';
+  if (screen.startsWith('cargo-desk')) await page.addInitScript((v) => { try { localStorage.setItem('bonzini-reception-view', v); } catch { /* privé */ } }, deskView);
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   // Le panneau du flyer photographie son flyer en boucle de rendu : « load », puis on attend l'image plus bas.
@@ -264,8 +283,22 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'cargo-deposit-wallet') { await page.click('text=Encaisser'); await page.waitForTimeout(500); await page.click('text=Solde Bonzini'); await page.waitForTimeout(700); }
   if (screen === 'rc-done-labels') { await page.click('button:has-text("Imprimer")'); await page.waitForTimeout(2500); }
   if (screen === 'cargo-desk-client') { await page.click('text=Aïcha Mbarga'); await page.waitForTimeout(900); }
+  if (screen === 'cargo-desk-expanded') { await page.click('button[aria-label="Déplier les colis"] >> nth=1'); await page.waitForTimeout(700); }
+  if (screen === 'cargo-desk-parcels-selected') { await page.click('input[aria-label="Sélectionner RC-000122-05"]'); await page.click('input[aria-label="Sélectionner RC-000122-06"]'); await page.waitForTimeout(900); }
+  if (screen === 'cargo-desk-viewer') { await page.click('role=dialog >> button[aria-label="Voir les photos"] >> nth=0'); await page.waitForTimeout(900); }
+  if (screen === 'cargo-desk-parcel-edit') { await page.click('role=dialog >> button[aria-label="Modifier"] >> nth=4'); await page.waitForTimeout(900); }
+  if (screen === 'cargo-desk-deposit-edit') { await page.click('text=Modifier le dépôt'); await page.waitForTimeout(700); }
+  if (screen === 'cargo-desk-labels') { await page.click('role=dialog >> text=Étiquettes'); await page.waitForTimeout(2500); }
+  if (screen === 'cargo-desk-labels-client') { await page.click('text=Étiquette client'); await page.waitForTimeout(2500); }
+  if (screen === 'cargo-desk-remove') { await page.click('role=dialog >> button[aria-label="Supprimer"] >> nth=1'); await page.waitForTimeout(600); }
   if (screen === 'cargo-deposit-photo' || screen === 'rc-deposit-photo' || screen === 'wh-client-photo') { await page.click('button[aria-label="Voir la photo en grand"]'); await page.waitForTimeout(900); }
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
+  if (screen === 'rc-parcel-photos' && process.env.PHOTOS_DIR) {
+    // Deux prises de vue de suite (l'appareil photo rend une photo à la fois), puis une troisième de la galerie.
+    for (const n of [1, 4]) await page.setInputFiles('input[capture]', join(process.env.PHOTOS_DIR, `carton-${n}.jpg`));
+    await page.setInputFiles('input[multiple]', [join(process.env.PHOTOS_DIR, 'carton-2.jpg')]);
+    await page.waitForTimeout(600);
+  }
   if (screen === 'rc-parcel-weight') await page.fill('#p-weight', '8,4');
   if (screen === 'rc-parcel-dims') { const dims = page.locator('input[inputmode="decimal"]'); await dims.nth(0).fill('60'); await dims.nth(1).fill('40'); await dims.nth(2).fill('40'); }
   if (screen === 'rc-parcel-inside') await page.fill('#p-desc', 'Chaussures, 40 paires');

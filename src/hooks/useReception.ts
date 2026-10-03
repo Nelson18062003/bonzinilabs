@@ -14,6 +14,9 @@ import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
 import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionLocation, ReceptionistRow, StockByClient, StockStats, SupplierInfo } from '@/lib/reception';
 
+// Les RPC de la migration 20261002100000 (photos multiples, contrôle total)
+// passent aussi par `rpcJson` tant que `/gen-types` n'a pas tourné.
+
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
 async function rpcJson<T>(name: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -69,8 +72,15 @@ export function useReceptionSearch(query: string) {
 function useInvalidateReception() {
   const qc = useQueryClient();
   return (deposit?: Deposit) => {
-    qc.invalidateQueries({ queryKey: ['reception'] });
-    if (deposit) qc.setQueryData(RECEPTION_KEYS.deposit(deposit.id), deposit);
+    // Tout ce qui lit la réception… sauf les URL signées des photos : un chemin
+    // ne change pas, le re-signer à chaque correction rechargerait la galerie.
+    qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'reception' && q.queryKey[1] !== 'photo' });
+    qc.invalidateQueries({ queryKey: ['cargo', 'parts'] });
+    if (deposit) {
+      qc.setQueryData(RECEPTION_KEYS.deposit(deposit.id), deposit);
+      // Un colis retiré emporte sa ligne de devis : le devis du dépôt se relit.
+      qc.invalidateQueries({ queryKey: ['cargo', 'quote', deposit.id] });
+    }
   };
 }
 
@@ -130,6 +140,8 @@ export interface AddParcelInput {
   description?: string;
   courierWaybill?: string;
   photoPath?: string | null;
+  /** Plusieurs photos : la première devient la couverture. */
+  photoPaths?: string[];
   copies?: number;
 }
 
@@ -148,16 +160,24 @@ export function useAddParcel() {
         p_courier_waybill: input.courierWaybill ?? null,
         p_photo_path: input.photoPath ?? null,
         p_copies: input.copies ?? 1,
+        p_photo_paths: input.photoPaths && input.photoPaths.length > 0 ? input.photoPaths : null,
       }).then((r) => r.deposit),
     onSuccess: (deposit) => invalidate(deposit),
     onError: (e: Error) => toast.error(e.message),
   });
 }
 
+/**
+ * Supprimer un colis. Dépôt ouvert : son réceptionnaire. Dépôt fermé :
+ * l'équipe cargo, avec un motif (la base le refuse sans).
+ */
 export function useRemoveParcel() {
   const invalidate = useInvalidateReception();
   return useMutation({
-    mutationFn: (parcelId: string) => rpcJson<{ deposit: Deposit }>('reception_remove_parcel', { p_parcel_id: parcelId }).then((r) => r.deposit),
+    mutationFn: (input: string | { parcelId: string; reason?: string }) => {
+      const { parcelId, reason } = typeof input === 'string' ? { parcelId: input, reason: undefined } : input;
+      return rpcJson<{ deposit: Deposit }>('reception_remove_parcel', { p_parcel_id: parcelId, p_reason: reason?.trim() || null }).then((r) => r.deposit);
+    },
     onSuccess: (deposit) => invalidate(deposit),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -198,17 +218,109 @@ export async function uploadParcelPhoto(depositId: string, file: File): Promise<
   return path;
 }
 
+/**
+ * Plusieurs photos d'un coup, envoyées en parallèle (trois à la fois : le
+ * réseau de l'entrepôt). Au premier échec, plus aucun envoi ne part : on ne
+ * remplit pas le seau de photos que rien ne référencera.
+ */
+export async function uploadParcelPhotos(depositId: string, files: File[]): Promise<string[]> {
+  const out: string[] = new Array(files.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (next < files.length && !failed) {
+      const i = next++;
+      try { out[i] = await uploadParcelPhoto(depositId, files[i]); } catch (e) { failed = true; throw e; }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(3, files.length) }, worker));
+  return out;
+}
+
+/*
+ * Les URL signées, par LOTS. La galerie de la console affiche des centaines
+ * de vignettes : une requête par vignette saturait le navigateur. Chaque
+ * demande est mise en attente quelques millisecondes, puis toutes partent en
+ * un seul `createSignedUrls` (100 chemins par appel). Les écrans continuent
+ * d'appeler `useParcelPhotoUrl(path)` comme avant.
+ */
+type SignWaiter = { resolve: (url: string) => void; reject: (e: Error) => void };
+let signQueue: Map<string, SignWaiter[]> | null = null;
+
+async function flushSignQueue() {
+  const batch = signQueue;
+  signQueue = null;
+  if (!batch) return;
+  const paths = [...batch.keys()];
+  for (let i = 0; i < paths.length; i += 100) {
+    const chunk = paths.slice(i, i + 100);
+    try {
+      const { data, error } = await supabaseAdmin.storage.from('parcel-photos').createSignedUrls(chunk, 3600);
+      if (error) throw new Error(error.message);
+      const byPath = new Map((data ?? []).map((row) => [row.path, row]));
+      for (const path of chunk) {
+        const row = byPath.get(path);
+        for (const w of batch.get(path) ?? []) {
+          if (row?.signedUrl) w.resolve(row.signedUrl);
+          else w.reject(new Error(row?.error || 'Photo introuvable'));
+        }
+      }
+    } catch (e) {
+      for (const path of chunk) for (const w of batch.get(path) ?? []) w.reject(e as Error);
+    }
+  }
+}
+
+function signParcelPhoto(path: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!signQueue) {
+      signQueue = new Map();
+      setTimeout(() => void flushSignQueue(), 12);
+    }
+    const waiters = signQueue.get(path) ?? [];
+    waiters.push({ resolve, reject });
+    signQueue.set(path, waiters);
+  });
+}
+
 /** L'URL signée (1 h) d'une photo de colis — le seau est privé. */
 export function useParcelPhotoUrl(path: string | null | undefined) {
   return useQuery({
     queryKey: ['reception', 'photo', path],
-    queryFn: async () => {
-      const { data, error } = await supabaseAdmin.storage.from('parcel-photos').createSignedUrl(path as string, 3600);
-      if (error) throw new Error(error.message);
-      return data.signedUrl;
-    },
+    queryFn: () => signParcelPhoto(path as string),
     enabled: !!path,
     staleTime: 50 * 60_000,
+  });
+}
+
+// ── Les photos d'un colis : ajouter, retirer, choisir la couverture ─────────
+export function useAddParcelPhotos() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: async (input: { depositId: string; parcelId: string; files: File[] }) => {
+      const paths = await uploadParcelPhotos(input.depositId, input.files);
+      return rpcJson<{ deposit: Deposit }>('reception_add_parcel_photos', { p_parcel_id: input.parcelId, p_paths: paths }).then((r) => r.deposit);
+    },
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRemoveParcelPhoto() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (photoId: string) => rpcJson<{ deposit: Deposit }>('reception_remove_parcel_photo', { p_photo_id: photoId }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSetParcelCover() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (photoId: string) => rpcJson<{ deposit: Deposit }>('reception_set_parcel_cover', { p_photo_id: photoId }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
   });
 }
 
@@ -337,6 +449,7 @@ export function useUpdateParcel() {
         p_description: input.description ?? null,
         p_courier_waybill: input.courierWaybill ?? null,
         p_photo_path: input.photoPath ?? null,
+        p_photo_paths: input.photoPaths && input.photoPaths.length > 0 ? input.photoPaths : null,
       }).then((r) => r.deposit),
     onSuccess: (dep) => invalidate(dep),
     onError: (e: Error) => toast.error(e.message),
@@ -358,5 +471,82 @@ export function useReceptionClient(userId: string | undefined) {
     queryFn: () => rpcJson<{ client: ReceptionClient }>('reception_client', { p_user_id: userId }).then((r) => r.client),
     enabled: !!userId,
     staleTime: 60_000,
+  });
+}
+
+// ── La console : la liste des dépôts, et le contrôle total ──────────────────
+export type BoardScope = 'stock' | 'all' | 'cancelled';
+
+export interface BoardQuery {
+  scope: BoardScope;
+  location?: ReceptionLocation | null;
+  from?: Date | null;
+  to?: Date | null;
+}
+
+/**
+ * Les dépôts et leurs colis (photos comprises) : ce qui est en stock, ce qui
+ * a été reçu sur une période, ou ce qui a été supprimé. Une seule source pour
+ * les vues Dépôts, Colis et Photos de la console.
+ */
+export function useReceptionBoard(q: BoardQuery) {
+  return useQuery({
+    queryKey: ['reception', 'board', q.scope, q.location ?? 'all', q.from?.toISOString() ?? null, q.to?.toISOString() ?? null],
+    queryFn: () => rpcJson<{ total: number; truncated: boolean; deposits: Deposit[] }>('reception_board', {
+      p_scope: q.scope,
+      p_location: q.location ?? null,
+      p_from: q.from?.toISOString() ?? null,
+      p_to: q.to?.toISOString() ?? null,
+      p_limit: 500,
+    }),
+    staleTime: 20_000,
+  });
+}
+
+export interface UpdateDepositInput {
+  depositId: string;
+  location?: ReceptionLocation;
+  broughtBy?: BroughtBy;
+  /** Chaîne vide : on efface ; absent : on garde. */
+  representativeName?: string;
+  representativePhone?: string;
+  notes?: string;
+}
+
+/** Corriger un dépôt (lieu, mode d'arrivée, apporteur, notes). */
+export function useUpdateDeposit() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (input: UpdateDepositInput) =>
+      rpcJson<{ deposit: Deposit }>('reception_update_deposit', {
+        p_deposit_id: input.depositId,
+        p_location: input.location ?? null,
+        p_brought_by: input.broughtBy ?? null,
+        p_representative_name: input.representativeName ?? null,
+        p_representative_phone: input.representativePhone ?? null,
+        p_notes: input.notes ?? null,
+      }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Supprimer un dépôt (suppression douce, motif obligatoire) — il se rétablit. */
+export function useCancelDeposit() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (input: { depositId: string; reason: string }) =>
+      rpcJson<{ deposit: Deposit }>('reception_cancel_deposit', { p_deposit_id: input.depositId, p_reason: input.reason.trim() }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRestoreDeposit() {
+  const invalidate = useInvalidateReception();
+  return useMutation({
+    mutationFn: (depositId: string) => rpcJson<{ deposit: Deposit }>('reception_restore_deposit', { p_deposit_id: depositId }).then((r) => r.deposit),
+    onSuccess: (deposit) => invalidate(deposit),
+    onError: (e: Error) => toast.error(e.message),
   });
 }

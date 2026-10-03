@@ -60,7 +60,7 @@ function useQuoteMutation<TArgs>(name: string, toArgs: (a: TArgs) => Record<stri
     mutationFn: (a: TArgs) => rpcJson<{ quote: Quote }>(name, toArgs(a)).then((r) => r.quote),
     onSuccess: (quote) => {
       qc.setQueryData(QUOTE_KEYS.quote(quote.deposit_id), quote);
-      qc.invalidateQueries({ queryKey: ['reception'] });
+      qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'reception' && q.queryKey[1] !== 'photo' });
       if (success) toast.success(success);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -91,7 +91,7 @@ export function useAddQuotePayment() {
       }).then((r) => ({ quote: r.quote, payment: r.quote.payments?.find((p) => p.id === r.payment_id) ?? null })),
     onSuccess: ({ quote }) => {
       qc.setQueryData(QUOTE_KEYS.quote(quote.deposit_id), quote);
-      qc.invalidateQueries({ queryKey: ['reception'] });
+      qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'reception' && q.queryKey[1] !== 'photo' });
       toast.success('Encaissement enregistré');
     },
     onError: (e: Error) => toast.error(e.message),
@@ -106,7 +106,7 @@ export function usePayQuoteFromWallet() {
         .then((r) => ({ quote: r.quote, payment: r.quote.payments?.find((p) => p.id === r.payment_id) ?? null, walletBalance: r.wallet_balance_xaf })),
     onSuccess: ({ quote }) => {
       qc.setQueryData(QUOTE_KEYS.quote(quote.deposit_id), quote);
-      qc.invalidateQueries({ queryKey: ['reception'] });
+      qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'reception' && q.queryKey[1] !== 'photo' });
       qc.invalidateQueries({ queryKey: ['admin-wallet'] });
       toast.success('Réglé depuis le solde du client');
     },

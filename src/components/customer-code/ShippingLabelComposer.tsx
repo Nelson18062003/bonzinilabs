@@ -38,15 +38,19 @@ export interface ShippingLabelComposerProps {
   layout?: 'stack' | 'split';
   /** `admin` : copier / télécharger l'image + PDF ; `client` : envoyer l'image et le PDF (WeChat, WhatsApp). */
   mode?: 'admin' | 'client';
+  /** Le mode d'envoi au départ (la console part du lieu du dépôt). Sea cargo sinon. */
+  initialDestination?: ShippingDestination;
+  /** Le fournisseur déjà connu (celui du dépôt), pré-rempli et modifiable. */
+  initialSupplier?: LabelSupplierInfo;
   className?: string;
 }
 
-export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', mode = 'client', className }: ShippingLabelComposerProps) {
+export function ShippingLabelComposer({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, settings, layout = 'stack', mode = 'client', initialDestination, initialSupplier, className }: ShippingLabelComposerProps) {
   const { t } = useTranslation('client');
   // Sea cargo (entrepôt) par défaut : c'est le mode de la plupart des envois ;
   // l'air cargo (bureau) est indiqué au cas par cas.
-  const [destination, setDestination] = useState<ShippingDestination>('warehouse');
-  const [supplier, setSupplier] = useState<LabelSupplierInfo>({});
+  const [destination, setDestination] = useState<ShippingDestination>(initialDestination ?? 'warehouse');
+  const [supplier, setSupplier] = useState<LabelSupplierInfo>(() => initialSupplier ?? {});
   const { preview, render, qr } = useShippingLabel({ code, clientName, clientPhone, clientEmail, companyName, clientCity, clientCountry, destination, settings, supplier });
 
   const destConfigured = isLocationConfigured(settings[destination]);

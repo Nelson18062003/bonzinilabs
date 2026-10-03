@@ -1,6 +1,7 @@
 // ============================================================
 // RÉCEPTION — Un colis, en cinq questions, une par écran :
-//   1. la photo (la preuve, et le geste le plus rapide)
+//   1. les photos (la preuve, et le geste le plus rapide) — plusieurs
+//      angles : l'étiquette du fournisseur, l'état du carton, le contenu
 //   2. le poids
 //   3. les dimensions (le m³ se calcule sous les yeux)
 //   4. ce que c'est — le type, et ce qu'il y a dedans
@@ -13,13 +14,15 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Camera, Check, Minus, Plus } from 'lucide-react';
+import { Camera, ImagePlus, Minus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { PARCEL_KINDS, cbmOf, formatCbm, type ParcelKind } from '@/lib/reception';
-import { uploadParcelPhoto, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useUpdateParcel } from '@/hooks/useReception';
+import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind } from '@/lib/reception';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useFilePreviews } from '@/hooks/useFilePreviews';
+import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, PrimaryPill, SoftPill, TextInput } from '@/mobile/designKit';
 import { StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -34,6 +37,29 @@ const num = (s: string): number | null => {
   return Number.isFinite(v) && v >= 0 ? v : null;
 };
 
+/** Une photo prise, pas encore envoyée : son aperçu local (useFilePreviews), et la retirer. */
+function NewPhoto({ url, cover, coverLabel, removeLabel, onRemove }: { url: string | null; cover: boolean; coverLabel: string; removeLabel: string; onRemove: () => void }) {
+  return (
+    <div className={cn('relative overflow-hidden rounded-lg', SURFACE.inset)} style={{ aspectRatio: '4 / 3' }}>
+      {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+      {cover && <span className="absolute left-2 top-2 rounded-md bg-[#1E1E1E]/85 px-2 py-0.5 text-[13px] font-semibold text-white">{coverLabel}</span>}
+      <button type="button" onClick={onRemove} aria-label={removeLabel} className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1E1E1E] shadow"><X className="h-5 w-5" /></button>
+    </div>
+  );
+}
+
+/** Une photo déjà enregistrée sur le colis (correction d'un colis existant). */
+function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove }: { photo: { path: string }; cover: boolean; coverLabel: string; removeLabel: string; onRemove?: () => void }) {
+  const { data: url } = useParcelPhotoUrl(photo.path);
+  return (
+    <div className={cn('relative overflow-hidden rounded-lg', SURFACE.inset)} style={{ aspectRatio: '4 / 3' }}>
+      {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+      {cover && <span className="absolute left-2 top-2 rounded-md bg-[#1E1E1E]/85 px-2 py-0.5 text-[13px] font-semibold text-white">{coverLabel}</span>}
+      {onRemove && <button type="button" onClick={onRemove} aria-label={removeLabel} className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1E1E1E] shadow"><X className="h-5 w-5" /></button>}
+    </div>
+  );
+}
+
 export function ReceptionParcel() {
   const navigate = useNavigate();
   const { depositId, parcelId } = useParams<{ depositId: string; parcelId?: string }>();
@@ -44,16 +70,18 @@ export function ReceptionParcel() {
   const { data: deposit } = useReceptionDeposit(depositId);
   const add = useAddParcel();
   const update = useUpdateParcel();
+  const removePhoto = useRemoveParcelPhoto();
   const editing = deposit?.parcels.find((p) => p.id === parcelId) ?? null;
-  const { data: existingPhotoUrl } = useParcelPhotoUrl(editing?.photo_path);
+  const { currentUser, hasPermission } = useAdminAuth();
+  // Les photos déjà enregistrées (correction) ; une donnée d'avant les photos multiples n'a que sa couverture.
+  const saved = editing ? parcelSavedPhotos(editing) : [];
   const steps = parcelId ? EDIT_STEPS : NEW_STEPS;
 
   const [step, setStep] = useState<Step>(() => {
     const s = params.get('step') as Step | null;
     return s && (parcelId ? EDIT_STEPS : NEW_STEPS).includes(s) ? s : 'photo';
   });
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [kind, setKind] = useState<ParcelKind>('carton');
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('');
@@ -66,6 +94,7 @@ export function ReceptionParcel() {
   const [uploading, setUploading] = useState(false);
   const [loaded, setLoaded] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   // Édition : le formulaire se remplit une fois, avec ce que le colis porte déjà.
   useEffect(() => {
@@ -81,12 +110,14 @@ export function ReceptionParcel() {
     setLoaded(editing.id);
   }, [editing, loaded]);
 
-  useEffect(() => {
-    if (!photo) { setPreview(null); return; }
-    const url = URL.createObjectURL(photo);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
+  const totalPhotos = saved.length + photos.length;
+  const previews = useFilePreviews(photos);
+  const addFiles = (list: FileList | null) => {
+    const { kept, rejected, overflow } = pickParcelPhotos(list ?? [], MAX_PARCEL_PHOTOS - totalPhotos);
+    if (rejected > 0) toast.error(t('rc_photo_type'));
+    if (overflow > 0) toast.warning(t('rc_photos_max'));
+    if (kept.length > 0) setPhotos((cur) => [...cur, ...kept]);
+  };
 
   const cbm = useMemo(() => cbmOf(num(length), num(width), num(height)), [length, width, height]);
   const nextSeq = (deposit?.parcels.length ?? 0) + 1;
@@ -97,14 +128,14 @@ export function ReceptionParcel() {
 
   const submit = async () => {
     if (!depositId) return;
-    let photoPath: string | null = null;
+    let photoPaths: string[] = [];
     try {
-      if (photo) { setUploading(true); photoPath = await uploadParcelPhoto(depositId, photo); }
+      if (photos.length > 0) { setUploading(true); photoPaths = await uploadParcelPhotos(depositId, photos); }
     } catch (e) {
       toast.error((e as Error).message); setUploading(false); return;
     }
     setUploading(false);
-    const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPath };
+    const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths };
     if (editing) {
       await update.mutateAsync({ ...fields, parcelId: editing.id, depositId });
       toast.success(t('rc_parcel_saved'), { description: editing.parcel_no });
@@ -117,11 +148,12 @@ export function ReceptionParcel() {
   };
 
   const busy = uploading || add.isPending || update.isPending;
-  const shownPhoto = preview ?? (editing && !photo ? existingPhotoUrl ?? null : null);
+  // Retirer une photo déjà enregistrée : son réceptionnaire tant que le dépôt est ouvert, sinon l'équipe cargo.
+  const canRemoveSaved = hasPermission('canManageCargo') || (deposit?.status === 'open' && deposit.received_by === currentUser?.id);
   const title = editing ? `${t('rc_parcel')} ${String(editing.seq).padStart(2, '0')}` : `${t('rc_parcel')} ${nextSeq}`;
 
   // Le bouton du bas : « Suivant », ou, à la dernière question, « Ajouter » / « Enregistrer ».
-  const primaryLabel = !last ? t('rc_next') : uploading ? t('rc_uploading') : editing ? t('rc_save') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add');
+  const primaryLabel = !last ? t('rc_next') : uploading ? (photos.length > 1 ? t('rc_uploading_n') : t('rc_uploading')) : editing ? t('rc_save') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add');
   const optional = step === 'photo' || step === 'weight' || step === 'dims';
 
   return (
@@ -131,24 +163,42 @@ export function ReceptionParcel() {
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-4">
         {step === 'photo' && (
           <>
-            <StepHeader step={index + 1} total={steps.length} title={t('rc_p_photo_title')} help={t('rc_p_photo_help')} />
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className={cn('flex w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed', shownPhoto ? 'border-transparent' : 'border-[#949494] dark:border-[#6E6E6E]', SURFACE.inset)}
-              style={{ aspectRatio: '4 / 3' }}
-            >
-              {shownPhoto ? (
-                <img src={shownPhoto} alt="" className="h-full w-full object-cover" />
-              ) : (
+            <StepHeader step={index + 1} total={steps.length} title={t('rc_p_photos_title')} help={t('rc_p_photos_help')} />
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+            <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+            {totalPhotos === 0 ? (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className={cn('flex w-full items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-[#949494] dark:border-[#6E6E6E]', SURFACE.inset)}
+                style={{ aspectRatio: '4 / 3' }}
+              >
                 <span className="flex flex-col items-center gap-4">
                   <span className={cn('flex h-20 w-20 items-center justify-center rounded-full', SURFACE.card, SURFACE.shadow)}><Camera className={cn('h-10 w-10', TEXT.strong)} /></span>
                   <span className={cn(TYPE.lead, TEXT.strong)}>{t('rc_take_photo')}</span>
                 </span>
-              )}
-            </button>
-            {shownPhoto && <p className={cn('-mt-3 flex items-center justify-center gap-2 text-center', TYPE.small, 'text-[#02542D] dark:text-[#CFF7D3]')}><Check className="h-4 w-4" /> {t('rc_photo_taken')} · {t('rc_retake_hint')}</p>}
+              </button>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {saved.map((ph, k) => (
+                  <SavedPhoto key={ph.path} photo={ph} cover={k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')}
+                    onRemove={canRemoveSaved && ph.id ? () => removePhoto.mutate(ph.id!) : undefined} />
+                ))}
+                {photos.map((f, k) => (
+                  <NewPhoto key={`${f.name}-${f.lastModified}-${k}`} url={previews[k]} cover={saved.length === 0 && k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')}
+                    onRemove={() => setPhotos((cur) => cur.filter((_, n) => n !== k))} />
+                ))}
+                {totalPhotos < MAX_PARCEL_PHOTOS && (
+                  <button type="button" onClick={() => fileRef.current?.click()} className={cn('flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#949494] dark:border-[#6E6E6E]', TYPE.bodyStrong, TEXT.strong)} style={{ aspectRatio: '4 / 3' }}>
+                    <Camera className="h-7 w-7" /> {t('rc_add_photo')}
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3">
+              <button type="button" onClick={() => galleryRef.current?.click()} disabled={totalPhotos >= MAX_PARCEL_PHOTOS} className={cn('flex items-center gap-2 disabled:opacity-40', TYPE.bodyStrong, TEXT.muted)}><ImagePlus className="h-5 w-5" /> {t('rc_from_gallery')}</button>
+              {totalPhotos > 0 && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{ti('rc_photos_count', { count: totalPhotos })}</span>}
+            </div>
           </>
         )}
 
