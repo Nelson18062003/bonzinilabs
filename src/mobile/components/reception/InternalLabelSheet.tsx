@@ -11,7 +11,7 @@ import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { ShippingSettings } from '@/lib/customerCode';
-import { depositSupplier, type Deposit } from '@/lib/reception';
+import { depositSupplier, labelPosition, type Deposit } from '@/lib/reception';
 import { parcelQrPayload, renderWarehouseLabel } from '@/lib/warehouseLabelCanvas';
 import { useParcelQrCanvases } from '@/components/customer-code/useParcelQrCanvases';
 import { canShareFiles, deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
@@ -30,7 +30,7 @@ export function InternalLabelSheet({ open, onClose, deposit, settings }: { open:
   const count = parcels.length;
 
   const data = (k: number) => ({
-    destination: deposit.location, settings, parcel: parcels[k], count, depositNo: deposit.deposit_no,
+    destination: deposit.location, settings, parcel: parcels[k], count, position: labelPosition(parcels, parcels[k].id), depositNo: deposit.deposit_no,
     client: client!, supplier: depositSupplier(deposit), receivedAt, receivedByName: deposit.received_by_name,
   });
 

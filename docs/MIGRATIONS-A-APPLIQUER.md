@@ -5,6 +5,25 @@
 
 ## En attente
 
+### `20261002100000_reception_full_control.sql`
+**PR :** Cargo › Réception refaite — dépôts et colis d'abord, plusieurs photos par colis, contrôle total
+**Contenu :**
+- `parcel_photos` (N photos par colis, RLS lecture staff, aucune écriture directe) ; les photos existantes y sont
+  recopiées comme couvertures, et `parcels.photo_path` reste la couverture (trigger) — étiquettes, Douala inchangés.
+- `parcel_deposits` : `cancelled_at / cancelled_by / cancel_reason` (suppression douce) et `last_seq` (un numéro de
+  colis supprimé n'est jamais redonné : il peut déjà être imprimé sur une étiquette).
+- `reception_add_parcel` et `reception_update_parcel` prennent `p_photo_paths` (l'ancienne signature est retirée ;
+  les apps déjà ouvertes qui envoient `p_photo_path` continuent de marcher). L'équipe cargo ajoute un colis à un dépôt
+  fermé ; un colis chargé en avion ne se modifie plus (seul le conteneur était vérifié).
+- Nouvelles RPC, toutes étiquetées `@mola` : `reception_add_parcel_photos`, `reception_remove_parcel_photo`,
+  `reception_set_parcel_cover`, `reception_update_deposit`, `reception_cancel_deposit`, `reception_restore_deposit`,
+  `reception_board` ; `reception_remove_parcel(uuid, text)` (motif) remplace `reception_remove_parcel(uuid)`.
+- Testée sur un Postgres local (droits réceptionnaire / support / admin, devis réglé, colis chargé, annulation puis
+  rétablissement, journal) et idempotente (deux exécutions successives).
+
+**Comment pousser :** appliquée par le workflow `deploy-edge-functions.yml` au merge (si `SUPABASE_DB_PASSWORD` est
+posé), sinon coller le fichier dans l'éditeur SQL. Puis `/gen-types` (les écrans passent par `rpcJson` en attendant).
+
 ### `migrations/20260918_consolidated.sql` (= `20260918100000_wallet_overdraft.sql` + `20260918110000_payment_cancel_reason_and_edit.sql`)
 **PR :** Découvert autorisé · relevé par période · annulation / modification de paiement · formulaire client
 **Contenu :**

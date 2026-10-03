@@ -53,6 +53,14 @@ export interface SupplierInfo {
   address?: string | null;
 }
 
+/** Une photo d'un colis. La première (position 0) est la couverture, recopiée dans `Parcel.photo_path`. */
+export interface ParcelPhoto {
+  id: string;
+  path: string;
+  position: number;
+  created_at: string;
+}
+
 export interface Parcel {
   id: string;
   seq: number;
@@ -65,7 +73,10 @@ export interface Parcel {
   cbm: number | null;
   description: string | null;
   courier_waybill: string | null;
+  /** La couverture : la première des `photos`. */
   photo_path: string | null;
+  /** Toutes les photos, couverture en tête (migration 20261002100000). */
+  photos?: ParcelPhoto[];
   status: ParcelStatus;
   /** La boîte (dossier Cargo) où le colis a été chargé — null tant qu'il attend à l'entrepôt. */
   shipment_id?: string | null;
@@ -82,6 +93,7 @@ export interface Parcel {
   release_id?: string | null;
   release_no?: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 /** Un colis vu depuis le Cargo : avec son dépôt et son client. */
@@ -138,6 +150,11 @@ export interface Deposit {
   received_by_name: string | null;
   opened_at: string;
   closed_at: string | null;
+  updated_at?: string;
+  /** Un dépôt supprimé : quand, par qui, pourquoi (il se rétablit). */
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
+  cancelled_by_name?: string | null;
   parcel_count: number;
   total_weight_kg: number;
   total_cbm: number;
@@ -275,4 +292,89 @@ export function depositSupplier(d: Pick<Deposit, 'supplier_kind' | 'supplier_nam
 export function supplierLine(s: SupplierInfo | null | undefined): string {
   if (!s) return '';
   return [s.name, s.contact, s.phone].filter((v) => v && v.trim()).join(' · ');
+}
+
+// ── Les photos, les verrous, la recherche — partagés par la console ──────
+
+/** Les chemins des photos d'un colis, couverture en tête (la couverture seule pour une donnée d'avant les photos multiples). */
+export function parcelPhotoPaths(p: Pick<Parcel, 'photo_path' | 'photos'>): string[] {
+  if (p.photos && p.photos.length > 0) return [...p.photos].sort((a, b) => a.position - b.position).map((ph) => ph.path);
+  return p.photo_path ? [p.photo_path] : [];
+}
+
+/**
+ * Pourquoi ce colis ne se modifie plus d'ici — ou null s'il se modifie.
+ * Miroir de `reception_parcel_locked` (SQL) : la base refuse de toute façon,
+ * l'écran le dit avant le clic.
+ */
+export function parcelLockReason(p: Pick<Parcel, 'delivered_at' | 'release_id' | 'checked_in_at' | 'shipment_id' | 'air_shipment_id'>): string | null {
+  if (p.delivered_at || p.release_id) return 'Remis au client';
+  if (p.checked_in_at) return 'Déjà arrivé à Douala';
+  if (p.shipment_id) return 'Chargé dans un conteneur : retirez-le d\'abord de la boîte';
+  if (p.air_shipment_id) return 'Chargé dans une LTA : retirez-le d\'abord de l\'expédition';
+  return null;
+}
+
+/** Le colis attend-il encore ici (reçu, pas chargé) ? */
+export function isParcelWaiting(p: Pick<Parcel, 'status' | 'shipment_id' | 'air_shipment_id'>): boolean {
+  return !p.shipment_id && !p.air_shipment_id && (p.status === 'received' || p.status === 'stored');
+}
+
+/** « 5 » colis, ou « 3 / 5 » quand une partie du dépôt est déjà partie. */
+export function parcelsHere(d: Pick<Deposit, 'parcels'>): string {
+  const here = d.parcels.filter(isParcelWaiting).length;
+  return here === d.parcels.length ? String(d.parcels.length) : `${here} / ${d.parcels.length}`;
+}
+
+/** La date d'un dépôt : sa fermeture (le reçu), sinon son ouverture. */
+export const depositDate = (d: Pick<Deposit, 'closed_at' | 'opened_at'>): string => d.closed_at ?? d.opened_at;
+
+/** Le rang de chaque colis dans son dépôt (1…n, dans l'ordre des numéros) — « 3 / 10 » sur l'étiquette. */
+export function labelPosition(parcels: ReadonlyArray<Pick<Parcel, 'id' | 'seq'>>, id: string): number {
+  const sorted = [...parcels].sort((a, b) => a.seq - b.seq);
+  return sorted.findIndex((p) => p.id === id) + 1;
+}
+
+const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/**
+ * La recherche de la console : un numéro de dépôt ou de colis (RC-…), un code
+ * client (BZ-…), un nom, un téléphone, un bordereau transporteur, ce qu'il y
+ * a dedans, le fournisseur, le réceptionnaire. Tous les mots doivent se
+ * retrouver quelque part dans le dépôt.
+ */
+export function depositMatches(d: Deposit, query: string): boolean {
+  const words = fold(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = fold([
+    d.deposit_no, d.client ? clientFullName(d.client) : '', d.client?.customer_code, d.client?.phone, d.client?.company_name, d.client?.account_name,
+    d.supplier_name, d.supplier_contact, d.representative_name, d.received_by_name, d.notes,
+    ...d.parcels.flatMap((p) => [p.parcel_no, p.description, p.courier_waybill]),
+  ].filter(Boolean).join(' '));
+  const digits = query.replace(/\D/g, '');
+  return words.every((w) => hay.includes(w)) || (digits.length >= 6 && hay.replace(/\D/g, '').includes(digits));
+}
+
+/** Les files de la console : ce qu'on cherche à voir en premier. */
+export type ReceptionQueue = 'all' | 'waiting' | 'loaded' | 'pending' | 'incomplete' | 'nophoto' | 'open';
+export const RECEPTION_QUEUES: ReceptionQueue[] = ['all', 'waiting', 'loaded', 'pending', 'incomplete', 'nophoto', 'open'];
+
+/** Un colis est-il dans cette file ? (Un dépôt y est s'il y a au moins un de ses colis — ou, pour pending/open, par son état.) */
+export function parcelInQueue(p: Parcel, d: Pick<Deposit, 'client' | 'status'>, q: ReceptionQueue): boolean {
+  switch (q) {
+    case 'all': return true;
+    case 'waiting': return isParcelWaiting(p);
+    case 'loaded': return !isParcelWaiting(p);
+    case 'pending': return !d.client;
+    case 'incomplete': return isParcelIncomplete(p);
+    case 'nophoto': return parcelPhotoPaths(p).length === 0;
+    case 'open': return d.status === 'open';
+  }
+}
+
+export function depositInQueue(d: Deposit, q: ReceptionQueue): boolean {
+  if (q === 'all') return true;
+  if (q === 'pending') return !d.client;
+  if (q === 'open') return d.status === 'open';
+  return d.parcels.some((p) => parcelInQueue(p, d, q));
 }
