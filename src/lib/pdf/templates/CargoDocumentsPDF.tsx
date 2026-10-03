@@ -40,7 +40,7 @@ import type { Style } from '@react-pdf/types';
 import { PdfLogo } from '../components/PDFHeader';
 import '../fonts';
 import {
-  NBSP, PLACE_TZ, addDays, commonRate, contactLine, countLabel, docDateTime, docDay, fontFor, kg, m3, money, rateUnit, splitZh, wrapText, xaf,
+  DOC_TZ, NBSP, PLACE_TZ, addDays, clampLines, commonRate, contactLine, countLabel, docDateTime, docDay, fontFor, kg, m3, money, pdfSafe, rateUnit, splitZh, wrapText, xaf,
 } from '../cargoDocFormat';
 import type { PaymentMethod, PaymentPlace, Quote, QuoteLine, QuotePayment } from '@/lib/cargoQuote';
 import { activePayments, lineNeedsMeasure, quoteBalance, quotePaid } from '@/lib/cargoQuote';
@@ -153,7 +153,7 @@ const TXT = {
     name: 'Nom', company: 'Société', bonziniId: 'Identifiant Bonzini', phone: 'Téléphone', city: 'Ville', account: 'Compte',
     toAssign: 'À attribuer', toCreate: 'À créer', toFill: 'À renseigner',
     deposit: 'Dépôt', mode: 'Mode', reception: 'Réception', receivedBy: 'Reçu par', supplier: 'Fournisseur', buyingAgent: 'Agent d’achat',
-    container: 'Conteneur', vessel: 'Navire', flight: 'Vol', awb: 'LTA', eta: 'Arrivée estimée', etaPending: 'à confirmer',
+    container: 'Conteneur', vessel: 'Navire', flight: 'Vol', awb: 'LTA', eta: 'Arrivée estimée', arrived: 'Arrivée', etaPending: 'À confirmer',
     modeSea: 'Sea Cargo — Groupage', modeAir: 'Air Cargo',
     atWarehouse: 'Entrepôt de Guangzhou', atOffice: 'Bureau de Guangzhou',
     parcelsN: (n: number) => `${n}${NBSP}colis`,
@@ -163,14 +163,14 @@ const TXT = {
     kind: { carton: ['carton', 'cartons'], bag: ['sac', 'sacs'], bale: ['ballot', 'ballots'], roll: ['rouleau', 'rouleaux'], pallet: ['palette', 'palettes'], other: ['colis', 'colis'] } as Kinds,
     kindLabel: { carton: 'Carton', bag: 'Sac', bale: 'Ballot', roll: 'Rouleau', pallet: 'Palette', other: 'Colis' } as Record<string, string>,
     parcel: 'Colis', waybill: 'suivi',
-    toPay: 'Montant à régler', provisional: 'Montant provisoire', balanceToPay: 'Reste à régler', settled: 'Devis réglé', amountPaid: 'Montant réglé', amountReceived: 'Montant reçu',
+    toPay: 'Montant à régler', provisional: 'Montant provisoire', balanceProvisional: 'Reste à régler (provisoire)', balanceToPay: 'Reste à régler', settled: 'Devis réglé', amountPaid: 'Montant réglé', amountReceived: 'Montant reçu',
     totalAndPaid: (total: string, paid: string) => `Total du devis ${total} · déjà réglé ${paid}`,
     pendingMeasure: (n: number) => `${n} colis à peser ou mesurer : le montant sera complété après la mesure.`,
     payRef: (ref: string) => ['Référence à rappeler sur tout paiement : ', ref, '.'],
     validity: (d: string) => `Devis valable 30 jours, jusqu’au ${d}. Le règlement intégral conditionne la remise de la marchandise.`,
     forCompany: 'Pour Norton Gauss Bonzini SARL',
     placeDate: (place: string | null, d: string) => (place ? `${place}, le${NBSP}${d}` : `Le${NBSP}${d}`),
-    quoteFootnote: 'Il tient lieu de décompte de fret pour le retrait à Douala.',
+    quoteFootnote: 'Ce devis tient lieu de décompte de fret pour le retrait à Douala.',
     receiptFootnote: 'Conservez ce reçu : il prouve votre paiement jusqu’au retrait de la marchandise.',
     invoiceFootnote: (ref: string | null) => `Facture acquittée : aucun montant ne reste dû sur ce dépôt. Les colis sont remis sur présentation ${ref ? `de la référence ${ref}` : 'de l’identifiant Bonzini'}.`,
     fullyPaid: (ref: string | null) => `Devis entièrement réglé : les colis sont remis sur présentation ${ref ? `de la référence ${ref}` : 'de l’identifiant Bonzini'}.`,
@@ -181,11 +181,11 @@ const TXT = {
     placeWallet: 'Application Bonzini',
     placeCity: { guangzhou: 'Guangzhou', douala: 'Douala', other: null } as Record<PaymentPlace, string | null>,
     localTime: (place: PaymentPlace): string => (place === 'guangzhou' ? 'heure de Guangzhou' : 'heure de Douala'),
-    payMode: 'Mode', payRefLabel: 'Référence', payPlace: 'Lieu', payDate: 'Date', payBy: 'Reçu par',
+    payMode: 'Mode', payRefLabel: 'Référence', payPlace: 'Lieu', payDate: 'Date', payBy: 'Encaissé par',
     colReceipt: 'Reçu', colDate: 'Date', colMethod: 'Mode', colPlace: 'Lieu', thisReceipt: 'ce reçu',
     bankName: 'Banque', iban: 'IBAN', swift: 'SWIFT',
     bankHolder: (name: string) => `Titulaire : ${name}. `,
-    otherWays: (ref: string) => `Également : Mobile Money, espèces à nos bureaux de Guangzhou ou de Douala, ou depuis votre solde Bonzini (application › Cargo). Rappelez la référence ${ref} sur tout paiement.`,
+    otherWays: (ref: string) => `Également : Mobile Money, espèces à nos bureaux de Guangzhou ou de Douala, ou débit de votre solde Bonzini (sur demande). Rappelez la référence ${ref} sur tout paiement.`,
     addrDouala: 'Douala — siège et retrait', addrOffice: `Guangzhou — bureau (Air${NBSP}Cargo)`, addrWarehouse: `Guangzhou — entrepôt (Sea${NBSP}Cargo)`,
     pickupOffice: 'Bureau de Douala',
     conditions: (where: string) => [
@@ -213,39 +213,39 @@ const TXT = {
     name: 'Name', company: 'Company', bonziniId: 'Bonzini ID', phone: 'Phone', city: 'City', account: 'Account',
     toAssign: 'To be assigned', toCreate: 'To be created', toFill: 'To be provided',
     deposit: 'Deposit', mode: 'Mode', reception: 'Received', receivedBy: 'Received by', supplier: 'Supplier', buyingAgent: 'Buying agent',
-    container: 'Container', vessel: 'Vessel', flight: 'Flight', awb: 'AWB', eta: 'Estimated arrival', etaPending: 'to be confirmed',
+    container: 'Container', vessel: 'Vessel', flight: 'Flight', awb: 'AWB', eta: 'Estimated arrival', arrived: 'Arrival', etaPending: 'To be confirmed',
     modeSea: 'Sea Cargo — LCL', modeAir: 'Air Cargo',
     atWarehouse: 'Guangzhou warehouse', atOffice: 'Guangzhou office',
     parcelsN: (n: number) => `${n}${NBSP}parcel${n === 1 ? '' : 's'}`,
     colNo: 'No.', colLabel: 'Description', colDims: 'Dimensions', colWeight: 'Weight', colVolume: 'Volume', colRate: 'Rate', colAmount: 'Amount', colAmountXaf: 'Amount (XAF)',
     perUnit: (u: string) => `per ${u}`, billedOn: (q: string) => `billed on ${q}`,
-    flat: 'Flat', fee: 'Fee', discount: 'Discount', total: 'Total', toMeasure: 'To be measured',
+    flat: 'Flat rate', fee: 'Fee', discount: 'Discount', total: 'Total', toMeasure: 'To be measured',
     kind: { carton: ['carton', 'cartons'], bag: ['bag', 'bags'], bale: ['bale', 'bales'], roll: ['roll', 'rolls'], pallet: ['pallet', 'pallets'], other: ['parcel', 'parcels'] } as Kinds,
     kindLabel: { carton: 'Carton', bag: 'Bag', bale: 'Bale', roll: 'Roll', pallet: 'Pallet', other: 'Parcel' } as Record<string, string>,
     parcel: 'Parcel', waybill: 'tracking',
-    toPay: 'Amount due', provisional: 'Provisional amount', balanceToPay: 'Balance due', settled: 'Quote paid', amountPaid: 'Amount paid', amountReceived: 'Amount received',
+    toPay: 'Amount due', provisional: 'Provisional amount', balanceProvisional: 'Balance due (provisional)', balanceToPay: 'Balance due', settled: 'Quote paid', amountPaid: 'Amount paid', amountReceived: 'Amount received',
     totalAndPaid: (total: string, paid: string) => `Quote total ${total} · already paid ${paid}`,
-    pendingMeasure: (n: number) => `${n} parcel${n === 1 ? '' : 's'} still to be weighed or measured: the amount will be completed after measuring.`,
+    pendingMeasure: (n: number) => `${n} parcel${n === 1 ? '' : 's'} still to be weighed or measured: the amount will be updated once they are measured.`,
     payRef: (ref: string) => ['Include this reference with every payment: ', ref, '.'],
-    validity: (d: string) => `Quote valid for 30 days, until ${d}. Goods are released once paid in full.`,
+    validity: (d: string) => `Quote valid for 30 days, until ${d}. Goods are released upon full payment.`,
     forCompany: 'For Norton Gauss Bonzini SARL',
     placeDate: (place: string | null, d: string) => (place ? `${place}, ${d}` : d),
-    quoteFootnote: 'It serves as the freight statement for collection in Douala.',
+    quoteFootnote: 'This quote serves as the freight statement for collection in Douala.',
     receiptFootnote: 'Keep this receipt: it proves your payment until the goods are collected.',
     invoiceFootnote: (ref: string | null) => `Paid invoice: nothing remains due on this deposit. Parcels are released on presentation of ${ref ? `reference ${ref}` : 'the Bonzini ID'}.`,
     fullyPaid: (ref: string | null) => `Quote paid in full: parcels are released on presentation of ${ref ? `reference ${ref}` : 'the Bonzini ID'}.`,
-    releaseWhenPaid: 'Goods are released once the quote is paid in full.',
+    releaseWhenPaid: 'Goods are released upon full payment.',
     stampTrade: 'Bonzini Trading Cargo · Air Cargo · Sea Cargo', stampPaid: 'PAID',
     method: { cash: 'Cash', mobile_money: 'Mobile Money', bank_transfer: 'Bank transfer', wallet: 'Bonzini balance', other: 'Other' } as Record<PaymentMethod, string>,
     place: { guangzhou: 'Guangzhou, before departure', douala: 'Douala, on collection', other: 'Elsewhere' } as Record<PaymentPlace, string>,
     placeWallet: 'Bonzini app',
     placeCity: { guangzhou: 'Guangzhou', douala: 'Douala', other: null } as Record<PaymentPlace, string | null>,
     localTime: (place: PaymentPlace): string => (place === 'guangzhou' ? 'Guangzhou time' : 'Douala time'),
-    payMode: 'Method', payRefLabel: 'Reference', payPlace: 'Place', payDate: 'Date', payBy: 'Received by',
+    payMode: 'Method', payRefLabel: 'Reference', payPlace: 'Place', payDate: 'Date', payBy: 'Cashier',
     colReceipt: 'Receipt', colDate: 'Date', colMethod: 'Method', colPlace: 'Place', thisReceipt: 'this receipt',
     bankName: 'Bank', iban: 'IBAN', swift: 'SWIFT',
     bankHolder: (name: string) => `Account holder: ${name}. `,
-    otherWays: (ref: string) => `Also: Mobile Money, cash at our Guangzhou or Douala offices, or from your Bonzini balance (Bonzini app › Cargo). Include reference ${ref} with every payment.`,
+    otherWays: (ref: string) => `Also: Mobile Money, cash at our Guangzhou or Douala offices, or a debit from your Bonzini balance (on request). Include reference ${ref} with every payment.`,
     addrDouala: 'Douala — head office and collection', addrOffice: `Guangzhou — office (Air${NBSP}Cargo)`, addrWarehouse: `Guangzhou — warehouse (Sea${NBSP}Cargo)`,
     pickupOffice: 'Douala office',
     conditions: (where: string) => [
@@ -255,7 +255,7 @@ const TXT = {
       'We do not carry military equipment or similar goods. Any breach of this clause is reported to the authorities.',
       'Unprotected fragile parcels travel at the customer’s risk: no liability is accepted for damage.',
       'Amounts are for delivery in Douala. For other cities (Yaoundé, Buea, Bamenda, Bafoussam…), inland transport is negotiated in Cameroon.',
-      `Weights and volumes are those measured at our ${where}. Goods are released once paid in full.`,
+      `Weights and volumes are those measured at our ${where}. Goods are released upon full payment.`,
     ],
     whereWarehouse: 'Guangzhou warehouse', whereOffice: 'Guangzhou office',
     footer: (dep: string) => `Deposit ${dep}`,
@@ -275,8 +275,11 @@ const countryIn = (c: string | null | undefined, lang: CargoDocLang) => {
   return iso ? countryName(iso, 'en') : c;
 };
 
-/** Le texte et sa police, coupé pour sa colonne. */
-const fitted = (s: string | null | undefined, width: number, size: number) => ({ text: wrapText(s, width, size), font: fontFor(s) });
+/** Le texte TAPÉ et sa police : ramené aux glyphes des polices (pdfSafe), coupé pour sa colonne, au plus `maxLines` lignes. */
+const fitted = (s: string | null | undefined, width: number, size: number, maxLines = 6) => {
+  const safe = pdfSafe(s);
+  return { text: clampLines(safe, width, size, maxLines), font: fontFor(safe) };
+};
 /** Un numéro et son libellé ne se séparent pas : « B/L MAEU 2261 8834 ». */
 const nb = (s: string) => s.replace(/ /g, NBSP);
 /** « A · B · C » : le point reste collé au mot qui le précède. */
@@ -359,17 +362,32 @@ function Section({ n, title, children, flush = false, style, wrap }: { n: number
 }
 
 type Tone = 'violet' | 'orange' | 'amber' | 'muted';
-type Kv = [label: string, value: string, tone?: Tone];
+/** Une valeur simple, ou une liste [repère, valeur] quand il y a plusieurs conteneurs ou vols (le repère en gris au-dessus). */
+type KvVal = string | Array<[id: string, value: string, tone?: Tone]>;
+type Kv = [label: string, value: KvVal, tone?: Tone];
 const TONE: Record<Tone, Style> = { violet: { color: C.violet }, orange: { color: C.orange }, amber: { color: C.amberText }, muted: { color: C.grey, fontWeight: 500 } };
 
 /** Une valeur : le latin en gras (DM Sans), le chinois en ligne grise dessous — comme les noms de produits de la packing list. */
-function KvValue({ value, tone }: { value: string; tone?: Tone }) {
-  const { main, zh } = splitZh(value);
-  const m = fitted(main, 134, 10.5);
+function KvValue({ value, tone }: { value: KvVal; tone?: Tone }) {
+  if (Array.isArray(value)) {
+    return (
+      <View style={st.kvValueBox}>
+        {value.map(([id, v, own], i) => (
+          <View key={`${id}-${i}`} style={i ? { marginTop: 3 } : undefined}>
+            <T style={[st.kvZh, { fontFamily: 'DM Sans', marginTop: 0 }]}>{id}</T>
+            <T style={[st.kvValue, ...((own ?? tone) ? [TONE[(own ?? tone) as Tone]] : [])]}>{fitted(v, 134, 10.5, 2).text}</T>
+          </View>
+        ))}
+      </View>
+    );
+  }
+  const { main, zh } = splitZh(pdfSafe(value));
+  // Au plus 3 lignes pour un texte tapé ; une valeur déjà mise en lignes (conteneurs, B/L) les garde toutes.
+  const m = fitted(main, 134, 10.5, Math.max(3, main.split('\n').length * 2));
   return (
     <View style={st.kvValueBox}>
       <T style={[st.kvValue, { fontFamily: m.font }, ...(tone ? [TONE[tone]] : [])]}>{m.text}</T>
-      {zh ? <T style={st.kvZh}>{wrapText(zh, 134, 8.5)}</T> : null}
+      {zh ? <T style={st.kvZh}>{clampLines(zh, 134, 8.5, 2)}</T> : null}
     </View>
   );
 }
@@ -403,51 +421,62 @@ function ClientBlock({ q, lang }: { q: Quote; lang: CargoDocLang }) {
   return <KvList rows={rows} />;
 }
 
-function ShipmentBlock({ q, lang }: { q: Quote; lang: CargoDocLang }) {
+/** `asOf` : la date du document. Une arrivée passée à cette date n'est plus « estimée ». */
+function ShipmentBlock({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?: string | null }) {
   const t = TXT[lang];
   const sea = q.location !== 'office';
   const parcels = q.lines.filter((l) => l.kind === 'parcel');
   const rows: Kv[] = [
     [t.deposit, dots([q.deposit_no, t.parcelsN(parcels.length)])],
     [t.mode, sea ? t.modeSea : t.modeAir],
-    [t.reception, `${sea ? t.atWarehouse : t.atOffice}\n${docDay(q.opened_at, lang)}`],
+    // La réception a lieu à Guangzhou : sa date est celle de Guangzhou.
+    [t.reception, `${sea ? t.atWarehouse : t.atOffice}\n${docDay(q.opened_at, lang, PLACE_TZ.guangzhou)}`],
   ];
   if (q.received_by_name) rows.push([t.receivedBy, q.received_by_name]);
   if (q.supplier_name) rows.push([q.supplier_kind === 'buying_agent' ? t.buyingAgent : t.supplier, q.supplier_name]);
   const containers = q.containers ?? [];
   const flights = q.flights ?? [];
-  // Plusieurs moyens de transport : chaque navire et chaque arrivée disent à quoi ils se rapportent.
+  // Plusieurs moyens de transport : chaque navire et chaque arrivée disent à quoi ils se rapportent (repère gris au-dessus).
   const multi = containers.length + flights.length > 1;
-  const tag = (id: string, v: string) => (multi ? `${nb(id)} : ${v}` : v);
+  const awb = (n: string) => nb(`${t.awb} ${formatAwb(n)}`);
   if (containers.length) {
     rows.push([t.container, containers.map((c) => [nb(c.container_number), c.bl_number ? nb(`B/L ${c.bl_number}`) : null].filter(Boolean).join('\n')).join('\n')]);
     if (containers.some((c) => c.vessel_name || c.voyage)) {
-      rows.push([t.vessel, containers.map((c) => tag(c.container_number, dots([c.vessel_name, c.voyage]) || '—')).join('\n')]);
+      const vessels = containers.map((c): [string, string] => [nb(c.container_number), dots([c.vessel_name, c.voyage]) || '—']);
+      rows.push([t.vessel, multi ? vessels : vessels[0][1]]);
     }
   }
   if (flights.length) {
-    rows.push([t.flight, flights.map((f) => dots([nb(`${t.awb} ${formatAwb(f.awb_number)}`), [f.airline, f.flight_no].filter(Boolean).join(' ')])).join('\n')]);
+    rows.push([t.flight, flights.map((f) => dots([awb(f.awb_number), nb([f.airline, f.flight_no].filter(Boolean).join(' '))])).join('\n')]);
   }
   if (containers.length || flights.length) {
-    const etas = [...containers.map((c) => ({ id: c.container_number, eta: c.eta })), ...flights.map((f) => ({ id: formatAwb(f.awb_number), eta: f.eta }))];
-    const known = [...new Set(etas.filter((e) => e.eta).map((e) => (multi ? tag(e.id, docDay(e.eta, lang)) : docDay(e.eta, lang))))];
-    rows.push(known.length ? [t.eta, known.join('\n'), 'amber'] : [t.eta, t.etaPending, 'muted']);
+    const etas = [...containers.map((c) => ({ id: nb(c.container_number), eta: c.eta })), ...flights.map((f) => ({ id: awb(f.awb_number), eta: f.eta }))];
+    const today = asOf ? new Intl.DateTimeFormat('en-CA', { timeZone: DOC_TZ }).format(new Date(asOf)) : null;
+    const dated = etas.filter((e) => e.eta);
+    // Toutes les arrivées connues sont passées à la date du document : c'est l'arrivée, plus une estimation.
+    const arrived = !!today && dated.length === etas.length && dated.every((e) => String(e.eta).slice(0, 10) <= today);
+    const label = arrived ? t.arrived : t.eta;
+    if (!dated.length) rows.push([t.eta, t.etaPending, 'muted']);
+    else if (multi) rows.push([label, etas.map((e): [string, string, Tone?] => [e.id, e.eta ? docDay(e.eta, lang) : t.etaPending, e.eta ? (arrived ? undefined : 'amber') : 'muted'])]);
+    else rows.push([label, docDay(dated[0].eta, lang), arrived ? undefined : 'amber']);
   }
   return <KvList rows={rows} />;
 }
 
-function PartiesRow({ q, lang }: { q: Quote; lang: CargoDocLang }) {
+// Sécable entre deux lignes (chaque ligne clé / valeur, elle, est insécable) : un dépôt réparti sur beaucoup de
+// conteneurs ou de vols ne peut pas dépasser une page et se faire écraser.
+function PartiesRow({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?: string | null }) {
   const t = TXT[lang];
   return (
-    <View style={{ flexDirection: 'row' }} wrap={false}>
+    <View style={{ flexDirection: 'row' }}>
       <Section n={1} title={t.secClient} style={{ flex: 1, marginRight: 6 * MM }}><ClientBlock q={q} lang={lang} /></Section>
-      <Section n={2} title={t.secShipment} style={{ flex: 1 }}><ShipmentBlock q={q} lang={lang} /></Section>
+      <Section n={2} title={t.secShipment} style={{ flex: 1 }}><ShipmentBlock q={q} lang={lang} asOf={asOf} /></Section>
     </View>
   );
 }
 
 // Colonnes du tableau des marchandises (largeur de la section : 180 mm)
-const COL = { no: 26, dims: 70, weight: 48, vol: 54, rate: 60, amount: 66 };
+const COL = { no: 26, dims: 86, weight: 54, vol: 54, rate: 60, amount: 72 };
 const DESIGNATION_W = 180 * MM - (COL.no + COL.dims + COL.weight + COL.vol + COL.rate + COL.amount) - 10;
 
 /** Où voyage le colis, quand le dépôt est réparti entre plusieurs conteneurs ou vols. */
@@ -483,6 +512,28 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
     if (l.quantity == null || measured == null || Math.abs(Number(l.quantity) - Number(measured)) < 0.0005) return null;
     return t.billedOn(l.basis === 'per_kg' ? `${kg(l.quantity, lang)}${NBSP}kg` : `${m3(l.quantity, lang)}${NBSP}m³`);
   };
+  const parcelRow = (l: QuoteLine) => {
+    const label = fitted(lineLabel(l, t), DESIGNATION_W, 9.5, 3);
+    const sub = dots([nb(l.parcel_no ?? ''), l.description && l.kind_of_parcel ? t.kindLabel[l.kind_of_parcel] : null, l.courier_waybill ? `${t.waybill} ${l.courier_waybill}` : null, split ? whereIs(l, t) : null, billed(l)]);
+    const subFit = fitted(sub, DESIGNATION_W, 8.5, 2);
+    const needs = lineNeedsMeasure(l);
+    return (
+      <View key={l.id} style={st.tr} wrap={false}>
+        <T style={[st.td, { width: COL.no }]}>{String(l.parcel_seq ?? l.seq).padStart(2, '0')}</T>
+        <View style={[st.td, { flex: 1 }]}>
+          <T style={{ fontFamily: label.font }}>{label.text}</T>
+          {sub ? <T style={[st.tdSub, { fontFamily: subFit.font }]}>{subFit.text}</T> : null}
+        </View>
+        <T style={[st.td, { width: COL.dims, textAlign: 'center' }]}>{l.length_cm && l.width_cm && l.height_cm ? [l.length_cm, l.width_cm, l.height_cm].map((x) => kg(x, lang)).join(`${NBSP}× `) : '—'}</T>
+        <T style={[st.td, { width: COL.weight }, right]}>{l.weight_kg == null ? '—' : kg(l.weight_kg, lang)}</T>
+        <T style={[st.td, { width: COL.vol }, right]}>{m3(l.cbm, lang)}</T>
+        {rateCell(l)}
+        {needs
+          ? <T style={[st.td, { width: COL.amount, fontSize: 8.5, fontWeight: 700, color: C.orange }, right]}>{t.toMeasure}</T>
+          : <T style={[st.td, { width: COL.amount, fontWeight: 700 }, right]}>{money(l.amount_xaf, lang)}</T>}
+      </View>
+    );
+  };
   return (
     <View>
       {/* `fixed` : l'en-tête des colonnes se répète sur chaque page que le tableau occupe. */}
@@ -495,30 +546,13 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
         {th(t.colRate, unit ? `XAF / ${unit}` : 'XAF', COL.rate, 'right')}
         {th(t.colAmount, 'XAF', COL.amount, 'right')}
       </View>
-      {parcels.map((l) => {
-        const label = fitted(lineLabel(l, t), DESIGNATION_W, 9.5);
-        const sub = dots([nb(l.parcel_no ?? ''), l.description && l.kind_of_parcel ? t.kindLabel[l.kind_of_parcel] : null, l.courier_waybill ? `${t.waybill} ${l.courier_waybill}` : null, split ? whereIs(l, t) : null, billed(l)]);
-        const subFit = fitted(sub, DESIGNATION_W, 8.5);
-        const needs = lineNeedsMeasure(l);
-        return (
-          <View key={l.id} style={st.tr} wrap={false}>
-            <T style={[st.td, { width: COL.no }]}>{String(l.parcel_seq ?? l.seq).padStart(2, '0')}</T>
-            <View style={[st.td, { flex: 1 }]}>
-              <T style={{ fontFamily: label.font }}>{label.text}</T>
-              {sub ? <T style={[st.tdSub, { fontFamily: subFit.font }]}>{subFit.text}</T> : null}
-            </View>
-            <T style={[st.td, { width: COL.dims, textAlign: 'center' }]}>{l.length_cm && l.width_cm && l.height_cm ? [l.length_cm, l.width_cm, l.height_cm].map((x) => kg(x, lang)).join(' × ') : '—'}</T>
-            <T style={[st.td, { width: COL.weight }, right]}>{l.weight_kg == null ? '—' : kg(l.weight_kg, lang)}</T>
-            <T style={[st.td, { width: COL.vol }, right]}>{m3(l.cbm, lang)}</T>
-            {rateCell(l)}
-            {needs
-              ? <T style={[st.td, { width: COL.amount, fontSize: 8.5, fontWeight: 700, color: C.orange }, right]}>{t.toMeasure}</T>
-              : <T style={[st.td, { width: COL.amount, fontWeight: 700 }, right]}>{money(l.amount_xaf, lang)}</T>}
-          </View>
-        );
-      })}
+      {parcels.slice(0, -1).map(parcelRow)}
+      {/* La dernière ligne de colis, les frais, le total et le montant changent de page ENSEMBLE : la page
+          suivante ne s'ouvre jamais sur un total sans colis au-dessus. */}
+      <View wrap={false}>
+      {parcels.slice(-1).map(parcelRow)}
       {others.map((l) => {
-        const label = fitted(l.label, DESIGNATION_W, 9.5);
+        const label = fitted(l.label, DESIGNATION_W, 9.5, 2);
         return (
           <View key={l.id} style={st.tr} wrap={false}>
             <T style={[st.td, { width: COL.no }]}> </T>
@@ -531,7 +565,6 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
           </View>
         );
       })}
-      <View wrap={false}>
       <View style={st.total}>
         <T style={[st.td, { width: COL.no }]}> </T>
         <T style={[st.td, { flex: 1, fontWeight: 700 }]}>{t.total}{`${NBSP}· `}{countLabel(parcels.map((p) => p.kind_of_parcel), t.kind)}</T>
@@ -609,6 +642,13 @@ const payPlace = (p: QuotePayment, t: Txt) => (p.method === 'wallet' ? t.placeWa
 /** La référence d'un paiement — sauf pour le solde Bonzini, où la base écrit « Solde Bonzini » (déjà dit par le mode). */
 const payReference = (p: QuotePayment) => (p.reference && p.method !== 'wallet' ? p.reference : null);
 
+/** La hauteur estimée du tableau des paiements (pt) : une section insécable plus haute qu'une page serait écrasée. */
+const REF_W = 120;
+const paymentsHeight = (ps: QuotePayment[]) => ps.reduce((h, x) => {
+  const ref = fitted(payReference(x), REF_W, 8.5, 3).text;
+  return h + 26 + (ref ? ref.split('\n').length * 10.5 : 0);
+}, 30);
+
 function PaymentsTable({ payments, highlight, lang }: { payments: QuotePayment[]; highlight?: string; lang: CargoDocLang }) {
   const t = TXT[lang];
   const right = { textAlign: 'right' as const };
@@ -618,14 +658,14 @@ function PaymentsTable({ payments, highlight, lang }: { payments: QuotePayment[]
         <T style={[st.thc, { width: 74 }]}>{t.colReceipt}</T>
         <T style={[st.thc, { width: 70 }]}>{t.colDate}</T>
         <T style={[st.thc, { flex: 1 }]}>{t.colMethod}</T>
-        <T style={[st.thc, { width: 126 }]}>{t.colPlace}</T>
+        <T style={[st.thc, { width: 142 }]}>{t.colPlace}</T>
         <T style={[st.thc, { width: 76 }, right]}>{t.colAmountXaf}</T>
       </View>
       {payments.map((p) => {
         const mine = p.id === highlight;
         const b = mine ? { fontWeight: 700 } : {};
         const ref = payReference(p);
-        const refFit = fitted(ref, 145, 8.5);
+        const refFit = fitted(ref, REF_W, 8.5, 3);
         return (
           <View key={p.id} style={[st.tr, ...(mine ? [{ backgroundColor: C.violetTint }] : [])]} wrap={false}>
             <T style={[st.td, { width: 74 }, b]}>{p.receipt_no}</T>
@@ -634,7 +674,7 @@ function PaymentsTable({ payments, highlight, lang }: { payments: QuotePayment[]
               <T style={b}>{t.method[p.method]}{mine ? `${NBSP}· ${t.thisReceipt}` : ''}</T>
               {ref ? <T style={[st.tdSub, { fontFamily: refFit.font }]}>{refFit.text}</T> : null}
             </View>
-            <T style={[st.td, { width: 126 }]}>{payPlace(p, t)}</T>
+            <T style={[st.td, { width: 142 }]}>{payPlace(p, t)}</T>
             <T style={[st.td, { width: 76, fontWeight: 700 }, right]}>{money(p.amount_xaf, lang)}</T>
           </View>
         );
@@ -705,7 +745,8 @@ function Addresses({ n, settings, lang }: { n: number; settings: ShippingSetting
           <T style={st.addrTitle}>{t.addrOffice}</T>
           {office.addressEn ? <T style={st.addrLine}>{office.addressEn}</T> : null}
           {office.addressZh ? <T style={st.addrZh}>{wrapText(office.addressZh, W.office, 8.5)}</T> : null}
-          {contactLine(office) ? <T style={[st.addrLine, { marginTop: 4, fontFamily: contact(office, W.office).font }]}>{contact(office, W.office).text}</T> : null}
+          {/* Comme sur la packing list : le bureau finit par le téléphone chinois de la société. */}
+          <T style={[st.addrLine, { marginTop: 4 }]}>{t.tel} {nb(co.phoneChina)}</T>
         </View>
         <View style={[st.addrCol, { flex: 1.3, borderLeftWidth: 0.5, borderLeftColor: C.rule }]}>
           <T style={st.addrTitle}>{t.addrWarehouse}</T>
@@ -736,38 +777,42 @@ export function CargoQuotePDF({ q, settings, lang = 'fr' }: { q: Quote; settings
   const t = TXT[lang];
   const sea = q.location !== 'office';
   const issued = q.sent_at ?? q.updated_at;
+  // Le devis est établi et signé à Guangzhou : ses dates sont celles de Guangzhou.
+  const tz = PLACE_TZ.guangzhou;
   const paid = quotePaid(q);
   const balance = quoteBalance(q);
-  const settled = paid > 0 && balance === 0;
   const toMeasure = q.lines.filter(lineNeedsMeasure).length;
+  // Réglé : rien ne reste dû ET rien ne reste à mesurer (un colis non mesuré ajoutera un montant).
+  const settled = paid > 0 && balance === 0 && toMeasure === 0;
   const ref = payRefOf(q);
   const [refBefore, refValue, refAfter] = t.payRef(ref);
   const where = sea ? t.whereWarehouse : t.whereOffice;
+  const dueLabel = toMeasure ? (paid > 0 ? t.balanceProvisional : t.provisional) : paid > 0 ? t.balanceToPay : t.toPay;
   return (
-    <Shell q={q} lang={lang} headTitle={t.hTitleQuote} reference={q.quote_no} issuedLabel={t.issued} issuedOn={docDay(issued, lang)}>
+    <Shell q={q} lang={lang} headTitle={t.hTitleQuote} reference={q.quote_no} issuedLabel={t.issued} issuedOn={docDay(issued, lang, tz)}>
       <DocHead title={t.titleQuote[sea ? 'warehouse' : 'office']} subtitle={docSubtitle(q, lang)} />
-      <PartiesRow q={q} lang={lang} />
+      <PartiesRow q={q} lang={lang} asOf={issued} />
       <Section n={3} title={t.secGoods} flush style={{ marginTop: GAP }}>
         <GoodsTable q={q} lang={lang} footer={
         <View style={{ padding: PAD }}>
           {settled
             ? <AmountBand label={t.settled} amount={q.total_xaf} tone="paid" lang={lang} />
-            : <AmountBand label={toMeasure ? t.provisional : paid > 0 ? t.balanceToPay : t.toPay} sub={paid > 0 ? t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang)) : null} amount={balance} tone="due" lang={lang} />}
+            : <AmountBand label={dueLabel} sub={paid > 0 ? t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang)) : null} amount={balance} tone="due" lang={lang} />}
           {toMeasure ? <T style={[st.note, { color: C.orange, marginTop: 6 }]}>{t.pendingMeasure(toMeasure)}</T> : null}
-          {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{wrapText(q.notes, 470, 9)}</T> : null}
-          <SignOff place="Guangzhou" date={docDay(issued, lang)} note={t.quoteFootnote} lang={lang}>
+          {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{fitted(q.notes, 470, 9, 4).text}</T> : null}
+          <SignOff place="Guangzhou" date={docDay(issued, lang, tz)} note={t.quoteFootnote} lang={lang}>
             {settled
               ? <T style={st.body}>{t.fullyPaid(q.client?.customer_code ? null : q.quote_no)}</T>
               : <>
                   <T style={st.body}>{refBefore}<T style={{ fontWeight: 700 }}>{nb(refValue)}</T>{refAfter}</T>
-                  <T style={[st.grey, { marginTop: 3 }]}>{t.validity(docDay(addDays(issued, 30), lang))}</T>
+                  <T style={[st.grey, { marginTop: 3 }]}>{t.validity(docDay(addDays(issued, 30), lang, tz))}</T>
                 </>}
           </SignOff>
         </View>} />
       </Section>
       {/* Le verso. Un devis à régler : au dos, comme la packing list (conditions, banques, adresses tiennent une page).
           Un devis réglé : conditions et adresses suivent, et passent ensemble à la page suivante s'il le faut. */}
-      {balance > 0 ? (
+      {!settled ? (
         <View break>
           <Conditions n={4} where={where} lang={lang} />
           <HowToPay n={5} payRef={ref} lang={lang} />
@@ -791,34 +836,45 @@ export function CargoReceiptPDF({ q, p, lang = 'fr' }: { q: Quote; p: QuotePayme
   const t = TXT[lang];
   const paid = quotePaid(q);
   const balance = quoteBalance(q);
+  const toMeasure = q.lines.filter(lineNeedsMeasure).length;
+  const settled = balance === 0 && toMeasure === 0;
   const payments = activePayments(q);
+  const others = payments.some((x) => x.id !== p.id);
   const tz = PLACE_TZ[p.place];
   const ref = payReference(p);
   const left: Kv[] = [[t.payMode, t.method[p.method]], ...(ref ? [[t.payRefLabel, ref] as Kv] : []), ...(p.received_by_name ? [[t.payBy, p.received_by_name] as Kv] : [])];
   const rightKv: Kv[] = [[t.payPlace, payPlace(p, t)], [t.payDate, `${docDateTime(p.paid_at, lang, tz)}\n(${t.localTime(p.method === 'wallet' ? 'douala' : p.place)})`]];
+  // Où en est le devis après ce paiement : ce qui reste, ou « réglé ».
+  const situation = (
+    <View wrap={false}>
+      {settled
+        ? <AmountBand label={t.settled} amount={q.total_xaf} tone="paid" lang={lang} />
+        : <AmountBand label={toMeasure ? t.balanceProvisional : t.balanceToPay} sub={t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang))} amount={balance} tone="due" lang={lang} />}
+      {toMeasure ? <T style={[st.note, { color: C.orange, marginTop: 6 }]}>{t.pendingMeasure(toMeasure)}</T> : null}
+      <T style={[st.grey, { marginTop: 6 }]}>{settled ? t.fullyPaid(q.client?.customer_code ? null : q.quote_no) : t.releaseWhenPaid}</T>
+    </View>
+  );
   return (
     <Shell q={q} lang={lang} headTitle={t.hTitleReceipt} reference={p.receipt_no} issuedLabel={t.issued} issuedOn={docDay(p.paid_at, lang, tz)}>
       <DocHead title={t.titleReceipt} subtitle={docSubtitle(q, lang, nb(`${t.quoteWord} ${q.quote_no}`))} />
-      <PartiesRow q={q} lang={lang} />
+      <PartiesRow q={q} lang={lang} asOf={p.paid_at} />
       <Section n={3} title={t.secPayment} style={{ marginTop: GAP }} wrap={false}>
         <AmountBand label={t.amountReceived} sub={p.receipt_no} amount={p.amount_xaf} tone="paid" lang={lang} />
         <View style={{ flexDirection: 'row', marginTop: 4 }}>
           <View style={{ flex: 1, marginRight: 6 * MM }}><KvList rows={left} /></View>
           <View style={{ flex: 1 }}><KvList rows={rightKv} /></View>
         </View>
-        {p.note ? <T style={[st.note, { fontFamily: fontFor(p.note) }]}>{wrapText(p.note, 470, 9)}</T> : null}
+        {p.note ? <T style={[st.note, { fontFamily: fontFor(p.note) }]}>{fitted(p.note, 470, 9, 4).text}</T> : null}
+        {/* Un seul paiement : la situation du devis tient ici, sans section ni tableau qui répèteraient ce paiement. */}
+        {others ? null : <View style={{ marginTop: 8 }}>{situation}</View>}
         <SignOff place={t.placeCity[p.place]} date={docDay(p.paid_at, lang, tz)} note={t.receiptFootnote} lang={lang} />
       </Section>
-      <Section n={4} title={t.secSituation} flush style={{ marginTop: GAP }} {...(payments.length > 10 ? {} : { wrap: false })}>
-        {/* Le tableau seulement s'il y a d'autres paiements : sinon il répèterait la section 3. */}
-        {payments.some((x) => x.id !== p.id) ? <PaymentsTable payments={payments} highlight={p.id} lang={lang} /> : null}
-        <View style={{ padding: PAD }} wrap={false}>
-          {balance > 0
-            ? <AmountBand label={t.balanceToPay} sub={t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang))} amount={balance} tone="due" lang={lang} />
-            : <AmountBand label={t.settled} amount={q.total_xaf} tone="paid" lang={lang} />}
-          <T style={[st.grey, { marginTop: 6 }]}>{balance > 0 ? t.releaseWhenPaid : t.fullyPaid(q.client?.customer_code ? null : q.quote_no)}</T>
-        </View>
-      </Section>
+      {others ? (
+        <Section n={4} title={t.secSituation} flush style={{ marginTop: GAP }} {...(paymentsHeight(payments) > 430 ? {} : { wrap: false })}>
+          <PaymentsTable payments={payments} highlight={p.id} lang={lang} />
+          <View style={{ padding: PAD }}>{situation}</View>
+        </Section>
+      ) : null}
     </Shell>
   );
 }
@@ -830,24 +886,24 @@ export function CargoInvoicePDF({ q, settings, lang = 'fr' }: { q: Quote; settin
   const t = TXT[lang];
   const sea = q.location !== 'office';
   const payments = activePayments(q);
-  // Le dernier encaissement dit où le compte a été soldé (souvent Douala, au retrait).
+  // Le dernier encaissement dit où le compte a été soldé (souvent Douala, au retrait) ; sans encaissement, Guangzhou.
   const last = payments.length ? payments[payments.length - 1] : null;
-  const tz = last ? PLACE_TZ[last.place] : undefined;
+  const tz = last ? PLACE_TZ[last.place] : PLACE_TZ.guangzhou;
   const issued = q.invoiced_at ?? q.paid_at ?? q.updated_at;
   return (
     <Shell q={q} lang={lang} headTitle={t.hTitleInvoice} reference={q.invoice_no ?? q.quote_no} issuedLabel={t.issuedInvoice} issuedOn={docDay(issued, lang, tz)}>
       <DocHead title={t.titleInvoice} subtitle={docSubtitle(q, lang, nb(`${t.quoteWord} ${q.quote_no}`))} />
-      <PartiesRow q={q} lang={lang} />
+      <PartiesRow q={q} lang={lang} asOf={issued} />
       <Section n={3} title={t.secGoods} flush style={{ marginTop: GAP }}>
         <GoodsTable q={q} lang={lang} footer={
         <View style={{ padding: PAD }}>
           <AmountBand label={t.amountPaid} sub={q.paid_at ? docDay(q.paid_at, lang, tz) : null} amount={quotePaid(q)} tone="paid" lang={lang} />
-          {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{wrapText(q.notes, 470, 9)}</T> : null}
+          {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{fitted(q.notes, 470, 9, 4).text}</T> : null}
           <SignOff place={last ? t.placeCity[last.place] : 'Guangzhou'} date={docDay(issued, lang, tz)} note={t.invoiceFootnote(q.client?.customer_code ? null : q.quote_no)} paid lang={lang} />
         </View>} />
       </Section>
       {payments.length ? (
-        <Section n={4} title={t.secSettlements} flush style={{ marginTop: GAP }} {...(payments.length > 12 ? {} : { wrap: false })}>
+        <Section n={4} title={t.secSettlements} flush style={{ marginTop: GAP }} {...(paymentsHeight(payments) > 520 ? {} : { wrap: false })}>
           <PaymentsTable payments={payments} lang={lang} />
         </Section>
       ) : null}
@@ -858,4 +914,3 @@ export function CargoInvoicePDF({ q, settings, lang = 'fr' }: { q: Quote; settin
     </Shell>
   );
 }
-

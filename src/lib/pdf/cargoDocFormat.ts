@@ -33,30 +33,55 @@ const ZH_RUN = new RegExp(`[${CJK_BREAK_RANGES}]+`, 'g');
 /** La police d'un texte : Noto Sans SC dès qu'il contient du chinois. */
 export const fontFor = (s: string | null | undefined): 'Noto Sans SC' | 'DM Sans' => (s && CJK.test(s) ? 'Noto Sans SC' : 'DM Sans');
 
+/** La largeur estimée d'un caractère, en em : idéogramme 1, M/W 1, capitale ou chiffre 0,7, minuscule 0,56, espace 0,28. */
+const em = (c: string): number => (CJK_BREAK.test(c) ? 1 : c === ' ' || c === '\t' ? 0.28 : /[MW]/.test(c) ? 1 : /[A-Z0-9@]/.test(c) ? 0.7 : 0.56);
+/** La largeur estimée d'un texte en points, en corps `size`. */
+export const estimateWidth = (w: string, size: number): number => Array.from(w).reduce((sum, c) => sum + em(c), 0) * size;
+/** La ponctuation chinoise fermante ne commence jamais une ligne (kinsoku) : elle reste avec le caractère qui la précède. */
+const NO_LINE_START = /^[、。，．：；？！）］｝》」』】〕〉〗〙〞]+$/;
+
 /**
- * Coupe un texte pour une colonne de `width` points en corps `size` : un
- * idéogramme compte 1 em, une lettre ≈ 0,56 em. Les mots latins ne sont
+ * Coupe un texte pour une colonne de `width` points en corps `size`, selon une
+ * estimation de largeur par classe de caractère. Les mots latins ne sont
  * jamais coupés, sauf s'ils dépassent seuls la colonne (une référence de
- * virement sans espace, une adresse e-mail) : ils le sont alors en tronçons.
- * Les sauts de ligne existants sont gardés ; aucun caractère n'est perdu.
+ * virement sans espace) : ils le sont alors en tronçons, chacun sur sa ligne.
+ * Les sauts de ligne existants sont gardés ; aucun caractère n'est perdu ; une
+ * paire de substitution (émoji, idéogramme rare) n'est jamais coupée en deux.
  */
 export function wrapText(text: string | null | undefined, width: number, size: number): string {
   if (!text) return '';
-  const maxChars = Math.max(4, Math.floor(width / (size * 0.6)));
-  // Par caractère complet (Array.from) : une paire de substitution — un émoji, un idéogramme rare — ne se coupe jamais en deux.
-  const len = (w: string) => Array.from(w).length;
-  const long = (w: string) => len(w) > maxChars && !CJK_BREAK.test(w);
-  const chunks = (w: string) => { const cp = Array.from(w); const out: string[] = []; for (let i = 0; i < cp.length; i += maxChars) out.push(cp.slice(i, i + maxChars).join('')); return out; };
+  const est = (w: string) => estimateWidth(w, size);
+  const long = (w: string) => !CJK_BREAK.test(w) && est(w) > width;
+  // Tronçons gloutons, à la largeur : deux tronçons du même mot ne se retrouvent jamais sur une ligne.
+  const chunks = (w: string) => {
+    const out: string[] = [];
+    let cur = '';
+    for (const c of Array.from(w)) {
+      if (cur && est(cur + c) > width) { out.push(cur); cur = ''; }
+      cur += c;
+    }
+    if (cur) out.push(cur);
+    return out;
+  };
   return text.split('\n').map((para) => {
     if (!CJK_BREAK.test(para) && !para.split(/[ \t]+/).some(long)) return para;
-    const tokens = (para.match(TOKENS) ?? []).flatMap((tok) => (long(tok) ? chunks(tok) : [tok]));
+    const tokens: string[] = [];
+    for (const tok of (para.match(TOKENS) ?? []).flatMap((t) => (long(t) ? chunks(t).map((c) => `${c}\u0000`) : [t]))) {
+      const last = tokens[tokens.length - 1];
+      // (avant la marque d'un tronçon forcé, s'il y en a une)
+      if (NO_LINE_START.test(tok) && last && !/^[ \t]+$/.test(last)) tokens[tokens.length - 1] = last.endsWith('\u0000') ? `${last.slice(0, -1)}${tok}\u0000` : last + tok;
+      else tokens.push(tok);
+    }
     const lines: string[] = [];
     let line = '';
     let w = 0;
-    for (const tok of tokens) {
+    for (const raw of tokens) {
+      // Un tronçon de mot trop long (marqué ci-dessus) occupe toujours sa propre ligne.
+      const forced = raw.endsWith('\u0000');
+      const tok = forced ? raw.slice(0, -1) : raw;
       const space = /^[ \t]+$/.test(tok);
-      const tw = CJK_BREAK.test(tok) ? size : space ? size * 0.28 : len(tok) * size * 0.56;
-      if (!space && line.trim() && w + tw > width) {
+      const tw = est(tok);
+      if (!space && line.trim() && (forced || w + tw > width)) {
         lines.push(line.trimEnd());
         line = tok;
         w = tw;
@@ -64,10 +89,57 @@ export function wrapText(text: string | null | undefined, width: number, size: n
         line += tok;
         w += tw;
       }
+      if (forced) { lines.push(line.trimEnd()); line = ''; w = 0; }
     }
     if (line.trim()) lines.push(line.trimEnd());
     return lines.join('\n');
   }).join('\n');
+}
+
+/**
+ * Au plus `maxLines` lignes estimées, « … » en fin. Un texte libre (note, motif,
+ * libellé de frais) vit dans un bloc insécable : sans plafond, un bloc plus haut
+ * qu'une page serait écrasé par le moteur et se recouvrirait.
+ */
+export function clampLines(text: string | null | undefined, width: number, size: number, maxLines: number): string {
+  const wrapped = wrapText(text, width, size);
+  if (!wrapped) return '';
+  const out: string[] = [];
+  let used = 0;
+  for (const line of wrapped.split('\n')) {
+    const n = Math.max(1, Math.ceil(estimateWidth(line, size) / width));
+    if (used + n > maxLines) {
+      const room = Math.max(0, maxLines - used);
+      if (room > 0) {
+        let cut = '';
+        for (const c of Array.from(line)) { if (estimateWidth(`${cut}${c}…`, size) > width * room) break; cut += c; }
+        out.push(`${cut.trimEnd()}…`);
+      } else if (out.length) out[out.length - 1] = `${out[out.length - 1].replace(/…$/, '')}…`;
+      return out.join('\n');
+    }
+    out.push(line);
+    used += n;
+  }
+  return out.join('\n');
+}
+
+/**
+ * Les caractères que les polices embarquées savent dessiner : la couverture
+ * réelle de DM Sans (latin, 3 graisses — relevée sur les fichiers .woff) et le
+ * chinois (Noto Sans SC). Un caractère absent part en Helvetica et se dessine
+ * par-dessus le mot voisin : le texte TAPÉ par l'équipe passe donc par
+ * pdfSafe (accents du pinyin ramenés à la lettre, flèches en ASCII, émojis ôtés).
+ */
+const FONT_OK = new RegExp(`^[\n\t\u0020-\u007e\u00a0-\u00ac\u00ae-\u00ff\u0102\u0131\u0152\u0153\u2013\u2014\u2018-\u201a\u201c-\u201e\u2022\u2026\u2039\u203a\u20ac\u2122\u2212${CJK_BREAK_RANGES}]$`);
+const SYMBOLS: Record<string, string> = { '\u2192': '->', '\u21d2': '=>', '\u2190': '<-', '\u2194': '<->', '\u2248': '~', '\u2264': '<=', '\u2265': '>=', '\u202f': '\u00a0', '\u2009': ' ', '\u00ad': '' };
+export function pdfSafe(text: string | null | undefined): string {
+  if (!text) return '';
+  return Array.from(text).map((c) => {
+    if (FONT_OK.test(c)) return c;
+    if (c in SYMBOLS) return SYMBOLS[c];
+    const base = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return base && Array.from(base).every((x) => FONT_OK.test(x)) ? base : '';
+  }).join('');
 }
 
 /** « 广州鞋业有限公司 Guangzhou Shoes Co. » → { main: 'Guangzhou Shoes Co.', zh: '广州鞋业有限公司' } : le latin en gras, le chinois en ligne grise. */
@@ -145,7 +217,9 @@ export function contactLine(c: { recipient?: string | null; phone?: string | nul
   const ph = cnPhone(c.phone);
   const same = (x: string | null | undefined) => !!x && !!ph && cnPhone(x) === ph;
   const apps = [same(c.wechat) ? 'WeChat' : null, same(c.whatsapp) ? 'WhatsApp' : null].filter(Boolean);
-  const extra = [c.wechat && !same(c.wechat) ? `WeChat ${c.wechat}` : null, c.whatsapp && !same(c.whatsapp) ? `WhatsApp ${cnPhone(c.whatsapp)}` : null];
+  // Un identifiant WeChat ou WhatsApp ne se coupe pas en fin de ligne (« WeChat 138 2229 » / « 7518 »).
+  const glue = (x: string) => x.replace(/ /g, NBSP);
+  const extra = [c.wechat && !same(c.wechat) ? `WeChat ${glue(cnPhone(c.wechat))}` : null, c.whatsapp && !same(c.whatsapp) ? `WhatsApp ${glue(cnPhone(c.whatsapp))}` : null];
   return [c.recipient || null, ph ? (apps.length ? `${ph} (${apps.join(' / ')})` : ph) : null, ...extra].filter(Boolean).join(' · ');
 }
 

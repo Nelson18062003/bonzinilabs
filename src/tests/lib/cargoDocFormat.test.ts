@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CJK, NBSP, cnPhone, commonRate, contactLine, countLabel, docDateTime, docDay, fontFor, kg, m3, money, num, rateUnit, splitZh, wrapText, xaf,
+  CJK, NBSP, clampLines, cnPhone, commonRate, contactLine, countLabel, docDateTime, docDay, estimateWidth, fontFor, kg, m3, money, num, pdfSafe, rateUnit, splitZh, wrapText, xaf,
 } from '@/lib/pdf/cargoDocFormat';
 
 const strip = (s: string) => s.replace(/[\s\n]/g, '');
@@ -59,6 +59,50 @@ describe('wrapText', () => {
   });
 });
 
+describe('wrapText — cas durs', () => {
+  it('un tronçon de mot trop long occupe sa propre ligne, jamais plus large que la colonne', () => {
+    const out = wrapText('OPQRSTUVWXYZ0123456789MMMMWWWW départ', 140, 8.5);
+    for (const line of out.split('\n')) expect(estimateWidth(line, 8.5)).toBeLessThanOrEqual(140 + 0.01);
+    expect(strip(out)).toBe(strip('OPQRSTUVWXYZ0123456789MMMMWWWW départ'));
+  });
+  it('la ponctuation chinoise fermante ne commence jamais une ligne', () => {
+    const s = '鞋子鞋子鞋子鞋子鞋子，衣服衣服衣服。';
+    for (let w = 20; w <= 200; w += 5) {
+      const out = wrapText(s, w, 10);
+      for (const line of out.split('\n').slice(1)) expect(/^[，。、]/.test(line)).toBe(false);
+      expect(strip(out)).toBe(strip(s));
+    }
+  });
+  it('ne laisse jamais de marque interne dans le texte', () => {
+    expect(wrapText('ABCDEFGHIJKLMNOPQRSTUVWXYZ，', 40, 10)).not.toContain('\u0000');
+  });
+});
+
+describe('clampLines', () => {
+  it('garde un texte court tel quel', () => {
+    expect(clampLines('Fragile, haut', 300, 9, 3)).toBe('Fragile, haut');
+  });
+  it('coupe au-delà de maxLines, avec « … »', () => {
+    const long = Array.from({ length: 60 }, (_, i) => `mot${i}`).join(' ');
+    const out = clampLines(long, 200, 9, 2);
+    expect(out.endsWith('…')).toBe(true);
+    expect(out.split('\n').length).toBeLessThanOrEqual(2);
+    expect(out.length).toBeLessThan(long.length);
+  });
+});
+
+describe('pdfSafe — seulement ce que les polices savent dessiner', () => {
+  it('garde le français, le chinois, les signes de la police', () => {
+    const s = 'Été — « Œuvre » · 1 234,5 € · 广州，鞋业 · RC-000122 × 3 ’';
+    expect(pdfSafe(s)).toBe(s);
+  });
+  it('ramène les accents du pinyin, traduit les flèches, ôte les émojis', () => {
+    expect(pdfSafe('Guǎngzhōu')).toBe('Guangzhou');
+    expect(pdfSafe('Nansha → Kribi')).toBe('Nansha -> Kribi');
+    expect(pdfSafe('Chaussures 👟 neuves')).toBe('Chaussures  neuves');
+  });
+});
+
 describe('splitZh', () => {
   it('sépare le latin (en gras) et le chinois (ligne grise)', () => {
     expect(splitZh('广州鞋业有限公司 Guangzhou Shoes Co.')).toEqual({ main: 'Guangzhou Shoes Co.', zh: '广州鞋业有限公司' });
@@ -113,7 +157,8 @@ describe('téléphones chinois', () => {
     expect(contactLine({ recipient: 'Tina', phone: '18667439286', wechat: '18667439286', whatsapp: '+86 186 6743 9286' }))
       .toBe(`Tina · (+86)${NBSP}186${NBSP}6743${NBSP}9286 (WeChat / WhatsApp)`);
     expect(contactLine({ recipient: 'Tina', phone: '199 2746 3902', wechat: '138 2229 7518', whatsapp: '' }))
-      .toBe(`Tina · (+86)${NBSP}199${NBSP}2746${NBSP}3902 · WeChat 138 2229 7518`);
+      .toBe(`Tina · (+86)${NBSP}199${NBSP}2746${NBSP}3902 · WeChat (+86)${NBSP}138${NBSP}2229${NBSP}7518`);
+    expect(contactLine({ phone: '', wechat: 'tina gz' })).toBe(`WeChat tina${NBSP}gz`);
   });
 });
 

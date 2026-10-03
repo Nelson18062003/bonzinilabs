@@ -186,13 +186,15 @@ AS $fn$
     -- Le fournisseur et le réceptionnaire du dépôt.
     'supplier_kind', d.supplier_kind, 'supplier_name', d.supplier_name,
     'received_by_name', (SELECT TRIM(COALESCE(ur.first_name,'') || ' ' || COALESCE(ur.last_name,'')) FROM public.user_roles ur WHERE ur.user_id = d.received_by),
-    -- Où sont chargés les colis du dépôt : chaque conteneur une fois, chaque vol une fois.
+    -- Où sont chargés les colis du dépôt : chaque conteneur une fois, chaque vol une fois. Une date RÉELLE
+    -- (timestamptz) est lue dans le fuseau du lieu : départ à Guangzhou (Asia/Shanghai), arrivée à Douala / Kribi
+    -- (Africa/Douala) — sinon une arrivée entre minuit et 1 h serait datée de la veille.
     'containers', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
         'container_number', cs.container_number, 'bl_number', cs.bl_number, 'carrier', cs.carrier,
         'vessel_name', cs.vessel_name, 'voyage', cs.voyage, 'pol_name', cs.pol_name, 'pod_name', cs.pod_name,
-        'etd', COALESCE(cs.etd_actual::date, cs.etd_promised),
-        'eta', COALESCE(cs.eta_carrier::date, cs.eta_promised)
+        'etd', COALESCE((cs.etd_actual AT TIME ZONE 'Asia/Shanghai')::date, cs.etd_promised),
+        'eta', COALESCE((cs.eta_carrier AT TIME ZONE 'Africa/Douala')::date, cs.eta_promised)
       ) ORDER BY cs.container_number)
       FROM public.cargo_shipments cs
       WHERE cs.id IN (SELECT pc.shipment_id FROM public.parcels pc WHERE pc.deposit_id = d.id AND pc.shipment_id IS NOT NULL)), '[]'::jsonb),
@@ -200,8 +202,8 @@ AS $fn$
       SELECT jsonb_agg(jsonb_build_object(
         'awb_number', a.awb_number, 'airline', a.airline, 'flight_no', a.flight_no,
         'origin', a.origin, 'destination', a.destination,
-        'etd', COALESCE(a.departed_at::date, a.etd),
-        'eta', COALESCE(a.arrived_at::date, a.eta)
+        'etd', COALESCE((a.departed_at AT TIME ZONE 'Asia/Shanghai')::date, a.etd),
+        'eta', COALESCE((a.arrived_at AT TIME ZONE 'Africa/Douala')::date, a.eta)
       ) ORDER BY a.awb_number)
       FROM public.air_shipments a
       WHERE a.id IN (SELECT pa.air_shipment_id FROM public.parcels pa WHERE pa.deposit_id = d.id AND pa.air_shipment_id IS NOT NULL)), '[]'::jsonb),

@@ -3,9 +3,10 @@
 // francs CFA » sous le chiffre du devis, comme sur la packing list client :
 // un montant écrit deux fois ne se falsifie pas d'un trait de stylo.
 //
-// Français : orthographe rectifiée (traits d'union dans chaque groupe de trois
-// chiffres), « vingt » et « cent » prennent un s quand ils sont multipliés et
-// terminent le nombre (« quatre-vingts », « deux-cents ») ou précèdent
+// Français : orthographe traditionnelle, la plus courante sur les factures —
+// traits d'union sous cent seulement (« quatre-vingt-dix-neuf mille huit cent
+// quarante ») ; « vingt » et « cent » prennent un s quand ils sont multipliés
+// et terminent le nombre (« quatre-vingts », « deux cents ») ou précèdent
 // « million(s) » / « milliard(s) », qui sont des noms ; jamais devant
 // « mille », qui est invariable. « mille », pas « un mille ».
 // Anglais : « two hundred nineteen thousand eight hundred forty ».
@@ -23,8 +24,8 @@ function frBelow100(n: number): string {
   const u = n % 10 + (t === 7 || t === 9 ? 10 : 0);
   const tens = FR_TENS[t];
   if (u === 0) return t === 8 ? 'quatre-vingts' : tens;
-  if (u === 1 && t >= 2 && t <= 6) return `${tens}-et-un`;
-  if (u === 11 && t === 7) return `${tens}-et-onze`;
+  if (u === 1 && t >= 2 && t <= 6) return `${tens} et un`;
+  if (u === 11 && t === 7) return `${tens} et onze`;
   return `${tens}-${FR_UNITS[u]}`;
 }
 
@@ -32,9 +33,9 @@ function frBelow1000(n: number): string {
   const h = Math.floor(n / 100);
   const r = n % 100;
   if (h === 0) return frBelow100(r);
-  const hundreds = h === 1 ? 'cent' : `${FR_UNITS[h]}-cent`;
+  const hundreds = h === 1 ? 'cent' : `${FR_UNITS[h]} cent`;
   if (r === 0) return h > 1 ? `${hundreds}s` : hundreds;
-  return `${hundreds}-${frBelow100(r)}`;
+  return `${hundreds} ${frBelow100(r)}`;
 }
 
 /** 219 840 → « deux-cent-dix-neuf mille huit-cent-quarante ». */
@@ -97,8 +98,9 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export function xafInWords(amount: number, lang: 'fr' | 'en'): string {
   const n = Math.round(Math.abs(Number(amount) || 0));
   if (n >= 1e12) return '';
-  if (lang === 'en') return `${capitalize(numberToWordsEn(n))} CFA ${n === 1 ? 'franc' : 'francs'}`;
+  // « francs CFA » / « CFA francs » ne se séparent pas en fin de ligne (insécable).
+  if (lang === 'en') return `${capitalize(numberToWordsEn(n))} CFA\u00a0${n === 1 ? 'franc' : 'francs'}`;
   const words = numberToWordsFr(n);
   const de = /(?:million|milliard)s?$/.test(words) ? ' de' : '';
-  return `${capitalize(words)}${de} ${n <= 1 ? 'franc' : 'francs'} CFA`;
+  return `${capitalize(words)}${de} ${n <= 1 ? 'franc' : 'francs'}\u00a0CFA`;
 }
