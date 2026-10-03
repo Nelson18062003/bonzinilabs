@@ -12,6 +12,7 @@
  *
  * Rien sous 16 px, texte foncé, aucune coupure.
  */
+import { toast } from 'sonner';
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship } from 'lucide-react';
@@ -226,7 +227,7 @@ function Inside({ s, onOpen3D, canManage }: { s: CargoShipment; onOpen3D: () => 
       )}
       <div className="flex flex-wrap gap-2">
         {canManage && <Button variant="primary" onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</Button>}
-        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaManifestPdf(s, parcels)}>Manifeste (PDF)</Button>}
+        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaManifestPdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))}>Manifeste (PDF)</Button>}
         <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
       </div>
     </div>

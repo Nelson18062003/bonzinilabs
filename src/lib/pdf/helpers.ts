@@ -32,10 +32,10 @@ export const formatDate = (date: Date | string): string => {
   return format(d, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
 };
 
-/** La date d'un document dans SA langue : « 02 octobre 2026 à 14:32 » ou « October 02, 2026 at 14:32 ». */
+/** La date d'un document dans SA langue : « 02 octobre 2026 à 14:32 » ou « October 2, 2026 at 14:32 ». */
 export const formatDateIn = (date: Date | string, lang: 'fr' | 'en'): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return lang === 'en' ? format(d, "MMMM dd, yyyy 'at' HH:mm", { locale: enUS }) : format(d, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
+  return lang === 'en' ? format(d, "MMMM d, yyyy 'at' HH:mm", { locale: enUS }) : format(d, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
 };
 
 /** Un montant en XAF dans la langue du document : « 1 234 567 XAF » (fr) ou « 1,234,567 XAF » (en). */

@@ -30,6 +30,7 @@ import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/receptio
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { downloadQuotePdf } from '@/lib/cargoQuotePdf';
 import { QuoteSection } from './QuoteSection';
 import { QuotePaymentsSection } from './QuotePaymentsSection';
 import { ParcelEditorDialog } from './ParcelEditorDialog';
@@ -118,6 +119,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const parcels = useMemo(() => sortedParcels(d?.parcels ?? []), [d?.parcels]);
   const labelMaker = useParcelLabels(useMemo(() => (d ? parcels.map((parcel) => ({ parcel, deposit: d })) : []), [d, parcels]), settings, !!d && !!d.client);
   const [labelBusy, setLabelBusy] = useState<string | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
 
   const cancelled = d?.status === 'cancelled';
   const isCargo = hasPermission('canManageCargo');
@@ -347,7 +349,26 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
 
           {/* Un dépôt supprimé ne se chiffre ni ne s'encaisse plus (la base le refuse aussi). */}
           {cancelled ? (
-            quote && <Band title="Prix et devis"><p className={cn('text-[13px]', TEXT.muted)}>Le devis {quote.quote_no} est conservé, figé : rétablissez le dépôt pour l'envoyer ou l'encaisser.</p></Band>
+            quote && (
+              <Band title="Prix et devis">
+                <div className="flex items-center justify-between gap-4">
+                  <p className={cn('text-[13px]', TEXT.muted)}>Le devis {quote.quote_no} est conservé, figé : rétablissez le dépôt pour l'envoyer ou l'encaisser.</p>
+                  <button
+                    type="button"
+                    disabled={quoteBusy}
+                    onClick={async () => {
+                      setQuoteBusy(true);
+                      try { await downloadQuotePdf(quote, settings); toast.success(`Devis ${quote.quote_no} téléchargé`); }
+                      catch (e) { toast.error((e as Error).message); }
+                      finally { setQuoteBusy(false); }
+                    }}
+                    className={cn('inline-flex h-9 shrink-0 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}
+                  >
+                    <Download className="h-4 w-4" /> Télécharger le devis
+                  </button>
+                </div>
+              </Band>
+            )
           ) : (
             <>
               <QuoteSection deposit={d} />

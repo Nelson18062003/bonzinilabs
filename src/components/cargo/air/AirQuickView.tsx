@@ -77,7 +77,7 @@ export function AirQuickView({ airId, onClose }: { airId: string | null; onClose
       bodyClassName="-mx-5 -mb-1 mt-1"
       footer={a ? (
         <>
-          <button type="button" onClick={() => void deliverAirManifestPdf(a)} disabled={parcels.length === 0} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}><FileText className="h-4 w-4" /> Manifeste (PDF)</button>
+          <button type="button" onClick={() => void deliverAirManifestPdf(a).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}><FileText className="h-4 w-4" /> Manifeste (PDF)</button>
           {canManage && <button type="button" onClick={() => { onClose(); navigate(`/m/cargo/avion/${a.id}/modifier`); }} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}><Pencil className="h-4 w-4" /> Fiche</button>}
           {canManage && a.status === 'DEPARTED' && <button type="button" onClick={() => void step('PLANNED')} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}><Undo2 className="h-4 w-4" /> Pas parti</button>}
           {canManage && next && (

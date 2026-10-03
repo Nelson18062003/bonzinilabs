@@ -6,21 +6,27 @@
 // preuve (photo) quand il y en a une. « Encaisser » ouvre une feuille : le
 // montant (le reste, par défaut), le mode, le lieu (Guangzhou avant le
 // départ, Douala au retrait), la photo de la preuve, une référence. Le reçu
-// PDF part aussitôt dans la feuille de partage. Quand tout est là : la
-// facture acquittée, le document final.
+// PDF part aussitôt (partagé sur téléphone, téléchargé sur ordinateur). Quand
+// tout est là : la facture acquittée, le document final.
 // Réservé à canCollectParcelPayments ; les autres voient, sans agir.
+//
+// Chaque reçu et la facture : « Télécharger » — un fichier, TOUJOURS, jamais
+// de feuille de partage — ouvert à tout le personnel qui voit le devis ; et,
+// sur téléphone / tablette seulement, « Partager » à côté. La langue est celle
+// choisie à côté du devis (`lang`), sinon celle retenue sur l'appareil.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
-import { Banknote, Camera, FileCheck2, FileText, Receipt, Undo2 } from 'lucide-react';
+import { Banknote, Camera, Download, FileCheck2, FileText, Receipt, Share2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddQuotePayment, useCancelQuotePayment, useInvoiceQuote, usePayQuoteFromWallet, uploadPaymentProof, usePaymentProofUrl } from '@/hooks/useCargoQuote';
 import { WalletBalanceCard } from '@/mobile/components/cargo/WalletBalanceCard';
 import { METHOD_LABEL, PLACE_SHORT, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type Quote, type QuotePayment } from '@/lib/cargoQuote';
-import { deliverInvoicePdf, deliverReceiptPdf } from '@/lib/cargoQuotePdf';
+import { CARGO_DOC_LANG_LABEL, deliverInvoicePdf, deliverReceiptPdf, downloadInvoicePdf, downloadReceiptPdf, readCargoDocLang, shareInvoicePdf, shareReceiptPdf, type CargoDocLang } from '@/lib/cargoQuotePdf';
+import { canShareFiles, prefersDownload, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import type { ShippingSettings } from '@/lib/customerCode';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, BottomSheet, Card, FormField, PrimaryPill, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BottomSheet, Button, Card, FormField, PrimaryPill, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
 import { TextArea } from '@/components/form';
 import { formatDateTime } from '@/mobile/components/reception/bits';
 
@@ -55,7 +61,11 @@ function ProofThumb({ path }: { path: string }) {
   );
 }
 
-function PaymentRow({ q, p, settings, canCancel, onCancel }: { q: Quote; p: QuotePayment; settings: ShippingSettings; canCancel: boolean; onCancel: () => void }) {
+/**
+ * Un encaissement. `busy` : le PDF en cours sur l'écran (null = aucun) —
+ * 'dl' / 'share' quand c'est ce reçu-ci, 'other' quand c'est un autre.
+ */
+function PaymentRow({ p, busy, canCancel, onCancel, onDownload, onShare }: { p: QuotePayment; busy: 'dl' | 'share' | 'other' | null; canCancel: boolean; onCancel: () => void; onDownload: () => void; onShare?: () => void }) {
   const off = !!p.cancelled_at;
   return (
     <div className="space-y-3 py-4">
@@ -74,8 +84,16 @@ function PaymentRow({ q, p, settings, canCancel, onCancel }: { q: Quote; p: Quot
       </div>
       {!off && (
         <div className="flex gap-2">
-          <SoftPill onClick={() => void deliverReceiptPdf(q, p, settings)} className="h-10 flex-1 text-[15px]"><Receipt /> Reçu (PDF)</SoftPill>
-          {canCancel && <SoftPill onClick={onCancel} className="h-10 px-4 text-[15px]"><Undo2 /> Annuler</SoftPill>}
+          <Button variant="neutral" onClick={onDownload} loading={busy === 'dl'} disabled={busy != null} ariaLabel={`Télécharger le reçu ${p.receipt_no} (PDF)`} className="h-10 flex-1 text-[15px]">
+            <Download /> Télécharger
+          </Button>
+          {onShare && (
+            <Button variant="neutral" onClick={onShare} loading={busy === 'share'} disabled={busy != null} ariaLabel={`Partager le reçu ${p.receipt_no}`} className="h-10 w-11 shrink-0 px-0">
+              <Share2 />
+            </Button>
+          )}
+          {/* Sous 400 px, avec « Partager » à côté, « Annuler » se réduit à son icône (le libellé reste lu). */}
+          {canCancel && <SoftPill onClick={onCancel} className="h-10 shrink-0 px-3 text-[15px]"><Undo2 /><span className={cn(onShare && 'max-[399px]:sr-only')}>Annuler</span></SoftPill>}
         </div>
       )}
     </div>
@@ -85,7 +103,7 @@ function PaymentRow({ q, p, settings, canCancel, onCancel }: { q: Quote; p: Quot
 /** Ce que la barre du bas de l'écran peut demander à cette section : ouvrir la feuille « Encaisser », ou établir la facture. */
 export type PaymentRequest = { kind: 'pay' | 'invoice'; n: number } | null;
 
-export function QuotePayments({ quote, settings, request }: { quote: Quote; settings: ShippingSettings; request?: PaymentRequest }) {
+export function QuotePayments({ quote, settings, request, lang }: { quote: Quote; settings: ShippingSettings; request?: PaymentRequest; lang?: CargoDocLang }) {
   const { hasPermission } = useAdminAuth();
   const canCollect = hasPermission('canCollectParcelPayments');
   const add = useAddQuotePayment();
@@ -112,6 +130,26 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [invoicing, setInvoicing] = useState(false);
+  // Le PDF en cours de fabrication : 'invoice[-share]', ou `${id}:dl|share` pour un reçu. Un à la fois.
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+
+  // La langue des PDF : celle choisie à côté du devis, sinon celle retenue sur l'appareil.
+  const docLang = lang ?? readCargoDocLang();
+  // « Partager » : seulement là où une feuille de partage a du sens (téléphone, tablette).
+  const canShare = canShareFiles() && !prefersDownload();
+
+  /** Un PDF à la fois, avec sablier ; « PDF téléchargé » sauf si la feuille de partage s'est ouverte. */
+  const makePdf = async (key: string, job: () => Promise<Outcome | void>, what: string) => {
+    if (pdfBusy) return;
+    setPdfBusy(key);
+    try {
+      if ((await job()) !== 'shared') toast.success('PDF téléchargé', { description: `${what} · ${CARGO_DOC_LANG_LABEL[docLang]}` });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPdfBusy(null);
+    }
+  };
 
   const openSheet = () => { setAmount(String(balance)); setMethod('cash'); setPlace('guangzhou'); setPaidAt(''); setReference(''); setNote(''); setProof(null); setOpen(true); };
 
@@ -130,7 +168,8 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
         })();
       setOpen(false);
       if (payment) {
-        const outcome = await deliverReceiptPdf(fresh, payment, settings);
+        // Le reçu à remettre : partagé sur téléphone, téléchargé sur ordinateur.
+        const outcome = await deliverReceiptPdf(fresh, payment, settings, docLang);
         if (outcome === 'downloaded') toast.success(`Reçu ${payment.receipt_no} téléchargé`);
       }
     } catch (e) {
@@ -144,7 +183,7 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
     setInvoicing(true);
     try {
       const fresh = await invoice.mutateAsync(quote.id);
-      if ((await deliverInvoicePdf(fresh, settings)) === 'downloaded') toast.success(`Facture ${fresh.invoice_no} téléchargée`);
+      if ((await deliverInvoicePdf(fresh, settings, docLang)) === 'downloaded') toast.success(`Facture ${fresh.invoice_no} téléchargée`);
     } catch (e) { toast.error((e as Error).message); } finally { setInvoicing(false); }
   };
 
@@ -181,7 +220,16 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
           <PrimaryPill onClick={() => void issueInvoice()} loading={invoicing} className="h-14 w-full text-[17px]"><FileCheck2 /> Établir la facture acquittée</PrimaryPill>
         )}
         {invoiced && (
-          <SoftPill onClick={() => void deliverInvoicePdf(quote, settings)} className="h-12 w-full text-[16px]"><FileCheck2 /> Facture acquittée (PDF)</SoftPill>
+          <div className="flex gap-2">
+            <Button variant="neutral" onClick={() => void makePdf('invoice', () => downloadInvoicePdf(quote, settings, docLang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice'} disabled={pdfBusy != null} className="min-h-12 flex-1 text-[16px]">
+              <Download /> Télécharger la facture
+            </Button>
+            {canShare && (
+              <Button variant="neutral" onClick={() => void makePdf('invoice-share', () => shareInvoicePdf(quote, settings, docLang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice-share'} disabled={pdfBusy != null} ariaLabel="Partager la facture acquittée" className="min-h-12 w-12 shrink-0 px-0">
+                <Share2 />
+              </Button>
+            )}
+          </div>
         )}
         {!canCollect && !invoiced && balance > 0 && <p className={cn(TYPE.small, TEXT.muted)}>Seules les opérations encaissent.</p>}
       </Card>
@@ -189,7 +237,15 @@ export function QuotePayments({ quote, settings, request }: { quote: Quote; sett
       {payments.length > 0 && (
         <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
           {payments.map((p) => (
-            <PaymentRow key={p.id} q={quote} p={p} settings={settings} canCancel={canCollect && !invoiced} onCancel={() => { setCancelId(p.id); setReason(''); }} />
+            <PaymentRow
+              key={p.id}
+              p={p}
+              busy={pdfBusy == null ? null : pdfBusy === `${p.id}:dl` ? 'dl' : pdfBusy === `${p.id}:share` ? 'share' : 'other'}
+              canCancel={canCollect && !invoiced}
+              onCancel={() => { setCancelId(p.id); setReason(''); }}
+              onDownload={() => void makePdf(`${p.id}:dl`, () => downloadReceiptPdf(quote, p, settings, docLang), `Reçu ${p.receipt_no}`)}
+              onShare={canShare ? () => void makePdf(`${p.id}:share`, () => shareReceiptPdf(quote, p, settings, docLang), `Reçu ${p.receipt_no}`) : undefined}
+            />
           ))}
         </Card>
       )}

@@ -1,9 +1,9 @@
 // ============================================================
 // Desktop admin — les petites pièces de la console Réception : la vignette
 // d'un colis avec son nombre de photos, la tuile du mur de photos, l'état
-// d'un dépôt en une pastille, le devis en une ligne.
+// d'un dépôt en une pastille, le devis en une ligne (et son PDF, d'un clic).
 // ============================================================
-import { Camera, ImageOff } from 'lucide-react';
+import { Camera, FileDown, ImageOff, Loader2 } from 'lucide-react';
 import { useParcelPhotoUrl } from '@/hooks/useReception';
 import { depositStage, parcelPhotoPaths, type Deposit, type Parcel } from '@/lib/reception';
 import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
@@ -55,12 +55,26 @@ export function DepositStatePill({ deposit }: { deposit: Deposit }) {
   return <StatusPill tone={st.tone} label={st.label} />;
 }
 
-/** Le devis en une ligne : statut, et le reste à payer (ou le total). */
-export function QuoteCell({ deposit }: { deposit: Deposit }) {
+/**
+ * Le devis en une ligne : statut, et le reste à payer (ou le total).
+ * Avec `onDownload` et un devis établi : le bouton « Télécharger le devis »
+ * (PDF), sans ouvrir le dépôt — le clic ne remonte pas à la ligne.
+ */
+export function QuoteCell({ deposit, onDownload, busy = false }: { deposit: Deposit; onDownload?: () => void; busy?: boolean }) {
   const q = quoteStatusMeta(deposit.quote_status);
+  const canDownload = !!onDownload && deposit.quote_no != null;
   return (
     <span className="inline-flex flex-col items-start gap-0.5">
-      <StatusPill tone={q.tone} label={q.short} />
+      <span className="inline-flex items-center gap-1">
+        <StatusPill tone={q.tone} label={q.short} />
+        {canDownload && (
+          <button type="button" disabled={busy} aria-busy={busy} aria-label="Télécharger le devis" title={`Télécharger le devis ${deposit.quote_no} (PDF)`}
+            onClick={(e) => { e.stopPropagation(); onDownload?.(); }}
+            className={cn('flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-accent hover:text-foreground disabled:cursor-wait', TEXT.muted)}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          </button>
+        )}
+      </span>
       {deposit.quote_total_xaf != null && (
         <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>
           {deposit.quote_paid_xaf && deposit.quote_paid_xaf > 0 && deposit.quote_paid_xaf < deposit.quote_total_xaf ? `reste ${xaf(deposit.quote_total_xaf - deposit.quote_paid_xaf)}` : xaf(deposit.quote_total_xaf)}

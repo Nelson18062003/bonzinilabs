@@ -4,6 +4,7 @@
 // dépôt), un bouton pour en charger, un pour en sortir. Les colis suivent
 // ensuite la boîte, sans rien ressaisir dans les lots.
 // ============================================================
+import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, PackagePlus, Undo2 } from 'lucide-react';
@@ -38,7 +39,7 @@ export function LoadedParcelsSection({ shipment: s, canManage, className }: { sh
       action={
         <span className="inline-flex items-center gap-2">
           {parcels.length > 0 && (
-            <button type="button" onClick={() => void deliverSeaManifestPdf(s, parcels)} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold', SOFT_PILL)}>
+            <button type="button" onClick={() => void deliverSeaManifestPdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold', SOFT_PILL)}>
               <FileText className="h-3.5 w-3.5" /> Manifeste (PDF)
             </button>
           )}

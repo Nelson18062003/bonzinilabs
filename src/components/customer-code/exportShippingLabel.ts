@@ -132,6 +132,18 @@ export async function deliverFile(file: File, title: string): Promise<Outcome> {
 }
 
 /**
+ * Le geste « donnez-moi le fichier » d'un écran à UN seul bouton : TÉLÉCHARGÉ
+ * sur ordinateur, feuille de partage sur téléphone. Sur un PC Windows, Chrome
+ * sait partager un fichier : deliverFile seul ouvrait le partage Windows au
+ * lieu de télécharger le devis. Un bouton « Partager » explicite garde
+ * deliverFile ; un bouton « Télécharger » explicite appelle downloadFile.
+ */
+export async function saveOrShareFile(file: File, title: string): Promise<Outcome> {
+  if (prefersDownload()) { downloadFile(file); return 'downloaded'; }
+  return deliverFile(file, title);
+}
+
+/**
  * Une image DÉJÀ PRÊTE dans le presse-papiers — à coller dans WhatsApp,
  * WeChat ou un e-mail. À appeler directement dans le toucher, sans rien
  * attendre avant : Safari n'accepte l'écriture que dans le geste.

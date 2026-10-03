@@ -64,7 +64,7 @@ const quoteDep2 = {
   id: 'q1', quote_no: 'DV-000031', deposit_id: 'dep2', status: 'draft', currency: 'XAF', amount_paid_xaf: 0, notes: null, sent_at: null,
   created_at: today(14, 40), updated_at: today(14, 52), deposit_no: dep2.deposit_no, location: dep2.location, opened_at: dep2.opened_at, closed_at: dep2.closed_at, client: dep2.client,
   lines: [
-    ...dep2.parcels.map((p, i) => quoteLine(p, i, i === 1 ? { basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 25000 } : i === 4 ? { basis: 'per_kg', quantity: p.weight_kg, unit_price_xaf: 6500, amount_xaf: Math.round(p.weight_kg * 6500) } : {})),
+    ...dep2.parcels.map((p, i) => quoteLine(p, i, i === 1 ? { basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 25000 } : i === 4 ? { basis: 'per_kg', quantity: p.weight_kg, unit_price_xaf: 6500, amount_xaf: Math.round(p.weight_kg * 6500) } : i === 2 ? { description: null, label: '', kind_of_parcel: 'bag' } : {})),
     { id: 'ql-fee1', seq: 11, kind: 'fee', label: 'Emballage renforcé', basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 12000, parcel_id: null },
     { id: 'ql-disc1', seq: 12, kind: 'discount', label: 'Geste commercial', basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: -10000, parcel_id: null },
   ],
@@ -271,7 +271,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   const page = await ctx.newPage();
   // DEBUG_NET=1 : trace les requêtes vers Supabase (REST, storage) et leur réponse.
   if (process.env.DEBUG_NET) { page.on('requestfailed', (r) => console.log('FAILED', r.url().slice(0, 120), r.failure()?.errorText)); page.on('request', (r) => { if (/supabase|storage/.test(r.url())) console.log('REQ', r.method(), r.url().slice(0, 140)); }); page.on('response', (r) => { if (/supabase|storage/.test(r.url())) console.log('RES', r.status(), r.url().slice(0, 100)); }); }
-  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen === 'payment-details-desktop-pdf' ? 'payment-details-desktop' : screen;
+  const key = screen === 'rc-location' ? 'rc-home' : screen === 'rc-client-card-label' ? 'rc-client-card' : screen === 'payment-details-images' ? 'payment-details' : screen === 'payment-details-desktop-pdf' ? 'payment-details-desktop' : screen === 'cargo-desk-deposit-quote' ? 'cargo-desk-deposit' : screen;
   if (screen === 'rc-location') await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
   // La vue de la console Réception (Dépôts, Colis, Photos, Par client) est mémorisée sur l'appareil.
   const deskView = { 'cargo-desk-parcels': 'parcels', 'cargo-desk-parcels-selected': 'parcels', 'cargo-desk-photos': 'photos', 'cargo-desk-client': 'clients' }[screen] ?? 'deposits';
@@ -279,9 +279,11 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'rc-identify') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-reception-draft', 'SF2884193055221'); } catch { /* privé */ } });
   if (screen === 'wh-who' || screen === 'wh-sign') await page.addInitScript(() => { try { sessionStorage.setItem('bonzini-warehouse-release', JSON.stringify({ code: 'BZ-510224', ids: ['dep3-1', 'dep3-2', 'dep3-3'], who: 'Samuel Ondo', phone: '+241 66 55 44 33' })); } catch { /* privé */ } });
   // Le panneau du flyer photographie son flyer en boucle de rendu : « load », puis on attend l'image plus bas.
-  await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light`, { waitUntil: screen === 'real-flyer-gabon' ? 'load' : 'networkidle' });
+  // DOCLANG=en : la langue des documents cargo (devis, reçu, facture) — français par défaut.
+  await page.goto(`http://localhost:8080/screenshot.html?screen=${key}&theme=light${process.env.DOCLANG ? `&doclang=${process.env.DOCLANG}` : ''}`, { waitUntil: screen === 'real-flyer-gabon' ? 'load' : 'networkidle' });
   if (screen === 'cargo-deposit-wallet') { await page.click('text=Encaisser'); await page.waitForTimeout(500); await page.click('text=Solde Bonzini'); await page.waitForTimeout(700); }
   if (screen === 'rc-done-labels') { await page.click('button:has-text("Imprimer")'); await page.waitForTimeout(2500); }
+  if (screen === 'cargo-desk-deposit-quote') { await page.locator('role=dialog >> text=Télécharger le devis').first().scrollIntoViewIfNeeded(); await page.waitForTimeout(500); }
   if (screen === 'cargo-desk-client') { await page.click('text=Aïcha Mbarga'); await page.waitForTimeout(900); }
   if (screen === 'cargo-desk-expanded') { await page.click('button[aria-label="Déplier les colis"] >> nth=1'); await page.waitForTimeout(700); }
   if (screen === 'cargo-desk-parcels-selected') { await page.click('input[aria-label="Sélectionner RC-000122-05"]'); await page.click('input[aria-label="Sélectionner RC-000122-06"]'); await page.waitForTimeout(900); }

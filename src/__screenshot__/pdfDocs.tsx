@@ -9,7 +9,7 @@ import { useRelease } from '@/hooks/useWarehouse';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { activePayments } from '@/lib/cargoQuote';
-import { buildInvoicePdf, buildQuotePdf, buildReceiptPdf } from '@/lib/cargoQuotePdf';
+import { buildInvoicePdf, buildQuotePdf, buildReceiptPdf, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { buildReleaseNotePdf } from '@/lib/releaseNotePdf';
 import { buildMobileMoneyGuidePdf } from '@/lib/mobileMoneyGuidePdf';
 import { buildBankDetailsPdf } from '@/lib/bankDetailsPdf';
@@ -26,11 +26,13 @@ export function PdfDoc({ kind }: { kind: Kind }) {
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     const s = settings ?? DEFAULT_SHIPPING_SETTINGS;
+    // ?doclang=fr|en : la langue du devis, du reçu et de la facture (français par défaut).
+    const lang: CargoDocLang = new URLSearchParams(window.location.search).get('doclang') === 'en' ? 'en' : 'fr';
     const go = async () => {
       let file: File | null = null;
-      if (kind === 'devis' && q2) file = await buildQuotePdf(q2, s);
-      if (kind === 'recu' && q2) { const p = activePayments(q2)[0]; if (p) file = await buildReceiptPdf(q2, p, s); }
-      if (kind === 'facture' && q3) file = await buildInvoicePdf(q3, s);
+      if (kind === 'devis' && q2) file = await buildQuotePdf(q2, s, lang);
+      if (kind === 'recu' && q2) { const p = activePayments(q2)[0]; if (p) file = await buildReceiptPdf(q2, p, s, lang); }
+      if (kind === 'facture' && q3) file = await buildInvoicePdf(q3, s, lang);
       if (kind === 'bon' && release) file = await buildReleaseNotePdf(release, null);
       if (kind === 'mobile-money') file = await buildMobileMoneyGuidePdf('portrait');
       if (kind === 'mobile-money-paysage') file = await buildMobileMoneyGuidePdf('landscape');

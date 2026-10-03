@@ -89,6 +89,7 @@ const TXT = {
     invoiceNote: 'Facture acquittée : aucun montant ne reste dû sur ce dépôt. Les colis sont remis sur présentation du code client.',
     method: { cash: 'Espèces', mobile_money: 'Mobile Money', bank_transfer: 'Virement', wallet: 'Solde Bonzini', other: 'Autre' } as Record<PaymentMethod, string>,
     place: { guangzhou: 'Guangzhou, avant le départ', douala: 'Douala, au retrait', other: 'Ailleurs' } as Record<PaymentPlace, string>,
+    kind: { carton: 'Carton', bag: 'Sac', bale: 'Ballot', roll: 'Rouleau', pallet: 'Palette', other: 'Colis' } as Record<string, string>,
     num: 'fr-FR',
   },
   en: {
@@ -115,12 +116,24 @@ const TXT = {
     invoiceNote: 'Paid invoice: nothing remains due on this deposit. Parcels are released on presentation of the customer code.',
     method: { cash: 'Cash', mobile_money: 'Mobile Money', bank_transfer: 'Bank transfer', wallet: 'Bonzini balance', other: 'Other' } as Record<PaymentMethod, string>,
     place: { guangzhou: 'Guangzhou, before departure', douala: 'Douala, on collection', other: 'Elsewhere' } as Record<PaymentPlace, string>,
+    kind: { carton: 'Carton', bag: 'Bag', bale: 'Bale', roll: 'Roll', pallet: 'Pallet', other: 'Parcel' } as Record<string, string>,
     num: 'en-US',
   },
 };
 type Txt = (typeof TXT)['fr'];
 
-const lineLabel = (l: QuoteLine, t: Txt) => (l.kind === 'parcel' ? (l.description || l.label || l.kind_of_parcel || t.parcel) : l.label);
+// Un colis sans description prend son TYPE, traduit — jamais la valeur brute de la base (« bag », « pallet »).
+const lineLabel = (l: QuoteLine, t: Txt) => (l.kind === 'parcel' ? (l.description || l.label || (l.kind_of_parcel ? t.kind[l.kind_of_parcel] ?? t.parcel : t.parcel)) : l.label);
+
+/** Le pays du client, tel qu'il est enregistré (en français) ; en anglais pour un document anglais. */
+const COUNTRY_EN: Record<string, string> = {
+  cameroun: 'Cameroon', tchad: 'Chad', gabon: 'Gabon', congo: 'Congo', 'république du congo': 'Republic of the Congo',
+  'république démocratique du congo': 'DR Congo', rdc: 'DR Congo', 'guinée équatoriale': 'Equatorial Guinea', guinée: 'Guinea',
+  centrafrique: 'Central African Republic', 'république centrafricaine': 'Central African Republic', "côte d'ivoire": "Côte d'Ivoire",
+  sénégal: 'Senegal', bénin: 'Benin', togo: 'Togo', niger: 'Niger', mali: 'Mali', 'burkina faso': 'Burkina Faso', nigéria: 'Nigeria',
+  nigeria: 'Nigeria', ghana: 'Ghana', chine: 'China', france: 'France', belgique: 'Belgium', maroc: 'Morocco',
+};
+const countryIn = (c: string | null | undefined, lang: CargoDocLang) => (c && lang === 'en' ? COUNTRY_EN[c.trim().toLowerCase()] ?? c : c);
 const lineBasis = (l: QuoteLine, t: Txt) => (l.kind !== 'parcel' ? (l.kind === 'discount' ? t.discount : t.fee) : l.basis === 'fixed' ? t.fixed : t.per(BASIS_UNIT[l.basis]));
 const lineQty = (l: QuoteLine, t: Txt) => (l.basis === 'fixed' || l.quantity == null ? '' : `${Number(l.quantity).toLocaleString(t.num, { maximumFractionDigits: 3 })} ${BASIS_UNIT[l.basis]}`);
 
@@ -147,7 +160,7 @@ function Parties({ q, settings, lang }: { q: Quote; settings: ShippingSettings; 
         {q.client?.company_name ? <Text style={st.partyLine}>{q.client.company_name}</Text> : null}
         <Text style={st.partyLine}>{[q.client?.customer_code, q.client?.phone].filter(Boolean).join(' · ')}</Text>
         {q.client?.email ? <Text style={st.partyLine}>{q.client.email}</Text> : null}
-        <Text style={st.partyLine}>{[q.client?.city, q.client?.country].filter(Boolean).join(', ')}</Text>
+        <Text style={st.partyLine}>{[q.client?.city, countryIn(q.client?.country, lang)].filter(Boolean).join(', ')}</Text>
         {q.client?.account_name ? <Text style={st.partyLine}>{t.account} {q.client.account_name}</Text> : null}
       </View>
     </View>
@@ -203,8 +216,8 @@ function PaymentsList({ payments, title, lang }: { payments: QuotePayment[]; tit
       <Text style={st.sectionTitle}>{title}</Text>
       {payments.map((p) => (
         <View key={p.id} style={st.kv}>
-          <Text style={st.k}>{p.receipt_no} · {formatDateIn(p.paid_at, lang)} · {t.method[p.method]}{p.reference ? ` (${p.reference})` : ''} · {t.place[p.place]}</Text>
-          <Text style={st.v}>{formatXafIn(p.amount_xaf, lang)}</Text>
+          <Text style={[st.k, { flex: 1, paddingRight: 12 }]}>{p.receipt_no} · {formatDateIn(p.paid_at, lang)} · {t.method[p.method]}{p.reference ? ` (${p.reference})` : ''} · {t.place[p.place]}</Text>
+          <Text style={[st.v, { flexShrink: 0, textAlign: 'right' }]}>{formatXafIn(p.amount_xaf, lang)}</Text>
         </View>
       ))}
     </View>

@@ -16,7 +16,7 @@
 // ============================================================
 import { createElement, type ReactElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { deliverFile, downloadFile, prefersDownload, type Outcome } from '@/components/customer-code/exportShippingLabel';
+import { deliverFile, downloadFile, saveOrShareFile, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import type { ShippingSettings } from '@/lib/customerCode';
 import { clientFullName } from '@/lib/reception';
 import { xaf, type Quote, type QuotePayment } from '@/lib/cargoQuote';
@@ -61,13 +61,7 @@ export function buildInvoicePdf(q: Quote, settings: ShippingSettings, lang: Carg
 }
 
 const quoteTitle = (q: Quote) => `${q.quote_no} · ${q.client ? clientFullName(q.client) : q.deposit_no}`;
-const invoiceTitle = (q: Quote) => `${q.invoice_no ?? 'Facture'} · ${q.client ? clientFullName(q.client) : q.deposit_no}`;
-
-/** Le geste par défaut d'un écran à un seul bouton : téléchargé sur ordinateur, partagé sur téléphone. */
-async function deliver(file: File, title: string): Promise<Outcome> {
-  if (prefersDownload()) { downloadFile(file); return 'downloaded'; }
-  return deliverFile(file, title);
-}
+const invoiceTitle = (q: Quote, lang: CargoDocLang) => `${q.invoice_no ?? (lang === 'en' ? 'Invoice' : 'Facture')} · ${q.client ? clientFullName(q.client) : q.deposit_no}`;
 
 // ── Télécharger : toujours un fichier, jamais de partage ──
 export async function downloadQuotePdf(q: Quote, settings: ShippingSettings, lang: CargoDocLang = readCargoDocLang()): Promise<void> {
@@ -88,16 +82,16 @@ export async function shareReceiptPdf(q: Quote, p: QuotePayment, settings: Shipp
   return deliverFile(await buildReceiptPdf(q, p, settings, lang), `${p.receipt_no} · ${xaf(p.amount_xaf)}`);
 }
 export async function shareInvoicePdf(q: Quote, settings: ShippingSettings, lang: CargoDocLang = readCargoDocLang()): Promise<Outcome> {
-  return deliverFile(await buildInvoicePdf(q, settings, lang), invoiceTitle(q));
+  return deliverFile(await buildInvoicePdf(q, settings, lang), invoiceTitle(q, lang));
 }
 
 // ── Le geste par défaut (un seul bouton) : téléchargé sur ordinateur, partagé sur téléphone ──
 export async function deliverQuotePdf(q: Quote, settings: ShippingSettings, lang: CargoDocLang = readCargoDocLang()): Promise<Outcome> {
-  return deliver(await buildQuotePdf(q, settings, lang), quoteTitle(q));
+  return saveOrShareFile(await buildQuotePdf(q, settings, lang), quoteTitle(q));
 }
 export async function deliverReceiptPdf(q: Quote, p: QuotePayment, settings: ShippingSettings, lang: CargoDocLang = readCargoDocLang()): Promise<Outcome> {
-  return deliver(await buildReceiptPdf(q, p, settings, lang), `${p.receipt_no} · ${xaf(p.amount_xaf)}`);
+  return saveOrShareFile(await buildReceiptPdf(q, p, settings, lang), `${p.receipt_no} · ${xaf(p.amount_xaf)}`);
 }
 export async function deliverInvoicePdf(q: Quote, settings: ShippingSettings, lang: CargoDocLang = readCargoDocLang()): Promise<Outcome> {
-  return deliver(await buildInvoicePdf(q, settings, lang), invoiceTitle(q));
+  return saveOrShareFile(await buildInvoicePdf(q, settings, lang), invoiceTitle(q, lang));
 }

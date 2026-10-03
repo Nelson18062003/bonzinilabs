@@ -4,7 +4,7 @@
 // pris pour un succès. Le réceptionnaire n'appelle rien d'ici : les écrans
 // qui les utilisent vivent dans Cargo, derrière canViewCargo / canPriceParcels.
 // ============================================================
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
@@ -44,14 +44,27 @@ export function useSetCargoPricing() {
   });
 }
 
+const QUOTE_STALE_MS = 15_000;
+const getQuote = (depositId: string | undefined) =>
+  rpcJson<{ quote: Quote | null }>('cargo_quote_get', { p_deposit_id: depositId }).then((r) => r.quote);
+
 /** Le devis d'un dépôt — null tant qu'aucun prix n'a été posé. */
 export function useCargoQuote(depositId: string | undefined) {
   return useQuery({
     queryKey: QUOTE_KEYS.quote(depositId ?? ''),
-    queryFn: () => rpcJson<{ quote: Quote | null }>('cargo_quote_get', { p_deposit_id: depositId }).then((r) => r.quote),
+    queryFn: () => getQuote(depositId),
     enabled: !!depositId,
-    staleTime: 15_000,
+    staleTime: QUOTE_STALE_MS,
   });
+}
+
+/**
+ * Le devis d'un dépôt, hors d'un composant (télécharger le PDF depuis une
+ * liste sans ouvrir le dépôt). Même clé que useCargoQuote : un devis déjà
+ * chargé par la fiche est repris tel quel, et ce qui est lu ici la sert ensuite.
+ */
+export function fetchCargoQuote(qc: QueryClient, depositId: string): Promise<Quote | null> {
+  return qc.fetchQuery({ queryKey: QUOTE_KEYS.quote(depositId), queryFn: () => getQuote(depositId), staleTime: QUOTE_STALE_MS });
 }
 
 function useQuoteMutation<TArgs>(name: string, toArgs: (a: TArgs) => Record<string, unknown>, success?: string) {

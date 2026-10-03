@@ -2,7 +2,9 @@
 // ENTREPÔT — Encaisser à Douala. Un devis à solder à la fois : le reste à
 // payer en grand, le montant reçu (le reste, par défaut), comment (quatre
 // boutons), une référence si ce n'est pas des espèces, une photo de la
-// preuve si on veut. « Encaisser » : le reçu part aussitôt, et, quand tout
+// preuve si on veut. « Encaisser » : le reçu est aussitôt TÉLÉCHARGÉ (sur le
+// téléphone comme sur le portable — jamais une feuille de partage à la place),
+// « Partager » (WhatsApp) restant à un toucher sur téléphone ; et, quand tout
 // est soldé, on revient aux colis pour la remise. Le lieu est toujours
 // Douala, la date toujours maintenant : rien à choisir.
 // ============================================================
@@ -15,9 +17,10 @@ import { useClientAtWarehouse } from '@/hooks/useWarehouse';
 import { useAddQuotePayment, useCargoQuote, usePayQuoteFromWallet, uploadPaymentProof } from '@/hooks/useCargoQuote';
 import { WalletBalanceCard } from '@/mobile/components/cargo/WalletBalanceCard';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
-import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { METHOD_LABEL, xaf, type PaymentMethod } from '@/lib/cargoQuote';
-import { deliverReceiptPdf } from '@/lib/cargoQuotePdf';
+import { DEFAULT_SHIPPING_SETTINGS, type ShippingSettings } from '@/lib/customerCode';
+import { METHOD_LABEL, xaf, type PaymentMethod, type Quote, type QuotePayment } from '@/lib/cargoQuote';
+import { buildReceiptPdf, readCargoDocLang } from '@/lib/cargoQuotePdf';
+import { canShareFiles, deliverFile, downloadFile, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { releaseBlockers, type ClientQuoteSummary } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, FormField, PrimaryPill, ScreenError, ScreenLoader, SoftPill, TextInput } from '@/mobile/designKit';
@@ -26,6 +29,26 @@ import { readReleaseDraft } from './releaseDraft';
 
 const METHODS: PaymentMethod[] = ['cash', 'wallet', 'mobile_money', 'bank_transfer', 'other'];
 const num = (s: string) => { const v = parseFloat(s.replace(/\s/g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
+
+/**
+ * Le reçu d'un encaissement : TÉLÉCHARGÉ d'office, dans la langue retenue sur
+ * l'appareil. Sur téléphone, « Partager » (WhatsApp) dans la notification : le
+ * fichier est déjà prêt, la feuille s'ouvre dans le toucher.
+ */
+async function handReceipt(q: Quote, p: QuotePayment, settings: ShippingSettings): Promise<void> {
+  try {
+    const file = await buildReceiptPdf(q, p, settings, readCargoDocLang());
+    downloadFile(file);
+    const share = canShareFiles() && !prefersDownload();
+    toast.success(`Reçu ${p.receipt_no} téléchargé`, share ? {
+      duration: 10_000,
+      action: { label: 'Partager', onClick: () => void deliverFile(file, `${p.receipt_no} · ${xaf(p.amount_xaf)}`) },
+    } : undefined);
+  } catch (e) {
+    // L'argent est encaissé : seul le fichier manque, on le retrouve dans « Paiements et reçus ».
+    toast.error(`Encaissé, mais le reçu ${p.receipt_no} n'a pas pu être préparé : ${(e as Error).message}`);
+  }
+}
 
 /** Le formulaire d'un devis : ce qu'il reste, ce qu'on reçoit, comment. */
 function PayForm({ summary, onDone }: { summary: ClientQuoteSummary; onDone: () => void }) {
@@ -55,7 +78,8 @@ function PayForm({ summary, onDone }: { summary: ClientQuoteSummary; onDone: () 
           const proofPath = proof ? await uploadPaymentProof(q.id, proof) : null;
           return add.mutateAsync({ quoteId: q.id, amount: Math.round(v!), method, place: 'douala', reference: reference.trim() || undefined, proofPath });
         })();
-      if (payment) { const out = await deliverReceiptPdf(fresh, payment, settings ?? DEFAULT_SHIPPING_SETTINGS); if (out === 'downloaded') toast.success(`Reçu ${payment.receipt_no} téléchargé`); }
+      // Le reçu ne peut plus bloquer la suite : l'encaissement est fait.
+      if (payment) await handReceipt(fresh, payment, settings ?? DEFAULT_SHIPPING_SETTINGS);
       onDone();
     } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
   };
@@ -129,7 +153,7 @@ export function WarehousePay() {
           </>
         ) : current ? (
           <>
-            <WhQuestion title="Combien recevez-vous ?" help="Le reçu part dans la foulée. Rien ne sort avant le solde." />
+            <WhQuestion title="Combien recevez-vous ?" help="Le reçu se télécharge dans la foulée. Rien ne sort avant le solde." />
             <PayForm key={current.id} summary={current} onDone={afterPay} />
           </>
         ) : (

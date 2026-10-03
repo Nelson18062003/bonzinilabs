@@ -83,7 +83,7 @@ export function MobileCargoAirDetail() {
           )}
           {canManage && a.status === 'PLANNED' && parcels.length === 0 && <p className={cn(TYPE.small, TEXT.muted)}>Chargez des colis avant de marquer le départ.</p>}
           <div className="flex flex-wrap gap-2">
-            <SoftPill onClick={() => void deliverAirManifestPdf(a)} disabled={parcels.length === 0} className="h-11 flex-1 text-[15px]"><FileText /> Manifeste (PDF)</SoftPill>
+            <SoftPill onClick={() => void deliverAirManifestPdf(a).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className="h-11 flex-1 text-[15px]"><FileText /> Manifeste (PDF)</SoftPill>
             {canManage && <SoftPill onClick={() => navigate(`/m/cargo/avion/${a.id}/modifier`)} className="h-11 px-4 text-[15px]"><Pencil /> Fiche</SoftPill>}
             {canManage && a.status === 'DEPARTED' && <SoftPill onClick={() => setConfirm('back')} className="h-11 px-4 text-[15px]"><Undo2 /> Pas parti</SoftPill>}
           </div>
