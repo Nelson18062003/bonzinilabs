@@ -48,6 +48,23 @@ describe('xafInWords', () => {
     expect(xafInWords(219_840, 'fr')).toBe('Deux-cent-dix-neuf mille huit-cent-quarante francs CFA');
     expect(xafInWords(219_840, 'en')).toBe('Two hundred nineteen thousand eight hundred forty CFA francs');
   });
+  it('« de » après million / milliard quand rien ne suit', () => {
+    expect(xafInWords(1_000_000, 'fr')).toBe('Un million de francs CFA');
+    expect(xafInWords(3_000_000, 'fr')).toBe('Trois millions de francs CFA');
+    expect(xafInWords(2_000_000_000, 'fr')).toBe('Deux milliards de francs CFA');
+    expect(xafInWords(2_500_000, 'fr')).toBe('Deux millions cinq-cent mille francs CFA');
+    expect(xafInWords(3_000_000, 'en')).toBe('Three million CFA francs');
+  });
+  it('le singulier : « un franc », « zéro franc », « one CFA franc »', () => {
+    expect(xafInWords(1, 'fr')).toBe('Un franc CFA');
+    expect(xafInWords(0, 'fr')).toBe('Zéro franc CFA');
+    expect(xafInWords(1, 'en')).toBe('One CFA franc');
+    expect(xafInWords(0, 'en')).toBe('Zero CFA francs');
+  });
+  it('rien au-delà de 999 milliards (le chiffre seul fait foi)', () => {
+    expect(xafInWords(1e12, 'fr')).toBe('');
+    expect(xafInWords(999_999_999_999, 'fr')).toMatch(/^Neuf-cent-quatre-vingt-dix-neuf milliards/);
+  });
   it('arrondit et ignore le signe (une remise s’écrit en chiffres)', () => {
     expect(xafInWords(1000.4, 'fr')).toBe('Mille francs CFA');
     expect(xafInWords(-5, 'en')).toBe('Five CFA francs');

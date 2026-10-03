@@ -86,8 +86,19 @@ export function numberToWordsEn(value: number): string {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-/** « Deux-cent-dix-neuf mille huit-cent-quarante francs CFA » / « Two hundred nineteen thousand eight hundred forty CFA francs ». */
+/**
+ * « Deux-cent-dix-neuf mille huit-cent-quarante francs CFA » / « Two hundred
+ * nineteen thousand eight hundred forty CFA francs ». « million » et
+ * « milliard » sont des noms : « deux millions DE francs CFA », mais « deux
+ * millions cinq-cent mille francs CFA ». Le singulier pour 0 et 1 en français
+ * (« un franc »), pour 1 seulement en anglais. Au-delà de 999 milliards (aucun
+ * devis réel), rien : le chiffre seul fait foi.
+ */
 export function xafInWords(amount: number, lang: 'fr' | 'en'): string {
   const n = Math.round(Math.abs(Number(amount) || 0));
-  return lang === 'en' ? `${capitalize(numberToWordsEn(n))} CFA francs` : `${capitalize(numberToWordsFr(n))} francs CFA`;
+  if (n >= 1e12) return '';
+  if (lang === 'en') return `${capitalize(numberToWordsEn(n))} CFA ${n === 1 ? 'franc' : 'francs'}`;
+  const words = numberToWordsFr(n);
+  const de = /(?:million|milliard)s?$/.test(words) ? ' de' : '';
+  return `${capitalize(words)}${de} ${n <= 1 ? 'franc' : 'francs'} CFA`;
 }
