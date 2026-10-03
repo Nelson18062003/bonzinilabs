@@ -350,7 +350,7 @@ export function useCargoPackages(shipmentId: string | null) {
 }
 
 export type CargoPackageInput = Pick<CargoPackage, 'label' | 'kind' | 'qty' | 'length_cm' | 'width_cm' | 'height_cm'> &
-  Partial<Pick<CargoPackage, 'weight_kg' | 'stackable' | 'supplier' | 'note' | 'position'>>;
+  Partial<Pick<CargoPackage, 'weight_kg' | 'stackable' | 'supplier' | 'note' | 'position' | 'cbm' | 'owner_label' | 'client_id' | 'hs_code'>>;
 
 export function useAddCargoPackage() {
   const qc = useQueryClient();
@@ -377,7 +377,10 @@ export function useUpdateCargoPackage() {
       const { error } = await supabaseAdmin.from('cargo_packages').update(patch).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] }),
+    onSuccess: (_d, v) => {
+      toast.success('Lot modifié');
+      qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] });
+    },
     onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
   });
 }

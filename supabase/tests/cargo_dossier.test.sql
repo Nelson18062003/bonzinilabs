@@ -146,4 +146,26 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 
+-- ============================================================================
+-- Colis : véhicules, volume seul, propriétaire (20261003170000_cargo_packages_mixed.sql)
+-- ============================================================================
+INSERT INTO public.cargo_packages (shipment_id, label, kind, length_cm, width_cm, height_cm, hs_code)
+  VALUES ('00000000-0000-0000-0000-00000000000a', 'Haval H6', 'VEHICLE', 464.9, 185.2, 171, '8703.22.10.9100');
+INSERT INTO public.cargo_packages (shipment_id, label, qty, cbm, owner_label)
+  VALUES ('00000000-0000-0000-0000-00000000000a', 'Tôles', 7, 3.2, 'Olivier Yaoundé');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label) VALUES ('00000000-0000-0000-0000-00000000000a', 'Sans taille');
+    PERFORM _assert(false, 'un lot sans cotes ni volume doit échouer');
+  EXCEPTION WHEN check_violation OR not_null_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label, length_cm, cbm) VALUES ('00000000-0000-0000-0000-00000000000a', 'Cotes à moitié', 100, 1);
+    PERFORM _assert(false, 'des cotes incomplètes doivent échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label, cbm, hs_code) VALUES ('00000000-0000-0000-0000-00000000000a', 'Code faux', 1, 'abc; drop');
+    PERFORM _assert(false, 'un code SH non numérique doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+
 \echo '✓ cargo_dossier : toutes les règles tiennent'

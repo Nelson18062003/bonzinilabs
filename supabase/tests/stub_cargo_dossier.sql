@@ -52,3 +52,19 @@ CREATE POLICY cargo_documents_insert ON public.cargo_documents FOR INSERT TO aut
 DROP POLICY IF EXISTS cargo_costs_read ON public.cargo_costs;
 CREATE POLICY cargo_costs_read ON public.cargo_costs FOR SELECT TO authenticated
   USING (public.admin_has_permission(auth.uid(), 'canViewCargo'));
+CREATE TABLE IF NOT EXISTS public.cargo_packages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  shipment_id uuid NOT NULL REFERENCES public.cargo_shipments(id) ON DELETE CASCADE,
+  label text NOT NULL,
+  kind text NOT NULL DEFAULT 'CARTON' CHECK (kind IN ('CARTON','PALLET','CRATE','BAG','DRUM','BUNDLE','OTHER')),
+  qty integer NOT NULL DEFAULT 1 CHECK (qty > 0),
+  length_cm numeric(7,1) NOT NULL CHECK (length_cm > 0 AND length_cm <= 1400),
+  width_cm numeric(7,1) NOT NULL CHECK (width_cm > 0 AND width_cm <= 300),
+  height_cm numeric(7,1) NOT NULL CHECK (height_cm > 0 AND height_cm <= 300),
+  weight_kg numeric(10,2),
+  stackable boolean NOT NULL DEFAULT true,
+  position integer NOT NULL DEFAULT 0,
+  created_by uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);

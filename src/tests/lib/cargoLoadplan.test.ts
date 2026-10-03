@@ -147,3 +147,69 @@ describe('CHARGEMENT — les teintes des lots', () => {
     expect(lotColor(0, true)).not.toBe(lotColor(0, false));
   });
 });
+
+/* ── Plan mixte : le vrai conteneur MIEU3611115 (3 véhicules + 11 lignes d'effets au volume) ── */
+const MIEU = (): CargoPackage[] => {
+  const veh = (id: string, label: string, L: number, W: number, H: number, cbm: number, position: number) =>
+    pkg({ id, label, kind: 'VEHICLE', length_cm: L, width_cm: W, height_cm: H, cbm, position, weight_kg: null, stackable: false });
+  const vol = (id: string, label: string, qty: number, cbm: number, position: number) =>
+    pkg({ id, label, qty, cbm, position, length_cm: null, width_cm: null, height_cm: null, weight_kg: null });
+  return [
+    veh('yaris', 'Toyota Yaris', 375, 169.5, 154.5, 9.82, 1),
+    veh('rav4', 'Toyota RAV4', 457, 184.5, 171.5, 14.081, 2),
+    veh('haval', 'Haval H6', 464.9, 185.2, 171, 14.723, 3),
+    vol('verres', 'Verres', 13, 4, 4), vol('clim', 'Climatiseur', 1, 0.25, 5), vol('chaises', 'Chaises', 5, 0.345, 6),
+    vol('pieces', 'Pièces', 1, 0.245, 7), vol('lavelinge', 'Machine à laver', 1, 1.56, 8), vol('meuble', 'Meuble', 1, 2.5, 9),
+    vol('etendoirs', 'Étendoirs', 50, 0.9, 10), vol('vetements', 'Vêtements', 1, 5.98, 11), vol('toles', 'Tôles', 7, 3.2, 12),
+    vol('chaussures', 'Chaussures', 1, 0.94, 13), vol('hauts', 'Hauts', 1, 0.015, 14),
+  ];
+};
+
+describe('CHARGEMENT — plan mixte (véhicules + volumes déclarés)', () => {
+  it('loge les trois voitures : deux à plat, la troisième inclinée sur le capot de la voisine', () => {
+    const plan = buildLoadPlan('45G1', MIEU());
+    expect(plan.mode).toBe('mixed');
+    expect(plan.vehicles.map((v) => v.packageId)).toEqual(['yaris', 'rav4', 'haval']);
+    expect(plan.vehicles[0].angle).toBe(0);
+    expect(plan.vehicles[1].angle).toBe(0);
+    expect(plan.vehicles[2].angle).toBeGreaterThan(5);
+    expect(plan.vehicles[2].angle).toBeLessThan(30);
+    expect(plan.leftOut.filter((o) => o.label.startsWith('Haval'))).toHaveLength(0);
+  });
+
+  it('les effets remplissent la place restante, sans rien laisser dehors', () => {
+    const plan = buildLoadPlan('45G1', MIEU());
+    expect(plan.leftOut).toEqual([]);
+    const lots = new Set(plan.boxes.map((b) => b.packageId));
+    expect(lots.size).toBe(11);
+    expect(plan.boxes.every((b) => b.estimated)).toBe(true);
+    // Rien ne sort de la caisse.
+    for (const b of plan.boxes) {
+      expect(b.x + b.l).toBeLessThanOrEqual(plan.dims.length + 0.01);
+      expect(b.y + b.h).toBeLessThanOrEqual(plan.dims.height + 0.01);
+      expect(b.z + b.w).toBeLessThanOrEqual(plan.dims.width + 0.01);
+    }
+  });
+
+  it('compte le volume déclaré de la packing list (58,56 m³ ≈ 77 % d’un 40 HC)', () => {
+    const plan = buildLoadPlan('45G1', MIEU());
+    expect(plan.usedVolumeM3).toBeCloseTo(58.559, 2);
+    expect(plan.fill).toBeGreaterThan(0.75);
+    expect(plan.fill).toBeLessThan(0.8);
+  });
+
+  it('reste dessinable : peu de blocs une fois les cubes fusionnés', () => {
+    const plan = buildLoadPlan('45G1', MIEU());
+    expect(plan.boxes.length).toBeLessThan(260);
+  });
+
+  it('un véhicule trop grand est dit, pas dessiné', () => {
+    const plan = buildLoadPlan('22G1', [pkg({ id: 'bus', label: 'Bus', kind: 'VEHICLE', length_cm: 900, width_cm: 230, height_cm: 250 })]);
+    expect(plan.vehicles).toHaveLength(0);
+    expect(plan.leftOut[0].why).toMatch(/plus grand/);
+  });
+
+  it('reste déterministe', () => {
+    expect(JSON.stringify(buildLoadPlan('45G1', MIEU()))).toBe(JSON.stringify(buildLoadPlan('45G1', MIEU())));
+  });
+});

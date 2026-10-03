@@ -26,7 +26,7 @@ const KIND_LABEL: Record<string, string> = { CARTON: 'Carton', PALLET: 'Palette'
 /** « 220 cartons », « 1 caisse ». */
 const KIND_PLURAL: Record<string, [string, string]> = {
   CARTON: ['carton', 'cartons'], PALLET: ['palette', 'palettes'], CRATE: ['caisse', 'caisses'], BAG: ['sac', 'sacs'],
-  DRUM: ['fût', 'fûts'], BUNDLE: ['fagot', 'fagots'], OTHER: ['colis', 'colis'],
+  DRUM: ['fût', 'fûts'], BUNDLE: ['fagot', 'fagots'], VEHICLE: ['véhicule', 'véhicules'], OTHER: ['colis', 'colis'],
 };
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
@@ -36,8 +36,12 @@ const toNum = (v: string) => { const n = Number(v.replace(/\s/g, '').replace(','
 function lotSentence(p: CargoPackage): string {
   const [one, many] = KIND_PLURAL[p.kind] ?? KIND_PLURAL.OTHER;
   const what = plural(p.qty, one, many);
-  const dims = `${num(Number(p.length_cm), 0)} × ${num(Number(p.width_cm), 0)} × ${num(Number(p.height_cm), 0)} cm`;
   const kg = p.weight_kg != null ? `, ${num(Number(p.weight_kg), 1)} kg ${p.qty > 1 ? 'chacun' : ''}`.trimEnd() : '';
+  // Un lot connu seulement par le volume de la packing list : on dit le volume, pas des cotes à zéro.
+  if (p.length_cm == null || p.width_cm == null || p.height_cm == null) {
+    return `${what}, ${num(Number(p.cbm ?? 0), 2)} m³ déclarés${kg}${p.owner_label ? `, à ${p.owner_label}` : ''}.`;
+  }
+  const dims = `${num(Number(p.length_cm), 0)} × ${num(Number(p.width_cm), 0)} × ${num(Number(p.height_cm), 0)} cm`;
   return `${what} de ${dims}${kg}${p.stackable === false ? ', à ne pas empiler' : ''}.`;
 }
 

@@ -12,7 +12,7 @@ const base = {
   created_at: '2026-09-11T20:00:00Z', updated_at: '2026-09-11T20:00:00Z', last_event_label: 'Navire parti',
   arrival_notice_at: null, besc_number: null, customs_cleared_at: null, customs_declaration_ref: null,
   delivery_order_at: null, empty_returned_at: null, free_time_ends_on: null, gate_out_at: null,
-  goods_description: 'Téléphones et accessoires', gross_weight_kg: 18400, packages_count: 860, freight_note: null,
+  goods_description: 'Téléphones et accessoires', gross_weight_kg: 22170, packages_count: 80, freight_note: null,
 } as const;
 
 const SHIPMENTS: CargoShipment[] = [
@@ -61,16 +61,24 @@ const LOOKUP: CargoLookup = {
 const ok = <T,>(data: T) => ({ data, isLoading: false, error: null, refetch: async () => undefined });
 
 /** Colis d'exemple : une packing list plausible pour un 40' High Cube. */
+const lotBase = { shipment_id: '2', weight_kg: null, supplier: null, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', client_id: null } as const;
+const veh = (id: string, label: string, L: number, W: number, H: number, cbm: number, position: number, hs: string): CargoPackage => ({
+  ...lotBase, id, label, kind: 'VEHICLE', qty: 1, length_cm: L, width_cm: W, height_cm: H, cbm, stackable: false, note: null, position, owner_label: null, hs_code: hs,
+});
+const vol = (id: string, label: string, kind: string, qty: number, cbm: number, position: number, owner: string | null = null): CargoPackage => ({
+  ...lotBase, id, label, kind, qty, length_cm: null, width_cm: null, height_cm: null, cbm, stackable: true, note: null, position, owner_label: owner, hs_code: null,
+});
+/** Le vrai contenu de MIEU3611115 : 3 véhicules + 11 lignes d'effets connues au volume. */
 const PACKAGES: CargoPackage[] = [
-  { id: 'p1', shipment_id: '2', label: 'Téléphones — cartons maîtres', kind: 'CARTON', qty: 220,
-    length_cm: 60, width_cm: 40, height_cm: 40, weight_kg: 18, stackable: true, supplier: 'Shenzhen Hongfa',
-    note: null, position: 0, created_by: null, created_at: '2026-08-10T09:00:00Z', updated_at: '2026-08-10T09:00:00Z' },
-  { id: 'p2', shipment_id: '2', label: 'Accessoires — cartons', kind: 'CARTON', qty: 140,
-    length_cm: 50, width_cm: 40, height_cm: 30, weight_kg: 11, stackable: true, supplier: 'Guangzhou Yite',
-    note: null, position: 1, created_by: null, created_at: '2026-08-10T09:05:00Z', updated_at: '2026-08-10T09:05:00Z' },
-  { id: 'p3', shipment_id: '2', label: 'Présentoirs — caisses bois', kind: 'CRATE', qty: 18,
-    length_cm: 120, width_cm: 80, height_cm: 60, weight_kg: 42, stackable: false, supplier: 'Foshan Ledi',
-    note: 'ISPM 15 requis', position: 2, created_by: null, created_at: '2026-08-10T09:10:00Z', updated_at: '2026-08-10T09:10:00Z' },
+  veh('p1', 'Toyota Yaris 2009', 375, 169.5, 154.5, 9.82, 1, '8703.23.10.9900'),
+  veh('p2', 'Toyota RAV4 2014', 457, 184.5, 171.5, 14.081, 2, '8703.23.90.9100'),
+  veh('p3', 'Haval H6 2016', 464.9, 185.2, 171, 14.723, 3, '8703.22.10.9100'),
+  vol('p4', 'Verres de lunettes (眼镜片)', 'CARTON', 13, 4, 4), vol('p5', 'Climatiseur (空调)', 'CARTON', 1, 0.25, 5),
+  vol('p6', 'Chaises (椅子)', 'CARTON', 5, 0.345, 6), vol('p7', 'Pièces mécaniques', 'CARTON', 1, 0.245, 7),
+  vol('p8', 'Machine à laver (洗衣机)', 'CARTON', 1, 1.56, 8), vol('p9', 'Meuble de rangement (柜子)', 'CARTON', 1, 2.5, 9),
+  vol('p10', 'Étendoirs à linge (晾衣架)', 'BUNDLE', 50, 0.9, 10), vol('p11', 'Vêtements (衣服)', 'BAG', 1, 5.98, 11),
+  vol('p12', 'Tôles (锌板)', 'BUNDLE', 7, 3.2, 12, 'Olivier Yaoundé'), vol('p13', 'Chaussures (鞋子)', 'CARTON', 1, 0.94, 13),
+  vol('p14', 'Hauts, vestes (上衣)', 'CARTON', 1, 0.015, 14),
 ];
 
 const noop = () => ({ mutate: () => undefined, mutateAsync: async () => undefined, isPending: false });

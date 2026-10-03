@@ -646,13 +646,17 @@ export type Database = {
       }
       cargo_packages: {
         Row: {
+          cbm: number | null
+          client_id: string | null
+          hs_code: string | null
+          owner_label: string | null
           created_at: string
           created_by: string | null
-          height_cm: number
+          height_cm: number | null
           id: string
           kind: string
           label: string
-          length_cm: number
+          length_cm: number | null
           note: string | null
           position: number
           qty: number
@@ -661,16 +665,20 @@ export type Database = {
           supplier: string | null
           updated_at: string
           weight_kg: number | null
-          width_cm: number
+          width_cm: number | null
         }
         Insert: {
+          cbm?: number | null
+          client_id?: string | null
+          hs_code?: string | null
+          owner_label?: string | null
           created_at?: string
           created_by?: string | null
-          height_cm: number
+          height_cm?: number | null
           id?: string
           kind?: string
           label: string
-          length_cm: number
+          length_cm?: number | null
           note?: string | null
           position?: number
           qty?: number
@@ -679,16 +687,20 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
           weight_kg?: number | null
-          width_cm: number
+          width_cm?: number | null
         }
         Update: {
+          cbm?: number | null
+          client_id?: string | null
+          hs_code?: string | null
+          owner_label?: string | null
           created_at?: string
           created_by?: string | null
-          height_cm?: number
+          height_cm?: number | null
           id?: string
           kind?: string
           label?: string
-          length_cm?: number
+          length_cm?: number | null
           note?: string | null
           position?: number
           qty?: number
@@ -697,7 +709,7 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
           weight_kg?: number | null
-          width_cm?: number
+          width_cm?: number | null
         }
         Relationships: [
           {
