@@ -1,21 +1,31 @@
 // ============================================================
 // Desktop admin — le devis d'un dépôt, en section du dialogue de dépôt :
 // la table des lignes (colis, base, quantité, prix unitaire, montant),
-// éditable sur place pour canPriceParcels, les frais et remises, le total,
-// et « Envoyer le devis » (PDF → feuille de partage ou téléchargement).
+// éditable sur place pour canPriceParcels, les frais et remises, le total.
+//
+// Le PDF, dans UNE langue (FR | EN, retenue sur l'appareil — elle vaut aussi
+// pour les reçus et la facture de la section « Paiement ») :
+//   · « Télécharger le devis » — un fichier, TOUJOURS, jamais de feuille de
+//     partage (sur un PC Windows, Chrome sait partager : l'ancien bouton
+//     « PDF » ouvrait le partage Windows). Ouvert à tout le personnel qui
+//     voit le dépôt, quel que soit le statut du devis ;
+//   · « Partager » — secondaire, seulement sur téléphone / tablette ;
+//   · « Envoyer le devis » — le marque envoyé, puis téléchargé sur
+//     ordinateur, partagé sur téléphone.
 // ============================================================
 import { useState } from 'react';
-import { FileText, Minus, Plus, Send, Trash2 } from 'lucide-react';
+import { Download, FileText, Loader2, Minus, Plus, Send, Share2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddQuoteLine, useCargoQuote, useEnsureQuote, useRemoveQuoteLine, useSendQuote, useSetQuoteLine } from '@/hooks/useCargoQuote';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { BASIS_LABEL, BASIS_UNIT, lineNeedsMeasure, quoteStatusMeta, xaf, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
-import { deliverQuotePdf } from '@/lib/cargoQuotePdf';
+import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, deliverQuotePdf, downloadQuotePdf, readCargoDocLang, shareQuotePdf, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
+import { canShareFiles, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { formatCbm, formatKg, type Deposit } from '@/lib/reception';
 import { Band } from '@/components/cargo/dossier/kit';
-import { formatDateTime } from '@/mobile/components/reception/bits';
+import { formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { cn } from '@/lib/utils';
 import { TEXT, SOFT_PILL, PRIMARY_PILL, StatusPill, Th, Td } from '@/desktop/designKit';
 
@@ -25,6 +35,7 @@ const INPUT = 'h-8 w-[112px] rounded-md border border-input bg-background px-2 t
 function LineRow({ line, canEdit, onSave, onRemove }: { line: QuoteLine; canEdit: boolean; onSave: (p: { basis?: QuoteBasis; unitPrice?: number | null; amount?: number | null }) => void; onRemove?: () => void }) {
   const [value, setValue] = useState(() => line.basis === 'fixed' ? String(line.amount_xaf ?? '') : String(line.unit_price_xaf ?? ''));
   const isParcel = line.kind === 'parcel';
+  const labels = useReceptionLabels();
   const needs = lineNeedsMeasure(line);
   const commit = () => {
     const v = num(value); if (v == null || v < 0) return;
@@ -35,7 +46,7 @@ function LineRow({ line, canEdit, onSave, onRemove }: { line: QuoteLine; canEdit
     <tr>
       <Td first><span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{isParcel ? String(line.parcel_seq ?? line.seq).padStart(2, '0') : line.kind === 'discount' ? '−' : '+'}</span></Td>
       <Td>
-        <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{isParcel ? (line.description || line.label || line.kind_of_parcel || 'Colis') : line.label}</div>
+        <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{isParcel ? (line.description || line.label || (line.kind_of_parcel ? labels.kind(line.kind_of_parcel) : 'Colis')) : line.label}</div>
         {isParcel && <div className={cn('text-[11.5px] tabular-nums', needs ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>{needs ? 'Ni pesé ni mesuré' : `${formatKg(line.weight_kg)} · ${formatCbm(line.cbm)}`}</div>}
       </Td>
       <Td>
@@ -60,6 +71,32 @@ function LineRow({ line, canEdit, onSave, onRemove }: { line: QuoteLine; canEdit
   );
 }
 
+/** FR | EN — la langue du PDF, tout le document dans une seule langue. */
+function LangToggle({ value, onChange }: { value: CargoDocLang; onChange: (lang: CargoDocLang) => void }) {
+  return (
+    <span role="group" aria-label="Langue du PDF (devis, reçus, facture)" className="inline-flex h-9 items-center gap-0.5 rounded-md border border-input bg-background p-0.5">
+      {CARGO_DOC_LANGS.map((l) => {
+        const on = l === value;
+        return (
+          <button
+            key={l}
+            type="button"
+            onClick={() => onChange(l)}
+            aria-pressed={on}
+            title={`PDF en ${CARGO_DOC_LANG_LABEL[l]}`}
+            className={cn(
+              'inline-flex h-full min-w-[34px] items-center justify-center rounded-sm px-2 text-[11.5px] font-bold uppercase tracking-wider outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
+              on ? 'bg-primary text-primary-foreground' : cn(TEXT.muted, 'hover:bg-accent hover:text-accent-foreground'),
+            )}
+          >
+            {l}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
+
 export function QuoteSection({ deposit }: { deposit: Deposit }) {
   const { hasPermission } = useAdminAuth();
   const canEdit = hasPermission('canPriceParcels');
@@ -73,20 +110,49 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
   const [extra, setExtra] = useState<'fee' | 'discount' | null>(null);
   const [label, setLabel] = useState('');
   const [amount, setAmount] = useState('');
-  const [sending, setSending] = useState(false);
+  // Le PDF en cours de fabrication (quelques secondes) : un geste à la fois.
+  const [busy, setBusy] = useState<'download' | 'share' | 'send' | null>(null);
+  const [lang, setLang] = useState<CargoDocLang>(readCargoDocLang);
 
   const st = quoteStatusMeta(quote?.status);
   const locked = quote?.status === 'paid' || quote?.status === 'invoiced';
   const editable = canEdit && !locked;
   const missing = quote ? deposit.parcels.filter((p) => !quote.lines.some((l) => l.parcel_id === p.id)).length : 0;
+  const hasLines = (quote?.lines.length ?? 0) > 0;
+  // « Partager » : seulement là où une feuille de partage a du sens (téléphone, tablette).
+  const canShare = canShareFiles() && !prefersDownload();
+  const pdfSettings = settings ?? DEFAULT_SHIPPING_SETTINGS;
+
+  const chooseLang = (l: CargoDocLang) => { setLang(l); storeCargoDocLang(l); };
+
+  const downloadQuote = async () => {
+    if (!quote || busy) return;
+    setBusy('download');
+    try {
+      await downloadQuotePdf(quote, pdfSettings, lang);
+      toast.success('PDF téléchargé', { description: `Devis ${quote.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
+
+  const shareQuote = async () => {
+    if (!quote || busy) return;
+    setBusy('share');
+    try {
+      if ((await shareQuotePdf(quote, pdfSettings, lang)) === 'downloaded') toast.success('PDF téléchargé');
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
 
   const sendQuote = async () => {
-    if (!quote) return;
-    setSending(true);
+    if (!quote || busy) return;
+    setBusy('send');
     try {
-      const fresh = await send.mutateAsync(quote.id);
-      if ((await deliverQuotePdf(fresh, settings ?? DEFAULT_SHIPPING_SETTINGS)) === 'downloaded') toast.success('PDF téléchargé');
-    } catch (e) { toast.error((e as Error).message); } finally { setSending(false); }
+      // Le hook annonce déjà « Devis marqué comme envoyé » (ou le refus) : pas de second toast.
+      const fresh = await send.mutateAsync(quote.id).catch(() => null);
+      if (!fresh) return;
+      if ((await deliverQuotePdf(fresh, pdfSettings, lang)) === 'downloaded') {
+        toast.success('PDF téléchargé', { description: `Devis ${fresh.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+      }
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
 
   return (
@@ -131,11 +197,20 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
                 <button type="button" onClick={() => setExtra(null)} className={cn('inline-flex h-8 items-center px-3 text-[12px] font-semibold', SOFT_PILL)}>Annuler</button>
               </span>
             )}
-            <span className="ml-auto flex items-center gap-2">
-              <button type="button" onClick={() => void deliverQuotePdf(quote, settings ?? DEFAULT_SHIPPING_SETTINGS)} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}><FileText className="h-4 w-4" /> PDF</button>
+            <span className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <LangToggle value={lang} onChange={chooseLang} />
+              {/* Le téléchargement est le geste principal de qui ne peut pas envoyer (lecture seule, devis payé). */}
+              <button type="button" onClick={() => void downloadQuote()} disabled={!!busy || !hasLines} title={hasLines ? `Télécharger le devis en PDF (${CARGO_DOC_LANG_LABEL[lang]})` : 'Le devis n’a aucune ligne'} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] disabled:opacity-50', editable ? cn('font-semibold', SOFT_PILL) : cn('font-bold', PRIMARY_PILL))}>
+                {busy === 'download' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Télécharger le devis
+              </button>
+              {canShare && (
+                <button type="button" onClick={() => void shareQuote()} disabled={!!busy || !hasLines} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>
+                  {busy === 'share' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />} Partager
+                </button>
+              )}
               {editable && (
-                <button type="button" onClick={() => void sendQuote()} disabled={sending || quote.lines.length === 0} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold disabled:opacity-50', PRIMARY_PILL)}>
-                  <Send className="h-4 w-4" /> {quote.status === 'sent' ? 'Renvoyer le devis' : 'Envoyer le devis'}
+                <button type="button" onClick={() => void sendQuote()} disabled={!!busy || !hasLines} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold disabled:opacity-50', PRIMARY_PILL)}>
+                  {busy === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {quote.status === 'sent' ? 'Renvoyer le devis' : 'Envoyer le devis'}
                 </button>
               )}
             </span>

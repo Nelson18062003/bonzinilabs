@@ -5,7 +5,7 @@
 // ============================================================
 import { createElement, type ReactElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { downloadFile, saveOrShareFile } from '@/components/customer-code/exportShippingLabel';
 import { MOBILE_MONEY_GUIDE_FILENAME, mobileMoneyGuideData, type GuideOrientation } from '@/lib/mobileMoneyGuide';
 import { MobileMoneyGuidePDF } from '@/lib/pdf/templates/MobileMoneyGuidePDF';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
@@ -23,5 +23,5 @@ export async function downloadMobileMoneyGuidePdf(orientation: GuideOrientation 
 }
 
 export async function deliverMobileMoneyGuidePdf(orientation: GuideOrientation = 'portrait'): Promise<'shared' | 'downloaded'> {
-  return deliverFile(await buildMobileMoneyGuidePdf(orientation), `${LEGAL_NAME} · Coordonnées Mobile Money`);
+  return saveOrShareFile(await buildMobileMoneyGuidePdf(orientation), `${LEGAL_NAME} · Coordonnées Mobile Money`);
 }

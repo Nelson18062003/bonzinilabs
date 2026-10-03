@@ -16,9 +16,13 @@
  * le temps avec la période, on retrouve les dépôts supprimés.
  * La route /m/cargo/reception/:depositId porte la fiche ouverte (lien
  * profond), `?colis=` le colis à mettre en évidence.
+ * Le devis se télécharge depuis la liste (colonne Devis), sans ouvrir le
+ * dépôt : un vrai fichier PDF, jamais la feuille de partage, dans la langue
+ * choisie en haut (FR | EN, retenue sur l'appareil).
  */
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronRight, Download, FileDown, Images, Loader2, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { DesktopCargoParts } from '@/components/cargo/CargoParts';
@@ -26,6 +30,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useReceptionBoard, useReceptionStock, type BoardScope } from '@/hooks/useReception';
 import { useWarehouseDay } from '@/hooks/useWarehouse';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { fetchCargoQuote } from '@/hooks/useCargoQuote';
+import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, downloadQuotePdf, readCargoDocLang, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { xaf as fmtXaf } from '@/lib/cargoQuote';
 import {
@@ -112,11 +118,18 @@ export function DesktopCargoReception() {
   const [labelsFor, setLabelsFor] = useState<Deposit | null>(null);
   const [viewerDeposit, setViewerDeposit] = useState<Deposit | null>(null);
   const [bulkBusy, setBulkBusy] = useState<'pdf' | 'print' | null>(null);
+  // Les devis en cours de fabrication (un sablier par ligne), et la langue des PDF.
+  const [quoteBusy, setQuoteBusy] = useState<Set<string>>(new Set());
+  const [docLang, setDocLangState] = useState<CargoDocLang>(readCargoDocLang);
+  const qc = useQueryClient();
   const viewer = useParcelViewer();
 
   const setView = (v: View) => { setViewState(v); setPage(1); try { localStorage.setItem(VIEW_KEY, v); } catch { /* préférence perdue : sans gravité */ } };
   useEffect(() => { setPage(1); }, [period, where, queue, query, receivedBy]);
   useEffect(() => { setSelected(new Set()); }, [period, where]);
+  // La fiche d'un dépôt peut changer la langue : on la relit quand elle se ferme.
+  useEffect(() => { setDocLangState(readCargoDocLang()); }, [depositId]);
+  const setDocLang = (l: CargoDocLang) => { setDocLangState(l); storeCargoDocLang(l); };
 
   const pq = useMemo(() => periodQuery(period), [period]);
   const board = useReceptionBoard({ scope: pq.scope, location: where === 'all' ? null : where, from: pq.from, to: pq.to });
@@ -222,6 +235,27 @@ export function DesktopCargoReception() {
     }
   };
 
+  // Le devis d'un dépôt, téléchargé depuis la liste : un fichier, jamais la feuille de partage.
+  const downloadQuote = async (d: Deposit) => {
+    if (quoteBusy.has(d.id)) return;
+    // La langue affichée en haut fait foi (relue sur l'appareil à la fermeture de la fiche) :
+    // même si le stockage est bloqué, le PDF sort dans la langue que l'on voit.
+    const lang = docLang;
+    setQuoteBusy((s) => new Set(s).add(d.id));
+    try {
+      const q = await fetchCargoQuote(qc, d.id);
+      if (!q) throw new Error(`Le dépôt ${d.deposit_no} n'a pas encore de devis`);
+      // Comme dans la fiche : un devis sans ligne ne donne pas de PDF (il serait vide).
+      if (q.lines.length === 0) throw new Error(`Le devis ${q.quote_no} n'a aucune ligne`);
+      await downloadQuotePdf(q, settings, lang);
+      toast.success('PDF téléchargé', { description: `Devis ${q.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+    } catch (e) {
+      toast.error((e as Error).message || 'Le devis n’a pas pu être téléchargé');
+    } finally {
+      setQuoteBusy((s) => { const n = new Set(s); n.delete(d.id); return n; });
+    }
+  };
+
   const exportCsv = () => {
     const stamp = new Date().toISOString().slice(0, 10);
     if (view === 'parcels' || view === 'photos') {
@@ -283,6 +317,17 @@ export function DesktopCargoReception() {
         <div className="flex items-center gap-2">
           <SearchField value={query} onChange={setQuery} placeholder="RC-…, BZ-…, client, bordereau, contenu…" className="w-[320px]" />
           <DropChip label="Période" value={period} options={PERIODS} onChange={(p) => { setPeriod(p); if (p === 'cancelled' || (p === 'stock' && queue === 'loaded')) setQueue('all'); }} />
+          {view === 'deposits' && (
+            <div role="radiogroup" aria-label="Langue des devis" title="Langue des devis téléchargés" className="flex items-center gap-1">
+              <span className={cn('pl-1 pr-0.5 text-[12px] font-semibold', TEXT.muted)}>Devis</span>
+              {CARGO_DOC_LANGS.map((l) => (
+                <button key={l} type="button" role="radio" aria-checked={docLang === l} aria-label={CARGO_DOC_LANG_LABEL[l]} title={`Devis en ${CARGO_DOC_LANG_LABEL[l]}`}
+                  onClick={() => setDocLang(l)} className={cn('inline-flex h-9 min-w-[38px] items-center justify-center px-2.5 text-[12px] font-bold', docLang === l ? PRIMARY_PILL : SOFT_PILL)}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
           <button type="button" onClick={exportCsv} disabled={listLen === 0} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>
             <Download className="h-4 w-4" /> CSV
           </button>
@@ -434,7 +479,8 @@ export function DesktopCargoReception() {
                               <span className={cn('block text-[11.5px] tabular-nums', TEXT.muted)}>{formatCbm(d.total_cbm)}</span>
                             </Td>
                             <Td><DepositStatePill deposit={d} /></Td>
-                            <Td><QuoteCell deposit={d} /></Td>
+                            {/* Dépôt supprimé : son devis est figé (la fiche ne le propose plus), pas de PDF depuis la liste. */}
+                            <Td><QuoteCell deposit={d} onDownload={d.status === 'cancelled' ? undefined : () => void downloadQuote(d)} busy={quoteBusy.has(d.id)} /></Td>
                             <Td last>
                               <button type="button" disabled={!d.client || d.parcels.length === 0} title={d.client ? 'Étiquettes du dépôt' : 'Attribuez d’abord le dépôt'} aria-label="Étiquettes du dépôt"
                                 onClick={(e) => { e.stopPropagation(); setLabelsFor(d); }} className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent disabled:opacity-30">

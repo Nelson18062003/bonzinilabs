@@ -1,10 +1,11 @@
 // ============================================================
 // LE BON DE RETRAIT — fabrication du fichier PDF (en-tête et pied officiels,
-// src/lib/pdf/templates/ReleaseNotePDF.tsx) et sa remise.
+// src/lib/pdf/templates/ReleaseNotePDF.tsx) et sa remise : TÉLÉCHARGÉ sur
+// ordinateur (jamais la feuille de partage de Windows), partagé sur téléphone.
 // ============================================================
 import { createElement, type ReactElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { downloadFile, saveOrShareFile, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import type { Release } from '@/lib/warehouse';
 import { clientFullName } from '@/lib/reception';
 import { ReleaseNotePDF } from '@/lib/pdf/templates/ReleaseNotePDF';
@@ -17,8 +18,9 @@ export async function buildReleaseNotePdf(r: Release, signatureDataUrl?: string 
   return new File([blob], releaseFileName(r), { type: 'application/pdf' });
 }
 
-export async function deliverReleaseNotePdf(r: Release, signatureDataUrl?: string | null): Promise<'shared' | 'downloaded'> {
-  return deliverFile(await buildReleaseNotePdf(r, signatureDataUrl), `${r.release_no} · ${r.client ? clientFullName(r.client) : r.picked_by_name}`);
+/** Le geste par défaut : téléchargé sur ordinateur, partagé sur téléphone (le client repart avec, sur WhatsApp). */
+export async function deliverReleaseNotePdf(r: Release, signatureDataUrl?: string | null): Promise<Outcome> {
+  return saveOrShareFile(await buildReleaseNotePdf(r, signatureDataUrl), `${r.release_no} · ${r.client ? clientFullName(r.client) : r.picked_by_name}`);
 }
 
 export async function downloadReleaseNotePdf(r: Release, signatureDataUrl?: string | null): Promise<void> { downloadFile(await buildReleaseNotePdf(r, signatureDataUrl)); }

@@ -5,6 +5,35 @@
 
 ## En attente
 
+### `20261003120000_cargo_quote_document_fields.sql`
+**PR :** Devis refait sur le modèle de la packing list client
+**Contenu :**
+- `cargo_quote_json` (helper interne du devis) redéfinie en **ajoutant** des clés, pour que le devis PDF dise ce que le
+  client connaît déjà de sa packing list — dimensions, fournisseur, conteneur ou vol :
+  - en tête : `supplier_kind`, `supplier_name` (le fournisseur du dépôt), `received_by_name` (le réceptionnaire à
+    Guangzhou) ; `containers[]` (les conteneurs où sont chargés des colis du dépôt, chacun une fois, triés par numéro :
+    B/L, armateur, navire, voyage, POL / POD, départ et arrivée — le réel s'il est connu, sinon l'annoncé) et
+    `flights[]` (les vols, de la même façon, triés par LTA) ; `[]` quand rien n'est chargé ;
+  - par ligne : `length_cm`, `width_cm`, `height_cm`, `courier_waybill`, `container_number`, `awb_number` (comme
+    `reception_deposit_json`).
+- Aucune clé existante ne change (nom, valeur, ordre des lignes et des paiements) ; aucune table ni colonne créée,
+  aucune donnée modifiée. Même signature, même retour `jsonb`, même étiquette `@mola` (`expose:false`) : helper réservé
+  au staff, `REVOKE` anon / authenticated conservés. Toutes les RPC `cargo_quote_*` qui la renvoient (devis,
+  encaissement, facture, portefeuille) portent les nouvelles clés sans changer elles-mêmes.
+- Testée sur un Postgres 16 local : l'ancienne fonction posée et sa sortie capturée sur trois devis (dépôt de trois colis
+  — deux dans un conteneur, un dans un vol — avec 3 lignes colis + 1 frais + 1 encaissement ; dépôt sans chargement ;
+  dépôt à deux conteneurs et deux vols), puis le fichier consolidé passé deux fois dans une transaction (`psql -1`) :
+  chaque devis moins les nouvelles clés est identique à l'ancienne sortie, valeurs attendues, conteneurs / vols
+  distincts et triés, `[]` sans chargement, attributs et droits inchangés (40 contrôles). Contrôle des prérequis
+  éprouvé (colonne, table ou fonction retirée → arrêt net qui nomme le manque, rien de modifié).
+
+**Comment pousser :** appliquée par le workflow `deploy-edge-functions.yml` au merge (si `SUPABASE_DB_PASSWORD` est
+posé), sinon coller `migrations/20261003_consolidated_devis.sql` dans l'éditeur SQL (contrôle des prérequis en
+tête, rejouable) — ou `npx supabase db push --linked` —, puis `npx supabase migration repair --status applied
+20261003120000` (après un collage seulement), puis `/gen-types` (hygiène : signature et type de retour inchangés ; les
+nouvelles clés sont typées dans `src/lib/cargoQuote.ts`). L'app fonctionne avant la migration : le devis PDF masque
+simplement les dimensions, le fournisseur et le conteneur / vol tant qu'elle n'est pas passée.
+
 ### `20261002100000_reception_full_control.sql`
 **PR :** Cargo › Réception refaite — dépôts et colis d'abord, plusieurs photos par colis, contrôle total
 **Contenu :**

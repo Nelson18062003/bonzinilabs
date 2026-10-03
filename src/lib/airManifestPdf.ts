@@ -3,11 +3,12 @@
 // compagnie, le transitaire et l'entrepôt de Douala : la LTA, le vol, les
 // dates, puis les colis client par client — numéro, contenu, poids,
 // dimensions, m³ — et, pour l'entrepôt, si le devis est payé. jsPDF,
-// Helvetica, même sortie que les autres documents (deliverFile).
+// Helvetica. Remise : TÉLÉCHARGÉ sur ordinateur (jamais la feuille de partage
+// de Windows), partagé sur téléphone (deliverFile).
 // ============================================================
 import { jsPDF } from 'jspdf';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
-import { deliverFile } from '@/components/customer-code/exportShippingLabel';
+import { saveOrShareFile, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import { awbLabel, flightSentence, fmtDay, groupByClient, parcelUnpaid, type AirParcel, type AirShipment } from '@/lib/airShipment';
 import type { CargoShipment } from '@/lib/cargo/model';
 import type { ParcelWithDeposit } from '@/lib/reception';
@@ -151,14 +152,14 @@ export function manifestFileName(a: AirShipment): string {
   return `bonzini-manifeste-${a.awb_number}.pdf`;
 }
 
-export async function deliverAirManifestPdf(a: AirShipment): Promise<'shared' | 'downloaded'> {
+export async function deliverAirManifestPdf(a: AirShipment): Promise<Outcome> {
   const pdf = buildAirManifestPdf(a);
   const file = new File([pdf.output('blob')], manifestFileName(a), { type: 'application/pdf' });
-  return deliverFile(file, `Manifeste ${awbLabel(a)}`);
+  return saveOrShareFile(file, `Manifeste ${awbLabel(a)}`);
 }
 
-export async function deliverSeaManifestPdf(s: CargoShipment, parcels: ParcelWithDeposit[]): Promise<'shared' | 'downloaded'> {
+export async function deliverSeaManifestPdf(s: CargoShipment, parcels: ParcelWithDeposit[]): Promise<Outcome> {
   const pdf = buildSeaManifestPdf(s, parcels);
   const file = new File([pdf.output('blob')], `bonzini-manifeste-${s.container_number.replace(/\s+/g, '')}.pdf`, { type: 'application/pdf' });
-  return deliverFile(file, `Manifeste ${s.container_number}`);
+  return saveOrShareFile(file, `Manifeste ${s.container_number}`);
 }

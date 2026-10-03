@@ -8,7 +8,7 @@
 // ============================================================
 import { createElement, type ReactElement } from 'react';
 import { pdf } from '@react-pdf/renderer';
-import { deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { downloadFile, saveOrShareFile } from '@/components/customer-code/exportShippingLabel';
 import { BANK_GUIDE_FILENAME, bankGuideData, bankRibFilename } from '@/lib/bankDetailsGuide';
 import type { GuideOrientation } from '@/lib/mobileMoneyGuide';
 import type { BankOption } from '@/types/deposit';
@@ -37,5 +37,5 @@ export async function downloadBankDetailsPdf(options: BankDetailsPdfOptions = {}
 
 export async function deliverBankDetailsPdf(options: BankDetailsPdfOptions = {}): Promise<'shared' | 'downloaded'> {
   const what = options.bank ? `RIB ${bankGuideData().accounts.find((a) => a.key === options.bank)?.name ?? ''}`.trim() : 'Coordonnées bancaires';
-  return deliverFile(await buildBankDetailsPdf(options), `${LEGAL_NAME} · ${what}`);
+  return saveOrShareFile(await buildBankDetailsPdf(options), `${LEGAL_NAME} · ${what}`);
 }

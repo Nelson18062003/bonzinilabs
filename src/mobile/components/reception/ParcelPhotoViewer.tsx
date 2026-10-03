@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight, Download, ImageOff, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useParcelPhotoUrl } from '@/hooks/useReception';
 import { formatCbm, formatDims, formatKg, parcelPhotoPaths, type Parcel } from '@/lib/reception';
-import { deliverFile } from '@/components/customer-code/exportShippingLabel';
+import { saveOrShareFile } from '@/components/customer-code/exportShippingLabel';
 import { cn } from '@/lib/utils';
 
 /** Ce que le visionneur sait dire d'un colis : le colis, et ce que l'écran d'appel veut ajouter (« Pointé · B3 », « Remis · BR-… »). */
@@ -117,7 +117,8 @@ export function ParcelPhotoViewer({ parcels, index, close, setIndex, title, phot
       const blob = await fetch(url).then((r) => { if (!r.ok) throw new Error('Photo indisponible'); return r.blob(); });
       const name = paths.length > 1 ? `${parcel.parcel_no}-${k + 1}.jpg` : `${parcel.parcel_no}.jpg`;
       const file = new File([blob], name, { type: blob.type || 'image/jpeg' });
-      if ((await deliverFile(file, parcel.parcel_no)) === 'downloaded') toast.success(`Photo ${name} téléchargée`);
+      // Sur ordinateur, on télécharge (la feuille de partage de Windows n'a pas d'« Enregistrer ») ; sur téléphone, partage.
+      if ((await saveOrShareFile(file, parcel.parcel_no)) === 'downloaded') toast.success(`Photo ${name} téléchargée`);
     } catch (e) { toast.error((e as Error).message); } finally { setSaving(false); }
   };
 

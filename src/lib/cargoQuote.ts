@@ -38,6 +38,37 @@ export interface QuoteLine {
   description?: string | null;
   weight_kg?: number | null;
   cbm?: number | null;
+  /** Les mesures et le suivi du colis (migration 20261003120000) — pour le devis façon packing list. */
+  length_cm?: number | null;
+  width_cm?: number | null;
+  height_cm?: number | null;
+  courier_waybill?: string | null;
+  container_number?: string | null;
+  awb_number?: string | null;
+}
+
+/** Le conteneur où sont chargés des colis du dépôt (cargo_shipments). Dates : réelles si connues, sinon annoncées. */
+export interface QuoteContainer {
+  container_number: string;
+  bl_number: string | null;
+  carrier: string | null;
+  vessel_name: string | null;
+  voyage: string | null;
+  pol_name: string | null;
+  pod_name: string | null;
+  etd: string | null;
+  eta: string | null;
+}
+
+/** Le vol (LTA) où sont chargés des colis du dépôt (air_shipments). */
+export interface QuoteFlight {
+  awb_number: string;
+  airline: string | null;
+  flight_no: string | null;
+  origin: string | null;
+  destination: string | null;
+  etd: string | null;
+  eta: string | null;
 }
 
 /** Un encaissement sur le devis — jamais effacé : annulé, avec un motif, et toujours visible. */
@@ -82,6 +113,12 @@ export interface Quote {
   client: ReceptionClient | null;
   lines: QuoteLine[];
   payments?: QuotePayment[];
+  /** Ce que le document dit du dépôt (migration 20261003120000 ; absent avant) : qui a envoyé, qui a reçu, où c'est chargé. */
+  supplier_kind?: 'supplier' | 'buying_agent' | null;
+  supplier_name?: string | null;
+  received_by_name?: string | null;
+  containers?: QuoteContainer[];
+  flights?: QuoteFlight[];
 }
 
 /** Le montant d'une ligne, tel que la base le calcule : quantité × prix unitaire, arrondi à l'unité ; ou le montant fixe. */
