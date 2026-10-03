@@ -252,8 +252,8 @@ export const WAX1_ROUTE: LatLng[] = [
  * L'ordre est celui où les coûts tombent dans la chaîne (manuel cargo,
  * chapitre « anatomie complète d'un coût »). */
 export const COST_KINDS = [
-  'FREIGHT', 'SURCHARGE', 'THC', 'BESC', 'INSURANCE', 'CUSTOMS_DUTY', 'CUSTOMS_FEE',
-  'DEMURRAGE', 'STORAGE', 'TRANSIT', 'TRUCKING', 'OTHER',
+  'FREIGHT', 'SURCHARGE', 'INSURANCE', 'BESC', 'INSPECTION', 'TRANSIT', 'CUSTOMS_DUTY', 'CUSTOMS_FEE',
+  'THC', 'STORAGE', 'DEMURRAGE', 'TRUCKING', 'OTHER',
 ] as const;
 
 export const COST_KIND_LABEL: Record<string, string> = {
@@ -261,12 +261,13 @@ export const COST_KIND_LABEL: Record<string, string> = {
   SURCHARGE: 'Surcharges (BAF, CAF…)',
   THC: 'Manutention portuaire (THC)',
   BESC: 'BESC',
+  INSPECTION: 'Inspection, CIVIC, expertise',
   INSURANCE: 'Assurance',
   CUSTOMS_DUTY: 'Droits de douane',
   CUSTOMS_FEE: 'Frais de douane et taxes',
   DEMURRAGE: 'Surestaries / détention',
   STORAGE: 'Stockage au port',
-  TRANSIT: 'Transitaire (honoraires)',
+  TRANSIT: 'Honoraires (déclarant, transitaire)',
   TRUCKING: 'Transport final',
   OTHER: 'Autre',
 };

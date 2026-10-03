@@ -15,16 +15,17 @@
  */
 import { useMemo, useRef, useState, type DragEvent, type ElementType } from 'react';
 import {
-  BadgeCheck, Banknote, Boxes, Building2, Camera, Car, ChevronLeft, ChevronRight, Download, ExternalLink, File as FileIcon,
+  BadgeCheck, Banknote, Boxes, Building2, Camera, Car, Download, File as FileIcon,
   FileText, FolderInput, Image as ImageIcon, FolderOpen, FolderPlus, Landmark, Mail, Pencil, Plus, Receipt, ScrollText, Search, Ship, Stamp, Trash2,
   Unlock, Upload, Wallet,
 } from 'lucide-react';
 import { NumberField, SelectField, TextArea, TextField } from '@/components/form';
 import {
-  downloadCargoDocument, openCargoDocument, useCargoDocFolders, useCargoDocumentUrls, useCargoDocuments, useCreateCargoDocFolders,
+  downloadCargoDocument, useCargoDocFolders, useCargoDocumentUrls, useCargoDocuments, useCreateCargoDocFolders,
   useDeleteCargoDocFolder, useDeleteCargoDocument, useUpdateCargoDocFolder, useUpdateCargoDocument, useUploadCargoDocuments,
 } from '@/hooks/useCargo';
 import { Empty, FieldLabel, IconButton, IconTile, Section, Tag, ToolButton, type SectionTone } from '@/components/cargo/dossier/kit';
+import { DocPreview } from '@/components/cargo/dossier/DocPreview';
 import {
   DOC_CATEGORIES, DOC_CATEGORY_META, STARTER_FOLDERS, categoryLabel, docTitle, fileSize, folderProgress, isDocCategory, isImage, isPdf,
   type CargoDocFolder, type DocCategory,
@@ -329,49 +330,6 @@ function FileDialog({
   );
 }
 
-/** Aperçu plein écran : image ou PDF, avec précédent / suivant dans la même pièce. */
-function Preview({ docs, index, urls, onIndex, onClose }: { docs: CargoDocument[]; index: number; urls: Record<string, string>; onIndex: (i: number) => void; onClose: () => void }) {
-  const doc = docs[index];
-  if (!doc) return null;
-  const url = urls[doc.storage_path];
-  return (
-    <CenterDialog
-      open
-      onClose={onClose}
-      width={980}
-      title={
-        <div className="min-w-0">
-          <div className={cn('truncate text-[16px] font-bold', TEXT.strong)}>{docTitle(doc)}</div>
-          <div className={cn('text-[12px] tabular-nums', TEXT.muted)}>{index + 1} / {docs.length}{doc.size_bytes ? ` · ${fileSize(doc.size_bytes)}` : ''}</div>
-        </div>
-      }
-      footer={
-        <>
-          <ToolButton icon={ChevronLeft} onClick={() => onIndex(index - 1)} disabled={index === 0}>Précédent</ToolButton>
-          <ToolButton icon={ChevronRight} onClick={() => onIndex(index + 1)} disabled={index >= docs.length - 1}>Suivant</ToolButton>
-          <span className="ml-auto flex gap-2">
-            <ToolButton icon={ExternalLink} onClick={() => openCargoDocument(doc)}>Ouvrir</ToolButton>
-            <ToolButton icon={Download} onClick={() => downloadCargoDocument(doc)}>Télécharger</ToolButton>
-          </span>
-        </>
-      }
-    >
-      <div className={cn('flex h-[70vh] items-center justify-center overflow-hidden rounded-[12px]', SURFACE.inset)}>
-        {!url ? (
-          <span className={cn('text-[13px]', TEXT.muted)}>Chargement…</span>
-        ) : isImage(doc) ? (
-          <img src={url} alt={docTitle(doc)} className="max-h-full max-w-full object-contain" />
-        ) : isPdf(doc) ? (
-          <iframe src={url} title={docTitle(doc)} className="h-full w-full rounded-[12px] bg-white" />
-        ) : (
-          <ToolButton icon={ExternalLink} onClick={() => openCargoDocument(doc)}>Ouvrir le fichier</ToolButton>
-        )}
-      </div>
-      {doc.note && <p className={cn('mt-3 text-[13px]', TEXT.body)}>{doc.note}</p>}
-    </CenterDialog>
-  );
-}
-
 function StarterDialog({ open, onClose, onCreate, saving }: { open: boolean; onClose: () => void; saving: boolean; onCreate: (picked: typeof STARTER_FOLDERS) => void }) {
   const [picked, setPicked] = useState<Set<number>>(() => new Set(STARTER_FOLDERS.map((_, i) => i)));
   const toggle = (i: number) => setPicked((p) => { const n = new Set(p); if (n.has(i)) n.delete(i); else n.add(i); return n; });
@@ -648,7 +606,7 @@ export function TabDocuments({ shipment: s, canManage }: { shipment: CargoShipme
       </CenterDialog>
 
       {preview && (
-        <Preview docs={preview.docs} index={preview.index} urls={urls ?? {}} onIndex={(i) => setPreview({ ...preview, index: i })} onClose={() => setPreview(null)} />
+        <DocPreview docs={preview.docs} index={preview.index} urls={urls ?? {}} onIndex={(i) => setPreview({ ...preview, index: i })} onClose={() => setPreview(null)} />
       )}
     </div>
   );

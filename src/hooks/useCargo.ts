@@ -9,6 +9,9 @@ import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/partie
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
+/** Le stockage privé des fichiers cargo (pièces du classeur, justificatifs de coûts). */
+const BUCKET = 'cargo-documents';
+
 type RpcResult = { success?: boolean; error?: string; [k: string]: unknown } | null;
 function assertOk(data: unknown): Record<string, unknown> {
   const r = data as RpcResult;
@@ -85,7 +88,7 @@ export type CargoShipmentPatch = Partial<
     | 'eta_promised' | 'etd_promised' | 'vessel_name' | 'vessel_imo' | 'vessel_mmsi' | 'voyage'
     | 'eta_carrier' | 'status' | 'arrival_notice_at' | 'free_time_ends_on' | 'customs_declaration_ref'
     | 'customs_cleared_at' | 'delivery_order_at' | 'gate_out_at' | 'empty_returned_at' | 'besc_number'
-    | 'goods_description' | 'gross_weight_kg' | 'packages_count'
+    | 'goods_description' | 'gross_weight_kg' | 'packages_count' | 'freight_note'
   >
 >;
 
@@ -271,7 +274,7 @@ export function useCargoCosts(shipmentId: string | null) {
 }
 
 export type CargoCostInput = Pick<CargoCost, 'kind' | 'amount' | 'currency'> &
-  Partial<Pick<CargoCost, 'label' | 'incurred_on' | 'paid' | 'invoice_ref' | 'note'>>;
+  Partial<Pick<CargoCost, 'label' | 'incurred_on' | 'paid' | 'paid_on' | 'payee' | 'invoice_ref' | 'note'>>;
 
 export function useAddCargoCost() {
   const qc = useQueryClient();
@@ -280,8 +283,9 @@ export function useAddCargoCost() {
       const { data: auth } = await supabaseAdmin.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error('Session expirée');
-      const { error } = await supabaseAdmin.from('cargo_costs').insert({ ...cost, shipment_id: shipmentId, created_by: uid });
+      const { data, error } = await supabaseAdmin.from('cargo_costs').insert({ ...cost, shipment_id: shipmentId, created_by: uid }).select('id').single();
       if (error) throw error;
+      return data.id as string;
     },
     onSuccess: (_d, v) => {
       toast.success('Coût ajouté');
@@ -303,14 +307,24 @@ export function useUpdateCargoCost() {
   });
 }
 
+/** Supprimer un coût ET ses justificatifs (fichiers compris) : un reçu sans coût n'a plus de sens. */
 export function useDeleteCargoCost() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id }: { id: string; shipmentId: string }) => {
+    mutationFn: async ({ id, files }: { id: string; shipmentId: string; files?: CargoDocument[] }) => {
+      if (files?.length) {
+        const { error: e1 } = await supabaseAdmin.from('cargo_documents').delete().in('id', files.map((f) => f.id));
+        if (e1) throw e1;
+        await supabaseAdmin.storage.from(BUCKET).remove(files.map((f) => f.storage_path));
+      }
       const { error } = await supabaseAdmin.from('cargo_costs').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] }),
+    onSuccess: (_d, v) => {
+      toast.success('Coût supprimé');
+      qc.invalidateQueries({ queryKey: ['cargo', 'costs', v.shipmentId] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
+    },
     onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
   });
 }
@@ -532,7 +546,6 @@ export function useRemoveShipmentParty() {
 
 /* ── Documents ──────────────────────────────────────────────────────────── */
 
-const BUCKET = 'cargo-documents';
 
 /**
  * Les pièces de TOUTE la flotte, groupées par conteneur — pour que la liste,

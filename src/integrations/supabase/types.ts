@@ -595,6 +595,8 @@ export type Database = {
           label: string | null
           note: string | null
           paid: boolean
+          paid_on: string | null
+          payee: string | null
           shipment_id: string
           updated_at: string
         }
@@ -610,6 +612,8 @@ export type Database = {
           label?: string | null
           note?: string | null
           paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
           shipment_id: string
           updated_at?: string
         }
@@ -625,6 +629,8 @@ export type Database = {
           label?: string | null
           note?: string | null
           paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
           shipment_id?: string
           updated_at?: string
         }
@@ -1048,6 +1054,7 @@ export type Database = {
           eta_promised: string | null
           etd_actual: string | null
           etd_promised: string | null
+          freight_note: string | null
           freight_paid: boolean
           freight_usd: number | null
           id: string
@@ -1091,6 +1098,7 @@ export type Database = {
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
+          freight_note?: string | null
           freight_paid?: boolean
           freight_usd?: number | null
           id?: string
@@ -1134,6 +1142,7 @@ export type Database = {
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
+          freight_note?: string | null
           freight_paid?: boolean
           freight_usd?: number | null
           id?: string
