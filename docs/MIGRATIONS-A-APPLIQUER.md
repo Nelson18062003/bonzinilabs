@@ -27,7 +27,8 @@
   distincts et triés, `[]` sans chargement, attributs et droits inchangés (40 contrôles). Contrôle des prérequis
   éprouvé (colonne, table ou fonction retirée → arrêt net qui nomme le manque, rien de modifié).
 
-**Comment pousser :** coller `migrations/20261003_consolidated_devis.sql` dans l'éditeur SQL (contrôle des prérequis en
+**Comment pousser :** appliquée par le workflow `deploy-edge-functions.yml` au merge (si `SUPABASE_DB_PASSWORD` est
+posé), sinon coller `migrations/20261003_consolidated_devis.sql` dans l'éditeur SQL (contrôle des prérequis en
 tête, rejouable) — ou `npx supabase db push --linked` —, puis `npx supabase migration repair --status applied
 20261003120000` (après un collage seulement), puis `/gen-types` (hygiène : signature et type de retour inchangés ; les
 nouvelles clés sont typées dans `src/lib/cargoQuote.ts`). L'app fonctionne avant la migration : le devis PDF masque
