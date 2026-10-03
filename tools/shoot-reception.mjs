@@ -59,10 +59,13 @@ const gone1 = { ...dep4, id: 'gone1', deposit_no: 'RC-000118', status: 'cancelle
 // ── Phase 1 : le devis d'un dépôt (prix par colis) ──
 const pricing = { success: true, air_per_kg_xaf: 6500, sea_per_cbm_xaf: 180000, currency: 'XAF' };
 const quoteLine = (p, i, o) => ({ id: `ql-${p.id}`, seq: i + 1, kind: 'parcel', label: p.parcel_no, basis: 'per_cbm', quantity: p.cbm, unit_price_xaf: 180000, amount_xaf: Math.round(p.cbm * 180000),
-  parcel_id: p.id, parcel_no: p.parcel_no, parcel_seq: p.seq, kind_of_parcel: p.kind, description: p.description, weight_kg: p.weight_kg, cbm: p.cbm, ...o });
+  parcel_id: p.id, parcel_no: p.parcel_no, parcel_seq: p.seq, kind_of_parcel: p.kind, description: p.description, weight_kg: p.weight_kg, cbm: p.cbm,
+  // migration 20261003120000 : les mesures et le suivi du colis, pour le devis façon packing list
+  length_cm: p.length_cm, width_cm: p.width_cm, height_cm: p.height_cm, courier_waybill: p.courier_waybill, container_number: p.container_number ?? null, awb_number: null, ...o });
 const quoteDep2 = {
   id: 'q1', quote_no: 'DV-000031', deposit_id: 'dep2', status: 'draft', currency: 'XAF', amount_paid_xaf: 0, notes: null, sent_at: null,
   created_at: today(14, 40), updated_at: today(14, 52), deposit_no: dep2.deposit_no, location: dep2.location, opened_at: dep2.opened_at, closed_at: dep2.closed_at, client: dep2.client,
+  supplier_kind: dep2.supplier_kind, supplier_name: dep2.supplier_name, received_by_name: dep2.received_by_name, containers: [], flights: [],
   lines: [
     ...dep2.parcels.map((p, i) => quoteLine(p, i, i === 1 ? { basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 25000 } : i === 4 ? { basis: 'per_kg', quantity: p.weight_kg, unit_price_xaf: 6500, amount_xaf: Math.round(p.weight_kg * 6500) } : i === 2 ? { description: null, label: '', kind_of_parcel: 'bag' } : {})),
     { id: 'ql-fee1', seq: 11, kind: 'fee', label: 'Emballage renforcé', basis: 'fixed', quantity: null, unit_price_xaf: null, amount_xaf: 12000, parcel_id: null },
@@ -74,7 +77,8 @@ quoteDep2.total_xaf = quoteDep2.lines.reduce((t, l) => t + l.amount_xaf, 0);
 const payment = (id, no, amount, o) => ({ id, receipt_no: no, amount_xaf: amount, method: 'mobile_money', place: 'guangzhou', paid_at: today(14, 58), reference: 'MP240921.1458.A7K2', proof_path: null, note: null, received_by: 'demo', received_by_name: 'Demo Admin', created_at: today(14, 58), cancelled_at: null, cancel_reason: null, ...o });
 quoteDep2.payments = [payment('pm1', 'RE-000041', 120000), payment('pm0', 'RE-000040', 50000, { method: 'cash', reference: null, paid_at: today(14, 45), cancelled_at: today(14, 50), cancel_reason: 'Double saisie' })];
 quoteDep2.amount_paid_xaf = 120000; quoteDep2.balance_xaf = quoteDep2.total_xaf - 120000; quoteDep2.status = 'sent'; quoteDep2.sent_at = today(14, 55);
-const quoteDep3 = { ...quoteDep2, id: 'q2', quote_no: 'DV-000030', deposit_id: 'dep3', status: 'invoiced', sent_at: today(13, 30), deposit_no: dep3.deposit_no, client: dep3.client, lines: dep3.parcels.map((p, i) => quoteLine(p, i)) };
+const quoteDep3 = { ...quoteDep2, id: 'q2', quote_no: 'DV-000030', deposit_id: 'dep3', status: 'invoiced', sent_at: today(13, 30), deposit_no: dep3.deposit_no, client: dep3.client, lines: dep3.parcels.map((p, i) => quoteLine({ ...p, container_number: shipment.container_number }, i)),
+  containers: [{ container_number: shipment.container_number, bl_number: shipment.bl_number, carrier: shipment.carrier, vessel_name: 'MAERSK KOLKATA', voyage: '438W', pol_name: shipment.pol_name, pod_name: shipment.pod_name, etd: shipment.etd_promised, eta: shipment.eta_promised }] };
 quoteDep3.total_xaf = quoteDep3.lines.reduce((t, l) => t + l.amount_xaf, 0);
 quoteDep3.payments = [payment('pm2', 'RE-000038', 30000, { method: 'cash', reference: null, paid_at: today(13, 40) }), payment('pm3', 'RE-000039', quoteDep3.total_xaf - 30000, { method: 'bank_transfer', reference: 'VIR 2026-0921-118', paid_at: today(13, 52) })];
 quoteDep3.amount_paid_xaf = quoteDep3.total_xaf; quoteDep3.balance_xaf = 0; quoteDep3.paid_at = today(13, 52); quoteDep3.invoice_no = 'FA-000012'; quoteDep3.invoiced_at = today(13, 55);
@@ -360,7 +364,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   }
   // Un document PDF : on attend le fichier, on l'enregistre, puis on rastérise sa première page avec pdf.js (PDFJS_DIR).
   if (screen.startsWith('pdf-')) {
-    await page.waitForFunction(() => !!window.__pdf, null, { timeout: 30_000 });
+    await page.waitForFunction(() => !!window.__pdf, null, { timeout: 30_000 }).catch(async (e) => { console.error('PAGE:', await page.evaluate(() => document.body.innerText)); throw e; });
     const b64 = await page.evaluate(async () => { const buf = await window.__pdf.arrayBuffer(); let bin = ''; const bytes = new Uint8Array(buf); for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); });
     const { writeFileSync } = await import('node:fs');
     writeFileSync(join(OUT, `${screen}.pdf`), Buffer.from(b64, 'base64'));
