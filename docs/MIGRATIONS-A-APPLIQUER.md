@@ -21,8 +21,12 @@
 - Testée sur un Postgres local (droits réceptionnaire / support / admin, devis réglé, colis chargé, annulation puis
   rétablissement, journal) et idempotente (deux exécutions successives).
 
+- Garde-fous d'un dépôt supprimé (triggers) : ni chargement, ni envoi, ni facture, ni encaissement — portefeuille compris.
+
 **Comment pousser :** appliquée par le workflow `deploy-edge-functions.yml` au merge (si `SUPABASE_DB_PASSWORD` est
-posé), sinon coller le fichier dans l'éditeur SQL. Puis `/gen-types` (les écrans passent par `rpcJson` en attendant).
+posé), sinon coller `migrations/20261003_consolidated_reception.sql` dans l'éditeur SQL (contrôle des prérequis en
+tête, rejouable), puis `npx supabase migration repair --status applied 20261002100000`. Enfin `/gen-types` (les écrans
+passent par `rpcJson` en attendant).
 
 ### `migrations/20260918_consolidated.sql` (= `20260918100000_wallet_overdraft.sql` + `20260918110000_payment_cancel_reason_and_edit.sql`)
 **PR :** Découvert autorisé · relevé par période · annulation / modification de paiement · formulaire client
