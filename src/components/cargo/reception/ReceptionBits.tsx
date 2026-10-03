@@ -27,11 +27,13 @@ export function CoverThumb({ parcel, size = 'h-10 w-10', onClick }: { parcel: Pi
 
 /** Une tuile du mur de photos : la photo, le numéro du colis, « 2/3 ». */
 export function PhotoTile({ path, caption, sub, onClick }: { path: string | null; caption: string; sub?: string; onClick: () => void }) {
-  const { data: url } = useParcelPhotoUrl(path);
+  const { data: url, isError } = useParcelPhotoUrl(path);
   return (
     <button type="button" onClick={onClick} className={cn('group relative aspect-[4/3] overflow-hidden rounded-lg ring-1 ring-border', path ? SURFACE.inset : 'border-2 border-dashed border-amber-300 ring-0 dark:border-amber-700')}>
       {path ? (
-        url ? <img src={url} alt={caption} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" draggable={false} /> : <span className="block h-full w-full animate-pulse bg-muted" />
+        url ? <img src={url} alt={caption} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" draggable={false} />
+          : isError ? <span className={cn('flex h-full w-full items-center justify-center text-[11.5px] font-semibold', TEXT.muted)}><ImageOff className="mr-1.5 h-4 w-4" />Indisponible</span>
+          : <span className="block h-full w-full animate-pulse bg-muted" />
       ) : (
         <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-amber-700 dark:text-amber-400">
           <ImageOff className="h-5 w-5" /><span className="text-[11.5px] font-semibold">Sans photo</span>

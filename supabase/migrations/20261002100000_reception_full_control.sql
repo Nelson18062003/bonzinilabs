@@ -26,7 +26,10 @@
 --   8. reception_update_deposit : lieu, mode d'arrivée, apporteur, notes ;
 --   9. reception_cancel_deposit / reception_restore_deposit ;
 --  10. reception_board : la liste des dépôts (en stock, sur une période,
---      ou supprimés), avec leurs colis, leurs photos et leur devis.
+--      ou supprimés), avec leurs colis, leurs photos et leur devis ;
+--  11. les garde-fous d'un dépôt supprimé : ses colis ne se chargent plus,
+--      son devis ne s'envoie, ne se facture ni ne s'encaisse plus (même
+--      depuis le portefeuille), quelle que soit la RPC qui essaie.
 --
 -- Qui : `canReceiveParcels` partout (le réceptionnaire, sur SES dépôts
 -- ouverts) ; `canManageCargo` (super_admin, ops) pour tout le reste — dépôts
@@ -231,8 +234,13 @@ BEGIN
   IF cardinality(v_paths) = 0 THEN RETURN NULL; END IF;
 
   FOREACH v_path IN ARRAY v_paths LOOP
-    IF left(v_path, length(v_dep_id::text) + 1) <> v_dep_id::text || '/' OR v_path LIKE '%..%' THEN
+    -- « <dépôt>/<nom>.jpg », rien d'autre : ni sous-dossier, ni « .. », ni le dossier d'un autre dépôt.
+    IF v_path !~ ('^' || v_dep_id::text || '/[A-Za-z0-9._-]+$') OR v_path LIKE '%..%' THEN
       RETURN 'Photo refusée : elle n''appartient pas à ce dépôt';
+    END IF;
+    -- Le fichier doit avoir été envoyé dans le seau : on ne rattache pas un chemin inventé.
+    IF NOT EXISTS (SELECT 1 FROM storage.objects o WHERE o.bucket_id = 'parcel-photos' AND o.name = v_path) THEN
+      RETURN 'Photo introuvable dans le stockage : renvoyez-la';
     END IF;
   END LOOP;
 
@@ -260,6 +268,31 @@ COMMENT ON FUNCTION public.reception_attach_photos(UUID, TEXT[], UUID, BOOLEAN) 
   '@mola:{"expose":false,"kind":"write","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Rattacher des photos à un colis (helper interne)"}';
 REVOKE ALL ON FUNCTION public.reception_attach_photos(UUID, TEXT[], UUID, BOOLEAN) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.reception_attach_photos(UUID, TEXT[], UUID, BOOLEAN) FROM anon, authenticated;
+
+-- Un devis que l'argent ou le client a déjà vu : envoyé, encaissé (même un
+-- encaissement annulé laisse un reçu), réglé ou facturé. Renvoie la raison,
+-- ou NULL. Un devis jamais envoyé ni encaissé reste un simple brouillon.
+CREATE OR REPLACE FUNCTION public.reception_quote_engaged(p_deposit_id UUID)
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $fn$
+  SELECT CASE
+    WHEN q.id IS NULL THEN NULL
+    WHEN q.invoice_no IS NOT NULL OR q.status = 'invoiced' THEN 'La facture ' || COALESCE(q.invoice_no, '') || ' est établie'
+    WHEN q.status = 'paid' THEN 'Le devis ' || q.quote_no || ' est réglé'
+    WHEN q.amount_paid_xaf > 0 THEN 'Le devis ' || q.quote_no || ' a déjà reçu des encaissements'
+    WHEN EXISTS (SELECT 1 FROM public.parcel_quote_payments pm WHERE pm.quote_id = q.id) THEN 'Le devis ' || q.quote_no || ' porte des reçus (même annulés)'
+    WHEN q.sent_at IS NOT NULL THEN 'Le devis ' || q.quote_no || ' a déjà été envoyé au client'
+    ELSE NULL
+  END
+  FROM (SELECT 1) one LEFT JOIN public.parcel_quotes q ON q.deposit_id = p_deposit_id;
+$fn$;
+COMMENT ON FUNCTION public.reception_quote_engaged(UUID) IS
+  '@mola:{"expose":false,"kind":"read","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Dire si le devis d''un dépôt est déjà engagé (helper interne)"}';
+REVOKE ALL ON FUNCTION public.reception_quote_engaged(UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reception_quote_engaged(UUID) FROM anon, authenticated;
 
 -- Un colis encore modifiable d'ici ? Ni chargé (conteneur ou avion), ni
 -- pointé, ni remis à Douala. Renvoie la raison du refus, ou NULL.
@@ -419,6 +452,13 @@ BEGIN
   IF v_locked IS NOT NULL THEN
     RETURN jsonb_build_object('success', false, 'error', v_locked);
   END IF;
+  -- Le devis est parti chez le client (ou payé) : le réceptionnaire ne repèse plus ; l'équipe cargo corrige, journalisé.
+  IF v_dep.status = 'closed' AND NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    v_locked := public.reception_quote_engaged(v_dep.id);
+    IF v_locked IS NOT NULL THEN
+      RETURN jsonb_build_object('success', false, 'error', v_locked || ' : demandez à l''équipe cargo de corriger ce colis');
+    END IF;
+  END IF;
   IF p_kind IS NOT NULL AND p_kind NOT IN ('carton','bag','bale','roll','pallet','other') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Type de colis inconnu');
   END IF;
@@ -527,6 +567,10 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Seule l''équipe cargo retire une photo d''un dépôt fermé');
   END IF;
   IF v_dep.status = 'cancelled' THEN RETURN jsonb_build_object('success', false, 'error', 'Ce dépôt est supprimé'); END IF;
+  -- Une photo d'un colis parti, pointé ou remis est une preuve : elle reste.
+  IF public.reception_parcel_locked(v_par) IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ce colis est déjà parti : ses photos sont une preuve, elles restent');
+  END IF;
 
   DELETE FROM public.parcel_photos WHERE id = v_ph.id;
   -- Les positions restent compactes : la suivante devient la couverture.
@@ -535,11 +579,9 @@ BEGIN
    WHERE ph.id = r.id AND ph.position <> r.rn - 1;
   UPDATE public.parcels SET updated_at = now() WHERE id = v_par.id;
 
-  IF v_dep.status = 'closed' THEN
-    INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
-    VALUES (v_uid, 'remove_parcel_photo', 'parcel_deposit', v_dep.id,
-            jsonb_build_object('description', 'Photo retirée du colis ' || v_par.parcel_no, 'parcel_id', v_par.id, 'path', v_ph.path));
-  END IF;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'remove_parcel_photo', 'parcel_deposit', v_dep.id,
+          jsonb_build_object('description', 'Photo retirée du colis ' || v_par.parcel_no, 'parcel_id', v_par.id, 'path', v_ph.path));
   RETURN jsonb_build_object('success', true, 'deposit', public.reception_deposit_json(v_dep.id));
 END;
 $fn$;
@@ -618,8 +660,9 @@ BEGIN
   IF v_locked IS NOT NULL THEN RETURN jsonb_build_object('success', false, 'error', v_locked); END IF;
 
   SELECT * INTO v_quote FROM public.parcel_quotes WHERE deposit_id = v_dep.id FOR UPDATE;
-  IF v_quote.status IN ('paid','invoiced') THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Le devis de ce dépôt est réglé : le colis ne se supprime plus');
+  -- Un encaissement (même partiel) : retirer la ligne ferait un trop-perçu sans remboursement.
+  IF v_quote.id IS NOT NULL AND (v_quote.status IN ('paid','invoiced') OR v_quote.invoice_no IS NOT NULL OR v_quote.amount_paid_xaf > 0) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Le devis ' || v_quote.quote_no || ' a déjà reçu des encaissements : le colis ne se supprime plus');
   END IF;
 
   IF v_dep.status = 'closed' THEN
@@ -683,6 +726,9 @@ DECLARE
   v_quote public.parcel_quotes;
   v_loc   TEXT;
   v_by    TEXT;
+  v_after public.parcel_deposits;
+  v_draft BOOLEAN := false;
+  v_why   TEXT;
 BEGIN
   IF NOT public.admin_has_permission(v_uid, 'canReceiveParcels') THEN
     RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
@@ -701,12 +747,21 @@ BEGIN
 
   -- Changer de lieu, c'est changer de mode (Sea ↔ Air) : jamais avec des colis déjà partis ni un devis réglé.
   IF v_loc <> v_dep.location THEN
+    PERFORM 1 FROM public.parcels WHERE deposit_id = v_dep.id FOR UPDATE;
     IF EXISTS (SELECT 1 FROM public.parcels p WHERE p.deposit_id = v_dep.id AND public.reception_parcel_locked(p) IS NOT NULL) THEN
       RETURN jsonb_build_object('success', false, 'error', 'Des colis de ce dépôt sont déjà partis : le lieu ne change plus');
     END IF;
-    SELECT * INTO v_quote FROM public.parcel_quotes WHERE deposit_id = v_dep.id;
-    IF v_quote.status IN ('paid','invoiced') THEN
-      RETURN jsonb_build_object('success', false, 'error', 'Le devis de ce dépôt est réglé : le lieu ne change plus');
+    -- Le lieu fixe la base du prix (m³ en Sea, kilo en Air). Un devis déjà vu
+    -- par le client ou par l'argent ne change pas de base ; un brouillon est
+    -- jeté, il se refera au tarif du nouveau mode.
+    SELECT * INTO v_quote FROM public.parcel_quotes WHERE deposit_id = v_dep.id FOR UPDATE;
+    v_why := public.reception_quote_engaged(v_dep.id);
+    IF v_why IS NOT NULL THEN
+      RETURN jsonb_build_object('success', false, 'error', v_why || ' : le lieu (et donc la base du prix) ne change plus');
+    END IF;
+    IF v_quote.id IS NOT NULL THEN
+      DELETE FROM public.parcel_quotes WHERE id = v_quote.id;
+      v_draft := true;
     END IF;
   END IF;
 
@@ -718,13 +773,15 @@ BEGIN
     representative_phone = CASE WHEN p_representative_phone IS NULL THEN representative_phone ELSE NULLIF(TRIM(p_representative_phone), '') END,
     notes                = CASE WHEN p_notes IS NULL THEN notes ELSE NULLIF(TRIM(p_notes), '') END,
     updated_at           = now()
-  WHERE id = v_dep.id;
+  WHERE id = v_dep.id
+  RETURNING * INTO v_after;
 
   INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
   VALUES (v_uid, 'update_parcel_deposit', 'parcel_deposit', v_dep.id,
-          jsonb_build_object('description', 'Dépôt ' || v_dep.deposit_no || ' corrigé', 'deposit_no', v_dep.deposit_no,
+          jsonb_build_object('description', 'Dépôt ' || v_dep.deposit_no || ' corrigé' || CASE WHEN v_draft THEN ' (brouillon de devis ' || v_quote.quote_no || ' retiré : nouveau mode)' ELSE '' END,
+                             'deposit_no', v_dep.deposit_no, 'draft_quote_removed', CASE WHEN v_draft THEN v_quote.quote_no END,
                              'before', jsonb_build_object('location', v_dep.location, 'brought_by', v_dep.brought_by, 'representative_name', v_dep.representative_name, 'representative_phone', v_dep.representative_phone, 'notes', v_dep.notes),
-                             'after', jsonb_build_object('location', v_loc, 'brought_by', v_by, 'representative_name', p_representative_name, 'representative_phone', p_representative_phone, 'notes', p_notes)));
+                             'after', jsonb_build_object('location', v_after.location, 'brought_by', v_after.brought_by, 'representative_name', v_after.representative_name, 'representative_phone', v_after.representative_phone, 'notes', v_after.notes)));
   RETURN jsonb_build_object('success', true, 'deposit', public.reception_deposit_json(v_dep.id));
 END;
 $fn$;
@@ -764,6 +821,9 @@ BEGIN
   IF v_reason IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Indiquez pourquoi ce dépôt est supprimé');
   END IF;
+  -- Les colis verrouillés AVANT de vérifier qu'aucun n'est parti : un chargement
+  -- concurrent attend la fin de la suppression, puis la trouve (garde-fou §11).
+  PERFORM 1 FROM public.parcels WHERE deposit_id = v_dep.id FOR UPDATE;
   IF EXISTS (SELECT 1 FROM public.parcels p WHERE p.deposit_id = v_dep.id AND public.reception_parcel_locked(p) IS NOT NULL) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Des colis de ce dépôt sont déjà partis : il ne se supprime plus');
   END IF;
@@ -859,8 +919,11 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Lieu inconnu');
   END IF;
 
+  -- La période porte sur la date affichée partout : la fermeture du dépôt (le
+  -- reçu), sinon son ouverture — un dépôt ouvert à 23 h 50 et fermé après
+  -- minuit est « d'aujourd'hui », comme l'écran le montre.
   WITH picked AS (
-    SELECT d.id, d.opened_at
+    SELECT d.id, COALESCE(d.closed_at, d.opened_at) AS at
     FROM public.parcel_deposits d
     WHERE (p_location IS NULL OR d.location = p_location)
       AND CASE COALESCE(p_scope, 'stock')
@@ -870,21 +933,21 @@ BEGIN
                                WHERE p.deposit_id = d.id AND p.shipment_id IS NULL AND p.air_shipment_id IS NULL
                                  AND p.status IN ('received','stored')))
             WHEN 'all' THEN d.status <> 'cancelled'
-                   AND (p_from IS NULL OR d.opened_at >= p_from) AND (p_to IS NULL OR d.opened_at < p_to)
+                   AND (p_from IS NULL OR COALESCE(d.closed_at, d.opened_at) >= p_from) AND (p_to IS NULL OR COALESCE(d.closed_at, d.opened_at) < p_to)
             ELSE d.status = 'cancelled'
-                   AND (p_from IS NULL OR d.opened_at >= p_from) AND (p_to IS NULL OR d.opened_at < p_to)
+                   AND (p_from IS NULL OR COALESCE(d.closed_at, d.opened_at) >= p_from) AND (p_to IS NULL OR COALESCE(d.closed_at, d.opened_at) < p_to)
           END
   ), counted AS (
     SELECT count(*) AS n FROM picked
   ), page AS (
-    SELECT id, opened_at FROM picked ORDER BY opened_at DESC LIMIT v_limit
+    SELECT id, at FROM picked ORDER BY at DESC LIMIT v_limit
   )
   SELECT (SELECT n FROM counted),
          COALESCE(jsonb_agg(
            public.reception_deposit_json(pg.id)
            || jsonb_build_object('quote_status', q.status, 'quote_no', q.quote_no, 'quote_total_xaf', q.total_xaf,
                                  'quote_paid_xaf', q.amount_paid_xaf, 'invoice_no', q.invoice_no)
-           ORDER BY pg.opened_at DESC), '[]'::jsonb)
+           ORDER BY pg.at DESC), '[]'::jsonb)
     INTO v_total, v_rows
   FROM page pg LEFT JOIN public.parcel_quotes q ON q.deposit_id = pg.id;
 
@@ -894,3 +957,125 @@ END;
 $fn$;
 COMMENT ON FUNCTION public.reception_board(TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, INTEGER) IS
   '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","confirm":false,"danger":false,"label":"Les dépôts de colis reçus, avec leurs colis et leurs photos (en stock, sur une période, ou supprimés)"}';
+
+-- Les vues « période » et « supprimés » trient les dépôts par date de réception.
+CREATE INDEX IF NOT EXISTS parcel_deposits_status_at_idx ON public.parcel_deposits (status, (COALESCE(closed_at, opened_at)) DESC);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Le fournisseur d'un dépôt supprimé ne se corrige plus (même corps que
+-- 20260922090000, plus ce refus).
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.reception_set_supplier(
+  p_deposit_id UUID,
+  p_supplier_kind TEXT DEFAULT 'supplier',
+  p_supplier_name TEXT DEFAULT NULL,
+  p_supplier_contact TEXT DEFAULT NULL,
+  p_supplier_phone TEXT DEFAULT NULL,
+  p_supplier_email TEXT DEFAULT NULL,
+  p_supplier_wechat TEXT DEFAULT NULL,
+  p_supplier_address TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_d public.parcel_deposits;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canReceiveParcels') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_d FROM public.parcel_deposits WHERE id = p_deposit_id FOR UPDATE;
+  IF v_d.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Dépôt introuvable'); END IF;
+  IF v_d.status = 'cancelled' THEN RETURN jsonb_build_object('success', false, 'error', 'Ce dépôt est supprimé'); END IF;
+  -- Fermé : seule l'équipe cargo corrige encore (le réceptionnaire ne réécrit pas un dépôt clos).
+  IF NOT (public.reception_can_edit(v_d, v_uid) OR public.admin_has_permission(v_uid, 'canManageCargo')) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ce dépôt ne peut plus être modifié');
+  END IF;
+  IF p_supplier_kind IS NOT NULL AND p_supplier_kind NOT IN ('supplier','buying_agent') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Type de fournisseur inconnu');
+  END IF;
+  UPDATE public.parcel_deposits SET
+    supplier_kind    = CASE WHEN NULLIF(TRIM(p_supplier_name), '') IS NULL THEN NULL ELSE COALESCE(p_supplier_kind, 'supplier') END,
+    supplier_name    = NULLIF(TRIM(p_supplier_name), ''),
+    supplier_contact = NULLIF(TRIM(p_supplier_contact), ''),
+    supplier_phone   = NULLIF(TRIM(p_supplier_phone), ''),
+    supplier_email   = NULLIF(TRIM(p_supplier_email), ''),
+    supplier_wechat  = NULLIF(TRIM(p_supplier_wechat), ''),
+    supplier_address = NULLIF(TRIM(p_supplier_address), ''),
+    updated_at = now()
+  WHERE id = v_d.id;
+  RETURN jsonb_build_object('success', true, 'deposit', public.reception_deposit_json(v_d.id));
+END;
+$fn$;
+COMMENT ON FUNCTION public.reception_set_supplier(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Poser ou corriger le fournisseur d''un dépôt de colis"}';
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 11. Un dépôt supprimé ne vit plus — quelle que soit la RPC qui essaie
+-- ─────────────────────────────────────────────────────────────────────────
+-- Les RPC de chargement (conteneur, avion), d'envoi, de facturation et
+-- d'encaissement (y compris depuis le portefeuille du client) ne lisent pas
+-- le statut du dépôt. Plutôt que de les recopier une à une, un trigger refuse
+-- au niveau de la ligne : charger un colis, envoyer ou facturer un devis,
+-- enregistrer un encaissement, quand le dépôt est supprimé. L'exception
+-- annule toute la transaction — le débit du portefeuille compris.
+--
+-- Pas de verrou ici : ces RPC verrouillent le devis puis lisent le dépôt,
+-- la suppression verrouille le dépôt puis le devis. Une simple lecture (READ
+-- COMMITTED : la dernière version validée) suffit et n'inverse aucun ordre
+-- de verrouillage.
+CREATE OR REPLACE FUNCTION public.reception_guard_cancelled_deposit()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_dep public.parcel_deposits;
+BEGIN
+  IF TG_TABLE_NAME = 'parcels' THEN
+    IF NOT ((NEW.shipment_id IS NOT NULL AND NEW.shipment_id IS DISTINCT FROM OLD.shipment_id)
+         OR (NEW.air_shipment_id IS NOT NULL AND NEW.air_shipment_id IS DISTINCT FROM OLD.air_shipment_id)) THEN
+      RETURN NEW;
+    END IF;
+    SELECT * INTO v_dep FROM public.parcel_deposits WHERE id = NEW.deposit_id;
+    IF v_dep.status = 'cancelled' THEN
+      RAISE EXCEPTION 'Le dépôt % est supprimé : le colis % ne se charge plus', v_dep.deposit_no, NEW.parcel_no USING ERRCODE = 'P0001';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'parcel_quote_payments' THEN
+    SELECT d.* INTO v_dep FROM public.parcel_deposits d JOIN public.parcel_quotes q ON q.deposit_id = d.id WHERE q.id = NEW.quote_id;
+    IF v_dep.status = 'cancelled' THEN
+      RAISE EXCEPTION 'Le dépôt % est supprimé : son devis ne s''encaisse plus', v_dep.deposit_no USING ERRCODE = 'P0001';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'parcel_quotes' THEN
+    IF NOT ((NEW.sent_at IS NOT NULL AND NEW.sent_at IS DISTINCT FROM OLD.sent_at)
+         OR (NEW.invoice_no IS NOT NULL AND NEW.invoice_no IS DISTINCT FROM OLD.invoice_no)) THEN
+      RETURN NEW;
+    END IF;
+    SELECT * INTO v_dep FROM public.parcel_deposits WHERE id = NEW.deposit_id;
+    IF v_dep.status = 'cancelled' THEN
+      RAISE EXCEPTION 'Le dépôt % est supprimé : son devis ne s''envoie ni ne se facture plus', v_dep.deposit_no USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$fn$;
+COMMENT ON FUNCTION public.reception_guard_cancelled_deposit() IS
+  '@mola:{"expose":false,"kind":"write","permission":"canManageCargo","confirm":false,"danger":false,"label":"Refuser chargement, envoi, facture et encaissement d''un dépôt supprimé (trigger interne)"}';
+REVOKE ALL ON FUNCTION public.reception_guard_cancelled_deposit() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reception_guard_cancelled_deposit() FROM anon, authenticated;
+
+DROP TRIGGER IF EXISTS parcels_guard_cancelled_deposit ON public.parcels;
+CREATE TRIGGER parcels_guard_cancelled_deposit
+  BEFORE UPDATE OF shipment_id, air_shipment_id ON public.parcels
+  FOR EACH ROW EXECUTE FUNCTION public.reception_guard_cancelled_deposit();
+
+DROP TRIGGER IF EXISTS parcel_quote_payments_guard_cancelled_deposit ON public.parcel_quote_payments;
+CREATE TRIGGER parcel_quote_payments_guard_cancelled_deposit
+  BEFORE INSERT ON public.parcel_quote_payments
+  FOR EACH ROW EXECUTE FUNCTION public.reception_guard_cancelled_deposit();
+
+DROP TRIGGER IF EXISTS parcel_quotes_guard_cancelled_deposit ON public.parcel_quotes;
+CREATE TRIGGER parcel_quotes_guard_cancelled_deposit
+  BEFORE UPDATE OF sent_at, invoice_no ON public.parcel_quotes
+  FOR EACH ROW EXECUTE FUNCTION public.reception_guard_cancelled_deposit();

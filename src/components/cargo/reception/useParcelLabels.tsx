@@ -1,7 +1,7 @@
 // ============================================================
-// L'étiquette interne (入库标签) côté console : un colis, tout un dépôt, ou
-// une sélection de colis de plusieurs dépôts — le même peintre que la
-// feuille mobile (warehouseLabelCanvas), les mêmes QR. Chaque étiquette
+// L'étiquette interne (入库标签) : un colis, tout un dépôt, ou une sélection
+// de colis de plusieurs dépôts — la console ET la feuille mobile passent par
+// ici (warehouseLabelCanvas, les mêmes QR). Chaque étiquette
 // porte le contexte de SON dépôt (client, fournisseur, date, « 3 / 10 »).
 //
 // `nodes` (les QR invisibles) est à monter quelque part ; `ready` dit quand
@@ -13,13 +13,12 @@ import type { ShippingSettings } from '@/lib/customerCode';
 import { depositDate, depositSupplier, labelPosition, type Deposit, type Parcel } from '@/lib/reception';
 import { parcelQrPayload, renderWarehouseLabel, type WarehouseLabelData } from '@/lib/warehouseLabelCanvas';
 import { useParcelQrCanvases } from '@/components/customer-code/useParcelQrCanvases';
+import { canvasToBlob } from '@/components/customer-code/exportShippingLabel';
 
 export interface LabelItem {
   parcel: Parcel;
   deposit: Deposit;
 }
-
-const canvasToBlob = (c: HTMLCanvasElement) => new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('toBlob a échoué'))), 'image/png'));
 
 export function labelData(it: LabelItem, settings: ShippingSettings): WarehouseLabelData {
   const d = it.deposit;

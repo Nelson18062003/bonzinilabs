@@ -282,6 +282,7 @@
   "rc_photos_count_one": "{{count}} photo",
   "rc_photos_count_other": "{{count}} photos",
   "rc_photos_max": "20 photos au plus par colis",
+  "rc_photo_type": "Seules les photos JPEG, PNG ou WebP de 10 Mo au plus sont acceptées",
   "rc_uploading_n": "Envoi des photos…",
   "rc_how_it_works": "Comment ça marche",
   "rc_how_1": "Scannez le code du client, ou cherchez-le par son nom.",

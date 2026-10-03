@@ -15,10 +15,11 @@ import { ArrowRight, Download, Images, Pencil, Plus, RotateCcw, Search, Tag, Tra
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAssignDeposit, useCancelDeposit, useParcelPhotoUrl, useReceptionDeposit, useReceptionSearch, useRemoveParcel, useRestoreDeposit } from '@/hooks/useReception';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
-  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, supplierLine,
+  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine,
   type Parcel,
 } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
@@ -36,6 +37,7 @@ import { DepositEditDialog } from './DepositEditDialog';
 import { DepositLabelsDialog } from './DepositLabelsDialog';
 import { ReasonDialog } from './ReasonDialog';
 import { useParcelLabels } from './useParcelLabels';
+import { DepositStatePill } from './ReceptionBits';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, DANGER_SOFT_PILL, CenterDialog, Holder, ScreenLoader, StatusPill, TextInput, Th, Td } from '@/desktop/designKit';
 
@@ -72,7 +74,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
   const labels = useReceptionLabels();
-  const { data: d } = useReceptionDeposit(depositId ?? undefined);
+  const { data: d, error: loadError } = useReceptionDeposit(depositId ?? undefined);
   const { data: quote } = useCargoQuote(depositId ?? undefined);
   const { data: settingsData } = useAdminShippingSettings();
   const settings = settingsData ?? DEFAULT_SHIPPING_SETTINGS;
@@ -81,8 +83,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   // Changer de client
   const [assigning, setAssigning] = useState(false);
   const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
-  useEffect(() => { const id = setTimeout(() => setDebounced(query), 250); return () => clearTimeout(id); }, [query]);
+  const debounced = useDebouncedValue(query, 250);
   const search = useReceptionSearch(assigning ? debounced : '');
   const assign = useAssignDeposit();
 
@@ -101,15 +102,20 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
     setAssigning(false); setQuery(''); viewer.close(); setEditor(null); setEditingDeposit(false); setLabelsFor(null); setRemoving(null); setCancelling(false);
   }, [depositId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Arrivé depuis la vue Colis : le colis demandé est mis en évidence.
+  // Arrivé depuis la vue Colis : le colis demandé est mis en évidence — une fois,
+  // pas à chaque rafraîchissement (on corrige peut-être un autre colis entre-temps).
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+  const scrolledTo = useRef<string | null>(null);
+  const loaded = !!d;
   useEffect(() => {
-    if (!d || !focusParcelId) return;
+    const key = `${depositId}:${focusParcelId}`;
+    if (!loaded || !focusParcelId || scrolledTo.current === key) return;
+    scrolledTo.current = key;
     const t = setTimeout(() => rowRefs.current.get(focusParcelId)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
     return () => clearTimeout(t);
-  }, [d, focusParcelId]);
+  }, [loaded, depositId, focusParcelId]);
 
-  const parcels = useMemo(() => [...(d?.parcels ?? [])].sort((a, b) => a.seq - b.seq), [d?.parcels]);
+  const parcels = useMemo(() => sortedParcels(d?.parcels ?? []), [d?.parcels]);
   const labelMaker = useParcelLabels(useMemo(() => (d ? parcels.map((parcel) => ({ parcel, deposit: d })) : []), [d, parcels]), settings, !!d && !!d.client);
   const [labelBusy, setLabelBusy] = useState<string | null>(null);
 
@@ -122,19 +128,18 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const canAddParcel = !!d && !cancelled && !(d.status === 'closed' && paid) && (isCargo || (d.status === 'open' && owner));
   const canEditParcels = !!d && !cancelled && (isCargo || owner);
   const canCancel = !!d && !cancelled && (isCargo || (d.status === 'open' && owner));
-  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà partis' : (quote && (quote.amount_paid_xaf > 0 || paid)) ? 'Des encaissements existent : annulez-les d’abord' : null;
+  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà partis' : (quote && (quote.amount_paid_xaf > 0 || paid || quote.invoice_no)) ? 'Des encaissements existent : annulez-les d’abord' : null;
   const removeBlock = (p: Parcel): string | null => {
     if (!d || cancelled) return 'Dépôt supprimé';
     if (!(isCargo || (d.status === 'open' && owner))) return 'Réservé à l’équipe cargo';
     const lock = parcelLockReason(p);
     if (lock) return lock;
-    if (paid) return 'Le devis est réglé';
+    if (paid || (quote && (quote.amount_paid_xaf > 0 || quote.invoice_no))) return 'Le devis a déjà reçu des encaissements';
     if (d.status === 'closed' && parcels.length <= 1) return 'Dernier colis : supprimez plutôt le dépôt';
     return null;
   };
 
   const name = d?.client ? clientFullName(d.client) : 'Client à attribuer';
-  const st = d ? (cancelled ? { tone: 'danger' as const, label: 'Supprimé' } : labels.status(d)) : null;
   const waiting = parcels.filter(isParcelWaiting).length;
   const supplier = d ? depositSupplier(d) : null;
   const photoCount = parcels.reduce((n, p) => n + parcelPhotoPaths(p).length, 0);
@@ -174,7 +179,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
               <span className={cn('block text-[16px] font-bold tabular-nums', TEXT.strong)}>{d.deposit_no} · {name}</span>
               <span className={cn('block text-[12px]', TEXT.muted)}>{labels.location(d.location)} · reçu le {formatDateTime(depositDate(d))}{d.received_by_name ? ` par ${d.received_by_name}` : ''}</span>
             </span>
-            {st && <StatusPill tone={st.tone} label={st.label} className="ml-auto" />}
+            <span className="ml-auto"><DepositStatePill deposit={d} /></span>
           </span>
         ) : 'Dépôt'
       }
@@ -186,7 +191,9 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
       ) : undefined}
     >
       {!d ? (
-        <ScreenLoader />
+        loadError ? (
+          <p className="px-5 py-10 text-center text-[13px] text-destructive">{(loadError as Error).message || 'Dépôt introuvable'}</p>
+        ) : <ScreenLoader />
       ) : (
         <>
           {labelMaker.nodes}
@@ -338,9 +345,15 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
             )}
           </Band>
 
-          {/* Un dépôt supprimé ne se chiffre plus ; son devis, s'il existe, reste lisible. */}
-          {(!cancelled || quote) && <QuoteSection deposit={d} />}
-          {(!cancelled || quote) && <QuotePaymentsSection depositId={d.id} />}
+          {/* Un dépôt supprimé ne se chiffre ni ne s'encaisse plus (la base le refuse aussi). */}
+          {cancelled ? (
+            quote && <Band title="Prix et devis"><p className={cn('text-[13px]', TEXT.muted)}>Le devis {quote.quote_no} est conservé, figé : rétablissez le dépôt pour l'envoyer ou l'encaisser.</p></Band>
+          ) : (
+            <>
+              <QuoteSection deposit={d} />
+              <QuotePaymentsSection depositId={d.id} />
+            </>
+          )}
           {releaseIds(d.parcels).length > 0 && (
             <Band title="Les bons de retrait"><DepositReleases parcels={d.parcels} /></Band>
           )}

@@ -290,7 +290,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'cargo-desk-deposit-edit') { await page.click('text=Modifier le dépôt'); await page.waitForTimeout(700); }
   if (screen === 'cargo-desk-labels') { await page.click('role=dialog >> text=Étiquettes'); await page.waitForTimeout(2500); }
   if (screen === 'cargo-desk-labels-client') { await page.click('text=Étiquette client'); await page.waitForTimeout(2500); }
-  if (screen === 'cargo-desk-remove') { await page.click('role=dialog >> button[aria-label="Supprimer"] >> nth=5'); await page.waitForTimeout(600); }
+  if (screen === 'cargo-desk-remove') { await page.click('role=dialog >> button[aria-label="Supprimer"] >> nth=1'); await page.waitForTimeout(600); }
   if (screen === 'cargo-deposit-photo' || screen === 'rc-deposit-photo' || screen === 'wh-client-photo') { await page.click('button[aria-label="Voir la photo en grand"]'); await page.waitForTimeout(900); }
   if (screen === 'rc-search') { await page.fill('input[inputmode="search"]', 'Mbarga'); await page.waitForTimeout(600); }
   if (screen === 'rc-parcel-photos' && process.env.PHOTOS_DIR) {

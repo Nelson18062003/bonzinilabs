@@ -282,6 +282,7 @@
   "rc_photos_count_one": "{{count}} 张照片",
   "rc_photos_count_other": "{{count}} 张照片",
   "rc_photos_max": "每件货物最多 20 张照片",
+  "rc_photo_type": "仅支持 10 MB 以内的 JPEG、PNG 或 WebP 照片",
   "rc_uploading_n": "正在上传照片…",
   "rc_how_it_works": "使用说明",
   "rc_how_1": "扫描客户编号，或按姓名查找。",

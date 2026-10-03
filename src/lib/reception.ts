@@ -296,10 +296,34 @@ export function supplierLine(s: SupplierInfo | null | undefined): string {
 
 // ── Les photos, les verrous, la recherche — partagés par la console ──────
 
+/** Vingt photos au plus par colis — la même limite qu'en base (reception_attach_photos). */
+export const MAX_PARCEL_PHOTOS = 20;
+/** Les photos de colis : JPEG, PNG ou WebP (le seau et validateUploadFile n'acceptent rien d'autre). */
+const PARCEL_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * Ce qu'on garde d'une sélection de fichiers : les images acceptées, dans la
+ * limite de la place qui reste. Renvoie aussi ce qui a été écarté, pour le dire.
+ */
+export function pickParcelPhotos(files: Iterable<File>, room: number): { kept: File[]; rejected: number; overflow: number } {
+  const all = Array.from(files);
+  const valid = all.filter((f) => PARCEL_PHOTO_TYPES.includes(f.type) && f.size <= 10 * 1024 * 1024);
+  const kept = valid.slice(0, Math.max(room, 0));
+  return { kept, rejected: all.length - valid.length, overflow: valid.length - kept.length };
+}
+
+/** Les colis d'un dépôt dans l'ordre de leurs numéros. */
+export const sortedParcels = <P extends Pick<Parcel, 'seq'>>(parcels: ReadonlyArray<P>): P[] => [...parcels].sort((a, b) => a.seq - b.seq);
+
+/** Les photos enregistrées d'un colis, couverture en tête ; la seule couverture pour une donnée d'avant les photos multiples (sans id). */
+export function parcelSavedPhotos(p: Pick<Parcel, 'photo_path' | 'photos'>): { id?: string; path: string }[] {
+  if (p.photos && p.photos.length > 0) return [...p.photos].sort((a, b) => a.position - b.position);
+  return p.photo_path ? [{ path: p.photo_path }] : [];
+}
+
 /** Les chemins des photos d'un colis, couverture en tête (la couverture seule pour une donnée d'avant les photos multiples). */
 export function parcelPhotoPaths(p: Pick<Parcel, 'photo_path' | 'photos'>): string[] {
-  if (p.photos && p.photos.length > 0) return [...p.photos].sort((a, b) => a.position - b.position).map((ph) => ph.path);
-  return p.photo_path ? [p.photo_path] : [];
+  return parcelSavedPhotos(p).map((ph) => ph.path);
 }
 
 /**
@@ -331,8 +355,7 @@ export const depositDate = (d: Pick<Deposit, 'closed_at' | 'opened_at'>): string
 
 /** Le rang de chaque colis dans son dépôt (1…n, dans l'ordre des numéros) — « 3 / 10 » sur l'étiquette. */
 export function labelPosition(parcels: ReadonlyArray<Pick<Parcel, 'id' | 'seq'>>, id: string): number {
-  const sorted = [...parcels].sort((a, b) => a.seq - b.seq);
-  return sorted.findIndex((p) => p.id === id) + 1;
+  return sortedParcels(parcels).findIndex((p) => p.id === id) + 1;
 }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

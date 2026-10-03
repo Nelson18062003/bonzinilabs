@@ -43,7 +43,7 @@ export function canShareFiles(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof File !== 'undefined';
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob a échoué'))), 'image/png'));
 }
 

@@ -639,7 +639,11 @@ export function CenterDialog({
       }
     };
     window.addEventListener('keydown', onKey);
-    const focusTimer = window.setTimeout(() => focusables()[0]?.focus(), 60);
+    // Un champ qui a déjà pris le focus (autoFocus : le motif d'une suppression) le garde ;
+    // sinon, le premier élément de la fenêtre.
+    const focusTimer = window.setTimeout(() => {
+      if (!panelRef.current?.contains(document.activeElement)) focusables()[0]?.focus();
+    }, 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {

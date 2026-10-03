@@ -30,7 +30,7 @@ import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { xaf as fmtXaf } from '@/lib/cargoQuote';
 import {
   clientFullName, depositDate, depositInQueue, depositMatches, formatCbm, formatDims, formatKg, initials, isParcelIncomplete, isParcelWaiting,
-  parcelInQueue, parcelPhotoPaths, parcelStage, parcelsHere,
+  parcelInQueue, parcelPhotoPaths, parcelStage, parcelsHere, sortedParcels, RECEPTION_QUEUES,
   type Deposit, type Parcel, type ReceptionLocation, type ReceptionQueue,
 } from '@/lib/reception';
 import { exportToCSV } from '@/lib/exportCSV';
@@ -40,7 +40,7 @@ import { DepositQuickView } from '@/components/cargo/reception/DepositQuickView'
 import { ClientParcelsQuickView } from '@/components/cargo/reception/ClientParcelsQuickView';
 import { DepositLabelsDialog } from '@/components/cargo/reception/DepositLabelsDialog';
 import { CoverThumb, DepositStatePill, PhotoTile, QuoteCell } from '@/components/cargo/reception/ReceptionBits';
-import { openForPrint, useParcelLabels } from '@/components/cargo/reception/useParcelLabels';
+import { openForPrint, useParcelLabels, type LabelItem } from '@/components/cargo/reception/useParcelLabels';
 import { downloadFile } from '@/components/customer-code/exportShippingLabel';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, Card, CardHeader, Chip, DropChip, Holder, KV, PaginationBar, ScreenLoader, SearchField, StatusPill, Th, Td } from '@/desktop/designKit';
@@ -89,7 +89,8 @@ function readView(): View {
   try { const v = localStorage.getItem(VIEW_KEY); return v === 'parcels' || v === 'photos' || v === 'clients' ? v : 'deposits'; } catch { return 'deposits'; }
 }
 
-interface ParcelRowItem { parcel: Parcel; deposit: Deposit }
+/** Au-delà, les étiquettes d'une sélection se font en plusieurs fois : un QR et une page par colis pèsent sur le navigateur. */
+const MAX_BULK_LABELS = 200;
 
 export function DesktopCargoReception() {
   const { hasPermission } = useAdminAuth();
@@ -142,7 +143,7 @@ export function DesktopCargoReception() {
     [base, queue, period]);
   // Une recherche qui vise un colis (son numéro, son bordereau, son contenu) ne garde que lui ;
   // une recherche qui vise le dépôt (client, fournisseur…) garde tous ses colis.
-  const parcelRows = useMemo<ParcelRowItem[]>(() => deposits.flatMap((d) => [...d.parcels].sort((a, b) => a.seq - b.seq)
+  const parcelRows = useMemo<LabelItem[]>(() => deposits.flatMap((d) => sortedParcels(d.parcels)
     .filter((p) => inScope(p, d) && parcelInQueue(p, d, queue) && (!query.trim() || depositMatches({ ...d, parcels: [p] }, query)))
     .map((parcel) => ({ parcel, deposit: d }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,7 +151,7 @@ export function DesktopCargoReception() {
 
   const counts = useMemo(() => {
     const c = {} as Record<ReceptionQueue, number>;
-    for (const q of ['all', 'waiting', 'loaded', 'pending', 'incomplete', 'nophoto', 'open'] as ReceptionQueue[]) c[q] = base.filter((d) => depositInQueue(scoped(d), q)).length;
+    for (const q of RECEPTION_QUEUES) c[q] = base.filter((d) => depositInQueue(scoped(d), q)).length;
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [base, period]);
@@ -191,7 +192,8 @@ export function DesktopCargoReception() {
 
   // La sélection (vue Colis) → étiquettes en lot.
   const selectedItems = useMemo(() => parcelRows.filter((r) => selected.has(r.parcel.id)), [parcelRows, selected]);
-  const bulk = useParcelLabels(selectedItems, settings, view === 'parcels' && selectedItems.length > 0);
+  const tooMany = selectedItems.length > MAX_BULK_LABELS;
+  const bulk = useParcelLabels(selectedItems, settings, view === 'parcels' && selectedItems.length > 0 && !tooMany);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -199,7 +201,7 @@ export function DesktopCargoReception() {
   const byClient = stock.data?.by_client ?? [];
   const openDeposit = (d: Deposit, parcelId?: string) => navigate(`/m/cargo/reception/${d.id}${parcelId ? `?colis=${parcelId}` : ''}`);
   const openViewer = (d: Deposit, parcelId?: string, k = 0) => {
-    const sorted = [...d.parcels].sort((a, b) => a.seq - b.seq);
+    const sorted = sortedParcels(d.parcels);
     setViewerDeposit({ ...d, parcels: sorted });
     viewer.open(Math.max(0, parcelId ? sorted.findIndex((p) => p.id === parcelId) : sorted.findIndex((p) => parcelPhotoPaths(p).length > 0)), k);
   };
@@ -237,8 +239,19 @@ export function DesktopCargoReception() {
     );
   };
 
+  // Le mur de photos : un dépôt par bloc, ses colis de la file (avec ou sans photo) en tuiles.
+  // Calculé AVANT la pagination : un dépôt sans tuile ne laisse pas de trou dans une page.
+  const wall = view !== 'photos' ? [] : deposits.map((d) => {
+    const ps = sortedParcels(d.parcels).filter((p) => inScope(p, d) && parcelInQueue(p, d, queue) && (!query.trim() || depositMatches({ ...d, parcels: [p] }, query)));
+    const tiles = ps.flatMap((p) => {
+      const paths = parcelPhotoPaths(p);
+      return paths.length === 0 ? [{ p, path: null as string | null, k: 0, n: 0 }] : paths.map((path, k) => ({ p, path, k, n: paths.length }));
+    });
+    return { d, count: ps.length, tiles };
+  }).filter((w) => w.tiles.length > 0);
+
   // ── Pagination ─────────────────────────────────────────────────────────
-  const listLen = view === 'parcels' ? parcelRows.length : view === 'photos' ? deposits.length : deposits.length;
+  const listLen = view === 'parcels' ? parcelRows.length : view === 'photos' ? wall.length : deposits.length;
   const per = view === 'parcels' ? PAGE.parcels : view === 'photos' ? PAGE.photos : PAGE.deposits;
   const pages = Math.max(1, Math.ceil(listLen / per));
   const cur = Math.min(page, pages);
@@ -314,7 +327,7 @@ export function DesktopCargoReception() {
       </section>
       {view !== 'clients' && (
         <section className="mt-3 flex flex-wrap items-center gap-1.5">
-          {(['all', 'waiting', 'loaded', 'pending', 'incomplete', 'nophoto', 'open'] as ReceptionQueue[])
+          {RECEPTION_QUEUES
             .filter((q) => !(period === 'stock' && q === 'loaded'))
             .map((q) => <Chip key={q} label={q === 'all' && period === 'stock' ? 'Tout le stock' : QUEUE_LABEL[q]} count={q === 'all' ? null : counts[q] || null} active={queue === q} onClick={() => setQueue(q)} />)}
           {receivedBy && (
@@ -385,7 +398,7 @@ export function DesktopCargoReception() {
                   <tbody>
                     {slice(deposits).map((d) => {
                       const open = expanded.has(d.id);
-                      const sorted = [...d.parcels].sort((a, b) => a.seq - b.seq);
+                      const sorted = sortedParcels(d.parcels);
                       const covers = sorted.filter((p) => parcelPhotoPaths(p).length > 0);
                       const photos = sorted.reduce((s, p) => s + parcelPhotoPaths(p).length, 0);
                       return (
@@ -473,6 +486,7 @@ export function DesktopCargoReception() {
                     <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>
                       {formatKg(selectedItems.reduce((s, r) => s + Number(r.parcel.weight_kg ?? 0), 0))} · {formatCbm(selectedItems.reduce((s, r) => s + Number(r.parcel.cbm ?? 0), 0))}
                       {bulk.skipped > 0 && ` · ${bulk.skipped} sans client (pas d'étiquette)`}
+                      {tooMany && <span className="font-semibold text-amber-700 dark:text-amber-400"> · {MAX_BULK_LABELS} étiquettes au plus par PDF : allégez la sélection</span>}
                     </span>
                     <span className="ml-auto flex gap-2">
                       <button type="button" onClick={() => void runBulk('pdf')} disabled={!bulk.ready || bulkBusy !== null} className={cn('inline-flex h-8 items-center gap-2 px-3 text-[12.5px] font-bold disabled:opacity-50', PRIMARY_PILL)}>
@@ -492,8 +506,13 @@ export function DesktopCargoReception() {
                     <tr>
                       <Th first className="w-[34px]">
                         <input type="checkbox" aria-label="Tout sélectionner" className="h-4 w-4"
-                          checked={parcelRows.length > 0 && parcelRows.every((r) => selected.has(r.parcel.id))}
-                          onChange={(e) => setSelected(e.target.checked ? new Set(parcelRows.map((r) => r.parcel.id)) : new Set())} />
+                          checked={slice(parcelRows).length > 0 && slice(parcelRows).every((r) => selected.has(r.parcel.id))}
+                          onChange={(e) => setSelected((cur) => {
+                            // La case de l'en-tête coche la PAGE affichée, pas toutes les pages.
+                            const n = new Set(cur);
+                            for (const r of slice(parcelRows)) { if (e.target.checked) n.add(r.parcel.id); else n.delete(r.parcel.id); }
+                            return n;
+                          })} />
                       </Th>
                       <Th>Photo</Th>
                       <Th>Colis · reçu le</Th>
@@ -547,16 +566,10 @@ export function DesktopCargoReception() {
             )
           ) : (
             /* ── Le mur de photos, dépôt par dépôt ─────────────────────── */
-            deposits.length === 0 ? empty(emptyMsg) : (
+            wall.length === 0 ? empty(emptyMsg) : (
               <>
                 <div className="divide-y divide-border">
-                  {slice(deposits).map((d) => {
-                    const sorted = [...d.parcels].sort((a, b) => a.seq - b.seq).filter((p) => inScope(p, d) && parcelInQueue(p, d, queue));
-                    const tiles = sorted.flatMap((p) => {
-                      const paths = parcelPhotoPaths(p);
-                      return paths.length === 0 ? [{ p, path: null as string | null, k: 0, n: 0 }] : paths.map((path, k) => ({ p, path, k, n: paths.length }));
-                    });
-                    if (tiles.length === 0) return null;
+                  {slice(wall).map(({ d, count, tiles }) => {
                     return (
                       <section key={d.id} className="px-5 py-4">
                         <button type="button" onClick={() => openDeposit(d)} className="mb-3 flex w-full items-center gap-3 text-left">
@@ -566,7 +579,7 @@ export function DesktopCargoReception() {
                               <span className="font-mono">{d.deposit_no}</span> · {d.client ? clientFullName(d.client) : <span className="text-amber-700 dark:text-amber-400">À attribuer</span>}
                             </span>
                             <span className={cn('block text-[12px] tabular-nums', TEXT.muted)}>
-                              {formatDateTime(depositDate(d))} · par {d.received_by_name || '—'} · {sorted.length} colis · {tiles.filter((t) => t.path).length} photo{tiles.filter((t) => t.path).length > 1 ? 's' : ''}
+                              {formatDateTime(depositDate(d))} · par {d.received_by_name || '—'} · {count} colis · {tiles.filter((t) => t.path).length} photo{tiles.filter((t) => t.path).length > 1 ? 's' : ''}
                             </span>
                           </span>
                           <DepositStatePill deposit={d} />

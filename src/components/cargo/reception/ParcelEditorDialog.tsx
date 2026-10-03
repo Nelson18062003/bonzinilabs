@@ -6,32 +6,35 @@
 // ou parcourir, plusieurs à la fois), choisir la couverture, en retirer.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ImagePlus, Loader2, Star, Trash2, X } from 'lucide-react';
+import { ImageOff, ImagePlus, Loader2, Star, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddParcel, useAddParcelPhotos, useParcelPhotoUrl, useRemoveParcelPhoto, useSetParcelCover, useUpdateParcel, uploadParcelPhotos } from '@/hooks/useReception';
-import { PARCEL_KINDS, cbmOf, formatCbm, parcelLockReason, type Deposit, type Parcel, type ParcelKind, type ParcelPhoto } from '@/lib/reception';
+import { useCargoQuote } from '@/hooks/useCargoQuote';
+import { useFilePreviews } from '@/hooks/useFilePreviews';
+import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, cbmOf, formatCbm, parcelLockReason, parcelSavedPhotos, pickParcelPhotos, type Deposit, type Parcel, type ParcelKind } from '@/lib/reception';
+import { parseDecimal } from '@/lib/decimalInput';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { useReceptionLabels } from '@/mobile/components/reception/bits';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog, TextInput } from '@/desktop/designKit';
 
-const MAX_PHOTOS = 20;
-
 const num = (s: string): number | null => {
-  const v = parseFloat(s.replace(',', '.').trim());
+  const v = parseDecimal(s);
   return Number.isFinite(v) && v >= 0 ? v : null;
 };
 const str = (v: number | null | undefined) => (v == null ? '' : String(Number(v)).replace('.', ','));
 const badNumber = (s: string) => s.trim() !== '' && num(s) == null;
 
 /** Une photo déjà enregistrée : la voir, la mettre en couverture, la retirer. */
-function SavedPhoto({ photo, cover, canRemove, onOpen, onCover, onRemove, busy }: { photo: ParcelPhoto; cover: boolean; canRemove: boolean; onOpen: () => void; onCover: () => void; onRemove: () => void; busy: boolean }) {
-  const { data: url } = useParcelPhotoUrl(photo.path);
+function SavedPhoto({ photo, cover, canRemove, onOpen, onCover, onRemove, busy }: { photo: { path: string }; cover: boolean; canRemove: boolean; onOpen: () => void; onCover: () => void; onRemove: () => void; busy: boolean }) {
+  const { data: url, isError } = useParcelPhotoUrl(photo.path);
   return (
     <div className={cn('group relative aspect-square overflow-hidden rounded-lg ring-1 ring-border', SURFACE.inset)}>
       <button type="button" onClick={onOpen} className="h-full w-full" aria-label="Voir la photo en grand">
-        {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} /> : <span className="block h-full w-full animate-pulse" />}
+        {url ? <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />
+          : isError ? <span className={cn('flex h-full w-full items-center justify-center', TEXT.muted)} title="Photo indisponible"><ImageOff className="h-5 w-5" /></span>
+          : <span className="block h-full w-full animate-pulse" />}
       </button>
       {cover && <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded bg-foreground/85 px-1.5 py-0.5 text-[10px] font-bold text-background"><Star className="h-2.5 w-2.5 fill-current" />Couverture</span>}
       <div className="absolute inset-x-1.5 bottom-1.5 flex justify-end gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
@@ -46,10 +49,8 @@ function SavedPhoto({ photo, cover, canRemove, onOpen, onCover, onRemove, busy }
   );
 }
 
-/** Une photo choisie, pas encore envoyée. */
-function PendingPhoto({ file, onRemove }: { file: File; onRemove: () => void }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => { const u = URL.createObjectURL(file); setUrl(u); return () => URL.revokeObjectURL(u); }, [file]);
+/** Une photo choisie, pas encore envoyée (son aperçu vient de useFilePreviews). */
+function PendingPhoto({ url, onRemove }: { url: string | null; onRemove: () => void }) {
   return (
     <div className={cn('relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-primary/50', SURFACE.inset)}>
       {url && <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />}
@@ -61,6 +62,7 @@ function PendingPhoto({ file, onRemove }: { file: File; onRemove: () => void }) 
 
 export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit: Deposit; parcel: Parcel | null; open: boolean; onClose: () => void }) {
   const { hasPermission, currentUser } = useAdminAuth();
+  const { data: quote } = useCargoQuote(open ? deposit.id : undefined);
   const labels = useReceptionLabels();
   const add = useAddParcel();
   const update = useUpdateParcel();
@@ -104,19 +106,22 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, parcel?.id]);
 
-  const saved = useMemo(() => [...(live?.photos ?? [])].sort((a, b) => a.position - b.position), [live?.photos]);
-  const legacyCover = live && saved.length === 0 && live.photo_path ? live.photo_path : null;
+  // Les photos enregistrées ; une donnée d'avant les photos multiples n'a que sa couverture, sans id (ni couverture à choisir, ni retrait).
+  const saved = useMemo(() => (live ? parcelSavedPhotos(live) : []), [live]);
+  const previews = useFilePreviews(files);
   const cbm = cbmOf(num(length), num(width), num(height));
-  const room = MAX_PHOTOS - saved.length - (legacyCover ? 1 : 0) - files.length;
+  const room = MAX_PARCEL_PHOTOS - saved.length - files.length;
+  // Un devis déjà parti chez le client ou payé ne suit plus les mesures : la correction ne change pas ce qui est facturé.
+  const quoteEngaged = !!quote && (quote.status === 'paid' || quote.status === 'invoiced' || quote.amount_paid_xaf > 0 || !!quote.sent_at);
   const nCopies = Math.round(num(copies) ?? 0);
   const invalid = [weight, length, width, height].some(badNumber) || (!editing && (nCopies < 1 || nCopies > 200));
 
   const pick = (list: FileList | File[] | null) => {
     if (!list) return;
-    const images = Array.from(list).filter((f) => f.type.startsWith('image/'));
-    if (images.length === 0) { toast.error('Choisissez des images (JPEG, PNG, HEIC…)'); return; }
-    if (images.length > room) toast.warning(`${MAX_PHOTOS} photos au plus par colis : ${Math.max(room, 0)} ajoutée(s)`);
-    const kept = images.slice(0, Math.max(room, 0));
+    // Vérifié au choix, pas à l'enregistrement : une seule image refusée ferait échouer tout l'envoi.
+    const { kept, rejected, overflow } = pickParcelPhotos(list, room);
+    if (rejected > 0) toast.error(`${rejected} fichier${rejected > 1 ? 's' : ''} écarté${rejected > 1 ? 's' : ''} : photos JPEG, PNG ou WebP de 10 Mo au plus`);
+    if (overflow > 0) toast.warning(`${MAX_PARCEL_PHOTOS} photos au plus par colis`);
     // Un colis parti ne se modifie plus, mais une photo de plus ne fausse rien : elle part tout de suite.
     if (lock && live) {
       if (kept.length > 0) addPhotos.mutate({ depositId: deposit.id, parcelId: live.id, files: kept }, { onSuccess: () => toast.success(kept.length > 1 ? `${kept.length} photos ajoutées` : 'Photo ajoutée') });
@@ -126,7 +131,8 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
   };
 
   const submit = async () => {
-    if (invalid || saving) return;
+    // ⌘⏎ ne contourne pas un colis verrouillé (le bouton est caché, la base refuserait).
+    if (invalid || saving || lock) return;
     setSaving(true);
     let photoPaths: string[] = [];
     try {
@@ -193,9 +199,13 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
         </>
       }
     >
-      {lock && (
+      {lock ? (
         <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-[12.5px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
           {lock} — ses mesures ne se modifient plus d'ici. Une photo ajoutée part tout de suite.
+        </p>
+      ) : live && quoteEngaged && (
+        <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-[12.5px] font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+          Le devis {quote?.quote_no} est déjà {quote?.status === 'paid' || quote?.status === 'invoiced' ? 'réglé' : quote?.amount_paid_xaf ? 'en partie encaissé' : 'envoyé au client'} : corriger le poids ou les dimensions ne change pas ce qui lui est facturé. La correction est journalisée.
         </p>
       )}
 
@@ -236,17 +246,16 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
         <div>
           <div className="mb-1.5 flex items-baseline justify-between">
             <span className={cn('text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>Photos</span>
-            <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>{saved.length + (legacyCover ? 1 : 0) + files.length} / {MAX_PHOTOS}</span>
+            <span className={cn('text-[11.5px] tabular-nums', TEXT.muted)}>{saved.length + files.length} / {MAX_PARCEL_PHOTOS}</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
             {saved.map((ph, k) => (
-              <SavedPhoto key={ph.id} photo={ph} cover={k === 0} canRemove={canRemovePhoto} busy={photoBusy}
+              <SavedPhoto key={ph.path} photo={ph} cover={k === 0} canRemove={canRemovePhoto && !lock && !!ph.id} busy={photoBusy || !ph.id}
                 onOpen={() => viewer.open(0, k)}
-                onCover={() => setCover.mutate(ph.id, { onSuccess: () => toast.success('Couverture changée') })}
-                onRemove={() => removePhoto.mutate(ph.id, { onSuccess: () => toast.success('Photo retirée') })} />
+                onCover={() => ph.id && setCover.mutate(ph.id, { onSuccess: () => toast.success('Couverture changée') })}
+                onRemove={() => ph.id && removePhoto.mutate(ph.id, { onSuccess: () => toast.success('Photo retirée') })} />
             ))}
-            {legacyCover && <SavedPhoto photo={{ id: 'legacy', path: legacyCover, position: 0, created_at: '' }} cover canRemove={false} busy onOpen={() => viewer.open(0)} onCover={() => undefined} onRemove={() => undefined} />}
-            {files.map((f, k) => <PendingPhoto key={`${f.name}-${k}`} file={f} onRemove={() => setFiles((cur) => cur.filter((_, n) => n !== k))} />)}
+            {files.map((f, k) => <PendingPhoto key={`${f.name}-${f.lastModified}-${k}`} url={previews[k]} onRemove={() => setFiles((cur) => cur.filter((_, n) => n !== k))} />)}
             {room > 0 && (
               <button
                 type="button"

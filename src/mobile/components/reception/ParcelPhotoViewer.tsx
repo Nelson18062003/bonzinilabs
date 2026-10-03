@@ -69,8 +69,9 @@ export function ParcelPhotoViewer({ parcels, index, close, setIndex, title, phot
   // « Dernière photo » (-1) : on revient du colis suivant par la gauche.
   const k = photoRaw < 0 ? Math.max(paths.length - 1, 0) : Math.min(photoRaw, Math.max(paths.length - 1, 0));
   const path = paths[k] ?? null;
-  const { data: url, isLoading } = useParcelPhotoUrl(path);
+  const { data: url, isLoading, isError } = useParcelPhotoUrl(path);
   const touch = useRef<{ x: number; y: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
 
   const goParcel = useCallback((n: number, last = false) => { setIndex(n); setPhotoAt(n, last ? -1 : 0); }, [setIndex, setPhotoAt]);
@@ -85,11 +86,21 @@ export function ParcelPhotoViewer({ parcels, index, close, setIndex, title, phot
 
   useEffect(() => {
     if (!open) return;
-    // En phase de capture, et consommé : la fenêtre en dessous (un dialogue de la console) ne se ferme pas avec.
+    // En phase de capture, et TOUT est consommé : la fenêtre en dessous (un dialogue
+    // de la console) ne voit ni Échap, ni ⌘⏎, ni la tabulation tant que les photos sont ouvertes.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+      e.stopPropagation();
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
+      else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.preventDefault();
+      else if (e.key === 'Tab') {
+        const list = Array.from(rootRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? []);
+        if (list.length === 0) { e.preventDefault(); return; }
+        const at = list.indexOf(document.activeElement as HTMLElement);
+        e.preventDefault();
+        list[(at + (e.shiftKey ? -1 : 1) + list.length) % list.length].focus();
+      }
     };
     window.addEventListener('keydown', onKey, true);
     const prevOverflow = document.body.style.overflow;
@@ -120,6 +131,7 @@ export function ParcelPhotoViewer({ parcels, index, close, setIndex, title, phot
       role="dialog"
       aria-modal="true"
       aria-label={`Photos du colis ${parcel.parcel_no}`}
+      ref={rootRef}
       className="fixed inset-0 z-[80] flex flex-col bg-black text-white"
       onTouchStart={(e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
       onTouchEnd={(e) => {
@@ -146,6 +158,12 @@ export function ParcelPhotoViewer({ parcels, index, close, setIndex, title, phot
           <img src={url} alt={`Colis ${parcel.parcel_no}, photo ${k + 1}`} className="max-h-full max-w-full object-contain" draggable={false} />
         ) : isLoading && path ? (
           <span className="text-[15px] text-white/70">Chargement…</span>
+        ) : isError && path ? (
+          <span className="flex flex-col items-center gap-3 px-8 text-center text-white/70">
+            <ImageOff className="h-10 w-10" />
+            <span className="text-[16px] font-medium">Photo indisponible</span>
+            <span className="text-[13px]">Elle existe mais n'a pas pu être chargée. Vérifiez la connexion, puis rouvrez-la.</span>
+          </span>
         ) : (
           <span className="flex flex-col items-center gap-3 px-8 text-center text-white/70">
             <ImageOff className="h-10 w-10" />

@@ -218,14 +218,19 @@ export async function uploadParcelPhoto(depositId: string, file: File): Promise<
   return path;
 }
 
-/** Plusieurs photos d'un coup, envoyées en parallèle (trois à la fois : le réseau de l'entrepôt). */
+/**
+ * Plusieurs photos d'un coup, envoyées en parallèle (trois à la fois : le
+ * réseau de l'entrepôt). Au premier échec, plus aucun envoi ne part : on ne
+ * remplit pas le seau de photos que rien ne référencera.
+ */
 export async function uploadParcelPhotos(depositId: string, files: File[]): Promise<string[]> {
   const out: string[] = new Array(files.length);
   let next = 0;
+  let failed = false;
   const worker = async () => {
-    while (next < files.length) {
+    while (next < files.length && !failed) {
       const i = next++;
-      out[i] = await uploadParcelPhoto(depositId, files[i]);
+      try { out[i] = await uploadParcelPhoto(depositId, files[i]); } catch (e) { failed = true; throw e; }
     }
   };
   await Promise.all(Array.from({ length: Math.min(3, files.length) }, worker));
@@ -492,7 +497,7 @@ export function useReceptionBoard(q: BoardQuery) {
       p_location: q.location ?? null,
       p_from: q.from?.toISOString() ?? null,
       p_to: q.to?.toISOString() ?? null,
-      p_limit: 1000,
+      p_limit: 500,
     }),
     staleTime: 20_000,
   });

@@ -471,7 +471,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-desk-deposit-edit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-labels': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-labels-client': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
-  'cargo-desk-remove': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-remove': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep4', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-cancelled': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/gone1', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-air': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion' },
   'cargo-desk-air-detail': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },

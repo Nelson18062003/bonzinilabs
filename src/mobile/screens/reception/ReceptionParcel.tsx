@@ -19,7 +19,9 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { PARCEL_KINDS, cbmOf, formatCbm, type ParcelKind, type ParcelPhoto } from '@/lib/reception';
+import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind } from '@/lib/reception';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useFilePreviews } from '@/hooks/useFilePreviews';
 import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, PrimaryPill, SoftPill, TextInput } from '@/mobile/designKit';
@@ -35,12 +37,8 @@ const num = (s: string): number | null => {
   return Number.isFinite(v) && v >= 0 ? v : null;
 };
 
-const MAX_PHOTOS = 20;
-
-/** Une photo prise, pas encore envoyée : l'aperçu local, et la retirer. */
-function NewPhoto({ file, cover, coverLabel, removeLabel, onRemove }: { file: File; cover: boolean; coverLabel: string; removeLabel: string; onRemove: () => void }) {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => { const u = URL.createObjectURL(file); setUrl(u); return () => URL.revokeObjectURL(u); }, [file]);
+/** Une photo prise, pas encore envoyée : son aperçu local (useFilePreviews), et la retirer. */
+function NewPhoto({ url, cover, coverLabel, removeLabel, onRemove }: { url: string | null; cover: boolean; coverLabel: string; removeLabel: string; onRemove: () => void }) {
   return (
     <div className={cn('relative overflow-hidden rounded-lg', SURFACE.inset)} style={{ aspectRatio: '4 / 3' }}>
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
@@ -51,7 +49,7 @@ function NewPhoto({ file, cover, coverLabel, removeLabel, onRemove }: { file: Fi
 }
 
 /** Une photo déjà enregistrée sur le colis (correction d'un colis existant). */
-function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove }: { photo: Pick<ParcelPhoto, 'path'>; cover: boolean; coverLabel: string; removeLabel: string; onRemove?: () => void }) {
+function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove }: { photo: { path: string }; cover: boolean; coverLabel: string; removeLabel: string; onRemove?: () => void }) {
   const { data: url } = useParcelPhotoUrl(photo.path);
   return (
     <div className={cn('relative overflow-hidden rounded-lg', SURFACE.inset)} style={{ aspectRatio: '4 / 3' }}>
@@ -74,10 +72,9 @@ export function ReceptionParcel() {
   const update = useUpdateParcel();
   const removePhoto = useRemoveParcelPhoto();
   const editing = deposit?.parcels.find((p) => p.id === parcelId) ?? null;
+  const { currentUser, hasPermission } = useAdminAuth();
   // Les photos déjà enregistrées (correction) ; une donnée d'avant les photos multiples n'a que sa couverture.
-  const saved: { path: string; id?: string }[] = editing
-    ? (editing.photos && editing.photos.length > 0 ? [...editing.photos].sort((a, b) => a.position - b.position) : editing.photo_path ? [{ path: editing.photo_path }] : [])
-    : [];
+  const saved = editing ? parcelSavedPhotos(editing) : [];
   const steps = parcelId ? EDIT_STEPS : NEW_STEPS;
 
   const [step, setStep] = useState<Step>(() => {
@@ -114,11 +111,12 @@ export function ReceptionParcel() {
   }, [editing, loaded]);
 
   const totalPhotos = saved.length + photos.length;
+  const previews = useFilePreviews(photos);
   const addFiles = (list: FileList | null) => {
-    const images = Array.from(list ?? []).filter((f) => f.type.startsWith('image/'));
-    const room = MAX_PHOTOS - totalPhotos;
-    if (images.length > room) toast.warning(t('rc_photos_max'));
-    if (room > 0) setPhotos((cur) => [...cur, ...images.slice(0, room)]);
+    const { kept, rejected, overflow } = pickParcelPhotos(list ?? [], MAX_PARCEL_PHOTOS - totalPhotos);
+    if (rejected > 0) toast.error(t('rc_photo_type'));
+    if (overflow > 0) toast.warning(t('rc_photos_max'));
+    if (kept.length > 0) setPhotos((cur) => [...cur, ...kept]);
   };
 
   const cbm = useMemo(() => cbmOf(num(length), num(width), num(height)), [length, width, height]);
@@ -150,8 +148,8 @@ export function ReceptionParcel() {
   };
 
   const busy = uploading || add.isPending || update.isPending;
-  // Retirer une photo déjà enregistrée : tant que le dépôt est ouvert (fermé, c'est l'équipe cargo).
-  const canRemoveSaved = deposit?.status === 'open';
+  // Retirer une photo déjà enregistrée : son réceptionnaire tant que le dépôt est ouvert, sinon l'équipe cargo.
+  const canRemoveSaved = hasPermission('canManageCargo') || (deposit?.status === 'open' && deposit.received_by === currentUser?.id);
   const title = editing ? `${t('rc_parcel')} ${String(editing.seq).padStart(2, '0')}` : `${t('rc_parcel')} ${nextSeq}`;
 
   // Le bouton du bas : « Suivant », ou, à la dernière question, « Ajouter » / « Enregistrer ».
@@ -187,10 +185,10 @@ export function ReceptionParcel() {
                     onRemove={canRemoveSaved && ph.id ? () => removePhoto.mutate(ph.id!) : undefined} />
                 ))}
                 {photos.map((f, k) => (
-                  <NewPhoto key={`${f.name}-${f.lastModified}-${k}`} file={f} cover={saved.length === 0 && k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')}
+                  <NewPhoto key={`${f.name}-${f.lastModified}-${k}`} url={previews[k]} cover={saved.length === 0 && k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')}
                     onRemove={() => setPhotos((cur) => cur.filter((_, n) => n !== k))} />
                 ))}
-                {totalPhotos < MAX_PHOTOS && (
+                {totalPhotos < MAX_PARCEL_PHOTOS && (
                   <button type="button" onClick={() => fileRef.current?.click()} className={cn('flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#949494] dark:border-[#6E6E6E]', TYPE.bodyStrong, TEXT.strong)} style={{ aspectRatio: '4 / 3' }}>
                     <Camera className="h-7 w-7" /> {t('rc_add_photo')}
                   </button>
@@ -198,7 +196,7 @@ export function ReceptionParcel() {
               </div>
             )}
             <div className="flex items-center justify-between gap-3">
-              <button type="button" onClick={() => galleryRef.current?.click()} disabled={totalPhotos >= MAX_PHOTOS} className={cn('flex items-center gap-2 disabled:opacity-40', TYPE.bodyStrong, TEXT.muted)}><ImagePlus className="h-5 w-5" /> {t('rc_from_gallery')}</button>
+              <button type="button" onClick={() => galleryRef.current?.click()} disabled={totalPhotos >= MAX_PARCEL_PHOTOS} className={cn('flex items-center gap-2 disabled:opacity-40', TYPE.bodyStrong, TEXT.muted)}><ImagePlus className="h-5 w-5" /> {t('rc_from_gallery')}</button>
               {totalPhotos > 0 && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{ti('rc_photos_count', { count: totalPhotos })}</span>}
             </div>
           </>
