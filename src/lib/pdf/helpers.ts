@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { enUS, fr } from 'date-fns/locale';
 import { colors } from './styles';
 
 export const formatXAF = (amount: number): string => {
@@ -30,6 +30,19 @@ export const formatRMB = (amount: number): string => {
 export const formatDate = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   return format(d, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
+};
+
+/** La date d'un document dans SA langue : « 02 octobre 2026 à 14:32 » ou « October 02, 2026 at 14:32 ». */
+export const formatDateIn = (date: Date | string, lang: 'fr' | 'en'): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return lang === 'en' ? format(d, "MMMM dd, yyyy 'at' HH:mm", { locale: enUS }) : format(d, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
+};
+
+/** Un montant en XAF dans la langue du document : « 1 234 567 XAF » (fr) ou « 1,234,567 XAF » (en). */
+export const formatXafIn = (amount: number | null | undefined, lang: 'fr' | 'en'): string => {
+  const n = Math.round(Number(amount ?? 0));
+  const digits = Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, lang === 'en' ? ',' : ' ');
+  return `${n < 0 ? '-' : ''}${digits} XAF`;
 };
 
 export const formatDateShort = (date: Date | string): string => {

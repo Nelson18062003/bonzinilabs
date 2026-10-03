@@ -102,10 +102,12 @@ const TYPE_LABEL: Record<PDFHeaderType, string> = {
 export interface PDFHeaderProps {
   type: PDFHeaderType;
   reference: string;
+  /** Le titre du document dans une autre langue (« SHIPPING QUOTE ») ; le français sinon. */
+  label?: string;
 }
 
-export function PDFHeader({ type, reference }: PDFHeaderProps) {
-  const typeLabel = TYPE_LABEL[type];
+export function PDFHeader({ type, reference, label }: PDFHeaderProps) {
+  const typeLabel = label ?? TYPE_LABEL[type];
 
   return (
     <View style={styles.container} fixed>
