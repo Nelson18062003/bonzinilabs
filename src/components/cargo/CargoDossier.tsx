@@ -9,7 +9,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipment } from '@/hooks/useCargo';
 import {
   DossierHeader, DossierTabsBar,
-  TabApercu, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabNotes, TabSuivi,
+  TabApercu, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabIntervenants, TabNotes, TabSuivi,
 } from '@/components/cargo/dossier';
 import { DOSSIER_TABS, type DossierTab } from '@/lib/cargo/dossierNav';
 import { cn } from '@/lib/utils';
@@ -62,6 +62,7 @@ export function CargoDossier({
         {tab === 'douane' && <TabDouane shipment={s} canManage={canManage} />}
         {tab === 'couts' && <TabCouts shipment={s} canManage={canManage} />}
         {tab === 'client' && <TabClient shipment={s} canManage={canManage} />}
+        {tab === 'intervenants' && <TabIntervenants shipment={s} canManage={canManage} />}
         {tab === 'notes' && <TabNotes shipment={s} canManage={canManage} />}
       </div>
     </div>

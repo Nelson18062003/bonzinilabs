@@ -4,6 +4,7 @@
  */
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
+import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -138,3 +139,26 @@ export const useDeleteCargoDocFolder = noop;
 export const useUpdateCargoDocument = noop;
 export const useUploadCargoDocuments = noop;
 export const downloadCargoDocument = async () => undefined;
+
+/* ── Intervenants ── */
+const party = (id: string, name: string, extra: Partial<CargoParty> = {}): CargoParty => ({
+  id, name, contact_name: null, phone: null, whatsapp: null, email: null, city: null, country: null, note: null,
+  created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', ...extra,
+});
+const link = (id: string, role: string, p: CargoParty, note: string | null, position: number): CargoShipmentPartyWithParty => ({
+  id, shipment_id: '2', party_id: p.id, role, note, position, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', party: p,
+});
+const KASS = party('pa1', 'KASSUMAYE PARTNER SARL', { contact_name: 'Eric', whatsapp: '+86 138 0000 0000' });
+const CYN = party('pa2', 'Cynthia AKAH', { country: 'Cameroun', phone: '+237 690 00 00 00' });
+const NGB = party('pa3', 'NORTON GAUSS BONZINI SARL', { city: 'Douala (Bépanda)', country: 'Cameroun' });
+const LINKS: CargoShipmentPartyWithParty[] = [
+  link('l1', 'FORWARDER', KASS, 'Booking, camion et douane d’export à Nansha.', 1),
+  link('l2', 'SHIPPER', KASS, 'Détient les 3 originaux du B/L : le télex doit venir de lui.', 2),
+  link('l3', 'DECLARANT', CYN, 'Mandatée pour BESC, CIVIC et déclaration.', 3),
+  link('l4', 'CONSIGNEE', NGB, null, 4),
+];
+export const useCargoShipmentParties = (id: string | null) => ok(id === '2' ? LINKS : ([] as CargoShipmentPartyWithParty[]));
+export const useCargoParties = () => ok([KASS, CYN, NGB]);
+export const useAddShipmentParty = noop;
+export const useUpdateShipmentParty = noop;
+export const useRemoveShipmentParty = noop;

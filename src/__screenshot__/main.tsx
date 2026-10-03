@@ -479,6 +479,7 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-desk-deposit-paid': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep3', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-deposit-pending': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
   'cargo-desk-documents': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/2/documents', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-desk-intervenants': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/2/intervenants', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-desk-apercu': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/2', path: '/m/cargo/:shipmentId' },
   'cargo-desk-chargement': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-desk-load': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement?charger=1', path: '/m/cargo/:shipmentId/:tab' },

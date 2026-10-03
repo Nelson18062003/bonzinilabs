@@ -5,6 +5,7 @@ import { validateUploadFile } from '@/lib/utils';
 import { shouldPollLookup } from '@/lib/cargo/lookup';
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
+import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
@@ -413,6 +414,119 @@ export function useCargoClientOptions(search: string) {
       return data ?? [];
     },
     staleTime: 30_000,
+  });
+}
+
+/* ── Parties prenantes ──────────────────────────────────────────────────── */
+
+/** Qui fait quoi sur ce conteneur, avec la fiche de chaque partie. */
+export function useCargoShipmentParties(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'shipment-parties', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_shipment_parties')
+        .select('*, party:cargo_parties(*)')
+        .eq('shipment_id', shipmentId!)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as CargoShipmentPartyWithParty[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** L'annuaire, pour choisir une partie déjà connue au lieu de la ressaisir. */
+export function useCargoParties(search: string) {
+  return useQuery({
+    queryKey: ['cargo', 'parties', search],
+    queryFn: async () => {
+      let q = supabaseAdmin.from('cargo_parties').select('*').order('name', { ascending: true }).limit(40);
+      const needle = search.replace(/[,()%\\]/g, ' ').trim();
+      if (needle) q = q.or(`name.ilike.%${needle}%,contact_name.ilike.%${needle}%,city.ilike.%${needle}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as CargoParty[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export type CargoPartyInput = Pick<CargoParty, 'name'> &
+  Partial<Pick<CargoParty, 'contact_name' | 'phone' | 'whatsapp' | 'email' | 'city' | 'country' | 'note'>>;
+
+/**
+ * Poser un rôle sur le conteneur. `partyId` = une partie de l'annuaire ;
+ * sinon `party` crée la fiche d'abord.
+ */
+export function useAddShipmentParty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, role, note, partyId, party, position }: {
+      shipmentId: string; role: string; note?: string | null; partyId?: string; party?: CargoPartyInput; position?: number;
+    }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      let id = partyId;
+      if (!id) {
+        if (!party?.name?.trim()) throw new Error('Nom manquant');
+        const { data, error } = await supabaseAdmin.from('cargo_parties').insert({ ...party, name: party.name.trim(), created_by: uid }).select('id').single();
+        if (error) throw error;
+        id = data.id;
+      }
+      const { error } = await supabaseAdmin.from('cargo_shipment_parties').insert({
+        shipment_id: shipmentId, party_id: id, role, note: note?.trim() || null, position: position ?? 0, created_by: uid,
+      });
+      if (error) throw error.code === '23505' ? new Error('Cette partie tient déjà ce rôle sur ce conteneur') : error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success('Intervenant ajouté');
+      qc.invalidateQueries({ queryKey: ['cargo', 'shipment-parties', v.shipmentId] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'parties'] });
+    },
+    onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+/** Modifier la fiche d'une partie (elle change sur tous les conteneurs) et la note du rôle. */
+export function useUpdateShipmentParty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ link, party, note }: { link: CargoShipmentPartyWithParty; party?: Partial<CargoPartyInput>; note?: string | null }) => {
+      if (party) {
+        const { error } = await supabaseAdmin.from('cargo_parties').update(party).eq('id', link.party_id);
+        if (error) throw error;
+      }
+      if (note !== undefined) {
+        const { error } = await supabaseAdmin.from('cargo_shipment_parties').update({ note: note?.trim() || null }).eq('id', link.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Intervenant modifié');
+      qc.invalidateQueries({ queryKey: ['cargo', 'shipment-parties'] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'parties'] });
+    },
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+/** Retirer un rôle du conteneur. La fiche reste dans l'annuaire. */
+export function useRemoveShipmentParty() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (link: CargoShipmentPartyWithParty) => {
+      const { error } = await supabaseAdmin.from('cargo_shipment_parties').delete().eq('id', link.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, link) => {
+      toast.success('Intervenant retiré du conteneur');
+      qc.invalidateQueries({ queryKey: ['cargo', 'shipment-parties', link.shipment_id] });
+    },
+    onError: (e: Error) => toast.error(`Retrait impossible : ${e.message}`),
   });
 }
 

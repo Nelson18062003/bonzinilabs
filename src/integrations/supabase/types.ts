@@ -703,6 +703,52 @@ export type Database = {
           },
         ]
       }
+      cargo_parties: {
+        Row: {
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+        ]
+      }
       cargo_doc_folders: {
         Row: {
           category: string
@@ -926,6 +972,57 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      cargo_shipment_parties: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          party_id: string
+          position: number
+          role: string
+          shipment_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id: string
+          position?: number
+          role: string
+          shipment_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id?: string
+          position?: number
+          role?: string
+          shipment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_shipment_parties_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_shipment_parties_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cargo_shipments: {
         Row: {

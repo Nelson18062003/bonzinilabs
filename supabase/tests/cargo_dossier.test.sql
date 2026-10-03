@@ -99,4 +99,51 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 
+-- ============================================================================
+-- Parties prenantes (20261003150000_cargo_parties.sql)
+-- ============================================================================
+SET ROLE authenticated;
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+INSERT INTO public.cargo_parties (id, name, contact_name) VALUES ('00000000-0000-0000-0000-0000000000e1', 'KASSUMAYE PARTNER SARL', 'Eric');
+-- Une partie, deux rôles sur le même conteneur.
+INSERT INTO public.cargo_shipment_parties (id, shipment_id, party_id, role) VALUES
+  ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'FORWARDER'),
+  ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'SHIPPER');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_shipment_parties (shipment_id, party_id, role) VALUES ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'SHIPPER');
+    PERFORM _assert(false, 'le même rôle deux fois doit échouer');
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_shipment_parties (shipment_id, party_id, role) VALUES ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'PIRATE');
+    PERFORM _assert(false, 'un rôle inconnu doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+-- Un rôle ne change pas de conteneur ; la note, si.
+UPDATE public.cargo_shipment_parties SET note = 'détient les originaux', shipment_id = '00000000-0000-0000-0000-00000000000b' WHERE id = '00000000-0000-0000-0000-0000000000e3';
+DO $$ BEGIN
+  PERFORM _assert((SELECT shipment_id FROM public.cargo_shipment_parties WHERE id = '00000000-0000-0000-0000-0000000000e3') = '00000000-0000-0000-0000-00000000000a', 'rôle figé sur son conteneur');
+  PERFORM _assert((SELECT note FROM public.cargo_shipment_parties WHERE id = '00000000-0000-0000-0000-0000000000e3') = 'détient les originaux', 'note modifiable');
+END $$;
+-- Le support lit, n'écrit pas ; le caissier ne voit rien.
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_shipment_parties) = 2, 'le support voit les rôles');
+  BEGIN
+    INSERT INTO public.cargo_parties (name) VALUES ('intrus');
+    PERFORM _assert(false, 'le support ne crée pas de partie');
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a3');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_parties) = 0, 'le caissier ne voit pas l''annuaire');
+END $$;
+-- Supprimer la partie retire ses rôles.
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+DELETE FROM public.cargo_parties WHERE id = '00000000-0000-0000-0000-0000000000e1';
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_shipment_parties) = 0, 'rôles retirés avec la partie');
+END $$;
+RESET ROLE;
+
 \echo '✓ cargo_dossier : toutes les règles tiennent'
