@@ -18,6 +18,8 @@ import {
   MessageSquareQuote,
   Sparkles,
   Newspaper,
+  Banknote,
+  Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
@@ -119,6 +121,12 @@ export function MobileMoreScreen() {
           <SectionTitle>{t('tools', { defaultValue: 'Outils' })}</SectionTitle>
           <Card className="space-y-0.5 p-2">
             <MenuRow
+              icon={Banknote}
+              label="Coordonnées de paiement"
+              description="Banques et Mobile Money · PDF et image à envoyer"
+              onClick={() => navigate('/m/more/payment-details')}
+            />
+            <MenuRow
               icon={BarChart3}
               label="Tableau de bord"
               description={t('reportsAndKPIs', { defaultValue: 'Rapports et indicateurs clés' })}
@@ -129,6 +137,12 @@ export function MobileMoreScreen() {
               label={t('exchangeRate', { defaultValue: 'Taux de change' })}
               description={t('manageRates', { defaultValue: 'Gérer les taux XAF/RMB' })}
               onClick={() => navigate('/m/more/rates')}
+            />
+            <MenuRow
+              icon={Landmark}
+              label="Douane"
+              description="Simulateur de droits et taxes, codes SH du Cameroun"
+              onClick={() => navigate('/m/douane')}
             />
             {canViewTreasury && (
               <MenuRow

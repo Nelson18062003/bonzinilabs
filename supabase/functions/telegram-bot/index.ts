@@ -441,7 +441,8 @@ Pour 1 000 000 XAF.`);
 
 // ─── Command: /flyer ─────────────────────────────────────────────────────────
 
-async function handleFlyer(chatId: number) {
+/** /flyer (français) ou /flyer en (anglais) — même flyer que l'app. */
+async function handleFlyer(chatId: number, lang: "fr" | "en" = "fr") {
   await sendMessage(chatId, "\u23f3 G\u00e9n\u00e9ration du flyer...");
 
   try {
@@ -460,21 +461,14 @@ async function handleFlyer(chatId: number) {
       return;
     }
 
-    // Call generate-flyer with published rates
+    // generate-flyer lit lui-même le taux actif et les réglages (même flyer que l'app).
     const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-flyer`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
-      body: JSON.stringify({
-        rates: {
-          alipay: activeRate.rate_alipay,
-          wechat: activeRate.rate_wechat,
-          bank: activeRate.rate_virement,
-          cash: activeRate.rate_cash,
-        },
-      }),
+      body: JSON.stringify({ country_key: "cameroun", lang }),
     });
 
     if (!res.ok) {
@@ -486,7 +480,7 @@ async function handleFlyer(chatId: number) {
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("image")) {
       const buffer = new Uint8Array(await res.arrayBuffer());
-      await sendPhoto(chatId, buffer, `<b>\ud83d\udcc4 Flyer Bonzini</b>\nTaux publi\u00e9 : ${fi(activeRate.rate_cash)} \u00a5 / 1M XAF`);
+      await sendPhoto(chatId, buffer, `<b>Taux du jour \u00b7 Cameroun</b>\nTaux publi\u00e9 : ${fi(activeRate.rate_cash)} \u00a5 / 1M XAF (cash)`);
     } else {
       await sendMessage(chatId, "\u274c Le service flyer n'a pas retourn\u00e9 une image.");
     }
@@ -610,7 +604,7 @@ async function handleHelp(chatId: number) {
 
 <b>Actions</b>
 /publier \u2014 Publier le taux du jour dans l'app
-/flyer \u2014 G\u00e9n\u00e9rer le flyer du jour
+/flyer \u2014 G\u00e9n\u00e9rer le flyer du jour (/flyer en : en anglais)
 /rapport \u2014 Rapport d\u00e9taill\u00e9
 
 <b>Configuration</b>
@@ -659,8 +653,8 @@ serve(async (req: Request) => {
       await handleTendance(chatId);
     } else if (text === "/publier") {
       await handlePublier(chatId);
-    } else if (text === "/flyer") {
-      await handleFlyer(chatId);
+    } else if (text === "/flyer" || text === "/flyer fr" || text === "/flyer en") {
+      await handleFlyer(chatId, text === "/flyer en" ? "en" : "fr");
     } else if (text === "/rapport") {
       await handleRapport(chatId);
     } else if (text.startsWith("/config")) {

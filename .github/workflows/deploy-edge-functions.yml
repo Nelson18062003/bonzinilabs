@@ -66,3 +66,27 @@ jobs:
           supabase functions deploy resend-events \
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt
+
+      # Le flyer « Taux du jour » côté serveur (Mola, Telegram) : données
+      # publiques, appelé avec la clé anon ou service → verify_jwt désactivé
+      # (supabase/config.toml ; même réglage qu'en production).
+      - name: Déployer la fonction generate-flyer
+        run: |
+          supabase functions deploy generate-flyer \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      # Webhook Telegram : Telegram n'envoie pas de JWT → verify_jwt désactivé
+      # (même réglage qu'en production).
+      - name: Déployer la fonction telegram-bot
+        run: |
+          supabase functions deploy telegram-bot \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      # Marché Binance (module Taux) : carnet P2P complet pour l'écran admin.
+      # JWT admin exigé (verify_jwt actif) + garde canManageRates dans la fonction.
+      - name: Déployer la fonction binance-p2p-book
+        run: |
+          supabase functions deploy binance-p2p-book \
+            --project-ref "$PROJECT_REF"

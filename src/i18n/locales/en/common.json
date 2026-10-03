@@ -327,7 +327,14 @@
       "last_month": "Last month",
       "all_time": "All history",
       "custom": "Custom"
-    }
+    },
+    "hint2": "Opening balance, every deposit and every payment (with its rate and the amount in ¥), then the closing balance.",
+    "periodLabel": "Period",
+    "languageLabel": "Statement language",
+    "fromDate": "From",
+    "toDate": "To",
+    "inverted": "The start date must come before the end date.",
+    "download": "Download the statement (PDF)"
   },
   "clientDetail": "Client detail",
   "clientNotFound": "Client not found",
@@ -522,7 +529,24 @@
     "passwordOnce": "This password will not be shown again. Send it to the client on WhatsApp.",
     "sendOnWhatsapp": "Send on WhatsApp · {{number}}",
     "extraPhonesFailed": "The extra numbers could not be saved. The client exists with the main number — add the others from the client sheet.",
-    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login."
+    "whatsappMessage": "Hello {{name}}, your Bonzini Labs account is ready. Your temporary password: {{password}}. You will need to change it at first login.",
+    "primaryNumber": "Main number (WhatsApp)",
+    "makePrimary": "Make main",
+    "phonesTitle": "Phone numbers",
+    "primaryBadge": "Main · login and SMS",
+    "primaryHint": "Used to log in; receives the password and the SMS.",
+    "makePrimaryShort": "Main",
+    "duplicateNumber": "This number is already in the list.",
+    "labelOther": "Your label: WeChat, Home…",
+    "addNumberShort": "Add a number",
+    "quickLabel": {
+      "mtn": "MTN",
+      "orange": "Orange",
+      "office": "Office",
+      "china": "China",
+      "personal": "Personal",
+      "other": "Other…"
+    }
   },
   "overdraft": {
     "title": "Authorised overdraft",
@@ -544,5 +568,9 @@
     "error": "Could not update the overdraft",
     "availableWithOverdraft": "Available with overdraft: {{amount}} (authorised {{limit}})",
     "willOverdraw": "The client goes into overdraft: balance after {{amount}}."
-  }
+  },
+  "signInWithPassword": "Password",
+  "signInWithPasswordHint": "The one you were given with your account",
+  "enterPassword": "Your password",
+  "scanOpenNative": "Open the scanner"
 }

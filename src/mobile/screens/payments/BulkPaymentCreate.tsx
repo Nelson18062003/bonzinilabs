@@ -21,7 +21,9 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAllClients } from '@/hooks/useAdminDeposits';
-import { useActiveDailyRate } from '@/hooks/useDailyRates';
+import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
+import { teamPaymentFromCny, teamPaymentRate } from '@/lib/countryRates';
+import { clientCountryToRateKey } from '@/components/payment-form/paymentRateLogic';
 import { getBaseRate } from '@/lib/rateCalculation';
 import { useCreatePaymentBatch, type CreatePaymentBatchInput, type PaymentMethod } from '@/hooks/usePaymentBatches';
 import {
@@ -126,6 +128,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   const { t } = useTranslation('payments');
   const { data: clients = [] } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
+  const { data: adjustments } = useRateAdjustments();
   const createBatch = useCreatePaymentBatch();
   const createBeneficiary = useAdminCreateBeneficiary();
 
@@ -191,9 +194,17 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   const overBudget = totalXaf > clientAvailable;
 
   // Live conversion (mirrors MobileNewPayment).
-  const eBaseRate = rateData ? getBaseRate(rateData, eMethod) : FALLBACK_RATE;
-  const eRate = eCustomRate ? parseInt(eCustomRateStr) || FALLBACK_RATE : eBaseRate;
+  // Pays du client ET tranche du montant, comme un paiement seul (avant le
+  // 25/09/2026, les paiements groupés prenaient le taux du Cameroun à 1 M).
   const eRaw = parseInt(eRawAmount) || 0;
+  const eRef = rateData ? getBaseRate(rateData, eMethod) : FALLBACK_RATE;
+  const eClientKey = client ? clientCountryToRateKey(client.country) : null;
+  const eBaseRate = !rateData
+    ? FALLBACK_RATE
+    : eCurrency === 'xaf'
+      ? teamPaymentRate(eRef, eClientKey, adjustments, eRaw)
+      : teamPaymentFromCny(eRef, eClientKey, adjustments, eRaw).rate;
+  const eRate = eCustomRate ? parseInt(eCustomRateStr) || FALLBACK_RATE : eBaseRate;
   const eXaf = eCurrency === 'xaf' ? eRaw : Math.round((eRaw * 1_000_000) / eRate);
   const eCny = eCurrency === 'xaf' ? Math.round((eRaw * eRate) / 1_000_000) : eRaw;
 

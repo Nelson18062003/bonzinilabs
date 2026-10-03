@@ -44,3 +44,10 @@ verify_jwt = false
 # dans la fonction), appelée par request_cargo_lookup via pg_net.
 [functions.cargo-lookup]
 verify_jwt = false
+
+# customs-supplier reçoit le dépôt d'un fournisseur chinois invité : il n'a
+# PAS de compte, donc pas de JWT. L'autorisation est le jeton d'invitation
+# (64 hex, gardé haché en base), revérifié par customs_invite_upload_target
+# puis customs_invite_record_document (clé de service seulement).
+[functions.customs-supplier]
+verify_jwt = false

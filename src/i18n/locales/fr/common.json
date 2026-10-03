@@ -422,7 +422,14 @@
       "last_month": "Mois dernier",
       "all_time": "Tout l'historique",
       "custom": "Personnalisé"
-    }
+    },
+    "hint2": "Solde d’ouverture, chaque dépôt et chaque paiement (avec son taux et le montant en ¥), puis le solde de clôture.",
+    "periodLabel": "Période",
+    "languageLabel": "Langue du relevé",
+    "fromDate": "Du",
+    "toDate": "Au",
+    "inverted": "La date de début doit précéder la date de fin.",
+    "download": "Télécharger le relevé (PDF)"
   },
   "suspendedStatus": "Suspendu",
   "systemModeNote": "Le mode Système s'adapte automatiquement aux préférences de votre appareil.",
@@ -522,7 +529,24 @@
     "passwordOnce": "Ce mot de passe ne sera plus affiché. Transmettez-le au client via WhatsApp.",
     "sendOnWhatsapp": "Envoyer sur WhatsApp · {{number}}",
     "extraPhonesFailed": "Les numéros supplémentaires n'ont pas pu être enregistrés. Le client existe avec son numéro principal — ajoutez les autres depuis sa fiche.",
-    "whatsappMessage": "Bonjour {{name}}, votre compte Bonzini Labs est prêt. Votre mot de passe temporaire : {{password}}. Vous devrez le changer à votre première connexion."
+    "whatsappMessage": "Bonjour {{name}}, votre compte Bonzini Labs est prêt. Votre mot de passe temporaire : {{password}}. Vous devrez le changer à votre première connexion.",
+    "primaryNumber": "Numéro principal (WhatsApp)",
+    "makePrimary": "Mettre en principal",
+    "phonesTitle": "Numéros de téléphone",
+    "primaryBadge": "Principal · connexion et SMS",
+    "primaryHint": "Il sert à la connexion et reçoit le mot de passe et les SMS.",
+    "makePrimaryShort": "Principal",
+    "duplicateNumber": "Ce numéro est déjà dans la liste.",
+    "labelOther": "Votre libellé : WeChat, Maison…",
+    "addNumberShort": "Ajouter un numéro",
+    "quickLabel": {
+      "mtn": "MTN",
+      "orange": "Orange",
+      "office": "Bureau",
+      "china": "Chine",
+      "personal": "Perso",
+      "other": "Autre…"
+    }
   },
   "overdraft": {
     "title": "Découvert autorisé",
@@ -544,5 +568,9 @@
     "error": "Impossible de modifier le découvert",
     "availableWithOverdraft": "Disponible avec découvert : {{amount}} (autorisé {{limit}})",
     "willOverdraw": "Le client passe en découvert : solde après {{amount}}."
-  }
+  },
+  "signInWithPassword": "Mot de passe",
+  "signInWithPasswordHint": "Celui qui vous a été donné avec votre compte",
+  "enterPassword": "Votre mot de passe",
+  "scanOpenNative": "Ouvrir le scanner"
 }

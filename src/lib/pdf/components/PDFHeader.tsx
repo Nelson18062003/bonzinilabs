@@ -2,9 +2,10 @@ import { View, Text, StyleSheet, Svg, Path } from '@react-pdf/renderer';
 import { colors } from '../styles';
 
 // ─── LOGO SVG BONZINI (tracés originaux — NE PAS MODIFIER) ───────────────────
-function PdfLogo({ size = 32 }: { size?: number }) {
+/** `tight` : le cadre serré sur le dessin (sans la marge blanche du carré 100×100) — le logo paraît plus grand à taille égale. */
+export function PdfLogo({ size = 32, tight = false }: { size?: number; tight?: boolean }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 100 100">
+    <Svg width={size} height={size} viewBox={tight ? '19 19 62 62' : '0 0 100 100'}>
       <Path
         d="M50.8,43.87 L49.79,43.9 L48.86,43.85 L47.93,43.7 L47.15,43.52 L46.4,43.24 L45.69,42.93 L45.05,42.56 L44.45,42.12 L43.91,41.66 L43.44,41.12 L43.01,40.56 L42.57,39.97 L42.12,39.37 L41.69,38.78 L41.25,38.19 L40.81,37.6 L40.39,37.0 L39.97,36.45 L39.54,35.85 L39.12,35.27 L38.7,34.7 L38.27,34.12 L37.85,33.53 L37.41,32.94 L36.98,32.35 L36.55,31.75 L36.13,31.16 L35.68,30.57 L35.27,29.97 L34.82,29.38 L34.42,28.79 L33.97,28.2 L33.55,27.6 L33.11,27.02 L32.68,26.43 L32.29,25.83 L32.47,25.15 L33.02,24.72 L33.67,24.3 L34.29,23.88 L34.89,23.53 L35.56,23.15 L36.24,22.79 L36.92,22.45 L37.6,22.12 L38.27,21.84 L39.03,21.54 L39.8,21.27 L40.56,21.02 L41.32,20.8 L42.13,20.58 L42.93,20.39 L43.86,20.25 L44.25,20.91 L44.44,21.76 L44.61,22.61 L44.78,23.45 L44.96,24.29 L45.12,25.15 L45.29,25.99 L45.46,26.84 L45.63,27.69 L45.81,28.52 L45.97,29.38 L46.15,30.23 L46.32,31.06 L46.49,31.91 L46.66,32.75 L46.82,33.6 L46.99,34.44 L47.17,35.22 L47.34,36.07 L47.51,36.92 L47.67,37.76 L47.81,38.7 L48.05,39.46 L48.52,39.99 L49.27,40.3 L50.21,40.34 L51.06,40.18 L51.64,39.71 L51.97,39.03 L52.16,38.26 L52.33,37.41 L52.5,36.49 L52.67,35.65 L52.83,34.8 L52.99,33.95 L53.17,33.11 L53.34,32.26 L53.49,31.41 L53.66,30.57 L53.83,29.72 L54.01,28.87 L54.18,28.03 L54.34,27.18 L54.52,26.33 L54.69,25.49 L54.86,24.64 L55.03,23.79 L55.2,22.95 L55.38,22.18 L55.57,21.34 L55.8,20.5 L56.14,19.85 L56.96,20.07 L57.66,20.38 L58.34,20.67 L59.1,20.99 L59.78,21.3 L60.47,21.59 L61.21,21.93 L61.9,22.22 L62.59,22.52 L63.34,22.85 L64.01,23.15 L64.73,23.45 L65.45,23.77 L66.13,24.06 L66.86,24.39 L67.56,24.72 L67.67,25.4 L67.36,26.08 L66.98,26.74 L66.55,27.34 L66.13,27.92 L65.71,28.49 L65.28,29.09 L64.86,29.68 L64.44,30.24 L64.0,30.82 L63.59,31.42 L63.16,32.01 L62.73,32.6 L62.31,33.19 L61.87,33.78 L61.44,34.38 L61.01,34.97 L60.58,35.56 L60.14,36.16 L59.71,36.75 L59.27,37.33 L58.85,37.91 L58.43,38.48 L58.0,39.06 L57.58,39.66 L57.14,40.22 L56.71,40.81 L56.22,41.4 L55.72,41.91 L55.18,42.34 L54.53,42.74 L53.86,43.1 L53.18,43.37 L52.41,43.61 L51.57,43.79 Z"
         fill="#F3A745"
@@ -86,13 +87,28 @@ const styles = StyleSheet.create({
   },
 });
 
+export type PDFHeaderType = 'depot' | 'paiement' | 'devis' | 'recu-cargo' | 'facture' | 'bon-retrait' | 'manifeste' | 'mobile-money';
+
+const TYPE_LABEL: Record<PDFHeaderType, string> = {
+  depot: 'REÇU DE DÉPÔT',
+  paiement: 'REÇU DE PAIEMENT',
+  devis: 'DEVIS DE TRANSPORT',
+  'recu-cargo': 'REÇU · FRAIS DE TRANSPORT',
+  facture: 'FACTURE ACQUITTÉE',
+  'bon-retrait': 'BON DE RETRAIT',
+  manifeste: 'MANIFESTE',
+  'mobile-money': 'COORDONNÉES MOBILE MONEY',
+};
+
 export interface PDFHeaderProps {
-  type: 'depot' | 'paiement';
+  type: PDFHeaderType;
   reference: string;
+  /** Le titre du document dans une autre langue (« SHIPPING QUOTE ») ; le français sinon. */
+  label?: string;
 }
 
-export function PDFHeader({ type, reference }: PDFHeaderProps) {
-  const typeLabel = type === 'depot' ? 'REÇU DE DÉPÔT' : 'REÇU DE PAIEMENT';
+export function PDFHeader({ type, reference, label }: PDFHeaderProps) {
+  const typeLabel = label ?? TYPE_LABEL[type];
 
   return (
     <View style={styles.container} fixed>

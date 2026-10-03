@@ -12,12 +12,16 @@
  *
  * Rien sous 16 px, texte foncé, aucune coupure.
  */
+import { toast } from 'sonner';
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
+import { useShipmentParcels } from '@/hooks/useReception';
+import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
+import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { DossierActions } from '@/components/cargo/dossier';
 import { MobilePapiers } from './MobilePapiers';
 import { MobileDouane } from './MobileDouane';
@@ -191,12 +195,41 @@ function Money({ s, canManage }: { s: CargoShipment; canManage: boolean }) {
   );
 }
 
-function Inside({ s, onOpen3D }: { s: CargoShipment; onOpen3D: () => void }) {
+function Inside({ s, onOpen3D, canManage }: { s: CargoShipment; onOpen3D: () => void; canManage: boolean }) {
+  const navigate = useNavigate();
+  const { data: loaded } = useShipmentParcels(s.id);
+  const parcels = loaded ?? [];
+  const kg = parcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0);
+  const cbm = parcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0);
+  const deposits = [...new Set(parcels.map((p) => p.deposit_no))];
   return (
     <div className="space-y-3">
       <Line strong>{contentSentence(s)}.</Line>
       <Line>Boîte de type <b>{s.container_iso === '45G1' ? "40 pieds High Cube" : s.container_iso ?? 'inconnu'}</b>.</Line>
-      <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
+      {/* Les colis reçus à l'entrepôt et chargés ici : ils suivent la boîte. */}
+      {parcels.length > 0 ? (
+        <div className={cn('rounded-lg p-3', SURFACE.inset)}>
+          <Line strong>{parcels.length} colis reçus à l'entrepôt sont dans cette boîte — {formatKg(kg)}, {formatCbm(cbm)}.</Line>
+          <Line>{deposits.length > 1 ? `${deposits.length} dépôts` : `Dépôt ${deposits[0]}`}{parcels[0]?.client ? ` · ${clientFullName(parcels[0].client)}` : ''}.</Line>
+          <ul className="mt-2 space-y-1">
+            {parcels.slice(0, 5).map((p) => (
+              <li key={p.id} className={cn('flex items-baseline gap-2 text-[16px]', TEXT.strong)}>
+                <span className={cn('shrink-0 tabular-nums', TEXT.muted)}>{p.parcel_no}</span>
+                <span className="min-w-0 flex-1 truncate">{p.description ?? p.kind}</span>
+                <span className={cn('shrink-0 tabular-nums', TEXT.muted)}>{formatKg(p.weight_kg)}</span>
+              </li>
+            ))}
+            {parcels.length > 5 && <li className={cn('text-[16px]', TEXT.muted)}>… et {parcels.length - 5} autres</li>}
+          </ul>
+        </div>
+      ) : (
+        <Line>Aucun colis reçu à l'entrepôt n'a encore été chargé dans cette boîte.</Line>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {canManage && <Button variant="primary" onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</Button>}
+        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaManifestPdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))}>Manifeste (PDF)</Button>}
+        <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
+      </div>
     </div>
   );
 }
@@ -226,7 +259,7 @@ export function MobileCargoDossier() {
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
     { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
     { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },
-    { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} /> },
+    { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} canManage={canManage} /> },
     { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <MobileChargement shipment={x} canManage={canManage} /> },
     { key: 'client', title: 'Le client', summary: (x) => x.client_id ? `${x.client_label}, rattaché à sa fiche` : `${x.client_label}, pas encore rattaché à une fiche`, body: (x) => <MobileClient shipment={x} canManage={canManage} /> },
     { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté', body: (x) => <MobileCouts shipment={x} canManage={canManage} /> },

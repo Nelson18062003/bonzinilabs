@@ -17,6 +17,10 @@ async function getCurrentUser() {
 
 /** Types écrits par les RPC (cf. migrations) — les inconnus retombent sur « bell ». */
 export type NotificationType =
+  // Cargo : du devis au retrait (phases 1–5)
+  | 'parcel_quote_sent' | 'parcel_payment_received' | 'parcel_invoice_issued' | 'parcel_departed' | 'parcel_arrived' | 'parcel_ready' | 'parcel_released'
+  // Douane : le commissionnaire agréé a signé, demande une précision, ou a relu une DAU
+  | 'customs_classification_signed' | 'customs_classification_needs_info' | 'customs_audit_reviewed' | 'customs_notice' | 'customs_supplier_document'
   | 'deposit_validated'
   | 'deposit_rejected'
   | 'deposit_correction_needed'
@@ -43,6 +47,11 @@ export interface Notification {
     amount_xaf?: number;
     new_balance?: number;
     reason?: string;
+    /** Douane : la fiche de classement ou l'audit concerné. */
+    classification_id?: string;
+    audit_id?: string;
+    /** Veille douane : l'avis concerné. */
+    slug?: string;
   };
   is_read: boolean;
   created_at: string;
@@ -125,7 +134,13 @@ export function getNotificationStyle(type: NotificationType) {
     case 'deposit_validated':
     case 'payment_completed':
     case 'kyc_approved':
+    case 'parcel_payment_received':
+    case 'parcel_invoice_issued':
+    case 'parcel_released':
       return { icon: 'check-circle', color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' };
+    case 'parcel_ready':
+      // Une action attendue du client : venir chercher ses colis (et solder, s'il reste à payer).
+      return { icon: 'alert-circle', color: 'text-amber-500', bgColor: 'bg-amber-500/10' };
     case 'deposit_rejected':
     case 'payment_rejected':
       return { icon: 'x-circle', color: 'text-red-500', bgColor: 'bg-red-500/10' };
@@ -142,5 +157,10 @@ export function getNotificationPath(notification: Notification): string {
   const { type, metadata } = notification;
   if (type.startsWith('deposit_') && metadata.deposit_id) return `/deposits/${metadata.deposit_id}`;
   if ((type.startsWith('payment_') || type === 'cash_payment_ready') && metadata.payment_id) return `/payments/${metadata.payment_id}`;
+  // Douane : la fiche signée ou la question du commissionnaire ; l'audit relu.
+  if (type.startsWith('customs_classification_') && metadata.classification_id) return `/douane/classer/${metadata.classification_id}`;
+  if (type.startsWith('customs_audit_') && metadata.audit_id) return `/douane/audit/${metadata.audit_id}`;
+  if (type === 'customs_supplier_document') return '/douane/fournisseurs';
+  if (type === 'customs_notice') return metadata.slug ? `/douane/veille#${metadata.slug}` : '/douane/veille';
   return '/notifications';
 }

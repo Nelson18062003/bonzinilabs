@@ -16,6 +16,7 @@ import { queryClient } from "@/lib/queryClient";
 // Auth (eagerly loaded — needed for route guard)
 import { AuthProvider } from "./contexts/AuthContext";
 import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import { NativeAppBridge } from "./components/NativeAppBridge";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRouteWrapper } from "./desktop/components/AdminRouteWrapper";
 import { AdminRealtimeListener, ClientRealtimeListener } from "./hooks/useRealtimeInvalidation";
@@ -40,6 +41,20 @@ const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const BeneficiariesPage = lazy(() => import("./pages/BeneficiariesPage"));
 const ClientRatesPage = lazy(() => import("./pages/rates/ClientRatesPage").then(m => ({ default: m.ClientRatesPage })));
+// Douane (docs/douane/00-plan.md) — public côté client, comme le simulateur de Flexport.
+const CustomsHomePage = lazy(() => import("./pages/customs/CustomsHomePage").then(m => ({ default: m.CustomsHomePage })));
+const TariffSimulatorPage = lazy(() => import("./pages/customs/TariffSimulatorPage").then(m => ({ default: m.TariffSimulatorPage })));
+const ClassifyHomePage = lazy(() => import("./pages/customs/ClassifyHomePage").then(m => ({ default: m.ClassifyHomePage })));
+const ClassificationPage = lazy(() => import("./pages/customs/ClassificationPage").then(m => ({ default: m.ClassificationPage })));
+const CustomsReviewPage = lazy(() => import("./pages/customs/ReviewPage").then(m => ({ default: m.ReviewPage })));
+const AuditHomePage = lazy(() => import("./pages/customs/AuditHomePage").then(m => ({ default: m.AuditHomePage })));
+const AuditPage = lazy(() => import("./pages/customs/AuditPage").then(m => ({ default: m.AuditPage })));
+const AuditReviewPage = lazy(() => import("./pages/customs/AuditReviewPage").then(m => ({ default: m.AuditReviewPage })));
+const NoticesPage = lazy(() => import("./pages/customs/NoticesPage").then(m => ({ default: m.NoticesPage })));
+const SuppliersPage = lazy(() => import("./pages/customs/SuppliersPage").then(m => ({ default: m.SuppliersPage })));
+const SupplierUploadPage = lazy(() => import("./pages/customs/SupplierUploadPage").then(m => ({ default: m.SupplierUploadPage })));
+const RoutesPage = lazy(() => import("./pages/customs/RoutesPage").then(m => ({ default: m.RoutesPage })));
+const CustomsSpacePage = lazy(() => import("./pages/customs/site/MySpacePage").then(m => ({ default: m.MySpacePage })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const SupportListPage = lazy(() => import("./pages/SupportListPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -74,6 +89,7 @@ const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileClientScan = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientScan })));
 const MyCodePage = lazy(() => import("./pages/MyCodePage"));
+const PaymentDetailsPage = lazy(() => import("./pages/PaymentDetailsPage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
@@ -81,6 +97,7 @@ const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
 const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
+const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesMarketScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
@@ -91,7 +108,10 @@ const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then
 const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
 const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
+// Importé à part (pas par le barrel « more ») : il embarque le moteur PDF, les autres écrans n'en ont pas besoin.
+const MobilePaymentDetailsScreen = lazy(() => import("./mobile/screens/more/MobilePaymentDetailsScreen").then(m => ({ default: m.MobilePaymentDetailsScreen })));
 const MobileShippingSettings = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileShippingSettings })));
+const MobileCargoPricing = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileCargoPricing })));
 const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobilePasskeysScreen })));
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
@@ -113,12 +133,25 @@ const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").th
 const MobileCargoScreen = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoScreen })));
 const DesktopCargoScreen = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoScreen })));
 const MobileCargoDossier = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDossier })));
+const MobileCargoReception = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoReception })));
+const MobileCargoDepositDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDepositDetail })));
+const MobileCargoLoadParcels = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoLoadParcels })));
+const MobileCargoQuote = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoQuote })));
+const MobileCargoAir = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAir })));
+const MobileCargoAirForm = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirForm })));
+const MobileCargoAirDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirDetail })));
+const MobileCargoAirLoad = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirLoad })));
+const MobileCargoAccounts = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAccounts })));
+const MobileCargoAccount = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAccount })));
+const DesktopCargoAir = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoAir })));
+const MobileClientParcels = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcels })));
 const MobileCargoTrack = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoTrack })));
 const MobileCargoMap = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoMap })));
 const MobileCargoCout = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoCout })));
 const DesktopCargoTrack = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoTrack })));
 const DesktopCargoMap = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoMap })));
 const DesktopCargoDossier = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoDossier })));
+const DesktopCargoReception = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoReception })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
 const DesktopBalanceDashboard = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopBalanceDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
@@ -142,6 +175,36 @@ const AgentCashScanner = lazy(() => import("./mobile/screens/agent-cash").then(m
 const AgentCashPaymentDetail = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashPaymentDetail })));
 const AgentCashConfirm = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashConfirm })));
 const AgentCashSuccess = lazy(() => import("./mobile/screens/agent-cash").then(m => ({ default: m.AgentCashSuccess })));
+
+// ── Lazy-loaded Reception Screens (réceptionnaire, /r) ──────
+import { ReceptionRouteWrapper } from "./mobile/components/reception/ReceptionRouteWrapper";
+import { WarehouseRouteWrapper } from "./mobile/components/warehouse/WarehouseRouteWrapper";
+const ReceptionLogin = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionLogin })));
+const ReceptionHome = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionHome })));
+const ReceptionIdentify = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionIdentify })));
+const ReceptionSearch = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSearch })));
+const ReceptionBroughtBy = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionBroughtBy })));
+const ReceptionNewClient = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionNewClient })));
+const ReceptionSupplier = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionSupplier })));
+const ReceptionDeposit = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDeposit })));
+const ReceptionParcel = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionParcel })));
+const ReceptionDone = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionDone })));
+const ReceptionPending = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPending })));
+const ReceptionClients = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClients })));
+const ReceptionClientCard = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClientCard })));
+const WarehouseLogin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseLogin })));
+const WarehouseHome = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHome })));
+const WarehouseArrivals = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseArrivals })));
+const WarehouseCheckin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckin })));
+const WarehouseCheckinParcel = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckinParcel })));
+const WarehouseCheckinDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseCheckinDone })));
+const WarehousePickup = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickup })));
+const WarehouseWaiting = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseWaiting })));
+const WarehousePickupClient = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePickupClient })));
+const WarehousePay = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehousePay })));
+const WarehouseHandover = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHandover })));
+const WarehouseSign = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseSign })));
+const WarehouseReleaseDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseReleaseDone })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -181,6 +244,7 @@ const App = () => (
             <ClientRealtimeListener />
             <AdminAuthProvider>
             <AdminRealtimeListener />
+            <NativeAppBridge />
             <KeyboardFocusManager />
               <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -200,6 +264,23 @@ const App = () => (
                 <Route path="/confidentialite" element={<PrivacyPage />} />
                 <Route path="/conditions" element={<TermsPage />} />
 
+                {/* Douane — public : un lien de simulation partagé s'ouvre sans compte. */}
+                <Route path="/douane" element={<CustomsHomePage />} />
+                <Route path="/douane/simulateur" element={<TariffSimulatorPage />} />
+                {/* La veille : publique, comme le simulateur. */}
+                <Route path="/douane/veille" element={<NoticesPage />} />
+                <Route path="/douane/routes" element={<RoutesPage />} />
+                <Route path="/douane/espace" element={<ProtectedRoute><CustomsSpacePage /></ProtectedRoute>} />
+                {/* Classer un produit : l'IA propose, le commissionnaire agréé signe (compte requis). */}
+                <Route path="/douane/classer" element={<ProtectedRoute><ClassifyHomePage /></ProtectedRoute>} />
+                <Route path="/douane/classer/:id" element={<ProtectedRoute><ClassificationPage /></ProtectedRoute>} />
+                {/* Vérifier une déclaration (DAU) : l'IA lit, le moteur recalcule, le CAD rend l'avis. */}
+                <Route path="/douane/audit" element={<ProtectedRoute><AuditHomePage /></ProtectedRoute>} />
+                <Route path="/douane/audit/:id" element={<ProtectedRoute><AuditPage /></ProtectedRoute>} />
+                {/* Les fournisseurs : le client invite ; le fournisseur dépose par un lien, sans compte. */}
+                <Route path="/douane/fournisseurs" element={<ProtectedRoute><SuppliersPage /></ProtectedRoute>} />
+                <Route path="/f/:token" element={<SupplierUploadPage />} />
+
                 {/* Protected Client Routes */}
                 <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
                 <Route path="/deposits" element={<ProtectedRoute><DepositsPage /></ProtectedRoute>} />
@@ -212,6 +293,8 @@ const App = () => (
                 <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 <Route path="/my-code" element={<ProtectedRoute><MyCodePage /></ProtectedRoute>} />
+                {/* Nos banques et nos numéros Mobile Money : à copier, ou en PDF / images. */}
+                <Route path="/payment-details" element={<ProtectedRoute><PaymentDetailsPage /></ProtectedRoute>} />
                 {/* Cible du QR code client (https://bonzinilabs.com/c/BZ-…) : un
                     scan depuis l'appareil photo du téléphone ouvre la fiche du
                     client dans l'app admin. */}
@@ -243,9 +326,11 @@ const App = () => (
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
                 <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
@@ -253,7 +338,9 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
+                <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
                 <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
@@ -271,6 +358,24 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
+                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><RoutesPage variant="admin" /></AdminRouteWrapper>} />
+                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId/charger" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirLoad /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/avion/:airId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoAir />}><MobileCargoAirDetail /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/comptes" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/comptes/:accountId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoAccount /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception" element={<AdminRouteWrapper desktop={<DesktopCargoReception />}><MobileCargoReception /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId/devis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoQuote /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoDepositDetail /></AdminRouteWrapper>} />
+                {/* Sur desktop, le chargement se fait dans l'onglet Chargement du dossier (dialogue) : la route mobile y renvoie. */}
+                <Route path="/m/cargo/:shipmentId/charger-colis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoLoadParcels /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId/:tab" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />
@@ -304,6 +409,36 @@ const App = () => (
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />
+
+                {/* Réception des colis (réceptionnaire) */}
+                <Route path="/r/login" element={<ReceptionRouteWrapper requireAuth={false} showTabBar={false}><ReceptionLogin /></ReceptionRouteWrapper>} />
+                <Route path="/r" element={<ReceptionRouteWrapper><ReceptionHome /></ReceptionRouteWrapper>} />
+                <Route path="/r/new" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionIdentify /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/search" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSearch /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/how" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionBroughtBy /></ReceptionRouteWrapper>} />
+                <Route path="/r/new/client" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionNewClient /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDeposit /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/supplier" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSupplier /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/parcel" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/parcel/:parcelId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />
+                <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
+                <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
+                <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionClientCard /></ReceptionRouteWrapper>} />
+                {/* ── Entrepôt de Douala (« /w ») : pointer, remettre ── */}
+                <Route path="/w/login" element={<WarehouseRouteWrapper requireAuth={false} showTabBar={false}><WarehouseLogin /></WarehouseRouteWrapper>} />
+                <Route path="/w" element={<WarehouseRouteWrapper><WarehouseHome /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees" element={<WarehouseRouteWrapper><WarehouseArrivals /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckin /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id/colis/:parcelId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinParcel /></WarehouseRouteWrapper>} />
+                <Route path="/w/arrivees/:kind/:id/bilan" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinDone /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise" element={<WarehouseRouteWrapper><WarehousePickup /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/liste" element={<WarehouseRouteWrapper><WarehouseWaiting /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePickupClient /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/encaisser" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePay /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/qui" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseHandover /></WarehouseRouteWrapper>} />
+                <Route path="/w/remise/:code/signature" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseSign /></WarehouseRouteWrapper>} />
+                <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

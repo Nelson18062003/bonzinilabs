@@ -9,11 +9,9 @@
  * qui parle en jours civils de Douala (UTC+1, sans heure d'été) : un
  * « 30 derniers jours » commence à minuit Douala, pas à minuit du poste.
  *
- * `prepareStatement` est PURE : elle reçoit des mouvements déjà mappés (dans
- * n'importe quel ordre), garde ceux de la période, et calcule les soldes.
- * C'est elle qui est testée ; les écrans ne font que lui passer des données.
+ * Le document lui-même (lignes, soldes d'ouverture et de clôture, totaux,
+ * taux et montants ¥) : lib/accountStatement.ts.
  */
-import type { StatementMovement } from '@/lib/pdf/templates/ClientStatementPDF';
 import {
   BONZINI_EPOCH,
   BUSINESS_TZ,
@@ -170,61 +168,4 @@ export function statementPeriodLabel(range: StatementRange, lang?: string): stri
   return l === 'en' ? `From ${from} to ${to}`
     : l === 'zh' ? `${from} 至 ${to}`
     : `Du ${from} au ${to}`;
-}
-
-// ─── Préparation (pure) ───────────────────────────────────────────────────────
-
-export interface PrepareStatementInput {
-  /** Mouvements déjà mappés et filtrés, dans n'importe quel ordre. */
-  movements: StatementMovement[];
-  range: { from: Date; to: Date };
-  /** `true` : on ignore les bornes et on garde tout. */
-  allTime: boolean;
-  /**
-   * `balance_after` de la dernière écriture AVANT la période — utilisé
-   * quand la période n'a aucun mouvement (sinon l'ouverture se lit sur la
-   * première ligne). Absent → 0.
-   */
-  lastBalanceBeforeRange?: number | null;
-}
-
-export interface PreparedStatement {
-  /** Triés du plus ancien au plus récent, bornés à la période. */
-  movements: StatementMovement[];
-  openingBalance: number;
-  closingBalance: number;
-  totalCredits: number;
-  totalDebits: number;
-}
-
-const time = (m: StatementMovement) => new Date(m.date).getTime();
-
-export function prepareStatement({
-  movements,
-  range,
-  allTime,
-  lastBalanceBeforeRange,
-}: PrepareStatementInput): PreparedStatement {
-  const fromMs = range.from.getTime();
-  const toMs = range.to.getTime();
-
-  const kept = movements
-    .filter((m) => {
-      if (allTime) return true;
-      const t = time(m);
-      return t >= fromMs && t <= toMs;
-    })
-    .sort((a, b) => time(a) - time(b));
-
-  const openingBalance = kept.length > 0
-    ? kept[0].soldeAvant
-    : (lastBalanceBeforeRange ?? 0);
-  const closingBalance = kept.length > 0
-    ? kept[kept.length - 1].solde
-    : openingBalance;
-
-  const totalCredits = kept.reduce((s, m) => s + m.credit, 0);
-  const totalDebits = kept.reduce((s, m) => s + m.debit, 0);
-
-  return { movements: kept, openingBalance, closingBalance, totalCredits, totalDebits };
 }

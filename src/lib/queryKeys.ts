@@ -72,3 +72,17 @@ export const dashboardKeys = {
   all: ['dashboard'] as const,
   stats: () => [...dashboardKeys.all, 'stats'] as const,
 };
+
+/** Module Douane (docs/douane/00-plan.md). */
+export const customsKeys = {
+  all: ['customs'] as const,
+  nomenclature: (version: number) => [...customsKeys.all, 'nomenclature', version] as const,
+  myFiles: () => [...customsKeys.all, 'my-files'] as const,
+  classification: (id: string | undefined) => [...customsKeys.all, 'classification', id] as const,
+  queue: () => [...customsKeys.all, 'queue'] as const,
+  audit: (id: string | undefined) => [...customsKeys.all, 'audit', id] as const,
+  notices: (scope: 'public' | 'admin') => [...customsKeys.all, 'notices', scope] as const,
+  invites: () => [...customsKeys.all, 'invites'] as const,
+  supplierInvite: (token: string | undefined) => [...customsKeys.all, 'supplier-invite', token] as const,
+  observedTransit: (scope: 'public' | 'admin') => [...customsKeys.all, 'observed-transit', scope] as const,
+};

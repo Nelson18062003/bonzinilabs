@@ -25,11 +25,25 @@ export function labelFileName(code: string, destination: ShippingDestination, ex
   return `bonzini-etiquette-${DESTINATION_SLUG[destination]}-${code}.${ext}`;
 }
 
+/**
+ * Sur un ordinateur, on TÉLÉCHARGE : la feuille de partage de Windows ou de
+ * macOS n'a pas d'« Enregistrer ». Sur téléphone et tablette, feuille de
+ * partage (WhatsApp, e-mail, Photos, Fichiers…). On regarde le pointeur
+ * PRINCIPAL (un PC portable à écran tactile garde son pavé tactile, donc
+ * reste un ordinateur) et le système (un iPad annonce « Macintosh »).
+ */
+export function prefersDownload(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const mobileOs = /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && (navigator.maxTouchPoints ?? 0) > 1);
+  return !mobileOs && window.matchMedia('(pointer: fine)').matches;
+}
+
 export function canShareFiles(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof File !== 'undefined';
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob a échoué'))), 'image/png'));
 }
 
@@ -59,6 +73,45 @@ export function downloadFile(file: File): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+/**
+ * La feuille de partage a été refermée (AbortError), ou une autre est déjà
+ * ouverte (InvalidStateError, un double toucher) : ni l'un ni l'autre n'est
+ * un échec, et ni l'un ni l'autre ne doit déclencher de téléchargement.
+ */
+function shareWasHandled(err: unknown): boolean {
+  return err instanceof DOMException && (err.name === 'AbortError' || err.name === 'InvalidStateError');
+}
+
+/** Plusieurs téléchargements, espacés pour que le navigateur les accepte tous. */
+export async function downloadFiles(files: File[]): Promise<void> {
+  for (const [i, file] of files.entries()) {
+    if (i) await new Promise((r) => setTimeout(r, 350));
+    downloadFile(file);
+  }
+}
+
+/**
+ * Plusieurs fichiers d'un coup (les pages d'une fiche en images) : une seule
+ * feuille de partage si le téléphone sait partager plusieurs fichiers, sinon
+ * un téléchargement par fichier.
+ */
+export async function deliverFiles(files: File[], title: string): Promise<Outcome> {
+  if (files.length === 1) return deliverFile(files[0], title);
+  if (canShareFiles()) {
+    const payload = { files, title };
+    if (!navigator.canShare || navigator.canShare(payload)) {
+      try {
+        await navigator.share(payload);
+        return 'shared';
+      } catch (err) {
+        if (shareWasHandled(err)) return 'shared';
+      }
+    }
+  }
+  await downloadFiles(files);
+  return 'downloaded';
+}
+
 /** Partage natif si le navigateur sait partager CE fichier, sinon téléchargement. */
 export async function deliverFile(file: File, title: string): Promise<Outcome> {
   if (canShareFiles()) {
@@ -68,10 +121,47 @@ export async function deliverFile(file: File, title: string): Promise<Outcome> {
         await navigator.share(payload);
         return 'shared';
       } catch (err) {
-        // La personne a refermé la feuille de partage : ce n'est pas un échec.
-        if (err instanceof DOMException && err.name === 'AbortError') return 'shared';
+        // Feuille refermée, ou déjà ouverte par un premier toucher : ce n'est pas un échec.
+        if (shareWasHandled(err)) return 'shared';
         // Autre erreur (feuille indisponible) : on retombe sur le téléchargement.
       }
+    }
+  }
+  downloadFile(file);
+  return 'downloaded';
+}
+
+/**
+ * Le geste « donnez-moi le fichier » d'un écran à UN seul bouton : TÉLÉCHARGÉ
+ * sur ordinateur, feuille de partage sur téléphone. Sur un PC Windows, Chrome
+ * sait partager un fichier : deliverFile seul ouvrait le partage Windows au
+ * lieu de télécharger le devis. Un bouton « Partager » explicite garde
+ * deliverFile ; un bouton « Télécharger » explicite appelle downloadFile.
+ */
+export async function saveOrShareFile(file: File, title: string): Promise<Outcome> {
+  if (prefersDownload()) { downloadFile(file); return 'downloaded'; }
+  return deliverFile(file, title);
+}
+
+/**
+ * Une image DÉJÀ PRÊTE dans le presse-papiers — à coller dans WhatsApp,
+ * WeChat ou un e-mail. À appeler directement dans le toucher, sans rien
+ * attendre avant : Safari n'accepte l'écriture que dans le geste.
+ *   · 'copied' : l'image est dans le presse-papiers ;
+ *   · 'downloaded' : pas de presse-papiers pour les images ici (API absente,
+ *     permission refusée) — l'image est téléchargée à la place ;
+ *   · 'cancelled' : une autre écriture l'a remplacée (double toucher) — rien
+ *     à faire, surtout pas de téléchargement.
+ */
+export async function copyImageFile(file: File): Promise<CopyOutcome | 'cancelled'> {
+  const canWrite = typeof ClipboardItem !== 'undefined' && typeof navigator !== 'undefined' && !!navigator.clipboard?.write;
+  if (canWrite) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ [file.type || 'image/png']: file })]);
+      return 'copied';
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
+      // Permission refusée, page sans focus, type non pris en charge : l'image passe par le disque.
     }
   }
   downloadFile(file);

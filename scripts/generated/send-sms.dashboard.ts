@@ -324,6 +324,14 @@ const greetEn = (p: SmsPayload): string => {
 // combien et où en est son argent — pas un identifiant qu'il ne connaît pas.
 // La référence sert au support ; elle passe donc en dernier.
 
+
+// ── Cargo (phases 1–5) : les colis, du devis au retrait ──────────────────
+const count = (p: SmsPayload): string => { const n = Number(p.parcel_count); return Number.isFinite(n) && n > 0 ? `${n} colis` : "vos colis"; };
+const via = (p: SmsPayload): string => safeText(p.flight_no ?? p.container_number, 14, "en route");
+const who = (p: SmsPayload): string => safeText(p.picked_by_name, 18, "votre mandataire");
+const balanceFr = (p: SmsPayload): string => { const b = Number(p.balance_xaf); return Number.isFinite(b) && b > 0 ? ` Reste à payer: ${formatXaf(b)} XAF.` : " Devis entièrement réglé."; };
+const balanceEn = (p: SmsPayload): string => { const b = Number(p.balance_xaf); return Number.isFinite(b) && b > 0 ? ` Balance due: ${formatXaf(b)} XAF.` : " Quote fully paid."; };
+
 export type SmsTemplateFn = (payload: SmsPayload) => string;
 
 export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
@@ -398,6 +406,36 @@ export const SMS_TEMPLATES: Record<string, Record<SmsLocale, SmsTemplateFn>> = {
   cash_payment_ready: {
     fr: (p) => `${greetFr(p)}votre retrait Bonzini en espèces est disponible en agence. Présentez la référence: ${ref(p)}`,
     en: (p) => `${greetEn(p)}your Bonzini cash withdrawal is ready at the branch. Show this reference: ${ref(p)}`,
+  },
+  // ── Cargo : les colis, du devis au retrait à Douala ──────────────────────
+  // Pas de « ô », « ç », « ê » (hors GSM-7) : on écrit « colis », « recu », « disponibles ».
+  parcel_quote_sent: {
+    fr: (p) => `${greetFr(p)}votre devis Bonzini de ${formatXaf(p.amount_xaf)} XAF pour ${count(p)} est disponible. Réglable avant le départ ou au retrait à Douala. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}your Bonzini quote of ${formatXaf(p.amount_xaf)} XAF for ${count(p)} is ready. Pay before departure or at pickup in Douala. Ref: ${ref(p)}`,
+  },
+  parcel_payment_received: {
+    fr: (p) => `${greetFr(p)}Bonzini a bien recu ${formatXaf(p.amount_xaf)} XAF pour vos colis.${balanceFr(p)} Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}Bonzini received ${formatXaf(p.amount_xaf)} XAF for your parcels.${balanceEn(p)} Ref: ${ref(p)}`,
+  },
+  parcel_invoice_issued: {
+    fr: (p) => `${greetFr(p)}${count(p)} entièrement réglés: ${formatXaf(p.amount_xaf)} XAF. Votre facture acquittée Bonzini est disponible. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}${count(p)} fully paid: ${formatXaf(p.amount_xaf)} XAF. Your Bonzini paid invoice is available. Ref: ${ref(p)}`,
+  },
+  parcel_departed: {
+    fr: (p) => `${greetFr(p)}${count(p)} Bonzini ont quitté la Chine (${via(p)}). Nous vous prévenons à l'arrivée à Douala. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}${count(p)} left China with Bonzini (${via(p)}). We will let you know when they arrive in Douala. Ref: ${ref(p)}`,
+  },
+  parcel_arrived: {
+    fr: (p) => `${greetFr(p)}${count(p)} sont arrivés chez Bonzini à Douala. Nous vous prévenons dès qu'ils sont disponibles au retrait. Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}${count(p)} arrived at Bonzini in Douala. We will let you know as soon as they are ready for pickup. Ref: ${ref(p)}`,
+  },
+  parcel_ready: {
+    fr: (p) => `${greetFr(p)}${count(p)} vous attendent chez Bonzini à Douala. Présentez votre code client.${balanceFr(p)} Ref: ${ref(p)}`,
+    en: (p) => `${greetEn(p)}${count(p)} are waiting for you at Bonzini in Douala. Show your customer code.${balanceEn(p)} Ref: ${ref(p)}`,
+  },
+  parcel_released: {
+    fr: (p) => `${greetFr(p)}${count(p)} remis à ${who(p)} à Douala. Bon de retrait Bonzini: ${ref(p)}. Merci de votre confiance.`,
+    en: (p) => `${greetEn(p)}${count(p)} handed to ${who(p)} in Douala. Bonzini release note: ${ref(p)}. Thank you for your trust.`,
   },
 };
 

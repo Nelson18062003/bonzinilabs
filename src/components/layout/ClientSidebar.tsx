@@ -13,6 +13,7 @@ import {
   User,
   Bell,
   LogOut,
+  Landmark,
 } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +21,7 @@ const navItems = [
   { to: '/deposits', icon: ArrowDownToLine, label: 'nav.deposits' },
   { to: '/payments', icon: Send, label: 'nav.payments' },
   { to: '/history', icon: History, label: 'nav.history' },
+  { to: '/douane', icon: Landmark, label: 'nav.customs' },
   { to: '/notifications', icon: Bell, label: 'nav.notifications' },
   { to: '/profile', icon: User, label: 'nav.profile' },
 ];

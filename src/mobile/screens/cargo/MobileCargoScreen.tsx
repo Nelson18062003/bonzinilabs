@@ -1,5 +1,7 @@
 /**
- * Mobile admin — Cargo : ce qui brûle, en quatre lignes par conteneur.
+ * Mobile admin — Cargo › Container : ce qui brûle, en quatre lignes par conteneur.
+ * (L'autre partie du module, la Réception des colis, vit à /m/cargo/reception ;
+ * le sélecteur en haut passe de l'une à l'autre.)
  *
  * Pour quelqu'un de 50–60 ans, debout, au soleil (05-simplicite.md) :
  * rien sous 16 px, texte foncé, aucune coupure, une idée par ligne —
@@ -13,6 +15,8 @@ import { useMemo, useState } from 'react';
 import { QueryError } from '@/components/ui/QueryError';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
+import { MobileCargoParts } from '@/components/cargo/CargoParts';
+import { DisruptionStrip } from '@/components/cargo/DisruptionStrip';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
@@ -75,6 +79,12 @@ export function MobileCargoScreen() {
           </>
         }
       />
+
+      {/* Les deux parties du module : Container (ici) · Réception. */}
+      <MobileCargoParts active="container" />
+
+      {/* La veille douane : congés en Chine, port, corridor — ce qui touche la flotte. */}
+      <DisruptionStrip shipments={all} />
 
       {/* Les filtres : gros, à 40 px, avec le compte dans le mot. */}
       <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pt-3">

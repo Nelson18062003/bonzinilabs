@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAdminAuth, ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
-import { Palette, Fingerprint, ChevronRight, Lock, Warehouse } from 'lucide-react';
+import { Palette, Fingerprint, ChevronRight, Lock, Warehouse, Scale, Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
+import { isNativeApp } from '@/lib/nativeApp';
 
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
@@ -66,6 +67,8 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
         <div>
           <SectionTitle>{t('security', { defaultValue: 'Sécurité' })}</SectionTitle>
           <Card>
+            {/* Dans l'app BONZINI HQ, Face ID / empreinte sont gérés par l'app : pas de clé d'accès (WebAuthn ne marche pas en WebView). */}
+            {!isNativeApp() && (<>
             <button
               type="button"
               onClick={() => navigate('/m/more/passkeys')}
@@ -86,6 +89,7 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
             </button>
 
             <div className="my-1 h-px bg-black/5 dark:bg-white/5" />
+            </>)}
 
             <button
               type="button"
@@ -127,6 +131,35 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
                 <p className={cn('text-[14px]', TEXT.muted)}>
                   {t('shippingSettingsRowHint', { defaultValue: 'Sea cargo (entrepôt), air cargo (bureau), téléphone, WeChat, WhatsApp, e-mail — imprimés sur l’étiquette colis' })}
                 </p>
+              </div>
+              <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/m/more/cargo-pricing')}
+              className={cn('flex w-full items-center gap-3 border-t py-1 pt-3 text-left', SURFACE.divider)}
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
+                <Scale className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Tarifs cargo</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>XAF au kilo (Air cargo), XAF au mètre cube (Sea cargo) — pré-remplissent chaque devis</p>
+              </div>
+              <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
+            </button>
+            {/* Nos coordonnées (banques et Mobile Money) : copiées, ou envoyées en PDF ou en image, sur leur propre page. */}
+            <button
+              type="button"
+              onClick={() => navigate('/m/more/payment-details')}
+              className={cn('flex w-full items-center gap-3 border-t py-1 pt-3 text-left', SURFACE.divider)}
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">
+                <Banknote className="h-[18px] w-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-[14px] font-semibold', TEXT.strong)}>Coordonnées de paiement</p>
+                <p className={cn('text-[14px]', TEXT.muted)}>Banques et Mobile Money, en français et en anglais : à copier, ou à envoyer en PDF ou en image, portrait ou paysage</p>
               </div>
               <ChevronRight className={cn('h-[18px] w-[18px] shrink-0', TEXT.muted)} />
             </button>

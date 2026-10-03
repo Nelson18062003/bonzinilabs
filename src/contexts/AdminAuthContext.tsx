@@ -5,7 +5,7 @@ import { authenticateWithPasskey } from '@/lib/passkey';
 import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -38,6 +38,21 @@ export interface RolePermission {
   canManageCargo: boolean;
   /** Autoriser un solde négatif (découvert) sur le portefeuille d'un client. Super admin seul. */
   canGrantOverdraft: boolean;
+  /** Réception des colis à Guangzhou : ouvrir un dépôt, enregistrer des colis (poids, dimensions, photo), l'attribuer à un client. */
+  canReceiveParcels: boolean;
+  /** Créer un client (le formulaire « Nouveau client ») — sans pouvoir le modifier ni voir son portefeuille. */
+  canRegisterClients: boolean;
+  /** Fixer le prix des colis reçus (au kilo, au m³ ou montant fixe) et émettre le devis. Le réceptionnaire ne l'a jamais. */
+  canPriceParcels: boolean;
+  canCollectParcelPayments: boolean;
+  canReceiveAtDestination: boolean;
+  canReleaseParcels: boolean;
+  /** Module Douane : voir les fiches de classement et les audits de déclaration des clients. */
+  canViewCustoms: boolean;
+  /** Signer un classement ou un avis d'audit : le commissionnaire agréé en douane SEUL (responsabilité professionnelle). */
+  canSignCustoms: boolean;
+  /** Piloter la douane : veille tarifaire, perturbations, suivi des fiches. */
+  canManageCustoms: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -57,6 +72,15 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: true,
     canGrantOverdraft: true,
+    canReceiveParcels: true,
+    canRegisterClients: true,
+    canPriceParcels: true,
+    canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
+    canViewCustoms: true,
+    canSignCustoms: false,
+    canManageCustoms: true,
   },
   ops: {
     canViewClients: true,
@@ -74,6 +98,15 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: true,
     canGrantOverdraft: false,
+    canReceiveParcels: true,
+    canRegisterClients: true,
+    canPriceParcels: true,
+    canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
+    canViewCustoms: true,
+    canSignCustoms: false,
+    canManageCustoms: true,
   },
   support: {
     canViewClients: true,
@@ -91,6 +124,15 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: true,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: true,
+    canSignCustoms: false,
+    canManageCustoms: false,
   },
   customer_success: {
     canViewClients: true,
@@ -108,6 +150,15 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: true,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: true,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: true,
+    canSignCustoms: false,
+    canManageCustoms: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -125,6 +176,15 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: false,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: false,
+    canSignCustoms: false,
+    canManageCustoms: false,
   },
   treasurer: {
     canViewClients: false,
@@ -142,6 +202,109 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCargo: false,
     canManageCargo: false,
     canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: false,
+    canSignCustoms: false,
+    canManageCustoms: false,
+  },
+  /**
+   * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
+   * la bonne étiquette sur le bon colis. Il cherche un client (identité
+   * seule), en crée un, enregistre des dépôts et des colis. Jamais un solde,
+   * un dépôt d'argent, un paiement, la trésorerie, les autres admins.
+   */
+  receptionist: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: true,
+    canRegisterClients: true,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: false,
+    canSignCustoms: false,
+    canManageCustoms: false,
+  },
+  /**
+   * Agent d'entrepôt (Douala) : le dernier maillon. Il pointe ce qui arrive,
+   * range, encaisse le reste à payer sur place, et remet les colis contre un
+   * bon de retrait signé. Rien d'autre de la plateforme.
+   */
+  warehouse_agent: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: true,
+    canReceiveAtDestination: true,
+    canReleaseParcels: true,
+    canViewCustoms: false,
+    canSignCustoms: false,
+    canManageCustoms: false,
+  },
+  /**
+   * Commissionnaire agréé en douane (CAD) : le seul qui SIGNE un code SH ou un
+   * avis d'audit. Il voit les fiches des clients et les déclarations à relire
+   * — rien de l'argent, rien des colis (code des douanes CEMAC, art. 149-153).
+   */
+  customs_broker: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: true,
+    canSignCustoms: true,
+    canManageCustoms: false,
   },
 };
 
@@ -152,6 +315,9 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   customer_success: 'Chargé de clientèle',
   cash_agent: 'Agent cash',
   treasurer: 'Trésorier',
+  receptionist: 'Réceptionnaire',
+  warehouse_agent: "Agent d'entrepôt",
+  customs_broker: 'Commissionnaire agréé (CAD)',
 };
 
 interface AdminAuthContextType {

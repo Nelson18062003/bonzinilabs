@@ -4,3 +4,4 @@ export { MobileCreateClient } from './MobileCreateClient';
 export { MobileClientLedger } from './MobileClientLedger';
 export { default as MobileClientBeneficiaries } from './MobileClientBeneficiaries';
 export { MobileClientScan } from './MobileClientScan';
+export { MobileClientParcels } from './MobileClientParcels';

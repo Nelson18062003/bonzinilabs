@@ -13,9 +13,9 @@ import { useCargoFleetDocuments } from '@/hooks/useCargo';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Map, { AttributionControl, Layer, Marker, NavigationControl, Popup, Source } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { FeatureCollection, LineString } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { paintWater } from './paintWater';
 import { useTheme } from 'next-themes';
 import { PORTS, WAX1_ROUTE, bestEta, fmtDay, fmtDayTime, fmtLatLng, liveVesselUrl, positionAge, statusMeta } from '@/lib/cargo/model';
 import type { CargoShipment, CargoVesselPosition, LatLng } from '@/lib/cargo/model';
@@ -31,24 +31,6 @@ export type { MapLayers };
 const STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/positron';
 const STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
 const toLngLat = (p: LatLng): [number, number] => [p[1], p[0]];
-
-/**
- * Le fond de carte livre un océan gris (positron : rgb(194,200,202) ; dark :
- * rgb(27,27,29)). Sur une carte maritime c'est presque tout l'écran, et c'est
- * ce qui rendait la carte éteinte. On repeint l'eau après le chargement du
- * style, plutôt que d'adopter un fond bariolé qui écraserait les marqueurs.
- */
-function paintWater(map: MapLibreMap, water: string) {
-  for (const layer of map.getStyle()?.layers ?? []) {
-    if (layer.type !== 'fill') continue;
-    if (!/water|ocean|sea/i.test(layer.id)) continue;
-    try {
-      map.setPaintProperty(layer.id, 'fill-color', water);
-    } catch {
-      // Une couche absente d'un style à l'autre ne doit pas casser la carte.
-    }
-  }
-}
 
 function line(coords: LatLng[], props: Record<string, unknown>): GeoJSON.Feature<LineString> {
   return { type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: coords.map(toLngLat) } };

@@ -27,6 +27,7 @@ const FILTER_OPTIONS: { value: LedgerEntryType | 'all'; label: string }[] = [
   { value: 'PAYMENT_RESERVED', label: 'Paiements' },
   { value: 'ADMIN_CREDIT', label: 'Ajouts' },
   { value: 'ADMIN_DEBIT', label: 'Retraits' },
+  { value: 'CARGO_FEES', label: 'Transport' },
 ];
 
 /** Le montant en couleur foncée : vert = entrée, ambre = réservé, rouge = sortie, encre = informatif. */

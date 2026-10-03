@@ -17,6 +17,7 @@ import { NumberField, TextField } from '@/components/form';
 import { useAddCargoPackage, useCargoPackages, useDeleteCargoPackage } from '@/hooks/useCargo';
 import { Empty, Fact, Facts, Section } from '@/components/cargo/dossier/kit';
 import { Container3D } from '@/components/cargo/Container3D';
+import { LoadedParcelsSection } from '@/components/cargo/reception/LoadedParcelsSection';
 import { buildLoadPlan, containerDims, lotColor, MAX_DISTINCT_LOTS } from '@/lib/cargo/loadplan';
 import type { CargoShipment } from '@/lib/cargo/model';
 import { cn } from '@/lib/utils';
@@ -109,6 +110,8 @@ export function TabChargement({ shipment: s, canManage }: { shipment: CargoShipm
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-4 max-lg:contents">
+        {/* Ce qui vient de la réception : les colis reçus à l'entrepôt, chargés dans cette boîte. */}
+        <LoadedParcelsSection shipment={s} canManage={canManage} className="max-lg:order-1" />
         <Section
           className="max-lg:order-2"
           title="Dans la boîte"

@@ -24,6 +24,7 @@ export default defineConfig(({ mode }) => ({
             "@/hooks/usePayments": path.resolve(__dirname, "./src/__screenshot__/mockPayments.ts"),
             "@/hooks/useClientManagement": path.resolve(__dirname, "./src/__screenshot__/mockClients.ts"),
             "@/hooks/useBeneficiaries": path.resolve(__dirname, "./src/__screenshot__/mockBeneficiaries.ts"),
+            "@/hooks/useBinanceP2PBook": path.resolve(__dirname, "./src/__screenshot__/mockBinanceP2PBook.ts"),
           }
         : {}),
       "@": path.resolve(__dirname, "./src"),

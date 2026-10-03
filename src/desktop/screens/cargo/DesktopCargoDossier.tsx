@@ -23,7 +23,7 @@ export function DesktopCargoDossier() {
         onClick={() => navigate('/m/cargo')}
         className={cn('mb-2 inline-flex items-center gap-1 text-[12px] font-semibold', TEXT.muted, 'hover:text-foreground')}
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Ma flotte
+        <ArrowLeft className="h-3.5 w-3.5" /> Container
       </button>
       <CargoDossier
         shipmentId={shipmentId}

@@ -9,6 +9,7 @@ import {
   PlusCircle,
   MinusCircle,
   Clock,
+  Truck,
 } from 'lucide-react';
 import type { LedgerEntryType } from '@/types/admin';
 import type { Tone } from '@/mobile/designKit';
@@ -29,6 +30,7 @@ export const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, {
   PAYMENT_CANCELLED_REFUNDED: { icon: RefreshCw, tone: 'success', prefix: '+', label: 'Paiement remboursé' },
   ADMIN_CREDIT: { icon: PlusCircle, tone: 'success', prefix: '+', label: 'Crédit admin' },
   ADMIN_DEBIT: { icon: MinusCircle, tone: 'danger', prefix: '-', label: 'Débit admin' },
+  CARGO_FEES: { icon: Truck, tone: 'danger', prefix: '-', label: 'Frais de transport' },
 };
 
 // Tone → amount text colour (matches the pill palette).

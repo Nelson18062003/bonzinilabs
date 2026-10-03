@@ -52,6 +52,9 @@ export function MobileAdminsScreen() {
     { value: 'super_admin', label: 'Super admin' },
     { value: 'ops', label: 'Opérations' },
     { value: 'cash_agent', label: 'Agent cash' },
+    { value: 'receptionist', label: 'Réceptionnaire' },
+    { value: 'warehouse_agent', label: "Agent d'entrepôt" },
+    { value: 'customs_broker', label: 'Commissionnaire agréé' },
   ];
 
   const statusOptions: { value: StatusFilter; label: string }[] = [

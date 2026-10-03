@@ -1,35 +1,47 @@
-// exportFlyer.ts — téléchargement du flyer « Taux du jour ».
+// exportFlyer.ts — l'image du flyer « Taux du jour ».
 //
-// Le fichier est rasterisé DEPUIS LE DOM du composant RateFlyer affiché à
-// l'écran (html-to-image) : l'aperçu et le fichier téléchargé sont le même
-// rendu, pixel pour pixel — impossible de diverger, aucune dépendance à
-// l'état de déploiement serveur. (L'edge function generate-flyer reste le
-// chemin de Mola pour l'envoi côté serveur ; à redéployer séparément.)
-//
-// Téléchargement via anchor click direct — iOS Safari 13+, Android, desktop.
+// L'image est rasterisée DEPUIS LE DOM du composant RateFlyer (html-to-image)
+// puis affichée telle quelle dans le panneau : ce qu'on voit, ce qu'on copie
+// et ce qu'on télécharge sont le même fichier, pixel pour pixel. Pas de PDF
+// (retiré le 25/09/2026 à la demande du fondateur : « ça ne sert à rien »).
+// L'edge function generate-flyer dessine le même flyer pour Mola et Telegram.
 import { captureNodePng, triggerDownload } from './nodeImage';
-import { jsPDF } from 'jspdf';
+import { flyerFileName, type FlyerLang } from './rateFlyer';
+import { flyerFontsLoaded, loadFlyerFonts } from './flyerFonts';
 
-// Taille naturelle du flyer (le nœud capturé doit être non transformé).
-export const FLYER_W = 2150;
-export const FLYER_H = 2560;
+// Taille naturelle du flyer (le nœud capturé doit être non transformé),
+// exportée au double : 2160×2700, net sur WhatsApp.
+export const FLYER_W = 1080;
+export const FLYER_H = 1350;
+const PIXEL_RATIO = 2;
 
-// `slug` = pays d'un flyer dérivé (« gabon ») ; absent pour la référence.
-function fileName(ext: string, slug?: string): string {
-  const date = new Date().toISOString().slice(0, 10);
-  return slug ? `bonzini_taux_${slug}_${date}.${ext}` : `bonzini_taux_${date}.${ext}`;
+/** Attend que les images du nœud (le drapeau) soient chargées : sinon elles manqueraient à la capture. */
+async function imagesReady(node: HTMLElement): Promise<void> {
+  await Promise.all([...node.querySelectorAll('img')].map((img) =>
+    img.complete && img.naturalWidth > 0 ? Promise.resolve() : img.decode().catch(() => undefined)));
 }
 
-async function capturePng(node: HTMLElement): Promise<string> {
-  // pixelRatio 1 : le nœud est déjà rendu en taille naturelle 2150×2560.
-  return captureNodePng(node, { width: FLYER_W, height: FLYER_H, pixelRatio: 1 });
-}
+/** Deux images : le navigateur a recalculé la mise en page avec la police chargée. */
+const nextFrames = () => new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 
-// ── API publique ──────────────────────────────────────────────────────────
-// `node` = racine NON transformée du RateFlyer rendu (cf. RateFlyerSheet).
-
-export async function downloadFlyerPNG(node: HTMLElement, slug?: string): Promise<void> {
-  triggerDownload(await capturePng(node), fileName('png', slug));
+/**
+ * Le flyer en fichier PNG (2160×2700). `node` = racine NON transformée du
+ * RateFlyer rendu (cf. RateFlyerSheet) ; `countryKey` = pays du flyer
+ * (« gabon ») et `lang` sa langue, dans le nom du fichier.
+ *
+ * La police est celle de lib/flyerFonts.ts, chargée dans la page ET remise à
+ * la capture : l'image a toujours la mise en page de l'écran (voir le bug du
+ * « flyer cassé » décrit là-bas). Police absente = erreur, jamais une image
+ * dans une autre police.
+ */
+export async function flyerPngFile(node: HTMLElement, countryKey: string, lang: FlyerLang = 'fr'): Promise<File> {
+  const fontEmbedCSS = await loadFlyerFonts();
+  await imagesReady(node);
+  await nextFrames();
+  if (!flyerFontsLoaded()) throw new Error('Police du flyer indisponible');
+  const dataUrl = await captureNodePng(node, { width: FLYER_W, height: FLYER_H, pixelRatio: PIXEL_RATIO, fontEmbedCSS, webkitWarmup: true });
+  const blob = await (await fetch(dataUrl)).blob();
+  return new File([blob], flyerFileName(countryKey, 'png', new Date(), lang), { type: 'image/png' });
 }
 
 // Capture générique d'un nœud NON transformé en taille naturelle — même
@@ -40,13 +52,8 @@ export async function downloadNodePNG(
   width: number,
   height: number,
   name: string,
+  /** CSS @font-face ajoutée à celle collectée (la police du flyer, sans réseau). */
+  extraFontCSS = '',
 ): Promise<void> {
-  triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1 }), name);
-}
-
-export async function downloadFlyerPDF(node: HTMLElement, slug?: string): Promise<void> {
-  const dataUrl = await capturePng(node);
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [FLYER_W, FLYER_H] });
-  pdf.addImage(dataUrl, 'PNG', 0, 0, FLYER_W, FLYER_H, undefined, 'FAST');
-  pdf.save(fileName('pdf', slug));
+  triggerDownload(await captureNodePng(node, { width, height, pixelRatio: 1, extraFontCSS, webkitWarmup: true }), name);
 }

@@ -26,18 +26,18 @@ import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { formatXAF, formatCurrency, formatDate } from '@/lib/formatters';
-import {
-  generateStatementForRange,
-  buildMovementFromLedgerEntry,
-  shouldIncludeLedgerEntry,
-} from '@/lib/generateClientStatement';
+import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
+import { downloadAccountStatement } from '@/lib/accountStatementData';
 import { ENTRY_TYPE_CONFIG, AMOUNT_TONE } from '@/lib/ledgerDisplay';
-import { normalizePhone } from '@/lib/phone';
 import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
-import { useClientPhones } from '@/hooks/useClientPhones';
+import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
+import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
+import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
+import { useClientDeposits } from '@/hooks/useReception';
+import { depositStage, formatCbm, formatKg } from '@/lib/reception';
+import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
-import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
 import { AmountField, TextArea } from '@/components/form';
@@ -221,6 +221,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { data: ledgerTotal } = useClientLedgerCount(clientId);
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
+  const { data: clientDeposits } = useClientDeposits(clientId, hasPermission('canViewCargo'));
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
 
@@ -251,7 +252,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [adjustmentType, setAdjustmentType] = useState<AdjustmentType | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    firstName: '', lastName: '', phone: '', email: '', companyName: '', country: '', city: '',
+    firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
   });
   const [resetOpen, setResetOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -282,12 +283,15 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
 
   const close = () => navigate('/m/clients');
 
+  const phonesEditor = useClientPhonesEditor();
+  const setPhones = useSetClientPhones();
+
   const openEdit = () => {
     if (!client) return;
+    phonesEditor.reset(clientPhones, client.phone, client.country);
     setEditForm({
       firstName: client.firstName,
       lastName: client.lastName,
-      phone: client.phone,
       email: client.email,
       companyName: client.companyName,
       country: client.country,
@@ -299,22 +303,29 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const saveEdit = async () => {
     // Le garde isPending compte : ⌘⏎ (onConfirm du CenterDialog) peut
     // relancer la mutation pendant qu'elle est en vol.
-    if (!client || updateClient.isPending) return;
+    if (!client || updateClient.isPending || setPhones.isPending) return;
     // Un numéro invalide met phone_e164 à NULL côté DB : le client cesse
     // silencieusement de recevoir ses SMS. On bloque ici.
-    const phone = editForm.phone.trim();
-    if (phone !== '' && !normalizePhone(phone)) {
-      toast.error('Numéro invalide', {
+    if (phonesEditor.primaryInvalid) {
+      toast.error('Numéro principal invalide', {
         description: 'Vérifiez le pays et le numéro. Sans numéro valide, ce client ne recevra aucun SMS.',
       });
       return;
     }
+    if (phonesEditor.extrasInvalid) {
+      toast.error('Un autre numéro est incomplet', { description: 'Complétez-le ou retirez-le.' });
+      return;
+    }
+    const phones = phonesEditor.toInputs();
     try {
+      // Les numéros d'abord : la RPC recopie le principal dans la fiche. S'ils
+      // sont refusés, rien d'autre n'est écrit.
+      if (phonesEditor.changed) await setPhones.mutateAsync({ userId: client.id, phones });
       await updateClient.mutateAsync({
         userId: client.id,
         firstName: editForm.firstName.trim(),
         lastName: editForm.lastName.trim(),
-        phone: editForm.phone.trim(),
+        phone: phones[0].phone_e164,
         email: editForm.email.trim(),
         companyName: editForm.companyName.trim(),
         country: editForm.country.trim(),
@@ -381,34 +392,31 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
   // les écritures de cette période (plus de plafond à 100), et le solde
   // d'ouverture vient de la dernière écriture avant la période si elle est vide.
-  const downloadStatement = async (range: StatementRange) => {
+  const downloadStatement = async (range: StatementRange, lang: StatementLang) => {
     if (!client || isGeneratingPDF) return false;
     setIsGeneratingPDF(true);
     try {
       const query = statementQueryRange(range);
-      const entries = await fetchLedgerEntriesInRange(client.id, query);
-      const movements = entries
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((entry) => shouldIncludeLedgerEntry({ ...entry, isTest: (entry as any).isTest }))
-        .map((entry) => buildMovementFromLedgerEntry(entry));
-      if (query === null && movements.length === 0) {
+      const entries: StatementEntry[] = await fetchLedgerEntriesInRange(client.id, query);
+      if (query === null && !entries.some(isStatementEntry)) {
         toast.error('Aucun mouvement à exporter');
         return false;
       }
-      const lastBefore = query && movements.length === 0
-        ? await fetchLastLedgerEntryBefore(client.id, query.from)
-        : null;
-      await generateStatementForRange({
+      // Le solde d'ouverture d'une période sans mouvement : la dernière écriture avant elle.
+      const lastBefore = query ? await fetchLastLedgerEntryBefore(client.id, query.from) : null;
+      await downloadAccountStatement({
+        db: supabaseAdmin,
+        lang,
         client: {
-          name: `${client.firstName} ${client.lastName}`,
+          name: `${client.firstName} ${client.lastName}`.trim(),
+          code: client.customerCode,
           phone: client.phone,
           email: client.email,
           country: client.country,
-          ref: client.customerCode,
         },
+        entries,
         range: query,
-        movements,
-        lastBalanceBefore: lastBefore?.balanceAfter ?? null,
+        balanceBeforeRange: lastBefore?.balanceAfter ?? null,
       });
       return true;
     } catch (err) {
@@ -733,6 +741,46 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           )}
         </div>
 
+        {/* Colis reçus — la réception, dans Cargo */}
+        {hasPermission('canViewCargo') && (clientDeposits?.length ?? 0) > 0 && (() => {
+          const parcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
+          const waiting = parcels.filter((p) => !p.shipment_id).length;
+          return (
+            <div className="rounded-2xl px-4 pb-2 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
+              <SecLabel
+                right={
+                  <button type="button" onClick={() => navigate(`/m/clients/${client.id}/parcels`)} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
+                    Voir tout ({clientDeposits?.length ?? 0})
+                  </button>
+                }
+              >
+                Colis reçus
+              </SecLabel>
+              <p className={cn('mt-1 text-[12.5px] tabular-nums', TEXT.body)}>
+                <b className={TEXT.strong}>{parcels.length} colis</b> · {formatKg(parcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(parcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}
+                {waiting > 0 ? <> · <span className="font-semibold text-emerald-700 dark:text-emerald-400">{waiting} à l'entrepôt</span></> : ' · tout est chargé'}
+              </p>
+              <div className="mt-1">
+                {(clientDeposits ?? []).slice(0, 3).map((d) => {
+                  const st = depositStage(d.parcels);
+                  return (
+                    <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className="flex w-full items-center gap-2.5 border-t border-black/[0.04] py-2 text-left first:border-t-0 dark:border-white/[0.05]">
+                      <LocationMark location={d.location} size={26} />
+                      <div className="min-w-0 flex-1 leading-[16px]">
+                        <div className={cn('truncate font-mono text-[12.5px] font-semibold', TEXT.strong)}>{d.deposit_no} <span className={cn('font-sans font-normal', TEXT.muted)}>· {d.parcels.length} colis · {formatKg(d.total_weight_kg)} · {formatCbm(d.total_cbm)}</span></div>
+                        <div className={cn('truncate text-[11px]', TEXT.muted)}>{formatDateTime(d.closed_at ?? d.opened_at)}{d.received_by_name ? ` · reçu par ${d.received_by_name}` : ''}</div>
+                      </div>
+                      <span className={cn('shrink-0 text-[11.5px] font-semibold', st.tone === 'success' ? 'text-emerald-700 dark:text-emerald-400' : st.tone === 'pending' ? 'text-amber-700 dark:text-amber-400' : 'text-indigo-700 dark:text-indigo-400')}>
+                        {st.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Raccourcis */}
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -792,7 +840,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         width={560}
         footer={
           <>
-            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending} className="flex-1">
+            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending || setPhones.isPending} className="flex-1">
               Enregistrer
             </PrimaryPill>
             <SoftPill onClick={() => setEditOpen(false)} className="flex-1">
@@ -809,9 +857,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <TextInput id="edit-lastName" value={editForm.lastName} onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))} />
           </FormField>
           <div className="col-span-2">
-            <FormField label="Téléphone / WhatsApp" htmlFor="edit-phone">
-              <PhoneCountryInput hideLabel value={editForm.phone} onChange={(val) => setEditForm((f) => ({ ...f, phone: val }))} controlClassName="h-11 rounded-lg" />
-            </FormField>
+            <ClientPhonesEditor editor={phonesEditor} />
           </div>
           <FormField label="Email" htmlFor="edit-email">
             <TextInput id="edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
@@ -908,6 +954,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         onClose={() => setStatementOpen(false)}
         onGenerate={downloadStatement}
         isGenerating={isGeneratingPDF}
+        variant="dialog"
       />
     </aside>
   );

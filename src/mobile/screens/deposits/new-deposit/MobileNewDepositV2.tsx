@@ -28,7 +28,7 @@ import {
   type AgencyOption,
 } from '@/types/deposit';
 import {
-  methodFamilies,
+  selectableMethodFamilies,
   getSubMethodsForFamily,
   banks,
   agencies,
@@ -379,10 +379,10 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           ],
           merchantCode: undefined as string | undefined,
           instructions: [
-            'Composer #150*1*1#',
+            'Depuis sa puce commerciale Orange (compte UV), transfert de flotte',
             `Numéro : ${orangeMoneyAccount.phone}`,
             `Montant : ${formatCurrency(amountNum)}`,
-            'Confirmer avec le code PIN',
+            `Nom affiché avant de valider : ${orangeMoneyAccount.accountName}`,
           ],
         };
       }
@@ -412,10 +412,10 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           ],
           merchantCode: undefined as string | undefined,
           instructions: [
-            'Depuis le compte MTN Float',
-            `Transfert vers ${mtnMoneyAccount.phone}`,
+            'Depuis sa puce commerciale MTN (compte Float), transfert de flotte',
+            `Numéro : ${mtnMoneyAccount.phone}`,
             `Montant : ${formatCurrency(amountNum)}`,
-            'Confirmer avec le code PIN',
+            `Nom affiché avant de valider : ${mtnMoneyAccount.accountName}`,
           ],
         };
       }
@@ -686,7 +686,7 @@ export function MobileNewDepositV2({ desktop = false }: { desktop?: boolean } = 
           <div>
             <div className={cn('mb-3.5 text-[20px] font-bold', TEXT.strong)}>Comment ?</div>
             <div className="space-y-2.5">
-              {methodFamilies.map((family) => {
+              {selectableMethodFamilies.map((family) => {
                 const isSelected = selectedFamily === family.family;
                 const conf = FAMILIES_CONF[family.family];
                 const color = conf?.bg || FAMILIES_CONF.AGENCY_BONZINI.bg;

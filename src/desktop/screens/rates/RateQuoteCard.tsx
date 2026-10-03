@@ -3,11 +3,17 @@
 // Nœud en taille naturelle 1080×1080 (format carré WhatsApp), réduit via
 // transform:scale par le parent et capturé tel quel par html-to-image —
 // l'aperçu et le fichier téléchargé sont le même rendu, comme le flyer.
-// Même langage de marque que RateFlyer : logo Bonzini, FR + 中文, gros
-// chiffres tabulaires, vrais logos de méthode, zéro dégradé.
+// Même langage de marque que RateFlyer : logo Bonzini, gros chiffres
+// tabulaires, vrais logos de méthode, zéro dégradé. Texte principal en
+// français OU en anglais (lang, 28/09/2026), le chinois toujours dessous
+// (pour le fournisseur). Police latine : celle du flyer (lib/flyerFonts.ts).
 import { Landmark } from 'lucide-react';
 import { LOGO_PATH } from '@/mobile/designKit/methods';
 import type { PaymentMethodKey } from '@/types/rates';
+import { CONTACT_PHONE_CM } from '@/lib/companyContacts';
+import { FLYER_FONT_STACK } from '@/lib/flyerFonts';
+import type { FlyerLang } from '@/lib/rateFlyer';
+import { QUOTE_TEXT, quoteDate, quoteNumber } from '@/lib/rateQuote';
 
 export const QUOTE_W = 1080;
 export const QUOTE_H = 1080;
@@ -18,24 +24,17 @@ export interface RateQuoteProps {
   method: PaymentMethodKey;
   finalRate: number;
   countryLabel: string;
+  /** Pays autre que la référence : on l'écrit à côté du taux. */
+  showCountry?: boolean;
   theme?: 'dark' | 'light';
+  lang?: FlyerLang;
 }
 
-const METHOD_META: Record<PaymentMethodKey, { name: string; cn: string }> = {
-  alipay: { name: 'Alipay', cn: '支付宝' },
-  wechat: { name: 'WeChat Pay', cn: '微信支付' },
-  virement: { name: 'Virement bancaire', cn: '银行转账' },
-  cash: { name: 'Cash', cn: '现金' },
-};
+const METHOD_CN: Record<PaymentMethodKey, string> = { alipay: '支付宝', wechat: '微信支付', virement: '银行转账', cash: '现金' };
 
-const FR_DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const FR_MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-function fmt(n: number): string {
-  return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, countryLabel, theme = 'dark' }: RateQuoteProps) {
+export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, countryLabel, showCountry = false, theme = 'dark', lang = 'fr' }: RateQuoteProps) {
+  const t = QUOTE_TEXT[lang];
+  const fmt = (n: number) => quoteNumber(n, lang);
   const isDark = theme === 'dark';
   const bg = isDark ? '#0D0C14' : '#F2F0F8';
   const card = isDark ? '#19172A' : '#FFFFFF';
@@ -46,11 +45,9 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
   const hairline = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(26,23,38,0.10)';
   const cardShadow = isDark ? '0 0 0 1px rgba(255,255,255,0.06)' : '0 18px 50px -22px rgba(40,28,80,0.28)';
 
-  const now = new Date();
   // « Lundi 31 août 2026 » — majuscule au jour seulement (règle typographique fr).
-  const day = FR_DAYS[now.getDay()];
-  const frDate = `${day.charAt(0).toUpperCase()}${day.slice(1)} ${now.getDate()} ${FR_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
-  const meta = METHOD_META[method];
+  const frDate = quoteDate(new Date(), lang);
+  const meta = { name: t.methods[method], cn: METHOD_CN[method] };
 
   const tile = (() => {
     const box = (color: string, content: React.ReactNode) => (
@@ -65,18 +62,18 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
   })();
 
   return (
-    <div style={{ width: QUOTE_W, height: QUOTE_H, backgroundColor: bg, display: 'flex', flexDirection: 'column', padding: '56px 64px', fontFamily: '"DM Sans", sans-serif' }}>
+    <div style={{ width: QUOTE_W, height: QUOTE_H, backgroundColor: bg, display: 'flex', flexDirection: 'column', padding: '56px 64px', fontFamily: FLYER_FONT_STACK }}>
       {/* En-tête — identité + pastille Cotation */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
           <img src="/assets/bonzini-logo.jpg" alt="Bonzini" width={92} height={92} style={{ borderRadius: 24 }} />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 58, fontWeight: 900, color: text, letterSpacing: -1.5, lineHeight: 1 }}>Bonzini</div>
-            <div style={{ fontSize: 19, fontWeight: 600, color: muted, letterSpacing: 4, marginTop: 5 }}>PAIEMENTS VERS LA CHINE</div>
+            <div style={{ fontSize: 19, fontWeight: 600, color: muted, letterSpacing: 4, marginTop: 5 }}>{t.tagline}</div>
           </div>
         </div>
         <div style={{ backgroundColor: isDark ? '#F1EEF8' : '#1A1726', color: isDark ? '#1A1726' : '#FFFFFF', borderRadius: 44, padding: '16px 30px', fontSize: 27, fontWeight: 700 }}>
-          Cotation
+          {t.badge}
         </div>
       </div>
 
@@ -89,7 +86,7 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
       {/* Corps — vous payez → votre fournisseur reçoit */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 26 }}>
         <div style={{ backgroundColor: card, borderRadius: 36, padding: '36px 44px', boxShadow: cardShadow }}>
-          <div style={{ fontSize: 27, fontWeight: 600, color: muted }}>Vous payez · 您支付</div>
+          <div style={{ fontSize: 27, fontWeight: 600, color: muted }}>{t.youPay} · <span style={{ fontFamily: '"Noto Sans SC", sans-serif' }}>您支付</span></div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, marginTop: 8 }}>
             <span style={{ fontSize: 96, fontWeight: 900, color: text, letterSpacing: -2, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
               {fmt(amountXAF)}
@@ -109,7 +106,7 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
         </div>
 
         <div style={{ backgroundColor: card, borderRadius: 36, padding: '36px 44px', boxShadow: cardShadow }}>
-          <div style={{ fontSize: 27, fontWeight: 600, color: muted }}>Votre fournisseur reçoit · 供应商收到</div>
+          <div style={{ fontSize: 27, fontWeight: 600, color: muted }}>{t.supplierGets} · <span style={{ fontFamily: '"Noto Sans SC", sans-serif' }}>供应商收到</span></div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: 8 }}>
             <span style={{ fontSize: 62, fontWeight: 700, color: ymark, marginBottom: 10 }}>¥</span>
             <span style={{ fontSize: 128, fontWeight: 900, color: text, letterSpacing: -3, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -124,10 +121,10 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 22, color: muted }}>
-              Taux appliqué{countryLabel !== 'Cameroun' ? ` · ${countryLabel}` : ''}
+              {t.rate}{showCountry ? ` · ${countryLabel}` : ''}
             </div>
             <div style={{ fontSize: 34, fontWeight: 800, color: text, fontVariantNumeric: 'tabular-nums', marginTop: 4 }}>
-              ¥ {finalRate.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} <span style={{ fontSize: 22, fontWeight: 600, color: muted }}>/ 1 000 000 XAF</span>
+              ¥ {fmt(finalRate)} <span style={{ fontSize: 22, fontWeight: 600, color: muted }}>/ {fmt(1_000_000)} XAF</span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -135,13 +132,13 @@ export function RateQuoteCard({ amountXAF, amountCNY, method, finalRate, country
               <svg viewBox="0 0 24 24" width={34} height={34} fill="#FFFFFF"><path d={LOGO_PATH.whatsapp} /></svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: 30, fontWeight: 800, color: text, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>+237 652 236 856</div>
+              <div style={{ fontSize: 30, fontWeight: 800, color: text, letterSpacing: -0.5, fontVariantNumeric: 'tabular-nums' }}>{CONTACT_PHONE_CM}</div>
               <div style={{ fontSize: 21, color: muted, marginTop: 2 }}>bonzinilabs.com</div>
             </div>
           </div>
         </div>
         <div style={{ fontSize: 19, color: muted, opacity: 0.7, marginTop: 18 }}>
-          Cotation valable aujourd'hui, au taux du jour. · 报价当日有效。
+          {t.valid} · <span style={{ fontFamily: '"Noto Sans SC", sans-serif' }}>报价当日有效。</span>
         </div>
       </div>
     </div>

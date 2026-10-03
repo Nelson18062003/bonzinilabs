@@ -3781,6 +3781,9 @@ export type Database = {
         | "customer_success"
         | "cash_agent"
         | "treasurer"
+        | "receptionist"
+        | "warehouse_agent"
+        | "customs_broker"
       deposit_method:
         | "bank_transfer"
         | "bank_cash"
@@ -3808,6 +3811,7 @@ export type Database = {
         | "PAYMENT_CANCELLED_REFUNDED"
         | "ADMIN_CREDIT"
         | "ADMIN_DEBIT"
+        | "CARGO_FEES"
       payment_method: "alipay" | "wechat" | "bank_transfer" | "cash"
       payment_status:
         | "created"
@@ -3978,6 +3982,9 @@ export const Constants = {
         "customer_success",
         "cash_agent",
         "treasurer",
+        "receptionist",
+        "warehouse_agent",
+        "customs_broker",
       ],
       deposit_method: [
         "bank_transfer",
@@ -4008,6 +4015,7 @@ export const Constants = {
         "PAYMENT_CANCELLED_REFUNDED",
         "ADMIN_CREDIT",
         "ADMIN_DEBIT",
+        "CARGO_FEES",
       ],
       payment_method: ["alipay", "wechat", "bank_transfer", "cash"],
       payment_status: [

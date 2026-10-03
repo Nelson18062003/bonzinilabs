@@ -98,14 +98,19 @@ type PermKey =
   | "canViewPayments" | "canProcessPayments"
   | "canManageRates" | "canViewLogs" | "canManageUsers" | "canViewTreasury"
   | "canManageTreasury" | "canAccessSupportChat"
-  | "canViewCargo" | "canManageCargo" | "canGrantOverdraft";
+  | "canViewCargo" | "canManageCargo" | "canGrantOverdraft"
+  | "canReceiveParcels" | "canRegisterClients" | "canPriceParcels" | "canCollectParcelPayments" | "canReceiveAtDestination" | "canReleaseParcels"
+  | "canViewCustoms" | "canSignCustoms" | "canManageCustoms";
 const ROLE_PERMISSIONS: Record<string, Record<PermKey, boolean>> = {
-  super_admin:       { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: true , canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: true , canViewCargo: true , canManageCargo: true , canGrantOverdraft: true  },
-  ops:               { canViewClients: true , canEditClients: false, canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: true, canGrantOverdraft: false },
-  support:           { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: false, canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false },
-  customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false },
-  cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false },
-  treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false },
+  super_admin:       { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: true , canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: true , canViewCargo: true , canManageCargo: true , canGrantOverdraft: true , canReceiveParcels: true , canRegisterClients: true , canPriceParcels: true , canCollectParcelPayments: true, canReceiveAtDestination: true, canReleaseParcels: true, canViewCustoms: true , canSignCustoms: false, canManageCustoms: true  },
+  ops:               { canViewClients: true , canEditClients: false, canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: true , canManageRates: true , canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: true, canGrantOverdraft: false, canReceiveParcels: true , canRegisterClients: true , canPriceParcels: true , canCollectParcelPayments: true, canReceiveAtDestination: true, canReleaseParcels: true, canViewCustoms: true , canSignCustoms: false, canManageCustoms: true  },
+  support:           { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: false, canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: true , canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: true , canSignCustoms: false, canManageCustoms: false },
+  customer_success:  { canViewClients: true , canEditClients: true , canViewDeposits: true , canProcessDeposits: true , canViewPayments: true , canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: true , canViewCargo: true , canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: true , canSignCustoms: false, canManageCustoms: false },
+  cash_agent:        { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: true , canProcessPayments: true , canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: false, canSignCustoms: false, canManageCustoms: false },
+  treasurer:         { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: true , canManageTreasury: true , canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: false, canSignCustoms: false, canManageCustoms: false },
+  receptionist:      { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: true , canRegisterClients: true , canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: false, canSignCustoms: false, canManageCustoms: false },
+  warehouse_agent:   { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: true, canReceiveAtDestination: true, canReleaseParcels: true, canViewCustoms: false, canSignCustoms: false, canManageCustoms: false },
+  customs_broker:    { canViewClients: false, canEditClients: false, canViewDeposits: false, canProcessDeposits: false, canViewPayments: false, canProcessPayments: false, canManageRates: false, canViewLogs: false, canManageUsers: false, canViewTreasury: false, canManageTreasury: false, canAccessSupportChat: false, canViewCargo: false, canManageCargo: false, canGrantOverdraft: false, canReceiveParcels: false, canRegisterClients: false, canPriceParcels: false, canCollectParcelPayments: false, canReceiveAtDestination: false, canReleaseParcels: false, canViewCustoms: true , canSignCustoms: true , canManageCustoms: false },
 };
 
 function json(body: Record<string, unknown>, status = 200) {
@@ -277,7 +282,7 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
   taux: [
     { capability: "définir les 4 taux du jour", tool: "set_daily_rate" },
     { capability: "modifier un ajustement de taux par pays/palier (%)", tool: "set_rate_adjustment", note: "super_admin" },
-    { capability: "générer le flyer du taux (Cameroun, ou un autre pays : Gabon… via country_key)", tool: "generate_rate_flyer" },
+    { capability: "générer le flyer du taux du jour d'un pays (Cameroun, Gabon… via country_key), avec le texte WhatsApp à coller dessous", tool: "generate_rate_flyer" },
   ],
   tresorerie: [
     { capability: "achats/ventes USDT, comptes, contreparties, inventaire, P&L", tool: "record_usdt_purchase / record_usdt_sale / treasury_*", note: "permission canViewTreasury" },
@@ -295,6 +300,11 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
     { capability: "marquer le fret payé, le télex reçu", tool: null, note: "via do_capability (cargo_set_freight_paid / cargo_set_telex) — la référence peut être le n° de conteneur, le B/L ou le nom du client ; confirmation requise" },
     { capability: "retirer un conteneur de la flotte, relancer la synchro armateur", tool: null, note: "via do_capability (remove_cargo_shipment / request_cargo_sync)" },
     { capability: "papiers, douane, coûts, colis d'un conteneur", tool: null, note: "lecture via query_database (cargo_documents, cargo_costs, cargo_packages, cargo_events) ; l'écriture passe par l'écran Cargo" },
+    { capability: "les colis reçus à Guangzhou : ce qui attend à l'entrepôt ou au bureau, les dépôts d'un client, un dépôt et ses colis", tool: null, note: "via find_capability → reception_stock, reception_overview, reception_client_deposits, reception_get_deposit (lecture, canViewCargo) ; query_database sur parcel_deposits / parcels" },
+    { capability: "poser les prix d'un dépôt de colis, le devis (au kilo, au m³, fixe), frais et remises, envoyer le devis", tool: null, note: "via find_capability + do_capability (cargo_quote_ensure, cargo_quote_set_line, cargo_quote_add_line, cargo_quote_send ; lecture cargo_quote_get), permission canPriceParcels ; les tarifs standard : cargo_pricing_get / cargo_pricing_set (canManageRates)" },
+    { capability: "encaisser un paiement sur un devis de colis, annuler un encaissement, établir la facture acquittée", tool: null, note: "via do_capability (cargo_quote_add_payment, cargo_quote_cancel_payment, cargo_quote_invoice), permission canCollectParcelPayments — argent : confirmation requise" },
+    { capability: "l'expédition aérienne : ouvrir une LTA, charger des colis, marquer parti / arrivé, le manifeste", tool: null, note: "via find_capability + do_capability (cargo_air_create, cargo_air_load_parcels, cargo_air_set_status ; lecture cargo_air_list, cargo_air_get), permission canManageCargo" },
+    { capability: "l'entrepôt de Douala : pointer une arrivée, signaler un manquant, les colis d'un client prêts au retrait, remettre (bon de retrait)", tool: null, note: "via find_capability + do_capability (warehouse_day, warehouse_arrival_parcels, warehouse_checkin_parcel, warehouse_flag_missing, warehouse_client_parcels, warehouse_release_parcels), permissions canReceiveAtDestination / canReleaseParcels — la remise est refusée tant que le devis n'est pas soldé" },
   ],
 };
 
@@ -302,10 +312,11 @@ const CAPABILITY_MAP: Record<string, Array<{ capability: string; tool: string | 
 const BUSINESS_ONTOLOGY: Array<{ scope: string; content: string }> = [
   { scope: "depots", content: "Cycle d'un dépôt : created → proof_submitted → admin_review → validated ou rejected. Valider un dépôt CRÉDITE le solde XAF (wallet) du client du montant confirmé. Un dépôt peut être créé sans preuve (en attente) puis validé quand l'argent est reçu." },
   { scope: "paiements", content: "Cycle d'un paiement fournisseur : created → waiting_beneficiary_info → ready_for_payment → processing → completed (ou rejected, cash_pending, cash_scanned). Créer un paiement DÉBITE (réserve) le solde XAF du client. Pas de montant minimum. Méthodes : alipay, wechat, bank_transfer, cash." },
-  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Le Cameroun est la RÉFÉRENCE : ce sont ses taux qui sont publiés. Chaque autre pays (Gabon, Tchad, RCA, Congo, Guinée équatoriale) a un écart en pourcentage (rate_adjustments, type country, ex. Gabon −1 %) appliqué en facteur aux quatre taux publiés : ses taux sont dérivés, jamais saisis à part. Les paliers de montant (< 400 000, 400 000–999 999, ≥ 1 000 000 XAF) ajoutent un second pourcentage ; le flyer et « Taux par pays » montrent le palier ≥ 1 M. Un paiement utilise le taux du jour du pays du client, ou un taux personnalisé si l'admin en fixe un." },
+  { scope: "taux", content: "Le taux est exprimé en CNY (¥) pour 1 000 000 XAF, par mode (cash, alipay, wechat, virement). Le Cameroun est la RÉFÉRENCE : ce sont ses taux qui sont publiés. Chaque autre pays (Gabon, Tchad, RCA, Congo, Guinée équatoriale) a un écart en pourcentage (rate_adjustments, type country, ex. Gabon −1 %) appliqué en facteur aux quatre taux publiés : ses taux sont dérivés, jamais saisis à part. Les paliers de montant (< 400 000, 400 000–999 999, ≥ 1 000 000 XAF) ajoutent un second pourcentage. Le flyer montre le taux ≥ 400 000 XAF en gros et, dans un bloc rouge, celui des petits paiements. Les paiements de l'app client ET ceux saisis par l'équipe (nouveau paiement, paiements groupés) appliquent le pays du client et la tranche du montant, sauf taux personnalisé fixé par l'admin. Pour create_payment, passe toujours le country_key du client." },
   { scope: "tresorerie", content: "Chaîne de valeur trésorerie : Bonzini achète des USDT (payés en XAF) auprès de fournisseurs, puis vend ces USDT contre des CNY à des acheteurs, pour régler les fournisseurs chinois. Le coût de revient de l'USDT est suivi en coût moyen pondéré (WAC). Le bénéfice vient du spread achat/vente." },
   { scope: "wallet", content: "Le wallet est le solde XAF d'un client, crédité par un dépôt validé et débité par un paiement. Il n'est jamais modifié à la main, sauf via un ajustement tracé (crédit/débit avec motif), réservé aux administrateurs autorisés." },
   { scope: "kyc", content: "Les clients ont un statut KYC (kyc_verified). Bonzini cible les importateurs africains qui règlent des fournisseurs chinois — ce ne sont pas des transferts d'argent entre particuliers." },
+  { scope: "colis", content: "La chaîne des colis, de Guangzhou à Douala. 1) RÉCEPTION : le réceptionnaire (rôle receptionist, app /r) enregistre un DÉPÔT (parcel_deposits, RC-000123) pour un client identifié par son code BZ-482913, à l'entrepôt (warehouse = Sea cargo) ou au bureau (office = Air cargo), et ses COLIS (parcels, RC-000123-01 : poids, dimensions, m³, photo). Il ne parle jamais de prix. 2) PRIX ET DEVIS (canPriceParcels : super_admin, ops) : un devis par dépôt (parcel_quotes, DV-…), une ligne par colis au tarif standard (platform_settings.cargo_pricing : XAF au kilo pour l'air, au m³ pour la mer) modifiable colis par colis (per_kg, per_cbm, fixed), frais et remises ; statuts draft → sent → paid → invoiced. 3) ENCAISSEMENTS (canCollectParcelPayments) : parcel_quote_payments (RE-…), avec preuve, mode (cash, mobile_money, bank_transfer) et lieu (guangzhou avant le départ, douala au retrait) ; un encaissement s'annule avec motif, jamais après remise ; tout soldé → facture acquittée FA-… (invoice_no). 4) DÉPART : un colis part dans une boîte (cargo_shipments, parcels.shipment_id) ou un avion (air_shipments, LTA, parcels.air_shipment_id ; PLANNED → DEPARTED → ARRIVED → DELIVERED, jalons posés à la main) ; le colis suit : loaded → shipped → arrived → delivered. 5) DOUALA (rôle warehouse_agent, app /w) : pointage à l'arrivée (parcels.checked_in_at, warehouse_location, condition ok/damaged/missing), puis REMISE au client contre bon de retrait signé (parcel_releases, BR-…) — REFUSÉE tant que le devis n'est pas soldé ; l'agent peut encaisser sur place. Le client est prévenu (notifications parcel_*) à chaque jalon : devis envoyé, encaissement, facture, parti, arrivé, prêt au retrait, remis." },
   { scope: "cargo", content: "Bonzini Cargo suit les conteneurs des clients de la Chine (Nansha, Shenzhen…) vers Douala ou Kribi. Un dossier (cargo_shipments) porte un client (client_label, libellé libre du transitaire, éventuellement rattaché à un vrai client via client_id), un n° de conteneur, un bill of lading, l'armateur (MAERSK en direct, CMA CGM/MSC/COSCO à la main), deux dates d'arrivée (eta_promised = promise du transitaire, eta_carrier = annoncée par l'armateur ; l'écart = le retard), le fret dû au transitaire (freight_usd) et deux drapeaux : freight_paid (fret payé) et telex_released (télex release reçu — sans lui la boîte reste au port). Statuts : UNKNOWN (armateur muet), BOOKED, AT_ORIGIN, AT_SEA, ARRIVED, DELIVERED. Après l'arrivée au Cameroun : avis d'arrivée, BESC, déclaration en douane (customs_cleared_at), bon à enlever (delivery_order_at), sortie du port (gate_out_at), restitution du vide (empty_returned_at) ; free_time_ends_on = fin de franchise, au-delà les surestaries courent. L'ordre des choses à faire : régler le fret, obtenir le télex, classer B/L et facture, vérifier le BESC, prévenir le client d'un report." },
 ];
 
@@ -850,66 +861,50 @@ const READ_TOOLS: ReadTool[] = [
   {
     name: "generate_rate_flyer",
     permission: "canViewPayments",
-    description: "Générer le FLYER (image PNG) du taux du jour, prêt à partager. Utilise le taux actif (référence Cameroun). Optionnel: country_key (gabon, tchad, rca, congo, guinee) pour le flyer d'un AUTRE pays — ses taux sont dérivés automatiquement de la référence via l'ajustement pays (ex. Gabon −1 %), pour 1 000 000 XAF. Optionnel: dark (true pour la version sombre). L'image est renvoyée directement dans le chat, téléchargeable.",
-    input_schema: { type: "object", properties: { dark: { type: "boolean" }, country_key: { type: "string", description: "Clé pays (rate_adjustments) : gabon, tchad, rca, congo, guinee. Absent = Cameroun (référence)." } } },
-    execute: async (admin, { dark, country_key }) => {
-      // 1) Taux du jour actif
-      const { data: rate, error } = await admin.from("daily_rates")
-        .select("rate_cash, rate_alipay, rate_wechat, rate_virement")
-        .eq("is_active", true).order("effective_at", { ascending: false }).limit(1).maybeSingle();
-      if (error) return { error: error.message };
-      if (!rate) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
+    description: "Générer le FLYER (image PNG) du taux du jour d'un pays, prêt à partager sur WhatsApp : signé BONZINI, jour et heure de Douala, pays → Chine (deux drapeaux), taux pour 1 000 000 XAF (Alipay/WeChat/Virement et Cash), petits paiements (tranches de montant) dans un bloc rouge. En français (par défaut) ou en anglais (lang: \"en\"). Utilise le taux actif et les réglages pays et tranches. Optionnel: country_key (cameroun par défaut ; gabon, tchad, rca, congo, guinee). Renvoie aussi `caption`, le texte du jour dans la même langue, à coller sous l'image. L'image est affichée directement dans le chat, téléchargeable.",
+    input_schema: { type: "object", properties: {
+      country_key: { type: "string", description: "Clé pays (rate_adjustments) : cameroun, gabon, tchad, rca, congo, guinee. Absent = Cameroun." },
+      lang: { type: "string", enum: ["fr", "en"], description: "Langue du flyer et du texte : fr (par défaut) ou en." },
+    } },
+    execute: async (admin, { country_key, lang }) => {
+      const LABELS: Record<string, string> = { cameroun: "Cameroun", gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
+      const key = typeof country_key === "string" && country_key.trim() ? country_key.trim().toLowerCase() : "cameroun";
+      const flyerLang = lang === "en" ? "en" : "fr";
+      if (!LABELS[key]) return { error: `Pays inconnu : ${key}. Clés possibles : cameroun, gabon, tchad, rca, congo, guinee.` };
 
-      // 1b) Pays dérivé : base × (1 + écart %), même formule que calculate_final_rate (palier ≥ 1 M = 0 %).
-      let country: { key: string; label: string; percentage: number } | null = null;
-      let factor = 1;
-      const wantedKey = typeof country_key === "string" ? country_key.trim().toLowerCase() : "";
-      if (wantedKey && wantedKey !== "cameroun") {
-        const { data: adj, error: adjErr } = await admin.from("rate_adjustments")
-          .select("key, label, percentage, is_reference").eq("type", "country").eq("key", wantedKey).maybeSingle();
-        if (adjErr) return { error: adjErr.message };
-        if (!adj) return { error: `Pays inconnu : ${wantedKey}. Clés possibles : gabon, tchad, rca, congo, guinee (ou rien pour le Cameroun).` };
-        if (!adj.is_reference) {
-          // Libellés accentués (la base stocke « Guinee Equatoriale ») : ce texte part sur le flyer.
-          const LABELS: Record<string, string> = { gabon: "Gabon", tchad: "Tchad", rca: "Centrafrique", congo: "Congo", guinee: "Guinée Équatoriale" };
-          country = { key: adj.key, label: LABELS[adj.key] || adj.label || adj.key, percentage: Number(adj.percentage) || 0 };
-          factor = 1 + country.percentage / 100;
-        }
-      }
-      const derive = (v: unknown) => Math.round(Number(v) * factor * 100) / 100;
-
-      // 2) Appel de l'Edge Function generate-flyer (PNG). rates attendu: {alipay, wechat, bank, cash}
+      // generate-flyer lit lui-même le taux actif et les réglages (pays, tranches) :
+      // mêmes chiffres et même dessin que le flyer de l'app.
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const rates = { alipay: derive(rate.rate_alipay), wechat: derive(rate.rate_wechat), bank: derive(rate.rate_virement), cash: derive(rate.rate_cash) };
       let pngBytes: Uint8Array;
+      let caption = "";
       try {
         const res = await fetch(`${supabaseUrl}/functions/v1/generate-flyer`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": `Bearer ${anonKey}` },
-          body: JSON.stringify({ rates, dark: dark === true, country: country?.label, country_slug: country?.key }),
+          body: JSON.stringify({ country_key: key, lang: flyerLang }),
         });
+        if (res.status === 404) return { error: "Aucun taux du jour actif. Définis d'abord le taux." };
         if (!res.ok) return { error: `Génération du flyer échouée (${res.status}).` };
+        caption = decodeURIComponent(res.headers.get("x-flyer-caption") ?? "");
         pngBytes = new Uint8Array(await res.arrayBuffer());
       } catch (e) { return { error: `Génération du flyer: ${String((e as Error)?.message ?? e)}` }; }
 
-      // 3) Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
-      const path = country ? `flyers/${Date.now()}-taux-${country.key}.png` : `flyers/${Date.now()}-taux.png`;
+      // Dépose dans le bucket privé + URL signée (lecture temporaire) pour l'afficher au chat
+      const path = `flyers/${Date.now()}-${flyerLang === "en" ? "todays-rate" : "taux-du-jour"}-${key}.png`;
       const up = await admin.storage.from(ATTACHMENT_BUCKET).upload(path, pngBytes, { contentType: "image/png", upsert: true });
       if (up.error) return { error: `Stockage du flyer: ${up.error.message}` };
       const signed = await admin.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 3600);
       if (signed.error || !signed.data?.signedUrl) return { error: "URL du flyer indisponible." };
 
-      // __image renvoie l'image au chat ; le texte sert au modèle.
-      const title = country ? `Flyer taux du jour · ${country.label}` : "Flyer taux du jour";
+      const title = `${flyerLang === "en" ? "Today's rate" : "Taux du jour"} · ${LABELS[key]}`;
       return {
         success: true,
-        rates,
-        country: country ? { key: country.key, label: country.label, adjustment_pct: country.percentage } : `${wantedKey || "cameroun"} (référence)`,
+        country: key,
+        lang: flyerLang,
+        caption,
         __image: { url: signed.data.signedUrl, name: title, kind: "image" },
-        message: country
-          ? `Flyer ${country.label} généré (taux Cameroun ${country.percentage > 0 ? "+" : ""}${country.percentage} %) et affiché dans le chat.`
-          : "Flyer du taux du jour généré et affiché dans le chat.",
+        message: `Flyer ${LABELS[key]} généré et affiché dans le chat. Texte du jour à coller sous l'image : fourni dans \`caption\`.`,
       };
     },
   },
@@ -1359,6 +1354,10 @@ const READ_TOOLS: ReadTool[] = [
       "- cargo_shipments(id, client_label, client_id, container_number, bl_number, carrier, status, pol_name, pod_name, vessel_name, voyage, etd_promised, etd_actual, eta_promised, eta_carrier, freight_usd, freight_paid, telex_released, free_time_ends_on, arrival_notice_at, customs_cleared_at, delivery_order_at, gate_out_at, empty_returned_at, goods_description, packages_count, gross_weight_kg, last_event_label, last_event_at, notes)\n" +
       "- cargo_events(shipment_id, event_code, event_time, location_name, vessel_name), cargo_documents(shipment_id, kind, file_name, created_at), cargo_costs(shipment_id, kind, amount, currency, paid, incurred_on), cargo_packages(shipment_id, label, kind, qty, length_cm, width_cm, height_cm, weight_kg)\n" +
       "- cargo_vessel_positions(vessel_imo, vessel_name, latitude, longitude, speed_kn, destination, eta, reported_at)\n" +
+      "- parcel_deposits(id, deposit_no, client_user_id, location warehouse|office, brought_by, status open|closed|cancelled, received_by, opened_at, closed_at), parcels(id, deposit_id, seq, parcel_no, kind, weight_kg, length_cm, width_cm, height_cm, cbm, description, status received|stored|loaded|shipped|arrived|delivered, shipment_id, air_shipment_id, checked_in_at, warehouse_location, condition, delivered_at, release_id)\n" +
+      "- parcel_quotes(id, deposit_id, quote_no, status draft|sent|paid|invoiced, total_xaf, amount_paid_xaf, invoice_no, sent_at, paid_at, invoiced_at), parcel_quote_lines(quote_id, parcel_id, kind parcel|fee|discount, basis per_kg|per_cbm|fixed, quantity, unit_price_xaf, amount_xaf), parcel_quote_payments(quote_id, receipt_no, amount_xaf, method, place, paid_at, reference, received_by, cancelled_at, cancel_reason)\n" +
+      "- air_shipments(id, awb_number, airline, flight_no, status PLANNED|DEPARTED|ARRIVED|DELIVERED, etd, eta, departed_at, arrived_at, freight_usd), parcel_releases(id, release_no, client_user_id, picked_by_name, parcel_count, released_by, released_at)\n" +
+      "Pour le client d'un dépôt de colis : JOIN clients c ON c.user_id = parcel_deposits.client_user_id.\n" +
       "Pour joindre un nom de client à une transaction : JOIN clients c ON c.user_id = d.user_id. Les montants sont en XAF (entiers). Pour un mois précis : WHERE created_at >= '2026-04-01' AND created_at < '2026-05-01'.",
     input_schema: { type: "object", properties: { sql: { type: "string", description: "Requête SELECT PostgreSQL (lecture seule)" } }, required: ["sql"] },
     execute: async (admin, { sql, __allowed_tables }, userClient) => {
@@ -1593,6 +1592,23 @@ async function uploadBeneficiaryQr(
 }
 
 // payment_method (enum DB) → clé attendue par calculate_final_rate
+/**
+ * Pays d'une fiche client (texte libre : « Gabon », « Congo-Brazzaville »…) →
+ * clé rate_adjustments. Miroir de clientCountryToRateKey (app) : hors des six
+ * pays de la zone, ou vide, c'est le Cameroun (référence).
+ */
+function rateCountryKey(country: unknown): string {
+  const n = String(country ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (!n) return "cameroun";
+  if (["cameroun", "cameroon", "cm"].includes(n)) return "cameroun";
+  if (["gabon", "ga"].includes(n)) return "gabon";
+  if (["tchad", "chad", "td"].includes(n)) return "tchad";
+  if (["rca", "cf", "centrafrique", "republique centrafricaine", "central african republic"].includes(n)) return "rca";
+  if (["congo", "cg", "congo-brazzaville", "republique du congo", "congo brazzaville"].includes(n)) return "congo";
+  if (["guinee", "gq", "guinee equatoriale", "equatorial guinea"].includes(n)) return "guinee";
+  return "cameroun";
+}
+
 const PAYMENT_METHOD_TO_RATE: Record<string, string> = { alipay: "alipay", wechat: "wechat", cash: "cash", bank_transfer: "virement" };
 const PAYMENT_METHOD_LABEL: Record<string, string> = { alipay: "Alipay", wechat: "WeChat", cash: "Cash", bank_transfer: "Virement" };
 
@@ -1893,7 +1909,7 @@ const WRITE_TOOLS: WriteTool[] = [
     name: "create_payment",
     permission: "canProcessPayments",
     acceptsProof: true,
-    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut cameroun), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
+    description: "Créer un paiement fournisseur pour un client → DÉBITE son wallet (au taux du jour, OU à un taux personnalisé si l'admin le demande). Si l'admin a joint une capture (QR code, justificatif), elle est attachée comme preuve du paiement. Fournir client_user_id, amount_xaf, method (alipay|wechat|bank_transfer|cash). Optionnels: country_key (défaut : le pays de la fiche client), beneficiary_name, beneficiary_phone, beneficiary_bank_name, beneficiary_bank_account, beneficiary_qr_code_url, et exchange_rate (taux personnalisé en CNY ¥ pour 1 000 000 XAF — la plateforme l'autorise, comme l'écran de paiement admin). Sans exchange_rate, le montant RMB est calculé automatiquement au taux du jour ; avec, il utilise le taux fourni.",
     input_schema: {
       type: "object",
       properties: {
@@ -1911,7 +1927,13 @@ const WRITE_TOOLS: WriteTool[] = [
       if (!amt) return { ok: false, error: "Montant invalide." };
       const rateMethod = PAYMENT_METHOD_TO_RATE[a.method];
       if (!rateMethod) return { ok: false, error: "Méthode de paiement invalide." };
-      const countryKey = (a.country_key || "cameroun").toLowerCase();
+      // Pays : celui demandé, sinon celui de la FICHE du client (même règle que l'app et
+      // les écrans de l'équipe) — avant le 25/09/2026, Mola prenait toujours le Cameroun.
+      let countryKey = typeof a.country_key === "string" && a.country_key.trim() ? a.country_key.trim().toLowerCase() : "";
+      if (!countryKey) {
+        const { data: cl } = await admin.from("clients").select("country").eq("user_id", c.uid).maybeSingle();
+        countryKey = rateCountryKey(cl?.country);
+      }
       // Vérifier le solde du client
       const { data: wallet } = await admin.from("wallets").select("balance_xaf, overdraft_limit_xaf").eq("user_id", c.uid).maybeSingle();
       if (!wallet) return { ok: false, error: "Wallet du client introuvable." };

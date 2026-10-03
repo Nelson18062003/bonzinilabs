@@ -50,6 +50,21 @@ const MANAGEABLE_ROLES: { role: AppRole; descriptionKey: string; descriptionDefa
     descriptionKey: 'roleTreasurerDesc',
     descriptionDefault: 'Trésorerie : achats/ventes USDT, contreparties, inventaire',
   },
+  {
+    role: 'receptionist',
+    descriptionKey: 'roleReceptionistDesc',
+    descriptionDefault: 'Réception des colis à Guangzhou : dépôts, colis, nouveaux clients. Aucun accès aux soldes ni aux paiements',
+  },
+  {
+    role: 'warehouse_agent',
+    descriptionKey: 'roleWarehouseAgentDesc',
+    descriptionDefault: "Entrepôt de Douala : pointe les colis arrivés, encaisse le reste à payer, remet les colis contre un bon de retrait signé",
+  },
+  {
+    role: 'customs_broker',
+    descriptionKey: 'roleCustomsBrokerDesc',
+    descriptionDefault: 'Commissionnaire agréé en douane : relit et signe les codes SH et les audits de déclaration des clients. Aucun accès à l’argent ni aux colis',
+  },
 ];
 
 export function MobileCreateAdmin({ desktop = false }: { desktop?: boolean } = {}) {

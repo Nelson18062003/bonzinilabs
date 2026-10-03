@@ -124,7 +124,7 @@
     "balance": "余额",
     "addFunds": "充值我的账户",
     "insufficientBalance": "余额不足",
-    "amountTooHigh": "金额不能超过50,000,000 XAF",
+    "amountTooHigh": "请输入整数金额。",
     "beneficiaryTitle": "收款人信息",
     "beneficiaryName": "收款人姓名",
     "beneficiaryId": "标识符",
@@ -183,7 +183,7 @@
     },
     "rateDependsOnMethod": "今日汇率取决于所选方式。",
     "balanceAfterPayment": "付款后余额",
-    "minMaxCaption": "最高 50 000 000 XAF",
+    "minMaxCaption": "上限为您的可用余额。",
     "all": "全部",
     "rateAppliedTitle": "适用今日汇率"
   },

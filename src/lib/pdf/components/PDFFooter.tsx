@@ -48,10 +48,10 @@ const styles = StyleSheet.create({
   },
 });
 
-export function PDFFooter() {
+export function PDFFooter({ text }: { text?: string } = {}) {
   return (
     <View style={styles.container} fixed>
-      <Text style={styles.leftText}>Document généré automatiquement par Bonzini</Text>
+      <Text style={styles.leftText}>{text ?? 'Document généré automatiquement par Bonzini'}</Text>
       <View style={styles.rightRow}>
         <FooterLogo />
         <Text style={styles.rightText}>bonzinilabs.com</Text>

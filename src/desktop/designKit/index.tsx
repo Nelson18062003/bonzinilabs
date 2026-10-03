@@ -465,15 +465,18 @@ export function Td({
   className,
   first,
   last,
+  colSpan,
 }: {
   children?: React.ReactNode;
   align?: 'left' | 'right';
   className?: string;
   first?: boolean;
   last?: boolean;
+  colSpan?: number;
 }) {
   return (
     <td
+      colSpan={colSpan}
       className={cn(
         'whitespace-nowrap border-t border-black/[0.05] py-3 dark:border-white/[0.05]',
         first ? 'pl-5 pr-2' : last ? 'pl-2 pr-5' : 'px-2',
@@ -564,6 +567,14 @@ export function RefChip({ children, className }: { children: React.ReactNode; cl
 
 /* ── Dialogue centré — le remplaçant desktop du BottomSheet ─────────────── */
 
+/**
+ * La pile des dialogues ouverts. Un dialogue peut en ouvrir un autre (la fiche
+ * d'un dépôt ouvre l'édition d'un colis) : seul celui du DESSUS répond au
+ * clavier — Échap ne ferme qu'une couche, la tabulation reste dans la couche
+ * visible.
+ */
+const dialogStack: symbol[] = [];
+
 export function CenterDialog({
   open,
   onClose,
@@ -593,6 +604,9 @@ export function CenterDialog({
 
   React.useEffect(() => {
     if (!open) return;
+    const layer = Symbol('dialog');
+    dialogStack.push(layer);
+    const isTop = () => dialogStack[dialogStack.length - 1] === layer;
     const focusables = () =>
       Array.from(
         panelRef.current?.querySelectorAll<HTMLElement>(
@@ -600,6 +614,7 @@ export function CenterDialog({
         ) ?? [],
       ).filter((el) => el.offsetParent !== null);
     const onKey = (e: KeyboardEvent) => {
+      if (!isTop()) return;
       if (e.key === 'Escape') {
         // Un Échap déjà consommé par une couche imbriquée (sélecteur de pays) ne ferme pas la fenêtre.
         if (!e.defaultPrevented) onCloseRef.current();
@@ -624,13 +639,19 @@ export function CenterDialog({
       }
     };
     window.addEventListener('keydown', onKey);
-    const focusTimer = window.setTimeout(() => focusables()[0]?.focus(), 60);
+    // Un champ qui a déjà pris le focus (autoFocus : le motif d'une suppression) le garde ;
+    // sinon, le premier élément de la fenêtre.
+    const focusTimer = window.setTimeout(() => {
+      if (!panelRef.current?.contains(document.activeElement)) focusables()[0]?.focus();
+    }, 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
       window.clearTimeout(focusTimer);
       document.body.style.overflow = prev;
+      const at = dialogStack.indexOf(layer);
+      if (at >= 0) dialogStack.splice(at, 1);
     };
   }, [open]);
 

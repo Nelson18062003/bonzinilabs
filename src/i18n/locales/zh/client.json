@@ -78,7 +78,11 @@
     "comingSoon": "功能即将推出",
     "customerCode": "我的客户编号",
     "sectionAccount": "账户",
-    "sectionPreferences": "偏好设置"
+    "sectionPreferences": "偏好设置",
+    "paymentDetails": "付款信息",
+    "paymentDetailsDesc": "银行和 Mobile Money · PDF 和图片",
+    "customs": "海关",
+    "customsDesc": "关税与税费、HS 编码"
   },
   "beneficiaries": {
     "title": "收款人",
@@ -163,7 +167,8 @@
     "history": "历史",
     "profile": "个人",
     "notifications": "通知",
-    "theme": "主题"
+    "theme": "主题",
+    "customs": "海关"
   },
   "rates": {
     "title": "汇率",

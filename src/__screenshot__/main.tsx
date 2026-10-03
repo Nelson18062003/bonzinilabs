@@ -11,7 +11,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 import '@/index.css';
 import '@/i18n';
@@ -58,7 +58,22 @@ import { MolaNav } from './molaNav';
 import { MolaScreen } from './molaScreen';
 import { MobileAssistantScreen } from '@/mobile/screens/assistant';
 import { Flyer } from './flyer';
-import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile } from './shippingLabel';
+import { PdfDoc, PngDoc } from './pdfDocs';
+import { StatementDoc } from './statementDoc';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+
+/** La fenêtre « Relevé de compte » (?variant=dialog|sheet), ouverte. */
+function StatementPicker() {
+  const q = new URLSearchParams(window.location.search);
+  return (
+    <div style={{ minHeight: '100vh', background: '#EDEBF3' }}>
+      <StatementPeriodSheet open onClose={() => {}} onGenerate={async () => false} isGenerating={false} variant={q.get('variant') === 'dialog' ? 'dialog' : 'sheet'} />
+    </div>
+  );
+}
+import { MobilePaymentDetailsScreen } from '@/mobile/screens/more/MobilePaymentDetailsScreen';
+import { PaymentDetailsHub } from '@/components/payment-details/PaymentDetailsHub';
+import { LabelWarehouse, LabelOffice, LabelWarehouseMono, LabelOfficeMono, LabelComposer, LabelComposerDesktop, LabelSheetMobile, LabelInternalSea, LabelInternalAir, LabelInternalJson } from './shippingLabel';
 import { MobileShippingSettings } from '@/mobile/screens/more/MobileShippingSettings';
 import { Kit } from './kit';
 import { MobileDashboard } from '@/mobile/screens/dashboard';
@@ -74,7 +89,13 @@ import {
   MobileChangePasswordScreen,
 } from '@/mobile/screens/more';
 import { MobileClientsScreen } from '@/mobile/screens/clients/MobileClientsScreen';
+import { MobileClientParcels } from '@/mobile/screens/clients/MobileClientParcels';
+import { MobileCargoScreen, MobileCargoDossier, MobileCargoReception, MobileCargoDepositDetail, MobileCargoLoadParcels, MobileCargoQuote, MobileCargoAir, MobileCargoAirForm, MobileCargoAirDetail, MobileCargoAirLoad, MobileCargoAccounts, MobileCargoAccount } from '@/mobile/screens/cargo';
+import { MobileCargoPricing } from '@/mobile/screens/more/MobileCargoPricing';
+import { DesktopCargoScreen, DesktopCargoDossier, DesktopCargoReception, DesktopCargoAir } from '@/desktop/screens/cargo';
+import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileLoginScreen } from '@/mobile/screens/auth/MobileLoginScreen';
 import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
 import { MobileClientLedger } from '@/mobile/screens/clients/MobileClientLedger';
 import MobileClientBeneficiaries from '@/mobile/screens/clients/MobileClientBeneficiaries';
@@ -85,6 +106,8 @@ import {
 } from '@/mobile/screens/deposits';
 import { MobileNewPayment, BulkPaymentCreate } from '@/mobile/screens/payments';
 import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
+import { MobileRatesMarketScreen } from '@/mobile/screens/rates/MobileRatesMarketScreen';
+import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import {
   MobileAdminsScreen,
   MobileCreateAdmin,
@@ -98,6 +121,24 @@ import {
   MobileQuickRepliesScreen,
 } from '@/mobile/screens/support';
 import {
+  ReceptionHome,
+  ReceptionIdentify,
+  ReceptionSearch,
+  ReceptionBroughtBy,
+  ReceptionSupplier,
+  ReceptionNewClient,
+  ReceptionDeposit,
+  ReceptionParcel,
+  ReceptionClients,
+  ReceptionClientCard,
+  ReceptionDone,
+  ReceptionPending,
+  ReceptionLogin,
+} from '@/mobile/screens/reception';
+import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
+import { WarehouseShell } from '@/mobile/components/warehouse/WarehouseRouteWrapper';
+import { WarehouseHome, WarehouseArrivals, WarehouseCheckin, WarehouseCheckinParcel, WarehouseCheckinDone, WarehousePickup, WarehouseWaiting, WarehousePickupClient, WarehousePay, WarehouseHandover, WarehouseSign, WarehouseReleaseDone } from '@/mobile/screens/warehouse';
+import {
   AgentCashLogin,
   AgentCashPayments,
   AgentCashScanner,
@@ -110,19 +151,46 @@ import { DdWorkbench, DdSplit, DdValidate, DdCreate } from './adminRedesign/depo
 import { DpWorkbench, DpSplit, DpCreate } from './adminRedesign/payments';
 import { MobilePaymentDetail } from '@/mobile/screens/payments';
 import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
-import { useActiveDailyRate as useMockActiveRate, useRateAdjustments as useMockAdjustments } from '@/hooks/useDailyRates';
+import { RateQuoteCard, QUOTE_W, QUOTE_H } from '@/desktop/screens/rates/RateQuoteCard';
 
-// Flyer réglé sur un pays dérivé (Gabon) — hooks aliasés sur les fixtures.
-function FlyerGabon() {
-  const { data: rate } = useMockActiveRate();
-  const { data: adjustments } = useMockAdjustments();
+/** La cotation du simulateur (?lang=en, ?theme=light), en taille naturelle. */
+function QuoteCardPreview() {
+  const q = new URLSearchParams(window.location.search);
+  const [fontReady, setFontReady] = React.useState(false);
+  React.useEffect(() => { void import('@/lib/flyerFonts').then((m) => m.loadFlyerFonts()).finally(() => setFontReady(true)); }, []);
+  if (!fontReady) return null;
+  const lang = q.get('lang') === 'en' ? 'en' : 'fr';
   return (
-    <div style={{ width: 560, padding: 16 }}>
-      <RateFlyerSheet activeRate={rate} adjustments={adjustments} initialCountry="gabon" />
+    <div id="quote" style={{ width: QUOTE_W, height: QUOTE_H }}>
+      <RateQuoteCard amountXAF={2500000} amountCNY={26730} method="alipay" finalRate={10692} countryLabel={lang === 'en' ? 'Gabon' : 'Gabon'} showCountry theme={q.get('theme') === 'light' ? 'light' : 'dark'} lang={lang} />
+    </div>
+  );
+}
+
+// Le panneau « Flyer du jour », réglé sur le Gabon, avec les chiffres de
+// production du 24/09/2026 (10 700 cash, 10 800 le reste ; pays −1 % ;
+// moins de 400 000 XAF −2 %) — donnés directement, sans hook.
+const FLYER_RATE = { id: 'r', rate_cash: 10700, rate_alipay: 10800, rate_wechat: 10800, rate_virement: 10800, effective_at: '2026-09-24T06:02:56Z', created_at: '', created_by: null, is_active: true };
+const flyerAdj = (type: 'country' | 'tier', key: string, percentage: number, is_reference = false) =>
+  ({ id: key, type, key, label: key, percentage, is_reference, sort_order: 0, updated_at: '', updated_by: null });
+const FLYER_ADJUSTMENTS = [
+  flyerAdj('country', 'cameroun', 0, true), flyerAdj('country', 'gabon', -1), flyerAdj('country', 'tchad', -1),
+  flyerAdj('country', 'rca', -1), flyerAdj('country', 'congo', -1), flyerAdj('country', 'guinee', -1),
+  flyerAdj('tier', 't3', 0, true), flyerAdj('tier', 't2', 0), flyerAdj('tier', 't1', -2),
+];
+function FlyerGabon() {
+  return (
+    <div style={{ width: '100%', maxWidth: 560, padding: 16, boxSizing: 'border-box' }}>
+      <RateFlyerSheet activeRate={FLYER_RATE} adjustments={FLYER_ADJUSTMENTS} initialCountry="gabon" />
     </div>
   );
 }
 import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
+
+/** Les documents rastérisés dans le navigateur (harnais des images). */
+const RIB_UBA = { kind: 'rib', bank: 'UBA' } as const;
+const MOMO = { kind: 'mobile-money' } as const;
+const BANKS = { kind: 'banks' } as const;
 
 // `path` (optional) renders the component inside a matching <Route> so
 // useParams() resolves — needed for the detail/edit screens.
@@ -144,7 +212,12 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'real-client-new': { Comp: ShippedCreateClient, route: '/m/clients/new' },
   // ÉCRANS LIVRÉS 18/09 — mobile (shoot avec tools/shoot-polish.mjs, iPhone)
   'real-rates-m': { Comp: MobileRatesScreen, route: '/m/more/rates' },
+  'real-rates-market': { Comp: () => <DesktopAppShell><DesktopRatesScreen initialView="market" /></DesktopAppShell>, route: '/m/more/rates/market' },
+  'real-rates-market-m': { Comp: MobileRatesMarketScreen, route: '/m/more/rates/market' },
   'real-flyer-gabon': { Comp: FlyerGabon, route: '/' },
+  'quote-card': { Comp: QuoteCardPreview, route: '/' },
+  'statement-doc': { Comp: StatementDoc, route: '/' },
+  'statement-picker': { Comp: StatementPicker, route: '/' },
   'real-pay-detail-m': { Comp: MobilePaymentDetail, route: '/m/payments/p3', path: '/m/payments/:paymentId' },
   'real-pay-done-m': { Comp: MobilePaymentDetail, route: '/m/payments/p5', path: '/m/payments/:paymentId' },
   'real-pay-cash-m': { Comp: MobilePaymentDetail, route: '/m/payments/p4', path: '/m/payments/:paymentId' },
@@ -231,6 +304,28 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'mola-real': { Comp: MobileAssistantScreen, route: '/m/more/assistant' },
   flyer: { Comp: Flyer, route: '/' },
   'label-warehouse': { Comp: LabelWarehouse, route: '/' },
+  'label-internal-sea': { Comp: LabelInternalSea, route: '/' },
+  'label-internal-json': { Comp: LabelInternalJson, route: '/' },
+  // Les documents PDF cargo (le script les lit sur window.__pdf et les rastérise)
+  'pdf-devis': { Comp: () => <PdfDoc kind="devis" />, route: '/' },
+  'pdf-recu': { Comp: () => <PdfDoc kind="recu" />, route: '/' },
+  'pdf-facture': { Comp: () => <PdfDoc kind="facture" />, route: '/' },
+  'pdf-bon': { Comp: () => <PdfDoc kind="bon" />, route: '/' },
+  'pdf-mobile-money': { Comp: () => <PdfDoc kind="mobile-money" />, route: '/' },
+  'pdf-mobile-money-paysage': { Comp: () => <PdfDoc kind="mobile-money-paysage" />, route: '/' },
+  'pdf-banques': { Comp: () => <PdfDoc kind="banques" />, route: '/' },
+  'pdf-banques-paysage': { Comp: () => <PdfDoc kind="banques-paysage" />, route: '/' },
+  // Le RIB de chaque banque, portrait et paysage : pdf-rib-ecobank, pdf-rib-cca-paysage…
+  ...Object.fromEntries(['ecobank', 'cca', 'uba', 'afriland'].flatMap((b) => ['', '-paysage'].map((o) => [`pdf-rib-${b}${o}`, { Comp: () => <PdfDoc kind={`rib-${b}${o}`} />, route: '/' }]))),
+  'png-rib-uba': { Comp: () => <PngDoc doc={RIB_UBA} orientation="portrait" />, route: '/' },
+  'png-momo-paysage': { Comp: () => <PngDoc doc={MOMO} orientation="landscape" />, route: '/' },
+  'png-momo-portrait': { Comp: () => <PngDoc doc={MOMO} orientation="portrait" />, route: '/' },
+  'png-banks-portrait': { Comp: () => <PngDoc doc={BANKS} orientation="portrait" />, route: '/' },
+  'png-banks-paysage': { Comp: () => <PngDoc doc={BANKS} orientation="landscape" />, route: '/' },
+  'payment-details': { Comp: MobilePaymentDetailsScreen, route: '/m/more/payment-details' },
+  'payment-details-momo': { Comp: () => <div className="p-4"><PaymentDetailsHub audience="client" initialTab="momo" /></div>, route: '/payment-details' },
+  'payment-details-desktop': { Comp: () => <MobilePaymentDetailsScreen desktop />, route: '/m/more/payment-details' },
+  'label-internal-air': { Comp: LabelInternalAir, route: '/' },
   'label-office': { Comp: LabelOffice, route: '/' },
   'label-warehouse-mono': { Comp: LabelWarehouseMono, route: '/' },
   'label-office-mono': { Comp: LabelOfficeMono, route: '/' },
@@ -295,11 +390,97 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'support-quick': { Comp: MobileQuickRepliesScreen, route: '/m/support/quick' },
   // Agent-cash sub-app (Phase 2 M8) — routes are /a/*. wrap:'lang' provides useLanguage().
   'agent-login': { Comp: AgentCashLogin, route: '/a/login', wrap: 'lang' },
+  // Connexion unique du personnel (app BONZINI HQ : ajouter « BonziniHQ/1.0 » à l'agent utilisateur).
+  'staff-login': { Comp: MobileLoginScreen, route: '/m/login', path: '/m/login' },
   'agent-payments': { Comp: AgentCashPayments, route: '/a', wrap: 'lang' },
   'agent-scanner': { Comp: AgentCashScanner, route: '/a/scan', wrap: 'lang' },
   'agent-payment-detail': { Comp: AgentCashPaymentDetail, route: '/a/payment/cp1', path: '/a/payment/:paymentId', wrap: 'lang' },
   'agent-confirm': { Comp: AgentCashConfirm, route: '/a/payment/cp1/confirm', path: '/a/payment/:paymentId/confirm', wrap: 'lang' },
   'agent-success': { Comp: AgentCashSuccess, route: '/a/payment/cp2/success', path: '/a/payment/:paymentId/success', wrap: 'lang' },
+  // Réception des colis (réceptionnaire) — routes /r/*, fixtures dans tools/shoot-reception.mjs
+  'rc-login': { Comp: ReceptionLogin, route: '/r/login', wrap: 'lang' },
+  'rc-home': { Comp: () => <ReceptionShell><ReceptionHome /></ReceptionShell>, route: '/r', wrap: 'lang' },
+  'rc-identify': { Comp: ReceptionIdentify, route: '/r/new', wrap: 'lang' },
+  'rc-search': { Comp: ReceptionSearch, route: '/r/new/search', wrap: 'lang' },
+  'rc-parcel-weight': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel?step=weight', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-parcel-dims': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel?step=dims', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-parcel-inside': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel?step=inside', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-parcel-copies': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel?step=copies', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-how': { Comp: ReceptionBroughtBy, route: '/r/new/how?client=u1&name=A%C3%AFcha%20Mbarga&code=BZ-482913', wrap: 'lang' },
+  'rc-client': { Comp: ReceptionNewClient, route: '/r/new/client', wrap: 'lang' },
+  'rc-supplier': { Comp: ReceptionSupplier, route: '/r/deposit/dep1/supplier', path: '/r/deposit/:depositId/supplier', wrap: 'lang' },
+  'rc-deposit': { Comp: ReceptionDeposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-deposit-photo': { Comp: ReceptionDeposit, route: '/r/deposit/dep2', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-deposit-empty': { Comp: ReceptionDeposit, route: '/r/deposit/dep0', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'rc-parcel': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-parcel-edit': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel/pRC-000123-1', path: '/r/deposit/:depositId/parcel/:parcelId', wrap: 'lang' },
+  'rc-parcel-photos': { Comp: ReceptionParcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'rc-done': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'rc-done-labels': { Comp: ReceptionDone, route: '/r/deposit/dep2/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'rc-pending': { Comp: () => <ReceptionShell><ReceptionPending /></ReceptionShell>, route: '/r/pending', wrap: 'lang' },
+  'rc-clients': { Comp: () => <ReceptionShell><ReceptionClients /></ReceptionShell>, route: '/r/clients', wrap: 'lang' },
+  'rc-client-card': { Comp: ReceptionClientCard, route: '/r/clients/u1', path: '/r/clients/:userId', wrap: 'lang' },
+  // Admin — la réception dans Bonzini Cargo
+  // Entrepôt de Douala (« /w »)
+  'wh-home': { Comp: () => <WarehouseShell><WarehouseHome /></WarehouseShell>, route: '/w', wrap: 'lang' },
+  'wh-arrivals': { Comp: () => <WarehouseShell><WarehouseArrivals /></WarehouseShell>, route: '/w/arrivees', wrap: 'lang' },
+  'wh-checkin': { Comp: WarehouseCheckin, route: '/w/arrivees/air/air3', path: '/w/arrivees/:kind/:id', wrap: 'lang' },
+  'wh-parcel': { Comp: WarehouseCheckinParcel, route: '/w/arrivees/air/air3/colis/dep3-3', path: '/w/arrivees/:kind/:id/colis/:parcelId', wrap: 'lang' },
+  'wh-parcel-damaged': { Comp: WarehouseCheckinParcel, route: '/w/arrivees/air/air3/colis/dep3-3', path: '/w/arrivees/:kind/:id/colis/:parcelId', wrap: 'lang' },
+  'wh-bilan': { Comp: WarehouseCheckinDone, route: '/w/arrivees/air/air3/bilan', path: '/w/arrivees/:kind/:id/bilan', wrap: 'lang' },
+  'wh-pickup': { Comp: () => <WarehouseShell><WarehousePickup /></WarehouseShell>, route: '/w/remise', wrap: 'lang' },
+  'wh-waiting': { Comp: () => <WarehouseShell><WarehouseWaiting /></WarehouseShell>, route: '/w/remise/liste', wrap: 'lang' },
+  'wh-client': { Comp: WarehousePickupClient, route: '/w/remise/BZ-510224', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-client-blocked': { Comp: WarehousePickupClient, route: '/w/remise/BZ-482913', path: '/w/remise/:code', wrap: 'lang' },
+  'wh-pay': { Comp: WarehousePay, route: '/w/remise/BZ-482913/encaisser', path: '/w/remise/:code/encaisser', wrap: 'lang' },
+  'wh-who': { Comp: WarehouseHandover, route: '/w/remise/BZ-510224/qui', path: '/w/remise/:code/qui', wrap: 'lang' },
+  'wh-sign': { Comp: WarehouseSign, route: '/w/remise/BZ-510224/signature', path: '/w/remise/:code/signature', wrap: 'lang' },
+  'wh-done': { Comp: WarehouseReleaseDone, route: '/w/bon/rel1', path: '/w/bon/:releaseId', wrap: 'lang' },
+  'cargo-home': { Comp: MobileCargoScreen, route: '/m/cargo' },
+  'cargo-reception': { Comp: MobileCargoReception, route: '/m/cargo/reception' },
+  'cargo-accounts': { Comp: MobileCargoAccounts, route: '/m/cargo/comptes' },
+  'cargo-account': { Comp: MobileCargoAccount, route: '/m/cargo/comptes/acc1', path: '/m/cargo/comptes/:accountId' },
+  'cargo-deposit': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-photo': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-wallet': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-deposit-pending': { Comp: MobileCargoDepositDetail, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-quote': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-quote-empty': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep4/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-quote-paid': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep3/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-quote-pay': { Comp: MobileCargoQuote, route: '/m/cargo/reception/dep2/devis', path: '/m/cargo/reception/:depositId/devis' },
+  'cargo-pricing': { Comp: MobileCargoPricing, route: '/m/more/cargo-pricing' },
+  'cargo-air': { Comp: MobileCargoAir, route: '/m/cargo/avion' },
+  'cargo-air-new': { Comp: MobileCargoAirForm, route: '/m/cargo/avion/nouveau' },
+  'cargo-air-detail': { Comp: MobileCargoAirDetail, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
+  'cargo-air-load': { Comp: MobileCargoAirLoad, route: '/m/cargo/avion/air1/charger', path: '/m/cargo/avion/:airId/charger' },
+  'cargo-pricing-desktop': { Comp: () => <MobileCargoPricing desktop />, route: '/m/more/cargo-pricing' },
+  'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
+  'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },
+  // Admin DESKTOP — la réception dans Bonzini Cargo (1440×900, dans le shell)
+  'cargo-desk-home': { Comp: () => <DesktopAppShell><DesktopCargoScreen /></DesktopAppShell>, route: '/m/cargo' },
+  'cargo-desk-reception': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-client': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-deposit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-expanded': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-parcels': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-parcels-selected': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-photos': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception' },
+  'cargo-desk-viewer': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-parcel-edit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-deposit-edit': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-labels': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-labels-client': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep2', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-remove': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep4', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-cancelled': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/gone1', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-air': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion' },
+  'cargo-desk-air-detail': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
+  'cargo-desk-air-load': { Comp: () => <DesktopAppShell><DesktopCargoAir /></DesktopAppShell>, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
+  'cargo-desk-deposit-paid': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/dep3', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-deposit-pending': { Comp: () => <DesktopAppShell><DesktopCargoReception /></DesktopAppShell>, route: '/m/cargo/reception/pend1', path: '/m/cargo/reception/:depositId' },
+  'cargo-desk-chargement': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-desk-load': { Comp: () => <DesktopAppShell><DesktopCargoDossier /></DesktopAppShell>, route: '/m/cargo/ct1/chargement?charger=1', path: '/m/cargo/:shipmentId/:tab' },
+  'client-desk-panel': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -312,9 +493,11 @@ try { window.localStorage.setItem('theme', theme); } catch { /* ignore */ }
 if (params.get('font') === 'dm') document.documentElement.style.fontFamily = "'DM Sans', sans-serif";
 
 // Full-permission fake admin so permission guards pass.
+// ?anon=1 : personne n'est connecté (écran de connexion) ; ?role=… : le rôle simulé.
+const anon = params.get('anon') === '1';
 const fakeAuth = {
-  currentUser: { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: 'super_admin' },
-  isAuthenticated: true,
+  currentUser: anon ? null : { id: 'demo', email: 'demo@bonzini.com', firstName: 'Demo', lastName: 'Admin', role: params.get('role') ?? 'super_admin' },
+  isAuthenticated: !anon,
   isLoading: false,
   hasPermission: () => true,
   profile: { first_name: 'Demo', last_name: 'Admin' },
@@ -341,11 +524,19 @@ const routed = entry.path ? (
 // Agent-cash screens need LanguageProvider (useLanguage bridge over i18next).
 const inner = entry.wrap === 'lang' ? <LanguageProvider>{routed}</LanguageProvider> : routed;
 
+/** Le chemin du routeur en mémoire, lisible par les tests (window.__routerPath). */
+function LocationProbe() {
+  const loc = useLocation();
+  (window as unknown as { __routerPath?: string }).__routerPath = loc.pathname;
+  return null;
+}
+
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={theme} enableSystem={false}>
     <QueryClientProvider client={qc}>
       <AdminAuthContext.Provider value={fakeAuth}>
         <MemoryRouter initialEntries={[entry.route]}>
+          <LocationProbe />
           {inner}
         </MemoryRouter>
       </AdminAuthContext.Provider>

@@ -4,6 +4,10 @@ import { AnimatedPage } from '@/components/transitions/AnimatedPage';
 import { PasskeyEnrollPrompt } from '@/mobile/components/PasskeyEnrollPrompt';
 import { SURFACE } from '@/mobile/designKit';
 import { cn } from '@/lib/utils';
+import { isNativeApp } from '@/lib/nativeApp';
+
+/** Dans l'app BONZINI HQ, la barre d'onglets est native : celle du site se retire. */
+const inApp = isNativeApp();
 
 interface MobileAppShellProps {
   children: ReactNode;
@@ -33,7 +37,7 @@ export function MobileAppShell({ children, showTabBar = true, className }: Mobil
       >
         <AnimatedPage>{children}</AnimatedPage>
       </main>
-      {showTabBar && <MobileTabBar />}
+      {showTabBar && !inApp && <MobileTabBar />}
       {/* Se montre au plus une fois, puis se tait 14 jours (cf. composant). */}
       <PasskeyEnrollPrompt />
     </div>

@@ -37,6 +37,9 @@ const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin' },
   { value: 'ops', label: 'Ops' },
   { value: 'cash_agent', label: 'Agent Cash' },
+  { value: 'receptionist', label: 'Réceptionnaire' },
+  { value: 'warehouse_agent', label: "Agent d'entrepôt" },
+  { value: 'customs_broker', label: 'Commissionnaire agréé' },
 ];
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Tous' },

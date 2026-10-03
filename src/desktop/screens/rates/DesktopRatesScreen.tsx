@@ -10,6 +10,8 @@
  *     dérivés du Cameroun, avec leur flyer.
  *   · Historique — tendance + table, la surveillance.
  *   · Réglages — ajustements pays & tranches.
+ *   · Marché Binance — distribution en direct du carnet Binance P2P
+ *     (CNY et XAF), filtres toujours visibles (canManageRates).
  * Rien d'autre n'est affiché que la vue choisie. Le flyer reste accessible
  * depuis l'en-tête, en dialogue centré.
  */
@@ -25,20 +27,28 @@ import { RateQuoteSimulator } from './RateQuoteSimulator';
 import { DesktopRateHistory } from './DesktopRateHistory';
 import { RateTrendCard } from './RateTrendCard';
 import { RateAdjustmentsCard } from './RateAdjustmentsCard';
+import { P2PMarketView } from '@/components/rates/market/P2PMarketView';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
-export type RatesView = 'simulator' | 'publish' | 'history' | 'settings';
+export type RatesView = 'simulator' | 'publish' | 'history' | 'settings' | 'market';
 
 const VIEWS: { key: RatesView; label: string }[] = [
   { key: 'simulator', label: 'Simulateur' },
   { key: 'publish', label: 'Publier' },
   { key: 'history', label: 'Historique' },
   { key: 'settings', label: 'Réglages' },
+  { key: 'market', label: 'Marché Binance' },
 ];
 
 export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?: RatesView } = {}) {
   const { data: activeRate } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
-  const [view, setView] = useState<RatesView>(initialView);
+  const { hasPermission } = useAdminAuth();
+  // Le carnet Binance est servi par une edge function gardée par
+  // canManageRates : on ne montre l'onglet qu'à qui peut le lire.
+  const canMarket = hasPermission('canManageRates');
+  const views = VIEWS.filter((v) => v.key !== 'market' || canMarket);
+  const [view, setView] = useState<RatesView>(initialView === 'market' && !canMarket ? 'simulator' : initialView);
   const [flyerOpen, setFlyerOpen] = useState(false);
   // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les
   // clients ; `flyerCountry` = pays présélectionné (depuis « Taux par pays »).
@@ -67,7 +77,7 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
 
       {/* ── Sélecteur de vue — un seul métier à l'écran à la fois ───────── */}
       <nav className="flex items-center gap-1.5" aria-label="Vues du module Taux">
-        {VIEWS.map((v) => (
+        {views.map((v) => (
           <button
             key={v.key}
             type="button"
@@ -117,6 +127,8 @@ export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?
           <RateAdjustmentsCard />
         </div>
       )}
+
+      {view === 'market' && canMarket && <P2PMarketView />}
 
       {/* ── Flyer WhatsApp ──────────────────────────────────────────────── */}
       <CenterDialog open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour" width={560}>

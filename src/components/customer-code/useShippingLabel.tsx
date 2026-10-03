@@ -8,7 +8,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { cn } from '@/lib/utils';
 import { customerQrPayload, renderShippingLabel, LABEL_W, LABEL_H, type LabelData } from '@/lib/shippingLabelCanvas';
 
-export function useShippingLabel(data: LabelData, { active = true }: { /** `false` : rien n'est peint (feuille fermée) — on ne paie pas deux peintures et un canvas ×3 pour une fiche client qu'on ne fait que lire. */ active?: boolean } = {}): { preview: string | null; render: (scale?: number) => Promise<HTMLCanvasElement>; qr: ReactNode } {
+export function useShippingLabel(data: LabelData, { active = true }: { /** `false` : rien n'est peint (feuille fermée) — on ne paie pas deux peintures et un canvas ×3 pour une fiche client qu'on ne fait que lire. */ active?: boolean } = {}): { preview: string | null; render: (scale?: number) => Promise<HTMLCanvasElement>; renderWith: (overrides: Partial<LabelData>, scale?: number) => Promise<HTMLCanvasElement>; qr: ReactNode } {
   // Le canvas du QR arrive par une ref-fonction : tant qu'il n'est pas monté
   // (feuille fermée), il n'y a pas d'aperçu à peindre ; dès qu'il l'est, on
   // repeint — sinon l'étiquette partait sans QR quand la feuille s'ouvrait
@@ -47,12 +47,15 @@ export function useShippingLabel(data: LabelData, { active = true }: { /** `fals
     return renderShippingLabel(stable, qrEl, scale);
   }, [stable, qrEl, key]);
 
+  /** La même étiquette, avec un numéro de carton (ou une date) : une page par colis à la réception. */
+  const renderWith = useCallback((overrides: Partial<LabelData>, scale = 3) => renderShippingLabel({ ...stable, ...overrides }, qrEl, scale), [stable, qrEl]);
+
   const qr = (
     <div aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
       <QRCodeCanvas ref={setQrEl} value={customerQrPayload(data.code)} size={600} level="H" marginSize={0} />
     </div>
   );
-  return { preview, render, qr };
+  return { preview, render, renderWith, qr };
 }
 
 /** L'aperçu : l'image de l'étiquette, à la largeur disponible, aux proportions de la feuille. */

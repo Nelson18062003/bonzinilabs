@@ -11,6 +11,7 @@ import { MobileLayout } from '@/components/layout/MobileLayout';
 import { BalanceCard } from '@/components/wallet/BalanceCard';
 import { QuickActions } from '@/components/wallet/QuickActions';
 import { CustomerIdCard } from '@/components/wallet/CustomerIdCard';
+import { CustomsCard } from '@/components/wallet/CustomsCard';
 import { OperationsList } from '@/components/wallet/OperationsList';
 import { WelcomeGreeting } from '@/components/wallet/WelcomeGreeting';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
@@ -65,6 +66,9 @@ const WalletPage = () => {
 
         {/* Identifiant client — libellé de virement + étiquette colis */}
         <CustomerIdCard code={profile?.customer_code} />
+
+        {/* Douane — ce que la sortie coûtera, avant de payer le fournisseur */}
+        <CustomsCard />
 
         {/* Taux du jour */}
         <section>

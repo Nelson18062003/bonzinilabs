@@ -20,11 +20,8 @@ import { formatXAF } from '@/lib/formatters';
 import { whenSentence } from '@/lib/plainTime';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  generateStatementForRange,
-  buildMovementFromLedgerEntry,
-  shouldIncludeLedgerEntry,
-} from '@/lib/generateClientStatement';
+import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
+import { downloadAccountStatement } from '@/lib/accountStatementData';
 import { cn } from '@/lib/utils';
 import {
   ArrowDownCircle,
@@ -48,15 +45,18 @@ import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
 import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
 import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
 import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
+import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
+import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
+import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
 import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
+import { useClientDeposits } from '@/hooks/useReception';
+import { formatCbm, formatKg } from '@/lib/reception';
 import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence } from '@/lib/cargo/plain';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { PhoneCountryInput } from '@/components/auth/PhoneCountryInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
-import { normalizePhone } from '@/lib/phone';
 import { toast } from 'sonner';
 import type { AdjustmentType } from '@/types/admin';
 import {
@@ -169,6 +169,9 @@ export function MobileClientDetail() {
   // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
   // toute la flotte pèsent jusqu'à 3 000 lignes).
   const { data: fleet } = useCargoShipments({ enabled: canViewCargo });
+  const { data: clientDeposits } = useClientDeposits(clientId || undefined, canViewCargo);
+  const receivedParcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
+  const waitingParcels = receivedParcels.filter((p) => !p.shipment_id);
   const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
   const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
@@ -176,15 +179,19 @@ export function MobileClientDetail() {
   // Edit client drawer state
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    firstName: '', lastName: '', phone: '', email: '', companyName: '', country: '', city: '',
+    firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
   });
+  // `client.id` est le user_id : la clé que lit useClientPhones.
+  const { data: clientPhones } = useClientPhones(client?.id);
+  const phonesEditor = useClientPhonesEditor();
+  const setPhones = useSetClientPhones();
 
   const openEdit = () => {
     if (!client) return;
+    phonesEditor.reset(clientPhones, client.phone, client.country);
     setEditForm({
       firstName: client.firstName,
       lastName: client.lastName,
-      phone: client.phone,
       email: client.email,
       companyName: client.companyName,
       country: client.country,
@@ -194,31 +201,42 @@ export function MobileClientDetail() {
   };
 
   const handleSaveEdit = async () => {
-    if (!client) return;
+    if (!client || updateClientMutation.isPending || setPhones.isPending) return;
 
     // Un numéro invalide n'est pas seulement mal saisi : le déclencheur de
     // synchronisation met alors phone_e164 à NULL, et le client cesse
     // silencieusement de recevoir ses alertes. Mieux vaut le dire ici.
-    const phone = editForm.phone.trim();
-    if (phone !== '' && !normalizePhone(phone)) {
-      toast.error('Numéro invalide', {
+    if (phonesEditor.primaryInvalid) {
+      toast.error('Numéro principal invalide', {
         description: 'Vérifiez le pays et le numéro. Sans numéro valide, ce client ne recevra aucun SMS.',
       });
       return;
     }
+    if (phonesEditor.extrasInvalid) {
+      toast.error('Un autre numéro est incomplet', { description: 'Complétez-le ou retirez-le.' });
+      return;
+    }
+    const phones = phonesEditor.toInputs();
 
-    await updateClientMutation.mutateAsync({
-      userId: client.id,
-      firstName: editForm.firstName.trim(),
-      lastName: editForm.lastName.trim(),
-      phone: editForm.phone.trim(),
-      email: editForm.email.trim(),
-      companyName: editForm.companyName.trim(),
-      country: editForm.country.trim(),
-      city: editForm.city.trim(),
-    });
-    setEditOpen(false);
-    refetch();
+    try {
+      // Les numéros d'abord : la RPC recopie le principal dans la fiche. S'ils
+      // sont refusés, rien d'autre n'est écrit.
+      if (phonesEditor.changed) await setPhones.mutateAsync({ userId: client.id, phones });
+      await updateClientMutation.mutateAsync({
+        userId: client.id,
+        firstName: editForm.firstName.trim(),
+        lastName: editForm.lastName.trim(),
+        phone: phones[0].phone_e164,
+        email: editForm.email.trim(),
+        companyName: editForm.companyName.trim(),
+        country: editForm.country.trim(),
+        city: editForm.city.trim(),
+      });
+      setEditOpen(false);
+      refetch();
+    } catch {
+      /* message affiché par le hook */
+    }
   };
 
   const deleteClientMutation = useAdminDeleteClient();
@@ -265,35 +283,31 @@ export function MobileClientDetail() {
   // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
   // les écritures de cette période (plus de plafond à 100), et le solde
   // d'ouverture vient de la dernière écriture avant la période si elle est vide.
-  const handleDownloadStatement = async (range: StatementRange) => {
+  const handleDownloadStatement = async (range: StatementRange, lang: StatementLang) => {
     if (!client) return;
     setIsStatementGenerating(true);
     try {
       const query = statementQueryRange(range);
-      const entries = await fetchLedgerEntriesInRange(client.id, query);
-      const movements = entries
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((entry) => shouldIncludeLedgerEntry({ ...entry, isTest: (entry as any).isTest }))
-        .map((entry) => buildMovementFromLedgerEntry(entry));
-      if (query === null && movements.length === 0) {
+      const entries: StatementEntry[] = await fetchLedgerEntriesInRange(client.id, query);
+      if (query === null && !entries.some(isStatementEntry)) {
         toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
         return false;
       }
-      const lastBefore = query && movements.length === 0
-        ? await fetchLastLedgerEntryBefore(client.id, query.from)
-        : null;
-
-      await generateStatementForRange({
+      // Le solde d'ouverture d'une période sans mouvement : la dernière écriture avant elle.
+      const lastBefore = query ? await fetchLastLedgerEntryBefore(client.id, query.from) : null;
+      await downloadAccountStatement({
+        db: supabaseAdmin,
+        lang,
         client: {
-          name: `${client.firstName} ${client.lastName}`,
+          name: `${client.firstName} ${client.lastName}`.trim(),
+          code: client.customerCode,
           phone: client.phone,
           email: client.email,
           country: client.country,
-          ref: client.customerCode,
         },
+        entries,
         range: query,
-        movements,
-        lastBalanceBefore: lastBefore?.balanceAfter ?? null,
+        balanceBeforeRange: lastBefore?.balanceAfter ?? null,
       });
       return true;
     } catch (err) {
@@ -459,6 +473,22 @@ export function MobileClientDetail() {
           </Card>
         </section>
 
+        {/* ── Ses colis reçus (Réception, dans Cargo) ─────────── */}
+        {canViewCargo && receivedParcels.length > 0 && (
+          <section>
+            <SectionTitle action={{ label: 'Tout voir', onClick: () => navigate(`/m/clients/${client.id}/parcels`) }}>
+              Ses colis reçus
+            </SectionTitle>
+            <Card className="py-0">
+              <ListRow
+                title={<span className="tabular-nums">{receivedParcels.length} colis · {formatKg(receivedParcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(receivedParcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}</span>}
+                subtitle={waitingParcels.length > 0 ? `${waitingParcels.length} à l'entrepôt, pas encore chargés` : 'Tout est chargé dans une boîte'}
+                onClick={() => navigate(`/m/clients/${client.id}/parcels`)}
+              />
+            </Card>
+          </section>
+        )}
+
         {/* ── Ses conteneurs (Cargo) ────────────────────────── */}
         {containers.length > 0 && (
           <section>
@@ -606,25 +636,17 @@ export function MobileClientDetail() {
           {([
             { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const },
             { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const },
-            { label: t('phoneWhatsApp', { defaultValue: 'Téléphone / WhatsApp' }), key: 'phone' as const },
+            { label: '', key: 'phones' as const },
             { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const },
             { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const },
             { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const },
             { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const },
-          ]).map(({ label, key }) => (
+          ]).map(({ label, key }) => key === 'phones' ? (
+            /* Plusieurs numéros, comme à la création : le premier est le principal. */
+            <ClientPhonesEditor key={key} editor={phonesEditor} />
+          ) : (
             <FormField key={key} label={label} htmlFor={`edit-${key}`}>
-              {key === 'phone' ? (
-                /* Sélecteur de pays + saisie formatée, comme à l'inscription.
-                   Un champ texte libre laissait passer des numéros sans
-                   indicatif — or sans numéro international, le client ne
-                   reçoit plus aucun SMS, et l'admin n'en sait rien. */
-                <PhoneCountryInput
-                  hideLabel
-                  value={editForm.phone}
-                  onChange={(val) => setEditForm(f => ({ ...f, phone: val }))}
-                  controlClassName="h-11 rounded-lg"
-                />
-              ) : key === 'country' ? (
+              {key === 'country' ? (
                 <CountryCombobox
                   id="edit-country"
                   variant="country"
@@ -643,7 +665,7 @@ export function MobileClientDetail() {
           ))}
         </div>
         <div className="mt-5 flex flex-col gap-2">
-          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending} className="w-full">
+          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending || setPhones.isPending} className="w-full">
             {t('save', { defaultValue: 'Enregistrer' })}
           </PrimaryPill>
           <SoftPill onClick={() => setEditOpen(false)} className="w-full">

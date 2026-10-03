@@ -26,6 +26,7 @@ import {
 } from '@/types/deposit';
 import {
   methodFamilies,
+  selectableMethodFamilies,
   getSubMethodsForFamily,
   banks,
   agencies,
@@ -174,6 +175,7 @@ function coordinates(
         { label: 'N° compte', value: b.bonziniAccount.accountNumber, mono: true },
         { label: 'Titulaire', value: b.bonziniAccount.accountName },
         { label: 'IBAN', value: b.bonziniAccount.iban, mono: true },
+        { label: 'SWIFT', value: b.bonziniAccount.swift, mono: true },
       ],
       instructions:
         subMethod === 'BANK_TRANSFER'
@@ -188,7 +190,7 @@ function coordinates(
           { label: 'Numéro', value: orangeMoneyAccount.phone, mono: true },
           { label: 'Titulaire', value: orangeMoneyAccount.accountName },
         ],
-        instructions: ['Composer #150*1*1#', `Montant : ${montant}`, 'Capture du SMS → preuve'],
+        instructions: ['Depuis sa puce commerciale Orange (compte UV), transfert de flotte', `Montant : ${montant}`, 'Capture de la confirmation → preuve'],
       };
     }
     return {
@@ -206,7 +208,7 @@ function coordinates(
           { label: 'Numéro', value: mtnMoneyAccount.phone, mono: true },
           { label: 'Titulaire', value: mtnMoneyAccount.accountName },
         ],
-        instructions: [`Transfert MoMo vers ${mtnMoneyAccount.phone}`, `Montant : ${montant}`, 'Capture du SMS → preuve'],
+        instructions: ['Depuis sa puce commerciale MTN (compte Float), transfert de flotte', `Montant : ${montant}`, 'Capture de la confirmation → preuve'],
       };
     }
     return {
@@ -490,7 +492,7 @@ export function DesktopNewDeposit() {
           <Card>
             <SecLabel>2 · Méthode de dépôt</SecLabel>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {methodFamilies.map((f) => (
+              {selectableMethodFamilies.map((f) => (
                 <button
                   key={f.family}
                   type="button"

@@ -23,7 +23,13 @@ import { FormField, TextInput, PrimaryPill, TEXT } from '@/mobile/designKit';
 
 const emailSchema = z.string().email();
 
-export function AgentCashLogin() {
+/**
+ * `home` : où l'on va une fois connecté (« /a » pour l'agent cash, « /r » pour
+ * le réceptionnaire) ; `titleKey` : le titre de l'écran, dans l'espace de
+ * noms `agent`. Le même écran sert aux deux sous-apps : même fond, mêmes deux
+ * étapes, même bascule de langue.
+ */
+export function AgentCashLogin({ home = '/a', titleKey = 'agent_login' }: { home?: string; titleKey?: string } = {}) {
   const navigate = useNavigate();
   const { login, isLoading: authLoading } = useAdminAuth();
   const { t, language, setLanguage } = useLanguage();
@@ -50,8 +56,12 @@ export function AgentCashLogin() {
     return `${visible}***@${domain}`;
   };
 
+  // Trois langues, en boucle : fr → en → zh → fr. La pastille dit la langue
+  // courante, dans sa propre écriture.
+  const LANGS = ['fr', 'en', 'zh'] as const;
   const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'zh' : 'en');
+    const i = LANGS.indexOf(language as (typeof LANGS)[number]);
+    setLanguage(LANGS[(i + 1) % LANGS.length]);
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -75,7 +85,7 @@ export function AgentCashLogin() {
       if (result.success) {
         toast.success(pick('Login successful', '登录成功', 'Connexion réussie'));
         setIsFadingOut(true);
-        setTimeout(() => navigate('/a'), 300);
+        setTimeout(() => navigate(home), 300);
       } else {
         setError(result.error || t('invalid_credentials'));
       }
@@ -107,7 +117,7 @@ export function AgentCashLogin() {
         onClick={toggleLanguage}
         className="absolute top-6 right-4 z-20 min-h-11 px-4 py-1.5 rounded-full bg-card/80 backdrop-blur-sm border border-border/50 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors animate-fade-in"
       >
-        {language === 'en' ? '中文' : 'EN'}
+        {language === 'zh' ? '中文' : language === 'en' ? 'EN' : 'FR'}
       </button>
 
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
@@ -137,7 +147,7 @@ export function AgentCashLogin() {
                 className="text-center mb-8 animate-slide-up"
                 style={{ animationDelay: '80ms', animationFillMode: 'both' }}
               >
-                <h1 className={cn('text-2xl font-bold mb-1', TEXT.strong)}>{t('agent_login')}</h1>
+                <h1 className={cn('text-2xl font-bold mb-1', TEXT.strong)}>{t(titleKey)}</h1>
                 <p className={cn('text-sm', TEXT.muted)}>{t('email_address')}</p>
               </div>
 
