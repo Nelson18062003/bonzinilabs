@@ -3,6 +3,7 @@
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoDocFolder } from '@/lib/cargo/documents';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -85,7 +86,6 @@ export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined)
 export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
 export const useCreateCargoShipmentManual = noop;
-export const useCargoDocuments = () => ok([] as CargoDocument[]);
 const COSTS: CargoCost[] = [
   { id: 'c1', shipment_id: '2', kind: 'FREIGHT', amount: 6550, currency: 'USD', label: null, incurred_on: '2026-08-12', invoice_ref: 'FAC-2026-0812', note: null, paid: true, created_by: null, created_at: '2026-08-12T09:00:00Z', updated_at: '2026-08-12T09:00:00Z' },
   { id: 'c2', shipment_id: '2', kind: 'BESC', amount: 85_000, currency: 'XAF', label: null, incurred_on: '2026-08-20', invoice_ref: null, note: null, paid: true, created_by: null, created_at: '2026-08-20T09:00:00Z', updated_at: '2026-08-20T09:00:00Z' },
@@ -105,3 +105,36 @@ export const useCargoClientOptions = () => ok([] as { id: string; first_name: st
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;
 export const openCargoDocument = async () => undefined;
+
+/* ── Classeur (refonte du 03/10/2026) ── */
+const folder = (id: string, title: string, category: string, expected_count: number | null, position: number, note: string | null = null): CargoDocFolder => ({
+  id, shipment_id: '2', title, category, expected_count, position, note, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z',
+});
+const FOLDERS: CargoDocFolder[] = [
+  folder('f1', 'Bill of lading Maersk 274428633 (originaux)', 'BL', 3, 1, 'Chargeur : KASSUMAYE PARTNER SARL'),
+  folder('f2', 'Télex release', 'TELEX', 1, 2, 'Pas encore reçu'),
+  folder('f3', 'BESC MI2661716', 'BESC', 1, 3, 'Validé le 30/09/2026'),
+  folder('f4', "Certificats d'identification CICQ", 'CERTIFICATE', 3, 4),
+  folder('f5', "Attestation d'immatriculation DGI", 'TAX', 1, 5),
+];
+const doc = (id: string, folder_id: string | null, kind: string, file_name: string, mime: string, title: string | null = null, note: string | null = null): CargoDocument => ({
+  id, shipment_id: '2', kind, file_name, storage_path: `2/${id}-${file_name}`, mime_type: mime, size_bytes: 180_000 + id.length * 9000,
+  uploaded_by: null, created_at: '2026-10-01T18:34:00Z', updated_at: '2026-10-01T18:34:00Z', folder_id, cost_id: null, title, note,
+});
+const DOCS: CargoDocument[] = [
+  doc('d1', 'f1', 'BL', 'bl-verify-copy.jpg', 'image/jpeg', 'B/L, copie « verify »', 'Photo reçue le 01/10'),
+  doc('d2', 'f3', 'BESC', 'MI2661716_20261001.pdf', 'application/pdf', 'BESC validé'),
+  doc('d3', 'f4', 'CERTIFICATE', 'cicq-4025-haval.jpg', 'image/jpeg', 'A/4025 · Haval H6'),
+  doc('d4', 'f4', 'CERTIFICATE', 'cicq-4026-rav4.jpg', 'image/jpeg', 'A/4026 · Toyota RAV4'),
+  doc('d5', 'f4', 'CERTIFICATE', 'cicq-4027-yaris.jpg', 'image/jpeg', 'A/4027 · Toyota Yaris'),
+  doc('d6', null, 'OTHER', 'capture-atlas.png', 'image/png'),
+];
+export const useCargoDocuments = (id: string | null) => ok(id === '2' ? DOCS : ([] as CargoDocument[]));
+export const useCargoDocFolders = (id: string | null) => ok(id === '2' ? FOLDERS : ([] as CargoDocFolder[]));
+export const useCargoDocumentUrls = () => ok({} as Record<string, string>);
+export const useCreateCargoDocFolders = noop;
+export const useUpdateCargoDocFolder = noop;
+export const useDeleteCargoDocFolder = noop;
+export const useUpdateCargoDocument = noop;
+export const useUploadCargoDocuments = noop;
+export const downloadCargoDocument = async () => undefined;

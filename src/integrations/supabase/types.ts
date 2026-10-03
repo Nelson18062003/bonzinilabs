@@ -703,41 +703,117 @@ export type Database = {
           },
         ]
       }
+      cargo_doc_folders: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          expected_count: number | null
+          id: string
+          note: string | null
+          position: number
+          shipment_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_doc_folders_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_documents: {
         Row: {
+          cost_id: string | null
           created_at: string
           file_name: string
+          folder_id: string | null
           id: string
           kind: string
           mime_type: string | null
+          note: string | null
           shipment_id: string
           size_bytes: number | null
           storage_path: string
+          title: string | null
+          updated_at: string
           uploaded_by: string | null
         }
         Insert: {
+          cost_id?: string | null
           created_at?: string
           file_name: string
+          folder_id?: string | null
           id?: string
           kind: string
           mime_type?: string | null
+          note?: string | null
           shipment_id: string
           size_bytes?: number | null
           storage_path: string
+          title?: string | null
+          updated_at?: string
           uploaded_by?: string | null
         }
         Update: {
+          cost_id?: string | null
           created_at?: string
           file_name?: string
+          folder_id?: string | null
           id?: string
           kind?: string
           mime_type?: string | null
+          note?: string | null
           shipment_id?: string
           size_bytes?: number | null
           storage_path?: string
+          title?: string | null
+          updated_at?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cargo_documents_cost_id_fkey"
+            columns: ["cost_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cargo_documents_shipment_id_fkey"
             columns: ["shipment_id"]

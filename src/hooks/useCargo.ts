@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
 import { shouldPollLookup } from '@/lib/cargo/lookup';
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { CargoDocFolder } from '@/lib/cargo/documents';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
@@ -456,31 +457,94 @@ export function useCargoDocuments(shipmentId: string | null) {
   });
 }
 
+export interface UploadDocInput {
+  shipmentId: string;
+  /** Catégorie du fichier (celle de sa pièce). */
+  kind: string;
+  file: File;
+  folderId?: string | null;
+  costId?: string | null;
+  title?: string | null;
+}
+
+/** Envoie UN fichier : stockage privé puis ligne cargo_documents (le fichier est retiré si la ligne échoue). */
+async function uploadOne({ shipmentId, kind, file, folderId, costId, title }: UploadDocInput, uid: string) {
+  validateUploadFile(file);
+  const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
+  const path = `${shipmentId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safe}`;
+  const up = await supabaseAdmin.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+  if (up.error) throw up.error;
+  const { error } = await supabaseAdmin.from('cargo_documents').insert({
+    shipment_id: shipmentId, kind, file_name: file.name, storage_path: path, mime_type: file.type, size_bytes: file.size,
+    uploaded_by: uid, folder_id: folderId ?? null, cost_id: costId ?? null, title: title?.trim() || null,
+  });
+  if (error) {
+    await supabaseAdmin.storage.from(BUCKET).remove([path]);
+    throw error;
+  }
+}
+
 export function useUploadCargoDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ shipmentId, kind, file }: { shipmentId: string; kind: string; file: File }) => {
-      validateUploadFile(file);
+    mutationFn: async (input: UploadDocInput) => {
       const { data: auth } = await supabaseAdmin.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error('Session expirée');
-      const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 80);
-      const path = `${shipmentId}/${Date.now()}-${safe}`;
-      const up = await supabaseAdmin.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: false });
-      if (up.error) throw up.error;
-      const { error } = await supabaseAdmin.from('cargo_documents').insert({
-        shipment_id: shipmentId, kind, file_name: file.name, storage_path: path, mime_type: file.type, size_bytes: file.size, uploaded_by: uid,
-      });
-      if (error) {
-        await supabaseAdmin.storage.from(BUCKET).remove([path]);
-        throw error;
-      }
+      await uploadOne(input, uid);
     },
-    onSuccess: (_d, v) => {
+    onSuccess: () => {
       toast.success('Document ajouté');
-      qc.invalidateQueries({ queryKey: ['cargo', 'documents', v.shipmentId] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
     },
     onError: (e: Error) => toast.error(`Ajout impossible : ${e.message}`),
+  });
+}
+
+/**
+ * Envoie PLUSIEURS fichiers à la suite, dans la même pièce. Un fichier refusé
+ * (type, taille) n'arrête pas les autres : on dit lesquels sont passés.
+ */
+export function useUploadCargoDocuments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ files, ...rest }: Omit<UploadDocInput, 'file'> & { files: File[] }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const failed: string[] = [];
+      let ok = 0;
+      for (const file of files) {
+        try {
+          await uploadOne({ ...rest, file }, uid);
+          ok += 1;
+        } catch (e) {
+          failed.push(`${file.name} : ${(e as Error).message}`);
+        }
+      }
+      return { ok, failed };
+    },
+    onSuccess: ({ ok, failed }) => {
+      if (ok > 0) toast.success(ok === 1 ? 'Fichier ajouté' : `${ok} fichiers ajoutés`);
+      for (const f of failed) toast.error(f);
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
+    },
+    onError: (e: Error) => toast.error(`Envoi impossible : ${e.message}`),
+  });
+}
+
+export type CargoDocumentPatch = Partial<Pick<CargoDocument, 'title' | 'note' | 'folder_id' | 'cost_id' | 'kind'>>;
+
+/** Renommer, annoter, déplacer un fichier (le chemin et le dossier sont figés côté base). */
+export function useUpdateCargoDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: CargoDocumentPatch }) => {
+      const { error } = await supabaseAdmin.from('cargo_documents').update(patch).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cargo', 'documents'] }),
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
   });
 }
 
@@ -492,8 +556,118 @@ export function useDeleteCargoDocument() {
       if (error) throw error;
       await supabaseAdmin.storage.from(BUCKET).remove([doc.storage_path]);
     },
-    onSuccess: (_d, doc) => qc.invalidateQueries({ queryKey: ['cargo', 'documents', doc.shipment_id] }),
+    onSuccess: () => {
+      toast.success('Fichier supprimé');
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
+    },
     onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
+/* ── Pièces du classeur ─────────────────────────────────────────────────── */
+
+export function useCargoDocFolders(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'doc-folders', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_doc_folders')
+        .select('*')
+        .eq('shipment_id', shipmentId!)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as CargoDocFolder[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export type CargoDocFolderInput = Pick<CargoDocFolder, 'title' | 'category'> & Partial<Pick<CargoDocFolder, 'note' | 'expected_count' | 'position'>>;
+
+export function useCreateCargoDocFolders() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, folders }: { shipmentId: string; folders: CargoDocFolderInput[] }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const { error } = await supabaseAdmin
+        .from('cargo_doc_folders')
+        .insert(folders.map((f) => ({ ...f, title: f.title.trim(), shipment_id: shipmentId, created_by: uid })));
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.folders.length > 1 ? `${v.folders.length} pièces créées` : 'Pièce créée');
+      qc.invalidateQueries({ queryKey: ['cargo', 'doc-folders', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Création impossible : ${e.message}`),
+  });
+}
+
+export function useUpdateCargoDocFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch, files }: { id: string; shipmentId: string; patch: Partial<CargoDocFolderInput>; files?: CargoDocument[] }) => {
+      const { error } = await supabaseAdmin.from('cargo_doc_folders').update(patch).eq('id', id);
+      if (error) throw error;
+      // La catégorie d'une pièce est celle de ses fichiers : la liste « à faire » lit les fichiers.
+      if (patch.category && files?.length) {
+        const { error: e2 } = await supabaseAdmin.from('cargo_documents').update({ kind: patch.category }).in('id', files.map((f) => f.id));
+        if (e2) throw e2;
+      }
+    },
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ['cargo', 'doc-folders', v.shipmentId] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
+    },
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+/**
+ * Supprimer une pièce. `withFiles` : ses fichiers partent avec elle (stockage
+ * compris) ; sinon ils restent, « non classés » (la base met folder_id à NULL).
+ */
+export function useDeleteCargoDocFolder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ folder, files, withFiles }: { folder: CargoDocFolder; files: CargoDocument[]; withFiles: boolean }) => {
+      if (withFiles && files.length > 0) {
+        const { error } = await supabaseAdmin.from('cargo_documents').delete().in('id', files.map((f) => f.id));
+        if (error) throw error;
+        await supabaseAdmin.storage.from(BUCKET).remove(files.map((f) => f.storage_path));
+      }
+      const { error } = await supabaseAdmin.from('cargo_doc_folders').delete().eq('id', folder.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success('Pièce supprimée');
+      qc.invalidateQueries({ queryKey: ['cargo', 'doc-folders', v.folder.shipment_id] });
+      qc.invalidateQueries({ queryKey: ['cargo', 'documents'] });
+    },
+    onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
+/**
+ * Liens signés (10 min) pour afficher les miniatures et l'aperçu — le
+ * classeur est privé, aucun fichier n'a d'adresse publique.
+ */
+export function useCargoDocumentUrls(docs: CargoDocument[] | undefined) {
+  const paths = (docs ?? []).map((d) => d.storage_path).sort();
+  return useQuery({
+    queryKey: ['cargo', 'documents', 'urls', paths.join('|')],
+    enabled: paths.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrls(paths, 600);
+      if (error) throw error;
+      const out: Record<string, string> = {};
+      for (const r of data ?? []) if (r.path && r.signedUrl) out[r.path] = r.signedUrl;
+      return out;
+    },
+    staleTime: 8 * 60_000,
   });
 }
 
@@ -504,4 +678,19 @@ export async function openCargoDocument(doc: CargoDocument) {
     return;
   }
   window.open(data.signedUrl, '_blank', 'noopener');
+}
+
+/** Télécharger un fichier sous son nom (lien signé « download », 5 min). */
+export async function downloadCargoDocument(doc: CargoDocument, name?: string) {
+  const { data, error } = await supabaseAdmin.storage.from(BUCKET).createSignedUrl(doc.storage_path, 300, { download: name ?? doc.file_name });
+  if (error || !data?.signedUrl) {
+    toast.error('Téléchargement impossible');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = data.signedUrl;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
