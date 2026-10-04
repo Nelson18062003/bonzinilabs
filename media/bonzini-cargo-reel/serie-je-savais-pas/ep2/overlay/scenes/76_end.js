@@ -5,14 +5,15 @@
 //     'screen'  the logo (its four pieces snap together) + « Bonzini Trading Cargo » (y G.end.logoY), the verified
 //               service lines in a cream panel (y 404 / 462, « → » drawn as a shape), the series' ritual stamp
 //               « MAINTENANT, TU SAIS. » (orange, y G.end.stampY, on A.stampEnd), the series' amber CTA pill
-//               « Écris [CBM] en commentaire » (bounces once on A.cta) + its hand-drawn orange arrow ↓.
-//     'world'   « Tague celui qui / remplit ses cartons / de papier » written in marker on the loop carton's front face
+//               « Écris [CARTON] en commentaire » (bounces once on A.cta) + its hand-drawn orange arrow ↓; scaled to fit
+//               x 140…940 (v2: a 6-letter keyword made the pill ≈ 865 px wide, over x = 960 in the 900–1560 safe band).
+//     'world'   « Montre ça / à celui qui / paie de l'air » written in marker on the loop carton's front face
 //               (SCORE.loopCarton(t).writeTag), glued to it (cartonJit + st.rot), scaled with it.
 //   Takes over the texts 'brand', 'service', 'stampEnd', 'cta', 'tag' (strings read from SCORE.TEXTS()).
 //   Everything is gone at A.out (fade A.out − .15 → A.out): the last frames are the trembling carton alone (the loop).
 // BZ_ritualStamp / BZ_ctaPill are the series' shared pieces (episode 1, « copy as is »): same stamp, same pill in all 5.
-// One local change in BZ_ctaPill: the typing cursor sits 18 px further from the keyword and is thinner, so « CBM| »
-// can never read « CBMI » on a phone (a 3-letter word ending in a vertical stroke).
+// Local changes in BZ_ctaPill: the typing cursor sits 18 px further from the keyword and is thinner, so « CARTON| » can
+// never read « CARTONI » on a phone (a word ending in a vertical stroke); o.maxW scales the whole pill down to fit.
 // =============================================================================================
 (function () {
   const S = window.SCORE, G = S.G, A = S.A, kk = S.kk, eOut = S.easeOut, spr = S.spr, cl = S.cl;
@@ -85,9 +86,9 @@
     // the series' ritual stamp
     BZ_ritualStamp(G.cx, G.end.stampY, st.stamp, { alpha: fo, since: t - A.stampEnd });
     // the CTA pill + the hand-drawn arrow ↓ hanging from « commentaire » (drawn on, then bobbing ≈ 1.2 Hz)
-    const word = ((txt('cta') || '').match(/Écris (.+?) en commentaire/) || [0, 'CBM'])[1];
+    const word = ((txt('cta') || '').match(/Écris (.+?) en commentaire/) || [0, 'CARTON'])[1];
     ctx.save(); ctx.globalAlpha *= fo;
-    const geo = BZ_ctaPill(G.end.ctaX, G.end.ctaY, word, { k: st.cta, since: t - A.cta, t });
+    const geo = BZ_ctaPill(G.end.ctaX, G.end.ctaY, word, { k: st.cta, since: t - A.cta, t, maxW: 800 });   // x 140…940
     const ak = kk(t, A.cta + .2, A.cta + .55);
     if (ak > 0 && geo) {
       const ax = geo.x1 - 44, ay = G.end.ctaY + geo.h / 2 + 12 + 5 * Math.sin((t - A.cta - .55) * 7.5) * kk(t, A.cta + .55, A.cta + .9);
@@ -99,7 +100,7 @@
     ctx.restore();
   }
 
-  // « Tague celui qui / remplit ses cartons / de papier », marker on the loop carton (glued, scaled with it)
+  // « Montre ça / à celui qui / paie de l'air » (the share line), marker on the loop carton (glued, scaled with it)
   const TAG_F = 'CaveatBrush', TAG_Z = 64;
   function worldPart(st, t, L) {
     const lc = S.loopCarton(t); if (!lc) return;
@@ -161,7 +162,8 @@ function BZ_ritualStamp(x, y, k, o = {}) {
 }
 /** the series' CTA pill « Écris [WORD] en commentaire »: amber pill with thickness, the keyword typed in a cream field
  *  (orange stencil + a 1 Hz cursor). Width ≈ 820 px for a 5-letter word (x 130…950 centred on 540). (x, y) = centre;
- *  o = {k (0..1 appear), since (s since it appeared: one bounce), t (seconds, for the cursor)}. Returns {x0, x1, h}. */
+ *  o = {k (0..1 appear), since (s since it appeared: one bounce), t (seconds, for the cursor), maxW (optional: the pill
+ *  is scaled down to at most this width)}. Returns {x0, x1, h} (scaled). */
 function BZ_ctaPill(x, y, word, o = {}) {
   const k = o.k ?? 1; if (k <= 0) return null;
   const C2 = BZ_ctaPill.cache || (BZ_ctaPill.cache = {});
@@ -188,12 +190,12 @@ function BZ_ctaPill(x, y, word, o = {}) {
     } finally { ctx = prev; }
     sp = C2[word] = { c, w: w + 80, h: h + 90, pw: w, ph: h, cursor: sp.cursor };
   }
-  const d = o.since ?? 1, e = 1 - Math.pow(1 - Math.min(1, k), 3);
-  const s = e * (1 + .13 * Math.exp(-Math.max(0, d) * 6) * Math.sin(Math.max(0, d) * 16));
+  const d = o.since ?? 1, e = 1 - Math.pow(1 - Math.min(1, k), 3), fw = o.maxW ? Math.min(1, o.maxW / sp.pw) : 1;
+  const s = fw * e * (1 + .13 * Math.exp(-Math.max(0, d) * 6) * Math.sin(Math.max(0, d) * 16));
   ctx.save(); ctx.translate(x, y); ctx.rotate(-.012); ctx.scale(s, s);
   ctx.save(); ctx.globalAlpha *= Math.min(1, k * 2); ctx.drawImage(sp.c, -sp.w / 2, -sp.h / 2 + 12, sp.w, sp.h); ctx.restore();
   const tt = o.t ?? 0;
   if (Math.floor(tt * 2) % 2 === 0) { ctx.fillStyle = '#FE560D'; ctx.globalAlpha *= Math.min(1, k * 2); ctx.fillRect(sp.cursor, -22, 4, 44); }
   ctx.restore();
-  return { x0: x - sp.pw / 2, x1: x + sp.pw / 2, h: sp.ph };
+  return { x0: x - sp.pw * fw / 2, x1: x + sp.pw * fw / 2, h: sp.ph * fw };
 }

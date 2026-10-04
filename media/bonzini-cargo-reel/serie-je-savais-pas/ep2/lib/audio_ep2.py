@@ -1,5 +1,5 @@
 """« TU PAIES DE L'AIR. » (JE SAVAIS PAS. · 2/5) — the film's sound: 48 kHz stereo, exactly SCORE.T.end seconds,
-synthesised (no samples) + the 10 voice takes. Built on « PAS REÇU. » (v3/lib/audio_recu.py, imported as R: voice chain,
+synthesised (no samples) + the 14 voice takes of the v2 script (clear diction, E/SCRIPT_V2.md). Built on « PAS REÇU. » (v3/lib/audio_recu.py, imported as R: voice chain,
 sidechain duck, carve, master, onset checks, series SFX) and the series' synth code (audio.py, makossa.py, bikutsi.py,
 instruments.py).
 
@@ -24,8 +24,11 @@ Music (makossa, 120 BPM, beat .5 s; series code makossa.groove / guitar / bass /
   stamp .. end              A-major makossa from the stamp; it breaks and slams back ON the ritual stamp; the band stops
                             on an E accent, the final A chord lands on its cue, choked dead at cut_dry
 Voices: R.voice_line (trim ±30 ms, 24 -> 48 kHz soxr VHQ, Rubber Band if stretch != 1, EQ, leveller + compressor, de-esser,
-  per-line loudness -18 LUFS), small-room reverb. Music ducks 8 dB under any voice (+4 dB carve of 0.9-5 kHz), soft SFX
-  4 dB; impacts and the ASMR tape are never ducked.
+  per-line loudness -18 LUFS, R.VOX_TRIM = {}: every line at the same level), small-room reverb. v2 mix: music ducks
+  DUCK_DB 12 dB under any voice (+ R.CARVE_DB 6 dB carve of 0.9-5 kHz), soft SFX SFX_DUCK_DB 9 dB, impacts HIT_DUCK_DB 6 dB;
+  the ASMR tape is never ducked. v2 placement (SCRIPT_V2.md §7.2-7.3, in the score): every loud cue (hit / asmr / brand)
+  starts on a word END or in a pause, never inside a word; the violet grid's bright balafon keeps out of « Bonzini » and
+  « Chine » (key_windows).
 Master: HP 28 Hz, bus soft-clips, true-peak limiter; -14 LUFS integrated (pyloudnorm), TP <= -1 dBTP.
 
 usage:  nice -n 5 python3 lib/audio_ep2.py           -> audio/mix.wav, audio/stems/*.wav, report
@@ -53,16 +56,17 @@ SHEET = os.path.join(E, 'out', 'chk_audio_sheet.jpg')
 R.PLAN_JSON = os.path.join(E, 'data', 'voice_plan.json'); R.TAKES_JSON = os.path.join(E, 'data', 'takes.json')
 R.VOCHECK_JSON = os.path.join(E, 'data', 'vocheck.json'); R.VO_DIR = os.path.join(E, 'audio', 'vo')
 R.CACHE = os.path.join(OUT_A, '.cache')
-R.VOX_TRIM = {'T1': +0.5, 'T2': -1.0}        # « Mais mon carton est léger ! » outraged · « …j'ai payé… » small voice
+R.VOX_TRIM = {}                                # v2 (clear diction): every line levelled the same, no whispered line
 
 TAIL = 3.0
 BEAT = 0.5
 BRK = 0.22                                    # stop-time: the band leaves the last .22 s before each hit it re-enters on
 SIG_GAP = 0.10                                # the series signature: E6 then G#6 .1 s later (as in « PAS REÇU. »)
-DUCK_DB, SFX_DUCK_DB = R.DUCK_DB, R.SFX_DUCK_DB
+DUCK_DB, SFX_DUCK_DB, HIT_DUCK_DB = 12.0, 9.0, 6.0   # v2: the voice must be understood first (owner's feedback)
+R.CARVE_DB = 6.0
 G_TENSE, G_MAJOR, G_BRAND, G_FINAL = R.G_TENSE, R.G_MAJOR, R.G_BRAND, R.G_FINAL
 MUSIC = ('groove', 'brand', 'final')
-DUCKED = {'groove': DUCK_DB, 'brand': DUCK_DB, 'final': DUCK_DB, 'sfx': SFX_DUCK_DB}
+DUCKED = {'groove': DUCK_DB, 'brand': DUCK_DB, 'final': DUCK_DB, 'sfx': SFX_DUCK_DB, 'hit': HIT_DUCK_DB}
 SENDS = {'groove': ('room', .08), 'brand': ('plate', .24), 'final': ('room', .10), 'sfx': ('room', .06),
          'hit': ('room', .08), 'asmr': ('vroom', .07), 'vox': ('vroom', .15)}
 STEMS = ('vox', 'music', 'sfx', 'hits', 'asmr', 'amb')
@@ -81,7 +85,7 @@ def score():
     """{dur, T, DUR, words, cues[{t, name, g, pan}], music{silentUntil, tenseFrom, cut, majorFrom, sigAt, end}, src}"""
     global _SC
     if _SC is not None: return _SC
-    tm = json.load(open(TIMING_JSON))
+    tm = json.load(open(TIMING_JSON)) if os.path.exists(TIMING_JSON) else {}   # before the re-timing: the score's defaults
     js = ("const S=require(%s);const o={T:S.T,DUR:S.DUR,A:S.A};"
           "o.cues=typeof S.soundCues==='function'?S.soundCues():null;o.music=typeof S.music==='function'?S.music():null;"
           "console.log(JSON.stringify(o))") % json.dumps(SCORE_JS)
@@ -90,8 +94,9 @@ def score():
         r = subprocess.run(['node', '-e', js], capture_output=True, text=True, timeout=60, check=True, cwd=E)
         d = json.loads(r.stdout.strip().splitlines()[-1]); d['src'] = '01_score.js (live)'
     except Exception as e: why = f'node failed: {e}'
-    der = derive_score(dict(d['T']) if d else {k: v for k, v in tm.items() if isinstance(v, (int, float))},
-                       dict(d['DUR']) if d and d.get('DUR') else tm.get('dur', {}), tm.get('words', {}))
+    der = derive_score(dict(d['T']) if d else {**T0, **{k: v for k, v in tm.items() if isinstance(v, (int, float))}},   # merged
+                       dict(d['DUR']) if d and d.get('DUR') else {**DUR0, **(tm.get('dur') or {})}, tm.get('words', {}),   # as the score
+                       tm.get('A'))
     if d and not d.get('cues'):
         d['cues'] = der['cues']; d['src'] += ' + cues derived in python (soundCues() missing)'
     if d and not d.get('music'):
@@ -103,7 +108,7 @@ def score():
     if d is None:
         try:
             j = json.load(open(CUES_DUMP))
-            if all(abs(j['T'].get(k, -9) - v) < 1e-9 for k, v in tm.items() if isinstance(v, (int, float))):
+            if all(abs(j['T'].get(k, -9) - v) < 1e-9 for k, v in (tm or T0).items() if isinstance(v, (int, float))):
                 d = j; d['src'] = f'audio/score_cues.json (last live read; {why})'
         except Exception: pass
     if d is None:
@@ -116,59 +121,102 @@ def score():
     _SC = d
     return d
 
-def derive_score(T, DUR, words):
-    """python replica of 01_score.js (A block, soundCues(), music()) — used only when node or a function is missing"""
+# the score's DEFAULT voice keys (01_score.js T / DUR = SCRIPT_V2.md §7.1): the replica's last resort when neither node nor
+# data/timing.json is there (before the re-timing on the v2 takes)
+T0 = dict(N1=.3, T1=2.87, N2=5.32, N2b=8.72, N3=12.92, N3b=15.49, T2=18.17, N4=22.13, N4b=24.24, N5=27.22, N6=31.0, N7=33.82,
+          N8=39.54, N8b=42.87, end=44.76)
+DUR0 = dict(N1=2.22, T1=1.94, N2=3.06, N2b=2.5, N3=2.22, N3b=2.22, T2=3.61, N4=1.67, N4b=2.22, N5=3.33, N6=2.22, N7=4.72,
+            N8=2.78, N8b=1.39)
+
+def _deacc(s): return re.sub('[̀-ͯ]', '', unicodedata.normalize('NFD', str(s).lower()))
+def _forms(w):
+    r = _deacc(w); return [re.sub('[^a-z0-9]', '', r), re.sub('[^a-z0-9]', '', re.sub(r"^(?:[a-z]{1,2}|qu|jusqu)['’]", '', r))]
+def find_word(words, i, prefix, nth=0):
+    """the nth word {w, s, e} of line i starting with prefix ('a|b' = either prefix), exactly as 01_score.js word()"""
+    ks = [k for k in (re.sub('[^a-z0-9]', '', _deacc(p)) for p in str(prefix).split('|')) if k]; c = 0
+    for w in (words or {}).get(i) or []:
+        if any(x.startswith(k) for x in _forms(w['w']) for k in ks):
+            if c == nth: return w
+            c += 1
+    return None
+
+# the brand-critical words of N7 (SCRIPT_V2.md §2.3: « Bonzini » and « Chine » must be recognised): (line, prefix, fallback =
+# syllables k0..k1 of n). The violet grid's bright balafon never starts inside them (rule P1: brand-bus onsets out of words).
+KEY_WORDS = (('N7', 'bonzini', 1, 4, 17), ('N7', 'chine', 16, 17, 17))
+def key_windows(sc):
+    T, DUR, words = sc['T'], sc.get('DUR') or {}, sc.get('words') or {}
+    out = []
+    for i, p, k0, k1, n in KEY_WORDS:
+        if i not in T: continue
+        w = find_word(words, i, p); d = DUR.get(i, 2.0)
+        s, e = (w['s'], w['e']) if w else (d * k0 / n, d * k1 / n)
+        if k1 == n: e = max(e, d)                                       # the line's last word: the ASR end is early (WEL)
+        out.append((T[i] + s - .04, T[i] + e))
+    return out
+
+def derive_score(T, DUR, words, A_over=None):
+    """python replica of 01_score.js (A block, soundCues(), music()) — used only when node or a function is missing.
+    v2 (SCRIPT_V2.md §7.2-7.3): mirrors the score line for line; check: python3 -c "import lib.audio_ep2 as X; …" (README).
+    A_over = timing.json's optional hand overrides `A` (applied after the derivation, as the score's Object.assign)"""
     T = dict(T); DUR = dict(DUR)
-    deacc = lambda s: unicodedata.normalize('NFD', str(s).lower()).encode('ascii', 'ignore').decode()
-    def forms(w):
-        r = deacc(w); return [re.sub('[^a-z0-9]', '', r), re.sub('[^a-z0-9]', '', re.sub(r"^(?:[a-z]{1,2}|qu|jusqu)'", '', r))]
-    def word(i, p, nth=0):
-        k = re.sub('[^a-z0-9]', '', deacc(p)); c = 0
-        for w in words.get(i, []):
-            if any(x.startswith(k) for x in forms(w['w'])):
-                if c == nth: return w
-                c += 1
-    W = lambda i, p, nth=0, fb=0: T[i] + (word(i, p, nth)['s'] if word(i, p, nth) else fb)
-    WE = lambda i, p, nth=0, fb=0: T[i] + (word(i, p, nth)['e'] if word(i, p, nth) else fb)
+    def W(i, p, nth=0, fb=0.0): w = find_word(words, i, p, nth); return T[i] + (w['s'] if w else fb)
+    def WE(i, p, nth=0, fb=0.0): w = find_word(words, i, p, nth); return T[i] + (w['e'] if w else fb)
     END = lambda i: T[i] + DUR.get(i, 2.0)
+    SYL = lambda i, k, n: DUR.get(i, 2.0) * k / n
+    WEL = lambda i, p, n: max(WE(i, p, 0, SYL(i, n, n)), END(i))      # a line's LAST word: max(ASR end, measured speech end)
     cl = lambda x, a, b: max(a, min(b, x))
     a = {}
-    a['hop'] = T['N1'] + .05; a['burstPeak'] = T['N1'] + .4; a['toiUp'] = T['T1'] - .1
-    a['bateauShadow'] = T['N2'] + .15; a['bateauFall'] = W('N2', 'place', 0, 1.0); a['stampM3'] = W('N2', 'cube', 0, 2.15)
-    a['bateauOut'] = max(END('N2') - .05, a['bateauFall'] + 1.45)   # QA stage 3 (mirrors 01_score.js)
-    a['mes0'] = a['bateauOut'] + .35; gap = cl((T['N3'] - .45 - a['mes0']) / 2.8, .3, .5)
+    a['hop'] = max(.05, T['N1'] - .25); a['burstPeak'] = T['N1'] + .2
+    a['kaching'] = min(WEL('N1', 'air', 8) + .05, T['T1'] - .05)
+    a['titleOut'] = T['T1'] - .25; a['toiUp'] = T['T1'] - .1
+    a['bateauFall'] = cl(T['N2'] - .3, END('T1') + .05, T['N2'] - .05); a['bateauShadow'] = a['bateauFall'] - .25
+    a['stampM3'] = WEL('N2b', 'cube', 9) + .03
+    a['bateauOut'] = max(a['stampM3'] + .15, a['bateauFall'] + 1.45)
+    a['mes0'] = a['bateauOut'] + .2; gap = cl((T['N3'] - .45 - a['mes0']) / 2.8, .3, .5)
     a['mes1'] = a['mes0'] + gap; a['mes2'] = a['mes0'] + 2 * gap; a['formula'] = a['mes0'] + 2.8 * gap
-    a['flank'] = T['N3'] - .1; a['hatch0'] = W('N3', 'carton', 0, .15) + .15; a['vide'] = W('N3', 'vide', 0, 1.68)
+    a['flank'] = T['N3b'] - .1; a['hatch0'] = W('N3b', 'pai|pay', 0, SYL('N3b', 1, 8)) + .15
+    a['vide'] = W('N3b', 'vide', 0, SYL('N3b', 5, 8)); a['videTic'] = WEL('N3b', 'dedan', 8) + .05
+    a['hatch1'] = max(a['hatch0'] + .6, a['vide'] - .1)
     a['cut'] = T['T2'] - .2; a['toiSmall'] = T['T2'] - .05
-    a['pose1'] = W('N4', 'ton', 0, .55); a['pose2'] = max(W('N4', 'cartons', 0, 1.6), a['pose1'] + .75)
-    a['pose3'] = max(W('N4', 'remplis', 0, 2.45), a['pose2'] + .75); a['split'] = T['N5'] - .1
-    a['chase'] = min(a['pose3'] + .2, a['split'] - .45); a['gulp'] = a['chase'] + .55
-    a['gauge0'] = T['N5'] + .1; a['gauge1'] = a['gauge0'] + .7; a['hic'] = a['gauge1'] + .55
-    a['glass'] = T['N6'] + .05; a['wrap0'] = W('N6', 'pas', 0, 1.2) - .15
-    a['wrap1'] = max(a['wrap0'] + .5, W('N6', 'protection', 0, 1.55) + .35)
-    a['ensuite'] = END('N6') + .1; a['violet'] = max(T['N7'] - .15, a['ensuite'] + .25); a['label'] = a['violet'] + .3
-    a['sig'] = W('N7', 'bonzini', 0, .25) - .05; a['plateBZ'] = W('N7', 'bonzini', 0, .25)
-    a['scan'] = W('N7', 'cartons', 0, 1.9); a['tape'] = W('N7', 'sont', 0, 2.35) - .1
-    a['volume'] = max(W('N7', 'mesures', 0, 2.55) + .1, a['tape'] + .3); a['airStrike'] = a['volume'] + .3
-    a['measured'] = max(WE('N7', 'mesures', 0, 3.0) + .1, a['airStrike'] + .3)
-    a['endcard'] = max(T['N8'] - .15, a['measured'] + 1.45); a['cta'] = max(T['N8'], a['endcard'] + .15); a['stampEnd'] = W('N8', 'maintenant', 0, 1.9) - .1; a['loop'] = T['end'] - .55
+    a['pose1'] = WEL('N4', 'fourniss', 6) + .03
+    a['pose2'] = max(W('N4b', 'carton', 0, SYL('N4b', 3, 8)), a['pose1'] + .75)
+    a['pose3'] = max(WEL('N4b', 'rempli', 8) + .05, a['pose2'] + .75); a['split'] = T['N5'] - .1
+    a['chase'] = max(min(a['pose3'] + .15, a['split'] - .5), a['pose3'] + .05)
+    a['gulp'] = max(a['chase'] + .25, min(a['chase'] + .45, a['split'] - .05))
+    a['gauge0'] = T['N5'] + .1; a['gauge1'] = a['gauge0'] + .7; a['hic'] = max(END('N5') + .05, a['gauge1'] + .55)
+    a['glass'] = max(T['N6'] - .1, a['hic'] + .08); a['wrap0'] = W('N6', 'proteg', 0, SYL('N6', 1, 8)) - .15
+    a['wrap1'] = max(a['wrap0'] + .5, WEL('N6', 'casse', 8) + .05)
+    a['ensuite'] = END('N6') + .1; a['violet'] = max(T['N7'] - .25, a['ensuite'] + .25)
+    a['sig'] = max(a['ensuite'] + .05, min(a['violet'], T['N7'] - .1))
+    a['plateBZ'] = a['sig'] + .05; a['label'] = WE('N7', 'cargo', 0, SYL('N7', 8, 17)) + .03
+    a['scan'] = W('N7', 'carton', 0, SYL('N7', 9, 17)); a['tape'] = W('N7', 'sont', 0, SYL('N7', 11, 17)) - .1
+    a['volume'] = max(W('N7', 'mesur', 0, SYL('N7', 12, 17)) + .1, a['tape'] + .3); a['airStrike'] = a['volume'] + .3
+    ch = WEL('N7', 'chine', 17)
+    a['measured'] = max(min(ch + .2, max(ch + .05, T['N8'] - .1)), a['airStrike'] + .3)
+    a['endcard'] = max(T['N8'] - .15, a['measured'] + 1.45); a['cta'] = max(T['N8'], a['endcard'] + .15)
+    a['stampEnd'] = cl(T['N8b'] - .3, END('N8') + .05, T['N8b'] - .05); a['loop'] = T['end'] - .55
+    if A_over: a.update({k: v for k, v in A_over.items() if isinstance(v, (int, float))})
     Q = []
-    def q(t, name, g=1, pan=0):
-        if 0 <= t < T['end']: Q.append(dict(t=round(t, 4), name=name, g=g, pan=pan))
-    q(0, 'pouf_air'); q(.02, 'carton_creak', .7); q(a['burstPeak'] - .1, 'kaching_soft', .55, -.2); q(a['hop'], 'gecko_skitter', .35, -.6)
+    def q(t, name, g=1, pan=0, d=None):
+        if 0 <= t < T['end']:
+            c = dict(t=round(t, 4), name=name, g=g, pan=pan)
+            if d is not None: c['d'] = round(d, 4)
+            Q.append(c)
+    q(0, 'pouf_air'); q(.02, 'carton_creak', .7); q(a['kaching'], 'kaching_soft', .55, -.2); q(a['hop'], 'gecko_skitter', .35, -.6)
     q(a['toiUp'], 'boing', .6); q(a['bateauShadow'], 'whoosh_low', .4); q(a['bateauFall'], 'boum_carton'); q(a['bateauFall'] + .03, 'letters_splash', .7)
     q(a['stampM3'], 'stamp')
     for i, m in enumerate((a['mes0'], a['mes1'], a['mes2'])): q(m, 'clac', .9, -.2 + .2 * i); q(m + .04, 'felt', .45)
-    q(a['formula'], 'stamp', .8); q(a['flank'], 'paper_lift', .7); q(a['hatch0'], 'fill_fffff', .6); q(a['vide'], 'tic', .6)
-    q(a['cut'], 'music_cut'); q(a['cut'] + .1, 'cricket', .5); q(a['toiSmall'] + 1.1, 'sweat_drop', .7); q(a['toiSmall'] + 2.1, 'sweat_drop', .5)
-    q(a['pose1'], 'carton_fold', .8); q(a['pose2'], 'cutter', .7); q(a['pose2'] + .05, 'carton_fold', .8); q(a['pose2'] + .1, 'pffuit', .6)
+    q(a['formula'], 'stamp', .8); q(a['flank'], 'paper_lift', .7)
+    q(a['hatch0'], 'fill_fffff', .3, 0, a['hatch1'] - a['hatch0'] + .1); q(a['videTic'], 'tic', .6)
+    q(a['cut'], 'music_cut'); q(a['cut'] + .1, 'cricket', .5); q(END('T2') + .05, 'sweat_drop', .6, .15)
+    q(a['pose1'], 'carton_fold', .8); q(a['pose2'], 'cutter', .4); q(a['pose2'] + .05, 'carton_fold', .5); q(a['pose2'] + .1, 'pffuit', .35)
     q(a['pose3'], 'scotch_scriiitch', 1.1); q(a['chase'], 'pffuit', .8, -.3); q(a['gulp'], 'gloup', .9, -.6); q(a['hic'], 'hic', .5, -.6)
     q(a['split'], 'whoosh', .5); q(a['gauge0'], 'gauge_fill', .4, -.3); q(a['gauge0'] + .05, 'gauge_fill', .3, .3)
-    q(a['glass'], 'pop_soft', .5, .3); q(a['wrap0'] + .1, 'bubble_wrap', .6, .3); q(a['wrap1'], 'bubble_plop', .8, .3)
+    q(a['glass'], 'pop_soft', .5, .3); q(a['wrap0'] + .1, 'bubble_wrap', .3, .3); q(a['wrap1'], 'bubble_plop', .8, .3)
     q(a['ensuite'], 'whoosh', .8); q(a['ensuite'] + .05, 'pill_drop', .4)
     q(a['violet'], 'violet_hum', .4); q(a['sig'], 'bonzini_sig'); q(a['plateBZ'], 'tonk', .8); q(a['label'], 'label_slap', .5)
-    q(a['scan'], 'bip', .8, .3); q(a['tape'], 'tape_measure', .8); q(a['volume'], 'tic', .6); q(a['airStrike'], 'marker_strike', .6, .3)
-    q(a['measured'], 'stamp'); q(a['endcard'], 'whoosh_soft', .5); q(a['cta'], 'pop', .7); q(a['stampEnd'], 'stamp_big')
+    q(a['scan'], 'bip', .8, .3); q(a['tape'], 'tape_measure', .5); q(a['volume'], 'tic', .6); q(a['airStrike'], 'marker_strike', .6, .3)
+    q(a['measured'], 'stamp'); q(a['endcard'], 'whoosh_soft', .5); q(a['cta'], 'pop', .4); q(a['stampEnd'], 'stamp_big')
     q(a['loop'], 'carton_rattle', .6); q(T['end'] - .5, 'final_chord'); q(T['end'] - .02, 'cut_dry')
     mus = dict(silentUntil=a['toiUp'] - .1, tenseFrom=a['toiUp'] - .1, cut=a['cut'], majorFrom=a['split'], sigAt=a['sig'], end=T['end'])
     return dict(T=T, DUR=DUR, A=a, cues=sorted(Q, key=lambda c: c['t']), music=mus)
@@ -269,8 +317,8 @@ def sfx_whoosh_low(dur, seed=451):
 def sfx_boum_carton(seed=461):
     """thick cardboard slammed on cardboard (« LE BATEAU » crushes TOI's plate): a heavy, DULL boum — chest thump
     120 -> 46 Hz, the series' sub_drop, the boards' dead modes (120-760 Hz, low Q, strike glide), the table's wooden knock,
-    a papery slap and the crushed plate's crunch. No clang: cardboard. Above 400 Hz it is over in ~35 ms: it lands ON
-    « place » and must not mask it"""
+    a papery slap and the crushed plate's crunch. No clang: cardboard. Above 400 Hz it is over in ~35 ms (v2: it lands in
+    the pause BEFORE N2, never on a word)"""
     n = ns(1.6); t = tt(n)
     y = dsp.softclip(thud(120, 46, .03, .14, n, 1.9), 1.4)
     s = tail_fade(I.sub_drop(1.0).copy(), 250); y[:len(s)] += s[:n] * .8          # the series' sub_drop ends on a step: fade it
@@ -598,8 +646,8 @@ def tense_plan(cues, mp):
     an = [(t0, 'enter', BEAT)]
     b = next((c['t'] for c in ins if c['name'] == 'boum_carton'), None)
     cl = [c['t'] for c in ins if c['name'] == 'clac']
-    if b is not None: an.append((b, 'boum', BEAT))     # (the « AU m³ » stamp on « cube » is NOT an anchor: a band re-entry
-                                                        #  under the word cost it 7 dB; the stamp stays an SFX on the word)
+    if b is not None: an.append((b, 'boum', BEAT))     # (the m³ stamp after « cubes » is NOT an anchor: a band re-entry
+                                                        #  near the word cost it 7 dB; the stamp stays an SFX)
     if cl:
         bm = float(np.median(np.diff(cl))) if len(cl) > 1 else BEAT
         an.append((cl[0], 'measure', bm if .42 <= bm <= .6 else BEAT))   # 100-143 BPM, else the clacs ride the 120 grid
@@ -679,10 +727,12 @@ def brand_anchor(sig_t, stamp_t):
     k = max(3, int(round((stamp_t - sig_t) / BEAT)))
     return stamp_t - k * BEAT, k
 
-def compose_brand(M, sig_t, stamp_t):
+def compose_brand(M, sig_t, stamp_t, avoid=()):
     """violet section (« PAS REÇU. »'s brand sound): soft pad, bass and the bright balafon on the violet grid:
-    D(add9, lydian with the signature's G#) -> E7sus4 (2 beats before the stamp) -> A at the stamp (compose_end)"""
+    D(add9, lydian with the signature's G#) -> E7sus4 (2 beats before the stamp) -> A at the stamp (compose_end).
+    v2: no bright balafon note starts inside an `avoid` window (key_windows: « Bonzini », « Chine »)"""
     v0, nbt = brand_anchor(sig_t, stamp_t)
+    clear = lambda t: not any(a <= t <= b for a, b in avoid)
     put = lambda sig, t, g=1.0, p=0.0, tag=None: M.put('brand', sig, t, g * G_BRAND, p, tag=tag)
     beats = lambda b: v0 + b * BEAT
     sus = beats(nbt - 2)
@@ -693,12 +743,12 @@ def compose_brand(M, sig_t, stamp_t):
     put(mk.bass(m2f(40), .45, .3), sus, .42, 0); put(mk.bass(m2f(35), .45, .3), sus + BEAT, .42, 0)
     pat = {2: 81, 3: 85, 5: 88, 6: 85, 8: 81, 9: 85, 10: 88, 11: 90}
     for e8, m in pat.items():
-        if beats(e8 / 2) < sus - .01 and beats(e8 / 2) > sig_t + SIG_GAP + .1:
+        if beats(e8 / 2) < sus - .01 and beats(e8 / 2) > sig_t + SIG_GAP + .1 and clear(beats(e8 / 2)):
             put(A.balafon_bright(m, 5000 + e8), beats(e8 / 2), .20, -.3 + .2 * (e8 % 3))
     climb = [(0, 81), (.5, 83), (1, 86), (1.5, 88), (2, 88), (2.5, 91), (2.75, 93), (3.0, 95), (3.25, 98), (3.5, 100)]
     for e8, m in climb:
         tk = sus + e8 * BEAT / 2
-        if tk < stamp_t - .01: put(A.balafon_bright(m, 5100 + int(e8 * 4)), tk, .17 + .025 * e8, -.2 + .15 * (int(e8 * 2) % 3))
+        if tk < stamp_t - .01 and clear(tk): put(A.balafon_bright(m, 5100 + int(e8 * 4)), tk, .17 + .025 * e8, -.2 + .15 * (int(e8 * 2) % 3))
     return v0, nbt
 
 def compose_end(M, a, hit2, t_final):
@@ -767,7 +817,8 @@ def compose(sc, lines):
     stamp_ok = first(cues, 'stamp', mp['sigAt'], t_final)                            # « MESURÉ ✓ »
     hit2 = first(cues, 'stamp_big', stamp_ok or mp['sigAt'], t_final - .6)
     if stamp_ok:
-        v0, nbt = compose_brand(M, mp['sigAt'], stamp_ok); plan['brand'] = dict(v0=v0, beats=nbt, stamp=stamp_ok)
+        kw = key_windows(sc)
+        v0, nbt = compose_brand(M, mp['sigAt'], stamp_ok, kw); plan['brand'] = dict(v0=v0, beats=nbt, stamp=stamp_ok, avoid=kw)
         stop, beat2 = compose_end(M, stamp_ok, hit2, t_final)
     else:
         stop, beat2 = compose_end(M, mp['sigAt'] + 1.0, hit2, t_final)
@@ -794,7 +845,7 @@ def compose(sc, lines):
         elif name == 'clac': P('hit', sfx_tape_clac(sd), .66 * g / .9)
         elif name == 'felt': P('sfx', sfx_felt(sd), .22 * g / .45, .1)
         elif name == 'paper_lift': P('sfx', sfx_paper_lift(), .30 * g / .7, .1)
-        elif name == 'fill_fffff': P('sfx', sfx_fill((nxt('tic') or t + 1.5) - t - .03), .14 * g / .6, 0)
+        elif name == 'fill_fffff': P('sfx', sfx_fill(c.get('d') or ((nxt('tic') or t + 1.5) - t - .03)), .14 * g / .6, 0)   # v2: d = the hatching sweep
         elif name == 'tic': P('sfx', sfx_tic(sd, 2650 if ntic == 0 else 3150), .55 * g / .6); ntic += 1
         elif name in ('music_cut', 'cut_dry'): pass                                    # the gates (mixdown)
         elif name == 'cricket': P('amb', A.sfx_cricket(), .16 * g / .5, -.6)
@@ -871,7 +922,7 @@ def mixdown(st, dry_vox, sc, spans, t_back, t_dry):
     d1, act = R.duck_db(dry_vox[:N], spans)
     st = {k: v[:N].copy() for k, v in st.items()}
     for k, depth in DUCKED.items(): st[k] *= dsp.undb(d1 * depth)[:, None]
-    for k in ('groove', 'brand'): st[k] = R.carve(st[k], d1)
+    for k in ('groove', 'brand'): st[k] = R.carve(st[k], d1, R.CARVE_DB)
     hole = R.gate(N, sc['music']['cut'], t_on=t_back)
     dry = R.gate(N, t_dry, fade=.012)
     head = np.ones(N); head[:ns(sc['music']['tenseFrom'])] = 0.0                # the zero-phase carve pre-rings a few 1e-3: no music before it
@@ -1157,7 +1208,7 @@ def make_sheet(Z, stems, G, d1, rep, sc, vinfo, plan, M, path=SHEET):
     # 5 zoom spectrograms (2 rows of 3)
     b0 = (plan['major1']['accent'] or mp['sigAt'] - .6) - .2
     zz = [(0.0, mp['tenseFrom'] + .5, 'opening: POUF in progress · creak · skitter · ka-ching · boing · music in'),
-          ((first(cues, 'whoosh_low') or 4) - .1, (first(cues, 'stamp', (first(cues, 'clac') or 6)) or 8) + .5, 'whoosh · BOUM on « place » · letters · AU m³ · 3 clacs + felt · formula'),
+          ((first(cues, 'whoosh_low') or 4) - .1, (first(cues, 'stamp', (first(cues, 'clac') or 6)) or 8) + .5, 'whoosh · BOUM before N2 · letters · m³ stamp after « cubes » · 3 clacs + felt · formula'),
           (mp['cut'] - .3, mp['cut'] + 2.6, 'the cut · cricket · sweat drop (silence)'),
           ((first(cues, 'carton_fold') or 15.5) - .2, mp['majorFrom'] + .5, 'packing ASMR: fold · cutter · fold · pffuit · SCRIIITCH · pffuit · gloup · major'),
           (b0, (plan['brand']['stamp'] if plan.get('brand') else b0 + 4) + .6, 'ENSUITE accent · violet hum · signature E6->G#6 · tonk · label · bip · tape · tic · strike · MESURÉ'),

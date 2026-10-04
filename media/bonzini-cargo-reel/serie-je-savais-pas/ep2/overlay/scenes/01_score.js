@@ -9,16 +9,21 @@
 //             TIMING = { N1: s, …, end: s, dur: {N1: s, …}, words: {N1: [{w, s, e}], …} (word times RELATIVE to the
 //             line start), A: {optional hand overrides of derived action times} }.
 //   W(id, prefix, nth = 0, fb)  → absolute time of the nth word of line id starting with prefix (accent/case/elision
-//             insensitive), else T[id] + fb.            WE(…) the same for the word END.
+//             insensitive; 'a|b' = either prefix), else T[id] + fb.   WE(…) the same for the word END.
+//             Fallbacks are written SYL(id, k, n) = « after k of the line's n syllables » (a fraction of DUR[id]), so a
+//             word the ASR missed still lands in proportion on any take.
 //   A       = every action time, DERIVED from T / W / DUR after the merge (no free-floating literal time).
+//   VOICE v2 (clear diction, serie/DICTION.md, E/SCRIPT_V2.md): 14 lines N1 T1 N2 N2b N3 N3b T2 N4 N4b N5 N6 N7 N8 N8b.
+//   RULE P1: a loud cue (hit, asmr, brand) never starts INSIDE a word: on a word END (WE + .03) or in a pause. A line's LAST
+//             word ends at WEL(id, prefix, n) = max(ASR end, END(id)): the ASR stamps it ≈ .1–.2 s early.
 //   Every object state below is a pure function of t. Deterministic. Loaded by the browser AND by node (audio cues):
 //   node -e "const S=require('./overlay/scenes/01_score.js'); console.log(S.A, S.soundCues(), S.music())"
 // =============================================================================================
 (function () {                       // own scope: kit.js already declares FPS, W, H, C… as globals
 const FPS = 30;
-// ---------- voice keys (defaults = storyboard SERIE.md « Épisode 2 », ≈16 chars/s) ----------
-const T = { N1: .1, T1: 2.4, N2: 4.2, N3: 9.1, T2: 12.0, N4: 15.3, N5: 18.8, N6: 21.3, N7: 24.4, N8: 29.3, end: 32.5 };
-const DUR = { N1: 2.2, T1: 1.7, N2: 2.7, N3: 2.6, T2: 3.1, N4: 3.2, N5: 2.3, N6: 2.3, N7: 4.7, N8: 2.9 };
+// ---------- voice keys (defaults = SCRIPT_V2.md §7.1: 3.6 syllables/s + the pauses of §6; retime.py keeps this spacing) ----------
+const T = { N1: .3, T1: 2.87, N2: 5.32, N2b: 8.72, N3: 12.92, N3b: 15.49, T2: 18.17, N4: 22.13, N4b: 24.24, N5: 27.22, N6: 31.0, N7: 33.82, N8: 39.54, N8b: 42.87, end: 44.76 };
+const DUR = { N1: 2.22, T1: 1.94, N2: 3.06, N2b: 2.5, N3: 2.22, N3b: 2.22, T2: 3.61, N4: 1.67, N4b: 2.22, N5: 3.33, N6: 2.22, N7: 4.72, N8: 2.78, N8b: 1.39 };
 let WORDS = {}, TM = null;
 if (typeof window !== 'undefined' && window.TIMING) TM = window.TIMING;
 else if (typeof require !== 'undefined') { try { TM = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'data', 'timing.json'), 'utf8')); } catch (e) { } }
@@ -29,8 +34,9 @@ const N = Math.round(T.end * FPS);
 const deacc = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const forms = w => { const r = deacc(w); return [r.replace(/[^a-z0-9]/g, ''), r.replace(/^(?:[a-z]{1,2}|qu|jusqu)['’]/, '').replace(/[^a-z0-9]/g, '')]; };
 function word(id, prefix, nth) {
-  const ws = WORDS[id]; if (!ws || !ws.length) return null; const k = deacc(prefix).replace(/[^a-z0-9]/g, ''); let c = 0;
-  for (const w of ws) if (forms(w.w).some(x => x.startsWith(k))) { if (c++ === nth) return w; }
+  const ws = WORDS[id]; if (!ws || !ws.length) return null; let c = 0;
+  const ks = String(prefix).split('|').map(p => deacc(p).replace(/[^a-z0-9]/g, '')).filter(Boolean);   // 'a|b': either prefix
+  for (const w of ws) if (forms(w.w).some(x => ks.some(k => x.startsWith(k)))) { if (c++ === nth) return w; }
   return null;
 }
 /** absolute START time of the nth word of line id beginning with prefix, else T[id] + fb */
@@ -38,6 +44,12 @@ function W(id, prefix, nth = 0, fb = 0) { const w = word(id, prefix, nth); retur
 /** absolute END time of that word, else T[id] + fb */
 function WE(id, prefix, nth = 0, fb = 0) { const w = word(id, prefix, nth); return T[id] + (w ? w.e : fb); }
 const END = id => T[id] + DUR[id];
+/** fallback offset: k syllables into a line of n syllables (SCRIPT_V2.md §1 counts), i.e. a fraction of its real DUR */
+const SYL = (id, k, n) => DUR[id] * k / n;
+/** END of a line's LAST word: the later of the ASR word end and the measured speech end END(id). The ASR stamps a line's
+ *  last word ≈ .07–.29 s before the take's real speech end (v1 takes: timing_v1 words vs dur), so WE alone would start a
+ *  loud cue inside the word's tail. On the defaults (no words) it is END(id), as before. */
+const WEL = (id, prefix, n) => Math.max(WE(id, prefix, 0, SYL(id, n, n)), END(id));
 
 // ---------- maths ----------
 const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -58,70 +70,86 @@ const fall = (t, t1, dur, y0, y1) => lerpv(y0, y1, easeIn(kk(t, t1 - dur, t1)));
 const bump = (t, a, b) => (t > a && t < b) ? Math.sin(Math.PI * (t - a) / (b - a)) : 0;
 
 // ---------- DERIVED ACTION TIMES (after the merge) ----------
+// v2 voices (SCRIPT_V2.md §1, §7.2), with their syllable counts (the SYL fallbacks):
+//   N1 « Dans ce carton, tu paies de l'air. » 8 · T1 « Mais mon carton est léger ! » 7 · N2 « Dans le bateau, même léger, tu paies
+//   la place. » 11 · N2b « La place se mesure en mètres cubes. » 9 · N3 « On mesure le carton entier. » 8 · N3b « Tu paies aussi
+//   le vide dedans. » 8 · T2 « Donc, j'ai payé le bateau pour transporter de l'air ? » 13 · N4 « Parle à ton fournisseur. » 6 ·
+//   N4b « Demande des cartons bien remplis. » 8 · N5 « Un carton plus petit, c'est moins de mètres cubes. » 12 · N6 « Mais
+//   protège ce qui peut casser. » 8 · N7 « Chez Bonzini Trading Cargo, tes cartons sont mesurés en Chine. » 17 · N8 « Écris le
+//   mot CARTON en commentaire. » 10 · N8b « Maintenant, tu sais. » 5
 const A = {};
-// hook (0 → T1): the AIR cloud is already bursting out at frame 0, peaks 0.4 s into N1
-A.hop = T.N1 + .05;                                   // the margouillat startles at the burst
-A.burstPeak = T.N1 + .4;
+// hook (0 → T1): the AIR cloud is already bursting out at frame 0 (the POUF), peaks at ≈ .5 s; the voice starts after the POUF
+A.hop = Math.max(.05, T.N1 - .25);                                   // the margouillat startles on the POUF, before the voice
+A.burstPeak = T.N1 + .2;                                             // ≈ .5 s: frame 0 unchanged
+A.kaching = Math.min(WEL('N1', 'air', 8) + .05, T.T1 - .05);                       // the soft ka-ching punctuates « de l'air »
 A.titleOut = T.T1 - .25;                              // the orange title plate leaves as TOI's amber plate rises
 A.toiUp = T.T1 - .1;
-// N2: LE BATEAU crushes TOI's plate on « place », « AU m³ » stamps the carton on « cube »
-A.bateauShadow = T.N2 + .15;
-A.bateauFall = W('N2', 'place', 0, 1.0);
-A.stampM3 = W('N2', 'cube', 0, 2.15);
-// LA MESURE (silent): 3 tape snaps after N2, formula stamped; compressed if N3 comes early.
-// QA (stage 3): the key plate « AU BATEAU, ON PAIE LA PLACE : LE MÈTRE CUBE. » is held ≥ 1.45 s after it lands on
-// « place » (it was ≈ 1.0 s on the real N2 take); the silent measure starts .35 s after it leaves.
-A.bateauOut = Math.max(END('N2') - .05, A.bateauFall + 1.45);
-A.mes0 = A.bateauOut + .35;
+// N2: LE BATEAU crushes TOI's plate in the pause BEFORE N2 (the BOUM never covers a word); the voice then reads the plate
+// « MÊME LÉGER, TU PAIES LA PLACE. ». N2b: « EN MÈTRES CUBES (m³) » stamps the carton right after « cubes ».
+A.bateauFall = cl(T.N2 - .3, END('T1') + .05, T.N2 - .05);          // = T.N2 − .3 (guard: never inside T1's last word)
+A.bateauShadow = A.bateauFall - .25;                                 // the shadow always comes first
+A.stampM3 = WEL('N2b', 'cube', 9) + .03;
+// LA MESURE (silent, ≈ 1.7 s): the plate stays through N2 + N2b, leaves right after the stamp (QA: held ≥ 1.45 s); 3 tape
+// snaps, the formula stamped .45 s before N3 (compressed if N3 comes early)
+A.bateauOut = Math.max(A.stampM3 + .15, A.bateauFall + 1.45);
+A.mes0 = A.bateauOut + .2;
 const GAP = cl((T.N3 - .45 - A.mes0) / 2.8, .3, .5);
 A.mes1 = A.mes0 + GAP; A.mes2 = A.mes0 + 2 * GAP; A.formula = A.mes0 + 2.8 * GAP;
-// N3: the flank lifts, the void is hatched « VIDE », the cloud settles in it, pleased
-A.flank = T.N3 - .1;
-A.hatch0 = W('N3', 'carton', 0, .15) + .15;
-A.vide = W('N3', 'vide', 0, 1.68);
+// N3 « On mesure le carton entier. » reads the formula (still up). N3b: the flank lifts, the void is hatched « VIDE » from
+// « paies », the cloud settles in it after « vide », pleased; the « tic » after « dedans »
+A.flank = T.N3b - .1;
+A.hatch0 = W('N3b', 'pai|pay', 0, SYL('N3b', 1, 8)) + .15;
+A.vide = W('N3b', 'vide', 0, SYL('N3b', 5, 8));
+A.videTic = WEL('N3b', 'dedan', 8) + .05;
 A.hatch1 = Math.max(A.hatch0 + .6, A.vide - .1);
-A.formulaOut = Math.max(A.hatch0 + .35, A.mes2 + 1.45);           // QA: the full formula is read ≥ 1.45 s
-A.capVide = Math.max(A.hatch0 + .45, A.formulaOut + .18);          // QA: never cross-fades over the formula (same zone)
+A.formulaOut = Math.max(T.N3b - .05, A.mes2 + 1.45);               // read during N3; QA: the full formula is read ≥ 1.45 s
+A.capVide = Math.max(A.flank + .2, A.formulaOut + .18);             // with N3b; never cross-fades over the formula (same zone)
 A.cloudSettle = A.vide + .2;
 // T2: « It's a clock » — everything stops, the music cuts, TOI's small plate sweats
 A.cut = T.T2 - .2;
 A.toiSmall = T.T2 - .05;
 A.toiSmallOut = T.N4 - .15;
-// N4: the repack in 3 HELD poses under the fixed pill « CHEZ TON FOURNISSEUR »
+// N4 « Parle à ton fournisseur. » + N4b « Demande des cartons bien remplis. »: the repack in 3 HELD poses under the fixed
+// pill « CHEZ TON FOURNISSEUR »
 A.repack = T.N4 - .15;
-A.pose1 = W('N4', 'ton', 0, .55);                                   // the sandals line up head-to-tail
-A.pose2 = Math.max(W('N4', 'cartons', 0, 1.6), A.pose1 + .75);       // the walls close in, smaller carton
-A.pose3 = Math.max(W('N4', 'remplis', 0, 2.45), A.pose2 + .75);      // the kraft tape runs across
-A.split = T.N5 - .1;                                                 // AVANT / APRÈS (music back, major)
-A.chase = Math.min(A.pose3 + .2, A.split - .45);                    // the AIR cloud is chased out…
-A.gulp = A.chase + .55;                                              // …and the margouillat gulps it
+A.pose1 = WEL('N4', 'fourniss', 6) + .03;                                         // the sandals line up, in the N4 → N4b pause
+A.pose2 = Math.max(W('N4b', 'carton', 0, SYL('N4b', 3, 8)), A.pose1 + .75);         // on « cartons »: the walls close in
+A.pose3 = Math.max(WEL('N4b', 'rempli', 8) + .05, A.pose2 + .75);                   // the kraft tape (ASMR) AFTER « remplis »
+A.split = T.N5 - .1;                                                               // AVANT / APRÈS (music back, major)
+A.chase = Math.max(Math.min(A.pose3 + .15, A.split - .5), A.pose3 + .05);          // the AIR cloud is chased out…
+A.gulp = Math.max(A.chase + .25, Math.min(A.chase + .45, A.split - .05));          // …and gulped (guards: a short N4b → N5 pause)
 // N5: gauges (no figure)
 A.gauge0 = T.N5 + .1; A.gauge1 = A.gauge0 + .7;
-A.hic = A.gauge1 + .55;                                              // a tiny air burp
-// N6: bubble-wrapped glass
+A.hic = Math.max(END('N5') + .05, A.gauge1 + .55);                                 // a tiny air burp, after « mètres cubes »
+// N6 « Mais protège ce qui peut casser. »: bubble-wrapped glass
 A.splitOut = T.N6 - .15;
-A.glass = T.N6 + .05;
-A.wrap0 = W('N6', 'pas', 0, 1.2) - .15;
-A.wrap1 = Math.max(A.wrap0 + .5, W('N6', 'protection', 0, 1.55) + .35);
+A.glass = Math.max(T.N6 - .1, A.hic + .08);                                       // its « pop » before « Mais » (after the hic)
+A.wrap0 = W('N6', 'proteg', 0, SYL('N6', 1, 8)) - .15;
+A.wrap1 = Math.max(A.wrap0 + .5, WEL('N6', 'casse', 8) + .05);                       // the « plop » after « casser »
 // ENSUITE : (silent band), the fixed pill drops off
 A.ensuite = END('N6') + .1;
 A.ensuiteOut = Math.max(A.ensuite + .45, T.N7 - .05);
-// N7: BONZINI — violet light, label, scan, tape, « VOLUME : • m³ », AIR struck, « MESURÉ ✓ », enamel plate
-A.violet = Math.max(T.N7 - .15, A.ensuite + .25);                   // QA: violet never before the ENSUITE band (Bonzini only)
+// N7: BONZINI — violet light + balafon signature BEFORE « Chez », the enamel plate lands with them (its tonk in the same
+// pause): the voice then READS « Chez Bonzini Trading Cargo » on it, as N2 reads LE BATEAU. The label slaps on in the pause
+// after « Cargo, »; scan on « cartons », tape on « sont », « VOLUME : • m³ » on « mesurés », AIR struck; « MESURÉ ✓ » .2 s
+// after « Chine ». (SCRIPT_V2 §7.2 put the plate after « Cargo »: 2.5 s of empty violet while the brand name was said.)
+A.violet = Math.max(T.N7 - .25, A.ensuite + .25);                   // QA: violet never before the ENSUITE band (Bonzini only)
 A.arrive = T.N7 - .1;
-A.label = A.violet + .3;
-A.sig = W('N7', 'bonzini', 0, .25) - .05;                           // balafon signature
-A.plateBZ = W('N7', 'bonzini', 0, .25);
-A.capBZ = W('N7', 'tes', 0, 1.7) - .1;
-A.scan = W('N7', 'cartons', 0, 1.9);
-A.tape = W('N7', 'sont', 0, 2.35) - .1;                           // the tape runs on « sont mesurés »
-A.volume = Math.max(W('N7', 'mesures', 0, 2.55) + .1, A.tape + .3);
+A.sig = Math.max(A.ensuite + .05, Math.min(A.violet, T.N7 - .1));   // = A.violet: the balafon signature before « Chez », never on « Bonzini »
+A.plateBZ = A.sig + .05;                                            // in the pause before « Chez » (v1: sig = plate − .05 too)
+A.label = WE('N7', 'cargo', 0, SYL('N7', 8, 17)) + .03;            // the label slap in the « Cargo, » pause, clear of « Bonzini »
+A.capBZ = Math.max(W('N7', 'tes', 0, SYL('N7', 8, 17)) - .1, A.plateBZ + .1);   // on « tes », under the plate once it has landed
+A.scan = W('N7', 'carton', 0, SYL('N7', 9, 17));
+A.tape = W('N7', 'sont', 0, SYL('N7', 11, 17)) - .1;               // the tape runs on « sont mesurés »
+A.volume = Math.max(W('N7', 'mesur', 0, SYL('N7', 12, 17)) + .1, A.tape + .3);
 A.airStrike = A.volume + .3;
-A.measured = Math.max(WE('N7', 'mesures', 0, 3.0) + .1, A.airStrike + .3);   // « MESURÉ ✓ » right after the word
-// N8: end card, CTA on « Écris », ritual stamp on « Maintenant », loop
+A.measured = Math.max(Math.min(WEL('N7', 'chine', 17) + .2, Math.max(WEL('N7', 'chine', 17) + .05, T.N8 - .1)),
+  A.airStrike + .3);                                                // .2 s after « Chine » (less if N8 follows closely), never on it
+// N8 « Écris le mot CARTON en commentaire. »: end card, the CTA pill just before « carton ». N8b « Maintenant, tu sais. »: the
+// ritual stamp falls .3 s BEFORE the voice, which then reads it. Then the loop. (T.end ≥ max(END(N8b) + .5, stampEnd + 1.45))
 A.endcard = Math.max(T.N8 - .15, A.measured + 1.45);                // QA: « MESURÉ ✓ » is held ≥ 1.45 s
 A.cta = Math.max(T.N8, A.endcard + .15);
-A.stampEnd = W('N8', 'maintenant', 0, 1.9) - .1;
+A.stampEnd = cl(T.N8b - .3, END('N8') + .05, T.N8b - .05);         // = T.N8b − .3 (guard: never inside N8's last word)
 A.loop = T.end - .55;                                               // the big closed carton starts trembling
 A.out = T.end - .12;                                                // texts gone: last frames = the trembling carton
 if (TM && TM.A) Object.assign(A, TM.A);
@@ -157,7 +185,7 @@ function cartonGeo(st) {
 // ---------- the cartons ----------
 // each: {id, x, y (foot), w, h, d, s, sx, sy, rot, a, flaps (0 shut → 1 wide open), lid (front flank lifted 0..1),
 //        hatch (light-blue « VIDE » hatching sweep 0..1), vide (label 0..1), sandals (0 heaped in a corner → 1 head-to-tail,
-//        tight), sandalsOn (interior visible), tape (kraft tape across the top 0..1), m3 (« AU m³ » ink 0..1, on the front
+//        tight), sandalsOn (interior visible), tape (kraft tape across the top 0..1), m3 (« EN MÈTRES CUBES (m³) » ink 0..1, on the front
 //        face), marks [3× 0..1] (felt lines of the measure on L, l, H), label (Bonzini sea label 0..1), shake 0..1, burst}
 function sizeAt(k) { return { w: lerpv(G.carton.w, G.small.w, k), h: lerpv(G.carton.h, G.small.h, k), d: lerpv(G.carton.d, G.small.d, k) }; }
 function heroCarton(t) {
@@ -271,8 +299,8 @@ function airMini(t) {
 const PLATE_TXT = {
   title: { lines: ['DANS CE CARTON,', 'TU PAIES', "DE L'AIR."], emph: 2 },           // orange, « DE L'AIR. » 170 px
   toi: { lines: ['MAIS MON CARTON', 'EST LÉGER !'], emph: -1 },                       // amber (TOI)
-  bateau: { lines: ['AU BATEAU, ON PAIE', 'LA PLACE :', 'LE MÈTRE CUBE.'], emph: 1 }, // thick kraft-grey, pill « LE BATEAU »
-  toiSmall: { lines: ["…J'AI PAYÉ LE BATEAU", 'POUR TRANSPORTER', "DE L'AIR ?!"], emph: -1 }, // amber, small, sweating
+  bateau: { lines: ['MÊME LÉGER,', 'TU PAIES', 'LA PLACE.'], emph: 2 },          // thick kraft-grey, pill « LE BATEAU » (read by N2)
+  toiSmall: { lines: ["J'AI PAYÉ LE BATEAU", 'POUR TRANSPORTER', "DE L'AIR ?!"], emph: -1 }, // amber, small, sweating (short T2)
 };
 function plates(t) {
   const out = [], Y = G.plateY;
@@ -281,7 +309,7 @@ function plates(t) {
     const q = squash(t, -.12, .12, 24, 7), k = easeIn(kk(t, A.titleOut, A.titleOut + .3));
     out.push({ kind: 'title', ...PLATE_TXT.title, x: G.cx - 700 * k, y: Y - 260 * k, s: 1, sx: q.sx, sy: q.sy, rot: -.35 * k, a: 1, crush: 0, sweat: 0, shake: 0 });
   }
-  // TOI: pops up (rebound), trembles under the incoming shadow, crushed on « place »
+  // TOI: pops up (rebound), trembles under the incoming shadow, crushed in the pause before N2
   if (t >= A.toiUp && t < A.bateauFall + .5) {
     let s = backOut(kk(t, A.toiUp, A.toiUp + .3), 2.4), sx = 1, sy = 1;
     const shake = kk(t, A.bateauShadow, A.bateauFall) * .6;
@@ -289,7 +317,7 @@ function plates(t) {
     if (crush > 0) { sy = lerpv(1, .18, crush); sx = lerpv(1, 1.18, crush); }
     out.push({ kind: 'toi', ...PLATE_TXT.toi, x: G.cx, y: Y + (G.plateH.toi / 2) * (1 - sy) * .8, s, sx, sy, rot: 0, a: 1 - kk(t, A.bateauFall + .3, A.bateauFall + .5), crush, sweat: 0, shake });
   }
-  // LE BATEAU: falls on « place », squashes, holds; leaves before the measure
+  // LE BATEAU: falls before N2 (which reads it), squashes, holds through N2b; leaves after the m³ stamp, before the measure
   if (t >= A.bateauFall - .2 && t < A.bateauOut + .3) {
     let y = t < A.bateauFall ? fall(t, A.bateauFall, .2, -420, Y) : Y; const q = squash(t, A.bateauFall, .16);
     const k = easeIn(kk(t, A.bateauOut, A.bateauOut + .3));
@@ -378,21 +406,21 @@ function endcard(t) {
 const TEXTS = () => [
   [A.mes0 - .05, A.formulaOut + .2, 'formula', 'LONGUEUR|× LARGEUR|× HAUTEUR', 'formula', 'CA_measure'],
   [A.formula + .1, A.formulaOut + .2, 'formulaSub', 'le carton entier', 'formulaSub', 'CA_measure'],
-  [A.stampM3 - .14, A.flank + .15, 'm3', 'AU m³', 'stampM3', 'CA_carton'],
-  [A.capVide, T.T2 + .05, 'capVide', 'LE *VIDE*,|TU LE PAIES AUSSI.', 'caption', null],
+  [A.stampM3 - .14, A.flank + .15, 'm3', 'EN MÈTRES|CUBES (m³)', 'stampM3', 'CA_carton'],
+  [A.capVide, T.T2 + .05, 'capVide', 'TU PAIES AUSSI|LE *VIDE* DEDANS.', 'caption', null],
   [T.N4 - .05, A.split - .05, 'capN4', 'DEMANDE À TON FOURNISSEUR :|^DES CARTONS|^*BIEN REMPLIS*.', 'caption', null],
   [A.split + .05, A.splitOut + .1, 'avantApres', 'AVANT|APRÈS', 'splitLabels', 'CA_split'],
-  [T.N5 - .05, T.N6 - .1, 'capN5', 'MOINS DE VIDE|= *MOINS DE m³*', 'caption', null],
-  [T.N6 - .05, A.ensuite, 'capN6', 'ENLÈVE LE VIDE,|*PAS LA PROTECTION*.', 'caption', null],
+  [T.N5 - .05, T.N6 - .1, 'capN5', "UN CARTON *PLUS PETIT*,|C'EST MOINS DE|^*MÈTRES CUBES*.", 'caption', null],
+  [T.N6 - .05, A.ensuite, 'capN6', 'MAIS *PROTÈGE*|*CE QUI PEUT CASSER*.', 'caption', null],
   [A.ensuite - .1, A.ensuiteOut + .25, 'ensuite', 'ENSUITE :', 'band', 'BZ_band'],
-  [A.capBZ, A.endcard, 'capBZ', 'TES CARTONS, *MESURÉS*|DÈS LA RÉCEPTION EN CHINE', 'captionBZ', null],
+  [A.capBZ, A.endcard, 'capBZ', 'TES CARTONS SONT|*MESURÉS* EN CHINE.', 'captionBZ', null],
   [A.volume - .1, A.endcard, 'volume', 'VOLUME : • m³', 'readout', 'BZ_scene'],
   [A.measured - .12, A.endcard, 'measured', 'MESURÉ', 'stampCheck', 'BZ_scene'],
   [A.endcard, A.out, 'brand', 'Bonzini Trading Cargo', 'brand', 'BZ_end'],
-  [A.endcard + .25, A.out, 'service', 'Groupage mer et air · Chine → Douala|Entrepôt : Foyer Balengou', 'service', 'BZ_end'],
+  [A.endcard + .25, A.out, 'service', 'Cargo bateau et avion · Chine → Douala|Entrepôt : Foyer Balengou', 'service', 'BZ_end'],
   [A.stampEnd - .12, A.out, 'stampEnd', 'MAINTENANT,|TU SAIS.', 'stampEnd', 'BZ_end'],
-  [A.cta, A.out, 'cta', 'Écris CBM en commentaire', 'cta', 'BZ_end'],
-  [A.cta + .35, A.out, 'tag', 'Tague celui qui|remplit ses cartons|de papier', 'tagHand', 'BZ_end'],
+  [A.cta, A.out, 'cta', 'Écris CARTON en commentaire', 'cta', 'BZ_end'],
+  [A.cta + .35, A.out, 'tag', "Montre ça|à celui qui|paie de l'air", 'tagHand', 'BZ_end'],
 ];
 /** speaker / role pills (world, follow their plate): {who: 'toi'|'bateau'|'fournisseur', x, y, a, rot} */
 function pills(t) {
@@ -403,8 +431,8 @@ function pills(t) {
     if (P.kind === 'toiSmall') out.push({ who: 'toi', x: P.x, y: P.y + hh + 34, a: kk(t, A.toiSmall + .25, A.toiSmall + .4) * P.s / .86 });
     if (P.kind === 'bateau') out.push({ who: 'bateau', x: P.x + 170, y: P.y - G.plateH.bateau / 2 * P.sy - 22, a: kk(t, A.bateauFall + .05, A.bateauFall + .2), rot: P.rot });
   }
-  if (t >= A.repack && t < A.ensuite + .45) {     // the fixed pill: CHEZ TON FOURNISSEUR; drops off at ENSUITE
-    const k = easeOut(kk(t, A.repack, A.repack + .2)), d = easeIn(kk(t, A.ensuite, A.ensuite + .4));
+  if (t >= A.repack && t < A.ensuite + .3) {      // the fixed pill: CHEZ TON FOURNISSEUR; drops off at ENSUITE (v2: in .25 s,
+    const k = easeOut(kk(t, A.repack, A.repack + .2)), d = easeIn(kk(t, A.ensuite, A.ensuite + .25));   // gone before the plate)
     out.push({ who: 'fournisseur', x: G.pillFix.x - 80 * d, y: G.pillFix.y + 900 * d * d, a: k, rot: -.5 * d, fixed: 1 });
   }
   return out;
@@ -464,21 +492,23 @@ function geckoShim() {
 
 // ---------- sound (names = the storyboard's sound column) ----------
 function soundCues() {
-  const Q = []; const q = (t, name, g = 1, pan = 0) => { if (t >= 0 && t < T.end) Q.push({ t: +t.toFixed(4), name, g, pan }); };
-  q(0, 'pouf_air'); q(.02, 'carton_creak', .7); q(A.burstPeak - .1, 'kaching_soft', .55, -.2); q(A.hop, 'gecko_skitter', .35, -.6);
+  // v2 (SCRIPT_V2.md §7.3): loud cues (hit / asmr / brand) start on a word END or in a pause, never inside a word; the cues
+  // that still fall under a voice are lowered. Optional d = the sound's length when it must follow a picture (fill = hatching).
+  const Q = []; const q = (t, name, g = 1, pan = 0, d) => { if (t >= 0 && t < T.end) Q.push(d === undefined ? { t: +t.toFixed(4), name, g, pan } : { t: +t.toFixed(4), name, g, pan, d: +d.toFixed(4) }); };
+  q(0, 'pouf_air'); q(.02, 'carton_creak', .7); q(A.kaching, 'kaching_soft', .55, -.2); q(A.hop, 'gecko_skitter', .35, -.6);
   q(A.toiUp, 'boing', .6); q(A.bateauShadow, 'whoosh_low', .4); q(A.bateauFall, 'boum_carton'); q(A.bateauFall + .03, 'letters_splash', .7);
   q(A.stampM3, 'stamp');
   [A.mes0, A.mes1, A.mes2].forEach((m, i) => { q(m, 'clac', .9, -.2 + .2 * i); q(m + .04, 'felt', .45); }); q(A.formula, 'stamp', .8);
-  q(A.flank, 'paper_lift', .7); q(A.hatch0, 'fill_fffff', .6); q(A.vide, 'tic', .6);
-  q(A.cut, 'music_cut'); q(A.cut + .1, 'cricket', .5); q(A.toiSmall + 1.1, 'sweat_drop', .7); q(A.toiSmall + 2.1, 'sweat_drop', .5);
-  q(A.pose1, 'carton_fold', .8); q(A.pose2, 'cutter', .7); q(A.pose2 + .05, 'carton_fold', .8); q(A.pose2 + .1, 'pffuit', .6); q(A.pose3, 'scotch_scriiitch', 1.1);
+  q(A.flank, 'paper_lift', .7); q(A.hatch0, 'fill_fffff', .3, 0, A.hatch1 - A.hatch0 + .1); q(A.videTic, 'tic', .6);
+  q(A.cut, 'music_cut'); q(A.cut + .1, 'cricket', .5); q(END('T2') + .05, 'sweat_drop', .6, .15);
+  q(A.pose1, 'carton_fold', .8); q(A.pose2, 'cutter', .4); q(A.pose2 + .05, 'carton_fold', .5); q(A.pose2 + .1, 'pffuit', .35); q(A.pose3, 'scotch_scriiitch', 1.1);
   q(A.chase, 'pffuit', .8, -.3); q(A.gulp, 'gloup', .9, -.6); q(A.hic, 'hic', .5, -.6);
   q(A.split, 'whoosh', .5); q(A.gauge0, 'gauge_fill', .4, -.3); q(A.gauge0 + .05, 'gauge_fill', .3, .3);
-  q(A.glass, 'pop_soft', .5, .3); q(A.wrap0 + .1, 'bubble_wrap', .6, .3); q(A.wrap1, 'bubble_plop', .8, .3);
+  q(A.glass, 'pop_soft', .5, .3); q(A.wrap0 + .1, 'bubble_wrap', .3, .3); q(A.wrap1, 'bubble_plop', .8, .3);
   q(A.ensuite, 'whoosh', .8); q(A.ensuite + .05, 'pill_drop', .4);
   q(A.violet, 'violet_hum', .4); q(A.sig, 'bonzini_sig'); q(A.plateBZ, 'tonk', .8); q(A.label, 'label_slap', .5);
-  q(A.scan, 'bip', .8, .3); q(A.tape, 'tape_measure', .8); q(A.volume, 'tic', .6); q(A.airStrike, 'marker_strike', .6, .3); q(A.measured, 'stamp');
-  q(A.endcard, 'whoosh_soft', .5); q(A.cta, 'pop', .7); q(A.stampEnd, 'stamp_big'); q(A.loop, 'carton_rattle', .6);
+  q(A.scan, 'bip', .8, .3); q(A.tape, 'tape_measure', .5); q(A.volume, 'tic', .6); q(A.airStrike, 'marker_strike', .6, .3); q(A.measured, 'stamp');
+  q(A.endcard, 'whoosh_soft', .5); q(A.cta, 'pop', .4); q(A.stampEnd, 'stamp_big'); q(A.loop, 'carton_rattle', .6);
   q(T.end - .5, 'final_chord'); q(T.end - .02, 'cut_dry');
   return Q.sort((a, b) => a.t - b.t);
 }

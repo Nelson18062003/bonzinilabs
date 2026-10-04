@@ -57,10 +57,11 @@
         text(it.label, 0, -eh / 2 + eh * .62, { font: lf, align: 'center', color: INK, ls: 2 });
         if (it.amountK > 0) handText(fmtN(it.amount), 0, eh / 2 - 14, 92, { write: it.amountK, color: ORANGE, pen: false });
         if (it.art > 0 && it.id === 'transport') { ctx.save(); ctx.globalAlpha *= it.art; at(-ew / 2 + 56, -eh / 2 + 40, 0, 1, 1, () => truck(INK)); at(ew / 2 - 54, -eh / 2 + 42, 0, 1.1, 1.1, () => iconShip(C.sea)); ctx.restore(); }
-        if (it.art > 0 && it.id === 'douane') at(ew / 2 - 64, -eh / 2 - 6, .1, it.art, it.art, () => postIt(200, () => {
-          text('exemple ·', 0, -40, { font: font(FF.hand, 34, 800), align: 'center', color: INK }); text('dépend du', 0, 2, { font: font(FF.hand, 32, 800), align: 'center', color: INK });
-          text('code du produit', 0, 42, { font: font(FF.hand, 28, 800), align: 'center', color: INK }); }, { lift: 6 }));
-        if (it.art > 0 && it.id === 'frais') { const ws = it.doodles; ws.forEach((wd, i) => { const k = S.kk(it.art, i / 4, (i + 1) / 4); if (k > 0) handText(wd, -ew / 2 + 50 + i * 92, -eh / 2 + 40, 28, { write: k, color: VIOLET_D, pen: false }); }); }
+        if (it.art > 0 && it.id === 'douane') at(ew / 2 - 50, -eh / 2 - 6, .05, it.art, it.art, () => postIt(290, () => {   // v2: « EXEMPLE / dépend du / produit », ≥ 44 px
+          const ls = it.sticker.split('|');
+          ls.forEach((l, i) => text(l, 0, -50 + i * 50, { font: font(FF.hand, 44, 800), align: 'center', color: i === 0 ? ORANGE : INK })); }, { lift: 6 }));
+        if (it.art > 0 && it.id === 'frais') { const ws = it.doodles; ws.forEach((wd, i) => { const k = S.kk(it.art, i / 4, (i + 1) / 4);   // v2: 2 × 2 grid, 42 px (was one row at 28 px)
+          if (k > 0) handText(wd, i % 2 ? 60 : -100, -eh / 2 + 112 + 44 * Math.floor(i / 2), 42, { write: k, color: INK, pen: false }); }); }
       });
     },
     box(it, t, n) {
@@ -95,7 +96,7 @@
           withShadow(4, () => { ctx.fillStyle = 'rgba(251,246,236,.92)'; rrect(-470, -140, 940, 290, 14); ctx.fill(); });
           stampText(lines[0], 0, -70, font(FF.stencil, 92, 900), ORANGE, { ls: 2, starve: .35 });
           stampText(lines[1], 0, 26, font(FF.stencil, 104, 900), ORANGE, { ls: 4, starve: .35 });
-          text(st.sub, 0, 120, { font: font(FF.body, 40, 800), align: 'center', color: INK }); });
+          if ((st.subK ?? 1) > 0) text(st.sub, 0, 120, { font: font(FF.body, 40, 800), align: 'center', color: INK, alpha: st.subK ?? 1 }); });
       } else {
         at(st.x, st.y, st.rot, st.s * sq.sx, st.s * sq.sy, () => {
           withShadow(10 + 60 * (1 - k), () => { ctx.fillStyle = 'rgba(251,246,236,.96)'; rrect(-450, -230, 900, 470, 24); ctx.fill(); });

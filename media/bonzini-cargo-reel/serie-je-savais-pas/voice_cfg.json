@@ -1,0 +1,6 @@
+{
+ "narratrice": {"voice": "unmute-prod-website/developpeuse-3.wav", "temp": 0.2, "cfg": 3.0, "pb": 0.0, "pbw": 2, "break": 0.25,
+                "_why": "lab/ (oct. 4): temp .2 + CFG 3 = the most stable diction; padding_between 2 = ~20 % slower with clear word boundaries; padding_bonus > 0.25 makes robotic gaps between words"},
+ "TOI": {"voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav", "temp": 0.3, "cfg": 3.0, "pb": 0.0, "pbw": 2, "break": 0.2},
+ "COLIS": {"voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav", "temp": 0.3, "cfg": 3.0, "pb": 0.0, "pbw": 2, "break": 0.2}
+}

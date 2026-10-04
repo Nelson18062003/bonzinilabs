@@ -14,7 +14,7 @@
 //       toiSmall amber, sweating (st.sweat)           + the incoming shadow of LE BATEAU on TOI's plate (A.bateauShadow →
 //                                                       A.bateauFall), and its own shadow on the table while it falls.
 //   CA_fx(t, L)               effects drawn after the plates: TOI's letters gush out from under LE BATEAU (closed-form arcs,
-//                             hops, spin, die-cut amber letters) with dust; dust at « AU m³ », at each tape clack, when the
+//                             hops, spin, die-cut amber letters) with dust; dust at the m³ stamp, at each tape clack, when the
 //                             walls close in (pose 2); kraft flakes and torn tape shreds of the burst at frame 0.
 // Deterministic, no ctx.filter. Cost ≈ 3–5 ms per plate (one 1.5× sprite + stacked shadows); first use builds the sprite (≈ 30 ms, once).
 // =============================================================================================
@@ -292,9 +292,9 @@ const CA_PL = (function () {
     burstDebris(t, L);
     if (typeof CA_MS !== 'undefined') CA_MS.formulaTail(t, L);
     gush(t, L);
-    // « AU m³ » hits the carton: dust from the stamp's ends
+    // « EN MÈTRES CUBES (m³) » hits the carton: dust from the stamp's ends (2-line box ≈ 480 × 210)
     { const k = kk(t, A.stampM3, A.stampM3 + .7); if (k > 0 && k < 1) { const hc = S.heroCarton(A.stampM3); if (hc) { const g = S.cartonGeo(hc), j = S.cartonJit(hc, t);
-      H.puffs([{ x: g.cx - 170 + j.x, y: g.cy + j.y, nx: -1, ny: .2 }, { x: g.cx + 170 + j.x, y: g.cy - 10 + j.y, nx: 1, ny: -.2 }, { x: g.cx + j.x, y: g.cy + 70 + j.y, nx: 0, ny: 1, s: .7 }], k, { n: 5, seed: 41, dist: 80, size: 30, a: .5 }); } } }
+      H.puffs([{ x: g.cx - 235 + j.x, y: g.cy + j.y, nx: -1, ny: .2 }, { x: g.cx + 235 + j.x, y: g.cy - 10 + j.y, nx: 1, ny: -.2 }, { x: g.cx + j.x, y: g.cy + 105 + j.y, nx: 0, ny: 1, s: .7 }], k, { n: 5, seed: 41, dist: 80, size: 30, a: .5 }); } } }
     // each tape clack: a puff at the hook
     [A.mes0, A.mes1, A.mes2].forEach((m, i) => { const k = kk(t, m, m + .55); if (k <= 0 || k >= 1) return; const tp = S.tape(m + .001); if (!tp) return; const e = tp.edges[i];
       const dx = e.p1[0] - e.p0[0], dy = e.p1[1] - e.p0[1], l = Math.hypot(dx, dy) || 1; H.puffs([{ x: e.p1[0], y: e.p1[1], nx: dx / l, ny: dy / l }], k, { n: 5, seed: 51 + i * 7, dist: 60, size: 24, a: .45, spread: 1.6 }); });

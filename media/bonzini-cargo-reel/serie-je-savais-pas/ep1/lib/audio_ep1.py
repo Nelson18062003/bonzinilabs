@@ -22,7 +22,7 @@ Music (makossa, 120 BPM, beat .5 s):
                        climbs at every cut (+skank +shaker, +16th picking +conga +4-on-floor, +claps +balafon tremolo), a
                        riser from the 4th cut grows into ...
   cut                  ... the TOTAL CUT (4 ms gate, reverb returns included): digital silence on the music bus; the coin
-                       spins alone, the giant stamp falls in slow motion, the coin lies flat (« ting »), TOI's « …zéro ?! »
+                       spins alone, the giant stamp falls in slow motion, the coin lies flat (« ting »), TOI's « Quoi ? Zéro franc ? »
   majorFrom            A MAJOR: arrival hit on majorFrom, the full makossa on the pile's beat grid (the 5 stacks = beats)
   brandIn              break: whoosh + violet pad + shimmer; sigAt: the Bonzini signature, E6 -> G#6 (2nd note +.1 s)
   sig2 .. ritual       brand groove on a grid anchored on the signature's 2nd note (E | D, pad + bright balafon), then the
@@ -31,8 +31,9 @@ Music (makossa, 120 BPM, beat .5 s):
   final_chord          the A-major final chord (V -> I), choked at T.end; the note re-forms with a reversed paper rush that
                        is cut dead on the last sample (the loop's first sample is the scissors' snip)
 Mix: voices (R.voice_line chain: HP/EQ, leveller + word compressor, de-esser, -18 LUFS per line, small-room reverb);
-music ducks 8 dB under any voice (+4 dB carve of 0.9-5 kHz, look-ahead, held through each line), soft SFX duck 4 dB,
-impacts and the signature never duck. Master: HP 28 Hz, soft clip on the music and impact buses, true-peak limiter;
+music ducks DUCK_DB (12 dB) under any voice (+ R.CARVE_DB (6 dB) carve of 0.9-5 kHz, look-ahead, held through each line),
+soft SFX duck SFX_DUCK_DB (9 dB), impacts HIT_DUCK_DB (6 dB; v2: they sit in the silences after the lines anyway), the
+signature never ducks. Master: HP 28 Hz, soft clip on the music and impact buses, true-peak limiter;
 -14 LUFS integrated (pyloudnorm), TP <= -1 dBTP. Every SFX cue is levelled by its max momentary loudness: LVL[name] +
 20·log10(g) (g = the score's gain).
 
@@ -66,17 +67,18 @@ REPORT = os.path.join(OUT_A, 'audio_report.json')
 SNAPPED = os.path.join(OUT_A, 'words_snapped.json')
 SHEET = os.path.join(X, 'out', 'chk_audio_sheet.jpg')
 
-VOX_TRIM = {'T2': -1.0}                         # « …zéro ?! » small, stunned voice (still far above the cut silence)
+VOX_TRIM = {}                                   # v2 (clear diction): every line levelled the same, no whispered line
 R.VO_DIR, R.CACHE, R.VOX_TRIM = VO_DIR, os.path.join(OUT_A, '.cache'), VOX_TRIM   # R.voice_line reads these globals
 
 BEAT, S16, BAR = 0.5, 0.125, 2.0
 BRK = 0.22                                      # stop-time: the band leaves .22 s before each TCHAC, re-enters ON it
 SIG_GAP = 0.10                                  # the signature's 2nd note, .1 s after the 1st (the series' signature)
-DUCK_DB, SFX_DUCK_DB = 8.0, 4.0
+DUCK_DB, SFX_DUCK_DB, HIT_DUCK_DB = 12.0, 9.0, 6.0   # v2: the voice must be understood first (owner's feedback)
+R.CARVE_DB = 6.0
 G_TENSE, G_MAJOR, G_BRAND = 10 ** (-9.5 / 20), 10 ** (-11 / 20), 10 ** (-12 / 20)
 G_SIG = 10 ** (-1.0 / 20)
 MUSIC = ('groove', 'brand', 'final', 'sig')
-DUCKED = {'groove': DUCK_DB, 'brand': DUCK_DB, 'sfx': SFX_DUCK_DB}
+DUCKED = {'groove': DUCK_DB, 'brand': DUCK_DB, 'sfx': SFX_DUCK_DB, 'hit': HIT_DUCK_DB}
 SENDS = {'groove': ('room', .08), 'brand': ('plate', .22), 'final': ('room', .10), 'sig': ('plate', .18), 'sfx': ('room', .07),
          'hit': ('room', .09), 'vox': ('vroom', .15)}
 ROOM_LUFS = -56.0                               # the paper table's room tone (pre-master), exactly periodic
@@ -85,7 +87,7 @@ LVL = {'snip': -19, 'tchac': -13, 'tchac_big': -12, 'paper_slide': -22, 'stamp':
        'horn': -19, 'sticker': -20, 'marker': -21, 'coin_roll': -21, 'box_drop': -18, 'lid': -21, 'boing': -18,
        'calc_zero': -19, 'coin_spin': -24, 'stamp_big': -15, 'ting': -19, 'stack': -20, 'pop': -20, 'whoosh': -19,
        'bonzini_sig': -22.5, 'plate': -21, 'scan_beep': -19, 'tonk': -20, 'gloup': -18, 'reform': -18}
-HIT = ('tchac', 'tchac_big', 'stamp_big')       # impact bus: never ducked, soft-clipped
+HIT = ('tchac', 'tchac_big', 'stamp_big')       # impact bus: soft-clipped, ducked only HIT_DUCK_DB under a voice
 SWELL = ('reform',)                             # cues whose onset is a soft take-off (checked on placement too)
 PM = mk.PROG_MINOR                               # F#m D E C#m
 CH = {'A': ('A', [64, 69, 73, 76], 45), 'D': ('D', [66, 69, 74, 78], 50), 'E': ('E', [64, 68, 71, 76], 52)}
@@ -112,38 +114,45 @@ def word_at(T, words, lid, prefix, nth=0, end=False):
             c += 1
     return None
 
-DUR0 = {'N1': .85, 'N2': 1.6, 'T1': 2.0, 'N3': 1.8, 'N4': 2.4, 'N5': 2.4, 'N6': 3.4, 'N7': 2.5, 'T2': .6, 'N8': 4.0, 'N9': 4.4, 'N10': 3.1}
+# v2 storyboard defaults (SCRIPT_V2.md §6.1 = 01_score.js DUR0): clear diction at 3.6 syllables/s
+DUR0 = {'N1': 3.06, 'N2': 2.5, 'T1': 2.14, 'N3': 1.94, 'N4': 1.67, 'N5': 2.22, 'N6': 5.02, 'N7': 4.47, 'T2': 1.31, 'N8': 3.06, 'N9': 5.83, 'N10': 4.47}
 
 def derive_A(T, DUR, words):
-    """python mirror of the score's A (only what the sound needs) — used when the score exposes no A"""
+    """python mirror of the score's A (only what the sound needs) — used when the score exposes no A. v2 (SCRIPT_V2.md
+    §6.2): « tchac » is no longer said, every cut is END(line) + .1 (sound alone, in the silence after the line); the
+    impacts sit at a word's END or in a silence. Fallback seconds measured on the v2 defaults, scaled by DUR/DUR0."""
     def W(i, p, nth=0, fb=0.0, end=False):
         v = word_at(T, words, i, p, nth, end)
         return v if v is not None else T[i] + fb * (DUR.get(i, DUR0[i]) / DUR0[i])
+    WE = lambda i, p, nth=0, fb=0.0: W(i, p, nth, fb, end=True)
     E = lambda i: T[i] + DUR.get(i, DUR0[i])
     A = {}
-    A['snips'] = [0, T['N1'] + DUR.get('N1', .85) * .5]
+    A['snips'] = [0, max(.12, T['N1'] - .2)]                                          # both BEFORE the voice
     A['cut1'] = min(E('N1') + .03, T['N2'] - .12); A['slide1'] = [A['cut1'] + .27, A['cut1'] + .87]
-    A['stampBuy'] = W('N2', 'achet') + .2; A['ding1'] = A['slide1'][1] + .05
-    A['tics'] = [E('T1') - 1.0, E('T1') - .5, E('T1')]; A['flyDur'] = .45
-    A['cutT'] = W('N3', ['tch', 'chak'], 0, 1.4); A['landT'] = A['cutT'] + .5; A['envT'] = W('N3', 'transp', 0, .15) - .25
-    A['cutD1'] = W('N4', ['tch', 'chak'], 0, 1.7); A['cutD2'] = W('N4', ['tch', 'chak'], 1, 2.0); A['landD'] = A['cutD2'] + .5
-    A['envD'] = max(W('N4', 'douane', 0, .15) - .25, A['landT'] + .1); A['amtD'] = min(W('N4', 'trois', 0, .75), A['envD'] + .6)
+    A['stampBuy'] = W('N2', 'pay', 0, 1.1) + .2; A['ding1'] = max(A['slide1'][1] + .05, E('N2') + .05)
+    A['challenge'] = max(E('N2') + .06, A['stampBuy'] + 1.4)
+    A['tics'] = [E('T1') + .05, E('T1') + .3, E('T1') + .55]; A['flyDur'] = .45     # after TOI's line
+    A['cutT'] = E('N3') + .1; A['landT'] = A['cutT'] + .5; A['envT'] = W('N3', 'transp', 0, .55) - .25
+    A['cutD1'] = E('N4') + .1; A['cutD2'] = A['cutD1'] + .3; A['landD'] = A['cutD2'] + .5
+    A['envD'] = max(W('N4', 'douane', 0, .28) - .25, A['landT'] + .1); A['amtD'] = min(W('N4', 'trois', 0, .85), A['envD'] + .6)
     A['sticker'] = A['amtD'] + .5
-    A['cutF'] = W('N5', ['tch', 'chak'], 0, 2.0); A['landF'] = A['cutF'] + .5; A['envF'] = max(W('N5', 'frais', 0, .55) - .25, A['landD'] + .1)
-    A['amtF'] = min(W('N5', 'cinq', 0, 1.1), A['envF'] + .6); A['doodles'] = [A['amtF'] + .35 + .16 * i for i in range(4)]
-    A['boxIn'] = max(T['N6'] - .15, A['landF'] + .1); A['lid'] = A['boxIn'] + .2; A['feet'] = A['lid'] + .22
-    A['stampInv'] = W('N6', 'cent', 0, 1.0) + .1; A['cutI'] = W('N6', ['tch', 'chak'], 0, 3.0); A['zeroCalc'] = A['cutI'] + .5
+    A['cutF'] = E('N5') + .1; A['landF'] = A['cutF'] + .5; A['envF'] = max(W('N5', 'frais', 0, .85) - .25, A['landD'] + .1)
+    A['amtF'] = min(W('N5', 'cinq', 0, 1.4), A['envF'] + .6); A['doodles'] = [A['amtF'] + .35 + .16 * i for i in range(4)]
+    A['boxIn'] = A['landF'] + .1; A['lid'] = A['boxIn'] + .15; A['feet'] = A['lid'] + .15
+    A['stampInv'] = WE('N6', 'pas', 0, 2.8) + .02; A['cutI'] = E('N6') + .1; A['zeroCalc'] = A['cutI'] + .5
     A['musicCut'] = E('N6') + .1; A['coinSpin'] = A['musicCut'] + .15
-    A['zeroStamp'] = W('N7', ['zer', 'zero'], 0, 2.2); A['zeroFall'] = min(T['N7'] + .1, A['zeroStamp'] - .75)
-    A['coinSettle'] = min(A['zeroStamp'] + .45, T['T2'] - .1)
+    A['zeroEq'] = W('N7', ['zer', 'zero', '0'], 0, 3.6)
+    A['zeroStamp'] = E('N7') + .02; A['zeroFall'] = min(T['N7'] + .1, A['zeroStamp'] - .75)   # the impact AFTER « franc »
+    A['coinSettle'] = A['zeroStamp'] + .25
     A['toiZeroEnd'] = max(E('T2') + .15, T['T2'] + 1.45); A['major'] = T['N8'] - .1
-    A['stack'] = [max(A['major'] + .4, A['toiZeroEnd'] + .05) + .5 * i for i in range(5)]
-    A['arrow'] = max(W('N8', 'fix', 0, 3.0) - .15, A['stack'][4] + .3); A['priceTag'] = max(W('N8', 'prix', 0, 3.55), A['arrow'] + .35)
-    A['brandIn'] = T['N9'] - .12; A['sig'] = W('N9', 'bonz', 0, .3) - .05; A['plate'] = W('N9', 'bonz', 0, .3)
-    A['scan'] = W('N9', 'colis', 0, 1.9); A['weigh'] = W('N9', 'pes', 0, 2.6); A['stampPese'] = A['weigh'] + .3
-    A['measure'] = W('N9', 'mesur', 0, 3.05); A['stampMes'] = A['measure'] + .45
+    A['stack'] = [max(A['major'] + .4, A['toiZeroEnd'] + .3) + .25 * i for i in range(5)]
+    A['brandIn'] = T['N9'] - .12
+    A['arrow'] = max(A['stack'][4] + .3, min(W('N8', 'fix', 0, 1.95) - .15, A['brandIn'] - 1.8)); A['priceTag'] = A['arrow'] + .35
+    A['sig'] = W('N9', 'bonz', 0, .55) - .05; A['plate'] = W('N9', 'bonz', 0, .55)
+    A['scan'] = W('N9', 'colis', 0, 2.75); A['weigh'] = W('N9', 'pes', 0, 3.6); A['stampPese'] = A['weigh'] + .3
+    A['measure'] = W('N9', 'mesur', 0, 4.45); A['stampMes'] = A['measure'] + .45
     A['endcard'] = E('N9') + .1; A['cta'] = max(W('N10', 'ecri'), A['endcard'] + .15); A['gulps'] = [A['cta'] + .55, A['cta'] + 1.05]
-    A['ritual'] = W('N10', 'maint', 0, 1.7); A['loop'] = T['end'] - .5; A['finalChord'] = A['loop'] - .25
+    A['ritual'] = W('N10', 'maint', 0, 3.08); A['loop'] = T['end'] - .5; A['finalChord'] = A['loop'] - .25
     return A
 
 def derive_cues(A):
@@ -153,17 +162,17 @@ def derive_cues(A):
     for s in A['snips']: q(s, 'snip', .9, .15)
     q(A['cut1'], 'tchac'); q(A['slide1'][0], 'paper_slide', .7, -.3); q(A['ding1'], 'ding', .55, .3); q(A['stampBuy'], 'stamp', .55, .25)
     for i, s in enumerate(A['tics']): q(s, 'tic', .8 if i == 2 else .6, .2)
-    q(A['envT'], 'paper_slide', .45, -.4); q(A['cutT'], 'tchac'); q(A['cutT'] + .05, 'paper_slide', .5); q(A['cutT'] + .22, 'horn', .5, .2)
+    q(A['envT'], 'paper_slide', .45, -.4); q(A['cutT'], 'tchac'); q(A['cutT'] + .05, 'paper_slide', .5); q(A['cutT'] + .12, 'horn', .5, .2)
     q(A['envD'], 'paper_slide', .45, -.4); q(A['sticker'], 'sticker', .5, -.2); q(A['cutD1'], 'tchac_big'); q(A['cutD2'], 'tchac_big')
     q(A['cutD2'] + .05, 'paper_slide', .5)
     q(A['envF'], 'paper_slide', .45, -.4)
     for d in A['doodles']: q(d, 'marker', .25, -.3)
     q(A['cutF'], 'tchac'); q(A['cutF'] + .1, 'coin_roll', .6, .3)
-    q(A['boxIn'] + .2, 'box_drop', .5, -.3); q(A['lid'], 'lid', .8, -.2); q(A['feet'], 'boing', .8, -.2); q(A['stampInv'], 'stamp', .8)
+    q(A['boxIn'] + .2, 'box_drop', .5, -.3); q(A['lid'], 'lid', .8, -.2); q(A['feet'], 'boing', .6, -.2); q(A['stampInv'], 'stamp', .8)
     q(A['cutI'], 'tchac'); q(A['zeroCalc'], 'calc_zero', .5, .3); q(A['coinSpin'], 'coin_spin', .6, .2); q(A['zeroStamp'], 'stamp_big')
     q(A['coinSettle'], 'ting', .6, .2)
-    for i, s in enumerate(A['stack']): q(s, 'stack', .55, -.3 + .15 * i)
-    q(A['arrow'], 'marker', .5, .1); q(A['priceTag'], 'pop', .5, .3)
+    for i, s in enumerate(A['stack']): q(s, 'stack', .35, -.3 + .15 * i)              # v2 §6.4: under the rule (N8), gains ≤ .35
+    q(A['arrow'], 'marker', .35, .1); q(A['priceTag'], 'pop', .35, .3)
     q(A['brandIn'], 'whoosh', .4); q(A['sig'], 'bonzini_sig'); q(A['plate'], 'plate', .8); q(A['scan'], 'scan_beep', .7, .3)
     q(A['weigh'], 'tonk', .8); q(A['stampPese'], 'stamp', .7, -.3); q(A['stampMes'], 'stamp', .7, .3)
     q(A['cta'], 'pop', .7)
@@ -290,11 +299,11 @@ def snap_words(sc, lines, min_pause=.12):
         out[lid] = new
     return out, rows
 
-# sync-critical cues of episode 1 (README « T / W anchors »): (cue name, nth) -> (line, word prefixes, nth word, design offset)
-SYNC = [(('tchac', 1), ('N3', ['tch', 'chak'], 0, 0.0)), (('tchac_big', 0), ('N4', ['tch', 'chak'], 0, 0.0)),
-        (('tchac_big', 1), ('N4', ['tch', 'chak'], 1, 0.0)), (('tchac', 2), ('N5', ['tch', 'chak'], 0, 0.0)),
-        (('tchac', 3), ('N6', ['tch', 'chak'], 0, 0.0)), (('stamp_big', 0), ('N7', ['zer', 'zero', '0'], 0, 0.0)),
-        (('stamp', 0), ('N2', ['achet'], 0, .2)), (('stamp', 1), ('N6', ['cent', '102'], 0, .1)),
+# sync-critical cues of episode 1 (README « T / W anchors »): (cue name, nth) -> (line, word prefixes, nth word, design offset
+# [, True = measured from the word's END]). v2: the 5 tchac / tchac_big are no longer on a word (sound alone after each line:
+# §6.3 checks them, tools/qa_score.js); PAYÉE on « payée », NE SE VENDENT PAS after « pas », the big stamp after « franc ».
+SYNC = [(('stamp_big', 0), ('N7', ['franc'], 0, .02, True)),
+        (('stamp', 0), ('N2', ['pay'], 0, .2)), (('stamp', 1), ('N6', ['pas'], 0, .02, True)),
         (('bonzini_sig', 0), ('N9', ['bonz'], 0, -.05)), (('plate', 0), ('N9', ['bonz'], 0, 0.0)),
         (('scan_beep', 0), ('N9', ['colis'], 0, 0.0)), (('tonk', 0), ('N9', ['pes'], 0, 0.0)),
         (('pop', 1), ('N10', ['ecri'], 0, 0.0)), (('stamp', 4), ('N10', ['maint'], 0, 0.0))]
@@ -304,10 +313,11 @@ def sync_audit(sc, snapped):
     T = sc['T']; rows = []; occ = {}
     for c in sc['cues']:
         k = occ.get(c['name'], 0); occ[c['name']] = k + 1
-        for (nm, nth), (lid, pre, wn, off) in SYNC:
+        for (nm, nth), (lid, pre, wn, off, *fl) in SYNC:
             if nm == c['name'] and nth == k and lid in T:
-                a = word_at(T, sc['words'], lid, pre, wn); b = word_at(T, snapped, lid, pre, wn)
-                rows.append(dict(cue=c['name'], t=c['t'], line=lid, word='/'.join(pre), off=off,
+                end = bool(fl and fl[0])
+                a = word_at(T, sc['words'], lid, pre, wn, end); b = word_at(T, snapped, lid, pre, wn, end)
+                rows.append(dict(cue=c['name'], t=c['t'], line=lid, word='/'.join(pre) + ('$' if end else ''), off=off,
                                  asr=a, speech=b, err_asr=None if a is None else (c['t'] - a - off) * 1000,
                                  err_speech=None if b is None else (c['t'] - b - off) * 1000))
     return rows
@@ -686,7 +696,12 @@ def compose_tense(M, plan, cues):
                 if lev >= 3 and bb in (1, 3): put(AU.clap(4500 + bb + 4 * bar), tb, .45, -.1)
             bar += 1
     if len(segs) >= 3:                                                           # riser from the 4th cut into the TOTAL cut
-        a = segs[-2][0]; d = plan['cut'] - a + .1; n = ns(d); u = tt(n) / d
+        # TCHAC 4 = the first plain « tchac » after the douane's double cut. v2: the last cut (cutI) sits ON the music cut
+        # (both END(N6) + .1) and opens no segment any more, so segs[-2] (v1's TCHAC 4) would be the post-skip re-entry and
+        # the riser would run ≈ 2 s early, under « Les petits frais… ».
+        big = [c['t'] for c in cues if c['name'] == 'tchac_big']
+        t4 = min((c['t'] for c in cues if c['name'] == 'tchac' and big and max(big) < c['t'] < plan['cut'] - .1), default=None)
+        a = t4 if t4 is not None else segs[-2][0]; d = plan['cut'] - a + .1; n = ns(d); u = tt(n) / d
         y = dsp.tv_biquad(nz(n, 4600), 'bp', 900 * 7 ** u, 2.0) * u ** 2.0 * .6
         y += (np.sin(2 * np.pi * np.cumsum(185 * 2 ** (2 * u)) / SR) + np.sin(2 * np.pi * np.cumsum(185.6 * 2 ** (2 * u)) / SR)) * u ** 2.5 * .05
         M.put('groove', y, a, .55 * G_TENSE, 0, cut=True, tag='riser')
@@ -730,7 +745,7 @@ def compose_brand_end(M, sc, plan, cues):
     sig = plan['sigAt']; s2 = sig + SIG_GAP
     v_in = next((c['t'] for c in cues if c['name'] == 'whoosh' and sig - 1.0 < c['t'] < sig), A.get('brandIn', sig - .18))
     t_final = next((c['t'] for c in cues if c['name'] == 'final_chord'), T['end'] - .75)
-    endcard = A.get('endcard', T['N9'] + sc['DUR'].get('N9', 4.4) + .1)
+    endcard = A.get('endcard', T['N9'] + sc['DUR'].get('N9', DUR0['N9']) + .1)
     ritual = A.get('ritual')
     if ritual is None or not (s2 < ritual < t_final): ritual = t_final - 1.0
     # the violet light, as a sound: an E(add9) pad swell + a glass shimmer under the signature
@@ -884,7 +899,7 @@ def mixdown(st, dry_vox, sc, spans, t_back):
     for k, depth in DUCKED.items():
         if k in st: st[k] *= dsp.undb(d1 * depth)[:, None]
     for k in ('groove', 'brand'):
-        if k in st: st[k] = R.carve(st[k], d1)
+        if k in st: st[k] = R.carve(st[k], d1, R.CARVE_DB)
     pre = np.ones(N); pre[:ns(plan['tenseFrom'])] = 0                         # the music events start exactly there
     hole = gate(N, plan['cut'], t_on=t_back)                                  # the zero-phase carve smears ~1e-4: the music
     end = gate(N, DUR - .04, fade=.06)                                       # is digital silence before tenseFrom and in the cut
@@ -1151,8 +1166,9 @@ def make_sheet(Z, stems, G, d1, rep, sc, vinfo, info, path=SHEET):
         ax.set_ylim(-110, 0); ax.set_xlim(a0, a1); ax.set_title(title, loc='left', fontsize=8); ax.legend(fontsize=7, facecolor='#16110c')
         ax.set_ylabel('dBFS (2-ms RMS)')
     # 4b zoom spectrograms
-    for j, (a0, a1, title) in enumerate(((0.0, 3.0, 'opening: snips · TCHAC 1 · slide on twos · stamp · ding (no music)'),
-                                         (plan['cut'] - .2, plan['majorFrom'] + .6, 'cut: coin spin · slow stamp · ting · « …zéro ?! » · A major'),
+    A_ = sc.get('A') or {}                                                       # v2: the opening runs to the ding (6.46 on the defaults)
+    for j, (a0, a1, title) in enumerate(((0.0, max(3.0, A_.get('ding1', 2.6) + .4), 'opening: snips · TCHAC 1 · slide on twos · stamp · ding (no music)'),
+                                         (plan['cut'] - .2, plan['majorFrom'] + .6, 'cut: coin spin · slow stamp · ting · « Quoi ? Zéro franc ? » · A major'),
                                          (br['v_in'] - .2, br['v_in'] + 3.4, 'brand: whoosh · signature E6->G#6 · plate · scan · tonk · stamps'))):
         ax = fig.add_subplot(gs[4, j]); a, b = ns(max(0, a0)), ns(a1)
         f, t, S_ = sps.stft(m[a:b], SR, nperseg=2048, noverlap=2048 - 120)

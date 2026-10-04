@@ -1,0 +1,32 @@
+[
+ {
+  "id": "A_base",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.6,
+  "cfg": 2.0
+ },
+ {
+  "id": "B_t035",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.35,
+  "cfg": 2.0
+ },
+ {
+  "id": "C_t035c3",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.35,
+  "cfg": 3.0
+ },
+ {
+  "id": "D_narr",
+  "voice": "unmute-prod-website/ex04_narration_longform_00001.wav",
+  "temp": 0.35,
+  "cfg": 2.5
+ },
+ {
+  "id": "E_t02c3",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0
+ }
+]

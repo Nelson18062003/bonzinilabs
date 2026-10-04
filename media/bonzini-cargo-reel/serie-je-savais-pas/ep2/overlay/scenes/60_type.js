@@ -2,7 +2,7 @@
 // =============================================================================================
 // « TU PAIES DE L'AIR. » — type (adapted from « PAS REÇU. » 60_type.js to the Kraft & Fil day table).
 //   TY_world(t, L)  inside the camera: speaker pills that follow their plate (TOI amber, LE BATEAU grey), and the world
-//                   texts a module has not taken over yet (« AU m³ » stamp on the carton, AVANT / APRÈS, the readout
+//                   texts a module has not taken over yet (« EN MÈTRES CUBES (m³) » stamp on the carton, AVANT / APRÈS, the readout
 //                   « VOLUME : • m³ », « MESURÉ ✓ », the hand-written tag line on the loop carton).
 //   TY_draw(t, L)   screen space: series chip « JE SAVAIS PAS. · 2/5 », the fixed pill « CHEZ TON FOURNISSEUR », the
 //                   formula, the key-sentence captions (torn paper strips, emphasis in orange), the « ENSUITE : » band,
@@ -84,7 +84,7 @@ const TY = (function () {
     for (const [a, b, id, s, st] of textsAt(t)) {
       if (st === 'stampM3' && hero) {
         const g = S.cartonGeo(hero), j = S.cartonJit(hero, t), k = hero.m3k, al = 1 - kk(t, A.flank - .05, A.flank + .15);
-        stamp('m3', [s], g.cx + j.x, g.cy + j.y, 104, ORANGE, k, al, -.09 + j.r);
+        stamp('m3', s.split('|'), g.cx + j.x, g.cy + j.y, 80, ORANGE, k, al, -.09 + j.r);   // 2 lines ≈ 80 px (fits the 600 px face)
       }
       if (st === 'splitLabels') {
         const sp = S.split(t); if (!sp) continue; const [l1, l2] = s.split('|');
@@ -151,7 +151,8 @@ const TY = (function () {
       if (st === 'stampEnd') stamp('end', s.split('|'), G.cx, G.end.stampY, 112, ORANGE, kk(t, a, a + .12), inOut(t, a, b, .01, .1), -.06);
       if (st === 'cta') {
         const k = kk(t, a, a + .25), bounce = 1 + .12 * Math.exp(-(t - a) * 6) * Math.sin((t - a) * 18), al = 1 - kk(t, b - .1, b);
-        ctx.save(); ctx.translate(G.end.ctaX, G.end.ctaY); ctx.scale(bounce * easeOut(k), bounce * easeOut(k)); ctx.globalAlpha *= al;
+        ctx.save(); ctx.font = SAT(56); const fw = Math.min(1, 800 / (ctx.measureText(s).width + 62)); ctx.restore();   // x 140…940 (safe zone)
+        ctx.save(); ctx.translate(G.end.ctaX, G.end.ctaY); ctx.scale(bounce * easeOut(k) * fw, bounce * easeOut(k) * fw); ctx.globalAlpha *= al;
         pill(0, 0, s, AMBER, INK, 1, 56);
         ctx.strokeStyle = AMBER; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';          // drawn arrow → the comments
         const ay = 62 + 6 * Math.sin(t * 8); ctx.beginPath(); ctx.moveTo(0, ay); ctx.bezierCurveTo(10, ay + 14, -8, ay + 26, 0, ay + 44); ctx.moveTo(-18, ay + 26); ctx.lineTo(0, ay + 46); ctx.lineTo(18, ay + 26); ctx.stroke();

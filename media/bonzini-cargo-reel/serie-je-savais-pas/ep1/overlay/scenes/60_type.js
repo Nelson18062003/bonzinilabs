@@ -1,8 +1,8 @@
 'use strict';
 // =============================================================================================
 // « TCHAC ! » — type (adapted from « PAS REÇU. » 60_type.js to the Kraft & Fil paper table).
-//   TY_world(t, L, n): inside the camera — the hook price tag + its stamp « ACHETÉE 5 000 F EN CHINE », TOI's cards and pill.
-//   TY_draw(t, L, n):  screen space — series chip « JE SAVAIS PAS. · 1/5 », « EXEMPLE FICTIF », « IL GAGNE COMBIEN ? »,
+//   TY_world(t, L, n): inside the camera — the hook price tag + its stamp « PAYÉE 5 000 F EN CHINE », TOI's cards and pill.
+//   TY_draw(t, L, n):  screen space — series chip « JE SAVAIS PAS. · 1/5 », « EXEMPLE FICTIF », « TU GAGNES COMBIEN ? »,
 //                      « Tu dis combien ? ↓ », the rule band, the Bonzini band, and the end card / ritual stamp / CTA pill
 //                      (handed to BZ_endcard / BZ_ritual / BZ_cta when the Bonzini module defines them).
 // Colour roles: amber = TOI · orange = alerts, stamps, the cuts · violet ONLY with Bonzini · ink on cream paper.
@@ -46,10 +46,10 @@ const TY = (function () {
       text('1 PAIRE · REVENDUE', 16, -h / 2 + 76, { font: font(FF.body, 46, 800), align: 'center', color: INK });
       text('10 000 F À MBOPPI', 16, -h / 2 + 138, { font: font(FF.body, 50, 800), align: 'center', color: INK });
       ctx.strokeStyle = 'rgba(35,22,41,.35)'; ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w / 2 + 30, -h / 2 + 168); ctx.lineTo(w / 2 - 24, -h / 2 + 168); ctx.stroke(); ctx.setLineDash([]);
-      // « ACHETÉE 5 000 F EN CHINE » — orange rubber stamp on « achetée »
+      // « PAYÉE 5 000 F EN CHINE » — orange rubber stamp on « payée »
       const k = hk.stamp; if (k > 0) { const sq = hk.stampSq || { sx: 1, sy: 1 }, sc = 1.6 - .6 * easeOut(k);
         at(14, h / 2 - 66, -.05, sc * sq.sx, sc * sq.sy, () => { ctx.globalAlpha *= Math.min(1, k * 2.5);
-          stampText('ACHETÉE 5 000 F EN CHINE', 0, 0, font(FF.stencil, 50, 900), ORANGE, { box: true, boxW: 6, h: 76, starve: .3, ls: 1 }); }); }
+          stampText('PAYÉE 5 000 F EN CHINE', 0, 0, font(FF.stencil, 50, 900), ORANGE, { box: true, boxW: 6, h: 76, starve: .3, ls: 1 }); }); }
     });
   }
   /** TOI's speech card in the slot, amber « TOI » pill on its corner */
@@ -57,20 +57,22 @@ const TY = (function () {
     const lines = s.split('|'), small = id === 'toi2';
     const k = spr(t - a, 13, .55), al = 1 - kk(t, b - .15, b);
     if (k <= 0 || al <= 0) return;
-    const fs = small ? 80 : 60, lh = fs * 1.08, w = small ? 380 : 430, h = lines.length * lh + 64;
-    const P = small ? G.slot : G.toi1, x = P.x + (small ? 0 : (1 - Math.min(1, k)) * 420), y = P.y;
+    // v2: card 2 « Quoi ? / Zéro franc ? » 64 px in a 500 px card (was « …zéro ?! » 80 px / 380 px), 12 px right of the slot so
+    // its left edge keeps ≈ 45 px of air; its tail stops at the calculator's edge
+    const fs = small ? 64 : 60, lh = fs * 1.08, w = small ? 500 : 430, h = lines.length * lh + 64;
+    const P = small ? G.slot : G.toi1, x = P.x + (small ? 12 : (1 - Math.min(1, k)) * 420), y = P.y;
     const tr = small ? jj(5, t, 2.5) : { x: 0, y: 0 };
     at(x + tr.x, y + tr.y, small ? .03 : -.025, small ? Math.min(1.1, k) : 1, small ? Math.min(1.1, k) : 1, () => {
       ctx.globalAlpha *= al;
       card(w, h, small ? 41 : 17, '#FFFFFF', 12);
       ctx.fillStyle = '#FFFFFF'; ctx.beginPath();                                   // speech tail: up to the calculator (card 1) / right (card 2)
-      if (small) { ctx.moveTo(w / 2 - 6, 4); ctx.lineTo(w / 2 + 40, 26); ctx.lineTo(w / 2 - 6, 40); } else { ctx.moveTo(-40, -h / 2 + 4); ctx.lineTo(10, -h / 2 - 46); ctx.lineTo(30, -h / 2 + 4); }
+      if (small) { ctx.moveTo(w / 2 - 6, 4); ctx.lineTo(w / 2 + 26, 24); ctx.lineTo(w / 2 - 6, 40); } else { ctx.moveTo(-40, -h / 2 + 4); ctx.lineTo(10, -h / 2 - 46); ctx.lineTo(30, -h / 2 + 4); }
       ctx.closePath(); ctx.fill();
       lines.forEach((l, i) => text(l, 0, -h / 2 + 32 + fs * .86 + i * lh, { font: font('Satoshi', fs, 900), align: 'center', color: INK }));
       pill(-w / 2 + 18, -h / 2 - 4, 'TOI', AMBER, INK, 1, 34, { left: true, rot: -.04 });
     });
   }
-  function toiSmall(t, a, b) {                     // the shrunken, trembling TOI pill (the key moment, before « …zéro ?! »)
+  function toiSmall(t, a, b) {                     // the shrunken, trembling TOI pill (the key moment, before « Quoi ? Zéro franc ? »)
     const toi2 = get(t, 'toi2'); if (toi2) return;
     const al = inOut(t, a, b, .2, .2); if (al <= 0) return;
     const j = jj(9, t, 3);
@@ -100,14 +102,14 @@ const TY = (function () {
       tape(-140, -24, -.6, 60);
     });
   }
-  function title(t, a, b) {                       // « IL GAGNE COMBIEN ? » — orange, big, lands like a stamp
+  function title(t, a, b) {                       // « TU GAGNES COMBIEN ? » — orange, big, lands like a stamp
     const k = kk(t, a, a + .18), al = 1 - kk(t, b - .2, b); if (k <= 0 || al <= 0) return;
     // QA: it stays up through the cuts (the question the calculator answers); once the dare pill has gone it settles
     // a little smaller and higher (112 → 96 px) so the scissors' handles keep their air
     const sk = ease(kk(t, A.dare + 1.45, A.dare + 1.85)), sc = (1.35 - .35 * easeOut(k)) * (1 - .14 * sk);
     at(G.head.x, G.head.y - 40 * sk, -.03, sc, sc, () => { ctx.globalAlpha *= Math.min(1, k * 2) * al;
-      ctx.save(); ctx.translate(5, 7); text('IL GAGNE COMBIEN ?', 0, 40, { font: font(FF.stencil, 112, 900), align: 'center', color: 'rgba(60,32,12,.18)', ls: 2 }); ctx.restore();
-      text('IL GAGNE COMBIEN ?', 0, 40, { font: font(FF.stencil, 112, 900), align: 'center', color: ORANGE, ls: 2 }); });
+      ctx.save(); ctx.translate(5, 7); text('TU GAGNES COMBIEN ?', 0, 40, { font: font(FF.stencil, 112, 900), align: 'center', color: 'rgba(60,32,12,.18)', ls: 2 }); ctx.restore();
+      text('TU GAGNES COMBIEN ?', 0, 40, { font: font(FF.stencil, 112, 900), align: 'center', color: ORANGE, ls: 2 }); });
   }
   function dare(t, a, b) {                        // « Tu dis combien ? ↓ » — amber pill, bounces once
     const al = inOut(t, a, b, .12, .2); if (al <= 0) return;
@@ -134,7 +136,7 @@ const TY = (function () {
       withShadow(10, () => { ctx.fillStyle = CREAM; rrect(-450, -92, 900, 184, 24); ctx.fill(); });
       ctx.fillStyle = VIOL; rrect(-450, -92, 14, 184, 6); ctx.fill();
       text('TON COLIS, PESÉ ET MESURÉ', 0, -18, { font: font('Satoshi', 58, 900), align: 'center', color: VIOL_D });
-      if (l2 > 0) { ctx.save(); ctx.globalAlpha *= l2; text('DÈS GUANGZHOU', 0, 58, { font: font('Satoshi', 66, 900), align: 'center', color: INK, ls: 2 }); ctx.restore(); }
+      if (l2 > 0) { ctx.save(); ctx.globalAlpha *= l2; text('EN CHINE', 0, 58, { font: font('Satoshi', 66, 900), align: 'center', color: INK, ls: 2 }); ctx.restore(); }
     });
   }
   // ---- end card (fallbacks: the Bonzini module takes over with BZ_endcard / BZ_ritual / BZ_cta)
@@ -154,7 +156,7 @@ const TY = (function () {
     const k = E.ctaK; if (k <= 0) return;
     const d = t - A.cta, bounce = 1 + .14 * Math.exp(-d * 6) * Math.sin(d * 16);
     ctx.save(); ctx.globalAlpha *= E.a; ctx.translate(G.end.cta.x, G.end.cta.y); ctx.scale(bounce * easeOut(k), bounce * easeOut(k));
-    pill(0, 0, 'Écris TCHAC en commentaire', AMBER, INK, 1, 62);
+    pill(0, 0, 'Écris CALCUL en commentaire', AMBER, INK, 1, 52);   // v2: 52 px so the pill ends ≤ x 960
     ctx.strokeStyle = ORANGE; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.lineJoin = 'round';    // hand-drawn arrow down to the comments
     const ay = 66 + 6 * Math.sin(t * 6); ctx.beginPath(); ctx.moveTo(-4, ay); ctx.quadraticCurveTo(8, ay + 22, 0, ay + 46); ctx.moveTo(-18, ay + 26); ctx.lineTo(0, ay + 48); ctx.lineTo(17, ay + 27); ctx.stroke();
     ctx.restore();

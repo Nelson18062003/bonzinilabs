@@ -1,11 +1,14 @@
 """Re-time an episode of « JE SAVAIS PAS. » on its chosen voice takes (contract: serie/PIPELINE.md).
-usage: python3 retime.py EPISODE_DIR [--gap 0.12] [--stretch N5=0.92,…]
+usage: python3 retime.py EPISODE_DIR [--gap 0.12] [--stretch N5=0.92,…] [--tail 1.2] [--script data/script.json] [--pauses]
 Reads   data/script.json (line order), data/takes.json ({id: {file, on, off, dur}}), data/vocheck.json (word times),
         the score's DEFAULT voice starts (node, with data/timing.json moved aside) → data/defaults.json.
 Writes  data/timing.json  {<id>: speech start, end, dur: {id: s}, words: {id: [{w, s, e}] relative to speech start}}
         data/voice_plan.json {<id>: {file, at (where the FILE starts in the film), stretch}}
 Rule: lines keep the storyboard's spacing (a cumulative shift absorbs longer takes), never overlap (gap ≥ --gap),
-and the tail after the last line keeps its storyboard length."""
+and the tail after the last line keeps its storyboard length.
+--pauses: keep the storyboard's SILENCES instead (start = end of the previous take + the default pause T0[i] − (T0[prev] +
+DUR0[prev])): every designed pause survives whatever the takes' lengths. E/data/gaps.json {id: s} = extra minimum silence
+before a line."""
 import json, os, sys, subprocess
 import re
 import numpy as np, soundfile as sf
@@ -42,15 +45,17 @@ def pauses_of(path, min_pause=.12, merge=.06):
     return [(b0, a1) for (a0, b0), (a1, b1) in zip(segs, segs[1:]) if a1 - b0 >= min_pause]
 E = os.path.abspath(sys.argv[1]); a = sys.argv[2:]
 GAP = float(a[a.index('--gap') + 1]) if '--gap' in a else .12
+PAUSES = '--pauses' in a
+MIN_TAIL = float(a[a.index('--tail') + 1]) if '--tail' in a else 1.2      # minimum film tail after the last line
 STRETCH = dict((k, float(v)) for k, v in (x.split('=') for x in a[a.index('--stretch') + 1].split(','))) if '--stretch' in a else {}
 D = lambda *p: os.path.join(E, 'data', *p)
-order = [s['id'] for s in json.load(open(D('script.json')))['segments']]
+order = [s['id'] for s in json.load(open(os.path.join(E, a[a.index('--script') + 1]) if '--script' in a else D('script.json')))['segments']]
 takes = json.load(open(D('takes.json'))); vc = json.load(open(D('vocheck.json')))
 # 1 — the storyboard defaults (score loaded WITHOUT timing.json)
 tj = D('timing.json'); moved = os.path.exists(tj)
 if moved: os.rename(tj, tj + '.off')
 try:
-    js = f"const S=require({json.dumps(os.path.join(E, 'overlay', 'scenes', '01_score.js'))}); console.log(JSON.stringify(S.T))"
+    js = f"const S=require({json.dumps(os.path.join(E, 'overlay', 'scenes', '01_score.js'))}); console.log(JSON.stringify(Object.assign({{}}, S.T, {{dur: S.DUR || S.T.dur || {{}}}})))"
     T0 = json.loads(subprocess.run(['node', '-e', js], capture_output=True, text=True, check=True, cwd=E).stdout.strip().splitlines()[-1])
 finally:
     if moved: os.rename(tj + '.off', tj)
@@ -60,11 +65,16 @@ missing = [i for i in order if i not in takes]
 if missing: print('WARNING no take for', missing)
 # 2 — place the lines
 T, plan, dur, words = {}, {}, {}, {}
-shift, prev_end = 0.0, -1e9
+shift, prev_end, prev = 0.0, -1e9, None
+D0 = T0.get('dur', {}) if isinstance(T0.get('dur'), dict) else {}
+GAPS = json.load(open(D('gaps.json'))) if os.path.exists(D('gaps.json')) else {}
 for i in lines:
     tk = takes[i]; st = STRETCH.get(i, 1.0); d = tk['dur'] * st
     desired = float(T0.get(i, prev_end + GAP)) + shift
-    start = max(desired, prev_end + GAP, 0.05)
+    if PAUSES and prev is not None and i in T0 and prev in T0 and prev in D0:
+        desired = prev_end + max(GAP, float(T0[i]) - (float(T0[prev]) + float(D0[prev])))
+    start = max(desired, prev_end + max(GAP, float(GAPS.get(i, 0))), 0.05)
+    prev = i
     shift = start - float(T0.get(i, start)); prev_end = start + d
     T[i] = round(start, 3); dur[i] = round(d, 3)
     plan[i] = {'file': tk['file'], 'at': round(start - tk['on'] * st, 3), 'stretch': st}
@@ -76,7 +86,7 @@ for i in lines:
         out.append({'w': asr_fr(w['w'], ws[j - 1]['w'] if j else None), 's': round(max(0, s1 - tk['on']) * st, 3), 'e': round(max(0, w['e'] - tk['on']) * st, 3)})
     words[i] = out
 last = lines[-1]
-tail = max(1.2, float(T0.get('end', 0)) - (float(T0.get(last, 0)) + dur[last]))   # storyboard tail after the last line
+tail = max(MIN_TAIL, float(T0.get('end', 0)) - (float(T0.get(last, 0)) + float(T0.get('dur', {}).get(last, dur[last]) if isinstance(T0.get('dur'), dict) else dur[last])))   # storyboard tail after the last line
 T['end'] = round(prev_end + tail, 2); T['dur'] = dur; T['words'] = words
 json.dump(T, open(D('timing.json'), 'w'), ensure_ascii=False, indent=1)
 json.dump(plan, open(D('voice_plan.json'), 'w'), indent=1)

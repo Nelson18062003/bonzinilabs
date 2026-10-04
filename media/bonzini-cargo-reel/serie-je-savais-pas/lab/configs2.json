@@ -1,0 +1,32 @@
+[
+ {
+  "id": "F_pb1",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 1.0
+ },
+ {
+  "id": "F_pb2",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 2.0
+ },
+ {
+  "id": "G_pb1w2",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 1.0,
+  "pbw": 2
+ },
+ {
+  "id": "H_pb2w2",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 2.0,
+  "pbw": 2
+ }
+]

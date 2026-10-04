@@ -18,7 +18,7 @@
 //                                     marks L · l · H (no figure), the readout slip « VOLUME : • m³ » stamped « MESURÉ ✓ »,
 //                                     the mini « AIR » cloud struck through. Takes over 'volume' and 'measured'.
 //   BZ_plate(st, t, L)        world   the series' glossy violet enamel plate « BONZINI TRADING CARGO » (ep. 1 design,
-//                                     sized ≤ 880×210 for G.bz.plateY), falls on « Bonzini », reflection sweep, dust.
+//                                     sized ≤ 880×210 for G.bz.plateY), falls before « Chez » (A.plateBZ), reflection sweep, dust.
 //   window.BZ_lib                     shared helpers for 76_end.js (sprite cache, palette).
 // Every time is read from SCORE.A / SCORE.T or from the state; every static look is cached in an offscreen sprite;
 // no ctx.filter. Stop-motion objects (scanner, slip) are sampled on twos at the frame centre (no ghosting under MB).

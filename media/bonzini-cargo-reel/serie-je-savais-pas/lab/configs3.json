@@ -1,0 +1,24 @@
+[
+ {
+  "id": "I_pb025",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 0.25
+ },
+ {
+  "id": "J_pb05",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 0.5
+ },
+ {
+  "id": "K_w2",
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 0.0,
+  "pbw": 2
+ }
+]

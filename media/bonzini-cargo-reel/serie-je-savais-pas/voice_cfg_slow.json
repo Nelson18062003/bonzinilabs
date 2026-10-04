@@ -1,0 +1,27 @@
+{
+ "narratrice": {
+  "voice": "unmute-prod-website/developpeuse-3.wav",
+  "temp": 0.2,
+  "cfg": 3.0,
+  "pb": 0.25,
+  "pbw": 2,
+  "break": 0.25,
+  "_why": "slow variant for short lines that came out > 4.8 syl/s (a Rubber Band stretch lowered recognition in the music bed)"
+ },
+ "TOI": {
+  "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav",
+  "temp": 0.3,
+  "cfg": 3.0,
+  "pb": 0.0,
+  "pbw": 2,
+  "break": 0.2
+ },
+ "COLIS": {
+  "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav",
+  "temp": 0.3,
+  "cfg": 3.0,
+  "pb": 0.0,
+  "pbw": 2,
+  "break": 0.2
+ }
+}

@@ -1,0 +1,137 @@
+{
+ "I_pb025_S1_s1": {
+  "key": "S1",
+  "rate": 3.94,
+  "speech": 4.06,
+  "clean": 0.929,
+  "clean_heard": "le maitre cube c est la place que ton carton prend dans le bateau",
+  "music": 0.929,
+  "music_heard": "le maitre cube c est la place que ton carton prend dans le bateau"
+ },
+ "I_pb025_S2_s1": {
+  "key": "S2",
+  "rate": 5.1,
+  "speech": 3.73,
+  "clean": 1.0,
+  "clean_heard": "avec bonzini trading cargo ton colis est pese et mesure en chine",
+  "music": 0.917,
+  "music_heard": "avec bonsigny trading cargo ton colis est pese et mesure en chine"
+ },
+ "I_pb025_S3_s1": {
+  "key": "S3",
+  "rate": 4.3,
+  "speech": 4.19,
+  "clean": 1.0,
+  "clean_heard": "tu as achete la paire a cinq mille francs tu la revends a dix mille francs",
+  "music": 0.938,
+  "music_heard": "tu as achete la paire a cinq mille francs tu la revends a dix mille"
+ },
+ "I_pb025_S4_s1": {
+  "key": "S4",
+  "rate": 4.26,
+  "speech": 3.28,
+  "clean": 0.8,
+  "clean_heard": "attention avant de fixer ton prix compte tout est frais",
+  "music": 0.7,
+  "music_heard": "attention avant de fixer ton prix compte tout effrayant"
+ },
+ "I_pb025_S5_s1": {
+  "key": "S5",
+  "rate": 4.22,
+  "speech": 4.5,
+  "clean": 0.933,
+  "clean_heard": "le prix de revient c est tout ce que tu payes jusqu a ta boutique",
+  "music": 0.933,
+  "music_heard": "le prix de revient c est tout ce que tu payes jusqu a ta boutique"
+ },
+ "J_pb05_S1_s1": {
+  "key": "S1",
+  "rate": 2.45,
+  "speech": 6.52,
+  "clean": 0.929,
+  "clean_heard": "le maitre cube c est la place que ton carton prend dans le bateau",
+  "music": 0.929,
+  "music_heard": "le maitre cube c est la place que ton carton prend dans le bateau"
+ },
+ "J_pb05_S2_s1": {
+  "key": "S2",
+  "rate": 4.7,
+  "speech": 4.04,
+  "clean": 0.917,
+  "clean_heard": "avec bondini trading cargo ton colis est pese et mesure en chine",
+  "music": 0.917,
+  "music_heard": "avec bondini trading cargo ton colis est pese et mesure en chine"
+ },
+ "J_pb05_S3_s1": {
+  "key": "S3",
+  "rate": 2.37,
+  "speech": 7.58,
+  "clean": 1.0,
+  "clean_heard": "tu as achete la paire a cinq mille francs tu la revends a dix mille francs",
+  "music": 1.0,
+  "music_heard": "tu as achete la paire a cinq mille francs tu la revends a dix mille francs"
+ },
+ "J_pb05_S4_s1": {
+  "key": "S4",
+  "rate": 4.33,
+  "speech": 3.23,
+  "clean": 0.8,
+  "clean_heard": "attention avant de fixer ton prix compte tout est frais",
+  "music": 0.8,
+  "music_heard": "attention avant de fixer ton prix compte tout est frais"
+ },
+ "J_pb05_S5_s1": {
+  "key": "S5",
+  "rate": 3.85,
+  "speech": 4.94,
+  "clean": 0.933,
+  "clean_heard": "le prix de revient c est tout ce que tu payes jusqu a ta boutique",
+  "music": 1.0,
+  "music_heard": "le prix de revient c est tout ce que tu paies jusqu a ta boutique"
+ },
+ "K_w2_S1_s1": {
+  "key": "S1",
+  "rate": 3.53,
+  "speech": 4.54,
+  "clean": 0.929,
+  "clean_heard": "le maitre cube c est la place que ton carton prend dans le bateau",
+  "music": 0.929,
+  "music_heard": "le maitre cube c est la place que ton carton prend dans le bateau"
+ },
+ "K_w2_S2_s1": {
+  "key": "S2",
+  "rate": 4.3,
+  "speech": 4.42,
+  "clean": 0.917,
+  "clean_heard": "avec banzini trading cargo ton colis est pese et mesure en chine",
+  "music": 0.833,
+  "music_heard": "avec bonzinie traduine cargo ton colis est pese et mesure en chine"
+ },
+ "K_w2_S3_s1": {
+  "key": "S3",
+  "rate": 2.75,
+  "speech": 6.54,
+  "clean": 0.875,
+  "clean_heard": "tu as achete la paire a cinq mille francs tu l as revend a dix mille francs",
+  "music": 1.0,
+  "music_heard": "tu as achete la paire a cinq mille francs tu la revends a dix mille francs"
+ },
+ "K_w2_S4_s1": {
+  "key": "S4",
+  "rate": 3.91,
+  "speech": 3.58,
+  "clean": 0.8,
+  "clean_heard": "attention avant de fixer ton prix compte tout est frais",
+  "music": 0.8,
+  "music_heard": "attention avant de fixer ton prix compte tout est frais"
+ },
+ "K_w2_S5_s1": {
+  "key": "S5",
+  "rate": 4.29,
+  "speech": 4.43,
+  "clean": 1.0,
+  "clean_heard": "le prix de revient c est tout ce que tu paies jusqu a ta boutique",
+  "music": 1.0,
+  "music_heard": "le prix de revient c est tout ce que tu paies jusqu a ta boutique"
+ }
+}

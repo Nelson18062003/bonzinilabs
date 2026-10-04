@@ -1,0 +1,62 @@
+{
+ "N1": {
+  "file": "N1_s2.wav",
+  "at": 0.05,
+  "stretch": 1.0
+ },
+ "N2": {
+  "file": "N2_s2.wav",
+  "at": 1.531,
+  "stretch": 1.0
+ },
+ "T1": {
+  "file": "T1_s3.wav",
+  "at": 3.302,
+  "stretch": 1.0
+ },
+ "N3": {
+  "file": "N3_s2.wav",
+  "at": 5.425,
+  "stretch": 1.0
+ },
+ "N4": {
+  "file": "N4_s2.wav",
+  "at": 8.1,
+  "stretch": 1.0
+ },
+ "N5": {
+  "file": "N5_s1.wav",
+  "at": 10.903,
+  "stretch": 1.0
+ },
+ "N6": {
+  "file": "N6_s2.wav",
+  "at": 13.406,
+  "stretch": 1.0
+ },
+ "N7": {
+  "file": "N7_s1.wav",
+  "at": 17.005,
+  "stretch": 1.0
+ },
+ "T2": {
+  "file": "T2_s2.wav",
+  "at": 19.766,
+  "stretch": 1.0
+ },
+ "N8": {
+  "file": "N8_s1.wav",
+  "at": 20.581,
+  "stretch": 1.0
+ },
+ "N9": {
+  "file": "N9_s1.wav",
+  "at": 24.768,
+  "stretch": 1.0
+ },
+ "N10": {
+  "file": "N10_s2.wav",
+  "at": 29.494,
+  "stretch": 1.0
+ }
+}

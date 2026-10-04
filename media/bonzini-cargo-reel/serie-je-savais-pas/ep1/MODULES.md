@@ -1,5 +1,10 @@
 # « JE SAVAIS PAS. » · 1/5 — « TCHAC ! » — module guide (read fully before drawing)
 
+> **v1 brief (31.5 s, v1 voice and texts).** Since the v2 « voix claires » the on-screen texts, the keyword (**CALCUL**),
+> the defaults (44.54 s) and the anchors are those of `SCRIPT_V2.md` §2/§6 and `README.md` (« v2 — what changed », « T / W
+> anchors »). Times and texts quoted below (« IL GAGNE COMBIEN ? », « INVENDABLES », « DÈS GUANGZHOU », « Écris TCHAC… »)
+> are v1 history; the layout, module API and colour rules still hold.
+
 Root `E = <scratchpad>/serie/ep1`. Storyboard: `<scratchpad>/serie/SERIE.md` (« Épisode 1 », « Ce qui revient dans chaque
 épisode », « Règles de fabrication communes »). Brief rules: `<scratchpad>/serie/BRIEF.md`. Contract: `<scratchpad>/serie/PIPELINE.md`.
 

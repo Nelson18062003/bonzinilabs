@@ -4,7 +4,7 @@
 // layer (60_type.js) call them with the state the score computed. VIOLET APPEARS ONLY HERE (from A.brandIn).
 // No figure anywhere near the brand: no weight, size, price or date; the dial and the tape carry ticks only; the only
 // code is the fictional BZ-000000 of the series' sea label. Bonzini = cargo (groupage mer et air, Chine → Douala,
-// pesé et mesuré dès Guangzhou), never customs, never a payment here.
+// pesé et mesuré en Chine), never customs, never a payment here.
 //
 //   World (inside the camera):
 //     BZ_light(t, L)               violet brand light on the table (wash deepening to the edges + a luminous pool from
@@ -18,7 +18,7 @@
 //     BZ_endcard(E, t, L, n)       the logo (its four pieces snap together), « Bonzini Trading Cargo »,
 //                                  « Groupage mer et air · Chine → Douala ».
 //     BZ_ritual(E, t, L, n)        the series ritual stamp « MAINTENANT, TU SAIS. » → BZ_ritualStamp (reusable, below).
-//     BZ_cta(E, t, L, n)           amber pill « Écris [TCHAC] en commentaire » + hand-drawn arrow ↓ + the share line.
+//     BZ_cta(E, t, L, n)           amber pill « Écris [CALCUL] en commentaire » + hand-drawn arrow ↓ + the share line.
 //     BZ_loop(k, t, L, n)          last call of the frame: paper whoosh behind the six slices flying back (gone before
 //                                  the last frame, so frame N−1 = frame 0).
 //   Reusable in the 5 episodes (kit.js only, no SCORE): BZ_ritualStamp(x, y, k, o), BZ_ctaPill(x, y, word, o).
@@ -452,7 +452,7 @@
     if (!E || E.a <= 0) return;
     const P0 = G.end.cta;
     ctx.save(); ctx.globalAlpha *= fadeA(E);
-    const geo = BZ_ctaPill(P0.x, P0.y, 'TCHAC', { k: E.ctaK, since: t - A.cta, t });
+    const geo = BZ_ctaPill(P0.x, P0.y, 'CALCUL', { k: E.ctaK, since: t - A.cta, t });
     // the hand-drawn arrow ↓ hanging from the end of « commentaire », drawn on, then bobbing gently (≈ 1.2 Hz)
     const ak = kk(t, A.cta + .2, A.cta + .55);
     if (ak > 0 && geo) {
@@ -549,7 +549,8 @@ function BZ_ritualStamp(x, y, k, o = {}) {
   ctx.restore();
 }
 /** the series' CTA pill « Écris [WORD] en commentaire »: amber pill with thickness, the keyword typed in a cream field
- *  (orange stencil + a 1 Hz cursor). Width ≈ 820 px for a 5-letter word (x 130…950 centred on 540). (x, y) = centre;
+ *  (orange stencil + a 1 Hz cursor). Width ≈ 841 px for the 6-letter CALCUL (v2: pads 34 → 26, gaps 18 → 14 so that, centred
+ *  on x 530, it spans x 110…951 — right edge ≤ 960 once landed). (x, y) = centre;
  *  o = {k (0..1 appear), since (s since it appeared: one bounce), t (seconds, for the cursor)}. Returns {x0, x1, h}. */
 function BZ_ctaPill(x, y, word, o = {}) {
   const k = o.k ?? 1; if (k <= 0) return null;
@@ -557,7 +558,7 @@ function BZ_ctaPill(x, y, word, o = {}) {
   let sp = C2[word];
   if (!sp) {
     const fA = '900 50px Satoshi', fK = '900 66px Stencil', wE = measure('Écris', fA), wC = measure('en commentaire', fA), wK = measure(word, fK, 3) + 54;
-    const gap = 18, pad = 34, w = Math.ceil(wE + gap + wK + gap + wC + 2 * pad), h = 104, sc = 2;
+    const gap = 14, pad = 26, w = Math.ceil(wE + gap + wK + gap + wC + 2 * pad), h = 104, sc = 2;
     const c = makeCanvas((w + 80) * sc, (h + 90) * sc), g = c.getContext('2d'), prev = ctx;
     ctx = g;
     try {

@@ -9,7 +9,9 @@ want = set(sys.argv[2:]) or set(script)
 norm = lambda w: re.sub(r'[^a-z0-9]', '', unicodedata.normalize('NFD', w.lower()).encode('ascii', 'ignore').decode())
 M = WhisperModel('large-v3', device='cpu', compute_type='int8', cpu_threads=4)
 out = {}
+CHOSEN = {t['file'] for t in json.load(open(os.path.join(F, 'data', 'takes.json'))).values()} if os.environ.get('CHOSEN') else None   # only the selected takes
 for p in sorted(glob.glob(os.path.join(F, 'audio', 'vo', '*_s*.wav'))):
+    if CHOSEN is not None and os.path.basename(p) not in CHOSEN: continue
     sid = os.path.basename(p).split('_')[0]
     if sid not in want: continue
     segs, _ = M.transcribe(p, language='fr', word_timestamps=True, beam_size=5)

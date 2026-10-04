@@ -1,0 +1,326 @@
+{
+ "N10_s1": {
+  "key": "N10",
+  "rate": 3.48,
+  "speech": 4.31,
+  "clean": 0.889,
+  "clean_heard": "ecri le mot calcule en commentaire maintenant tu sai",
+  "music": 1.0,
+  "music_heard": "ecri le mot calcul en commentaire maintenant tu sai"
+ },
+ "N10_s2": {
+  "key": "N10",
+  "rate": 3.38,
+  "speech": 4.44,
+  "clean": 1.0,
+  "clean_heard": "ecri le mot calcul en commentaire maintenant tu sai",
+  "music": 1.0,
+  "music_heard": "ecri le mot calcul en commentaire maintenant tu sai"
+ },
+ "N10_s3": {
+  "key": "N10",
+  "rate": 3.52,
+  "speech": 4.27,
+  "clean": 0.889,
+  "clean_heard": "ecri le mot calcule en commentaire maintenant tu sai",
+  "music": 1.0,
+  "music_heard": "ecri le mot calcul en commentaire maintenant tu sai"
+ },
+ "N1_s1": {
+  "key": "N1",
+  "rate": 3.58,
+  "speech": 3.63,
+  "clean": 1.0,
+  "clean_heard": "tu revend une paire de chaussure dix mille franc",
+  "music": 1.0,
+  "music_heard": "tu revend une paire de chaussure dix mille franc"
+ },
+ "N1_s2": {
+  "key": "N1",
+  "rate": 4.74,
+  "speech": 2.74,
+  "clean": 1.0,
+  "clean_heard": "tu revend une paire de chaussure dix mille franc",
+  "music": 0.778,
+  "music_heard": "tu revend une paire de chaussure d imil franc"
+ },
+ "N1_s3": {
+  "key": "N1",
+  "rate": 4.37,
+  "speech": 2.97,
+  "clean": 1.0,
+  "clean_heard": "tu revend une paire de chaussure dix mille franc",
+  "music": 1.0,
+  "music_heard": "tu revend une paire de chaussure dix mille franc"
+ },
+ "N2_s1": {
+  "key": "N2",
+  "rate": 2.58,
+  "speech": 3.49,
+  "clean": 1.0,
+  "clean_heard": "en chine tu l as pai cinq mille franc",
+  "music": 1.0,
+  "music_heard": "en chine tu l as pai cinq mille franc"
+ },
+ "N2_s2": {
+  "key": "N2",
+  "rate": 3.23,
+  "speech": 2.78,
+  "clean": 1.0,
+  "clean_heard": "en chine tu l as pai cinq mille franc",
+  "music": 1.0,
+  "music_heard": "en chine tu l as pai cinq mille franc"
+ },
+ "N2_s3": {
+  "key": "N2",
+  "rate": 3.0,
+  "speech": 3.0,
+  "clean": 1.0,
+  "clean_heard": "en chine tu l as pai cinq mille franc",
+  "music": 1.0,
+  "music_heard": "en chine tu l as pai cinq mille franc"
+ },
+ "N3_s1": {
+  "key": "N3",
+  "rate": 2.44,
+  "speech": 2.86,
+  "clean": 1.0,
+  "clean_heard": "mai le transport coute mille franc",
+  "music": 1.0,
+  "music_heard": "mai le transport coute mille franc"
+ },
+ "N3_s2": {
+  "key": "N3",
+  "rate": 2.74,
+  "speech": 2.55,
+  "clean": 1.0,
+  "clean_heard": "mai le transport coute mille franc",
+  "music": 1.0,
+  "music_heard": "mai le transport coute mille franc"
+ },
+ "N3_s3": {
+  "key": "N3",
+  "rate": 2.16,
+  "speech": 3.24,
+  "clean": 1.0,
+  "clean_heard": "mai le transport coute mille franc",
+  "music": 1.0,
+  "music_heard": "mai le transport coute mille franc"
+ },
+ "N4_s1": {
+  "key": "N4",
+  "rate": 3.15,
+  "speech": 1.91,
+  "clean": 1.0,
+  "clean_heard": "la douane coute troi mille franc",
+  "music": 1.0,
+  "music_heard": "la douane coute troi mille franc"
+ },
+ "N4_s2": {
+  "key": "N4",
+  "rate": 3.45,
+  "speech": 1.74,
+  "clean": 1.0,
+  "clean_heard": "la douane coute troi mille franc",
+  "music": 1.0,
+  "music_heard": "la douane coute troi mille franc"
+ },
+ "N4_s3": {
+  "key": "N4",
+  "rate": 2.71,
+  "speech": 2.22,
+  "clean": 1.0,
+  "clean_heard": "la douane coute troi mille franc",
+  "music": 1.0,
+  "music_heard": "la douane coute troi mille franc"
+ },
+ "N5_s1": {
+  "key": "N5",
+  "rate": 4.4,
+  "speech": 2.05,
+  "clean": 1.0,
+  "clean_heard": "les petit frai coutent cinq cent franc",
+  "music": 1.0,
+  "music_heard": "les petit frai coutent cinq cent franc"
+ },
+ "N5_s2": {
+  "key": "N5",
+  "rate": 3.83,
+  "speech": 2.35,
+  "clean": 1.0,
+  "clean_heard": "les petit frai coutent cinq cent franc",
+  "music": 1.0,
+  "music_heard": "les petit frai coutent cinq cent franc"
+ },
+ "N5_s3": {
+  "key": "N5",
+  "rate": 4.46,
+  "speech": 2.02,
+  "clean": 1.0,
+  "clean_heard": "les petit frai coutent cinq cent franc",
+  "music": 1.0,
+  "music_heard": "les petit frai coutent cinq cent franc"
+ },
+ "N6_s1": {
+  "key": "N6",
+  "rate": 3.88,
+  "speech": 4.64,
+  "clean": 1.0,
+  "clean_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme",
+  "music": 1.0,
+  "music_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme"
+ },
+ "N6_s2": {
+  "key": "N6",
+  "rate": 3.86,
+  "speech": 4.67,
+  "clean": 1.0,
+  "clean_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme",
+  "music": 1.0,
+  "music_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme"
+ },
+ "N6_s3": {
+  "key": "N6",
+  "rate": 3.88,
+  "speech": 4.64,
+  "clean": 1.0,
+  "clean_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme",
+  "music": 1.0,
+  "music_heard": "dan ta commande cinq paire ne se vendent pas tu les as pai quand meme"
+ },
+ "N7_s1": {
+  "key": "N7",
+  "rate": 2.51,
+  "speech": 6.77,
+  "clean": 1.0,
+  "clean_heard": "ton pri c etait le pri chinoi foi deu tu gagne zero franc",
+  "music": 1.0,
+  "music_heard": "ton pri c etait le pri chinoi foi deu tu gagne zero franc"
+ },
+ "N7_s2": {
+  "key": "N7",
+  "rate": 2.88,
+  "speech": 5.91,
+  "clean": 1.0,
+  "clean_heard": "ton pri c etait le pri chinoi foi deu tu gagne zero franc",
+  "music": 0.923,
+  "music_heard": "ton pri c etait le pri chinoi foi deu tu gagne zero"
+ },
+ "N7_s3": {
+  "key": "N7",
+  "rate": 2.59,
+  "speech": 6.57,
+  "clean": 1.0,
+  "clean_heard": "ton pri c etait le pri chinoi foi deu tu gagne zero franc",
+  "music": 0.923,
+  "music_heard": "ton pri c etait le pri chinoi fou a deu tu gagne zero franc"
+ },
+ "N8_s1": {
+  "key": "N8",
+  "rate": 3.74,
+  "speech": 2.94,
+  "clean": 1.0,
+  "clean_heard": "la regle compte tout avant de fixer ton pri",
+  "music": 1.0,
+  "music_heard": "la regle compte tout avant de fixer ton pri"
+ },
+ "N8_s2": {
+  "key": "N8",
+  "rate": 3.91,
+  "speech": 2.81,
+  "clean": 1.0,
+  "clean_heard": "la regle compte tout avant de fixer ton pri",
+  "music": 1.0,
+  "music_heard": "la regle compte tout avant de fixer ton pri"
+ },
+ "N8_s3": {
+  "key": "N8",
+  "rate": 4.03,
+  "speech": 2.73,
+  "clean": 1.0,
+  "clean_heard": "la regle compte tout avant de fixer ton pri",
+  "music": 0.889,
+  "music_heard": "la regle compte tout avant de fixer tout le pri"
+ },
+ "N9_s1": {
+  "key": "N9",
+  "rate": 3.8,
+  "speech": 5.0,
+  "clean": 0.917,
+  "clean_heard": "avec bonsini trading cargo ton coli est pese et mesure en chine",
+  "music": 1.0,
+  "music_heard": "avec bonzini trading cargo ton coli est pese et mesure en chine"
+ },
+ "N9_s2": {
+  "key": "N9",
+  "rate": 3.96,
+  "speech": 4.8,
+  "clean": 1.0,
+  "clean_heard": "avec bonzini trading cargo ton coli est pese et mesure en chine",
+  "music": 0.917,
+  "music_heard": "avec bonzini trading cargo ton coli est pese et mesure en chaine"
+ },
+ "N9_s3": {
+  "key": "N9",
+  "rate": 3.72,
+  "speech": 5.11,
+  "clean": 1.0,
+  "clean_heard": "avec bonzini trading cargo ton coli est pese et mesure en chine",
+  "music": 0.833,
+  "music_heard": "avec bonsini trading cargo ton coli est pese et mesure en chaine"
+ },
+ "T1_s1": {
+  "key": "T1",
+  "rate": 3.0,
+  "speech": 2.34,
+  "clean": 1.0,
+  "clean_heard": "facile je gagne cinq mille franc",
+  "music": 1.0,
+  "music_heard": "facile je gagne cinq mille franc"
+ },
+ "T1_s2": {
+  "key": "T1",
+  "rate": 2.96,
+  "speech": 2.36,
+  "clean": 1.0,
+  "clean_heard": "facile je gagne cinq mille franc",
+  "music": 1.0,
+  "music_heard": "facile je gagne cinq mille franc"
+ },
+ "T1_s3": {
+  "key": "T1",
+  "rate": 3.04,
+  "speech": 2.31,
+  "clean": 1.0,
+  "clean_heard": "facile je gagne cinq mille franc",
+  "music": 1.0,
+  "music_heard": "facile je gagne cinq mille franc"
+ },
+ "T2_s1": {
+  "key": "T2",
+  "rate": 2.96,
+  "speech": 1.35,
+  "clean": 0.667,
+  "clean_heard": "quoi zero front",
+  "music": 1.0,
+  "music_heard": "quoi zero franc"
+ },
+ "T2_s2": {
+  "key": "T2",
+  "rate": 2.8,
+  "speech": 1.43,
+  "clean": 1.0,
+  "clean_heard": "quoi zero franc",
+  "music": 1.0,
+  "music_heard": "quoi zero franc"
+ },
+ "T2_s3": {
+  "key": "T2",
+  "rate": 2.84,
+  "speech": 1.41,
+  "clean": 1.0,
+  "clean_heard": "quoi zero franc",
+  "music": 1.0,
+  "music_heard": "quoi zero franc"
+ }
+}

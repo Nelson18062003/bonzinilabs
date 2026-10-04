@@ -8,7 +8,7 @@
 //   MC_envelope(SCORE.item(k, t))   the 4 kraft envelopes (label, felt-pen amount, lorry + boat, douane sticker, 4 doodles)
 //   MC_box(SCORE.item(4, t))        the shoe box: lid off, two LEFT sneakers « G » « G »
 //   MC_calc(SCORE.calc(t))          « RESTE SUR LE BILLET » — 7-segment LCD, « ? » blinks, red « 0 F »
-//   MC_stamp(SCORE.stamps(t)[i])    « 5 PAIRES SUR 100 : INVENDABLES » + sub-line · giant « PRIX CHINOIS × 2 = 0 »
+//   MC_stamp(SCORE.stamps(t)[i])    « 5 PAIRES SUR 100 : NE SE VENDENT PAS » + sub-line · giant « PRIX CHINOIS × 2 = 0 »
 //   MC_pile(SCORE.pile(t))          « TOUT CE QUE TU PAIES », felt-pen arrow, kraft tag « TON VRAI PRIX »
 //   MC_crumb(SCORE.crumbs(t)[i])    the two bits of note the margouillat swallows
 // Every look is a pure function of (state, t, n); every time comes from the score (states / SCORE.A). Static paper is
@@ -424,8 +424,8 @@
   const ENV_LAYOUT = [
     { lab: -30, lx: 0, amt: 96 },                       // FOURNISSEUR
     { lab: -54, lx: 0, amt: 108 },                      // TRANSPORT (+ lorry + boat)
-    { lab: -30, lx: -42, amt: 96 },                     // DOUANE (+ sticker on the right)
-    { lab: -54, lx: 0, amt: 108 },                      // PETITS FRAIS (+ 4 doodles)
+    { lab: -30, lx: -92, amt: 96, lsz: 52 },            // DOUANE (+ the v2 sticker on the right: the label moves left, 52 px)
+    { lab: -54, lx: 0, amt: 108 },                      // PETITS FRAIS (+ the 4 words, 2 × 2)
   ];
   function envBack() {     // flap open above the mouth + the inside of the back panel
     ctx.fillStyle = '#B98D5B'; rrect(-EW / 2 + 3, -EH / 2, EW - 6, EH - 4, 8); ctx.fill();
@@ -458,8 +458,8 @@
     // printing: thin frame, the label, the dotted amount field
     const Lo = ENV_LAYOUT[k], lab = S.ITEMS[k].label;
     ctx.strokeStyle = 'rgba(35,22,41,.28)'; ctx.lineWidth = 2; rrect(-EW / 2 + 14, -EH / 2 + 30, EW - 28, EH - 44, 6); ctx.stroke();
-    const lf = font(FF.stencil, 60, 900), lw = wid(lab, lf, { ls: 2 });
-    const lsz = lw > EW - 60 ? 60 * (EW - 60) / lw : 60;
+    const l0 = Lo.lsz || 60, lf = font(FF.stencil, l0, 900), lw = wid(lab, lf, { ls: 2 });
+    const lsz = lw > EW - 60 ? l0 * (EW - 60) / lw : l0;
     txt(lab, Lo.lx, Lo.lab, font(FF.stencil, lsz, 900), INK, { ls: 2 });
     ctx.strokeStyle = 'rgba(35,22,41,.38)'; ctx.lineWidth = 2.2; ctx.setLineDash([3, 6]); ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(-EW / 2 + 34, Lo.amt + 10); ctx.lineTo(EW / 2 - 34, Lo.amt + 10); ctx.stroke(); ctx.setLineDash([]);
@@ -521,28 +521,33 @@
     handWrite('camion en Chine + bateau', 0, 42, 25, kk(p, .55, 1), INK2, 'center');
   }
   function artFrais(p) {            // « taux · pousseur · taxi · crédit »: one per quarter of the art
-    const cells = [['taux', 'taux', -158, -14], ['pousseur', 'pousseur', -14, -14], ['taxi', 'taxi', -158, 26], ['credit', 'crédit', -14, 26]];
-    cells.forEach(([d, word, x, y], i) => {
+    // v2 (SCRIPT_V2 §2): these words DEFINE « petits frais », they must read on a phone: 42 px handwriting (was 28), a wider
+    // 2 × 2 grid (left column x −166, right column x −35, rows y −14 / 30), the little pictos dropped for the room
+    const cells = [['taux', -166, -14], ['pousseur', -35, -14], ['taxi', -166, 30], ['crédit', -35, 30]];
+    cells.forEach(([word, x, y], i) => {
       const q = kk(p, i / 4, (i + 1) / 4); if (q <= 0) return;
-      at(x + 18, y - 8, 0, .95, .95, () => doodle(d, kk(q, 0, .6), 3.6));
-      handWrite(word, x + 42, y + 2, 28, kk(q, .45, 1));
+      handWrite(word, x, y, 42, q);
     });
   }
-  /** the yellow sticker on DOUANE: the legal mention of the douane figure (slapped on) */
-  const stickerSpr = () => mk('sticker', -118, -112, 236, 228, 1.5, () => {
+  /** the yellow sticker on DOUANE: the legal mention of the douane figure (slapped on). v2 (SCRIPT_V2 §2): « EXEMPLE /
+   *  dépend du / produit », 48 px handwriting (≈ 44.6 px on screen at × .93; was 31 px « exemple · dépend du code du produit »,
+   *  « code du produit » was jargon), the paper 300 × 198 (was 208 × 198) */
+  const stickerSpr = () => mk('sticker', -164, -112, 328, 228, 1.5, () => {
+    const X = 150;
     ctx.save(); ctx.shadowColor = 'rgba(60,32,12,.25)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 4;
     const g = ctx.createLinearGradient(0, -100, 0, 100); g.addColorStop(0, '#FFE680'); g.addColorStop(1, '#FBD54E');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-104, -98); ctx.lineTo(104, -98); ctx.lineTo(104, 72); ctx.quadraticCurveTo(96, 92, 72, 100); ctx.lineTo(-104, 100); ctx.closePath(); ctx.fill(); ctx.restore();
-    ctx.fillStyle = 'rgba(160,120,0,.18)'; ctx.beginPath(); ctx.moveTo(104, 72); ctx.quadraticCurveTo(96, 92, 72, 100); ctx.lineTo(84, 80); ctx.closePath(); ctx.fill();   // curled corner
-    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-104, -98, 208, 26);                                                    // the glue band
-    const lines = ['exemple ·', 'dépend du', 'code du', 'produit'];
-    lines.forEach((l, i) => txt(l, 0, -46 + i * 40, font(FF.hand, 31, 800), i === 0 ? ORANGE_D : INK2));
-    ctx.strokeStyle = ORANGE_D; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-62, -36); ctx.quadraticCurveTo(0, -31, 44, -37); ctx.stroke();
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-X, -98); ctx.lineTo(X, -98); ctx.lineTo(X, 72); ctx.quadraticCurveTo(X - 8, 92, X - 32, 100); ctx.lineTo(-X, 100); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.fillStyle = 'rgba(160,120,0,.18)'; ctx.beginPath(); ctx.moveTo(X, 72); ctx.quadraticCurveTo(X - 8, 92, X - 32, 100); ctx.lineTo(X - 20, 80); ctx.closePath(); ctx.fill();   // curled corner
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(-X, -98, 2 * X, 26);                                                    // the glue band
+    const lines = ['EXEMPLE', 'dépend du', 'produit'];
+    lines.forEach((l, i) => txt(l, 0, -30 + i * 52, font(FF.hand, 48, 800), i === 0 ? ORANGE_D : INK2));
+    ctx.strokeStyle = ORANGE_D; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-112, -18); ctx.quadraticCurveTo(0, -12, 108, -19); ctx.stroke();
   });
   function sticker(p) {
     if (p <= 0) return;
     const e = eOut(p), sc = 1.55 - .55 * e, sp = stickerSpr();
-    at(184, -70, .07 + .25 * (1 - e), sc * .93, sc * .93, () => { ctx.globalAlpha *= cl(p * 3); blit(sp); });
+    // right half of the envelope, sticking out ≈ 40 px above it; right edge ≤ x 570 on screen (the calculator starts at 575)
+    at(140, -68, .03 + .25 * (1 - e), sc * .93, sc * .93, () => { ctx.globalAlpha *= cl(p * 3); blit(sp); });
   }
   const envDone = (k, nFill) => mk('envD' + k + '_' + nFill, -EW / 2 - 8, -EH / 2 - 80, EW + 140, EH + 90, 1.25, () => {
     blit(envBase(k, nFill)); const Lo = ENV_LAYOUT[k];
@@ -758,11 +763,14 @@
         ctx.fillStyle = col; ctx.globalAlpha = .7; ctx.beginPath(); ctx.arc(Math.cos(a) * r * o.splat[1], Math.sin(a) * r * o.splat[2], s, 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
     });
   }
-  const invSpr = () => inkSpr('stInv', [{ s: '5 PAIRES SUR 100 :', y: -22, size: 96, ls: 2 }, { s: 'INVENDABLES', y: 82, size: 116, ls: 6 }], ORANGE, { w: 900, h: 240, box: [830, 212], boxW: 9, starve: .38, seed: 7 });
+  // v2: line 2 « NE SE VENDENT PAS » at 96 px / ls 2 like line 1 (« INVENDABLES » was 116 px / ls 6) — 727 px in the 830 px box
+  const invSpr = () => inkSpr('stInv', [{ s: '5 PAIRES SUR 100 :', y: -22, size: 96, ls: 2 }, { s: 'NE SE VENDENT PAS', y: 81, size: 96, ls: 2 }], ORANGE, { w: 900, h: 240, box: [830, 212], boxW: 9, starve: .38, seed: 7 });
   const invSubSpr = () => mk('stInvSub', -420, -44, 840, 88, 1.25, () => {
     ctx.save(); ctx.shadowColor = 'rgba(60,32,12,.22)'; ctx.shadowBlur = 8; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 4; ctx.fillStyle = CREAM; tornRect(800, 70, 61, 2.2); ctx.fill(); ctx.restore();
-    const f = font(FF.body, 44, 800), a = 'leur coût retombe sur les autres paires : ', b = '−500', wa = wid(a, f, { stretch: 'condensed' }), wb = wid(b, f, { stretch: 'condensed' }), x0 = -(wa + wb) / 2;
-    txt(a, x0, 15, f, INK, { align: 'left', stretch: 'condensed' }); txt(b, x0 + wa, 15, f, ORANGE_D, { align: 'left', stretch: 'condensed' });
+    // v2: « payées quand même : −500 par paire vendue » (47 500 ÷ 95 = 500 per pair sold), −500 in orange
+    const f = font(FF.body, 44, 800), a = 'payées quand même : ', b = '−500', c = ' par paire vendue', o = { stretch: 'condensed' };
+    const wa = wid(a, f, o), wb = wid(b, f, o), wc = wid(c, f, o), x0 = -(wa + wb + wc) / 2;
+    txt(a, x0, 15, f, INK, { align: 'left', ...o }); txt(b, x0 + wa, 15, f, ORANGE_D, { align: 'left', ...o }); txt(c, x0 + wa + wb, 15, f, INK, { align: 'left', ...o });
   });
   const zeroCard = () => mk('zeroCard', -462, -250, 924, 500, 1.25, () => {
     const cw = 860, ch = 420;
@@ -783,10 +791,10 @@
     if (st.k <= 0 || st.a <= 0) return;
     ctx.save(); ctx.globalAlpha *= st.a;
     if (st.id === 'invendables') {
-      // the stamp slams on « cent » (k), the explanation strip slides in right under it
+      // the stamp slams right after « ne se vendent pas » (k), the explanation strip slides in under it during the 2nd sentence
       const k = st.k, sc = 1.5 - .5 * eIn(k), sq = S.squash(t, A.stampInv, .06), sp = invSpr();
       at(st.x, st.y - 8, st.rot, st.s * sc * sq.sx, st.s * sc * sq.sy, () => { ctx.globalAlpha *= cl(k * 2.5); ctx.globalCompositeOperation = 'multiply'; blit(sp); });
-      const ks = kk(t, A.stampInv + .06, A.stampInv + .3);
+      const ks = st.subK ?? kk(t, A.stampInv + .06, A.stampInv + .3);
       if (ks > 0) { const sub = invSubSpr(), e = eOut(ks), yy = st.y + 134 + 26 * (1 - e);
         drop(sub, st.x, yy, st.rot * .5 + .006, st.s, st.s, 4 + 26 * (1 - e), cl(ks * 2));
         at(st.x, yy, st.rot * .5 + .006, st.s, st.s, () => { ctx.globalAlpha *= cl(ks * 2); blit(sub); }); }

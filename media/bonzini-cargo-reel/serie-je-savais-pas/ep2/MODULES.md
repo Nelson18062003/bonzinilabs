@@ -94,7 +94,7 @@ The state has these fields:
   screen) or `'loop'` (the end card's big closed carton: the image the loop starts from);
 - `x, y, w, h, d, s, sx, sy, rot, a`;
 - `flaps` 0..1: 0 shut, 1 wide open. **At frame 0 the flaps are already ≈ .8 open, flipping out** (the burst); kraft tape torn;
-- `lid` 0..1: **the front flank lifts like a cut-paper lid** (hinged at the top) to show the inside (N3, and the split);
+- `lid` 0..1: **the front flank lifts like a cut-paper lid** (hinged at the top) to show the inside (N3b, and the split);
 - `sandalsOn`, `sandals` 0..1: 3 unbranded pairs heaped in the left corner (0), then « tête-bêche », tight (1). Pose 1 is
   `A.pose1`: step it on twos;
 - `hatch` 0..1: the light-blue hatching sweeps the void, left → right (`A.hatch0`→`A.hatch1`). `vide` 0..1: the « VIDE »
@@ -103,7 +103,7 @@ The state has these fields:
   that the lid and flaps shut;
 - `tape` 0..1 (`A.pose3`): **kraft tape** runs from edge to edge across the top. This is the ASMR moment: show it big and
   crisp;
-- `m3`, `m3k` 0..1: the « AU m³ » stamp hits the front face at `A.stampM3` (`m3k` = impact progress). **Orange starved ink
+- `m3`, `m3k` 0..1: the « EN MÈTRES / CUBES (m³) » stamp (v2, 2 lines ≈ 80 px) hits the front face at `A.stampM3`, right after « cubes » (`m3k` = impact progress). **Orange starved ink
   on the flank. You take over the `'m3'` text: draw it.** It goes away with the flank when the lid lifts;
 - `marks[3]` 0..1: the felt-pen line along each measured edge (L, l, H), drawn by `CA_measure` or by you;
 - `label` 0..1: Bonzini's label. **M2 draws it** (`BZ_onCarton`); leave the front face clean;
@@ -142,8 +142,8 @@ fluted edge, a printed or painted face, real thickness, a contact shadow. The te
 |---|---|---|---|
 | `title` | orange printed cardboard | `DANS CE CARTON,` / `TU PAIES` / `DE L'AIR.`: the last line is 170 px, the others ~84 px; Satoshi 900, cream | at rest from frame 0, leaves at `A.titleOut` |
 | `toi` | amber cardboard | `MAIS MON CARTON` / `EST LÉGER !` (~96 px, dark brown) | pops up with a rebound at `A.toiUp`; trembles under the incoming shadow (`shake`); **crushed at `A.bateauFall`** (`crush` 0..1) |
-| `bateau` | grey-kraft heavy board | `AU BATEAU, ON PAIE` / `LA PLACE :` / `LE MÈTRE CUBE.` (`emph` = 1 → orange) | falls on « place » and stays until `A.bateauOut`. The grey pill « LE BATEAU » is drawn by type at its top-right |
-| `toiSmall` | small amber plate, **sweating** (`sweat`) | `…J'AI PAYÉ LE BATEAU` / `POUR TRANSPORTER` / `DE L'AIR ?!` (≥ 58 px on screen) | `A.toiSmall` → `A.toiSmallOut`, the camera pushes slowly onto it |
+| `bateau` | grey-kraft heavy board | `MÊME LÉGER,` / `TU PAIES` / `LA PLACE.` (`emph` = 2 → orange band) | falls in the pause before N2 (`A.bateauFall` = N2 − .3; N2 then reads it), stays through N2b until `A.bateauOut` (after the m³ stamp). The grey pill « LE BATEAU » is drawn by type at its top-right |
+| `toiSmall` | small amber plate, **sweating** (`sweat`) | `J'AI PAYÉ LE BATEAU` / `POUR TRANSPORTER` / `DE L'AIR ?!` (≥ 58 px on screen) | `A.toiSmall` → `A.toiSmallOut`, the camera pushes slowly onto it |
 
 The « TOI » pills are drawn by the type layer under the toi plates: leave room for them.
 
@@ -202,12 +202,12 @@ measured, out}`. This is the reception in China, in stop-motion. Draw:
 - the mini « AIR » cloud at `G.bz.air` (`b.air` = `{x, y, s, strike}`), **struck through** at `A.airStrike`;
 - the stamp **« MESURÉ ✓ »** (violet, at `A.measured`; `measured` = impact 0..1). **You take over `'measured'`.**
 
-Keep it to 3 text blocks at once: the enamel plate, the caption « TES CARTONS, MESURÉS DÈS LA RÉCEPTION EN CHINE » (type,
+Keep it to 3 text blocks at once: the enamel plate, the caption « TES CARTONS SONT / MESURÉS EN CHINE. » (type,
 y 510–690) and the readout with its stamp. The label code counts as the legal mention.
 
 **`BZ_plate(st, t, L)`** (world): `st = SCORE.bzPlate(t)` = `{x, y, s, sx, sy, rot, a, sweep}`. This is the **violet
 enamel plate « BONZINI TRADING CARGO »** (glossy enamel, logo via `drawLogo`, cream letters, a reflection `sweep`). It lands
-on the word « Bonzini » (`A.plateBZ`), with the balafon signature, at `G.bz.plateY` (y 330, ≤ 880×210), and leaves at the end
+with the balafon signature in the pause before « Chez » (`A.plateBZ` = `A.sig` + .05; v2 deviation, see README), at `G.bz.plateY` (y 330, ≤ 880×210), and leaves at the end
 card.
 
 ### `76_end.js`: `BZ_end(st, t, L, space)`
@@ -216,12 +216,12 @@ camera, and `space = 'screen'` after the world. **You take over `'brand'`, `'ser
 Read each text from `SCORE.TEXTS()` (id, text, t0, t1); the layout is `G.end`:
 - **screen**:
   - the logo and « Bonzini Trading Cargo » (y 300);
-  - « Groupage mer et air · Chine → Douala » / « Entrepôt : Foyer Balengou » (y 404 / 462, ≥ 44 px; draw « → » as a
+  - « Cargo bateau et avion · Chine → Douala » / « Entrepôt : Foyer Balengou » (y 404 / 462, ≥ 44 px; draw « → » as a
     shape);
   - the orange stamp **« MAINTENANT, / TU SAIS. »** (y 676, at `A.stampEnd`, held until `A.out`);
-  - the amber CTA pill **« Écris CBM en commentaire »** (y 908, ≥ 56 px) with **a drawn arrow ↓**. It bounces once at
+  - the amber CTA pill **« Écris CARTON en commentaire »** (y 908, ≥ 56 px, scaled to fit x 140–940) with **a drawn arrow ↓**. It bounces once at
     `A.cta`;
-- **world**: « Tague celui qui / remplit ses cartons / de papier », **written in marker on the loop carton's front face**
+- **world**: « Montre ça / à celui qui / paie de l'air », **written in marker on the loop carton's front face**
   (`SCORE.loopCarton(t).writeTag`, apply `cartonJit`).
 
 **The loop**: from `A.loop` the big closed carton trembles harder and grows back to its frame-0 size and place. At `A.out`
@@ -229,26 +229,27 @@ Read each text from `SCORE.TEXTS()` (id, text, t0, t1); the layout is `G.end`:
 
 ---
 
-## Key times (defaults; read `SCORE.A`; `node -e "console.log(require('./overlay/scenes/01_score.js').A)"` from E)
+## Key times (v2 defaults, `SCRIPT_V2.md` §7.1–7.2; read `SCORE.A`; `node -e "console.log(require('./overlay/scenes/01_score.js').A)"` from E)
 
-**Voices**: N1 .1 · T1 2.4 · N2 4.2 · N3 9.1 · T2 12.0 · N4 15.3 · N5 18.8 · N6 21.3 · N7 24.4 · N8 29.3 · end 32.5.
+**Voices**: N1 .3 · T1 2.87 · N2 5.32 · N2b 8.72 · N3 12.92 · N3b 15.49 · T2 18.17 · N4 22.13 · N4b 24.24 · N5 27.22 · N6 31.0 ·
+N7 33.82 · N8 39.54 · N8b 42.87 · end 44.76. (The v1 table, 10 lines / 32.5 s, is obsolete; anchors: `README.md`.)
 
 **Actions**:
-- hook: burstPeak .50 · titleOut 2.15 · toiUp 2.30;
-- the crush: bateauShadow 4.35 · **bateauFall 5.20** (« place ») · **stampM3 6.35** (« cube ») · bateauOut 6.85;
-- the measure: **clacks 7.20 / 7.70 / 8.20** · formula 8.60 · formulaOut 9.75;
-- the void: flank 9.00 · hatch 9.40 → 10.68 · capVide 9.85 · vide 10.78 · cloudSettle 10.98;
-- TOI's realisation: **cut 11.80** · toiSmall 11.95 → 15.15;
-- the repack: **pose1 15.85 · pose2 16.90 · pose3 17.75** · chase 17.95 · **gulp 18.50**;
-- AVANT / APRÈS: **split 18.70** · gauges 18.90 → 19.60 · hic 20.15 · splitOut 21.15;
-- the glass: glass 21.35 · wrap 22.35 → 23.20;
-- ENSUITE: **ensuite 23.70** → 24.35;
-- Bonzini: **violet 24.25** · label 24.55 · sig 24.60 · **plateBZ 24.65** · capBZ 26.00 · scan 26.30 · tape 26.65 ·
-  volume 27.05 · airStrike 27.35 · **measured 27.65**;
-- end: **endcard 29.15** · cta 29.30 · **stampEnd 31.10** · loop 31.95 · out 32.38.
+- hook: burstPeak .50 · ka-ching 2.57 · titleOut 2.62 · toiUp 2.77;
+- the crush: bateauShadow 4.77 · **bateauFall 5.02** (before N2) · **stampM3 11.25** (after « cubes ») · bateauOut 11.40;
+- the measure: **clacks 11.60 / 11.91 / 12.22** · formula 12.47 · formulaOut 15.44;
+- the void: flank 15.39 · capVide 15.62 · hatch 15.92 → 16.78 · vide 16.88 · cloudSettle 17.08 · tic 17.76;
+- TOI's realisation: **cut 17.97** · toiSmall 18.12 → 21.98;
+- the repack: **pose1 23.83 · pose2 25.07 · pose3 26.51** · chase 26.62 · **gulp 27.07**;
+- AVANT / APRÈS: **split 27.12** · gauges 27.32 → 28.02 · hic 30.60 · splitOut 30.85;
+- the glass: glass 30.90 · wrap 31.13 → 33.27;
+- ENSUITE: **ensuite 33.32** → 33.77;
+- Bonzini: **violet = sig 33.57** · **plateBZ 33.62** (before « Chez ») · capBZ 35.94 · label 36.07 · scan 36.32 · tape 36.77 · volume 37.25 ·
+  airStrike 37.55 · **measured 38.74**;
+- end: **endcard 40.19** · cta 40.34 · **stampEnd 42.57** · loop 44.21 · out 44.64.
 
-**Suggested test times**: 0, .3, .5, 2.9, 5.25, 5.5, 6.4, 7.25, 8.3, 8.9, 10.9, 13.0, 15.9, 16.95, 17.8, 18.3, 19.8, 22.8,
-24.0, 24.7, 26.4, 27.1, 27.9, 30.0, 31.6, 32.45.
+**Suggested test times**: 0, .3, 3.6, 5.15, 6.5, 11.33, 11.8, 13.5, 15.7, 16.3, 17.3, 19.5, 25.3, 26.9, 28.8, 32.2, 33.45, 36.5,
+38.9, 41.2, 43.6, 44.7.
 
 ## Report to the lead
 Report your files, the exact API you implemented, any SCORE field you need that does not exist (ask, do not patch the

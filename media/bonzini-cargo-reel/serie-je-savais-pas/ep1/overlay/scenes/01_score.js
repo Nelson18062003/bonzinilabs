@@ -12,9 +12,10 @@
 // =============================================================================================
 (function () {
 const FPS = 30;
-// ---------- voice keys: storyboard defaults (SERIE.md « Épisode 1 », re-keyed on the script ids) ----------
-const T = { N1: .05, N2: 1.2, T1: 2.9, N3: 5.0, N4: 6.9, N5: 9.4, N6: 11.9, N7: 15.6, T2: 18.3, N8: 19.1, N9: 23.3, N10: 27.9, end: 31.5 };
-const DUR0 = { N1: .85, N2: 1.6, T1: 2.0, N3: 1.8, N4: 2.4, N5: 2.4, N6: 3.4, N7: 2.5, T2: .6, N8: 4.0, N9: 4.4, N10: 3.1 };
+// ---------- voice keys: v2 storyboard defaults (SCRIPT_V2.md §6.1 — clear diction at 3.6 syllables/s, the §6.3 silences;
+// ids of data/script_v2.json, unchanged). The W()/WE() fallback seconds below are measured on these values. ----------
+const T = { N1: .40, N2: 3.91, T1: 6.81, N3: 9.55, N4: 12.09, N5: 14.46, N6: 17.38, N7: 23.0, T2: 27.97, N8: 29.68, N9: 33.24, N10: 39.47, end: 44.54 };
+const DUR0 = { N1: 3.06, N2: 2.5, T1: 2.14, N3: 1.94, N4: 1.67, N5: 2.22, N6: 5.02, N7: 4.47, T2: 1.31, N8: 3.06, N9: 5.83, N10: 4.47 };
 const DUR = { ...DUR0 };
 let WORDS = {};
 let TM = null;
@@ -65,87 +66,93 @@ function squash(t, t0, amt = .2, freq = 30, damp = 9) {
 const rndS = i => { const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };   // deterministic, node-safe
 
 // =============================================================================================
-// A — every action time, derived (defaults in comments = storyboard)
+// A — every action time, derived (comments = value on the v2 defaults, SCRIPT_V2.md §6.2). « tchac » is no longer
+// said: every cut is a sound effect alone, in the silence AFTER its line; every impact sits at the end of a word or in a
+// silence, never at the start of a key word.
 // =============================================================================================
 const A = {};
-// hook: the scissors already snap at frame 0 (film origin), a second dry snip during « Revendue dix mille… »
-A.snips = [0, T.N1 + DUR.N1 * .5];
-A.cut1 = Math.min(END('N1') + .03, T.N2 - .12);                 // 0.93 TCHAC 1, between N1 and N2
-A.slide1 = [A.cut1 + .27, A.cut1 + .87];                         // 1.2–1.8 the left half slides into FOURNISSEUR (on twos)
+// hook: the scissors snap at frame 0 (film origin) and once more 0.2 s later, both BEFORE the voice (N1 starts at 0.4 s)
+A.snips = [0, Math.max(.12, T.N1 - .2)];                          // 0 / 0.20
+A.cut1 = Math.min(END('N1') + .03, T.N2 - .12);                  // 3.49 TCHAC 1 (sound alone), between N1 and N2
+A.slide1 = [A.cut1 + .27, A.cut1 + .87];                         // 3.76–4.36 the left half slides into FOURNISSEUR (on twos)
 A.calcIn = A.cut1 + .05;                                         // the calculator enters « RESTE SUR LE BILLET »
-A.stampBuy = W('N2', 'achet', 0, 0) + .2;                         // 1.4 stamp « ACHETÉE 5 000 F EN CHINE » on « achetée »
-A.ding1 = A.slide1[1] + .05;                                     // cash « ding » when RESTE shows 5 000
-A.challenge = Math.min(END('N2') + .06, T.T1 - .05);             // 2.86 « IL GAGNE COMBIEN ? » lands
-A.toiIn = T.T1 - .12;                                            // TOI's card slides in
-A.ask = [W('T1', 'cinq', 0, .55), W('T1', 'cinq', 0, .55) + .62]; // « 5 000 ? » blinks twice on the calculator (< 3 Hz)
-A.dare = WE('T1', 'benef', 0, 1.75) + .05;                       // « Tu dis combien ? ↓ » bounces once
-A.tics = [END('T1') - 1.0, END('T1') - .5, END('T1')];            // 3 tic-tacs; makossa enters on the last (4.9)
+A.stampBuy = W('N2', 'pay', 0, 1.1) + .2;                        // 5.21 stamp « PAYÉE 5 000 F EN CHINE » on « payée »
+A.ding1 = Math.max(A.slide1[1] + .05, END('N2') + .05);          // 6.46 cash « ding »: after N2 (it used to sit on « Chine, tu l'as »)
+A.challenge = Math.max(END('N2') + .06, A.stampBuy + 1.4);       // 6.61 « TU GAGNES COMBIEN ? » lands; PAYÉE held ≥ 1.4 s (§6.3: T.T1 ≥ challenge + .05)
+A.toiIn = T.T1 - .12;                                            // 6.69 TOI's card slides in
+A.ask = [W('T1', 'cinq', 0, 1.3), W('T1', 'cinq', 0, 1.3) + .62]; // 8.11 / 8.73 « 5 000 ? » blinks twice on the calculator (< 3 Hz)
+A.dare = WE('T1', 'franc', 0, 1.9) + .05;                        // 8.76 « Tu dis combien ? ↓ » at the end of « francs »
+A.tics = [END('T1') + .05, END('T1') + .3, END('T1') + .55];     // 9.0 / 9.25 / 9.5 three tic-tacs AFTER TOI; makossa in on the last (§6.3: T.N3 ≥ tics[2] + .05)
 A.flyDur = .45;                                                  // a cut slice flies into its envelope (the first one: A.slide1)
 // each envelope enters the slot on its label word, stays until its slice has landed (the couple « −X / RESTE Y » is held)
-A.cutT = W('N3', ['tch', 'chak'], 0, 1.4);                        // 6.4 TCHAC 2
+A.cutT = END('N3') + .1;                                         // 11.59 TCHAC 2 (sound alone), after « mille francs »
 A.landT = A.cutT + .05 + A.flyDur;
-A.envT = W('N3', 'transp', 0, .15) - .25;                         // 4.9 « Le transport » → TRANSPORT envelope in the slot
-A.amtT = Math.min(W('N3', 'mil', 0, .8), A.envT + .6);            // « −1 000 » written (on « mille » at the latest)
-A.cutD1 = W('N4', ['tch', 'chak'], 0, 1.7);                       // 8.6
-A.cutD2 = W('N4', ['tch', 'chak'], 1, 2.0);                       // 8.9 (music skips a beat here)
+A.envT = W('N3', 'transp', 0, .55) - .25;                         // 9.85 « Mais le transport » → TRANSPORT envelope in the slot
+A.amtT = Math.min(W('N3', 'mil', 0, 1.4), A.envT + .6);           // 10.45 « −1 000 » written (on « mille » at the latest)
+A.cutD1 = END('N4') + .1;                                        // 13.86 double TCHAC (sound alone), after « trois mille francs »
+A.cutD2 = A.cutD1 + .3;                                          // 14.16 (music skips a beat here)
 A.landD = A.cutD2 + .05 + A.flyDur;
-A.envD = Math.max(W('N4', 'douane', 0, .15) - .25, A.landT + .1);
-A.amtD = Math.min(W('N4', 'trois', 0, .75), A.envD + .6);         // « −3 000 » on « trois mille »
-A.sticker = A.amtD + .5;                                         // yellow sticker « exemple · dépend du code du produit »
-A.cutF = W('N5', ['tch', 'chak'], 0, 2.0);                        // 11.4
+A.envD = Math.max(W('N4', 'douane', 0, .28) - .25, A.landT + .1); // 12.19 DOUANE ≈ .2 s before « douane »
+A.amtD = Math.min(W('N4', 'trois', 0, .85), A.envD + .6);         // 12.79 « −3 000 » on « trois mille » at the latest
+A.sticker = A.amtD + .5;                                         // 13.29 yellow sticker « EXEMPLE / dépend du / produit »
+A.cutF = END('N5') + .1;                                         // 16.78 TCHAC 4 (sound alone), after « cinq cents francs »
 A.landF = A.cutF + .05 + A.flyDur;
-A.envF = Math.max(W('N5', 'frais', 0, .55) - .25, A.landD + .1);
-A.amtF = Math.min(W('N5', 'cinq', 0, 1.1), A.envF + .6);          // « −500 » on « cinq cents »
+A.envF = Math.max(W('N5', 'frais', 0, .85) - .25, A.landD + .1);  // 15.06
+A.amtF = Math.min(W('N5', 'cinq', 0, 1.4), A.envF + .6);          // 15.66 « −500 » on « cinq cents » at the latest
 A.doodles = [0, 1, 2, 3].map(i => A.amtF + .35 + .16 * i);      // taux · pousseur · taxi · crédit, drawn one by one
-A.boxIn = Math.max(T.N6 - .15, A.landF + .1);                     // the shoe box drops into the slot
-A.lid = A.boxIn + .2;                                            // 12.2 lid off: two LEFT feet
-A.feet = A.lid + .22;
-A.stampInv = W('N6', 'cent', 0, 1.0) + .1;                        // 13.0 « 5 PAIRES SUR 100 : INVENDABLES »
-A.cutI = W('N6', ['tch', 'chak'], 0, 3.0);                        // 14.9 the last bit of the note → the box
+A.boxIn = A.landF + .1;                                          // 17.38 the shoe box drops in as soon as the last slice is in (the picture before the words)
+A.lid = A.boxIn + .15;                                           // 17.53 lid off: two LEFT feet, seen during « Dans ta commande »
+A.feet = A.lid + .15;                                            // 17.68 (§6.3: feet ≤ W(N6,'cinq') − .5)
+A.stampInv = WE('N6', 'pas', 0, 2.8) + .02;                      // 20.20 « 5 PAIRES SUR 100 : NE SE VENDENT PAS » right AFTER « pas »
+A.cutI = END('N6') + .1;                                         // 22.50 the last bit of the note → the box (sound alone, after « même »)
 A.zeroCalc = A.cutI + .5;                                        // the calculator lands on 0 F
 A.scExit = [A.cutI + .4, A.cutI + .85];                         // QA: the scissors fly off after the last cut (always a .45 s window)
-A.musicCut = END('N6') + .1;                                     // 15.4 music cut dead: the key moment
+A.musicCut = END('N6') + .1;                                     // 22.50 music cut dead: the key moment (= cutI)
 A.boxOut = Math.max(A.musicCut, A.cutI + .05 + A.flyDur + .15);  // QA: the box leaves for the row once the last slice is in
+// the strip « payées quand même : −500 par paire vendue » lands during the 2nd sentence (« Tu les as payées quand même »),
+// just before « payées », and stays ≥ 1.45 s before the stamp fades at the music cut (stamps(): until musicCut + .3)
+A.invSub = Math.min(Math.max(A.stampInv + .25, W('N6', 'pay', 0, 3.9) - .45), A.musicCut + .3 - 1.75);   // 20.84
 A.coinSpin = A.musicCut + .15;                                   // a coin spins in the silence…
-A.zeroStamp = W('N7', ['zer', 'zero'], 0, 2.2);                   // 17.8 giant stamp lands on « zéro » (slow motion ×0.5)
-A.zeroFall = Math.min(T.N7 + .1, A.zeroStamp - .75);           // visible while she says « Prix chinois fois deux… », slow fall
-A.coinSettle = Math.min(A.zeroStamp + .45, T.T2 - .1);           // …and lies down (« ting »)
-A.toiShrink = T.N7 - .1;
-A.outlineOut = W('N8', 'compt', 0, .55) - .3;                    // the pencil outline of the note goes with the rule                                         // the small TOI pill trembles
-A.toiZeroEnd = Math.max(END('T2') + .15, T.T2 + 1.45);           // « …zéro ?! » held ≥ 1.4 s
-A.major = T.N8 - .1;                                             // 19.0 the makossa comes back in major
-A.rule1 = W('N8', 'compt', 0, .55);                              // « COMPTE TOUT. »
-A.rule2 = W('N8', 'avant', 0, 2.55);                             // « AVANT DE FIXER TON PRIX. »
-A.stack = [0, 1, 2, 3, 4].map(i => Math.max(A.major + .4, A.toiZeroEnd + .3) + .25 * i);   // QA: on the eighth notes (120 BPM), once « …zéro ?! » has left the slot
-A.pileLabel = Math.max(W('N8', 'tout', 0, .95), A.stack[0] + .1); // « TOUT CE QUE TU PAIES »
+A.zeroEq = W('N7', ['zer', 'zero', '0'], 0, 3.6);                // 26.60 « = 0 » printed on « zéro »
+A.zeroStamp = END('N7') + .02;                                   // 27.49 the giant card lands (stamp_big) AFTER « franc », in the silence
+A.zeroFall = Math.min(T.N7 + .1, A.zeroStamp - .75);             // 23.10 slow fall while she says « Ton prix, c'était le prix chinois fois deux »
+A.coinSettle = A.zeroStamp + .25;                                // 27.74 …the coin lies down (« ting »), before TOI (§6.3: T.T2 ≥ coinSettle + .2)
+A.toiShrink = T.N7 - .1;                                         // the small TOI pill trembles
+A.outlineOut = W('N8', 'compt', 0, .55) - .3;                    // the pencil outline of the note goes with the rule
+A.toiZeroEnd = Math.max(END('T2') + .15, T.T2 + 1.45);           // 29.43 « Quoi ? Zéro franc ? » held ≥ 1.4 s
+A.major = T.N8 - .1;                                             // 29.58 the makossa comes back in major
+A.rule1 = W('N8', 'compt', 0, .55);                              // 30.23 « COMPTE TOUT. »
+A.rule2 = W('N8', 'avant', 0, 1.1);                              // 30.78 « AVANT DE FIXER TON PRIX. »
+A.stack = [0, 1, 2, 3, 4].map(i => Math.max(A.major + .4, A.toiZeroEnd + .3) + .25 * i);   // QA: on the eighth notes (120 BPM), once TOI's card has left the slot
+A.pileLabel = Math.max(W('N8', 'tout', 0, .85), A.stack[0] + .1); // 30.53 « TOUT CE QUE TU PAIES » on « tout »
 A.calcOut = A.stack[0] - .2;
-A.brandIn = T.N9 - .12;                                          // 23.2 violet light; every figure leaves the frame
+A.brandIn = T.N9 - .12;                                          // 33.12 violet light; every figure leaves the frame
 A.clearOut = [A.brandIn, A.brandIn + .5];
 A.figOut = [A.brandIn - .3, A.brandIn + .2];                     // QA: the pile (every figure) is gone before the plate lands; the tag (no figure) leaves with clearOut
 // felt-pen arrow pile → price tag « TON VRAI PRIX »: on « fixer », but early enough for the tag to be read ≥ 1.4 s before the
-// brand clears the table (QA: on the real takes the tag used to live 0.7 s)
-A.arrow = Math.max(A.stack[4] + .3, Math.min(W('N8', 'fix', 0, 3.0) - .15, A.brandIn - 1.8));
-A.priceTag = A.arrow + .35;
-A.sig = W('N9', 'bonz', 0, .3) - .05;                            // balafon signature on « Bonzini »
-A.plate = W('N9', 'bonz', 0, .3);                                // enamel plate « BONZINI TRADING CARGO » lands
-A.cartonIn = Math.min(W('N9', 'colis', 0, 1.9) - .45, A.plate + .45);   // QA: slides in right after the plate lands
-A.scan = W('N9', 'colis', 0, 1.9);                               // violet laser sweep + bip
-A.bandBz = W('N9', 'colis', 0, 1.9) - .25;                        // « TON COLIS, PESÉ ET MESURÉ DÈS GUANGZHOU »
-A.weigh = W('N9', 'pes', 0, 2.6);                                // on the scale (« tonk »), needle settles
+// brand clears the table (§6.3: brandIn − priceTag ≥ 1.4)
+A.arrow = Math.max(A.stack[4] + .3, Math.min(W('N8', 'fix', 0, 1.95) - .15, A.brandIn - 1.8));   // 31.32
+A.priceTag = A.arrow + .35;                                      // 31.67
+A.sig = W('N9', 'bonz', 0, .55) - .05;                           // 33.74 balafon signature on « Bonzini »
+A.plate = W('N9', 'bonz', 0, .55);                               // 33.79 enamel plate « BONZINI TRADING CARGO » lands
+A.cartonIn = Math.min(W('N9', 'colis', 0, 2.75) - .45, A.plate + .45);   // QA: slides in right after the plate lands
+A.scan = W('N9', 'colis', 0, 2.75);                              // 35.99 violet laser sweep + bip
+A.bandBz = W('N9', 'colis', 0, 2.75) - .25;                      // 35.74 « TON COLIS, PESÉ ET MESURÉ / EN CHINE »
+A.weigh = W('N9', 'pes', 0, 3.6);                                // 36.84 on the scale (« tonk »), needle settles
 A.stampPese = A.weigh + .3;
-A.measure = W('N9', 'mesur', 0, 3.05);                           // tape measure along the edges
-A.stampMes = A.measure + .45;
-A.guang = W('N9', ['gu', 'go'], 0, 3.75);                         // « DÈS GUANGZHOU » (said)
+A.measure = W('N9', 'mesur', 0, 4.45);                           // 37.69 tape measure along the edges (« mesuré » = syllable 17 of 21: 16 / 3.6)
+A.stampMes = A.measure + .45;                                    // 38.14 (§6.4: if it masks « en Chine », → WE('N9','chin') + .02)
+A.chine = W('N9', 'chin', 0, 5.4);                               // 38.64 « en Chine » (said; replaces « dès Guangzhou »)
 A.endcard0 = END('N9') + .1;
-A.bzLine2 = Math.max(A.bandBz + .3, Math.min(A.guang - .12, A.endcard0 - 1.55));   // QA: line 2 of the band, held ≥ 1.4 s
-A.endcard = A.endcard0;                                          // 27.8 logo + « Groupage mer et air · Chine → Douala »
-A.cta = Math.max(W('N10', 'ecri', 0, 0), A.endcard + .15);         // CTA pill on « Écris »
+A.bzLine2 = Math.max(A.bandBz + .3, Math.min(A.chine - .12, A.endcard0 - 1.55));   // 37.62 QA: line 2 « EN CHINE », held ≥ 1.4 s
+A.endcard = A.endcard0;                                          // 39.17 logo + « Groupage mer et air · Chine → Douala »
+A.cta = Math.max(W('N10', 'ecri', 0, 0), A.endcard + .15);       // 39.47 CTA pill « Écris CALCUL en commentaire ↓ » on « Écris »
 A.share = A.cta + .55;
 A.gulps = [A.cta + .55, A.cta + 1.05];                           // the margouillat swallows two crumbs of the note
-A.ritual = W('N10', 'maint', 0, 1.7);                             // « MAINTENANT, TU SAIS. » stamp
-A.loop = T.end - .5;                                             // 31.0 → the note re-forms: last frame = frame 0
+A.ritual = W('N10', 'maint', 0, 3.08);                           // 42.55 « MAINTENANT, TU SAIS. » stamp (§6.3: T.end ≥ ritual + 1.9)
+A.loop = T.end - .5;                                             // 44.04 → the note re-forms: last frame = frame 0
 A.finalChord = A.loop - .25;
-A.crumbs = A.cutD1;                                              // two crumbs fly off the note at the douane cut
+A.crumbs = A.cutD1;                                              // two crumbs fly off the note at the douane double cut
 
 // ---------- layout (screen px, world = table coordinates before the camera) ----------
 const G = {
@@ -154,7 +161,7 @@ const G = {
   head: { x: 540, y: 400 },                                        // headline zone (tag, title, stamps, plate, end card)
   sneaker: { x: 250, y: 410 }, tag: { x: 702, y: 392, w: 500, h: 300 },
   note: { x: 540, y: 760, w: 860, h: 380 },                        // the 10 000 F SPÉCIMEN note
-  slot: { x: 285, y: 1118 },                                       // the active slot (middle-left): envelope / box / « …zéro ?! » / pile
+  slot: { x: 285, y: 1118 },                                       // the active slot (middle-left): envelope / box / « Quoi ? Zéro franc ? » / pile
   toi1: { x: 765, y: 1372 },                                       // TOI's first card, under the calculator (the row is still empty)
   calc: { x: 765, y: 1112, w: 380, h: 250 },                       // « RESTE SUR LE BILLET »
   row: { y: 1436, xs: [305, 447, 589, 731, 873], s: .4 },          // done envelopes (+ the box last), bottom
@@ -163,7 +170,7 @@ const G = {
   zero: { x: 540, y: 760 },                                        // giant stamp « PRIX CHINOIS × 2 = 0 »
   rule: { x: 540, y: 560 }, pile: { x: 285, y: 1150 }, priceTag: { x: 765, y: 1135 },
   carton: { x: 540, y: 840 }, bzBand: { x: 528, y: 1268 }, stamps: { pese: { x: 255, y: 1085 }, mesure: { x: 830, y: 1085 } },
-  end: { logo: { x: 540, y: 470 }, name: { y: 690 }, line: { y: 772 }, ritual: { x: 540, y: 975 }, cta: { x: 540, y: 1210 }, share: { y: 1370 } },   // QA: share line clear of the margouillat's head
+  end: { logo: { x: 540, y: 470 }, name: { y: 690 }, line: { y: 772 }, ritual: { x: 540, y: 975 }, cta: { x: 530, y: 1210 }, share: { y: 1370 } },   // QA: share line clear of the margouillat's head; v2: CTA centred on x 530 so « CALCUL »'s pill ends ≤ x 960
   gecko: { x: 112, y: 1420 },
   crumbs: [{ x: 238, y: 1338 }, { x: 290, y: 1352 }, { x: 330, y: 1366 }],
 };
@@ -175,9 +182,9 @@ const PIECE_CUT = () => [A.cut1, A.cutT, A.cutD1, A.cutD2, A.cutF, A.cutI];
 const ITEMS = [                                                    // the four envelopes + the shoe box (index 4)
   { id: 'four', label: 'FOURNISSEUR', amount: -5000 },
   { id: 'transport', label: 'TRANSPORT', amount: -1000, art: 'truckBoat', sub: 'camion en Chine + bateau' },
-  { id: 'douane', label: 'DOUANE', amount: -3000, art: 'sticker', sticker: 'exemple · dépend du code du produit' },
+  { id: 'douane', label: 'DOUANE', amount: -3000, art: 'sticker', sticker: 'EXEMPLE|dépend du|produit' },
   { id: 'frais', label: 'PETITS FRAIS', amount: -500, art: 'doodles', doodles: ['taux', 'pousseur', 'taxi', 'crédit'] },
-  { id: 'box', label: '5 PAIRES SUR 100 : INVENDABLES', amount: -500, sub: 'leur coût retombe sur les autres paires' },
+  { id: 'box', label: '5 PAIRES SUR 100 : NE SE VENDENT PAS', amount: -500, sub: 'payées quand même : −500 par paire vendue' },
 ];
 // when each item enters the slot, when it leaves for the row, its amount writing time
 const itemTimes = () => [
@@ -337,16 +344,17 @@ function calc(t) {
 /** the stamps owned by the money module: [{id, text, sub, x, y, rot, s, k (0..1 landing), a}] */
 function stamps(t) {
   const out = [];
-  // « 5 PAIRES SUR 100 : INVENDABLES » + its sub-line, headline zone
+  // « 5 PAIRES SUR 100 : NE SE VENDENT PAS » (after « pas ») + its sub-line (A.invSub, during « Tu les as payées quand même »)
   if (t >= A.stampInv - .12 && t < A.musicCut + .3) {
     const k = kk(t, A.stampInv - .12, A.stampInv);
-    out.push({ id: 'invendables', text: '5 PAIRES SUR 100 :|INVENDABLES', sub: 'leur coût retombe sur les autres paires : −500',
+    out.push({ id: 'invendables', text: '5 PAIRES SUR 100 :|NE SE VENDENT PAS', sub: 'payées quand même : −500 par paire vendue', subK: kk(t, A.invSub, A.invSub + .24),
       x: G.head.x, y: G.head.y + 10, rot: -.035, s: 1, k, a: 1 - kk(t, A.musicCut, A.musicCut + .3) });
   }
-  // the giant « PRIX CHINOIS × 2 = 0 », falling in slow motion onto « zéro »
+  // the giant « PRIX CHINOIS × 2 = 0 », falling in slow motion during N7; « = 0 » printed on « zéro » (A.zeroEq), the card
+  // lands after « franc » (A.zeroStamp)
   if (t >= A.zeroFall && t < A.rule1 + .2) {
     const k = kk(t, A.zeroFall, A.zeroStamp);
-    out.push({ id: 'zero', text: 'PRIX CHINOIS × 2|= 0', x: G.zero.x, y: G.zero.y, rot: -.05, s: lerpv(1.1, 1, easeIn(k)), k, eqK: kk(t, A.zeroStamp - .2, A.zeroStamp),
+    out.push({ id: 'zero', text: 'PRIX CHINOIS × 2|= 0', x: G.zero.x, y: G.zero.y, rot: -.05, s: lerpv(1.1, 1, easeIn(k)), k, eqK: kk(t, A.zeroEq - .05, A.zeroEq + .25),
       a: Math.min(kk(t, A.zeroFall, A.zeroFall + .2), 1 - kk(t, A.rule1 - .1, A.rule1 + .2)), landed: t >= A.zeroStamp ? squash(t, A.zeroStamp, .1) : null });
   }
   return out;
@@ -360,7 +368,7 @@ function pile(t) {
     tagX: G.priceTag.x + outT * 700, tagY: G.priceTag.y, a: 1 };
 }
 /** the hook props (frame-0 composition): the paper sneaker and its kraft price tag « 1 PAIRE · REVENDUE 10 000 F À MBOPPI »
- *  (stamped « ACHETÉE 5 000 F EN CHINE » on « achetée »). They leave at the challenge and come back for the loop.
+ *  (stamped « PAYÉE 5 000 F EN CHINE » on « payée »). They leave at the challenge and come back for the loop.
  *  null or {sneaker:{x,y,rot,s}, tag:{x,y,rot,s,w,h}, stamp (0..1 landing), a} */
 function hook(t) {
   const out = easeIn(kk(t, A.challenge - .05, A.challenge + .3)), back = easeOut(kk(t, A.loop, T.end - .04));
@@ -426,16 +434,16 @@ const loop = t => kk(t, A.loop, T.end);
 const TEXTS = () => [
   [0, T.end + 1, 'chip', 'JE SAVAIS PAS. · 1/5', 'chip'],
   [0, T.end + 1, 'exemple', 'EXEMPLE FICTIF', 'exemple'],
-  [A.challenge, Math.max(A.stampInv - .1, A.challenge + 1.5), 'title', 'IL GAGNE COMBIEN ?', 'title'],
+  [A.challenge, Math.max(A.stampInv - .1, A.challenge + 1.5), 'title', 'TU GAGNES COMBIEN ?', 'title'],
   [A.dare, A.dare + 1.45, 'dare', 'Tu dis combien ? ↓', 'dare'],
-  [A.toiIn, Math.max(A.dare - .05, A.toiIn + 1.45), 'toi1', 'Facile :|5 000 de|bénéfice !', 'toiCard'],
+  [A.toiIn, Math.max(A.dare - .05, A.toiIn + 1.45), 'toi1', 'Facile !|Je gagne|5 000 F !', 'toiCard'],
   [A.toiShrink, A.toiZeroEnd, 'toiPill', 'TOI', 'toiSmall'],
-  [T.T2 - .05, A.toiZeroEnd, 'toi2', '…zéro ?!', 'toiCard'],
+  [T.T2 - .05, A.toiZeroEnd, 'toi2', 'Quoi ?|Zéro franc ?', 'toiCard'],
   [A.rule1, A.brandIn + .1, 'rule', 'COMPTE TOUT.|AVANT DE FIXER|TON PRIX.', 'rule'],
-  [A.bandBz, A.endcard, 'bzBand', 'TON COLIS, PESÉ ET MESURÉ|DÈS GUANGZHOU', 'bzBand'],
+  [A.bandBz, A.endcard, 'bzBand', 'TON COLIS, PESÉ ET MESURÉ|EN CHINE', 'bzBand'],
   [A.endcard, A.loop + .3, 'end', 'Bonzini Trading Cargo|Groupage mer et air · Chine → Douala', 'endcard'],
   [A.ritual - .12, A.loop + .3, 'ritual', 'MAINTENANT, TU SAIS.', 'ritual'],
-  [A.cta, A.loop + .3, 'cta', 'Écris TCHAC en commentaire', 'cta'],
+  [A.cta, A.loop + .3, 'cta', 'Écris CALCUL en commentaire', 'cta'],
   [A.share, A.loop + .3, 'share', 'Partage à l’ami qui fait encore × 2', 'share'],
 ];
 /** the « Tu dis combien ? » pill and the rule band are revealed in parts: helper for the type layer */
@@ -469,7 +477,7 @@ function gecko(t) {
   let target = { x: G.note.x, y: G.note.y }, act = 'idle', k = 0, n = -1;
   const sc = scissors(t);
   if (t < A.challenge) target = { x: sc.x, y: sc.y + 120 };
-  else if (t < T.N3) target = { x: G.head.x, y: G.head.y };                      // looks up at « IL GAGNE COMBIEN ? »
+  else if (t < T.N3) target = { x: G.head.x, y: G.head.y };                      // looks up at « TU GAGNES COMBIEN ? »
   else if (t < A.cutI + .6) {                                                     // the cuts: a tennis match scissors ↔ slot
     act = 'tennis';
     const cuts = PIECE_CUT(); let lastCut = -1; for (const c of cuts) if (t >= c) lastCut = c;
@@ -508,12 +516,12 @@ function soundCues() {
   A.snips.forEach(s => q(s, 'snip', .9, .15));                                   // two dry snips, close to the mic
   q(A.cut1, 'tchac', 1); q(A.slide1[0], 'paper_slide', .7, -.3); q(A.ding1, 'ding', .55, .3); q(A.stampBuy, 'stamp', .55, .25);
   A.tics.forEach((s, i) => q(s, 'tic', i === 2 ? .8 : .6, .2));
-  q(A.envT, 'paper_slide', .45, -.4); q(A.cutT, 'tchac', 1); q(A.cutT + .05, 'paper_slide', .5); q(A.cutT + .22, 'horn', .5, .2);
+  q(A.envT, 'paper_slide', .45, -.4); q(A.cutT, 'tchac', 1); q(A.cutT + .05, 'paper_slide', .5); q(A.cutT + .12, 'horn', .5, .2);   // §6.4: .12 (at + .22 its 0.34 s ran into « La douane »)
   q(A.envD, 'paper_slide', .45, -.4); q(A.sticker, 'sticker', .5, -.2); q(A.cutD1, 'tchac_big', 1); q(A.cutD2, 'tchac_big', 1); q(A.cutD2 + .05, 'paper_slide', .5);
   q(A.envF, 'paper_slide', .45, -.4); A.doodles.forEach(d => q(d, 'marker', .25, -.3)); q(A.cutF, 'tchac', 1); q(A.cutF + .1, 'coin_roll', .6, .3);
-  q(A.boxIn + .2, 'box_drop', .5, -.3); q(A.lid, 'lid', .8, -.2); q(A.feet, 'boing', .8, -.2); q(A.stampInv, 'stamp', .8); q(A.cutI, 'tchac', 1);
+  q(A.boxIn + .2, 'box_drop', .5, -.3); q(A.lid, 'lid', .8, -.2); q(A.feet, 'boing', .6, -.2); q(A.stampInv, 'stamp', .8); q(A.cutI, 'tchac', 1);
   q(A.zeroCalc, 'calc_zero', .5, .3); q(A.coinSpin, 'coin_spin', .6, .2); q(A.zeroStamp, 'stamp_big', 1); q(A.coinSettle, 'ting', .6, .2);
-  A.stack.forEach((s, i) => q(s, 'stack', .55, -.3 + .15 * i)); q(A.arrow, 'marker', .5, .1); q(A.priceTag, 'pop', .5, .3);
+  A.stack.forEach((s, i) => q(s, 'stack', .35, -.3 + .15 * i)); q(A.arrow, 'marker', .35, .1); q(A.priceTag, 'pop', .35, .3);   // §6.4: under the rule (N8), ≤ .35
   q(A.brandIn, 'whoosh', .4); q(A.sig, 'bonzini_sig', 1); q(A.plate, 'plate', .8); q(A.scan, 'scan_beep', .7, .3); q(A.weigh, 'tonk', .8);
   q(A.stampPese, 'stamp', .7, -.3); q(A.stampMes, 'stamp', .7, .3);
   q(A.cta, 'pop', .7); A.gulps.forEach(g => q(g, 'gloup', .8, -.5)); q(A.ritual, 'stamp', .8); q(A.finalChord, 'final_chord', 1); q(A.loop, 'reform', .5);

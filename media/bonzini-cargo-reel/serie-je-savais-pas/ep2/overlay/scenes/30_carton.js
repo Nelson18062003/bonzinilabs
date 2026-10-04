@@ -8,7 +8,7 @@
 //                    st.vide) and the 3 unbranded pairs of slides (heap in the left corner → head-to-tail stack that the
 //                    small carton hugs, st.sandals, stepped on twos).
 //     pass 'front' : the right wall (this-way-up print, felt mark « LARGEUR », tape tab), the front wall or the lifted
-//                    cut-paper lid (st.lid, cut edges with their flutes) with its ink (stamp « AU m³ » st.m3/m3k, felt
+//                    cut-paper lid (st.lid, cut edges with their flutes) with its ink (stamp « EN MÈTRES CUBES (m³) » st.m3/m3k, felt
 //                    marks st.marks), the top: open flaps (st.flaps, the kraft tape torn at the burst) or closed flaps
 //                    (bulging with st.tremble) under the kraft tape (st.tape, laid by a tape roll that rolls along it).
 //   CA_table(t, L, n)          the cream table + dressing (tape roll, cutter, pencil, offcuts): one cached sprite, the
@@ -184,7 +184,7 @@ const CA_K = (function () {
   const { cl, kk, mix, sst, eo, R, tq, pv, dot, VIEW, shadeN, face, poly, litA, rgbA, cutEdge } = H;
   const DEG = Math.PI / 180, FLAP_MAX = 114 * DEG, LID_MAX = 150 * DEG;
   const FL = { front: 1.2, back: .92, side: 1.03 };                // per flap: the front one falls further out (the opening reads)
-  let M3WIN = null;                                                  // the « AU m³ » stamp's life, from SCORE.TEXTS()
+  let M3WIN = null;                                                  // the « EN MÈTRES CUBES (m³) » stamp's life, from SCORE.TEXTS()
   const m3Win = () => M3WIN || (M3WIN = (S.TEXTS().find(x => x[2] === 'm3') || [A.stampM3 - .14, A.flank + .15]).slice(0, 2));
   const INK = '#231629', ORANGE = '#FE560D', SEA = '#0B5FA5';
   // per-call state (set by draw)
@@ -433,7 +433,7 @@ const CA_K = (function () {
     ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(70,44,18,.14)'; ctx.lineWidth = 3 * s;
     for (let i = 0; i < 4; i++) { const x = (.12 + .2 * i + .08 * R(i, 9)) * w, y = (.7 + .2 * R(i, 4)) * h; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (16 + 20 * R(i, 6)) * s, y - 6 * s * R(i, 2)); ctx.stroke(); }
     ctx.restore();
-    // « AU m³ »: orange starved ink, hits on « cube »
+    // « EN MÈTRES CUBES (m³) »: orange starved ink, hits right after « cubes » (N2b)
     if ((st.m3k > 0 || st.m3 > 0) && t < m3Win()[1] + .3) {
       const k = st.m3 > 0 ? 1 : st.m3k, sc = (k < 1 ? 1.7 - .7 * H.eo(k) : 1) * s;
       const al = k < 1 ? .25 + .5 * k : .95;
@@ -442,19 +442,34 @@ const CA_K = (function () {
     }
   }
   let STM = null;
+  /** « EN MÈTRES / CUBES (m³) » (v2: the term said by N2b, written as it is heard; it teaches « m³ » to the eye before the
+   *  Bonzini readout « VOLUME : • m³ »). Text = SCORE.TEXTS() 'm3' ('|' = line break). Stencil ≈ 80 px, each « ³ » drawn
+   *  as a raised Satoshi « 3 » (as the old « AU m³ »); the box stays ≤ 540 px wide, inside the 600 px front face. */
   function stampM3() {
     if (STM) return STM;
-    const SS = 2, Wd = 380, Hd = 170, c = makeCanvas(Wd * SS * 2 / 2 * 2, Hd * SS * 2 / 2 * 2), g = c.getContext('2d');
+    const SS = 2, Wd = 380, Hd = 170, c = makeCanvas(Wd * SS * 2, Hd * SS * 2), g = c.getContext('2d');
     g.scale(SS, SS); g.translate(Wd, Hd);
-    const col = ORANGE, f = '900 112px Stencil';
-    g.font = f; g.letterSpacing = '5px'; const tw = g.measureText('AU m').width; g.letterSpacing = '0px';
-    const bw = tw + 46 + 70, bh = 142, x0 = -bw / 2, y0 = -bh / 2;
+    const col = ORANGE, row = S.TEXTS().find(x => x[2] === 'm3');
+    const lines = String(row ? row[3] : 'EN MÈTRES|CUBES (m³)').split('|'), LS = 4, PAD = 34, MAXW = 540 - 2 * PAD;
+    const fS = z => `900 ${z}px Stencil`, fU = z => `900 ${Math.round(z * .48)}px Satoshi`;
+    const supW = z => { g.font = fU(z); g.letterSpacing = '0px'; return g.measureText('3').width + 6; };
+    const runW = (p, z) => { g.font = fS(z); g.letterSpacing = LS + 'px'; const w = g.measureText(p).width; g.letterSpacing = '0px'; return w; };
+    const lineW = (l, z) => l.split('³').reduce((w, p, i) => w + (i ? supW(z) : 0) + runW(p, z), 0);
+    let z = 80; const w0 = Math.max(...lines.map(l => lineW(l, z))); if (w0 > MAXW) z = Math.floor(z * MAXW / w0);
+    const tw = Math.max(...lines.map(l => lineW(l, z))), lh = z * 1.02;
+    const bw = tw + 2 * PAD, bh = lh * lines.length + 44, x0 = -bw / 2, y0 = -bh / 2;
     g.strokeStyle = col; g.lineWidth = 10; rrectOn(g, x0, y0, bw, bh, 14); g.stroke();
-    g.fillStyle = col; g.textBaseline = 'middle'; g.letterSpacing = '5px'; g.fillText('AU m', x0 + 34, 6); g.letterSpacing = '0px';
-    g.font = '900 54px Satoshi'; g.fillText('3', x0 + 34 + tw + 6, -26);
+    g.fillStyle = col; g.textBaseline = 'middle'; g.textAlign = 'left';
+    lines.forEach((l, li) => {
+      let x = -lineW(l, z) / 2; const y = y0 + 22 + lh * (li + .5) + z * .05;
+      l.split('³').forEach((p, i) => {
+        if (i) { g.font = fU(z); g.letterSpacing = '0px'; g.fillText('3', x + 1, y - z * .29); x += supW(z); }
+        g.font = fS(z); g.letterSpacing = LS + 'px'; g.fillText(p, x, y); x += g.measureText(p).width; g.letterSpacing = '0px';
+      });
+    });
     g.globalCompositeOperation = 'destination-out';
-    for (let i = 0; i < 1400; i++) { g.globalAlpha = .22 + rnd(i * 1.7 + 3) * .6; g.beginPath(); g.arc(x0 + rnd(i * 1.1 + 3) * bw, y0 + rnd(i * 2.9 + 1) * bh, .5 + rnd(i * 3.3) * 2.3, 0, 7); g.fill(); }
-    g.globalAlpha = .5; for (let i = 0; i < 9; i++) { g.lineWidth = 2 + rnd(i * 5) * 4; g.beginPath(); const y = y0 + rnd(i * 7.7) * bh; g.moveTo(x0, y); g.lineTo(x0 + bw, y + (rnd(i) - .5) * 20); g.stroke(); }
+    for (let i = 0; i < 1700; i++) { g.globalAlpha = .22 + rnd(i * 1.7 + 3) * .6; g.beginPath(); g.arc(x0 + rnd(i * 1.1 + 3) * bw, y0 + rnd(i * 2.9 + 1) * bh, .5 + rnd(i * 3.3) * 2.3, 0, 7); g.fill(); }
+    g.globalAlpha = .5; for (let i = 0; i < 11; i++) { g.lineWidth = 2 + rnd(i * 5) * 4; g.beginPath(); const y = y0 + rnd(i * 7.7) * bh; g.moveTo(x0, y); g.lineTo(x0 + bw, y + (rnd(i) - .5) * 20); g.stroke(); }
     return (STM = c);
   }
   /** the front wall: shut (lid = 0) or lifted like a cut-paper lid hinged at the top */

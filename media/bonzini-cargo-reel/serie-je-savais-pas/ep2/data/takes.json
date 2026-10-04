@@ -1,62 +1,128 @@
 {
  "N1": {
-  "file": "N1_s2.wav",
-  "on": 0.118,
-  "off": 2.247,
-  "dur": 2.129
+  "file": "N1_s1.wav",
+  "on": 0.069,
+  "off": 2.361,
+  "dur": 2.292,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.93
  },
  "T1": {
-  "file": "T1_s3.wav",
-  "on": 0.196,
-  "off": 1.614,
-  "dur": 1.418
+  "file": "T1_s6.wav",
+  "on": 0.177,
+  "off": 2.355,
+  "dur": 2.179,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.21
  },
  "N2": {
   "file": "N2_s1.wav",
-  "on": 0.232,
-  "off": 2.212,
-  "dur": 1.98
+  "on": 0.105,
+  "off": 3.749,
+  "dur": 3.644,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.05
+ },
+ "N2b": {
+  "file": "N2b_s5.wav",
+  "on": 0.11,
+  "off": 2.25,
+  "dur": 2.14,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.67
  },
  "N3": {
-  "file": "N3_s2.wav",
-  "on": 0.129,
-  "off": 2.62,
-  "dur": 2.491
+  "file": "N3_s3.wav",
+  "on": 0.623,
+  "off": 2.062,
+  "dur": 1.439,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 5.56
+ },
+ "N3b": {
+  "file": "N3b_s1.wav",
+  "on": 0.102,
+  "off": 2.556,
+  "dur": 2.454,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.26
  },
  "T2": {
-  "file": "T2_s2.wav",
-  "on": 0.595,
-  "off": 2.518,
-  "dur": 1.923
+  "file": "T2_s1.wav",
+  "on": 0.13,
+  "off": 3.631,
+  "dur": 3.501,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.0
  },
  "N4": {
-  "file": "N4_s1.wav",
-  "on": 0.082,
-  "off": 2.068,
-  "dur": 1.987
+  "file": "N4_s4.wav",
+  "on": 0.124,
+  "off": 2.347,
+  "dur": 2.223,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 2.7
+ },
+ "N4b": {
+  "file": "N4b_s2.wav",
+  "on": 0.069,
+  "off": 1.752,
+  "dur": 1.683,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.75
  },
  "N5": {
-  "file": "N5_s1.wav",
-  "on": 0.0,
-  "off": 1.86,
-  "dur": 1.86
+  "file": "N5_s3.wav",
+  "on": 0.131,
+  "off": 3.685,
+  "dur": 3.553,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.94
  },
  "N6": {
   "file": "N6_s1.wav",
-  "on": 0.17,
-  "off": 2.69,
-  "dur": 2.52
+  "on": 0.106,
+  "off": 2.73,
+  "dur": 2.624,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.05
  },
  "N7": {
-  "file": "N7_s1.wav",
+  "file": "N7_s2.wav",
   "on": 0.121,
-  "off": 4.181,
-  "dur": 4.06
+  "off": 3.918,
+  "dur": 3.797,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.48
  },
  "N8": {
-  "file": "N8_s2.wav",
+  "file": "N8_s1.wav",
+  "on": 0.104,
+  "off": 2.651,
+  "dur": 2.547,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.93
+ },
+ "N8b": {
+  "file": "N8b_s1.wav",
   "on": 0.0,
-  "off": 3.781,
-  "dur": 3.781
+  "off": 1.273,
+  "dur": 1.273,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.93
  }
 }
