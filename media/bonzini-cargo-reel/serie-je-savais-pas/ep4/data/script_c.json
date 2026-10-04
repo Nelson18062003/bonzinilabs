@@ -1,0 +1,29 @@
+{
+ "segments": [
+  {
+   "id": "C1",
+   "text": "Patron ! Attends ! Ne paie pas ce compte !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C2",
+   "text": "Attends ! C'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C3",
+   "text": "Appelle-le sur le numéro que tu connais déjà !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C4",
+   "text": "Ouf !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C5",
+   "text": "On se voit à Douala, patron !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  }
+ ]
+}

@@ -7,10 +7,10 @@ ET écrite en grand. Rituel de fin commun : « MAINTENANT, TU SAIS. » + un mot-
 
 | N° | Épisode | Sujet | Durée | Mot-clé | Dossier |
 |---|---|---|---|---|---|
-| 1 | « TCHAC ! » Prix chinois × 2 = 0 | conseils business (prix de revient) | 47,9 s (v2) | CALCUL | `ep1/` |
-| 2 | « TU PAIES DE L'AIR. » | cargo (le mètre cube, cartons bien remplis) | 44,0 s (v2) | CARTON | `ep2/` |
-| 3 | « C'EST PAS ÇA. » | achat en Chine (tout par écrit, l'échantillon) | — | FICHE | à venir |
-| 4 | « PATRON, ATTENDS ! » | arnaques (« on a changé de compte bancaire ») | — | ALLÔ | à venir |
+| 1 | « TCHAC ! » Prix chinois × 2 = 0 | conseils business (prix de revient) | 48,2 s | CALCUL | `ep1/` |
+| 2 | « TU PAIES DE L'AIR. » | cargo (le mètre cube, cartons bien remplis) | 44,7 s | CARTON | `ep2/` |
+| 3 | « C'EST PAS ÇA. » | achat en Chine (tout par écrit, l'échantillon) | 45,9 s | FICHE | `ep3/` |
+| 4 | « PATRON, ATTENDS ! » | arnaques (« on a changé de compte bancaire ») | 43,4 s | ALLÔ | `ep4/` |
 | 5 | « J'AI FIXÉ MON PRIX. » | douane (estimer avant) | — | AVANT | à venir |
 
 - `BRIEF.md` — la demande, les leçons, les services Bonzini vérifiés, les faits disponibles, les règles.
@@ -56,7 +56,21 @@ compréhension d'abord (règles dans `DICTION.md`) :
   avant → 100 % ; épisode 2, 94 % → 99 % (le seul écart est « maître cube », homophone de « mètre cube »).
   Durées : 47,9 s et 44,0 s (au lieu de 33,9 s et 34,3 s) — on parle moins vite.
 
+- **Bords de parole** (correction du 4 octobre au soir) : le mixeur coupe chaque prise à ses bornes `takes.json`. Un seuil
+  à 4 % du pic manquait les fins faibles : le « ch » de « fiche » (épisode 3, entendu « fille »), le « s » de « place »,
+  la traîne des fins de phrase (40 à 255 ms perdus). `select_takes.py` prend maintenant les bords sur l'enveloppe large
+  bande à 1,2 % ET sur l'enveloppe > 2 kHz (fricatives), en ne prolongeant que la parole contiguë (au plus 0,15 s
+  avant, 0,30 s après) ; `select_takes.py E --respan` recalcule les prises déjà choisies. Les 4 épisodes ont été
+  recalés, remixés et rendus avec ces bornes.
+- **Épisodes 3 et 4** : même chaîne, plus `split_take.py` (« Allô ? » seul sortait tronqué : généré devant la phrase
+  suivante puis coupé au silence, et allongé ×1,5 au mixage), et des variantes phonétiques du tts (« Douwala ») dans
+  `epN/data/alt.json`. Chaque épisode a son moteur son (`lib/audio_ep3.py`, `lib/audio_ep4.py`) sur le modèle de
+  l'épisode 2.
+- **Contrôle final, mix final, les 4 épisodes** (`listen_test.py`) : 100 % · 100 % (« maître cube » = « mètre cube »,
+  homophones) · 100 % · 100 %.
+
 Commandes, pour un épisode `E` : `python tts_v2.py E --takes 3` (venv Kyutai) → `python3 tighten.py E` →
 `BED=<musique> python3 select_takes.py E` → `cp E/data/script_v2.json E/data/script.json` →
 `CHOSEN=1 python3 E/lib/vocheck.py E/data/script.json` → `python3 retime.py E --pauses --tail 0.6` →
-`node E/tools/qa_score.js` → `python3 E/lib/audio_epN.py --sheet` → `python3 listen_test.py E E/audio/mix.wav` → rendu.
+`node E/tools/qa_score.js` → `python3 E/lib/audio_epN.py --sheet` → `python3 listen_test.py E E/audio/mix.wav` → rendu
+→ `./encode.sh E nom` (version partage ≤ 27,3 Mio + version WhatsApp 720p).

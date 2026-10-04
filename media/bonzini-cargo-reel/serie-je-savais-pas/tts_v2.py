@@ -1,5 +1,5 @@
 """Clear-diction voices for « JE SAVAIS PAS. » (Kyutai TTS 1.6B, CC-BY 4.0) — loads the model ONCE for several episodes.
-usage: python tts_v2.py EP_DIR [EP_DIR...] [--takes 3] [--run 1] [--only N1,T2] [--voices voice_cfg.json]
+usage: python tts_v2.py EP_DIR [EP_DIR...] [--takes 3] [--run 1] [--only N1,T2] [--voices voice_cfg.json] [--script data/alt.json]
 Reads  E/data/script_v2.json (segments in speaking order: id, text, tts?, voice?)
 Writes E/audio/vo/<id>_s<k>.wav, k = (run-1)*takes + 1 … run*takes: the takes of one line are generated as ONE batch
 (independent samples, ~the cost of one on CPU). Skips a line whose takes of this run all exist.
@@ -19,6 +19,7 @@ def opt(k, d=None):
 NT = int(opt('--takes', '3')); RUN = int(opt('--run', '1'))
 only = set(opt('--only', '').split(',')) - {''}
 VC = json.load(open(opt('--voices', os.path.join(H, 'voice_cfg.json'))))
+SCRIPT = opt('--script', os.path.join('data', 'script_v2.json'))   # relative to each episode (alternative tts variants)
 eps = [os.path.abspath(x) for x in a]
 NARR = VC['narratrice']['voice']
 def cfg_for(seg):
@@ -36,7 +37,7 @@ def cond(c):
     return _conds[k]
 for E in eps:
     os.makedirs(os.path.join(E, 'audio', 'vo'), exist_ok=True)
-    for s in json.load(open(os.path.join(E, 'data', 'script_v2.json')))['segments']:
+    for s in json.load(open(os.path.join(E, SCRIPT)))['segments']:
         if only and s['id'] not in only: continue
         ks = [(RUN - 1) * NT + b + 1 for b in range(NT)]
         outs = [os.path.join(E, 'audio', 'vo', f"{s['id']}_s{k}.wav") for k in ks]

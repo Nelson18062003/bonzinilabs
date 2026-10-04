@@ -1,0 +1,58 @@
+{
+ "segments": [
+  {
+   "id": "C1",
+   "text": "Patron ! Attends ! Ne paie pas ce compte !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "T1",
+   "text": "« On a changé de compte bancaire. Paie ici, vite. »",
+   "tts": "On a changé de compte bancaire. Paie ici, vite.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T2",
+   "text": "Trois cœurs… c'est lui ! Je paie.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "C2",
+   "text": "Attends ! C'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C3",
+   "text": "Appelle-le sur le numéro que tu connais déjà !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "T3",
+   "text": "Allô ?… Il dit qu'il a rien changé ?!",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "C4",
+   "text": "Ouf !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "N1",
+   "text": "Nouveau compte ? Ancien numéro : appelle d'abord."
+  },
+  {
+   "id": "C5",
+   "text": "On se voit à Douala, patron !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "N2",
+   "text": "Bonzini Trading Cargo : de la Chine à Douala."
+  },
+  {
+   "id": "N3",
+   "text": "Écris ALLÔ en commentaire. Maintenant, tu sais.",
+   "tts": "Écris « allô » en commentaire. Maintenant, tu sais."
+  }
+ ]
+}

@@ -1,0 +1,73 @@
+{
+ "segments": [
+  {
+   "id": "C1",
+   "text": "Patron, attends ! Ne paie pas sur ce compte !",
+   "tts": "Patron, attends ! Ne paie pas sur ce compte !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "T1",
+   "text": "Mon fournisseur m'écrit qu'il a changé de compte bancaire.",
+   "tts": "Mon fournisseur m'écrit qu'il a changé de compte bancaire.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T2",
+   "text": "Il a mis trois cœurs, c'est lui ! Je paie.",
+   "tts": "Il a mis trois cœurs, c'est lui ! Je paie.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "C2",
+   "text": "Ce n'est peut-être pas ton fournisseur !",
+   "tts": "Ce n'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C3",
+   "text": "Appelle-le sur le numéro que tu connais déjà !",
+   "tts": "Appelle-le, sur le numéro que tu connais déjà !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "T3",
+   "text": "Allô ?",
+   "tts": "Allô ?",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T3b",
+   "text": "Il dit qu'il n'a rien changé !",
+   "tts": "Il dit qu'il n'a rien changé !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "C4",
+   "text": "C'était un faux message !",
+   "tts": "C'était un faux message !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "N1",
+   "text": "Avant de payer sur un nouveau compte, appelle l'ancien numéro.",
+   "tts": "Avant de payer sur un nouveau compte, appelle l'ancien numéro."
+  },
+  {
+   "id": "C5",
+   "text": "On se voit à Douala !",
+   "tts": "On se voit à Douala !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "N2",
+   "text": "Ensuite, Bonzini Trading Cargo amène ta commande de la Chine à Douala.",
+   "tts": "Ensuite, Bonzini Trading Cargo amène ta commande de la Chine à Douala."
+  },
+  {
+   "id": "N3",
+   "text": "Écris le mot ALLÔ en commentaire. Maintenant, tu sais.",
+   "tts": "Écris le mot « allô » en commentaire. Maintenant, tu sais."
+  }
+ ]
+}

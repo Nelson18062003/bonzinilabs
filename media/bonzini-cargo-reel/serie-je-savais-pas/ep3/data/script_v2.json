@@ -1,0 +1,88 @@
+{
+ "segments": [
+  {
+   "id": "T1",
+   "text": "Mes sacs sont arrivés !",
+   "tts": "Mes sacs sont arrivés !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T2",
+   "text": "Mais c'est pas ça !",
+   "tts": "Mais c'est pas ça !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N1",
+   "text": "Ton fournisseur a fait ce que tu as écrit.",
+   "tts": "Ton fournisseur a fait ce que tu as écrit."
+  },
+  {
+   "id": "T3",
+   "text": "J'ai écrit : bonne qualité, comme la photo.",
+   "tts": "J'ai écrit, bonne qualité, comme la photo.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N1b",
+   "text": "La photo ne dit pas tout.",
+   "tts": "La photo ne dit pas tout."
+  },
+  {
+   "id": "N2",
+   "text": "Le fournisseur choisit tout ce que tu n'écris pas.",
+   "tts": "Le fournisseur choisit tout ce que tu n'écris pas."
+  },
+  {
+   "id": "N3a",
+   "text": "La prochaine fois, fais une fiche.",
+   "tts": "La prochaine fois, fais une fiche."
+  },
+  {
+   "id": "N3",
+   "text": "Écris tout : la matière, la taille, les poignées et l'emballage.",
+   "tts": "Écris tout, la matière, la taille, les poignées, et l'emballage."
+  },
+  {
+   "id": "N4",
+   "text": "L'échantillon, c'est un seul sac.",
+   "tts": "L'échantillon, c'est un seul sac."
+  },
+  {
+   "id": "N4b",
+   "text": "Demande-le d'abord.",
+   "tts": "Demande-le d'abord."
+  },
+  {
+   "id": "N4c",
+   "text": "Garde-le pour comparer.",
+   "tts": "Garde-le, pour comparer."
+  },
+  {
+   "id": "T4",
+   "text": "Voilà, c'est ça !",
+   "tts": "Voilà, c'est ça !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N5",
+   "text": "La commande, c'est toi.",
+   "tts": "La commande, c'est toi."
+  },
+  {
+   "id": "N5b",
+   "text": "Le transport, c'est Bonzini Trading Cargo.",
+   "tts": "Le transport, c'est Bonzini Trading Cargo."
+  },
+  {
+   "id": "N6",
+   "text": "Écris le mot FICHE en commentaire.",
+   "tts": "Écris le mot fiche, en commentaire."
+  },
+  {
+   "id": "N6b",
+   "text": "Maintenant, tu sais.",
+   "tts": "Maintenant, tu sais."
+  }
+ ]
+}

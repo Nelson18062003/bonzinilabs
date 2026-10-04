@@ -1,0 +1,69 @@
+{
+ "T1": [
+  "sacs",
+  "arrivés"
+ ],
+ "T2": [
+  "mais c'est pas ça"
+ ],
+ "N1": [
+  "fournisseur",
+  "a fait",
+  "écrit"
+ ],
+ "T3": [
+  "j'ai écrit",
+  "bonne qualité",
+  "photo"
+ ],
+ "N1b": [
+  "photo",
+  "pas tout"
+ ],
+ "N2": [
+  "fournisseur",
+  "choisit",
+  "n'écris pas"
+ ],
+ "N3a": [
+  "prochaine fois",
+  "fiche"
+ ],
+ "N3": [
+  "matière",
+  "taille",
+  "poigné",
+  "emballage"
+ ],
+ "N4": [
+  "échantillon|chantillon",
+  "seul sac"
+ ],
+ "N4b": [
+  "demande",
+  "d'abord"
+ ],
+ "N4c": [
+  "garde",
+  "comparer"
+ ],
+ "T4": [
+  "voilà",
+  "c'est ça"
+ ],
+ "N5": [
+  "commande",
+  "toi"
+ ],
+ "N5b": [
+  "transport",
+  "Bonzini"
+ ],
+ "N6": [
+  "le mot",
+  "fiche"
+ ],
+ "N6b": [
+  "tu sais"
+ ]
+}

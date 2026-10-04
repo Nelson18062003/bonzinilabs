@@ -1,0 +1,146 @@
+{
+ "T1": {
+  "file": "T1_s1.wav",
+  "on": 0.088,
+  "off": 1.552,
+  "dur": 1.464,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.1
+ },
+ "T2": {
+  "file": "T2_s1.wav",
+  "on": 0.193,
+  "off": 1.48,
+  "dur": 1.286,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.89
+ },
+ "N1": {
+  "file": "N1_s3.wav",
+  "on": 0.093,
+  "off": 3.242,
+  "dur": 3.149,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.81
+ },
+ "T3": {
+  "file": "T3_s1.wav",
+  "on": 0.523,
+  "off": 3.325,
+  "dur": 2.801,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.93
+ },
+ "N1b": {
+  "file": "N1b_s1.wav",
+  "on": 0.1,
+  "off": 1.924,
+  "dur": 1.824,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.84
+ },
+ "N2": {
+  "file": "N2_s3.wav",
+  "on": 0.105,
+  "off": 3.124,
+  "dur": 3.019,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.64
+ },
+ "N3a": {
+  "file": "N3a_s3.wav",
+  "on": 0.096,
+  "off": 1.93,
+  "dur": 1.834,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.36
+ },
+ "N3": {
+  "file": "N3_s1.wav",
+  "on": 0.105,
+  "off": 4.815,
+  "dur": 4.71,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.4
+ },
+ "N4": {
+  "file": "N4_s1.wav",
+  "on": 0.092,
+  "off": 2.308,
+  "dur": 2.216,
+  "music": 0.714,
+  "clean": 0.714,
+  "rate": 4.51
+ },
+ "N4b": {
+  "file": "N4b_s1.wav",
+  "on": 0.069,
+  "off": 1.319,
+  "dur": 1.25,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.8
+ },
+ "N4c": {
+  "file": "N4c_s8.wav",
+  "on": 0.0,
+  "off": 1.447,
+  "dur": 1.447,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.15
+ },
+ "T4": {
+  "file": "T4_s1.wav",
+  "on": 0.144,
+  "off": 1.771,
+  "dur": 1.627,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.07
+ },
+ "N5": {
+  "file": "N5_s1.wav",
+  "on": 0.099,
+  "off": 1.933,
+  "dur": 1.834,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.27
+ },
+ "N5b": {
+  "file": "N5b_s1.wav",
+  "on": 0.087,
+  "off": 2.954,
+  "dur": 2.868,
+  "music": 0.857,
+  "clean": 1.0,
+  "rate": 4.18
+ },
+ "N6": {
+  "file": "N6_s1.wav",
+  "on": 0.105,
+  "off": 2.586,
+  "dur": 2.481,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.63
+ },
+ "N6b": {
+  "file": "N6b_s3.wav",
+  "on": 0.0,
+  "off": 1.248,
+  "dur": 1.248,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.01
+ }
+}

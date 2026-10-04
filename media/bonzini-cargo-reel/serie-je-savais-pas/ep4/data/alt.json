@@ -1,0 +1,22 @@
+{
+ "segments": [
+  {
+   "id": "T3x",
+   "text": "Allô ? Il dit qu'il n'a rien changé !",
+   "tts": "Allô ? <break time=\"0.5s\"/> Il dit qu'il n'a rien changé !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "C5",
+   "text": "On se voit à Douala !",
+   "tts": "On se voit à Douwala !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "C5v",
+   "text": "On se voit à Douala !",
+   "tts": "On se voit, à Dou-ala !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  }
+ ]
+}

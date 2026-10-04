@@ -20,9 +20,9 @@ def fr_num(n):
 def toks(s):
     s = re.sub(r'(\d)[\s  .](\d{3})\b', r'\1\2', s)
     s = re.sub(r'\d+', lambda m: ' ' + fr_num(int(m.group())) + ' ', s)
-    s = unicodedata.normalize('NFD', s.lower()).encode('ascii', 'ignore').decode()
+    s = unicodedata.normalize('NFD', s.lower().replace('œ', 'oe').replace('æ', 'ae')).encode('ascii', 'ignore').decode()
     return [w for w in re.split(r"[^a-z]+", s.replace('-', ' ')) if w]
-HOMO = {'pere': 'paire', 'peres': 'paires', 'mettre': 'metre', 'x': 'fois', 'demandent': 'demande', 'ecrit': 'ecris', 'cartou': 'carton'}
+HOMO = {'pere': 'paire', 'peres': 'paires', 'mettre': 'metre', 'x': 'fois', 'demandent': 'demande', 'ecrit': 'ecris', 'cartou': 'carton', 'alo': 'allo', 'allos': 'allo', 'maitre': 'metre', 'maitres': 'metres'}
 def canon(ws):
     """compare SOUNDS, not spellings: exact French homophones in context, silent plural -s / -e (payé = payée, cube = cubes)"""
     out = []

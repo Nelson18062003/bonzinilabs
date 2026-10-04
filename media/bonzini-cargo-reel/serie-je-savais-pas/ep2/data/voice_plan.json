@@ -1,72 +1,72 @@
 {
  "N1": {
   "file": "N1_s1.wav",
-  "at": 0.231,
+  "at": 0.236,
   "stretch": 1.0
  },
  "T1": {
   "file": "T1_s6.wav",
-  "at": 2.765,
+  "at": 2.865,
   "stretch": 1.0
  },
  "N2": {
   "file": "N2_s1.wav",
-  "at": 5.526,
+  "at": 5.731,
   "stretch": 1.0
  },
  "N2b": {
   "file": "N2b_s5.wav",
-  "at": 9.505,
+  "at": 9.815,
   "stretch": 1.0
  },
  "N3": {
   "file": "N3_s3.wav",
-  "at": 12.832,
+  "at": 13.162,
   "stretch": 1.0
  },
  "N3b": {
   "file": "N3b_s1.wav",
-  "at": 15.142,
+  "at": 15.492,
   "stretch": 1.0
  },
  "T2": {
   "file": "T2_s1.wav",
-  "at": 18.028,
+  "at": 18.394,
   "stretch": 1.0
  },
  "N4": {
   "file": "N4_s4.wav",
-  "at": 21.885,
+  "at": 22.361,
   "stretch": 1.0
  },
  "N4b": {
   "file": "N4b_s2.wav",
-  "at": 24.603,
+  "at": 25.139,
   "stretch": 1.0
  },
  "N5": {
   "file": "N5_s3.wav",
-  "at": 26.984,
+  "at": 27.535,
   "stretch": 1.0
  },
  "N6": {
   "file": "N6_s1.wav",
-  "at": 31.012,
+  "at": 31.583,
   "stretch": 1.0
  },
  "N7": {
   "file": "N7_s2.wav",
-  "at": 34.221,
+  "at": 34.822,
   "stretch": 1.0
  },
  "N8": {
   "file": "N8_s1.wav",
-  "at": 39.035,
+  "at": 39.651,
   "stretch": 1.0
  },
  "N8b": {
   "file": "N8b_s1.wav",
-  "at": 42.236,
+  "at": 42.902,
   "stretch": 1.0
  }
 }

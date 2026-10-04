@@ -1,0 +1,49 @@
+{
+ "segments": [
+  {
+   "id": "T1",
+   "text": "Mes sacs sont arrivés !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T2",
+   "text": "Eh… c'est pas ça !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N1",
+   "text": "C'est ce que tu as écrit."
+  },
+  {
+   "id": "T3",
+   "text": "Sacs noirs, bonne qualité, comme la photo.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N2",
+   "text": "Ce que tu n'écris pas… c'est lui qui le choisit."
+  },
+  {
+   "id": "N3",
+   "text": "Matière, taille, anses, emballage… tout par écrit."
+  },
+  {
+   "id": "N4",
+   "text": "L'échantillon d'abord… et garde-le pour comparer."
+  },
+  {
+   "id": "T4",
+   "text": "Ahh… c'est ça !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N5",
+   "text": "La description, c'est toi. Le transport, c'est Bonzini Trading Cargo."
+  },
+  {
+   "id": "N6",
+   "text": "Écris FICHE en commentaire. Maintenant, tu sais.",
+   "tts": "Écris « fiche » en commentaire. Maintenant, tu sais."
+  }
+ ]
+}

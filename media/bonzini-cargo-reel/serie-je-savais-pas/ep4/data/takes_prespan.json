@@ -1,0 +1,110 @@
+{
+ "C1": {
+  "file": "C1_s1.wav",
+  "on": 0.04,
+  "off": 3.164,
+  "dur": 3.123,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.2
+ },
+ "T1": {
+  "file": "T1_s2.wav",
+  "on": 0.095,
+  "off": 4.009,
+  "dur": 3.914,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.83
+ },
+ "T2": {
+  "file": "T2_s2.wav",
+  "on": 0.726,
+  "off": 4.771,
+  "dur": 4.045,
+  "music": 0.9,
+  "clean": 1.0,
+  "rate": 2.47
+ },
+ "C2": {
+  "file": "C2_s1.wav",
+  "on": 0.121,
+  "off": 3.399,
+  "dur": 3.279,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.06
+ },
+ "C3": {
+  "file": "C3_s3.wav",
+  "on": 0.0,
+  "off": 2.882,
+  "dur": 2.882,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.86
+ },
+ "T3": {
+  "file": "T3_s2.wav",
+  "on": 0.13,
+  "off": 0.447,
+  "dur": 0.317,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 6.3
+ },
+ "T3b": {
+  "file": "T3b_s1.wav",
+  "on": 0.65,
+  "off": 2.775,
+  "dur": 2.125,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.76
+ },
+ "C4": {
+  "file": "C4_s1.wav",
+  "on": 0.124,
+  "off": 1.968,
+  "dur": 1.844,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.83
+ },
+ "N1": {
+  "file": "N1_s1.wav",
+  "on": 0.095,
+  "off": 4.465,
+  "dur": 4.37,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.89
+ },
+ "C5": {
+  "file": "C5_s5.wav",
+  "on": 0.739,
+  "off": 2.141,
+  "dur": 1.402,
+  "music": 0.8,
+  "clean": 0.8,
+  "rate": 4.28
+ },
+ "N2": {
+  "file": "N2_s3.wav",
+  "on": 0.089,
+  "off": 4.578,
+  "dur": 4.489,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 4.46
+ },
+ "N3": {
+  "file": "N3_s1.wav",
+  "on": 0.12,
+  "off": 4.279,
+  "dur": 4.16,
+  "music": 0.889,
+  "clean": 0.889,
+  "rate": 3.61
+ }
+}

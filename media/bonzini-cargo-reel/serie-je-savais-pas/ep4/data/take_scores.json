@@ -1,0 +1,434 @@
+{
+ "C1_s1": {
+  "key": "C1",
+  "rate": 3.2,
+  "speech": 3.12,
+  "clean": 1.0,
+  "clean_heard": "patron attend ne pai pas sur ce compte",
+  "music": 1.0,
+  "music_heard": "patron attend ne pai pas sur ce compte"
+ },
+ "C1_s2": {
+  "key": "C1",
+  "rate": 3.18,
+  "speech": 3.15,
+  "clean": 1.0,
+  "clean_heard": "patron attend ne pai pas sur ce compte",
+  "music": 1.0,
+  "music_heard": "patron attend ne pai pas sur ce compte"
+ },
+ "C1_s3": {
+  "key": "C1",
+  "rate": 3.08,
+  "speech": 3.24,
+  "clean": 0.875,
+  "clean_heard": "patron a temp ne pai pas sur ce compte",
+  "music": 1.0,
+  "music_heard": "patron attend ne pai pas sur ce compte"
+ },
+ "C2_s1": {
+  "key": "C2",
+  "rate": 3.06,
+  "speech": 3.27,
+  "clean": 1.0,
+  "clean_heard": "ce n est peut etre pas ton fournisseur",
+  "music": 1.0,
+  "music_heard": "ce n est peut etre pas ton fournisseur"
+ },
+ "C2_s2": {
+  "key": "C2",
+  "rate": 3.27,
+  "speech": 3.06,
+  "clean": 1.0,
+  "clean_heard": "ce n est peut etre pas ton fournisseur",
+  "music": 1.0,
+  "music_heard": "ce n est peut etre pas ton fournisseur"
+ },
+ "C2_s3": {
+  "key": "C2",
+  "rate": 2.92,
+  "speech": 3.42,
+  "clean": 1.0,
+  "clean_heard": "ce n est peut etre pas ton fournisseur",
+  "music": 1.0,
+  "music_heard": "ce n est peut etre pas ton fournisseur"
+ },
+ "C3_s1": {
+  "key": "C3",
+  "rate": 4.87,
+  "speech": 2.87,
+  "clean": 1.0,
+  "clean_heard": "appelle le sur le numero qu tu connai deja",
+  "music": 1.0,
+  "music_heard": "appelle le sur le numero qu tu connai deja"
+ },
+ "C3_s2": {
+  "key": "C3",
+  "rate": 5.05,
+  "speech": 2.77,
+  "clean": 1.0,
+  "clean_heard": "appelle le sur le numero qu tu connai deja",
+  "music": 1.0,
+  "music_heard": "appelle le sur le numero qu tu connai deja"
+ },
+ "C3_s3": {
+  "key": "C3",
+  "rate": 4.86,
+  "speech": 2.88,
+  "clean": 1.0,
+  "clean_heard": "appelle le sur le numero qu tu connai deja",
+  "music": 1.0,
+  "music_heard": "appelle le sur le numero qu tu connai deja"
+ },
+ "C4_s1": {
+  "key": "C4",
+  "rate": 3.83,
+  "speech": 1.83,
+  "clean": 1.0,
+  "clean_heard": "c etait un fau message",
+  "music": 1.0,
+  "music_heard": "c etait un fau message"
+ },
+ "C4_s2": {
+  "key": "C4",
+  "rate": 2.93,
+  "speech": 2.39,
+  "clean": 1.0,
+  "clean_heard": "c etait un fau message",
+  "music": 1.0,
+  "music_heard": "c etait un fau message"
+ },
+ "C4_s3": {
+  "key": "C4",
+  "rate": 4.59,
+  "speech": 1.53,
+  "clean": 1.0,
+  "clean_heard": "c etait un fau message",
+  "music": 1.0,
+  "music_heard": "c etait un fau message"
+ },
+ "C5_s1": {
+  "key": "C5",
+  "rate": 5.5,
+  "speech": 1.09,
+  "clean": 0.8,
+  "clean_heard": "on se voit a doi la",
+  "music": 0.8,
+  "music_heard": "on se voit a d oala"
+ },
+ "C5_s2": {
+  "key": "C5",
+  "rate": 3.39,
+  "speech": 1.77,
+  "clean": 0.8,
+  "clean_heard": "on se voit a doi la",
+  "music": 0.8,
+  "music_heard": "on se voit a d oala"
+ },
+ "C5_s3": {
+  "key": "C5",
+  "rate": 5.07,
+  "speech": 1.18,
+  "clean": 0.8,
+  "clean_heard": "on se voit a doilat",
+  "music": 0.8,
+  "music_heard": "on se voit a doila"
+ },
+ "C5_s4": {
+  "key": "C5",
+  "rate": 4.64,
+  "speech": 1.29,
+  "clean": 0.8,
+  "clean_heard": "on se voit a d ouala",
+  "music": 0.8,
+  "music_heard": "on se voit a d ouala"
+ },
+ "C5_s5": {
+  "key": "C5",
+  "rate": 4.28,
+  "speech": 1.4,
+  "clean": 0.8,
+  "clean_heard": "on se voit a d ouala",
+  "music": 0.8,
+  "music_heard": "on se voit a doua la"
+ },
+ "C5_s6": {
+  "key": "C5",
+  "rate": 3.66,
+  "speech": 1.64,
+  "clean": 0.8,
+  "clean_heard": "on se voit a dou a la",
+  "music": 0.8,
+  "music_heard": "on se voit a duhwala"
+ },
+ "C5_s7": {
+  "key": "C5",
+  "rate": 2.85,
+  "speech": 2.1,
+  "clean": 0.8,
+  "clean_heard": "on se voit a d ou a la",
+  "music": 0.8,
+  "music_heard": "on se voit a d ou a la"
+ },
+ "C5_s8": {
+  "key": "C5",
+  "rate": 2.71,
+  "speech": 2.22,
+  "clean": 0.8,
+  "clean_heard": "on se voit a d ou a la",
+  "music": 0.8,
+  "music_heard": "on se voit a duhala"
+ },
+ "C5_s9": {
+  "key": "C5",
+  "rate": 3.24,
+  "speech": 1.85,
+  "clean": 0.8,
+  "clean_heard": "on se voit a deu a la",
+  "music": 0.8,
+  "music_heard": "on se voit a deu a la"
+ },
+ "N1_s1": {
+  "key": "N1",
+  "rate": 3.89,
+  "speech": 4.37,
+  "clean": 1.0,
+  "clean_heard": "avant de payer sur un nouveau compte appelle l ancien numero",
+  "music": 1.0,
+  "music_heard": "avant de payer sur un nouveau compte appelle l ancien numero"
+ },
+ "N1_s2": {
+  "key": "N1",
+  "rate": 4.57,
+  "speech": 3.72,
+  "clean": 1.0,
+  "clean_heard": "avant de payer sur un nouveau compte appelle l ancien numero",
+  "music": 1.0,
+  "music_heard": "avant de payer sur un nouveau compte appelle l ancien numero"
+ },
+ "N1_s3": {
+  "key": "N1",
+  "rate": 4.51,
+  "speech": 3.77,
+  "clean": 1.0,
+  "clean_heard": "avant de payer sur un nouveau compte appelle l ancien numero",
+  "music": 1.0,
+  "music_heard": "avant de payer sur un nouveau compte appelle l ancien numero"
+ },
+ "N2_s1": {
+  "key": "N2",
+  "rate": 4.32,
+  "speech": 4.63,
+  "clean": 0.917,
+  "clean_heard": "ensuite bonzini trading cargo amene ta commande de la chine a doi la",
+  "music": 0.917,
+  "music_heard": "ensuite bondini trading cargo amene ta commande de la chine a douala"
+ },
+ "N2_s2": {
+  "key": "N2",
+  "rate": 4.52,
+  "speech": 4.42,
+  "clean": 0.917,
+  "clean_heard": "ensuite bunzini trading cargo amene ta commande de la chine a douala",
+  "music": 1.0,
+  "music_heard": "ensuite bonzini trading cargo amene ta commande de la chine a douala"
+ },
+ "N2_s3": {
+  "key": "N2",
+  "rate": 4.46,
+  "speech": 4.49,
+  "clean": 1.0,
+  "clean_heard": "ensuite bonzini trading cargo amene ta commande de la chine a douala",
+  "music": 1.0,
+  "music_heard": "ensuite bonzini trading cargo amene ta commande de la chine a douala"
+ },
+ "N3_s1": {
+  "key": "N3",
+  "rate": 3.61,
+  "speech": 4.16,
+  "clean": 0.889,
+  "clean_heard": "ecri le mot a l eau en commentaire maintenant tu sai",
+  "music": 0.889,
+  "music_heard": "ecri le mot a l eau en commentaire maintenant tu sai"
+ },
+ "N3_s2": {
+  "key": "N3",
+  "rate": 3.16,
+  "speech": 4.75,
+  "clean": 0.889,
+  "clean_heard": "ecri le mot a l eau en commentaire maintenant tu sai",
+  "music": 0.889,
+  "music_heard": "ecri le mot a l eau en commentaire maintenant tu sai"
+ },
+ "N3_s3": {
+  "key": "N3",
+  "rate": 3.48,
+  "speech": 4.31,
+  "clean": 0.889,
+  "clean_heard": "ecri le mot a l eau en commentaire maintenant tu sai",
+  "music": 0.889,
+  "music_heard": "ecri le mot a l eau en commentaire maintenant tu sai"
+ },
+ "T1_s1": {
+  "key": "T1",
+  "rate": 4.26,
+  "speech": 3.52,
+  "clean": 1.0,
+  "clean_heard": "mon fournisseur m ecri qu il a change de compte bancaire",
+  "music": 1.0,
+  "music_heard": "mon fournisseur m ecri qu il a change de compte bancaire"
+ },
+ "T1_s2": {
+  "key": "T1",
+  "rate": 3.83,
+  "speech": 3.91,
+  "clean": 1.0,
+  "clean_heard": "mon fournisseur m ecri qu il a change de compte bancaire",
+  "music": 1.0,
+  "music_heard": "mon fournisseur m ecri qu il a change de compte bancaire"
+ },
+ "T1_s3": {
+  "key": "T1",
+  "rate": 4.27,
+  "speech": 3.52,
+  "clean": 1.0,
+  "clean_heard": "mon fournisseur m ecri qu il a change de compte bancaire",
+  "music": 1.0,
+  "music_heard": "mon fournisseur m ecri qu il a change de compte bancaire"
+ },
+ "T2_s1": {
+  "key": "T2",
+  "rate": 2.84,
+  "speech": 3.52,
+  "clean": 0.9,
+  "clean_heard": "il a mis troi coeur c est lui je pai",
+  "music": 0.6,
+  "music_heard": "l ami troi queur c est lui je pai"
+ },
+ "T2_s2": {
+  "key": "T2",
+  "rate": 2.47,
+  "speech": 4.05,
+  "clean": 1.0,
+  "clean_heard": "il a mis troi cur c est lui je pai",
+  "music": 0.9,
+  "music_heard": "il a mis troi coeur c est lui je pai"
+ },
+ "T2_s3": {
+  "key": "T2",
+  "rate": 2.69,
+  "speech": 3.72,
+  "clean": 1.0,
+  "clean_heard": "il a mis troi cur c est lui je pai",
+  "music": 0.8,
+  "music_heard": "il a mis troi coeur c est lui je bai"
+ },
+ "T3_s1": {
+  "key": "T3",
+  "rate": 8.07,
+  "speech": 0.25,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3_s2": {
+  "key": "T3",
+  "rate": 6.3,
+  "speech": 0.32,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3_s3": {
+  "key": "T3",
+  "rate": 8.1,
+  "speech": 0.25,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3_s4": {
+  "key": "T3",
+  "rate": 6.85,
+  "speech": 0.29,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3_s5": {
+  "key": "T3",
+  "rate": 7.16,
+  "speech": 0.28,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3_s6": {
+  "key": "T3",
+  "rate": 6.84,
+  "speech": 0.29,
+  "clean": 1.0,
+  "clean_heard": "allo",
+  "music": 1.0,
+  "music_heard": "allo"
+ },
+ "T3b_s1": {
+  "key": "T3b",
+  "rate": 3.76,
+  "speech": 2.12,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ },
+ "T3b_s2": {
+  "key": "T3b",
+  "rate": 2.79,
+  "speech": 2.87,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ },
+ "T3b_s3": {
+  "key": "T3b",
+  "rate": 3.04,
+  "speech": 2.63,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ },
+ "T3b_s4": {
+  "key": "T3b",
+  "rate": 3.86,
+  "speech": 2.07,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ },
+ "T3b_s5": {
+  "key": "T3b",
+  "rate": 3.54,
+  "speech": 2.26,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ },
+ "T3b_s6": {
+  "key": "T3b",
+  "rate": 3.71,
+  "speech": 2.16,
+  "clean": 1.0,
+  "clean_heard": "il dit qu il n a rien change",
+  "music": 1.0,
+  "music_heard": "il dit qu il n a rien change"
+ }
+}

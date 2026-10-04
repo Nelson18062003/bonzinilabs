@@ -1,0 +1,14 @@
+{
+ "segments": [
+  {
+   "id": "N4c",
+   "text": "Garde-le, pour comparer.",
+   "tts": "Garde-le, pour comparer."
+  },
+  {
+   "id": "N4cv",
+   "text": "Garde-le, pour comparer.",
+   "tts": "Garde-le. <break time=\"0.15s\"/> Pour comparer."
+  }
+ ]
+}

@@ -1,0 +1,58 @@
+{
+ "C1": [
+  "pas",
+  "compte"
+ ],
+ "T1": [
+  "m'écrit",
+  "changé",
+  "compte bancaire"
+ ],
+ "T2": [
+  "trois cœurs|trois coeur|trois queur",
+  "c'est lui"
+ ],
+ "C2": [
+  "n'est",
+  "pas",
+  "fournisseur"
+ ],
+ "C3": [
+  "appelle",
+  "numéro",
+  "connais",
+  "déjà"
+ ],
+ "T3": [
+  "allô|alo|allo|à l'eau"
+ ],
+ "T3b": [
+  "dit",
+  "rien",
+  "changé"
+ ],
+ "C4": [
+  "faux",
+  "message"
+ ],
+ "N1": [
+  "avant de payer",
+  "nouveau compte",
+  "ancien numéro"
+ ],
+ "C5": [
+  "Douala|doua la|d ouala|ouala"
+ ],
+ "N2": [
+  "Bonzini",
+  "Cargo",
+  "Chine",
+  "Douala"
+ ],
+ "N3": [
+  "le mot",
+  "allô|alo|allo|à l'eau",
+  "maintenant",
+  "tu sais"
+ ]
+}

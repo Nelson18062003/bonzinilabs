@@ -1,0 +1,34 @@
+{
+ "segments": [
+  {
+   "id": "A0",
+   "text": "Patron ! Attends ! Ne paie pas ce compte !",
+   "voice": "cml-tts/fr/10179_11051_000005-0001_enhanced.wav"
+  },
+  {
+   "id": "A1",
+   "text": "Patron ! Attends ! Ne paie pas ce compte !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "A2",
+   "text": "Patron ! Attends ! Ne paie pas ce compte !",
+   "voice": "cml-tts/fr/579_2548_000015-0001_enhanced.wav"
+  },
+  {
+   "id": "B0",
+   "text": "Attends ! C'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/10179_11051_000005-0001_enhanced.wav"
+  },
+  {
+   "id": "B1",
+   "text": "Attends ! C'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/5830_4703_000037-0001_enhanced.wav"
+  },
+  {
+   "id": "B2",
+   "text": "Attends ! C'est peut-être pas ton fournisseur !",
+   "voice": "cml-tts/fr/579_2548_000015-0001_enhanced.wav"
+  }
+ ]
+}
