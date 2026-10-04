@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "commonjs",
+  "description": "Le Bonneteau du Feyman — sources (Canvas engine + score). Not part of the app build."
+}
