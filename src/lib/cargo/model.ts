@@ -47,7 +47,7 @@ export const CARRIER_LABEL: Record<string, string> = {
 /** Ce que la plateforme sait faire par armateur — dit tel quel à l'écran. */
 export const CARRIER_SUPPORT: { carrier: string; label: string; state: 'live' | 'pending' | 'later'; note: string }[] = [
   { carrier: 'MAERSK', label: 'Maersk', state: 'live', note: 'Jalons et arrivée en direct (API Track & Trace)' },
-  { carrier: 'CMA_CGM', label: 'CMA CGM', state: 'pending', note: 'Référence reconnue · accès API demandé' },
+  { carrier: 'CMA_CGM', label: 'CMA CGM', state: 'live', note: 'Jalons, escales et arrivée en direct (API Track & Trace)' },
   { carrier: 'MSC', label: 'MSC', state: 'later', note: 'Via agrégateur, à brancher' },
   { carrier: 'COSCO', label: 'COSCO', state: 'later', note: 'Via agrégateur, à brancher' },
 ];
@@ -68,26 +68,43 @@ export function fromDate(d: string | null): Date | null {
   return d ? new Date(d + 'T12:00:00') : null;
 }
 
-/** L'arrivée à afficher : celle de l'armateur si on l'a, sinon la promesse. */
-export function bestEta(s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'>): { date: Date | null; source: 'carrier' | 'promised' | null } {
+/**
+ * L'arrivée à afficher. Ordre de confiance :
+ *   1. celle RELEVÉE par l'équipe (eta_manual : Atlas, consignataire, avis
+ *      d'arrivée) — elle corrige un flux armateur en retard sur le terrain ;
+ *   2. celle de l'armateur (eta_carrier) ;
+ *   3. la promesse du transitaire.
+ */
+export type EtaSource = 'manual' | 'carrier' | 'promised';
+export function bestEta(
+  s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'> & Partial<Pick<CargoShipment, 'eta_manual'>>,
+): { date: Date | null; source: EtaSource | null } {
+  if (s.eta_manual) return { date: new Date(s.eta_manual), source: 'manual' };
   if (s.eta_carrier) return { date: new Date(s.eta_carrier), source: 'carrier' };
   const p = fromDate(s.eta_promised);
   return p ? { date: p, source: 'promised' } : { date: null, source: null };
 }
+
+export const ETA_SOURCE_LABEL: Record<EtaSource, string> = {
+  manual: 'relevée par l’équipe',
+  carrier: 'annoncée par l’armateur',
+  promised: 'promise par le transitaire',
+};
 
 export function bestEtd(s: Pick<CargoShipment, 'etd_actual' | 'etd_promised'>): Date | null {
   if (s.etd_actual) return new Date(s.etd_actual);
   return fromDate(s.etd_promised);
 }
 
-/** Jours de glissement de l'armateur par rapport à la promesse (0 si aucun). */
-export function etaSlipDays(s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'>): number {
+/** Jours de retard de l'arrivée retenue (relevée ou armateur) sur la promesse (0 si aucun). */
+export function etaSlipDays(s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'> & Partial<Pick<CargoShipment, 'eta_manual'>>): number {
   const p = fromDate(s.eta_promised);
-  if (!s.eta_carrier || !p) return 0;
-  return Math.max(0, differenceInCalendarDays(new Date(s.eta_carrier), p));
+  const real = s.eta_manual ?? s.eta_carrier;
+  if (!real || !p) return 0;
+  return Math.max(0, differenceInCalendarDays(new Date(real), p));
 }
 
-export function daysUntilArrival(s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'>, now = new Date()): number | null {
+export function daysUntilArrival(s: Pick<CargoShipment, 'eta_carrier' | 'eta_promised'> & Partial<Pick<CargoShipment, 'eta_manual'>>, now = new Date()): number | null {
   const { date } = bestEta(s);
   return date ? differenceInCalendarDays(date, now) : null;
 }
@@ -137,13 +154,28 @@ export function whereIs(s: CargoShipment, pos: CargoVesselPosition | null): stri
   switch (s.status) {
     case 'DELIVERED': return 'Livré';
     case 'ARRIVED': return `Arrivé à ${s.pod_name}`;
-    case 'AT_SEA':
-      if (pos) return isStalePosition(pos) ? `En mer — dernière position ${positionAge(pos)}` : `En mer — position ${positionAge(pos)}`;
-      return 'En mer';
+    case 'AT_SEA': {
+      if (!pos) return 'En mer';
+      const pod = s.pod_unlocode ? PORTS[s.pod_unlocode] : null;
+      if (pod && !isStalePosition(pos)) {
+        const km = kmBetween([pos.latitude, pos.longitude], pod.pos);
+        const slow = pos.speed_kn == null || Number(pos.speed_kn) < 1;
+        if (km < 8 && slow) return `À quai à ${pod.name}`;
+        if (km < 60) return slow ? `Au mouillage devant ${pod.name}` : `En approche de ${pod.name}`;
+      }
+      return isStalePosition(pos) ? `En mer — dernière position ${positionAge(pos)}` : `En mer — position ${positionAge(pos)}`;
+    }
     case 'AT_ORIGIN': return `Au port de départ${s.pol_name ? ` (${s.pol_name})` : ''}`;
     case 'BOOKED': return 'Réservé, pas encore chargé';
     default: return 'Aucune donnée de suivi';
   }
+}
+
+/** Distance grand-cercle en km (copie locale : geo.ts importe ce module). */
+function kmBetween(a: [number, number], b: [number, number]): number {
+  const r = (d: number) => (d * Math.PI) / 180;
+  const h = Math.sin(r(b[0] - a[0]) / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(r(b[1] - a[1]) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
 /* ── Référence saisie ─────────────────────────────────────────────────── */
@@ -237,7 +269,8 @@ export const PORTS: Record<string, { name: string; pos: LatLng }> = {
   SGSIN: { name: 'Singapour', pos: [1.29, 103.8] },
   CIABJ: { name: 'Abidjan', pos: [5.33, -4.02] },
   NGLKK: { name: 'Lekki', pos: [6.43, 3.98] },
-  CMKBI: { name: 'Kribi', pos: [2.936, 9.909] },
+  // Port en eau profonde de Kribi (Mboro), pas la ville : c'est là que le navire accoste.
+  CMKBI: { name: 'Kribi', pos: [2.73, 9.865] },
   CMDLA: { name: 'Douala', pos: [4.05, 9.7] },
 };
 
@@ -245,15 +278,15 @@ export const WAX1_ROUTE: LatLng[] = [
   [22.637, 113.676], [21.8, 113.6], [19.0, 112.5], [15.0, 110.5], [8.0, 107.5], [1.5, 104.6],
   [2.8, 101.0], [5.5, 98.0], [5.0, 93.0], [0.0, 80.0], [-15.0, 60.0], [-28.0, 48.0], [-33.0, 35.0],
   [-36.0, 22.0], [-34.3, 17.5], [-28.0, 13.5], [-20.4, 9.9], [-12.0, 8.5], [-3.0, 6.0], [2.0, 2.0],
-  [4.5, -3.5], [5.33, -4.02], [4.2, -1.5], [5.4, 2.5], [6.43, 3.98], [4.6, 5.0], [2.8, 8.0], [2.6, 9.5], [2.936, 9.909],
+  [4.5, -3.5], [5.33, -4.02], [4.2, -1.5], [5.4, 2.5], [6.43, 3.98], [4.6, 5.0], [2.8, 8.0], [2.7, 9.5], [2.73, 9.865],
 ];
 
 /* ── Coûts du dossier ─────────────────────────────────────────────────────
  * L'ordre est celui où les coûts tombent dans la chaîne (manuel cargo,
  * chapitre « anatomie complète d'un coût »). */
 export const COST_KINDS = [
-  'FREIGHT', 'SURCHARGE', 'THC', 'BESC', 'INSURANCE', 'CUSTOMS_DUTY', 'CUSTOMS_FEE',
-  'DEMURRAGE', 'STORAGE', 'TRANSIT', 'TRUCKING', 'OTHER',
+  'FREIGHT', 'SURCHARGE', 'INSURANCE', 'BESC', 'INSPECTION', 'TRANSIT', 'CUSTOMS_DUTY', 'CUSTOMS_FEE',
+  'THC', 'STORAGE', 'DEMURRAGE', 'TRUCKING', 'OTHER',
 ] as const;
 
 export const COST_KIND_LABEL: Record<string, string> = {
@@ -261,12 +294,13 @@ export const COST_KIND_LABEL: Record<string, string> = {
   SURCHARGE: 'Surcharges (BAF, CAF…)',
   THC: 'Manutention portuaire (THC)',
   BESC: 'BESC',
+  INSPECTION: 'Inspection, CIVIC, expertise',
   INSURANCE: 'Assurance',
   CUSTOMS_DUTY: 'Droits de douane',
   CUSTOMS_FEE: 'Frais de douane et taxes',
   DEMURRAGE: 'Surestaries / détention',
   STORAGE: 'Stockage au port',
-  TRANSIT: 'Transitaire (honoraires)',
+  TRANSIT: 'Honoraires (déclarant, transitaire)',
   TRUCKING: 'Transport final',
   OTHER: 'Autre',
 };
@@ -278,19 +312,6 @@ export function fmtMoney(amount: number | null | undefined, currency = 'XAF'): s
   const n = Math.round(amount).toLocaleString('fr-FR');
   return currency === 'XAF' ? `${n} XAF` : `${n} ${CURRENCY_LABEL[currency] ?? currency}`;
 }
-
-/* ── Documents : ce qu'un dossier d'import camerounais exige ───────────────
- * `required` = pièce sans laquelle on ne sort pas le conteneur (manuel cargo,
- * « le dossier documentaire, pièce par pièce »). */
-export const DOCUMENT_KINDS: { kind: string; label: string; required: boolean; who: string }[] = [
-  { kind: 'BL', label: 'Bill of lading', required: true, who: "émis par l'armateur — titre de la marchandise" },
-  { kind: 'TELEX', label: 'Télex release', required: true, who: "libération du B/L par l'armateur, après paiement du fret" },
-  { kind: 'INVOICE', label: 'Facture commerciale', required: true, who: 'émise par le fournisseur — base de la valeur en douane' },
-  { kind: 'PACKING_LIST', label: 'Packing list', required: true, who: 'émise par le fournisseur — détail des colis et des poids' },
-  { kind: 'BESC', label: 'BESC', required: true, who: 'Conseil national des chargeurs — obligatoire à l’import au Cameroun' },
-  { kind: 'CUSTOMS', label: 'Pièces de douane', required: false, who: 'déclaration, quittance, bon à enlever' },
-  { kind: 'OTHER', label: 'Autre pièce', required: false, who: 'certificat d’origine, assurance, ANOR/PECAE…' },
-];
 
 /* ── Jalons camerounais après l'arrivée ───────────────────────────────────
  * Ces dates sont saisies à la main : aucun armateur ne les publie. */

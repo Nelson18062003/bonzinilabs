@@ -3,6 +3,10 @@
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { Json } from '@/integrations/supabase/types';
+import type { CargoDocFolder } from '@/lib/cargo/documents';
+import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
+import type { CargoStep } from '@/lib/cargo/steps';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -10,21 +14,31 @@ const base = {
   created_at: '2026-09-11T20:00:00Z', updated_at: '2026-09-11T20:00:00Z', last_event_label: 'Navire parti',
   arrival_notice_at: null, besc_number: null, customs_cleared_at: null, customs_declaration_ref: null,
   delivery_order_at: null, empty_returned_at: null, free_time_ends_on: null, gate_out_at: null,
-  goods_description: 'Téléphones et accessoires', gross_weight_kg: 18400, packages_count: 860,
+  goods_description: 'Téléphones et accessoires', gross_weight_kg: 22170, packages_count: 80, freight_note: null,
+  eta_manual: null, eta_manual_at: null, eta_manual_note: null, route_calls: [] as Json[],
 } as const;
 
 const SHIPMENTS: CargoShipment[] = [
   { ...base, id: '1', client_label: 'PRC', carrier: 'CMA_CGM', bl_number: 'GGZ3133535', container_number: 'CMAU6126032', container_iso: null, pol_name: null, pol_unlocode: null, pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: '2026-08-04', eta_promised: '2026-09-17', etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 6650, status: 'UNKNOWN', last_event_at: null, last_event_label: null, last_synced_at: null },
-  { ...base, id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
+  { ...base, freight_note: 'Chiffre du tableau du transitaire du 11/09/2026, jamais vérifié. Le BESC porte 3 000 USD de fret.',
+    eta_manual: '2026-10-03T21:00:00Z', eta_manual_at: '2026-10-03T22:00:00Z', eta_manual_note: 'Au mouillage devant Kribi le 03/10 au soir (Flexport Atlas). Escale prévue du 03 au 04/10. Maersk annonçait le 07/10.',
+    besc_number: 'MI2661716',
+    route_calls: [
+      { id: 'nsa', name: 'Nansha', unlocode: 'CNNSA', atd: '2026-08-15T23:38:00Z', note: 'Départ du navire (Maersk).' },
+      { id: 'abj', name: 'Abidjan', unlocode: 'CIABJ', atd: '2026-10-01T17:40:00Z', note: 'Départ relevé sur VesselFinder.' },
+      { id: 'kbi', name: 'Kribi', unlocode: 'CMKBI', ata: '2026-10-03', eta: '2026-10-03', etd: '2026-10-04', note: 'Au mouillage le 03/10 au soir. Escale du 03 au 04/10 : notre conteneur est déchargé ici.' },
+      { id: 'lkk', name: 'Lekki', unlocode: 'NGLKK', eta: '2026-10-07', etd: '2026-10-11', after: 1, note: 'Escale suivante du navire.' },
+    ],
+    id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
   { ...base, id: '3', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275558999', container_number: 'MRKU4617437', etd_promised: '2026-08-23', eta_promised: '2026-10-05', etd_actual: '2026-08-24T02:26:00Z', eta_carrier: '2026-10-15T01:00:00Z', vessel_name: 'CMA CGM CEDRUS', vessel_imo: '9938121', vessel_mmsi: '256615000', voyage: '633W', freight_usd: 5950, status: 'AT_SEA', last_event_at: '2026-08-24T02:26:00Z' },
   { ...base, id: '4', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275926835', container_number: 'MRSU7972968', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5650, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
   { ...base, id: '5', client_label: 'DJIANI', carrier: 'MAERSK', bl_number: '275926916', container_number: 'CAJU5023560', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5750, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
 ];
 
 const POSITIONS: CargoVesselPosition[] = [
-  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'CMA CGM LAPEROUSE', latitude: -20.42261, longitude: 9.9197, speed_kn: 12.4, course_deg: 333.2, destination: 'CIABJ', eta: '2026-09-17T06:00:00Z', reported_at: '2026-09-10T22:47:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
-  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'CMA CGM CEDRUS', latitude: 2.56352, longitude: 101.51508, speed_kn: 13.6, course_deg: 310.6, destination: 'CIABJ', eta: '2026-09-27T17:00:00Z', reported_at: '2026-09-01T12:46:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
-  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
+  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'CMA CGM LAPEROUSE', latitude: 2.79, longitude: 9.68, speed_kn: null, course_deg: null, destination: 'CMKBI', eta: null, reported_at: '2026-10-03T20:35:00Z', source: 'manual', updated_at: '2026-10-03T22:00:00Z', note: 'Estimée d’après la capture Flexport Atlas du 03/10 : au mouillage devant Kribi.' },
+  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'CMA CGM CEDRUS', latitude: 2.56352, longitude: 101.51508, speed_kn: 13.6, course_deg: 310.6, destination: 'CIABJ', eta: '2026-09-27T17:00:00Z', reported_at: '2026-09-01T12:46:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
+  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
 ];
 
 const ev = (id: string, code: string, type: string, time: string, classifier = 'ACT', location: string | null = 'GZ Oceangate Container Terminal', vessel: string | null = null): CargoEvent => ({
@@ -39,7 +53,9 @@ const EVENTS: CargoEvent[] = [
   ev('e5', 'DRFT', 'SHIPMENT', '2026-08-11T03:46:22Z', 'ACT', null),
   ev('e6', 'LOAD', 'EQUIPMENT', '2026-08-15T15:25:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
   ev('e7', 'DEPA', 'TRANSPORT', '2026-08-15T23:38:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
-  ev('e8', 'ARRI', 'TRANSPORT', '2026-10-11T10:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e8', 'ARRI', 'TRANSPORT', '2026-10-03T08:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e9', 'ARRI', 'TRANSPORT', '2026-10-07T08:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e10', 'DEPA', 'TRANSPORT', '2026-08-15T23:38:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
 ];
 
 const LOOKUP: CargoLookup = {
@@ -59,16 +75,24 @@ const LOOKUP: CargoLookup = {
 const ok = <T,>(data: T) => ({ data, isLoading: false, error: null, refetch: async () => undefined });
 
 /** Colis d'exemple : une packing list plausible pour un 40' High Cube. */
+const lotBase = { shipment_id: '2', weight_kg: null, supplier: null, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', client_id: null } as const;
+const veh = (id: string, label: string, L: number, W: number, H: number, cbm: number, position: number, hs: string): CargoPackage => ({
+  ...lotBase, id, label, kind: 'VEHICLE', qty: 1, length_cm: L, width_cm: W, height_cm: H, cbm, stackable: false, note: null, position, owner_label: null, hs_code: hs,
+});
+const vol = (id: string, label: string, kind: string, qty: number, cbm: number, position: number, owner: string | null = null): CargoPackage => ({
+  ...lotBase, id, label, kind, qty, length_cm: null, width_cm: null, height_cm: null, cbm, stackable: true, note: null, position, owner_label: owner, hs_code: null,
+});
+/** Le vrai contenu de MIEU3611115 : 3 véhicules + 11 lignes d'effets connues au volume. */
 const PACKAGES: CargoPackage[] = [
-  { id: 'p1', shipment_id: '2', label: 'Téléphones — cartons maîtres', kind: 'CARTON', qty: 220,
-    length_cm: 60, width_cm: 40, height_cm: 40, weight_kg: 18, stackable: true, supplier: 'Shenzhen Hongfa',
-    note: null, position: 0, created_by: null, created_at: '2026-08-10T09:00:00Z', updated_at: '2026-08-10T09:00:00Z' },
-  { id: 'p2', shipment_id: '2', label: 'Accessoires — cartons', kind: 'CARTON', qty: 140,
-    length_cm: 50, width_cm: 40, height_cm: 30, weight_kg: 11, stackable: true, supplier: 'Guangzhou Yite',
-    note: null, position: 1, created_by: null, created_at: '2026-08-10T09:05:00Z', updated_at: '2026-08-10T09:05:00Z' },
-  { id: 'p3', shipment_id: '2', label: 'Présentoirs — caisses bois', kind: 'CRATE', qty: 18,
-    length_cm: 120, width_cm: 80, height_cm: 60, weight_kg: 42, stackable: false, supplier: 'Foshan Ledi',
-    note: 'ISPM 15 requis', position: 2, created_by: null, created_at: '2026-08-10T09:10:00Z', updated_at: '2026-08-10T09:10:00Z' },
+  veh('p1', 'Toyota Yaris 2009', 375, 169.5, 154.5, 9.82, 1, '8703.23.10.9900'),
+  veh('p2', 'Toyota RAV4 2014', 457, 184.5, 171.5, 14.081, 2, '8703.23.90.9100'),
+  veh('p3', 'Haval H6 2016', 464.9, 185.2, 171, 14.723, 3, '8703.22.10.9100'),
+  vol('p4', 'Verres de lunettes (眼镜片)', 'CARTON', 13, 4, 4), vol('p5', 'Climatiseur (空调)', 'CARTON', 1, 0.25, 5),
+  vol('p6', 'Chaises (椅子)', 'CARTON', 5, 0.345, 6), vol('p7', 'Pièces mécaniques', 'CARTON', 1, 0.245, 7),
+  vol('p8', 'Machine à laver (洗衣机)', 'CARTON', 1, 1.56, 8), vol('p9', 'Meuble de rangement (柜子)', 'CARTON', 1, 2.5, 9),
+  vol('p10', 'Étendoirs à linge (晾衣架)', 'BUNDLE', 50, 0.9, 10), vol('p11', 'Vêtements (衣服)', 'BAG', 1, 5.98, 11),
+  vol('p12', 'Tôles (锌板)', 'BUNDLE', 7, 3.2, 12, 'Olivier Yaoundé'), vol('p13', 'Chaussures (鞋子)', 'CARTON', 1, 0.94, 13),
+  vol('p14', 'Hauts, vestes (上衣)', 'CARTON', 1, 0.015, 14),
 ];
 
 const noop = () => ({ mutate: () => undefined, mutateAsync: async () => undefined, isPending: false });
@@ -80,16 +104,16 @@ export const useCargoEvents = (id: string | null) => ok(id === '2' ? EVENTS : []
 export const useUpdateCargoShipment = noop;
 export const useRemoveCargoShipment = noop;
 export const useRequestCargoSync = noop;
+export const useSetVesselPosition = noop;
 export const useRequestCargoLookup = noop;
 export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
 export const useRecentCargoLookups = () => ok([LOOKUP]);
 export const useAddCargoShipment = noop;
 export const useCreateCargoShipmentManual = noop;
-export const useCargoDocuments = () => ok([] as CargoDocument[]);
 const COSTS: CargoCost[] = [
-  { id: 'c1', shipment_id: '2', kind: 'FREIGHT', amount: 6550, currency: 'USD', label: null, incurred_on: '2026-08-12', invoice_ref: 'FAC-2026-0812', note: null, paid: true, created_by: null, created_at: '2026-08-12T09:00:00Z', updated_at: '2026-08-12T09:00:00Z' },
-  { id: 'c2', shipment_id: '2', kind: 'BESC', amount: 85_000, currency: 'XAF', label: null, incurred_on: '2026-08-20', invoice_ref: null, note: null, paid: true, created_by: null, created_at: '2026-08-20T09:00:00Z', updated_at: '2026-08-20T09:00:00Z' },
-  { id: 'c3', shipment_id: '2', kind: 'TRANSIT', amount: 450_000, currency: 'XAF', label: 'Honoraires Transimex', incurred_on: null, invoice_ref: null, note: null, paid: false, created_by: null, created_at: '2026-09-01T09:00:00Z', updated_at: '2026-09-01T09:00:00Z' },
+  { id: 'c1', shipment_id: '2', kind: 'FREIGHT', amount: 6550, currency: 'USD', label: null, incurred_on: '2026-08-12', invoice_ref: 'FAC-2026-0812', note: null, paid: true, paid_on: '2026-08-14', payee: 'KASSUMAYE PARTNER SARL', created_by: null, created_at: '2026-08-12T09:00:00Z', updated_at: '2026-08-12T09:00:00Z' },
+  { id: 'c2', shipment_id: '2', kind: 'BESC', amount: 85_000, currency: 'XAF', label: null, incurred_on: '2026-08-20', invoice_ref: null, note: null, paid: true, paid_on: '2026-09-30', payee: 'SOFT CENTRAL LAB', created_by: null, created_at: '2026-08-20T09:00:00Z', updated_at: '2026-08-20T09:00:00Z' },
+  { id: 'c3', shipment_id: '2', kind: 'TRANSIT', amount: 450_000, currency: 'XAF', label: 'Honoraires Transimex', incurred_on: null, invoice_ref: null, note: null, paid: false, paid_on: null, payee: 'Cynthia AKAH', created_by: null, created_at: '2026-09-01T09:00:00Z', updated_at: '2026-09-01T09:00:00Z' },
 ];
 export const useCargoCosts = (id: string | null) => ok(id === '2' ? COSTS : ([] as CargoCost[]));
 export const useCargoPackages = (id: string | null) => ok(id === '2' ? PACKAGES : []);
@@ -105,3 +129,86 @@ export const useCargoClientOptions = () => ok([] as { id: string; first_name: st
 export const useUploadCargoDocument = noop;
 export const useDeleteCargoDocument = noop;
 export const openCargoDocument = async () => undefined;
+
+/* ── Classeur (refonte du 03/10/2026) ── */
+const folder = (id: string, title: string, category: string, expected_count: number | null, position: number, note: string | null = null): CargoDocFolder => ({
+  id, shipment_id: '2', title, category, expected_count, position, note, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z',
+});
+const FOLDERS: CargoDocFolder[] = [
+  folder('f1', 'Bill of lading Maersk 274428633 (originaux)', 'BL', 3, 1, 'Chargeur : KASSUMAYE PARTNER SARL'),
+  folder('f2', 'Télex release', 'TELEX', 1, 2, 'Pas encore reçu'),
+  folder('f3', 'BESC MI2661716', 'BESC', 1, 3, 'Validé le 30/09/2026'),
+  folder('f4', "Certificats d'identification CICQ", 'CERTIFICATE', 3, 4),
+  folder('f5', "Attestation d'immatriculation DGI", 'TAX', 1, 5),
+];
+const doc = (id: string, folder_id: string | null, kind: string, file_name: string, mime: string, title: string | null = null, note: string | null = null): CargoDocument => ({
+  id, shipment_id: '2', kind, file_name, storage_path: `2/${id}-${file_name}`, mime_type: mime, size_bytes: 180_000 + id.length * 9000,
+  uploaded_by: null, created_at: '2026-10-01T18:34:00Z', updated_at: '2026-10-01T18:34:00Z', folder_id, cost_id: null, title, note,
+});
+const DOCS: CargoDocument[] = [
+  doc('d1', 'f1', 'BL', 'bl-verify-copy.jpg', 'image/jpeg', 'B/L, copie « verify »', 'Photo reçue le 01/10'),
+  doc('d2', 'f3', 'BESC', 'MI2661716_20261001.pdf', 'application/pdf', 'BESC validé'),
+  doc('d3', 'f4', 'CERTIFICATE', 'cicq-4025-haval.jpg', 'image/jpeg', 'A/4025 · Haval H6'),
+  doc('d4', 'f4', 'CERTIFICATE', 'cicq-4026-rav4.jpg', 'image/jpeg', 'A/4026 · Toyota RAV4'),
+  doc('d5', 'f4', 'CERTIFICATE', 'cicq-4027-yaris.jpg', 'image/jpeg', 'A/4027 · Toyota Yaris'),
+  doc('d6', null, 'OTHER', 'capture-atlas.png', 'image/png'),
+  { ...doc('d7', null, 'COST', 'recu-besc.jpg', 'image/jpeg', 'Reçu BESC'), cost_id: 'c2' },
+  { ...doc('d8', null, 'COST', 'facture-fret.pdf', 'application/pdf', 'Facture de fret'), cost_id: 'c1' },
+];
+export const useCargoDocuments = (id: string | null) => ok(id === '2' ? DOCS : ([] as CargoDocument[]));
+export const useCargoDocFolders = (id: string | null) => ok(id === '2' ? FOLDERS : ([] as CargoDocFolder[]));
+export const useCargoDocumentUrls = () => ok({} as Record<string, string>);
+export const useCreateCargoDocFolders = noop;
+export const useUpdateCargoDocFolder = noop;
+export const useDeleteCargoDocFolder = noop;
+export const useUpdateCargoDocument = noop;
+export const useUploadCargoDocuments = noop;
+export const downloadCargoDocument = async () => undefined;
+
+/* ── Intervenants ── */
+const party = (id: string, name: string, extra: Partial<CargoParty> = {}): CargoParty => ({
+  id, name, contact_name: null, phone: null, whatsapp: null, email: null, city: null, country: null, note: null,
+  created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', ...extra,
+});
+const link = (id: string, role: string, p: CargoParty, note: string | null, position: number): CargoShipmentPartyWithParty => ({
+  id, shipment_id: '2', party_id: p.id, role, note, position, created_by: null, created_at: '2026-10-03T10:00:00Z', updated_at: '2026-10-03T10:00:00Z', party: p,
+});
+const KASS = party('pa1', 'KASSUMAYE PARTNER SARL', { contact_name: 'Eric', whatsapp: '+86 138 0000 0000' });
+const CYN = party('pa2', 'Cynthia AKAH', { country: 'Cameroun', phone: '+237 690 00 00 00' });
+const NGB = party('pa3', 'NORTON GAUSS BONZINI SARL', { city: 'Douala (Bépanda)', country: 'Cameroun' });
+const LINKS: CargoShipmentPartyWithParty[] = [
+  link('l1', 'FORWARDER', KASS, 'Booking, camion et douane d’export à Nansha.', 1),
+  link('l2', 'SHIPPER', KASS, 'Détient les 3 originaux du B/L : le télex doit venir de lui.', 2),
+  link('l3', 'DECLARANT', CYN, 'Mandatée pour BESC, CIVIC et déclaration.', 3),
+  link('l4', 'CONSIGNEE', NGB, null, 4),
+];
+export const useCargoShipmentParties = (id: string | null) => ok(id === '2' ? LINKS : ([] as CargoShipmentPartyWithParty[]));
+export const useCargoParties = () => ok([KASS, CYN, NGB]);
+export const useAddShipmentParty = noop;
+export const useUpdateShipmentParty = noop;
+export const useRemoveShipmentParty = noop;
+
+/* ── Étapes de douane ── */
+const step = (id: string, key: string, title: string, phase: string, position: number, extra: Partial<CargoStep> = {}): CargoStep => ({
+  id, shipment_id: '2', key, title, phase, status: 'todo', due_on: null, done_on: null, reference: null, note: null, folder_id: null, position,
+  created_by: null, created_at: '2026-10-04T08:00:00Z', updated_at: '2026-10-04T08:00:00Z', ...extra,
+});
+const STEPS: CargoStep[] = [
+  step('s1', 'BESC', 'BESC', 'before', 1, { status: 'done', done_on: '2026-09-30', reference: 'MI2661716', folder_id: 'f3', note: 'Validé par SOFT CENTRAL LAB. Corrections demandées (RAV4, Yaris, code du Haval).' }),
+  step('s2', 'CIVIC', 'CIVIC des véhicules (SGS)', 'before', 2, { status: 'doing', note: 'À lancer : copie du B/L, carte contribuable, certificats CICQ du 01/10.', folder_id: 'f4' }),
+  step('s3', 'TELEX', 'Télex release (ou B/L original endossé)', 'before', 3, { due_on: '2026-10-03', folder_id: 'f2', note: 'À obtenir d’Eric (KASSUMAYE).' }),
+  step('s4', 'ARRIVAL_NOTICE', 'Avis d’arrivée', 'arrival', 4),
+  step('s5', 'CARRIER_RELEASE', 'Bon à délivrer du consignataire', 'arrival', 5),
+  step('s6', 'DECLARATION', 'Déclaration en douane', 'clearance', 6, { note: 'Déclarante : Cynthia AKAH.' }),
+  step('s7', 'INSPECTION', 'Visite ou scanner', 'clearance', 7),
+  step('s8', 'LIQUIDATION', 'Liquidation et paiement des droits', 'clearance', 8),
+  step('s9', 'BAE', 'Bon à enlever', 'exit', 9),
+  step('s10', 'GATE_OUT', 'Sortie du port', 'exit', 10),
+  step('s11', 'EMPTY_RETURN', 'Restitution du vide', 'exit', 11),
+];
+export const useCargoSteps = (id: string | null) => ok(id === '2' ? STEPS : ([] as CargoStep[]));
+export const useCreateCargoSteps = noop;
+export const useUpdateCargoStep = noop;
+export const useDeleteCargoStep = noop;
+export const useCargoClientsByIds = () => ok([] as { id: string; first_name: string; last_name: string; company_name: string | null; phone: string | null; customer_code: string | null; city: string | null }[]);
+export const useAssignLotsOwner = noop;

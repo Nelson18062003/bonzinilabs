@@ -595,6 +595,8 @@ export type Database = {
           label: string | null
           note: string | null
           paid: boolean
+          paid_on: string | null
+          payee: string | null
           shipment_id: string
           updated_at: string
         }
@@ -610,6 +612,8 @@ export type Database = {
           label?: string | null
           note?: string | null
           paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
           shipment_id: string
           updated_at?: string
         }
@@ -625,6 +629,8 @@ export type Database = {
           label?: string | null
           note?: string | null
           paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
           shipment_id?: string
           updated_at?: string
         }
@@ -640,13 +646,17 @@ export type Database = {
       }
       cargo_packages: {
         Row: {
+          cbm: number | null
+          client_id: string | null
+          hs_code: string | null
+          owner_label: string | null
           created_at: string
           created_by: string | null
-          height_cm: number
+          height_cm: number | null
           id: string
           kind: string
           label: string
-          length_cm: number
+          length_cm: number | null
           note: string | null
           position: number
           qty: number
@@ -655,16 +665,20 @@ export type Database = {
           supplier: string | null
           updated_at: string
           weight_kg: number | null
-          width_cm: number
+          width_cm: number | null
         }
         Insert: {
+          cbm?: number | null
+          client_id?: string | null
+          hs_code?: string | null
+          owner_label?: string | null
           created_at?: string
           created_by?: string | null
-          height_cm: number
+          height_cm?: number | null
           id?: string
           kind?: string
           label: string
-          length_cm: number
+          length_cm?: number | null
           note?: string | null
           position?: number
           qty?: number
@@ -673,16 +687,20 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
           weight_kg?: number | null
-          width_cm: number
+          width_cm?: number | null
         }
         Update: {
+          cbm?: number | null
+          client_id?: string | null
+          hs_code?: string | null
+          owner_label?: string | null
           created_at?: string
           created_by?: string | null
-          height_cm?: number
+          height_cm?: number | null
           id?: string
           kind?: string
           label?: string
-          length_cm?: number
+          length_cm?: number | null
           note?: string | null
           position?: number
           qty?: number
@@ -691,7 +709,7 @@ export type Database = {
           supplier?: string | null
           updated_at?: string
           weight_kg?: number | null
-          width_cm?: number
+          width_cm?: number | null
         }
         Relationships: [
           {
@@ -703,41 +721,163 @@ export type Database = {
           },
         ]
       }
+      cargo_parties: {
+        Row: {
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+        ]
+      }
+      cargo_doc_folders: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          expected_count: number | null
+          id: string
+          note: string | null
+          position: number
+          shipment_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_doc_folders_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_documents: {
         Row: {
+          cost_id: string | null
           created_at: string
           file_name: string
+          folder_id: string | null
           id: string
           kind: string
           mime_type: string | null
+          note: string | null
           shipment_id: string
           size_bytes: number | null
           storage_path: string
+          title: string | null
+          updated_at: string
           uploaded_by: string | null
         }
         Insert: {
+          cost_id?: string | null
           created_at?: string
           file_name: string
+          folder_id?: string | null
           id?: string
           kind: string
           mime_type?: string | null
+          note?: string | null
           shipment_id: string
           size_bytes?: number | null
           storage_path: string
+          title?: string | null
+          updated_at?: string
           uploaded_by?: string | null
         }
         Update: {
+          cost_id?: string | null
           created_at?: string
           file_name?: string
+          folder_id?: string | null
           id?: string
           kind?: string
           mime_type?: string | null
+          note?: string | null
           shipment_id?: string
           size_bytes?: number | null
           storage_path?: string
+          title?: string | null
+          updated_at?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cargo_documents_cost_id_fkey"
+            columns: ["cost_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cargo_documents_shipment_id_fkey"
             columns: ["shipment_id"]
@@ -851,6 +991,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cargo_shipment_parties: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          party_id: string
+          position: number
+          role: string
+          shipment_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id: string
+          position?: number
+          role: string
+          shipment_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id?: string
+          position?: number
+          role?: string
+          shipment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_shipment_parties_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_shipment_parties_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_shipments: {
         Row: {
           arrival_notice_at: string | null
@@ -872,9 +1063,13 @@ export type Database = {
           container_number: string
           created_at: string
           eta_carrier: string | null
+          eta_manual: string | null
+          eta_manual_at: string | null
+          eta_manual_note: string | null
           eta_promised: string | null
           etd_actual: string | null
           etd_promised: string | null
+          freight_note: string | null
           freight_paid: boolean
           freight_usd: number | null
           id: string
@@ -886,6 +1081,7 @@ export type Database = {
           pod_unlocode: string | null
           pol_name: string | null
           pol_unlocode: string | null
+          route_calls: Json
           status: string
           sync_error: string | null
           telex_released: boolean
@@ -915,9 +1111,13 @@ export type Database = {
           container_number: string
           created_at?: string
           eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
+          freight_note?: string | null
           freight_paid?: boolean
           freight_usd?: number | null
           id?: string
@@ -929,6 +1129,7 @@ export type Database = {
           pod_unlocode?: string | null
           pol_name?: string | null
           pol_unlocode?: string | null
+          route_calls?: Json
           status?: string
           sync_error?: string | null
           telex_released?: boolean
@@ -958,9 +1159,13 @@ export type Database = {
           container_number?: string
           created_at?: string
           eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
+          freight_note?: string | null
           freight_paid?: boolean
           freight_usd?: number | null
           id?: string
@@ -972,6 +1177,7 @@ export type Database = {
           pod_unlocode?: string | null
           pol_name?: string | null
           pol_unlocode?: string | null
+          route_calls?: Json
           status?: string
           sync_error?: string | null
           telex_released?: boolean
@@ -991,6 +1197,75 @@ export type Database = {
           },
         ]
       }
+      cargo_steps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done_on: string | null
+          due_on: string | null
+          folder_id: string | null
+          id: string
+          key: string | null
+          note: string | null
+          phase: string
+          position: number
+          reference: string | null
+          shipment_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_steps_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_steps_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_vessel_positions: {
         Row: {
           course_deg: number | null
@@ -998,6 +1273,7 @@ export type Database = {
           eta: string | null
           latitude: number
           longitude: number
+          note: string | null
           reported_at: string
           source: string
           speed_kn: number | null
@@ -1012,6 +1288,7 @@ export type Database = {
           eta?: string | null
           latitude: number
           longitude: number
+          note?: string | null
           reported_at: string
           source?: string
           speed_kn?: number | null
@@ -1026,6 +1303,7 @@ export type Database = {
           eta?: string | null
           latitude?: number
           longitude?: number
+          note?: string | null
           reported_at?: string
           source?: string
           speed_kn?: number | null
@@ -3053,6 +3331,18 @@ export type Database = {
       }
       cargo_fleet_status: {
         Args: { p_client?: string }
+        Returns: Json
+      }
+      cargo_set_vessel_position: {
+        Args: {
+          p_course_deg?: number
+          p_imo: string
+          p_latitude: number
+          p_longitude: number
+          p_note?: string
+          p_reported_at?: string
+          p_speed_kn?: number
+        }
         Returns: Json
       }
       cargo_set_freight_paid: {

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { TextArea } from '@/components/form';
 import { useUpdateCargoShipment } from '@/hooks/useCargo';
+import { StickyNote, Activity } from 'lucide-react';
 import { Fact, Facts, Section } from '@/components/cargo/dossier/kit';
 import { CARRIER_LABEL, fmtDayTime } from '@/lib/cargo/model';
 import type { CargoShipment } from '@/lib/cargo/model';
@@ -15,7 +16,7 @@ export function TabNotes({ shipment: s, canManage }: { shipment: CargoShipment; 
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-5 max-lg:grid-cols-1">
-      <Section title="Note interne" meta={canManage ? 'enregistrée en quittant le champ' : 'lecture seule'}>
+      <Section icon={StickyNote} tone="amber" title="Note interne" meta={canManage ? 'enregistrée en quittant le champ' : 'lecture seule'}>
         <TextArea
           id={`cargo-notes-${s.id}`}
           value={notes}
@@ -27,7 +28,7 @@ export function TabNotes({ shipment: s, canManage }: { shipment: CargoShipment; 
         />
       </Section>
 
-      <Section title="État du dossier">
+      <Section icon={Activity} title="État du dossier">
         <Facts cols={2}>
           <Fact label="Créé le" value={fmtDayTime(new Date(s.created_at))} />
           <Fact label="Modifié le" value={fmtDayTime(new Date(s.updated_at))} />

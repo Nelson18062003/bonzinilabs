@@ -21,8 +21,8 @@
  * les pavés ne s'interpénètrent jamais, donc rien à trier à la main.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildLoadPlan, CAMERAS, lotColor } from '@/lib/cargo/loadplan';
-import type { CameraPreset, LoadPlan, PlacedBox } from '@/lib/cargo/loadplan';
+import { buildLoadPlan, CAMERAS, lotColorMap } from '@/lib/cargo/loadplan';
+import type { CameraPreset, LoadPlan, PlacedBox, PlacedVehicle } from '@/lib/cargo/loadplan';
 import type { CargoPackage } from '@/lib/cargo/model';
 
 type FaceKey = 'back' | 'front' | 'left' | 'right' | 'top' | 'bottom';
@@ -81,6 +81,31 @@ function Cuboid({
   );
 }
 
+/**
+ * Un véhicule : sa silhouette (caisse basse + habitacle), posée à plat ou
+ * inclinée. Le repère local part de l'arrière-bas du véhicule (s vers
+ * l'avant, t vers le haut) ; la rotation se fait autour de ce coin.
+ * En CSS l'axe Y descend : lever l'avant d'un véhicule tourné vers +X, c'est
+ * rotateZ(−θ) ; tourné vers −X, on le retourne (scaleX(−1)) puis rotateZ(+θ).
+ */
+function Vehicle({ v, color, dim, on, onEnter, onLeave }: { v: PlacedVehicle; color: string; dim: boolean; on: boolean; onEnter?: () => void; onLeave?: () => void }) {
+  const t = `translate3d(${v.px}px, ${-v.py}px, ${v.z}px) rotateZ(${v.facing === 1 ? -v.angle : v.angle}deg)${v.facing === -1 ? ' scaleX(-1)' : ''}`;
+  return (
+    <div className={`c3d-solid c3d-box${on ? ' is-on' : ''}`} style={{ transform: t }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      {v.parts.map((pt, i) => (
+        <Cuboid
+          key={i}
+          x={pt.s0} y={-pt.t1} z={0}
+          l={pt.s1 - pt.s0} w={v.width} h={pt.t1}
+          // L'habitacle un ton plus clair : on lit l'avant et l'arrière du véhicule.
+          color={i === 0 ? color : `color-mix(in srgb, ${color} 62%, #ffffff)`}
+          opacity={dim ? 0.13 : 1}
+        />
+      ))}
+    </div>
+  );
+}
+
 /** Plafond de pavés dessinés — au-delà, la scène devient un tas de calques GPU. */
 const MAX_DRAWN = 160;
 
@@ -95,6 +120,7 @@ export function Container3D({
   className?: string;
 }) {
   const plan: LoadPlan = useMemo(() => buildLoadPlan(iso, packages), [iso, packages]);
+  const colors = useMemo(() => lotColorMap(packages, dark), [packages, dark]);
   const [cam, setCam] = useState(CAMERAS[0]);
   const [yaw, setYaw] = useState(CAMERAS[0].yaw);
   const [pitch, setPitch] = useState(CAMERAS[0].pitch);
@@ -221,7 +247,7 @@ export function Container3D({
         onPointerUp={onUp}
         onPointerCancel={onUp}
         role="img"
-        aria-label={`Conteneur ${plan.isoLabel}, ${plan.boxes.length} colis, rempli à ${Math.round(plan.fill * 100)} pour cent du volume`}
+        aria-label={`Conteneur ${plan.isoLabel}${plan.vehicles.length ? `, ${plan.vehicles.length} véhicule${plan.vehicles.length > 1 ? 's' : ''}` : ''}, rempli à ${Math.round(plan.fill * 100)} pour cent du volume`}
       >
         {hidden > 0 && (
           <p className="c3d-hint" style={{ position: 'absolute', left: 8, top: 8, zIndex: 2, margin: 0 }}>
@@ -248,12 +274,24 @@ export function Container3D({
               />
             )}
 
+            {plan.vehicles.map((v) => (
+              <Vehicle
+                key={v.id}
+                v={v}
+                color={colors[v.packageId] ?? '#999'}
+                dim={hoveredPackageId != null && hoveredPackageId !== v.packageId}
+                on={hoveredPackageId === v.packageId}
+                onEnter={() => onHoverPackage?.(v.packageId)}
+                onLeave={() => onHoverPackage?.(null)}
+              />
+            ))}
+
             {visible.map((b) => (
               <Cuboid
                 key={b.id}
                 x={b.x} y={-b.y - b.h} z={b.z}
                 l={b.l} w={b.w} h={b.h}
-                color={lotColor(b.lot, dark)}
+                color={colors[b.packageId] ?? '#999'}
                 opacity={hoveredPackageId != null && hoveredPackageId !== b.packageId ? 0.13 : 1}
                 className={`c3d-box${hoveredPackageId === b.packageId ? ' is-on' : ''}`}
                 onEnter={() => onHoverPackage?.(b.packageId)}
@@ -264,6 +302,11 @@ export function Container3D({
         </div>
       </div>
 
+      {plan.mode === 'mixed' && (
+        <p className="c3d-hint">
+          Véhicules en silhouette ; les colis connus seulement par leur volume (packing list) sont dessinés en blocs de ce volume, pas à leur forme réelle.
+        </p>
+      )}
       <p className="c3d-hint">
         <span className="max-lg:hidden">Glisser pour tourner · molette pour approcher · « Étages » retire les couches du haut pour voir dessous.</span>
         <span className="lg:hidden">Glissez pour tourner la boîte. « Étages » retire les couches du haut pour voir dessous.</span>

@@ -8,4 +8,5 @@ export { TabDouane } from './TabDouane';
 export { TabCouts } from './TabCouts';
 export { TabClient } from './TabClient';
 export { TabNotes } from './TabNotes';
-export { Section, Band, Fact, Facts, Empty, SectionHead } from './kit';
+export { TabIntervenants } from './TabIntervenants';
+export { Section, Band, Fact, Facts, Empty, SectionHead, SubBlock, IconTile, ToolButton, IconButton, Tag, FieldLabel } from './kit';

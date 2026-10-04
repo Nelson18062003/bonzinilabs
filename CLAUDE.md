@@ -26,6 +26,9 @@ config racine est `{"files": [], "references": [...]}` : `tsc --noEmit` sans
 `--build` y compile **zéro fichier** et sort 0 — la commande a longtemps
 renvoyé « OK » sans rien vérifier. Ne retirez pas le `-p`.
 
+## Cargo — modèle opérationnel (LIRE AVANT TOUT TRAVAIL CARGO)
+Bonzini a **son propre bureau et son propre entrepôt à Guangzhou**. C'est Bonzini qui reçoit, enregistre et mesure les colis des clients, puis **remplit lui-même les conteneurs** (groupage). Le **transitaire** en Chine (pour MIEU3611115 : Eric, société KASSUMAYE PARTNER SARL) fait seulement le booking, le camion et la douane d'export ; il est le chargeur sur le BL. NORTON GAUSS BONZINI SARL est le destinataire au Cameroun ; les clients paient le fret à Bonzini. Le nombre de colis et leurs propriétaires se demandent à **notre entrepôt**, les factures des marchandises à **nos clients**. Détails : `docs/cargo/MODELE-OPERATIONNEL.md`.
+
 ## Critical Rules
 @.claude/rules/database.md — schema, dropped tables, RLS patterns
 @.claude/rules/supabase-clients.md — two-client isolation (the most common source of bugs)

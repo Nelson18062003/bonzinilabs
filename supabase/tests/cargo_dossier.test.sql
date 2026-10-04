@@ -1,0 +1,244 @@
+-- ============================================================================
+-- Dossier conteneur — le classeur (20261003140000_cargo_document_folders.sql) :
+-- qui crée une pièce, ce qui ne bouge jamais, et rien ne passe d'un conteneur à l'autre.
+-- ============================================================================
+\set ON_ERROR_STOP on
+SET client_min_messages = warning;
+
+CREATE OR REPLACE FUNCTION public._assert(cond BOOLEAN, msg TEXT) RETURNS VOID LANGUAGE plpgsql AS $$
+BEGIN IF cond IS NOT TRUE THEN RAISE EXCEPTION 'ÉCHEC : %', msg; END IF; END $$;
+GRANT EXECUTE ON FUNCTION public._assert(BOOLEAN, TEXT) TO anon, authenticated, service_role;
+CREATE OR REPLACE FUNCTION public._as(uid UUID) RETURNS VOID LANGUAGE sql AS $$
+  SELECT set_config('request.jwt.claims', json_build_object('sub', uid)::text, false)
+$$;
+GRANT EXECUTE ON FUNCTION public._as(UUID) TO anon, authenticated, service_role;
+
+INSERT INTO auth.users (id) VALUES
+  ('00000000-0000-0000-0000-0000000000a1'),  -- ops : gère
+  ('00000000-0000-0000-0000-0000000000a2'),  -- support : lit
+  ('00000000-0000-0000-0000-0000000000a3');  -- caissier : rien
+INSERT INTO public.user_roles (user_id, role) VALUES
+  ('00000000-0000-0000-0000-0000000000a1', 'ops'),
+  ('00000000-0000-0000-0000-0000000000a2', 'support'),
+  ('00000000-0000-0000-0000-0000000000a3', 'cash_agent');
+INSERT INTO public.cargo_shipments (id, container_number) VALUES
+  ('00000000-0000-0000-0000-00000000000a', 'MIEU3611115'),
+  ('00000000-0000-0000-0000-00000000000b', 'MRKU4617437');
+INSERT INTO public.cargo_costs (id, shipment_id, label) VALUES
+  ('00000000-0000-0000-0000-0000000000cb', '00000000-0000-0000-0000-00000000000b', 'fret B');
+
+-- ── L'ops crée une pièce « B/L originaux » (3 attendus) et y range un fichier.
+SET ROLE authenticated;
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+INSERT INTO public.cargo_doc_folders (id, shipment_id, title, category, expected_count)
+  VALUES ('00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-00000000000a', 'B/L originaux', 'BL', 3);
+INSERT INTO public.cargo_documents (id, shipment_id, kind, file_name, storage_path, uploaded_by, folder_id)
+  VALUES ('00000000-0000-0000-0000-0000000000da', '00000000-0000-0000-0000-00000000000a', 'BL', 'bl1.pdf', 'a/1-bl1.pdf',
+          '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000fa');
+-- Les nouvelles catégories passent.
+INSERT INTO public.cargo_documents (shipment_id, kind, file_name, storage_path, uploaded_by)
+  VALUES ('00000000-0000-0000-0000-00000000000a', 'CERTIFICATE', 'cicq.jpg', 'a/2-cicq.jpg', '00000000-0000-0000-0000-0000000000a1');
+
+-- ── Renommer, annoter : oui. Changer de conteneur, de chemin ou d'auteur : rétabli en silence.
+UPDATE public.cargo_documents
+   SET title = 'B/L original 1/3', note = 'reçu de Kassumaye',
+       shipment_id = '00000000-0000-0000-0000-00000000000b', storage_path = 'pirate', uploaded_by = '00000000-0000-0000-0000-0000000000a2'
+ WHERE id = '00000000-0000-0000-0000-0000000000da';
+DO $$ DECLARE d RECORD; BEGIN
+  SELECT * INTO d FROM public.cargo_documents WHERE id = '00000000-0000-0000-0000-0000000000da';
+  PERFORM _assert(d.title = 'B/L original 1/3' AND d.note = 'reçu de Kassumaye', 'titre et note modifiables');
+  PERFORM _assert(d.shipment_id = '00000000-0000-0000-0000-00000000000a', 'le fichier reste dans son conteneur');
+  PERFORM _assert(d.storage_path = 'a/1-bl1.pdf', 'le chemin de stockage ne bouge pas');
+  PERFORM _assert(d.uploaded_by = '00000000-0000-0000-0000-0000000000a1', 'l''auteur ne bouge pas');
+END $$;
+
+-- ── Une pièce ou un coût d'un AUTRE conteneur est refusé.
+DO $$ BEGIN
+  INSERT INTO public.cargo_doc_folders (id, shipment_id, title) VALUES ('00000000-0000-0000-0000-0000000000fb', '00000000-0000-0000-0000-00000000000b', 'Pièce de B');
+  BEGIN
+    UPDATE public.cargo_documents SET folder_id = '00000000-0000-0000-0000-0000000000fb' WHERE id = '00000000-0000-0000-0000-0000000000da';
+    PERFORM _assert(false, 'ranger un fichier dans la pièce d''un autre conteneur doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    UPDATE public.cargo_documents SET cost_id = '00000000-0000-0000-0000-0000000000cb' WHERE id = '00000000-0000-0000-0000-0000000000da';
+    PERFORM _assert(false, 'justifier le coût d''un autre conteneur doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+
+-- ── La pièce ne change ni de conteneur ni d'auteur.
+UPDATE public.cargo_doc_folders SET title = 'B/L (3 originaux)', shipment_id = '00000000-0000-0000-0000-00000000000b', created_by = NULL
+ WHERE id = '00000000-0000-0000-0000-0000000000fa';
+DO $$ DECLARE f RECORD; BEGIN
+  SELECT * INTO f FROM public.cargo_doc_folders WHERE id = '00000000-0000-0000-0000-0000000000fa';
+  PERFORM _assert(f.title = 'B/L (3 originaux)', 'la pièce se renomme');
+  PERFORM _assert(f.shipment_id = '00000000-0000-0000-0000-00000000000a' AND f.created_by = '00000000-0000-0000-0000-0000000000a1', 'dossier et auteur figés');
+END $$;
+
+-- ── Le support lit mais n'écrit pas ; le caissier ne voit rien.
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_doc_folders) = 2, 'le support voit les pièces');
+  BEGIN
+    INSERT INTO public.cargo_doc_folders (shipment_id, title) VALUES ('00000000-0000-0000-0000-00000000000a', 'intrus');
+    PERFORM _assert(false, 'le support ne crée pas de pièce');
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  UPDATE public.cargo_documents SET title = 'support' WHERE id = '00000000-0000-0000-0000-0000000000da';
+  PERFORM _assert(NOT FOUND, 'le support ne renomme pas un fichier');
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a3');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_doc_folders) = 0, 'le caissier ne voit aucune pièce');
+  PERFORM _assert((SELECT count(*) FROM public.cargo_documents) = 0, 'le caissier ne voit aucun fichier');
+END $$;
+
+-- ── Supprimer la pièce laisse ses fichiers, « non classés ».
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+DELETE FROM public.cargo_doc_folders WHERE id = '00000000-0000-0000-0000-0000000000fa';
+DO $$ BEGIN
+  PERFORM _assert((SELECT folder_id FROM public.cargo_documents WHERE id = '00000000-0000-0000-0000-0000000000da') IS NULL, 'fichier conservé, non classé');
+END $$;
+RESET ROLE;
+
+-- ============================================================================
+-- Parties prenantes (20261003150000_cargo_parties.sql)
+-- ============================================================================
+SET ROLE authenticated;
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+INSERT INTO public.cargo_parties (id, name, contact_name) VALUES ('00000000-0000-0000-0000-0000000000e1', 'KASSUMAYE PARTNER SARL', 'Eric');
+-- Une partie, deux rôles sur le même conteneur.
+INSERT INTO public.cargo_shipment_parties (id, shipment_id, party_id, role) VALUES
+  ('00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'FORWARDER'),
+  ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'SHIPPER');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_shipment_parties (shipment_id, party_id, role) VALUES ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'SHIPPER');
+    PERFORM _assert(false, 'le même rôle deux fois doit échouer');
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_shipment_parties (shipment_id, party_id, role) VALUES ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-0000000000e1', 'PIRATE');
+    PERFORM _assert(false, 'un rôle inconnu doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+-- Un rôle ne change pas de conteneur ; la note, si.
+UPDATE public.cargo_shipment_parties SET note = 'détient les originaux', shipment_id = '00000000-0000-0000-0000-00000000000b' WHERE id = '00000000-0000-0000-0000-0000000000e3';
+DO $$ BEGIN
+  PERFORM _assert((SELECT shipment_id FROM public.cargo_shipment_parties WHERE id = '00000000-0000-0000-0000-0000000000e3') = '00000000-0000-0000-0000-00000000000a', 'rôle figé sur son conteneur');
+  PERFORM _assert((SELECT note FROM public.cargo_shipment_parties WHERE id = '00000000-0000-0000-0000-0000000000e3') = 'détient les originaux', 'note modifiable');
+END $$;
+-- Le support lit, n'écrit pas ; le caissier ne voit rien.
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_shipment_parties) = 2, 'le support voit les rôles');
+  BEGIN
+    INSERT INTO public.cargo_parties (name) VALUES ('intrus');
+    PERFORM _assert(false, 'le support ne crée pas de partie');
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a3');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_parties) = 0, 'le caissier ne voit pas l''annuaire');
+END $$;
+-- Supprimer la partie retire ses rôles.
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+DELETE FROM public.cargo_parties WHERE id = '00000000-0000-0000-0000-0000000000e1';
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_shipment_parties) = 0, 'rôles retirés avec la partie');
+END $$;
+RESET ROLE;
+
+-- ============================================================================
+-- Colis : véhicules, volume seul, propriétaire (20261003170000_cargo_packages_mixed.sql)
+-- ============================================================================
+INSERT INTO public.cargo_packages (shipment_id, label, kind, length_cm, width_cm, height_cm, hs_code)
+  VALUES ('00000000-0000-0000-0000-00000000000a', 'Haval H6', 'VEHICLE', 464.9, 185.2, 171, '8703.22.10.9100');
+INSERT INTO public.cargo_packages (shipment_id, label, qty, cbm, owner_label)
+  VALUES ('00000000-0000-0000-0000-00000000000a', 'Tôles', 7, 3.2, 'Olivier Yaoundé');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label) VALUES ('00000000-0000-0000-0000-00000000000a', 'Sans taille');
+    PERFORM _assert(false, 'un lot sans cotes ni volume doit échouer');
+  EXCEPTION WHEN check_violation OR not_null_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label, length_cm, cbm) VALUES ('00000000-0000-0000-0000-00000000000a', 'Cotes à moitié', 100, 1);
+    PERFORM _assert(false, 'des cotes incomplètes doivent échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_packages (shipment_id, label, cbm, hs_code) VALUES ('00000000-0000-0000-0000-00000000000a', 'Code faux', 1, 'abc; drop');
+    PERFORM _assert(false, 'un code SH non numérique doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+
+-- ============================================================================
+-- Suivi manuel (20261003180000_cargo_voyage_manual.sql)
+-- ============================================================================
+RESET ROLE;
+UPDATE public.cargo_shipments SET vessel_imo = '9454412', vessel_name = 'CMA CGM LAPEROUSE' WHERE id = '00000000-0000-0000-0000-00000000000a';
+INSERT INTO public.cargo_vessel_positions (vessel_imo, latitude, longitude, reported_at, source)
+  VALUES ('9454412', -20.42, 9.92, '2026-09-10T22:47:00Z', 'manual');
+SET ROLE authenticated;
+-- Le support ne pose pas de position.
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now(), NULL, NULL, 'Atlas') ->> 'success')::boolean = false, 'le support est refusé');
+-- L'ops oui ; les absurdités sont refusées ; une saisie plus ancienne n'écrase rien.
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 95, 9.68) ->> 'success')::boolean = false, 'latitude hors limites');
+SELECT _assert((public.cargo_set_vessel_position('123', 2.79, 9.68) ->> 'success')::boolean = false, 'IMO invalide');
+SELECT _assert((public.cargo_set_vessel_position('9999999', 2.79, 9.68) ->> 'success')::boolean = false, 'navire sans dossier');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now() + interval '2 days') ->> 'success')::boolean = false, 'date future');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now() - interval '1 hour', 0.2, NULL, 'Flexport Atlas') ->> 'success')::boolean, 'l''ops pose la position');
+SELECT _assert((public.cargo_set_vessel_position('9454412', -10, 5, '2026-09-01T00:00:00Z') ->> 'success')::boolean, 'appel accepté…');
+RESET ROLE;
+DO $$ BEGIN
+  PERFORM _assert((SELECT latitude FROM public.cargo_vessel_positions WHERE vessel_imo = '9454412') = 2.79, '…mais une saisie plus ancienne n''écrase pas la récente');
+  PERFORM _assert((SELECT note FROM public.cargo_vessel_positions WHERE vessel_imo = '9454412') = 'Flexport Atlas', 'la source est gardée');
+  PERFORM _assert(obj_description('public.cargo_set_vessel_position(text, double precision, double precision, timestamptz, numeric, numeric, text)'::regprocedure, 'pg_proc') LIKE '@mola:{"expose":true%', 'étiquette Mola');
+END $$;
+-- Escales : un tableau, borné.
+DO $$ BEGIN
+  BEGIN
+    UPDATE public.cargo_shipments SET route_calls = '{"a":1}' WHERE id = '00000000-0000-0000-0000-00000000000a';
+    PERFORM _assert(false, 'route_calls doit être un tableau');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+
+-- ============================================================================
+-- Étapes de douane (20261004090000_cargo_steps.sql)
+-- ============================================================================
+SET ROLE authenticated;
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+INSERT INTO public.cargo_doc_folders (id, shipment_id, title, category) VALUES ('00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC');
+INSERT INTO public.cargo_steps (id, shipment_id, key, title, phase, status, done_on, reference, folder_id)
+  VALUES ('00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC', 'before', 'done', '2026-09-30', 'MI2661716', '00000000-0000-0000-0000-0000000000f5');
+-- Une étape libre (sans clé) passe ; une clé en double sur le même conteneur, non.
+INSERT INTO public.cargo_steps (shipment_id, title) VALUES ('00000000-0000-0000-0000-00000000000a', 'Rendez-vous chez le déclarant');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_steps (shipment_id, key, title) VALUES ('00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC bis');
+    PERFORM _assert(false, 'une clé standard en double doit échouer');
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_steps (shipment_id, title, status) VALUES ('00000000-0000-0000-0000-00000000000a', 'x', 'peut-être');
+    PERFORM _assert(false, 'un état inconnu doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  -- La pièce d'un autre conteneur est refusée.
+  INSERT INTO public.cargo_doc_folders (id, shipment_id, title) VALUES ('00000000-0000-0000-0000-0000000000f6', '00000000-0000-0000-0000-00000000000b', 'Autre');
+  BEGIN
+    UPDATE public.cargo_steps SET folder_id = '00000000-0000-0000-0000-0000000000f6' WHERE id = '00000000-0000-0000-0000-0000000005a1';
+    PERFORM _assert(false, 'lier la pièce d''un autre conteneur doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+UPDATE public.cargo_steps SET note = 'validé par SOFT CENTRAL LAB', shipment_id = '00000000-0000-0000-0000-00000000000b' WHERE id = '00000000-0000-0000-0000-0000000005a1';
+DO $$ BEGIN
+  PERFORM _assert((SELECT shipment_id FROM public.cargo_steps WHERE id = '00000000-0000-0000-0000-0000000005a1') = '00000000-0000-0000-0000-00000000000a', 'étape figée sur son conteneur');
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_steps) = 2, 'le support lit les étapes');
+  UPDATE public.cargo_steps SET status = 'done';
+  PERFORM _assert(NOT FOUND, 'le support ne coche rien');
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a3');
+DO $$ BEGIN PERFORM _assert((SELECT count(*) FROM public.cargo_steps) = 0, 'le caissier ne voit rien'); END $$;
+RESET ROLE;
+
+\echo '✓ cargo_dossier : toutes les règles tiennent'

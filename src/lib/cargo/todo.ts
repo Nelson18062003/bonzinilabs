@@ -18,16 +18,27 @@ export function nextSteps(s: CargoShipment, docs?: CargoDocument[], now = new Da
   const level = (done: boolean): TodoLevel => (done ? 'done' : urgent ? 'now' : days != null && days <= 21 ? 'soon' : 'later');
   const items: TodoItem[] = [];
   if (s.status !== 'DELIVERED') {
-    items.push({ id: 'freight', label: 'Régler le fret au transitaire', detail: s.freight_usd != null ? `${Math.round(s.freight_usd).toLocaleString('fr-FR')} $` : undefined, level: level(s.freight_paid) });
-    items.push({ id: 'telex', label: 'Obtenir le télex release', detail: 'sans lui, le conteneur reste au port', level: s.freight_paid ? level(s.telex_released) : s.telex_released ? 'done' : 'later' });
+    const freight = s.freight_usd != null ? `${Math.round(s.freight_usd).toLocaleString('fr-FR')} $` : undefined;
+    items.push({
+      id: 'freight', label: 'Régler le fret au transitaire',
+      detail: s.freight_paid ? undefined : [freight, s.freight_note ? 'montant à confirmer' : null].filter(Boolean).join(' · ') || undefined,
+      level: level(s.freight_paid),
+    });
+    items.push({ id: 'telex', label: 'Obtenir le télex release', detail: 'sans lui, le conteneur reste au port', level: s.freight_paid ? level(s.telex_released) : s.telex_released ? 'done' : urgent ? 'now' : 'later' });
     items.push({ id: 'bl', label: 'Classer le bill of lading dans le dossier', level: level(HAS(docs, 'BL')) });
-    items.push({ id: 'invoice', label: 'Classer la facture commerciale', detail: 'demandée à la douane', level: level(HAS(docs, 'INVOICE')) });
+    items.push({ id: 'invoice', label: 'Réunir les factures commerciales', detail: 'à demander à nos clients, base de la valeur en douane', level: level(HAS(docs, 'INVOICE')) });
     if (s.pod_unlocode === 'CMKBI' || s.pod_unlocode === 'CMDLA') {
-      items.push({ id: 'besc', label: 'Vérifier le BESC', detail: 'obligatoire à l’import au Cameroun', level: level(HAS(docs, 'BESC')) });
+      // Le BESC est fait dès qu'on a son numéro (ou sa pièce) : la liste ne le redemande plus.
+      const besc = !!s.besc_number || HAS(docs, 'BESC');
+      items.push({
+        id: 'besc', label: besc ? `BESC obtenu${s.besc_number ? ` (${s.besc_number})` : ''}` : 'Obtenir le BESC',
+        detail: besc ? undefined : 'obligatoire à l’import au Cameroun, avant l’arrivée', level: level(besc),
+      });
     }
     if (s.status === 'UNKNOWN') items.push({ id: 'vessel', label: 'Renseigner le navire', detail: 'pour placer la boîte sur la carte', level: s.vessel_imo ? 'done' : 'soon' });
     // Prévenir le client : urgent seulement quand l'arrivée est proche, sinon « bientôt ».
-    if (etaSlipDays(s) > 3) items.push({ id: 'client', label: `Prévenir ${s.client_label} du report`, detail: `retard de ${etaSlipDays(s)} jours sur la date promise`, level: days != null && days <= 14 ? 'now' : 'soon' });
+    const slip = etaSlipDays(s);
+    if (slip > 3) items.push({ id: 'client', label: `Prévenir ${s.client_label} du retard`, detail: `${slip} jours de plus que la date promise`, level: days != null && days <= 14 ? 'now' : 'soon' });
   }
   return items;
 }
