@@ -21,7 +21,7 @@ export const DOSSIER_TABS: readonly DossierTabDef[] = [
   { key: 'documents', label: 'Documents', purpose: 'Le classeur : les pièces du dossier et leurs fichiers' },
   { key: 'douane', label: 'Douane & arrivée', purpose: 'Les étapes camerounaises et la franchise' },
   { key: 'couts', label: 'Coûts', purpose: 'Le prix de revient réel du conteneur' },
-  { key: 'client', label: 'Client', purpose: 'Le client Bonzini et ses autres conteneurs' },
+  { key: 'client', label: 'Clients', purpose: 'Les clients du groupage : à qui est chaque lot, sa part du volume et du fret' },
   { key: 'intervenants', label: 'Intervenants', purpose: 'Les parties prenantes externes : transitaire, chargeur, déclarant, armateur…' },
   { key: 'notes', label: 'Notes', purpose: 'Ce que l’équipe doit savoir' },
 ] as const;

@@ -443,6 +443,41 @@ export function useCargoClient(clientId: string | null) {
   });
 }
 
+/** Les fiches des clients rattachés aux lots d'un conteneur. */
+export function useCargoClientsByIds(ids: string[]) {
+  const key = [...new Set(ids)].sort();
+  return useQuery({
+    queryKey: ['cargo', 'clients-by-ids', key.join(',')],
+    enabled: key.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('clients')
+        .select('id, first_name, last_name, company_name, phone, customer_code, city')
+        .in('id', key);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Attribuer des lots à un propriétaire (nom porté sur les colis, fiche Bonzini facultative). */
+export function useAssignLotsOwner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, ownerLabel, clientId }: { ids: string[]; shipmentId: string; ownerLabel: string | null; clientId: string | null }) => {
+      if (ids.length === 0) return;
+      const { error } = await supabaseAdmin.from('cargo_packages').update({ owner_label: ownerLabel, client_id: clientId }).in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.ids.length > 1 ? `${v.ids.length} lots attribués` : 'Lot attribué');
+      qc.invalidateQueries({ queryKey: ['cargo', 'packages', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Attribution impossible : ${e.message}`),
+  });
+}
+
 /** Liste courte des clients, pour rattacher un dossier. */
 export function useCargoClientOptions(search: string) {
   return useQuery({

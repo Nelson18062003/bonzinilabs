@@ -210,3 +210,5 @@ export const useCargoSteps = (id: string | null) => ok(id === '2' ? STEPS : ([] 
 export const useCreateCargoSteps = noop;
 export const useUpdateCargoStep = noop;
 export const useDeleteCargoStep = noop;
+export const useCargoClientsByIds = () => ok([] as { id: string; first_name: string; last_name: string; company_name: string | null; phone: string | null; customer_code: string | null; city: string | null }[]);
+export const useAssignLotsOwner = noop;
