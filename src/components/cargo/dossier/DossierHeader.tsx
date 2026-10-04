@@ -179,7 +179,7 @@ export function DossierHeader({
         <div className="flex items-start gap-4">
           <div className="text-right">
             <div className={cn('text-[11px] max-lg:text-[16px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>
-              {eta.source === 'carrier' ? 'Arrivée' : 'Arrivée promise'}
+              {eta.source === 'manual' ? 'Arrivée relevée' : eta.source === 'carrier' ? 'Arrivée armateur' : 'Arrivée promise'}
             </div>
             <div className={cn('mt-0.5 text-[17px] font-extrabold tabular-nums', TEXT.strong)}>{s.pod_name} · {fmtDay(eta.date)}</div>
             <div className={cn('text-[11.5px] max-lg:text-[16px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>

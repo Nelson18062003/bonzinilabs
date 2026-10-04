@@ -89,6 +89,7 @@ export type CargoShipmentPatch = Partial<
     | 'eta_carrier' | 'status' | 'arrival_notice_at' | 'free_time_ends_on' | 'customs_declaration_ref'
     | 'customs_cleared_at' | 'delivery_order_at' | 'gate_out_at' | 'empty_returned_at' | 'besc_number'
     | 'goods_description' | 'gross_weight_kg' | 'packages_count' | 'freight_note'
+    | 'eta_manual' | 'eta_manual_note' | 'eta_manual_at' | 'route_calls'
   >
 >;
 
@@ -139,6 +140,31 @@ export function useRequestCargoSync() {
       window.setTimeout(() => qc.invalidateQueries({ queryKey: ['cargo'] }), 25_000);
     },
     onError: (e: Error) => toast.error(`Mise à jour impossible : ${e.message}`),
+  });
+}
+
+/**
+ * Poser à la main la dernière position d'un navire (relevée sur Atlas,
+ * VesselFinder, ou donnée par le consignataire) — aucune source AIS n'est
+ * branchée. La RPC vérifie le droit (canManageCargo) et refuse une saisie
+ * plus ancienne que la position connue.
+ */
+export function useSetVesselPosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { imo: string; latitude: number; longitude: number; reportedAt: string; speedKn?: number | null; courseDeg?: number | null; note?: string | null }) => {
+      const { data, error } = await supabaseAdmin.rpc('cargo_set_vessel_position', {
+        p_imo: v.imo, p_latitude: v.latitude, p_longitude: v.longitude, p_reported_at: v.reportedAt,
+        p_speed_kn: v.speedKn ?? undefined, p_course_deg: v.courseDeg ?? undefined, p_note: v.note ?? undefined,
+      });
+      if (error) throw error;
+      assertOk(data);
+    },
+    onSuccess: () => {
+      toast.success('Position du navire mise à jour');
+      qc.invalidateQueries({ queryKey: ['cargo', 'positions'] });
+    },
+    onError: (e: Error) => toast.error(`Position non enregistrée : ${e.message}`),
   });
 }
 

@@ -16,7 +16,7 @@ export interface DossierTabDef {
 
 export const DOSSIER_TABS: readonly DossierTabDef[] = [
   { key: 'apercu', label: "Aperçu", purpose: 'Où il est, quand il arrive, ce qu’il reste à faire' },
-  { key: 'suivi', label: 'Suivi', purpose: 'Les jalons de l’armateur, du booking à l’arrivée' },
+  { key: 'suivi', label: 'Suivi', purpose: 'Les escales du voyage, les jalons de l’armateur et les arrivées confrontées' },
   { key: 'chargement', label: 'Chargement', purpose: 'Ce qu’il y a dans la boîte, et la place qu’il reste' },
   { key: 'documents', label: 'Documents', purpose: 'Le classeur : les pièces du dossier et leurs fichiers' },
   { key: 'douane', label: 'Douane & arrivée', purpose: 'Les étapes camerounaises et la franchise' },

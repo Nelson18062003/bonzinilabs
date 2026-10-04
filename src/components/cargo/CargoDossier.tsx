@@ -55,8 +55,8 @@ export function CargoDossier({
       <p className={cn('mt-4 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{current.purpose}</p>
 
       <div className="mt-3 pb-10">
-        {tab === 'apercu' && <TabApercu shipment={s} />}
-        {tab === 'suivi' && <TabSuivi shipment={s} />}
+        {tab === 'apercu' && <TabApercu shipment={s} canManage={canManage} onGo={onTabChange} />}
+        {tab === 'suivi' && <TabSuivi shipment={s} canManage={canManage} />}
         {tab === 'chargement' && <TabChargement shipment={s} canManage={canManage} />}
         {tab === 'documents' && <TabDocuments shipment={s} canManage={canManage} />}
         {tab === 'douane' && <TabDouane shipment={s} canManage={canManage} />}

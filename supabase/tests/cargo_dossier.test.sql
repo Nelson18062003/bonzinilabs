@@ -168,4 +168,37 @@ DO $$ BEGIN
   EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;
 
+-- ============================================================================
+-- Suivi manuel (20261003180000_cargo_voyage_manual.sql)
+-- ============================================================================
+RESET ROLE;
+UPDATE public.cargo_shipments SET vessel_imo = '9454412', vessel_name = 'CMA CGM LAPEROUSE' WHERE id = '00000000-0000-0000-0000-00000000000a';
+INSERT INTO public.cargo_vessel_positions (vessel_imo, latitude, longitude, reported_at, source)
+  VALUES ('9454412', -20.42, 9.92, '2026-09-10T22:47:00Z', 'manual');
+SET ROLE authenticated;
+-- Le support ne pose pas de position.
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now(), NULL, NULL, 'Atlas') ->> 'success')::boolean = false, 'le support est refusé');
+-- L'ops oui ; les absurdités sont refusées ; une saisie plus ancienne n'écrase rien.
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 95, 9.68) ->> 'success')::boolean = false, 'latitude hors limites');
+SELECT _assert((public.cargo_set_vessel_position('123', 2.79, 9.68) ->> 'success')::boolean = false, 'IMO invalide');
+SELECT _assert((public.cargo_set_vessel_position('9999999', 2.79, 9.68) ->> 'success')::boolean = false, 'navire sans dossier');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now() + interval '2 days') ->> 'success')::boolean = false, 'date future');
+SELECT _assert((public.cargo_set_vessel_position('9454412', 2.79, 9.68, now() - interval '1 hour', 0.2, NULL, 'Flexport Atlas') ->> 'success')::boolean, 'l''ops pose la position');
+SELECT _assert((public.cargo_set_vessel_position('9454412', -10, 5, '2026-09-01T00:00:00Z') ->> 'success')::boolean, 'appel accepté…');
+RESET ROLE;
+DO $$ BEGIN
+  PERFORM _assert((SELECT latitude FROM public.cargo_vessel_positions WHERE vessel_imo = '9454412') = 2.79, '…mais une saisie plus ancienne n''écrase pas la récente');
+  PERFORM _assert((SELECT note FROM public.cargo_vessel_positions WHERE vessel_imo = '9454412') = 'Flexport Atlas', 'la source est gardée');
+  PERFORM _assert(obj_description('public.cargo_set_vessel_position(text, double precision, double precision, timestamptz, numeric, numeric, text)'::regprocedure, 'pg_proc') LIKE '@mola:{"expose":true%', 'étiquette Mola');
+END $$;
+-- Escales : un tableau, borné.
+DO $$ BEGIN
+  BEGIN
+    UPDATE public.cargo_shipments SET route_calls = '{"a":1}' WHERE id = '00000000-0000-0000-0000-00000000000a';
+    PERFORM _assert(false, 'route_calls doit être un tableau');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+
 \echo '✓ cargo_dossier : toutes les règles tiennent'

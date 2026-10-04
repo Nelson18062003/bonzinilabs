@@ -15,7 +15,7 @@ export PGOPTIONS="-c client_min_messages=warning"
 cd "$(dirname "$0")/../.."
 
 CUSTOMS="supabase/migrations/20260929120000_customs_foundation.sql supabase/migrations/20260929130000_customs_audit_workflow.sql supabase/migrations/20260930090000_customs_notices.sql supabase/migrations/20260930120000_customs_supplier_invites.sql"
-CARGO_DOSSIER="supabase/migrations/20261003140000_cargo_document_folders.sql supabase/migrations/20261003150000_cargo_parties.sql supabase/migrations/20261003170000_cargo_packages_mixed.sql"
+CARGO_DOSSIER="supabase/migrations/20261003140000_cargo_document_folders.sql supabase/migrations/20261003150000_cargo_parties.sql supabase/migrations/20261003170000_cargo_packages_mixed.sql supabase/migrations/20261003180000_cargo_voyage_manual.sql"
 declare -A MIGRATIONS=(
   [customs_foundation]="$CUSTOMS"
   [customs_audit_workflow]="$CUSTOMS"

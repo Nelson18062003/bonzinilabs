@@ -3,6 +3,7 @@
  * les cinq dossiers du 11/09/2026, les trois navires, une recherche.
  */
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import type { Json } from '@/integrations/supabase/types';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
 import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
 
@@ -13,20 +14,30 @@ const base = {
   arrival_notice_at: null, besc_number: null, customs_cleared_at: null, customs_declaration_ref: null,
   delivery_order_at: null, empty_returned_at: null, free_time_ends_on: null, gate_out_at: null,
   goods_description: 'Téléphones et accessoires', gross_weight_kg: 22170, packages_count: 80, freight_note: null,
+  eta_manual: null, eta_manual_at: null, eta_manual_note: null, route_calls: [] as Json[],
 } as const;
 
 const SHIPMENTS: CargoShipment[] = [
   { ...base, id: '1', client_label: 'PRC', carrier: 'CMA_CGM', bl_number: 'GGZ3133535', container_number: 'CMAU6126032', container_iso: null, pol_name: null, pol_unlocode: null, pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: '2026-08-04', eta_promised: '2026-09-17', etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 6650, status: 'UNKNOWN', last_event_at: null, last_event_label: null, last_synced_at: null },
-  { ...base, freight_note: 'Chiffre du tableau du transitaire du 11/09/2026, jamais vérifié. Le BESC porte 3 000 USD de fret.', id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
+  { ...base, freight_note: 'Chiffre du tableau du transitaire du 11/09/2026, jamais vérifié. Le BESC porte 3 000 USD de fret.',
+    eta_manual: '2026-10-03T21:00:00Z', eta_manual_at: '2026-10-03T22:00:00Z', eta_manual_note: 'Au mouillage devant Kribi le 03/10 au soir (Flexport Atlas). Escale prévue du 03 au 04/10. Maersk annonçait le 07/10.',
+    besc_number: 'MI2661716',
+    route_calls: [
+      { id: 'nsa', name: 'Nansha', unlocode: 'CNNSA', atd: '2026-08-15T23:38:00Z', note: 'Départ du navire (Maersk).' },
+      { id: 'abj', name: 'Abidjan', unlocode: 'CIABJ', atd: '2026-10-01T17:40:00Z', note: 'Départ relevé sur VesselFinder.' },
+      { id: 'kbi', name: 'Kribi', unlocode: 'CMKBI', ata: '2026-10-03', eta: '2026-10-03', etd: '2026-10-04', note: 'Au mouillage le 03/10 au soir. Escale du 03 au 04/10 : notre conteneur est déchargé ici.' },
+      { id: 'lkk', name: 'Lekki', unlocode: 'NGLKK', eta: '2026-10-07', etd: '2026-10-11', after: 1, note: 'Escale suivante du navire.' },
+    ],
+    id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
   { ...base, id: '3', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275558999', container_number: 'MRKU4617437', etd_promised: '2026-08-23', eta_promised: '2026-10-05', etd_actual: '2026-08-24T02:26:00Z', eta_carrier: '2026-10-15T01:00:00Z', vessel_name: 'CMA CGM CEDRUS', vessel_imo: '9938121', vessel_mmsi: '256615000', voyage: '633W', freight_usd: 5950, status: 'AT_SEA', last_event_at: '2026-08-24T02:26:00Z' },
   { ...base, id: '4', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275926835', container_number: 'MRSU7972968', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5650, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
   { ...base, id: '5', client_label: 'DJIANI', carrier: 'MAERSK', bl_number: '275926916', container_number: 'CAJU5023560', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5750, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
 ];
 
 const POSITIONS: CargoVesselPosition[] = [
-  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'CMA CGM LAPEROUSE', latitude: -20.42261, longitude: 9.9197, speed_kn: 12.4, course_deg: 333.2, destination: 'CIABJ', eta: '2026-09-17T06:00:00Z', reported_at: '2026-09-10T22:47:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
-  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'CMA CGM CEDRUS', latitude: 2.56352, longitude: 101.51508, speed_kn: 13.6, course_deg: 310.6, destination: 'CIABJ', eta: '2026-09-27T17:00:00Z', reported_at: '2026-09-01T12:46:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
-  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z' },
+  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'CMA CGM LAPEROUSE', latitude: 2.79, longitude: 9.68, speed_kn: null, course_deg: null, destination: 'CMKBI', eta: null, reported_at: '2026-10-03T20:35:00Z', source: 'manual', updated_at: '2026-10-03T22:00:00Z', note: 'Estimée d’après la capture Flexport Atlas du 03/10 : au mouillage devant Kribi.' },
+  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'CMA CGM CEDRUS', latitude: 2.56352, longitude: 101.51508, speed_kn: 13.6, course_deg: 310.6, destination: 'CIABJ', eta: '2026-09-27T17:00:00Z', reported_at: '2026-09-01T12:46:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
+  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
 ];
 
 const ev = (id: string, code: string, type: string, time: string, classifier = 'ACT', location: string | null = 'GZ Oceangate Container Terminal', vessel: string | null = null): CargoEvent => ({
@@ -41,7 +52,9 @@ const EVENTS: CargoEvent[] = [
   ev('e5', 'DRFT', 'SHIPMENT', '2026-08-11T03:46:22Z', 'ACT', null),
   ev('e6', 'LOAD', 'EQUIPMENT', '2026-08-15T15:25:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
   ev('e7', 'DEPA', 'TRANSPORT', '2026-08-15T23:38:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
-  ev('e8', 'ARRI', 'TRANSPORT', '2026-10-11T10:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e8', 'ARRI', 'TRANSPORT', '2026-10-03T08:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e9', 'ARRI', 'TRANSPORT', '2026-10-07T08:00:00Z', 'EST', 'Kribi Port', 'CMA CGM LAPEROUSE'),
+  ev('e10', 'DEPA', 'TRANSPORT', '2026-08-15T23:38:00Z', 'ACT', 'GZ Oceangate Container Terminal', 'CMA CGM LAPEROUSE'),
 ];
 
 const LOOKUP: CargoLookup = {
@@ -90,6 +103,7 @@ export const useCargoEvents = (id: string | null) => ok(id === '2' ? EVENTS : []
 export const useUpdateCargoShipment = noop;
 export const useRemoveCargoShipment = noop;
 export const useRequestCargoSync = noop;
+export const useSetVesselPosition = noop;
 export const useRequestCargoLookup = noop;
 export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
 export const useRecentCargoLookups = () => ok([LOOKUP]);

@@ -1063,6 +1063,9 @@ export type Database = {
           container_number: string
           created_at: string
           eta_carrier: string | null
+          eta_manual: string | null
+          eta_manual_at: string | null
+          eta_manual_note: string | null
           eta_promised: string | null
           etd_actual: string | null
           etd_promised: string | null
@@ -1078,6 +1081,7 @@ export type Database = {
           pod_unlocode: string | null
           pol_name: string | null
           pol_unlocode: string | null
+          route_calls: Json
           status: string
           sync_error: string | null
           telex_released: boolean
@@ -1107,6 +1111,9 @@ export type Database = {
           container_number: string
           created_at?: string
           eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
@@ -1122,6 +1129,7 @@ export type Database = {
           pod_unlocode?: string | null
           pol_name?: string | null
           pol_unlocode?: string | null
+          route_calls?: Json
           status?: string
           sync_error?: string | null
           telex_released?: boolean
@@ -1151,6 +1159,9 @@ export type Database = {
           container_number?: string
           created_at?: string
           eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
           eta_promised?: string | null
           etd_actual?: string | null
           etd_promised?: string | null
@@ -1166,6 +1177,7 @@ export type Database = {
           pod_unlocode?: string | null
           pol_name?: string | null
           pol_unlocode?: string | null
+          route_calls?: Json
           status?: string
           sync_error?: string | null
           telex_released?: boolean
@@ -1192,6 +1204,7 @@ export type Database = {
           eta: string | null
           latitude: number
           longitude: number
+          note: string | null
           reported_at: string
           source: string
           speed_kn: number | null
@@ -1206,6 +1219,7 @@ export type Database = {
           eta?: string | null
           latitude: number
           longitude: number
+          note?: string | null
           reported_at: string
           source?: string
           speed_kn?: number | null
@@ -1220,6 +1234,7 @@ export type Database = {
           eta?: string | null
           latitude?: number
           longitude?: number
+          note?: string | null
           reported_at?: string
           source?: string
           speed_kn?: number | null
@@ -3247,6 +3262,18 @@ export type Database = {
       }
       cargo_fleet_status: {
         Args: { p_client?: string }
+        Returns: Json
+      }
+      cargo_set_vessel_position: {
+        Args: {
+          p_course_deg?: number
+          p_imo: string
+          p_latitude: number
+          p_longitude: number
+          p_note?: string
+          p_reported_at?: string
+          p_speed_kn?: number
+        }
         Returns: Json
       }
       cargo_set_freight_paid: {

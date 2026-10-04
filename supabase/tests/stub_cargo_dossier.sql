@@ -68,3 +68,13 @@ CREATE TABLE IF NOT EXISTS public.cargo_packages (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.cargo_shipments
+  ADD COLUMN IF NOT EXISTS vessel_imo text, ADD COLUMN IF NOT EXISTS vessel_name text, ADD COLUMN IF NOT EXISTS vessel_mmsi text,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+CREATE TABLE IF NOT EXISTS public.cargo_vessel_positions (
+  vessel_imo text PRIMARY KEY, vessel_mmsi text, vessel_name text,
+  latitude double precision NOT NULL, longitude double precision NOT NULL,
+  speed_kn numeric(5,1), course_deg numeric(5,1), destination text, eta timestamptz,
+  reported_at timestamptz NOT NULL, source text NOT NULL DEFAULT 'aisstream', updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.cargo_vessel_positions ENABLE ROW LEVEL SECURITY;
