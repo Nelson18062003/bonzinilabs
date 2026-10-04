@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fondations juridiques partie 2</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  :root {
+    --violet: hsl(258 100% 60%); --amber: hsl(36 100% 55%); --orange: hsl(16 100% 55%);
+    --ink: #1c1b22; --muted: #5d5a68; --line: #dcd9e3; --soft: #f6f4fa;
+    --ok: #1d7a46; --warn: #a35a00; --risk: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); font-size: 10.2pt; line-height: 1.45; margin: 0; }
+  h1 { font-size: 21pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.01em; }
+  h2 { font-size: 13.5pt; margin: 18pt 0 6pt; padding-bottom: 3pt; border-bottom: 2px solid var(--line); break-after: avoid; }
+  h3 { font-size: 11pt; margin: 12pt 0 4pt; break-after: avoid; }
+  p { margin: 0 0 6pt; }
+  ul, ol { margin: 0 0 6pt; padding-left: 16pt; }
+  li { margin: 0 0 2.5pt; }
+  .bar { height: 5px; background: linear-gradient(90deg, var(--violet) 0 33%, var(--amber) 33% 66%, var(--orange) 66% 100%); border-radius: 3px; margin-bottom: 10pt; }
+  .meta { color: var(--muted); font-size: 9pt; margin-bottom: 10pt; }
+  .lead { font-size: 11pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9.4pt; }
+  th, td { border: 1px solid var(--line); padding: 4pt 5pt; vertical-align: top; text-align: left; }
+  th { background: var(--soft); font-weight: 600; }
+  tr { break-inside: avoid; }
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--violet); background: var(--soft); padding: 6pt 8pt; margin: 6pt 0 8pt; border-radius: 3px; break-inside: avoid; }
+  .box.amber { border-left-color: var(--amber); }
+  .box.risk { border-left-color: var(--risk); background: #fff5f4; }
+  .box.ok { border-left-color: var(--ok); background: #f3faf5; }
+  .tag { display: inline-block; font-size: 7.8pt; font-weight: 700; padding: 0 4pt; border-radius: 3px; vertical-align: 1px; white-space: nowrap; }
+  .off { background: #e3f4e9; color: var(--ok); }
+  .cp { background: #eef0ff; color: #3b3fa8; }
+  .an { background: #f1eefa; color: #5b3fb0; }
+  .nk { background: #fff1dc; color: var(--warn); }
+  blockquote { margin: 4pt 0 6pt; padding: 4pt 8pt; border-left: 3px solid var(--line); color: #34313c; font-size: 9.3pt; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .pb { break-before: page; }
+  .us { background: #f3faf5; }
+  .who { font-weight: 600; white-space: nowrap; }
+  .step { display: inline-block; min-width: 15pt; height: 15pt; line-height: 15pt; text-align: center; border-radius: 8pt; background: var(--violet); color: #fff; font-weight: 700; font-size: 8pt; }
+  .step.a { background: var(--amber); color: #2a1a00; } .step.o { background: var(--orange); } .step.g { background: var(--ok); }
+  code { font-family: inherit; background: var(--soft); padding: 0 2pt; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="bar"></div>
+<h1>Le client devient l’importateur, Bonzini l’accompagne</h1>
+<div class="lead">Fondations juridiques et comptables de Bonzini Cargo au Cameroun · partie 2 : le modèle «&nbsp;commissionnaire de transport&nbsp;», concrètement</div>
+<div class="meta">NORTON GAUSS BONZINI SARL · document interne · version du 4 octobre 2026 · préparé pour Nelson Soh, directeur des opérations</div>
+
+<div class="box amber">
+  <b>Étiquettes.</b>
+  <span class="tag off">OFFICIEL</span> lu dans un texte publié par un État ou une organisation officielle ·
+  <span class="tag cp">AUTRE SOURCE</span> document d’un organisme privé ou copie non officielle ·
+  <span class="tag an">ANALYSE</span> mon raisonnement ·
+  <span class="tag nk">JE NE SAIS PAS</span> pas de texte trouvé, la personne à consulter est indiquée.<br>
+  <b>Ce que j’ai compris de ta question :</b> «&nbsp;une vraie commission de 30 %&nbsp;» est, je pense, «&nbsp;un vrai commissionnaire de transport&nbsp;», le modèle B de la partie 1. Si tu parlais d’une marge de 30 %, c’est une question de prix, à traiter à part.
+</div>
+
+<h2>1. Le principe en trois phrases</h2>
+<ol>
+  <li><b>Le client est l’importateur.</b> Son nom et son NIU sont sur la déclaration en douane. C’est lui qui doit les droits et qui les paie.</li>
+  <li><b>Le commissionnaire en douane agréé déclare au nom du client</b>, grâce à un mandat signé une fois pour toutes.</li>
+  <li><b>Bonzini organise tout le reste</b> et facture son service : réception en Chine, groupage, fret, suivi, dossier, livraison. Bonzini n’avance de droits que s’il le choisit, et alors au franc près, quittance à l’appui.</li>
+</ol>
+<p>Ce montage est prévu par le Code des douanes de la CEMAC <span class="tag off">OFFICIEL</span> : on peut traiter avec la douane «&nbsp;par l’intermédiaire d’un tiers [qu’on désigne] pour agir en [son] nom&nbsp;» (art. 74-1). Et une fois la relation régulière, la douane ne redemande pas le mandat à chaque déclaration (art. 74-10).</p>
+
+<h2>2. Ce qu’il faut au client pour être importateur</h2>
+<h3>Une fois pour toutes (puis chaque année pour certaines pièces)</h3>
+<table>
+  <tr><th style="width:20%">Pièce</th><th>Ce que dit la source</th><th style="width:21%">Peut-on l’automatiser ?</th></tr>
+  <tr><td><b>NIU</b> (numéro d’identifiant unique)</td><td>Obligatoire sur toute déclaration : elle doit contenir «&nbsp;le numéro d’identification unique (NIU) des importateurs&nbsp;» (Code des douanes CEMAC, art. 156-2) <span class="tag off">OFFICIEL</span>.<br>Il est «&nbsp;attribué sans frais&nbsp;». Pour une personne physique : formulaire, copie de la carte d’identité, registre du commerce le cas échéant, plan de localisation. Avec prise d’empreintes et photo (décret n° 2012/3731/PM, art. 8 à 10, annexé au Code général des impôts 2026) <span class="tag off">OFFICIEL</span>.</td><td><b>En partie.</b> On prépare le dossier. Mais les empreintes et la photo se font sur place : le client doit se déplacer.</td></tr>
+  <tr><td><b>Être inscrit dans un centre des impôts</b></td><td>À la douane, le précompte est de 10 % de la valeur pour celui qui ne relève pas du fichier d’un centre des impôts, 10 % aussi pour un petit commerçant à l’impôt général synthétique qui importe, et 2 % pour un commerçant au réel (Code général des impôts 2026, art. 21-3) <span class="tag off">OFFICIEL</span>. L’impôt général synthétique concerne les commerces de moins de 50 millions de FCFA de chiffre d’affaires par an (art. C 39).</td><td>Oui pour le dossier. L’inscription se fait au centre des impôts.</td></tr>
+  <tr><td><b>Existence légale du commerce</b></td><td>Une société, ou un commerçant inscrit au registre du commerce. Pour un petit commerçant, le droit OHADA prévoit le statut d’<b>entreprenant</b> : une déclaration d’activité «&nbsp;sans frais&nbsp;» au greffe, avec nom, adresse, activité et pièce d’identité. Le greffe délivre un numéro de déclaration d’activité (Acte uniforme sur le droit commercial général, art. 30, 62, 63) <span class="tag off">OFFICIEL</span>.</td><td>Oui pour le formulaire. Le dépôt se fait au greffe ou à l’organe compétent.</td></tr>
+  <tr><td><b>Fichier des importateurs (FIMEX)</b></td><td>Pièces : patente ou attestation de non-redevance, attestation d’immatriculation au registre du commerce, carte d’identité, carte de contribuable, attestation CNPS. Coût : 25 000 FCFA. Attestation en 48 heures, valable une année budgétaire (site du ministère du Commerce) <span class="tag off">OFFICIEL</span>.</td><td>Oui : rappel de renouvellement chaque année.</td></tr>
+</table>
+<p class="small">Deux points que je ne sais pas trancher <span class="tag nk">JE NE SAIS PAS</span> : (1) la page du ministère ne dit pas si le FIMEX est obligatoire pour toute importation ; (2) elle demande une «&nbsp;attestation d’immatriculation au registre du commerce&nbsp;», et je ne sais pas si la déclaration d’entreprenant suffit. <b>Qui consulter :</b> le ministère du Commerce.</p>
+
+<h3>À chaque envoi</h3>
+<table>
+  <tr><th style="width:20%">Formalité</th><th>Ce que dit la source</th><th style="width:21%">Qui la porte</th></tr>
+  <tr><td>Facture du fournisseur <b>au nom du client</b></td><td>La valeur en douane est «&nbsp;le prix effectivement payé ou à payer&nbsp;» par l’acheteur (Code des douanes, art. 30-1) <span class="tag off">OFFICIEL</span>. Ici, l’acheteur et l’importateur sont enfin la même personne.</td><td>Le client, auprès de son fournisseur.</td></tr>
+  <tr><td>Déclaration d’importation</td><td>«&nbsp;Toutes les importations de biens font l’objet d’une déclaration d’importation&nbsp;» (Règlement des changes CEMAC n° 02/18, art. 62) <span class="tag off">OFFICIEL</span>.</td><td>Le client, avec notre aide et celle du commissionnaire.</td></tr>
+  <tr><td>Domiciliation bancaire, à partir de 5 millions</td><td>Les importations «&nbsp;égal[es] ou supérieur[es] à 5 millions de Francs CFA sont domiciliées auprès d’un établissement de crédit du pays de destination finale&nbsp;» (art. 63). Sinon, amende de 10 % du montant (art. 159) <span class="tag off">OFFICIEL</span>.</td><td>Le client, dans <b>sa</b> banque.</td></tr>
+  <tr><td>Inspection SGS (PVI), à partir de 2 millions FOB</td><td>Seuil indiqué par le guide de l’importateur de la SGS <span class="tag cp">AUTRE SOURCE</span>. Le texte du ministère n’a pas été relu.</td><td>Le client et son fournisseur.</td></tr>
+  <tr><td>Un titre de transport par client</td><td>Le manifeste doit décrire les colis ; il est interdit d’y «&nbsp;présenter comme unité&nbsp;» plusieurs colis réunis (Code des douanes, art. 113). Il peut être rectifié dans les 48 heures après l’arrivée du navire (art. 140) <span class="tag off">OFFICIEL</span>.</td><td><b>Bonzini</b> : un «&nbsp;house BL&nbsp;» par client, repris au manifeste.</td></tr>
+</table>
+<p class="small">Nos notes précédentes citaient l’«&nbsp;art. 38&nbsp;» du Règlement des changes pour la domiciliation. Dans la copie officielle lue (sgg.cg), c’est l’<b>art. 63</b>, et l’amende est à l’art. 159. Ces notes sont à corriger.</p>
+
+<h2 class="pb">3. Le parcours d’un client, du premier message au retrait</h2>
+<table>
+  <tr><th style="width:5%"></th><th style="width:30%">Étape</th><th style="width:16%">Qui</th><th>Ce qui se passe</th></tr>
+  <tr><td><span class="step">1</span></td><td><b>Premier contact</b></td><td class="who">Bonzini</td><td>On demande : «&nbsp;Avez-vous un NIU et un FIMEX à jour ?&nbsp;» Trois réponses possibles : <b>oui</b> (on passe à 3), <b>pas encore</b> (étape 2), <b>non et je ne veux pas</b> (voir partie 5).</td></tr>
+  <tr><td><span class="step">2</span></td><td><b>Mise en règle du client</b></td><td class="who">Client + Bonzini</td><td>Bonzini remplit les dossiers (entreprenant, NIU, FIMEX), prend les rendez-vous et accompagne. Le client signe et se déplace pour les empreintes.</td></tr>
+  <tr><td><span class="step">3</span></td><td><b>Signature du mandat</b></td><td class="who">Client</td><td>Une fois pour toutes : il autorise le commissionnaire en douane à déclarer en son nom, et Bonzini à organiser le transport et à recevoir ses colis.</td></tr>
+  <tr><td><span class="step a">4</span></td><td><b>Achat et facture</b></td><td class="who">Client</td><td>Il achète chez son fournisseur, avec une facture <b>à son nom</b>. Si le montant atteint 5 millions, il domicilie l’opération dans sa banque.</td></tr>
+  <tr><td><span class="step a">5</span></td><td><b>Réception à Guangzhou</b></td><td class="who">Bonzini Chine</td><td>Pesée, mesures, photos, bon de réception et devis. On rattache la facture fournisseur aux colis.</td></tr>
+  <tr><td><span class="step a">6</span></td><td><b>Estimation des droits</b></td><td class="who">Bonzini</td><td>Notre moteur douane estime ses droits <b>avant le départ</b>. Le client sait ce qu’il paiera à l’arrivée. Pas de surprise, pas de colis bloqué.</td></tr>
+  <tr><td><span class="step o">7</span></td><td><b>Chargement et départ</b></td><td class="who">Bonzini + transitaire</td><td>Un house BL par client. Liste de colisage par client.</td></tr>
+  <tr><td><span class="step o">8</span></td><td><b>Avant l’arrivée</b></td><td class="who">Bonzini + consignataire</td><td>Le manifeste doit montrer chaque client avec ses colis. S’il faut corriger : dans les 48 heures après l’arrivée (art. 140).</td></tr>
+  <tr><td><span class="step o">9</span></td><td><b>Déclaration en douane</b></td><td class="who">Commissionnaire agréé</td><td>Une déclaration <b>au nom du client</b>, avec sa facture et son NIU.</td></tr>
+  <tr><td><span class="step g">10</span></td><td><b>Paiement des droits</b></td><td class="who">Client</td><td>Il paie <b>lui-même</b>, par le canal officiel de paiement des droits. La quittance est à son nom. Il nous envoie la preuve.</td></tr>
+  <tr><td><span class="step g">11</span></td><td><b>Sortie et dégroupage</b></td><td class="who">Bonzini</td><td>Le conteneur sort, on sépare les lots dans notre entrepôt de Douala.</td></tr>
+  <tr><td><span class="step g">12</span></td><td><b>Facture Bonzini, paiement, retrait</b></td><td class="who">Bonzini + client</td><td>Notre facture : fret et services seulement. Paiement sur nos comptes, reçu, bon de livraison signé (voir le guide des documents client).</td></tr>
+</table>
+
+<h2>4. Ce qui change pour Bonzini</h2>
+<table>
+  <tr><th style="width:25%"></th><th>Aujourd’hui</th><th>Modèle commissionnaire</th></tr>
+  <tr><td>Nom sur la déclaration</td><td>Bonzini, pour tout le conteneur</td><td>Chaque client, pour son lot</td></tr>
+  <tr><td>Droits et TVA d’import</td><td>Payés par Bonzini, non déductibles (lecture de la partie 1)</td><td>Payés par le client. Déductibles par lui s’il est au réel <span class="tag an">ANALYSE</span></td></tr>
+  <tr><td>Valeur en douane</td><td>Fixée par la douane, faute de facture à notre nom</td><td>Celle de la facture du client (art. 30)</td></tr>
+  <tr><td>Notre chiffre d’affaires</td><td>Un prix «&nbsp;douane incluse&nbsp;» mélangé</td><td>Fret et services, clairement</td></tr>
+  <tr><td>Notre risque</td><td>Toute erreur de valeur ou de classement est pour nous</td><td>Elle est pour l’importateur. Le signataire garde un recours contre son client s’il y a un mandat écrit (Code des douanes, art. 449) <span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Notre trésorerie</td><td>On avance les droits de tout le conteneur</td><td>On n’avance rien, sauf choix commercial</td></tr>
+</table>
+
+<h2 class="pb">5. Les murs, dits franchement</h2>
+<div class="box risk">
+  <ul style="margin-bottom:0">
+    <li><b>Le petit commerçant informel n’a ni NIU, ni registre, ni FIMEX.</b> Le faire passer à l’existence légale, c’est aussi l’engager dans des déclarations fiscales. Certains refuseront.</li>
+    <li><b>Le précompte.</b> Déclaré à son nom, un petit commerçant paie 10&nbsp;% de la valeur en douane, contre 2&nbsp;% au nom de Bonzini (art. 21-3). Le Code prévoit que «&nbsp;les acomptes d’impôt sur le revenu prélevés sur les facturations&nbsp;» d’un commerçant à l’impôt général synthétique sont imputables sur son impôt de l’année suivante (art. C 38-5) <span class="tag off">OFFICIEL</span>. Je ne sais pas si cela couvre le précompte prélevé à la douane <span class="tag nk">JE NE SAIS PAS</span>. Pour un commerçant non inscrit, c’est une perte sèche.</li>
+    <li><b>Une déclaration par client</b> : les honoraires du commissionnaire se multiplient. Leur barème n’est pas connu. Pour un tout petit lot, le coût peut dépasser l’intérêt.</li>
+    <li><b>La facture du fournisseur</b> : certains clients ne l’ont pas, ou ne veulent pas la montrer.</li>
+    <li><b>Le manifeste ventilé</b> : il faut que le consignataire et notre commissionnaire acceptent de reprendre nos house BL. La procédure exacte sur CAMCIS n’est pas vérifiée <span class="tag nk">JE NE SAIS PAS</span>.</li>
+  </ul>
+</div>
+<p><b>La porte à explorer avec la douane.</b> Le Directeur national des douanes peut autoriser des «&nbsp;procédures simplifiées&nbsp;», par exemple des déclarations complémentaires «&nbsp;globales, périodiques ou récapitulatives&nbsp;», ou le dédouanement dans les locaux du déclarant (Code des douanes, art. 164) <span class="tag off">OFFICIEL</span>. C’est peut-être la voie pour un groupage de nombreux petits lots. Je ne sais pas si la douane camerounaise l’accorde pour ce cas <span class="tag nk">JE NE SAIS PAS</span>. <b>Qui consulter :</b> la Direction générale des douanes.</p>
+
+<h2>6. Recommandation : avancer par segments</h2>
+<table>
+  <tr><th style="width:22%">Segment</th><th>Qui</th><th>Ce qu’on fait</th></tr>
+  <tr class="us"><td><b>1. Les formels</b></td><td>Sociétés et commerçants qui ont déjà NIU, registre et FIMEX</td><td><b>Modèle commissionnaire tout de suite</b>, en commençant par un pilote de 2 ou 3 clients sur un prochain conteneur.</td></tr>
+  <tr><td><b>2. Les formalisables</b></td><td>Clients réguliers, qui importent assez pour que 25 000 FCFA par an et une inscription fiscale vaillent la peine</td><td>Un <b>service Bonzini de mise en règle</b> : dossier préparé, rendez-vous, accompagnement. Puis modèle commissionnaire.</td></tr>
+  <tr><td><b>3. Les informels</b></td><td>Petits lots, clients qui ne veulent pas se déclarer</td><td>Le montage actuel continue pour l’instant, mais avec un <b>mandat écrit</b> et une déclaration de contenu et de valeur signée pour chacun. On pose la question des procédures simplifiées (art. 164) à la douane.</td></tr>
+</table>
+<p class="small">C’est la même conclusion que nos études douanières précédentes (<code>docs/cargo/reference/voie-b-representation-en-douane.md</code>), vérifiée ici sur les textes officiels.</p>
+
+<h2 class="pb">7. Ce que la plateforme peut automatiser</h2>
+<p>La paperasse se répète d’un client à l’autre : c’est exactement ce qu’un logiciel fait bien. Ce que le logiciel ne peut pas faire : les empreintes pour le NIU, les signatures et les dépôts au guichet. Là, Bonzini accompagne.</p>
+<table>
+  <tr><th style="width:26%">Module</th><th>Ce qu’il fait</th></tr>
+  <tr><td><b>Profil importateur</b></td><td>Pour chaque client : carte d’identité, NIU, attestation d’immatriculation, registre ou numéro d’entreprenant, FIMEX, avec dates d’expiration. Un badge «&nbsp;prêt à importer&nbsp;» ou «&nbsp;à mettre en règle&nbsp;». Rappel avant l’expiration annuelle du FIMEX.</td></tr>
+  <tr><td><b>Kit de mise en règle</b></td><td>Formulaires pré-remplis à partir de ce qu’on sait du client, liste des pièces, plan de localisation, prise de rendez-vous, suivi de chaque démarche jusqu’à l’attestation.</td></tr>
+  <tr><td><b>Mandat</b></td><td>Mandat de représentation en douane et contrat de transport, signés une fois dans l’application, conservés et rattachés au client.</td></tr>
+  <tr><td><b>Dossier d’envoi</b></td><td>La facture fournisseur déposée par le client, rattachée aux colis reçus. Alerte à 2 millions (inspection) et à 5 millions (domiciliation dans sa banque).</td></tr>
+  <tr><td><b>Estimation des droits</b></td><td>Notre moteur douane, déjà en place, chiffre les droits du client avant le départ et les lui envoie.</td></tr>
+  <tr><td><b>House BL et manifeste</b></td><td>Un house BL par client généré depuis la réception. Fichier de ventilation pour le consignataire. Alerte «&nbsp;48 heures&nbsp;» à l’arrivée du navire.</td></tr>
+  <tr><td><b>Paiement des droits</b></td><td>Le montant liquidé, la référence de paiement, la quittance déposée par le client, et le blocage de la sortie tant qu’elle manque.</td></tr>
+  <tr><td><b>Registre des opérations pour autrui</b></td><td>Si un jour Bonzini déclare lui-même pour ses clients, le Code impose des répertoires annuels numérotés, «&nbsp;côtés et paraphés par le Président du Tribunal civil&nbsp;», import et export séparés (art. 153 et 154) <span class="tag off">OFFICIEL</span>. La plateforme peut en préparer le contenu et les numéros ; le répertoire lui-même reste à faire parapher au tribunal.</td></tr>
+</table>
+
+<h2>8. Ce que je ne sais pas, et qui consulter</h2>
+<table>
+  <tr><th style="width:4%">N°</th><th>Question</th><th style="width:28%">Qui consulter</th></tr>
+  <tr><td>1</td><td>Le FIMEX est-il obligatoire pour toute importation commerciale ? La déclaration d’entreprenant suffit-elle à la place du registre du commerce ?</td><td>Ministère du Commerce</td></tr>
+  <tr><td>2</td><td>Comment faire reprendre nos house BL au manifeste (CAMCIS), et qui le dépose ?</td><td>Consignataire, commissionnaire en douane agréé</td></tr>
+  <tr><td>3</td><td>Barème du commissionnaire par déclaration, pour chiffrer le seuil où le modèle devient rentable.</td><td>Commissionnaire en douane agréé</td></tr>
+  <tr><td>4</td><td>Une procédure simplifiée (art. 164) est-elle possible pour un groupage de petits lots ?</td><td>Direction générale des douanes</td></tr>
+  <tr><td>5</td><td>Le précompte payé à la douane par un commerçant à l’impôt général synthétique est-il imputable sur son impôt ?</td><td>Expert-comptable, centre des impôts</td></tr>
+  <tr><td>6</td><td>Notre service (fret, accompagnement) est-il soumis à la TVA ? (question n° 2 de la partie 1)</td><td>Expert-comptable, puis rescrit</td></tr>
+</table>
+
+<h2>9. Sources</h2>
+<table class="small">
+  <tr><th style="width:44%">Texte</th><th>Où il a été lu</th><th style="width:15%">Statut</th></tr>
+  <tr><td>Code des douanes de la CEMAC (Règlement n° 05/19-UEAC-010A-CM-33) : art. 30, 74, 113, 140, 153, 154, 156, 164, 449</td><td>sgg.cg, Secrétariat général du gouvernement du Congo</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Règlement n° 02/18/CEMAC/UMAC/CM portant réglementation des changes : art. 62, 63, 159</td><td>sgg.cg</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Code général des impôts 2026 : art. 21, C 38, C 39 ; décret n° 2012/3731/PM sur l’immatriculation fiscale (annexe)</td><td>impots.cm, Direction générale des impôts</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Acte uniforme OHADA sur le droit commercial général (2010) : art. 30, 62, 63</td><td>justice.sec.gouv.sn, ministère de la Justice du Sénégal</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Procédure d’inscription au fichier des importateurs et exportateurs</td><td>mincommerce.gov.cm, ministère du Commerce</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Guide de l’importateur, SGS Cameroun (2021)</td><td>sgs.com</td><td><span class="tag cp">AUTRE SOURCE</span></td></tr>
+</table>
+
+</body>
+</html>
