@@ -6,6 +6,7 @@ import { shouldPollLookup } from '@/lib/cargo/lookup';
 import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
 import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
+import type { CargoStep } from '@/lib/cargo/steps';
 
 // ⚠ Module ADMIN : tout passe par supabaseAdmin (voir .claude/rules/supabase-clients.md).
 
@@ -460,6 +461,82 @@ export function useCargoClientOptions(search: string) {
   });
 }
 
+/* ── Étapes de douane et de sortie ──────────────────────────────────────── */
+
+export function useCargoSteps(shipmentId: string | null) {
+  return useQuery({
+    queryKey: ['cargo', 'steps', shipmentId],
+    enabled: !!shipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin
+        .from('cargo_steps')
+        .select('*')
+        .eq('shipment_id', shipmentId!)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as CargoStep[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export type CargoStepInput = Pick<CargoStep, 'title' | 'phase'> &
+  Partial<Pick<CargoStep, 'key' | 'status' | 'due_on' | 'done_on' | 'reference' | 'note' | 'folder_id' | 'position'>>;
+
+export function useCreateCargoSteps() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shipmentId, steps }: { shipmentId: string; steps: CargoStepInput[] }) => {
+      const { data: auth } = await supabaseAdmin.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error('Session expirée');
+      const { error } = await supabaseAdmin.from('cargo_steps').insert(steps.map((st) => ({ ...st, shipment_id: shipmentId, created_by: uid })));
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.steps.length > 1 ? `${v.steps.length} étapes créées` : 'Étape ajoutée');
+      qc.invalidateQueries({ queryKey: ['cargo', 'steps', v.shipmentId] });
+    },
+    onError: (e: Error) => toast.error(`Création impossible : ${e.message}`),
+  });
+}
+
+/**
+ * Modifier une étape ; `shipmentPatch` reporte dans le dossier ce qu'une
+ * étape standard tient à jour (date de liquidation, n° BESC, télex reçu…).
+ */
+export function useUpdateCargoStep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ step, patch, shipmentPatch }: { step: CargoStep; patch: Partial<CargoStepInput>; shipmentPatch?: CargoShipmentPatch }) => {
+      const { error } = await supabaseAdmin.from('cargo_steps').update(patch).eq('id', step.id);
+      if (error) throw error;
+      if (shipmentPatch && Object.keys(shipmentPatch).length) {
+        const { error: e2 } = await supabaseAdmin.from('cargo_shipments').update(shipmentPatch).eq('id', step.shipment_id);
+        if (e2) throw e2;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cargo'] }),
+    onError: (e: Error) => toast.error(`Modification impossible : ${e.message}`),
+  });
+}
+
+export function useDeleteCargoStep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (step: CargoStep) => {
+      const { error } = await supabaseAdmin.from('cargo_steps').delete().eq('id', step.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, step) => {
+      toast.success('Étape supprimée');
+      qc.invalidateQueries({ queryKey: ['cargo', 'steps', step.shipment_id] });
+    },
+    onError: (e: Error) => toast.error(`Suppression impossible : ${e.message}`),
+  });
+}
+
 /* ── Parties prenantes ──────────────────────────────────────────────────── */
 
 /** Qui fait quoi sur ce conteneur, avec la fiche de chaque partie. */
@@ -749,10 +826,12 @@ export function useCreateCargoDocFolders() {
       const { data: auth } = await supabaseAdmin.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error('Session expirée');
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from('cargo_doc_folders')
-        .insert(folders.map((f) => ({ ...f, title: f.title.trim(), shipment_id: shipmentId, created_by: uid })));
+        .insert(folders.map((f) => ({ ...f, title: f.title.trim(), shipment_id: shipmentId, created_by: uid })))
+        .select('id');
       if (error) throw error;
+      return (data ?? []).map((r) => r.id as string);
     },
     onSuccess: (_d, v) => {
       toast.success(v.folders.length > 1 ? `${v.folders.length} pièces créées` : 'Pièce créée');

@@ -6,6 +6,7 @@ import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, C
 import type { Json } from '@/integrations/supabase/types';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
 import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
+import type { CargoStep } from '@/lib/cargo/steps';
 
 const base = {
   client_id: null, container_iso: '45G1', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Kribi', pod_unlocode: 'CMKBI',
@@ -186,3 +187,26 @@ export const useCargoParties = () => ok([KASS, CYN, NGB]);
 export const useAddShipmentParty = noop;
 export const useUpdateShipmentParty = noop;
 export const useRemoveShipmentParty = noop;
+
+/* ── Étapes de douane ── */
+const step = (id: string, key: string, title: string, phase: string, position: number, extra: Partial<CargoStep> = {}): CargoStep => ({
+  id, shipment_id: '2', key, title, phase, status: 'todo', due_on: null, done_on: null, reference: null, note: null, folder_id: null, position,
+  created_by: null, created_at: '2026-10-04T08:00:00Z', updated_at: '2026-10-04T08:00:00Z', ...extra,
+});
+const STEPS: CargoStep[] = [
+  step('s1', 'BESC', 'BESC', 'before', 1, { status: 'done', done_on: '2026-09-30', reference: 'MI2661716', folder_id: 'f3', note: 'Validé par SOFT CENTRAL LAB. Corrections demandées (RAV4, Yaris, code du Haval).' }),
+  step('s2', 'CIVIC', 'CIVIC des véhicules (SGS)', 'before', 2, { status: 'doing', note: 'À lancer : copie du B/L, carte contribuable, certificats CICQ du 01/10.', folder_id: 'f4' }),
+  step('s3', 'TELEX', 'Télex release (ou B/L original endossé)', 'before', 3, { due_on: '2026-10-03', folder_id: 'f2', note: 'À obtenir d’Eric (KASSUMAYE).' }),
+  step('s4', 'ARRIVAL_NOTICE', 'Avis d’arrivée', 'arrival', 4),
+  step('s5', 'CARRIER_RELEASE', 'Bon à délivrer du consignataire', 'arrival', 5),
+  step('s6', 'DECLARATION', 'Déclaration en douane', 'clearance', 6, { note: 'Déclarante : Cynthia AKAH.' }),
+  step('s7', 'INSPECTION', 'Visite ou scanner', 'clearance', 7),
+  step('s8', 'LIQUIDATION', 'Liquidation et paiement des droits', 'clearance', 8),
+  step('s9', 'BAE', 'Bon à enlever', 'exit', 9),
+  step('s10', 'GATE_OUT', 'Sortie du port', 'exit', 10),
+  step('s11', 'EMPTY_RETURN', 'Restitution du vide', 'exit', 11),
+];
+export const useCargoSteps = (id: string | null) => ok(id === '2' ? STEPS : ([] as CargoStep[]));
+export const useCreateCargoSteps = noop;
+export const useUpdateCargoStep = noop;
+export const useDeleteCargoStep = noop;

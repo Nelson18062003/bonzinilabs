@@ -1197,6 +1197,75 @@ export type Database = {
           },
         ]
       }
+      cargo_steps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done_on: string | null
+          due_on: string | null
+          folder_id: string | null
+          id: string
+          key: string | null
+          note: string | null
+          phase: string
+          position: number
+          reference: string | null
+          shipment_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_steps_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_steps_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cargo_vessel_positions: {
         Row: {
           course_deg: number | null

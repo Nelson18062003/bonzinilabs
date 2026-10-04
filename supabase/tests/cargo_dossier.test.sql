@@ -201,4 +201,44 @@ DO $$ BEGIN
   EXCEPTION WHEN check_violation THEN NULL; END;
 END $$;
 
+-- ============================================================================
+-- Étapes de douane (20261004090000_cargo_steps.sql)
+-- ============================================================================
+SET ROLE authenticated;
+SELECT _as('00000000-0000-0000-0000-0000000000a1');
+INSERT INTO public.cargo_doc_folders (id, shipment_id, title, category) VALUES ('00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC');
+INSERT INTO public.cargo_steps (id, shipment_id, key, title, phase, status, done_on, reference, folder_id)
+  VALUES ('00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC', 'before', 'done', '2026-09-30', 'MI2661716', '00000000-0000-0000-0000-0000000000f5');
+-- Une étape libre (sans clé) passe ; une clé en double sur le même conteneur, non.
+INSERT INTO public.cargo_steps (shipment_id, title) VALUES ('00000000-0000-0000-0000-00000000000a', 'Rendez-vous chez le déclarant');
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.cargo_steps (shipment_id, key, title) VALUES ('00000000-0000-0000-0000-00000000000a', 'BESC', 'BESC bis');
+    PERFORM _assert(false, 'une clé standard en double doit échouer');
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+  BEGIN
+    INSERT INTO public.cargo_steps (shipment_id, title, status) VALUES ('00000000-0000-0000-0000-00000000000a', 'x', 'peut-être');
+    PERFORM _assert(false, 'un état inconnu doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  -- La pièce d'un autre conteneur est refusée.
+  INSERT INTO public.cargo_doc_folders (id, shipment_id, title) VALUES ('00000000-0000-0000-0000-0000000000f6', '00000000-0000-0000-0000-00000000000b', 'Autre');
+  BEGIN
+    UPDATE public.cargo_steps SET folder_id = '00000000-0000-0000-0000-0000000000f6' WHERE id = '00000000-0000-0000-0000-0000000005a1';
+    PERFORM _assert(false, 'lier la pièce d''un autre conteneur doit échouer');
+  EXCEPTION WHEN check_violation THEN NULL; END;
+END $$;
+UPDATE public.cargo_steps SET note = 'validé par SOFT CENTRAL LAB', shipment_id = '00000000-0000-0000-0000-00000000000b' WHERE id = '00000000-0000-0000-0000-0000000005a1';
+DO $$ BEGIN
+  PERFORM _assert((SELECT shipment_id FROM public.cargo_steps WHERE id = '00000000-0000-0000-0000-0000000005a1') = '00000000-0000-0000-0000-00000000000a', 'étape figée sur son conteneur');
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a2');
+DO $$ BEGIN
+  PERFORM _assert((SELECT count(*) FROM public.cargo_steps) = 2, 'le support lit les étapes');
+  UPDATE public.cargo_steps SET status = 'done';
+  PERFORM _assert(NOT FOUND, 'le support ne coche rien');
+END $$;
+SELECT _as('00000000-0000-0000-0000-0000000000a3');
+DO $$ BEGIN PERFORM _assert((SELECT count(*) FROM public.cargo_steps) = 0, 'le caissier ne voit rien'); END $$;
+RESET ROLE;
+
 \echo '✓ cargo_dossier : toutes les règles tiennent'
