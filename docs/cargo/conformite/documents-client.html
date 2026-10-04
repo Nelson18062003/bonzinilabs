@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Documents client Bonzini Cargo</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  :root {
+    --violet: hsl(258 100% 60%); --amber: hsl(36 100% 55%); --orange: hsl(16 100% 55%);
+    --ink: #1c1b22; --muted: #5d5a68; --line: #dcd9e3; --soft: #f6f4fa;
+    --ok: #1d7a46; --warn: #a35a00; --risk: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); font-size: 10.2pt; line-height: 1.45; margin: 0; }
+  h1 { font-size: 21pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.01em; }
+  h2 { font-size: 13.5pt; margin: 18pt 0 6pt; padding-bottom: 3pt; border-bottom: 2px solid var(--line); break-after: avoid; }
+  h3 { font-size: 11pt; margin: 12pt 0 4pt; break-after: avoid; }
+  p { margin: 0 0 6pt; }
+  ul, ol { margin: 0 0 6pt; padding-left: 16pt; }
+  li { margin: 0 0 2.5pt; }
+  .bar { height: 5px; background: linear-gradient(90deg, var(--violet) 0 33%, var(--amber) 33% 66%, var(--orange) 66% 100%); border-radius: 3px; margin-bottom: 10pt; }
+  .meta { color: var(--muted); font-size: 9pt; margin-bottom: 10pt; }
+  .lead { font-size: 11pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9.4pt; break-inside: auto; }
+  th, td { border: 1px solid var(--line); padding: 4pt 5pt; vertical-align: top; text-align: left; }
+  th { background: var(--soft); font-weight: 600; }
+  tr { break-inside: avoid; }
+  .step { display: inline-block; min-width: 16pt; height: 16pt; line-height: 16pt; text-align: center; border-radius: 8pt; color: #fff; font-weight: 700; font-size: 8.5pt; margin-right: 4pt; }
+  .s1 { background: var(--violet); } .s2 { background: #7b6fa8; } .s3 { background: var(--amber); color: #2a1a00; } .s4 { background: var(--orange); } .s5 { background: #1d7a46; }
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--violet); background: var(--soft); padding: 6pt 8pt; margin: 6pt 0 8pt; border-radius: 3px; break-inside: avoid; }
+  .box.amber { border-left-color: var(--amber); }
+  .box.orange { border-left-color: var(--orange); }
+  .box.risk { border-left-color: var(--risk); background: #fff5f4; }
+  .box.ok { border-left-color: var(--ok); background: #f3faf5; }
+  .tag { display: inline-block; font-size: 7.8pt; font-weight: 700; padding: 0 4pt; border-radius: 3px; vertical-align: 1px; }
+  .v { background: #e3f4e9; color: var(--ok); }
+  .a { background: #fff1dc; color: var(--warn); }
+  .q { color: var(--muted); font-style: italic; }
+  blockquote { margin: 4pt 0 6pt; padding: 4pt 8pt; border-left: 3px solid var(--line); color: #34313c; font-size: 9.3pt; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+  .pb { break-before: page; }
+  .keep { break-inside: avoid; }
+  code { font-family: inherit; background: var(--soft); padding: 0 2pt; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="bar"></div>
+<h1>Les documents à remettre aux clients</h1>
+<div class="lead">Bonzini Cargo, de la réception en Chine au retrait au Cameroun : quel document, à quel moment, et pourquoi.</div>
+<div class="meta">NORTON GAUSS BONZINI SARL · document interne · version du 4 octobre 2026 · préparé pour Nelson Soh, directeur des opérations</div>
+
+<div class="box amber">
+  <b>À lire d’abord.</b> Ce guide s’appuie sur les textes officiels cités en fin de document. Il ne remplace pas un expert-comptable agréé ni un avocat. Les points marqués <span class="tag a">À VÉRIFIER</span> doivent être confirmés par eux avant d’être appliqués. Les points marqués <span class="tag v">VÉRIFIÉ</span> ont été lus dans le texte officiel.
+</div>
+
+<h2>1. La réponse courte</h2>
+<p>Un seul document ne peut pas tout faire. Il en faut <b>cinq</b>, un par moment, et chacun a un rôle précis.</p>
+<table>
+  <tr><th style="width:20%">Moment</th><th style="width:24%">Document</th><th>À quoi il sert</th></tr>
+  <tr><td><span class="step s1">1</span>Réception en Chine</td><td><b>Bon de réception et devis</b></td><td>Dire au client ce qu’on a reçu (photos, poids, dimensions, état) et combien ça coûtera. Quand il l’accepte, c’est <b>notre contrat</b>. Il y signe aussi sa déclaration de contenu et de valeur.</td></tr>
+  <tr><td><span class="step s2">2</span>Départ</td><td>Avis d’expédition</td><td>Simple information : conteneur ou vol, date, arrivée estimée. Pas obligatoire.</td></tr>
+  <tr><td><span class="step s3">3</span>Arrivée au Cameroun</td><td><b>Facture</b></td><td>La seule pièce <b>comptable et fiscale</b>. Elle dit que le service est rendu et que le client nous doit le montant.</td></tr>
+  <tr><td><span class="step s4">4</span>Paiement vérifié</td><td><b>Reçu</b> (ou facture marquée «&nbsp;acquittée&nbsp;»)</td><td>Prouver que nous avons bien reçu l’argent. Il protège le client.</td></tr>
+  <tr><td><span class="step s5">5</span>Retrait</td><td><b>Bon de livraison signé</b> (procès-verbal de remise)</td><td>Le client compte et vérifie ses colis devant nous, puis signe «&nbsp;reçu en bon état&nbsp;» ou écrit ce qui ne va pas. <b>C’est ce document qui nous protège</b> si le client revient dire qu’il manque quelque chose.</td></tr>
+</table>
+
+<div class="box">
+  <b>Et la packing list du conteneur ?</b> C’est un document <b>interne et douanier</b>. Elle sert à l’entrepôt, au transitaire, au déclarant et à la douane. Elle ne s’envoie pas aux clients et n’a pas de valeur entre eux et nous. Pour un client, ce qui compte, c’est <b>sa partie à lui</b> : elle figure déjà sur son bon de réception (au départ) et sur son bon de livraison (à l’arrivée).
+</div>
+
+<h2>2. Les quatre mots qu’on confond</h2>
+<table>
+  <tr><th style="width:14%"></th><th style="width:22%">Devis</th><th style="width:20%">Facture proforma</th><th style="width:22%">Facture</th><th>Reçu (quittance)</th></tr>
+  <tr><th>Ce que c’est</th><td>Une offre de prix, avant le service.</td><td>Une «&nbsp;facture à l’avance&nbsp;», pour information.</td><td>Le constat que le service est rendu et que l’argent est dû.</td><td>La preuve que l’argent a été reçu.</td></tr>
+  <tr><th>Quand</th><td>Avant ou à la réception des colis.</td><td>Quand un client la demande, par exemple pour sa banque.</td><td>Quand le service est fait : à l’arrivée au Cameroun.</td><td>Quand le paiement est vérifié sur notre compte.</td></tr>
+  <tr><th>Valeur juridique</th><td><b>Oui, une fois accepté</b> : c’est le contrat.</td><td>Faible : c’est une simple information.</td><td>Oui : elle fixe ce qui est dû.</td><td>Oui : elle prouve le paiement.</td></tr>
+  <tr><th>Valeur comptable</th><td>Aucune.</td><td>Aucune.</td><td><b>Oui</b> : on l’enregistre en comptabilité et pour la TVA.</td><td>Oui, avec le relevé bancaire.</td></tr>
+  <tr><th>Chez nous</th><td>Indispensable.</td><td>Inutile, sauf demande d’un client.</td><td>Indispensable.</td><td>Indispensable.</td></tr>
+</table>
+<p><b>Le piège à éviter :</b> une facture ne prouve <b>pas</b> que le client a payé. Elle prouve seulement qu’il doit payer. C’est le reçu, appuyé par le relevé bancaire, qui prouve le paiement.</p>
+<p class="small">Entre commerçants, un contrat se prouve par tous moyens, y compris un message WhatsApp (Acte uniforme OHADA sur le droit commercial général, art. 5) <span class="tag v">VÉRIFIÉ</span>. Un écrit signé reste la meilleure preuve, surtout face à un client qui n’est pas commerçant.</p>
+
+<h2 class="pb">3. Étape par étape</h2>
+
+<h3><span class="step s1">1</span>Réception en Chine : le bon de réception et devis</h3>
+<p>C’est le document que vous voulez envoyer «&nbsp;immédiatement&nbsp;» au client. Ce n’est <b>pas une facture</b>, pour trois raisons :</p>
+<ul>
+  <li>le service n’est pas encore rendu : pour un service, la TVA naît de son exécution (Code général des impôts, art. 133) <span class="tag v">VÉRIFIÉ</span> ;</li>
+  <li>le prix peut encore changer (remballage, colis qui s’ajoutent) ;</li>
+  <li>une facture entre en comptabilité et doit porter un numéro qui ne se supprime plus.</li>
+</ul>
+<p>C’est donc un <b>devis</b>, accompagné de ce qu’on a constaté à la réception. Il doit contenir :</p>
+<div class="two">
+<div>
+<ul>
+  <li><b>Le client</b> : nom, téléphone, identifiant Bonzini, ville. Son NIU s’il est une entreprise.</li>
+  <li><b>Chaque colis</b> : photo, poids, dimensions, volume, nature déclarée, état à l’arrivée («&nbsp;carton abîmé&nbsp;», «&nbsp;bien emballé&nbsp;»…).</li>
+  <li><b>Le tarif appliqué</b> : au CBM, au kilo ou au forfait, et le total.</li>
+  <li><b>Ce qui est inclus et ce qui ne l’est pas</b> : douane incluse ou non, assurance non incluse, livraison à Douala seulement.</li>
+</ul>
+</div>
+<div>
+<ul>
+  <li>Le délai estimé, écrit comme <b>non garanti</b>.</li>
+  <li>La durée de validité du devis.</li>
+  <li>Le renvoi aux <b>conditions générales</b> (partie 4).</li>
+  <li><b>La déclaration du client</b>, signée : contenu, valeur des marchandises, engagement de fournir la facture d’achat, et mandat de déclarer en douane pour son compte.</li>
+  <li>La case <b>«&nbsp;Bon pour accord&nbsp;»</b> : signature, ou réponse écrite du client.</li>
+</ul>
+</div>
+</div>
+<div class="box ok">La déclaration signée par le client est le document le moins cher et le plus protecteur. Elle permet de désigner le vrai propriétaire si la douane conteste une valeur. Voir <code>docs/cargo/recommandation-regime-douanier.md</code>, «&nbsp;Horizon 0&nbsp;».</div>
+
+<h3><span class="step s2">2</span>Départ : l’avis d’expédition</h3>
+<p>Un message suffit : «&nbsp;vos 6 colis sont partis dans le conteneur MIEU3611115 le 15/08, arrivée estimée début octobre&nbsp;». Il rassure le client. Il n’a pas de valeur juridique.</p>
+
+<h3><span class="step s3">3</span>Arrivée : la facture</h3>
+<p>Le transport est fait : on émet la <b>facture définitive</b>, numérotée, avec le montant à payer <b>avant le retrait</b>. Pour une entreprise soumise à la TVA comme la nôtre, la loi impose ces mentions (Code général des impôts, art. 150, 5°) <span class="tag v">VÉRIFIÉ</span> :</p>
+<blockquote>
+  le numéro d’identifiant unique du fournisseur <b>et du client</b> ; la date de la facturation, le nom, la raison sociale, l’adresse complète et le numéro du registre de commerce du fournisseur ; l’identité complète du client ; la nature, l’objet et le détail de la transaction ; le prix hors taxe ; le taux et le montant de la taxe correspondante ; le montant total toutes taxes comprises dû par le client ; la mention «&nbsp;Exonérée&nbsp;» ou «&nbsp;prise en charge État&nbsp;» le cas échéant, par produit.
+</blockquote>
+<ul>
+  <li><b>Numérotation</b> : une suite continue, sans trou. On ne supprime jamais une facture : on l’annule par une <b>facture d’avoir</b>.</li>
+  <li><b>Pour un client entreprise</b>, une facture sans ces mentions lui fait perdre la déduction de la dépense depuis la loi de finances 2025. Une facture propre est donc aussi un argument commercial.</li>
+  <li><b>La TVA</b> : nos documents actuels n’en portent pas. Il faut savoir si notre fret est soumis à la TVA, et sinon quelle mention écrire. Le Code ne cite pas clairement le fret international vendu à un client camerounais. C’est la <b>question n°1</b> pour le comptable (partie 8) <span class="tag a">À VÉRIFIER</span>.</li>
+</ul>
+<div class="box">
+  <b>Véhicules et engins.</b> La facture porte le fret et notre prestation de dédouanement. Les droits de douane ne sont connus qu’à la liquidation. Le plus propre : le client les paie lui-même. Sinon, on les avance et on les refacture <b>au franc près</b>, avec la quittance de la douane jointe. Ce sont alors des «&nbsp;débours&nbsp;», exclus de la base de la TVA (Code général des impôts, art. 137, 3°) <span class="tag v">VÉRIFIÉ</span>.
+</div>
+
+<h3><span class="step s4">4</span>Paiement : seulement sur nos comptes, puis le reçu</h3>
+<p>Votre règle «&nbsp;pas d’espèces&nbsp;» n’est pas seulement prudente : <b>au-delà de 500 000 FCFA, elle est obligatoire</b>.</p>
+<blockquote>
+  «&nbsp;Tout paiement qui excède la somme de 500.000 Francs CFA ou qui a pour objet le règlement par fraction d’une dette supérieure à ce montant doit être effectué par un moyen de paiement inscrivant le montant réglé au débit d’un compte tenu au nom du payeur chez un établissement assujetti.&nbsp;» Règlement CEMAC n° 03/16 relatif aux systèmes, moyens et incidents de paiement, art. 3. L’art. 5 punit la violation d’une amende de 5 % des sommes payées en espèces. <span class="tag v">VÉRIFIÉ</span>
+</blockquote>
+<ol>
+  <li>Le client paie par virement ou chèque, depuis son compte, sur un compte de la société.</li>
+  <li>Il envoie sa preuve (ordre de virement, capture).</li>
+  <li><b>Nous vérifions sur notre relevé bancaire</b>, pas seulement sur la capture : une capture se fabrique.</li>
+  <li>Nous remettons le <b>reçu</b> : numéro, facture concernée, montant, date, mode, référence bancaire. On peut aussi tamponner la facture «&nbsp;ACQUITTÉE&nbsp;».</li>
+</ol>
+<p class="small">Deux nuances <span class="tag a">À VÉRIFIER</span> : (1) un versement d’espèces au guichet sur notre compte n’est pas, à la lettre, un débit sur le compte du payeur ; (2) le Mobile Money passe par un compte au nom du payeur chez un établissement de paiement, mais il faut le confirmer avec la banque ou le comptable.</p>
+
+<h3><span class="step s5">5</span>Retrait : le bon de livraison signé</h3>
+<p>C’est la réponse à «&nbsp;il ne faut pas qu’il revienne après nous dire que ceci manque&nbsp;». Le client (ou la personne qu’il envoie, avec une procuration et sa carte d’identité) <b>compte et regarde ses colis devant nous</b>, puis signe.</p>
+<ul>
+  <li>Numéro de facture et de reçu, liste des colis (nombre, poids), photos au moment de la remise.</li>
+  <li>Une case <b>réserves</b> : ce qui manque ou ce qui est abîmé, écrit par le client.</li>
+  <li>Sinon la phrase : «&nbsp;Je reconnais avoir reçu mes X colis, en bon état apparent, sans réserve.&nbsp;»</li>
+  <li>Nom, numéro de carte d’identité, signature, date et heure.</li>
+</ul>
+<p>Pourquoi c’est solide : pour le transport maritime, le Cameroun applique les Règles de Hambourg (adhésion en 1993) <span class="tag v">VÉRIFIÉ</span>. Leur article 19 dit :</p>
+<blockquote>
+  sans avis écrit au plus tard le premier jour ouvrable qui suit la remise, «&nbsp;cette remise constitue une présomption, sauf preuve contraire, que les marchandises ont été livrées&nbsp;» telles que décrites, ou en bon état. Pour un dommage non apparent, le délai est de <b>15 jours consécutifs</b>. Si l’état a été vérifié contradictoirement au moment de la remise, aucun avis n’est nécessaire pour ce qui a été constaté.
+</blockquote>
+<p>Le bon de livraison signé <b>est</b> cette vérification contradictoire. Attention : ces règles protègent aussi le client. On ne peut pas écrire dans nos conditions un délai plus court que 15 jours pour les dommages cachés. Que ces règles s’appliquent entre nos clients et nous (nous ne sommes pas l’armateur) est à confirmer par l’avocat <span class="tag a">À VÉRIFIER</span>. Pour l’aérien, la Convention de Montréal prévoit 14 jours pour les marchandises (art. 31), sous réserve qu’elle s’applique.</p>
+<div class="box ok">
+  <b>Payer avant de retirer : c’est notre droit.</b> «&nbsp;Le créancier qui détient légitimement un bien mobilier de son débiteur peut le retenir jusqu’au complet paiement de ce qui lui est dû&nbsp;» (Acte uniforme OHADA portant organisation des sûretés, art. 67) <span class="tag v">VÉRIFIÉ</span>. Il faut une créance certaine, liquide et exigible, donc <b>une facture</b>, et un lien entre la dette et les colis gardés (art. 68 et 69). C’est le cas ici.
+</div>
+
+<h2 class="pb">4. Les conditions générales : le vrai bouclier</h2>
+<p>Les documents disent <b>quoi</b>. Les conditions générales disent <b>les règles du jeu</b>. Le client doit les accepter <b>avant</b> l’envoi : signature sur le devis ou acceptation dans l’application. Nos documents actuels en ont déjà sept. Voici ce qu’il faut corriger et ajouter.</p>
+<table>
+  <tr><th style="width:30%">Point</th><th>Ce qu’il faut faire</th></tr>
+  <tr><td>«&nbsp;Marchandises abandonnées vendues aux enchères après 2 mois&nbsp;»</td><td><b>À réécrire.</b> On peut garder les colis tant qu’on n’est pas payé, mais on doit les conserver en bon état. Pour les vendre, il faut l’<b>autorisation du juge</b> (Acte uniforme sur les sûretés, art. 70) <span class="tag v">VÉRIFIÉ</span>. Écrire plutôt : frais de magasinage, puis mise en demeure, puis demande au juge. Faire valider par l’avocat.</td></tr>
+  <tr><td>Paiement</td><td>Retirer «&nbsp;espèces à nos bureaux&nbsp;» des documents. Écrire : paiement sur les comptes de la société uniquement, avant retrait.</td></tr>
+  <tr><td>Assurance</td><td>Écrire clairement : les marchandises ne sont <b>pas assurées</b> par Bonzini, sauf assurance demandée et payée en plus. Ajouter une <b>limite de responsabilité</b> par kilo ou par colis. Le montant est à fixer avec l’avocat.</td></tr>
+  <tr><td>Déclaration du client</td><td>Le client déclare honnêtement le contenu et la valeur. Il assume les conséquences d’une fausse déclaration ou d’une marchandise interdite.</td></tr>
+  <tr><td>Calcul du prix</td><td>Comment on mesure (CBM, kilo, forfait), et si le remballage est facturé.</td></tr>
+  <tr><td>Réclamations</td><td>Vérification au retrait, réserves écrites sur le bon de livraison, 15 jours pour un dommage caché.</td></tr>
+  <tr><td>Retards</td><td>Délais estimés, non garantis. Ce qui dépend de l’armateur et de la douane n’est pas de notre fait.</td></tr>
+  <tr><td>Droit de rétention</td><td>Rappeler que les colis ne sont remis qu’après paiement complet.</td></tr>
+</table>
+
+<h2>5. Faut-il inclure la douane dans le prix ?</h2>
+<div class="two">
+<div class="box ok"><b>Ce qui est bien</b><br>Un prix simple pour le client, tout compris. C’est ce que le marché attend pour les cartons.</div>
+<div class="box risk"><b>Le risque</b><br>Si les droits changent, c’est nous qui payons la différence. Et une part douane noyée dans le prix devient, pour les impôts, notre chiffre d’affaires.</div>
+</div>
+<p><b>Recommandation :</b> garder le prix tout compris si le commerce l’exige, mais <b>le détailler sur la facture</b> : fret, prestation de dédouanement, droits et taxes. Comment traiter la part «&nbsp;droits&nbsp;» quand la déclaration en douane est à notre nom : c’est la <b>question n°2</b> pour le comptable. Le diagnostic douanier complet est dans <code>docs/cargo/reference/qui-declare-groupage.md</code>.</p>
+
+<h2>6. L’assurance</h2>
+<p>Ne pas inclure l’assurance dans nos prix est permis, à condition de l’écrire (partie 4). Mais il existe une autre obligation, qui vise l’<b>importateur</b> : une loi camerounaise de 1975 (loi n° 75/14) impose d’assurer auprès d’un assureur agréé au Cameroun toute importation dont la valeur FOB atteint 500 000 FCFA. Or, sur la déclaration en douane, l’importateur de nos conteneurs, c’est <b>nous</b>. Il faut vérifier si nos conteneurs sont couverts <span class="tag a">À VÉRIFIER</span>. Cette information vient d’une source secondaire : le texte de la loi n’a pas été relu.</p>
+
+<h2>7. La comptabilité : ce qu’on garde, et combien de temps</h2>
+<ul>
+  <li><b>Chaque écriture</b> doit s’appuyer sur une pièce justificative (Acte uniforme OHADA relatif au droit comptable, art. 19).</li>
+  <li><b>On garde 10 ans</b> les livres et les pièces : devis acceptés, factures, avoirs, reçus, relevés bancaires, bons de livraison signés (même Acte uniforme, art. 24).</li>
+  <li>Un client peut nous réclamer quelque chose pendant <b>5 ans</b> (Acte uniforme sur le droit commercial général, art. 16) <span class="tag v">VÉRIFIÉ</span> : le bon de livraison signé doit donc rester retrouvable.</li>
+  <li>Chaque mois, on rapproche les reçus émis et le relevé bancaire : pas de reçu sans argent arrivé, pas d’argent arrivé sans reçu.</li>
+  <li>À suivre : la <b>facture électronique</b>, prévue par la loi de finances 2026 et déployée d’abord pour les grandes entreprises. Les détails techniques ne sont pas encore publiés <span class="tag a">À VÉRIFIER</span>.</li>
+</ul>
+
+<h2 class="pb">8. Les questions à poser, et à qui</h2>
+<table>
+  <tr><th style="width:4%">N°</th><th>Question</th><th style="width:22%">À qui</th></tr>
+  <tr><td>1</td><td>Notre fret Chine → Cameroun, facturé à un client camerounais, est-il soumis à la TVA ? Si non, quelle mention écrire sur la facture, et sur quel article s’appuyer ?</td><td>Expert-comptable, centre des impôts</td></tr>
+  <tr><td>2</td><td>Prix «&nbsp;douane incluse&nbsp;» alors que la déclaration est à notre nom : la part «&nbsp;droits&nbsp;» peut-elle être facturée en débours, ou est-ce notre chiffre d’affaires ?</td><td>Expert-comptable</td></tr>
+  <tr><td>3</td><td>Client particulier sans NIU : que mettre dans la case «&nbsp;NIU du client&nbsp;» ?</td><td>Expert-comptable, centre des impôts</td></tr>
+  <tr><td>4</td><td>Facture électronique (loi de finances 2026) : sommes-nous concernés, et à partir de quand ?</td><td>Expert-comptable</td></tr>
+  <tr><td>5</td><td>Mobile Money et versement d’espèces au guichet : conformes au Règlement CEMAC n° 03/16, art. 3 ?</td><td>Banque, expert-comptable</td></tr>
+  <tr><td>6</td><td>Réécrire la clause des marchandises abandonnées (vente sur autorisation du juge).</td><td>Avocat</td></tr>
+  <tr><td>7</td><td>Fixer une limite de responsabilité et la clause d’assurance.</td><td>Avocat</td></tr>
+  <tr><td>8</td><td>Vis-à-vis de nos clients, sommes-nous «&nbsp;transporteur&nbsp;» au sens des Règles de Hambourg ? Quel délai de réclamation s’applique ?</td><td>Avocat</td></tr>
+  <tr><td>9</td><td>Notre activité correspond à la définition du <b>commissionnaire de transport</b> : faire transporter, en son nom et sous sa responsabilité, pour le compte d’un client. La loi n° 95/09 et le décret n° 96/072 en font une profession soumise à <b>agrément</b>. Avons-nous cet agrément, pour le maritime et pour l’aérien ?</td><td>Ministère des Transports, CNCC</td></tr>
+  <tr><td>10</td><td>Nos conteneurs sont-ils couverts par l’assurance obligatoire des importations (loi n° 75/14) ?</td><td>Assureur agréé</td></tr>
+</table>
+
+<h2>9. Ce que ça change dans la plateforme</h2>
+<p>La plateforme produit déjà trois documents : <b>Devis de fret</b>, <b>Reçu de paiement</b> et <b>Facture acquittée</b>. Ce qu’il faudrait faire :</p>
+<table>
+  <tr><th style="width:24%">Aujourd’hui</th><th>À faire</th></tr>
+  <tr><td>Devis de fret</td><td>Le renommer «&nbsp;Bon de réception et devis&nbsp;». Ajouter l’état de chaque colis à l’arrivée, la déclaration signée du client et la case «&nbsp;Bon pour accord&nbsp;».</td></tr>
+  <tr><td>Facture acquittée (émise seulement après paiement)</td><td>Émettre une <b>vraie facture dès l’arrivée</b>, numérotée, avec les mentions de l’art. 150, 5° (NIU du client, adresse complète, hors taxe, TVA ou mention «&nbsp;Exonérée&nbsp;», toutes taxes comprises). La marquer «&nbsp;acquittée&nbsp;» au paiement.</td></tr>
+  <tr><td>Reçu de paiement</td><td>Le relier au numéro de facture et à la référence bancaire. Retirer «&nbsp;espèces&nbsp;» des modes de paiement.</td></tr>
+  <tr><td><i>N’existe pas</i></td><td>Créer le <b>bon de livraison</b> : liste des colis, réserves, signature du client et photos au retrait.</td></tr>
+  <tr><td>Conditions au verso</td><td>Corriger la clause des enchères. Ajouter l’assurance, la limite de responsabilité, les réclamations et le paiement bancaire seulement.</td></tr>
+</table>
+<p class="small">Le contenu exact de la facture (TVA ou non, mention) dépend des réponses aux questions 1 à 3. Il vaut mieux les avoir avant de changer le modèle.</p>
+
+<h2>10. Sources</h2>
+<table class="small">
+  <tr><th style="width:42%">Texte</th><th>Ce qu’on en tire</th><th style="width:13%">État</th></tr>
+  <tr><td>Code général des impôts du Cameroun, édition 2022 (impots.cm) : art. 129, 133, 134, 137, 142, 143, 150</td><td>Mentions de la facture, naissance de la TVA sur un service, débours, taux</td><td><span class="tag v">VÉRIFIÉ</span> lu</td></tr>
+  <tr><td>Loi de finances 2025 (analyse Deloitte)</td><td>Dépense non déductible si la facture n’a pas les mentions de l’art. 150, 5°</td><td>Source secondaire</td></tr>
+  <tr><td>Loi de finances 2026 (analyses Deloitte, Edicom)</td><td>Facture électronique, d’abord pour les grandes entreprises</td><td><span class="tag a">À VÉRIFIER</span></td></tr>
+  <tr><td>Règlement n° 03/16-CEMAC-UMAC-CM, systèmes, moyens et incidents de paiement : art. 3 à 6</td><td>Pas d’espèces au-delà de 500 000 FCFA, amende de 5 %</td><td><span class="tag v">VÉRIFIÉ</span> lu (version consolidée)</td></tr>
+  <tr><td>Acte uniforme OHADA portant organisation des sûretés (2010) : art. 67 à 70</td><td>Droit de garder les colis jusqu’au paiement ; vente seulement sur autorisation du juge</td><td><span class="tag v">VÉRIFIÉ</span> lu</td></tr>
+  <tr><td>Acte uniforme OHADA sur le droit commercial général (2010) : art. 5 et 16</td><td>Preuve par tous moyens entre commerçants ; prescription de 5 ans</td><td><span class="tag v">VÉRIFIÉ</span> lu</td></tr>
+  <tr><td>Acte uniforme OHADA relatif au droit comptable (2017) : art. 19 et 24</td><td>Pièce justificative pour chaque écriture ; conservation 10 ans</td><td>Lu dans des extraits cités</td></tr>
+  <tr><td>Règles de Hambourg (1978) : art. 19 ; statut CNUDCI : adhésion du Cameroun le 21/10/1993</td><td>Effet de la remise sans réserve, 15 jours pour un dommage caché</td><td><span class="tag v">VÉRIFIÉ</span> lu</td></tr>
+  <tr><td>Convention de Montréal (1999) : art. 31</td><td>14 jours pour réclamer sur des marchandises (aérien)</td><td>Ratification par le Cameroun <span class="tag a">À VÉRIFIER</span></td></tr>
+  <tr><td>Loi n° 95/09 du 30/01/1995 et décret n° 96/072 du 08/04/1996</td><td>Commissionnaire de transport : définition et agrément</td><td>Source secondaire, <span class="tag a">À VÉRIFIER</span></td></tr>
+  <tr><td>Loi n° 75/14 du 08/12/1975 et décret n° 76/334</td><td>Assurance locale des importations à partir de 500 000 FCFA FOB</td><td>Source secondaire, <span class="tag a">À VÉRIFIER</span></td></tr>
+</table>
+
+</body>
+</html>
