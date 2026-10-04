@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "type": "commonjs",
+  "description": "PAS RECU — sources (Canvas engine + score). Not part of the app build."
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Satoshi; font-weight: 400; src: url(../assets/fonts/Satoshi-400.woff2); }
+@font-face { font-family: Satoshi; font-weight: 500; src: url(../assets/fonts/Satoshi-500.woff2); }
+@font-face { font-family: Satoshi; font-weight: 700; src: url(../assets/fonts/Satoshi-700.woff2); }
+@font-face { font-family: Satoshi; font-weight: 900; src: url(../assets/fonts/Satoshi-900.woff2); }
+@font-face { font-family: Stencil; font-weight: 100 900; src: url(../assets/fonts/BigShouldersStencilDisplay.ttf); }
+@font-face { font-family: Brico; font-weight: 200 800; src: url(../assets/fonts/BricolageGrotesque.ttf); }
+@font-face { font-family: Martian; font-weight: 100 800; src: url(../assets/fonts/MartianMono.ttf); }
+@font-face { font-family: Shantell; font-weight: 300 800; src: url(../assets/fonts/ShantellSans.ttf); }
+@font-face { font-family: CaveatBrush; src: url(../assets/fonts/CaveatBrush-400.woff2); }
+@font-face { font-family: DMSans; font-weight: 100 1000; src: url(../assets/fonts/DMSans.ttf); }
+html, body { margin: 0; background: #140C26; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="kit.js"></script>
+<script>
+window.MB = 1;
+const acc = document.createElement('canvas'); acc.width = W; acc.height = H;
+window.setup = (timeline, logo, extra) => {
+  TLD = timeline; Object.assign(window, extra || {});
+  const pieces = logo.map(p => ({ fill: p.fill, path: new Path2D(p.d), cy: p.cy,
+    role: p.fill.toUpperCase() === '#F3A745' ? 'amber' : p.fill.toUpperCase() === '#FE560D' ? 'orange' : 'violet' }));
+  const vi = pieces.filter(p => p.role === 'violet').sort((a, b) => a.cy - b.cy);
+  if (vi[0]) vi[0].role = 'wingTop'; if (vi[1]) vi[1].role = 'wingBot';
+  LOGO = pieces; buildTextures(); return SCENES.map(s => s.id);
+};
+function drawAll(t, n) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#140C26'; ctx.fillRect(0, 0, W, H);
+  for (const s of SCENES) { if (s.when && !s.when(t)) continue; ctx.save(); s.draw(t, n); ctx.restore(); }
+}
+window.renderFrame = (n) => {
+  const main = cv.getContext('2d');
+  if (window.MB <= 1) { ctx = main; drawAll(n / FPS, n); return true; }
+  const a = acc.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, W, H);
+  for (let k = 0; k < window.MB; k++) { const t = (n + (k / (window.MB - 1) - .5) * .5) / FPS; ctx = main; drawAll(t, n); a.globalAlpha = 1 / (k + 1); a.drawImage(cv, 0, 0); }
+  ctx = main; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.drawImage(acc, 0, 0); return true;
+};
+</script>
+</body></html>

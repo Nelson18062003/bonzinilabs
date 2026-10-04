@@ -1,0 +1,70 @@
+{
+ "segments": [
+  {
+   "id": "T1",
+   "text": "J'ai payé mon fournisseur.",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T2",
+   "text": "Hein ?! Mais j'ai payé !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T3",
+   "text": "J'ai payé !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T4",
+   "text": "J'AI PAYÉ !",
+   "tts": "J'ai payé !!",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T5",
+   "text": "Euh… le gars m'a dit que c'est fait…",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "T6",
+   "text": "Ahh… voilà !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N1",
+   "text": "Payer sans preuve, c'est ça.",
+   "tts": "Payer… sans preuve, c'est ça."
+  },
+  {
+   "id": "N2",
+   "text": "La même commande… avec l'appli Bonzini."
+  },
+  {
+   "id": "N3",
+   "text": "Bonzini paie ton fournisseur en Chine…"
+  },
+  {
+   "id": "N4",
+   "text": "…et tu as la preuve de paiement."
+  },
+  {
+   "id": "N5",
+   "text": "Bonzini Labs. Paie tes fournisseurs chinois en XAF… avec la preuve.",
+   "tts": "Bonzini Labs. Paie tes fournisseurs chinois en francs CFA… avec la preuve."
+  },
+  {
+   "id": "N6",
+   "text": "Écris REÇU en commentaire.",
+   "tts": "Écris « reçu » en commentaire."
+  },
+  {
+   "id": "NA",
+   "text": "Quand tu paies sans preuve, c'est ça."
+  },
+  {
+   "id": "NB",
+   "text": "Sans preuve de paiement… c'est ça."
+  }
+ ]
+}
