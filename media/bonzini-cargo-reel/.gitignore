@@ -1,0 +1,2 @@
+# Python bytecode caches created when the audio scripts import each other
+__pycache__/
