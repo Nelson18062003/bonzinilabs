@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fondations juridiques partie 1</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  :root {
+    --violet: hsl(258 100% 60%); --amber: hsl(36 100% 55%); --orange: hsl(16 100% 55%);
+    --ink: #1c1b22; --muted: #5d5a68; --line: #dcd9e3; --soft: #f6f4fa;
+    --ok: #1d7a46; --warn: #a35a00; --risk: #b42318;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); font-size: 10.2pt; line-height: 1.45; margin: 0; }
+  h1 { font-size: 21pt; line-height: 1.15; margin: 0 0 4pt; letter-spacing: -0.01em; }
+  h2 { font-size: 13.5pt; margin: 18pt 0 6pt; padding-bottom: 3pt; border-bottom: 2px solid var(--line); break-after: avoid; }
+  h3 { font-size: 11pt; margin: 12pt 0 4pt; break-after: avoid; }
+  p { margin: 0 0 6pt; }
+  ul, ol { margin: 0 0 6pt; padding-left: 16pt; }
+  li { margin: 0 0 2.5pt; }
+  .bar { height: 5px; background: linear-gradient(90deg, var(--violet) 0 33%, var(--amber) 33% 66%, var(--orange) 66% 100%); border-radius: 3px; margin-bottom: 10pt; }
+  .meta { color: var(--muted); font-size: 9pt; margin-bottom: 10pt; }
+  .lead { font-size: 11pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9.4pt; }
+  th, td { border: 1px solid var(--line); padding: 4pt 5pt; vertical-align: top; text-align: left; }
+  th { background: var(--soft); font-weight: 600; }
+  tr { break-inside: avoid; }
+  .box { border: 1px solid var(--line); border-left: 4px solid var(--violet); background: var(--soft); padding: 6pt 8pt; margin: 6pt 0 8pt; border-radius: 3px; break-inside: avoid; }
+  .box.amber { border-left-color: var(--amber); }
+  .box.risk { border-left-color: var(--risk); background: #fff5f4; }
+  .box.ok { border-left-color: var(--ok); background: #f3faf5; }
+  .tag { display: inline-block; font-size: 7.8pt; font-weight: 700; padding: 0 4pt; border-radius: 3px; vertical-align: 1px; white-space: nowrap; }
+  .off { background: #e3f4e9; color: var(--ok); }
+  .cp { background: #eef0ff; color: #3b3fa8; }
+  .an { background: #f1eefa; color: #5b3fb0; }
+  .nk { background: #fff1dc; color: var(--warn); }
+  blockquote { margin: 4pt 0 6pt; padding: 4pt 8pt; border-left: 3px solid var(--line); color: #34313c; font-size: 9.3pt; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; }
+  .pb { break-before: page; }
+  .us { background: #f3faf5; }
+  code { font-family: inherit; background: var(--soft); padding: 0 2pt; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="bar"></div>
+<h1>Qui sommes-nous en droit, et pourquoi la douane et la TVA coincent</h1>
+<div class="lead">Fondations juridiques et comptables de Bonzini Cargo au Cameroun · partie 1</div>
+<div class="meta">NORTON GAUSS BONZINI SARL · document interne · version du 4 octobre 2026 · préparé pour Nelson Soh, directeur des opérations</div>
+
+<div class="box amber">
+  <b>Règle de ce document.</b> Chaque affirmation porte une étiquette.
+  <span class="tag off">OFFICIEL</span> : lu dans un texte publié par un État ou une organisation officielle (lien en fin de document).
+  <span class="tag cp">COPIE</span> : texte officiel, mais lu dans une copie publiée par un cabinet privé.
+  <span class="tag an">ANALYSE</span> : mon raisonnement à partir des textes. Ce n’est pas une position de l’administration.
+  <span class="tag nk">JE NE SAIS PAS</span> : je n’ai pas trouvé de texte officiel. La personne à consulter est indiquée.
+</div>
+
+<h2>1. La réponse en cinq phrases</h2>
+<ol>
+  <li>En droit CEMAC, ce que fait Bonzini porte un nom : <b>commissionnaire de transport</b>. Le Code de 2012 l’appelle aussi «&nbsp;entrepreneur de transport multimodal&nbsp;». On organise tout le trajet, en notre nom, et on s’engage sur le résultat. En anglais : <i>freight forwarder</i>, et pour le groupage <i>consolidator</i>.</li>
+  <li>Nous ne sommes <b>pas transitaire</b> : le transitaire agit seulement comme mandataire de son client, sans garantir le résultat. Nous ne sommes pas non plus <b>commissionnaire en douane</b>, un métier qui exige un agrément.</li>
+  <li>Mais sur nos déclarations en douane, nous ne disons pas que nous agissons pour nos clients. Le Code des douanes nous considère donc comme <b>l’importateur</b>, comme si la marchandise était à nous.</li>
+  <li>D’où le nœud que vous avez senti : nous payons à la douane une TVA sur des marchandises qui ne sont pas à nous et que nous ne revendons pas. Selon ma lecture du Code des impôts, <b>nous ne pouvons pas la déduire</b>. Nos clients non plus, puisque la déclaration n’est pas à leur nom.</li>
+  <li>Il existe deux façons cohérentes de travailler (partie 5). La situation actuelle mélange les deux. La première décision se prend avec un expert-comptable. L’administration fiscale peut ensuite nous donner une <b>réponse écrite et opposable</b> : c’est la procédure de rescrit (partie 7).</li>
+</ol>
+
+<h2>2. Le bon mot pour nous définir</h2>
+<p>Le Code communautaire de la marine marchande de la CEMAC définit chaque métier. Les définitions de 2001 <span class="tag off">OFFICIEL</span> et de 2012 <span class="tag cp">COPIE</span> sont identiques pour le commissionnaire de transport.</p>
+<table>
+  <tr><th style="width:19%">Métier</th><th>Ce que dit le texte</th><th style="width:22%">Chez nous</th></tr>
+  <tr class="us"><td><b>Commissionnaire de transport</b><br><span class="small">(Code 2012 : «&nbsp;entrepreneur de transport multimodal&nbsp;»)</span></td><td>«&nbsp;toute personne physique ou morale chargée d’organiser ou de faire exécuter sous sa responsabilité les opérations d’acheminement des marchandises selon les modes de son choix pour le compte du commettant&nbsp;» (Code 2001, art. 2-21).<br>«&nbsp;Il a une obligation de résultat&nbsp;» (Code 2001, art. 453).<br>En 2012 : il organise le trajet avec au moins deux modes de transport et un contrat unique ; «&nbsp;il agit en son nom et pour son compte […] et assume la responsabilité de l’exécution du contrat&nbsp;» (art. 642) <span class="tag cp">COPIE</span>.</td><td><b>C’est nous.</b> Un prix unique de Guangzhou à Douala, camion plus bateau (ou avion), nous choisissons les prestataires, et nous répondons du résultat.</td></tr>
+  <tr><td>Transitaire</td><td>«&nbsp;Le transitaire est le mandataire salarié du client&nbsp;» ; «&nbsp;il n’est tenu que d’une obligation de moyen et de diligence&nbsp;» (Code 2001, art. 452). En 2012, il intervient «&nbsp;à la charnière entre deux modes de transport&nbsp;» (art. 638).</td><td>Eric en Chine : booking, camion, douane d’export, pour notre compte.</td></tr>
+  <tr><td>Commissionnaire en douane</td><td>«&nbsp;Nul ne peut faire profession d’accomplir pour autrui les formalités de douane concernant la déclaration en détail des marchandises s’il n’a été agréé comme commissionnaire en douane&nbsp;» (Code des douanes CEMAC, art. 149) <span class="tag off">OFFICIEL</span>.</td><td>Le déclarant agréé que nous mandatons au Cameroun. Au Cameroun, on l’appelle souvent «&nbsp;transitaire&nbsp;».</td></tr>
+  <tr><td>Transporteur maritime</td><td>«&nbsp;toute personne […] par laquelle ou au nom de laquelle un contrat de transport de marchandises par mer est conclu avec un chargeur&nbsp;» (Code 2001, art. 2-52 ; Règles de Hambourg, art. 1) <span class="tag off">OFFICIEL</span>.</td><td>Maersk, CMA CGM. Vis-à-vis de nos clients, nous pourrions aussi être vus comme transporteur <span class="tag an">ANALYSE</span>.</td></tr>
+  <tr><td>Importateur</td><td>Celui au nom de qui la marchandise entre et qui doit les droits (Code des douanes, art. 74-4, partie 3).</td><td>Normalement <b>le client</b>, propriétaire. Aujourd’hui, sur le papier : <b>nous</b>.</td></tr>
+</table>
+<div class="box">
+  <b>Pourquoi le mot compte.</b> Il décide de notre responsabilité. Le transitaire répond seulement de ses fautes prouvées (Code 2012, art. 639) <span class="tag cp">COPIE</span>. Le commissionnaire de transport, lui, a une obligation de résultat : si un colis se perd, c’est à nous de prouver que ce n’est pas de notre fait. C’est cohérent avec notre promesse commerciale, mais il faut des conditions générales et une assurance à la hauteur.
+</div>
+<p><b>Agrément.</b> Le Code 2012 renvoie les conditions d’exercice de ces métiers à l’Acte n° 3/98 UDEAC du 5 février 1998 (art. 620) <span class="tag cp">COPIE</span>. Je n’ai pas lu cet Acte ni le texte camerounais d’application. Je ne sais donc pas si un agrément est exigé pour notre activité, ni lequel <span class="tag nk">JE NE SAIS PAS</span>. <b>Qui consulter :</b> le ministère des Transports et un avocat.</p>
+
+<h2 class="pb">3. Pourquoi nos déclarations en douane sont à notre nom</h2>
+<p>Le Code des douanes de la CEMAC <span class="tag off">OFFICIEL</span> nous autorise à déclarer :</p>
+<blockquote>«&nbsp;la déclaration en douane peut être faite par toute personne pouvant légalement disposer de la marchandise&nbsp;» (art. 148).</blockquote>
+<p>Nous sommes destinataires sur le connaissement, donc nous pouvons en disposer. Mais l’article 148 commence par «&nbsp;sous réserve de l’article 74&nbsp;», qui offre deux manières de traiter avec la douane :</p>
+<blockquote>«&nbsp;Les personnes intéressées ont la faculté de traiter avec la douane, soit directement, soit par l’intermédiaire d’un tiers qu’elles désignent pour agir en leur nom&nbsp;» (art. 74-1).<br>«&nbsp;Les personnes qui ne déclarent pas qu’elles agissent en tant que représentant en douane […] sont réputées agir en leur nom propre et pour leur propre compte&nbsp;» (art. 74-4).</blockquote>
+<p><b>Ce que ça veut dire.</b> Si nos déclarations ne disent pas que nous agissons pour nos clients, la douane nous traite comme le propriétaire et l’acheteur de tout le conteneur. C’est ce qui se passe aujourd’hui <span class="tag an">ANALYSE</span>.</p>
+<p>Deux conséquences directes :</p>
+<ul>
+  <li><b>La valeur en douane.</b> Elle se calcule sur «&nbsp;le prix effectivement payé ou à payer pour ces marchandises&nbsp;» (art. 30-1) <span class="tag off">OFFICIEL</span>. La douane attend donc une facture d’achat <b>à notre nom</b>. Nous n’en avons jamais, puisque ce sont nos clients qui achètent. Elle fixe alors la valeur elle-même.</li>
+  <li><b>Déclarer pour les autres.</b> Si nous voulons déclarer au nom de nos clients sans être commissionnaire en douane agréé, le Code prévoit une «&nbsp;autorisation de dédouaner&nbsp;», accordée par le Directeur national des douanes (art. 150) <span class="tag off">OFFICIEL</span>. Je ne sais pas comment la douane camerounaise l’applique en pratique <span class="tag nk">JE NE SAIS PAS</span>. <b>Qui consulter :</b> la Direction générale des douanes et notre commissionnaire en douane agréé.</li>
+</ul>
+<p class="small">Le diagnostic douanier complet, avec la déclaration de septembre 2026, est dans <code>docs/cargo/reference/qui-declare-groupage.md</code>.</p>
+
+<h2>4. Le nœud : la TVA et le précompte payés à la douane</h2>
+<p>Sur chaque déclaration à notre nom, la douane encaisse notamment deux taxes qui ne sont pas des droits de douane. Toutes les citations viennent du Code général des impôts, édition 2026 <span class="tag off">OFFICIEL</span>.</p>
+
+<h3>La TVA à l’importation : 17,5 %, plus 10 % de centimes additionnels, soit 19,25 %</h3>
+<p class="small">Taux de 17,5 % (art. 142) ; centimes additionnels fixés à «&nbsp;dix pour cent (10 %) du principal […] de la taxe sur la valeur ajoutée&nbsp;» (art. C 83).</p>
+<p>La règle de déduction :</p>
+<blockquote>«&nbsp;La Taxe sur la Valeur Ajoutée qui a grevé les éléments du prix d’une opération imposable est déductible&nbsp;» (art. 143-1 a).<br>Elle doit figurer, «&nbsp;en cas d’importation, sur la déclaration de mise à la consommation&nbsp;» (art. 143-1 b).</blockquote>
+<p><b>Ma lecture</b> <span class="tag an">ANALYSE</span> : nous pouvons déduire une TVA seulement si elle fait partie du prix de ce que <b>nous</b> vendons. Ce que nous vendons, c’est un transport. Les marchandises de nos clients ne sont pas un élément de ce prix : nous ne les achetons pas et nous ne les revendons pas. Cette TVA n’est donc pas déductible pour nous. Et nos clients ne peuvent pas la déduire non plus, puisque la déclaration n’est pas à leur nom.</p>
+<div class="box risk">
+  <b>Ce que ça coûte, si cette lecture est la bonne.</b>
+  <ul style="margin-bottom:0">
+    <li>La TVA d’import devient une <b>charge</b> pour nous, que nous refacturons dans le prix «&nbsp;douane incluse&nbsp;».</li>
+    <li>Refacturée ainsi, ce n’est pas un débours. Le Code n’exclut de la base de la TVA que «&nbsp;les débours qui ne sont que des remboursements de frais facturés pour leur montant exact&nbsp;» (art. 137-3). Or c’est <b>notre</b> taxe, pas une dépense faite au nom du client.</li>
+    <li>Si notre fret est lui-même soumis à la TVA (question encore ouverte), on paierait de la TVA sur un prix qui contient déjà de la TVA.</li>
+    <li>Un client entreprise au régime du réel perd une TVA qu’il aurait pu déduire si la déclaration avait été à son nom. C’est un argument commercial perdu.</li>
+  </ul>
+</div>
+
+<h3>Le précompte : 2 % pour nous, 10 % pour un client sans fichier fiscal</h3>
+<blockquote>Taux : «&nbsp;10 % du montant des opérations pour les contribuables ne relevant pas du fichier d’un centre des impôts&nbsp;» ; «&nbsp;2 % du montant des opérations, pour les commerçants relevant du régime du réel&nbsp;». Base : la valeur en douane. «&nbsp;Le précompte n’est pas récupérable sur le prix.&nbsp;» Pour une société, «&nbsp;la somme précomptée constitue un acompte à faire valoir sur les acomptes mensuels&nbsp;» d’impôt (art. 21-3).</blockquote>
+<ul>
+  <li>Comme nous sommes au réel, nous payons 2 % au lieu de 10 % pour un client informel. C’est sans doute une des raisons pour lesquelles le groupage se déclare au nom du groupeur <span class="tag an">ANALYSE</span>.</li>
+  <li>Ce précompte, nous pouvons l’imputer sur notre propre impôt. Mais le texte dit qu’il «&nbsp;n’est pas récupérable sur le prix&nbsp;». Le refacturer au client <b>et</b> l’imputer sur notre impôt revient peut-être à le récupérer deux fois. C’est à confirmer avec l’expert-comptable <span class="tag nk">JE NE SAIS PAS</span>.</li>
+</ul>
+
+<h2 class="pb">5. Deux façons cohérentes de travailler, et la nôtre aujourd’hui</h2>
+<table>
+  <tr><th style="width:17%"></th><th>Modèle A : acheteur-revendeur</th><th>Modèle B : commissionnaire de transport</th><th style="width:22%">Aujourd’hui</th></tr>
+  <tr><th>Qui achète la marchandise</th><td>Bonzini, avec une facture d’achat à son nom.</td><td>Le client.</td><td>Le client.</td></tr>
+  <tr><th>Au nom de qui la déclaration</th><td>Bonzini (art. 74-4).</td><td>Le client, représenté par un commissionnaire en douane agréé ou par nous avec l’autorisation de dédouaner (art. 74, 149, 150).</td><td><b>Bonzini</b>.</td></tr>
+  <tr><th>Ce que Bonzini facture</th><td>La marchandise rendue au Cameroun : une <b>vente</b>.</td><td>Le transport et ses services. Les droits avancés pour le client sont des débours au franc près (art. 137-3).</td><td>Un prix de transport «&nbsp;douane incluse&nbsp;».</td></tr>
+  <tr><th>TVA d’import</th><td>Déductible par Bonzini, qui collecte la TVA sur sa revente <span class="tag an">ANALYSE</span>.</td><td>Payée par le client. Déductible par lui s’il est au réel.</td><td>Payée par Bonzini, <b>non déductible</b> selon ma lecture.</td></tr>
+  <tr><th>Le point faible</th><td>Ne correspond pas à notre métier, sauf pour la «&nbsp;centrale d’achat&nbsp;». Il faut acheter vraiment.</td><td>Le client doit avoir un NIU, et paie 10 % de précompte s’il n’est pas dans un fichier fiscal. Plus de déclarations à gérer.</td><td>Le droit voit un acheteur ; la réalité est un transporteur. Rien ne se raccorde.</td></tr>
+</table>
+<p><b>Recommandation</b> <span class="tag an">ANALYSE</span> : notre métier correspond au modèle B. Le modèle A peut rester pour les cas où nous achetons vraiment pour le client (la centrale d’achat). Les étapes concrètes pour passer d’un modèle à l’autre ont déjà été étudiées (<code>docs/cargo/recommandation-regime-douanier.md</code>, voies A, B et C). Elles doivent maintenant être validées par l’expert-comptable et la douane.</p>
+
+<h2>6. Comment ça se traduit dans la comptabilité</h2>
+<p>Nous sommes au régime du réel. Le Code nous impose donc une comptabilité au «&nbsp;système normal prévu par le droit comptable OHADA&nbsp;» (art. 150-4) <span class="tag off">OFFICIEL</span>. Dans le modèle B <span class="tag an">ANALYSE</span> :</p>
+<ul>
+  <li><b>Notre chiffre d’affaires</b>, c’est le fret et nos services, rien d’autre.</li>
+  <li><b>Les droits et taxes payés pour un client</b> ne sont ni une recette ni une charge : c’est une avance, que le client nous rembourse au franc près, justificatif à l’appui.</li>
+  <li><b>Ce que nous payons au transitaire, à l’armateur, au déclarant</b> : ce sont nos charges.</li>
+</ul>
+<p>Les numéros de comptes exacts (plan SYSCOHADA) doivent être fixés par l’expert-comptable <span class="tag nk">JE NE SAIS PAS</span>.</p>
+<p><b>Règles nouvelles de 2026 à connaître</b> <span class="tag off">OFFICIEL</span> :</p>
+<ul>
+  <li>Une dépense de <b>100 000 FCFA ou plus payée en espèces</b> n’est pas déductible de l’impôt (art. 8 bis-1). La TVA d’un achat de ce montant payé en espèces ne se déduit pas non plus (art. 143-1 d).</li>
+  <li>Une dépense n’est pas déductible si sa facture n’a pas les mentions obligatoires, si elle est «&nbsp;délivrée en marge du système de suivi de facturation électronique de l’administration fiscale&nbsp;», ou si le fournisseur n’est pas dans le «&nbsp;fichier des contribuables actifs&nbsp;» (art. 8 bis-2).</li>
+  <li>Pour déduire une TVA, la facture doit avoir été émise par ce système électronique (art. 143-1 b). Ses modalités pratiques ne sont pas dans le Code <span class="tag nk">JE NE SAIS PAS</span>. <b>Qui consulter :</b> l’expert-comptable et le centre des impôts.</li>
+</ul>
+
+<h2 class="pb">7. Obtenir une réponse officielle : le rescrit fiscal</h2>
+<p>Plutôt que de deviner, la loi permet de poser la question à l’administration avant d’agir :</p>
+<blockquote>«&nbsp;Tout contribuable peut, préalablement à la conclusion d’une opération […], solliciter l’avis de l’Administration sur le régime fiscal qui lui est applicable.&nbsp;» La réponse «&nbsp;garantit le contribuable contre tout changement d’interprétation ultérieur&nbsp;». Sans réponse dans les trois mois, la position du contribuable est tacitement acceptée (Livre des procédures fiscales, art. L 33 bis) <span class="tag off">OFFICIEL</span>.</blockquote>
+<p>C’est l’outil pour trancher, une fois pour toutes, les questions de la partie 8. Il faut décrire l’opération complètement, sinon la garantie ne joue pas. La demande se prépare avec l’expert-comptable.</p>
+
+<h2>8. Ce que je ne sais pas, et qui peut répondre</h2>
+<table>
+  <tr><th style="width:4%">N°</th><th>Question</th><th style="width:28%">Qui consulter</th></tr>
+  <tr><td>1</td><td>La TVA d’import payée à notre nom sur les marchandises des clients est-elle déductible pour nous ? (ma lecture : non)</td><td>Expert-comptable, puis rescrit (art. L 33 bis)</td></tr>
+  <tr><td>2</td><td>Notre fret Chine → Cameroun est-il soumis à la TVA ? Sinon, quelle mention sur la facture ?</td><td>Expert-comptable, puis rescrit</td></tr>
+  <tr><td>3</td><td>Le précompte : peut-on à la fois le refacturer au client et l’imputer sur notre impôt ?</td><td>Expert-comptable</td></tr>
+  <tr><td>4</td><td>Faut-il un agrément pour exercer comme commissionnaire de transport (Acte n° 3/98 UDEAC, texte camerounais) ? Pour le maritime et pour l’aérien ?</td><td>Ministère des Transports, avocat</td></tr>
+  <tr><td>5</td><td>Comment déclarer au nom de nos clients : par notre commissionnaire en douane agréé avec un mandat, ou avec une autorisation de dédouaner (art. 150) ? Quelles conditions au Cameroun (art. 74-3) ?</td><td>Direction générale des douanes, commissionnaire en douane agréé</td></tr>
+  <tr><td>6</td><td>Nos statuts et notre registre du commerce couvrent-ils l’activité de commissionnaire de transport ?</td><td>Avocat (à lire dans nos statuts)</td></tr>
+  <tr><td>7</td><td>Le système de facturation électronique : sommes-nous concernés, et à partir de quand ?</td><td>Expert-comptable, centre des impôts</td></tr>
+</table>
+<p class="small">L’expert-comptable doit être inscrit à l’Ordre ; l’avocat, au Barreau du Cameroun. Vérifiez leur inscription avant de les mandater.</p>
+
+<h2>9. La suite, petit bout par petit bout</h2>
+<table>
+  <tr><th style="width:5%"></th><th style="width:32%">Étape</th><th>Ce qu’on obtient</th></tr>
+  <tr><td>✓</td><td>Les documents client (guide du 4 octobre)</td><td>Bon de réception et devis, facture, reçu, bon de livraison.</td></tr>
+  <tr class="us"><td>●</td><td><b>Partie 1 : ce document</b></td><td>Notre nom en droit, et le nœud douane/TVA expliqué.</td></tr>
+  <tr><td>2</td><td>Rendez-vous avec un expert-comptable, ce document en main</td><td>Réponses aux questions 1, 2, 3 et 7. Choix du modèle. Décision sur le rescrit.</td></tr>
+  <tr><td>3</td><td>Statuts et agrément</td><td>Objet social à jour, agrément de commissionnaire de transport si exigé.</td></tr>
+  <tr><td>4</td><td>Douane au nom des clients</td><td>Mandat type, NIU des clients, déclaration en représentation.</td></tr>
+  <tr><td>5</td><td>Nos paiements vers la Chine</td><td>Payer le transitaire et le fret dans les règles des changes de la CEMAC.</td></tr>
+  <tr><td>6</td><td>La société de Chine et Bonzini Cameroun</td><td>Qui facture quoi à qui entre les deux sociétés.</td></tr>
+  <tr><td>7</td><td>Assurance et responsabilité</td><td>Couverture des marchandises, limite de responsabilité dans nos conditions.</td></tr>
+</table>
+
+<h2>10. Sources</h2>
+<table class="small">
+  <tr><th style="width:40%">Texte</th><th>Où il a été lu</th><th style="width:14%">Statut</th></tr>
+  <tr><td>Code général des impôts du Cameroun, édition 2026 : art. 8 bis, 21, 137, 142, 143, 150, C 83, L 33 bis</td><td>impots.cm, site de la Direction générale des impôts</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Règlement n° 05/19-UEAC-010A-CM-33 portant révision du Code des douanes de la CEMAC : art. 30, 74, 148, 149, 150</td><td>sgg.cg, Secrétariat général du gouvernement du Congo (État membre de la CEMAC)</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Code communautaire de la marine marchande CEMAC, version 2001 : art. 2 (définitions), 452, 453</td><td>NATLEX, base de textes de l’Organisation internationale du travail</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Code communautaire de la marine marchande CEMAC, version 2012 : art. 620, 638, 639, 642</td><td>Copie publiée par le cabinet Kalieu Elongo</td><td><span class="tag cp">COPIE</span></td></tr>
+  <tr><td>Règles de Hambourg (1978) : art. 1 ; adhésion du Cameroun le 21/10/1993</td><td>uncitral.un.org, Nations unies</td><td><span class="tag off">OFFICIEL</span></td></tr>
+  <tr><td>Acte n° 3/98 UDEAC (professions auxiliaires) ; loi n° 95/09 et décret n° 96/072 (Cameroun)</td><td>Non trouvés en version officielle</td><td><span class="tag nk">JE NE SAIS PAS</span></td></tr>
+</table>
+
+</body>
+</html>
