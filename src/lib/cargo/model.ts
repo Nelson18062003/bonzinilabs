@@ -313,19 +313,6 @@ export function fmtMoney(amount: number | null | undefined, currency = 'XAF'): s
   return currency === 'XAF' ? `${n} XAF` : `${n} ${CURRENCY_LABEL[currency] ?? currency}`;
 }
 
-/* ── Documents : ce qu'un dossier d'import camerounais exige ───────────────
- * `required` = pièce sans laquelle on ne sort pas le conteneur (manuel cargo,
- * « le dossier documentaire, pièce par pièce »). */
-export const DOCUMENT_KINDS: { kind: string; label: string; required: boolean; who: string }[] = [
-  { kind: 'BL', label: 'Bill of lading', required: true, who: "émis par l'armateur — titre de la marchandise" },
-  { kind: 'TELEX', label: 'Télex release', required: true, who: "libération du B/L par l'armateur, après paiement du fret" },
-  { kind: 'INVOICE', label: 'Facture commerciale', required: true, who: 'émise par le fournisseur — base de la valeur en douane' },
-  { kind: 'PACKING_LIST', label: 'Packing list', required: true, who: 'émise par le fournisseur — détail des colis et des poids' },
-  { kind: 'BESC', label: 'BESC', required: true, who: 'Conseil national des chargeurs — obligatoire à l’import au Cameroun' },
-  { kind: 'CUSTOMS', label: 'Pièces de douane', required: false, who: 'déclaration, quittance, bon à enlever' },
-  { kind: 'OTHER', label: 'Autre pièce', required: false, who: 'certificat d’origine, assurance, ANOR/PECAE…' },
-];
-
 /* ── Jalons camerounais après l'arrivée ───────────────────────────────────
  * Ces dates sont saisies à la main : aucun armateur ne les publie. */
 export const ARRIVAL_STEPS: { key: keyof CargoShipment; label: string; hint: string }[] = [

@@ -454,6 +454,8 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'cargo-air-detail': { Comp: MobileCargoAirDetail, route: '/m/cargo/avion/air1', path: '/m/cargo/avion/:airId' },
   'cargo-air-load': { Comp: MobileCargoAirLoad, route: '/m/cargo/avion/air1/charger', path: '/m/cargo/avion/:airId/charger' },
   'cargo-pricing-desktop': { Comp: () => <MobileCargoPricing desktop />, route: '/m/more/cargo-pricing' },
+  'cargo-mob-papiers': { Comp: MobileCargoDossier, route: '/m/cargo/2/papiers', path: '/m/cargo/:shipmentId/:tab' },
+  'cargo-mob-douane': { Comp: MobileCargoDossier, route: '/m/cargo/2/douane', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-dossier-dedans': { Comp: MobileCargoDossier, route: '/m/cargo/ct1/dedans', path: '/m/cargo/:shipmentId/:tab' },
   'cargo-load': { Comp: MobileCargoLoadParcels, route: '/m/cargo/ct1/charger-colis', path: '/m/cargo/:shipmentId/charger-colis' },
   'client-parcels': { Comp: MobileClientParcels, route: '/m/clients/u1/parcels', path: '/m/clients/:clientId/parcels' },

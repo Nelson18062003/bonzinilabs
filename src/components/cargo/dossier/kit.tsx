@@ -53,8 +53,9 @@ export function SectionHead({
   title: ReactNode; subtitle?: ReactNode; meta?: ReactNode; action?: ReactNode; icon?: ElementType; tone?: SectionTone;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-3.5 dark:border-white/[0.06]">
-      <div className="flex min-w-0 items-center gap-3">
+    // `flex-wrap` : sur un téléphone, les actions passent sous le titre au lieu de l'écraser mot par mot.
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5 border-b border-black/[0.06] px-5 py-3.5 max-sm:px-4 dark:border-white/[0.06]">
+      <div className="flex min-w-[200px] flex-1 items-center gap-3">
         {icon && <IconTile icon={icon} tone={tone} />}
         <div className="min-w-0">
           <div className={cn('text-[14px] max-lg:text-[16px] font-bold leading-5', TEXT.strong)}>{title}</div>
@@ -86,7 +87,7 @@ export function Section({
   return (
     <section id={id} className={cn('overflow-hidden rounded-[14px]', SURFACE.card, SURFACE.shadow, className)}>
       <SectionHead title={title} subtitle={subtitle} meta={meta} action={action} icon={icon} tone={tone} />
-      <div className={cn('px-5 py-5', bodyClassName)}>{children}</div>
+      <div className={cn('px-5 py-5 max-sm:px-4', bodyClassName)}>{children}</div>
     </section>
   );
 }

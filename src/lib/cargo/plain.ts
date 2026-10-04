@@ -10,7 +10,7 @@
  */
 import { differenceInHours, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { bestEta, bestEtd, daysUntilArrival, DOCUMENT_KINDS, etaSlipDays, fmtUsd, voyageProgress } from '@/lib/cargo/model';
+import { bestEta, bestEtd, daysUntilArrival, etaSlipDays, fmtUsd, voyageProgress } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { nextSteps } from '@/lib/cargo/todo';
 
@@ -100,10 +100,15 @@ export function moneySentence(s: CargoShipment): string {
 
 /** « 5 pièces manquantes sur 5 » / « Toutes les pièces obligatoires sont là ». */
 export function papersSentence(docs: CargoDocument[] | undefined): string {
-  const required = DOCUMENT_KINDS.filter((k) => k.required);
-  const missing = required.filter((k) => !(docs ?? []).some((d) => d.kind === k.kind)).length;
-  if (missing === 0) return 'Toutes les pièces obligatoires sont là';
-  return `${plural(missing, 'pièce manquante', 'pièces manquantes')} sur ${required.length}`;
+  // Le classeur n'a plus de pièces « obligatoires » : on dit ce qui est classé, et s'il manque le B/L ou le télex,
+  // les deux sans lesquels le conteneur ne sort pas.
+  const files = (docs ?? []).filter((d) => d.kind !== 'COST');
+  if (files.length === 0) return 'Aucun document classé';
+  const missing = [
+    !files.some((d) => d.kind === 'BL') && 'le B/L',
+    !files.some((d) => d.kind === 'TELEX') && 'le télex release',
+  ].filter(Boolean) as string[];
+  return `${plural(files.length, 'document classé', 'documents classés')}${missing.length ? ` · il manque ${missing.join(' et ')}` : ''}`;
 }
 
 /** L'étape camerounaise en cours, en une phrase. */

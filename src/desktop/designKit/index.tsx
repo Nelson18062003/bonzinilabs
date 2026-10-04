@@ -657,7 +657,7 @@ export function CenterDialog({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 max-sm:p-2" role="dialog" aria-modal="true">
       <button
         type="button"
         aria-label="Fermer"
@@ -671,7 +671,8 @@ export function CenterDialog({
           SURFACE.card,
           'ring-1 ring-black/[0.08] dark:ring-white/[0.08]',
         )}
-        style={{ width }}
+        // Sur téléphone, la fenêtre ne dépasse jamais l'écran (les dialogues du dossier conteneur y servent aussi).
+        style={{ width, maxWidth: '100%' }}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           {typeof title === 'string' ? <h2 className={cn('text-[17px] font-bold', TEXT.strong)}>{title}</h2> : <div className="min-w-0 flex-1">{title}</div>}

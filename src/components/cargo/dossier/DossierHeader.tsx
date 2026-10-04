@@ -6,7 +6,7 @@
  *   3. la décision (arrivée) + les actions             — à droite
  */
 import { useState } from 'react';
-import { CheckCircle, Copy, Loader2, MoreHorizontal, RefreshCw, Ship, Trash2 } from 'lucide-react';
+import { CheckCircle, CircleDollarSign, Container, Copy, FileCheck2, Loader2, MoreHorizontal, RefreshCw, Ship, Stamp, Trash2 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { CargoVesselDialog } from '@/components/cargo/CargoVesselDialog';
@@ -138,7 +138,7 @@ export function DossierHeader({
 }: {
   shipment: CargoShipment;
   onRemoved?: () => void;
-  /** Boîte rapide : titre plus petit, pas de ligne d'arrivée (elle est dans le corps). */
+  /** Boîte rapide : titre plus petit, pas de bandeau d'indicateurs (il est dans le corps). */
   compact?: boolean;
 }) {
   const meta = statusMeta(s.status);
@@ -147,49 +147,74 @@ export function DossierHeader({
   const inDays = daysUntilArrival(s);
 
   const identity = (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className={cn(compact ? 'text-[17px]' : 'text-[20px]', 'font-extrabold tracking-tight', TEXT.strong)}>
-          Conteneur de {s.client_label}
-        </h2>
-        <StatusPill tone={meta.tone} label={meta.label} />
-      </div>
-      <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] max-lg:text-[16px]', TEXT.muted)}>
-        <span className="inline-flex items-center gap-1">
-          <RefChip>{s.container_number}</RefChip>
-          <CopyBtn value={s.container_number} label="Numéro de conteneur" />
+    <div className="flex min-w-0 items-start gap-3.5">
+      {!compact && (
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300 max-sm:hidden">
+          <Container className="h-6 w-6" />
         </span>
-        <span className="inline-flex items-center gap-1">
-          {CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className={cn('font-mono font-semibold', TEXT.body)}>{s.bl_number}</span>
-          <CopyBtn value={s.bl_number} label="Numéro de B/L" />
-        </span>
-        {s.vessel_name && <span>{s.vessel_name}{s.voyage ? ` · ${s.voyage}` : ''}</span>}
+      )}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className={cn(compact ? 'text-[17px]' : 'text-[22px] max-lg:text-[20px]', 'font-extrabold tracking-tight', TEXT.strong)}>
+            Conteneur de {s.client_label}
+          </h2>
+          <StatusPill tone={meta.tone} label={meta.label} />
+        </div>
+        <div className={cn('mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] max-lg:text-[15px]', TEXT.muted)}>
+          <span className="inline-flex items-center gap-1">
+            <RefChip>{s.container_number}</RefChip>
+            <CopyBtn value={s.container_number} label="Numéro de conteneur" />
+          </span>
+          <span className="inline-flex items-center gap-1">
+            {CARRIER_LABEL[s.carrier] ?? s.carrier} · B/L <span className={cn('font-mono font-semibold', TEXT.body)}>{s.bl_number}</span>
+            <CopyBtn value={s.bl_number} label="Numéro de B/L" />
+          </span>
+          {s.vessel_name && <span className="inline-flex items-center gap-1"><Ship className="h-3.5 w-3.5" />{s.vessel_name}{s.voyage ? ` · ${s.voyage}` : ''}</span>}
+          {s.pol_name && <span>{s.pol_name} → {s.pod_name}</span>}
+        </div>
       </div>
     </div>
   );
 
   const actions = <DossierActions shipment={s} onRemoved={onRemoved} />;
+  if (compact) {
+    return (
+      <div className="flex items-start justify-between gap-x-6 gap-y-3 max-sm:flex-col">
+        {identity}
+        {actions}
+      </div>
+    );
+  }
 
+  // Le bandeau d'indicateurs : ce qu'on vérifie d'un coup d'œil avant d'ouvrir un onglet.
+  const pill = (ok: boolean, label: string, Icon: typeof Ship) => (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] max-lg:text-[13.5px] font-semibold', ok ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-destructive/10 text-destructive')}>
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </span>
+  );
   return (
-    <div className="flex items-start justify-between gap-x-6 gap-y-3 max-sm:flex-col">
-      {identity}
-      {compact ? (
-        actions
-      ) : (
-        <div className="flex items-start gap-4">
-          <div className="text-right">
-            <div className={cn('text-[11px] max-lg:text-[16px] font-bold uppercase tracking-wider max-lg:normal-case max-lg:tracking-normal', TEXT.muted)}>
-              {eta.source === 'manual' ? 'Arrivée relevée' : eta.source === 'carrier' ? 'Arrivée armateur' : 'Arrivée promise'}
-            </div>
-            <div className={cn('mt-0.5 text-[17px] font-extrabold tabular-nums', TEXT.strong)}>{s.pod_name} · {fmtDay(eta.date)}</div>
-            <div className={cn('text-[11.5px] max-lg:text-[16px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>
-              {inDays != null && (inDays > 0 ? `dans ${inDays} j` : inDays === 0 ? "aujourd'hui" : `il y a ${-inDays} j`)}
-              {slip > 0 && ` · +${slip} j vs promesse`}
-            </div>
-          </div>
-          {actions}
+    <div>
+      <div className="flex items-start justify-between gap-x-6 gap-y-3 max-sm:flex-col">
+        {identity}
+        {actions}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex items-baseline gap-2">
+          <span className={cn('text-[11px] max-lg:text-[13px] font-bold uppercase tracking-wider', TEXT.muted)}>
+            {eta.source === 'manual' ? 'Arrivée relevée' : eta.source === 'carrier' ? 'Arrivée armateur' : 'Arrivée promise'}
+          </span>
+          <span className={cn('text-[15px] max-lg:text-[16px] font-extrabold tabular-nums', TEXT.strong)}>{s.pod_name} · {fmtDay(eta.date)}</span>
+          <span className={cn('text-[12px] max-lg:text-[13.5px] tabular-nums', slip > 0 ? 'font-semibold text-amber-700 dark:text-amber-400' : TEXT.muted)}>
+            {inDays != null && (inDays > 0 ? `dans ${inDays} j` : inDays === 0 ? "aujourd'hui" : `il y a ${-inDays} j`)}
+            {slip > 0 && ` · +${slip} j vs promesse`}
+          </span>
         </div>
-      )}
+        <span className="flex flex-wrap gap-1.5">
+          {pill(s.telex_released, s.telex_released ? 'Télex reçu' : 'Télex non reçu', FileCheck2)}
+          {pill(s.freight_paid, s.freight_paid ? 'Fret réglé' : 'Fret à régler', CircleDollarSign)}
+          {pill(!!s.besc_number, s.besc_number ? `BESC ${s.besc_number}` : 'BESC manquant', Stamp)}
+        </span>
+      </div>
     </div>
   );
 }

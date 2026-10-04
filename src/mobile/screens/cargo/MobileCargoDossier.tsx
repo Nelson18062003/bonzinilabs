@@ -22,13 +22,8 @@ import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPosi
 import { useShipmentParcels } from '@/hooks/useReception';
 import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
-import { DossierActions } from '@/components/cargo/dossier';
-import { MobilePapiers } from './MobilePapiers';
-import { MobileDouane } from './MobileDouane';
-import { MobileCouts } from './MobileCouts';
-import { MobileClient } from './MobileClient';
+import { DossierActions, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabIntervenants } from '@/components/cargo/dossier';
 import { MobileNotes } from './MobileNotes';
-import { MobileChargement } from './MobileChargement';
 import { MobileNavireSheet } from './MobileNavire';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { groupVessels } from '@/lib/cargo/vessels';
@@ -45,8 +40,8 @@ import { cn } from '@/lib/utils';
 import { copyToClipboard } from '@/lib/clipboard';
 import { TEXT, TYPE, SURFACE, Button, ScreenError, ScreenLoader, StatusPill } from '@/mobile/designKit';
 
-type SectionKey = 'afaire' | 'ou' | 'trajet' | 'argent' | 'papiers' | 'douane' | 'dedans' | 'chargement' | 'client' | 'couts' | 'notes';
-const KEYS: SectionKey[] = ['afaire', 'ou', 'trajet', 'argent', 'papiers', 'douane', 'dedans', 'chargement', 'client', 'couts', 'notes'];
+type SectionKey = 'afaire' | 'ou' | 'trajet' | 'argent' | 'papiers' | 'douane' | 'dedans' | 'chargement' | 'client' | 'intervenants' | 'couts' | 'notes';
+const KEYS: SectionKey[] = ['afaire', 'ou', 'trajet', 'argent', 'papiers', 'douane', 'dedans', 'chargement', 'client', 'intervenants', 'couts', 'notes'];
 /** Les adresses des onglets desktop restent valables : on les traduit. */
 const ALIAS: Record<string, SectionKey> = { apercu: 'afaire', suivi: 'trajet', documents: 'papiers' };
 const DEFAULT: SectionKey = 'afaire';
@@ -65,7 +60,7 @@ function Line({ children, strong, tone, className }: { children: React.ReactNode
 }
 
 /** La section qui règle chaque chose à faire : on y va d'un tap. */
-const TODO_SECTION: Record<string, SectionKey> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
+const TODO_SECTION: Record<string, SectionKey> = { freight: 'argent', telex: 'douane', bl: 'papiers', invoice: 'papiers', besc: 'douane', vessel: 'ou', client: 'client' };
 
 function Todo({ s, docs, onGo }: { s: CargoShipment; docs?: CargoDocument[]; onGo: (k: SectionKey) => void }) {
   const items = nextSteps(s, docs);
@@ -257,12 +252,15 @@ export function MobileCargoDossier() {
     { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} canManage={canManage} /> },
     { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} events={events ?? []} /> },
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
-    { key: 'papiers', title: 'Les papiers', summary: () => papersSentence(docs), body: (x) => <MobilePapiers shipment={x} canManage={canManage} /> },
-    { key: 'douane', title: "La douane et l'arrivée", summary: (x) => customsSentence(x), body: (x) => <MobileDouane shipment={x} canManage={canManage} /> },
+    // Les modules refaits le 03-04/10/2026 (classeur, douane étape par étape, coûts justifiés, clients du groupage,
+    // intervenants) servent le téléphone ET l'ordinateur : une seule version, qui se replie sur petit écran.
+    { key: 'papiers', title: 'Les documents', summary: () => papersSentence(docs), body: (x) => <TabDocuments shipment={x} canManage={canManage} /> },
+    { key: 'douane', title: 'La douane, étape par étape', summary: (x) => customsSentence(x), body: (x) => <TabDouane shipment={x} canManage={canManage} /> },
     { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} canManage={canManage} /> },
-    { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'La boîte vue de l’intérieur, lot par lot', body: (x) => <MobileChargement shipment={x} canManage={canManage} /> },
-    { key: 'client', title: 'Le client', summary: (x) => x.client_id ? `${x.client_label}, rattaché à sa fiche` : `${x.client_label}, pas encore rattaché à une fiche`, body: (x) => <MobileClient shipment={x} canManage={canManage} /> },
-    { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté', body: (x) => <MobileCouts shipment={x} canManage={canManage} /> },
+    { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'Les véhicules et les colis dans la boîte, lot par lot', body: (x) => <TabChargement shipment={x} canManage={canManage} /> },
+    { key: 'client', title: 'Les clients du groupage', summary: () => 'À qui est chaque lot, et sa part du fret', body: (x) => <TabClient shipment={x} canManage={canManage} /> },
+    { key: 'intervenants', title: 'Les intervenants', summary: () => 'Transitaire, chargeur, déclarante, armateur…', body: (x) => <TabIntervenants shipment={x} canManage={canManage} /> },
+    { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté, avec les reçus', body: (x) => <TabCouts shipment={x} canManage={canManage} /> },
     { key: 'notes', title: 'Les notes', summary: (x) => x.notes ? x.notes : 'Rien de noté pour l’instant', body: (x) => <MobileNotes shipment={x} canManage={canManage} /> },
   ] : [];
 

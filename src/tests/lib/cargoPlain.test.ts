@@ -88,9 +88,13 @@ describe('PHRASES — l’argent et les papiers', () => {
     expect(flat(moneySentence(ship({ freight_paid: true, telex_released: true })))).toBe('Fret 6 550 $, payé. Télex reçu.');
   });
   it('compte les pièces obligatoires manquantes', () => {
-    expect(papersSentence([])).toBe('5 pièces manquantes sur 5');
+    expect(papersSentence([])).toBe('Aucun document classé');
+    const some = ['BL', 'INVOICE'].map((kind) => ({ kind } as CargoDocument));
+    expect(papersSentence(some)).toBe('2 documents classés · il manque le télex release');
     const all = ['BL', 'TELEX', 'INVOICE', 'PACKING_LIST', 'BESC'].map((kind) => ({ kind } as CargoDocument));
-    expect(papersSentence(all)).toBe('Toutes les pièces obligatoires sont là');
+    expect(papersSentence(all)).toBe('5 documents classés');
+    // Un justificatif de coût n'est pas une pièce du classeur.
+    expect(papersSentence([{ kind: 'COST' } as CargoDocument])).toBe('Aucun document classé');
   });
   it('décrit l’étape camerounaise en cours', () => {
     expect(customsSentence(ship())).toBe('Pas encore arrivé');

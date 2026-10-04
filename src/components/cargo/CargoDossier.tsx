@@ -47,14 +47,14 @@ export function CargoDossier({
         )}
       >
         <DossierHeader shipment={s} onRemoved={onRemoved} />
-        <div className="mt-4">
+        <div className="mt-5">
           <DossierTabsBar value={tab} onChange={onTabChange} />
         </div>
       </div>
 
-      <p className={cn('mt-4 text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>{current.purpose}</p>
+      <p className={cn('mt-5 text-[13px] max-lg:text-[14px]', TEXT.muted)}>{current.purpose}</p>
 
-      <div className="mt-3 pb-10">
+      <div className="mt-4 pb-12">
         {tab === 'apercu' && <TabApercu shipment={s} canManage={canManage} onGo={onTabChange} />}
         {tab === 'suivi' && <TabSuivi shipment={s} canManage={canManage} />}
         {tab === 'chargement' && <TabChargement shipment={s} canManage={canManage} />}
