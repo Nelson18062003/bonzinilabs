@@ -1,0 +1,47 @@
+{
+ "segments": [
+  {
+   "id": "N1",
+   "text": "Dans ce carton… tu paies de l'air."
+  },
+  {
+   "id": "T1",
+   "text": "Mais mon carton est léger !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N2",
+   "text": "Au bateau, on paie la place : le mètre cube."
+  },
+  {
+   "id": "N3",
+   "text": "Le carton entier… même le vide dedans."
+  },
+  {
+   "id": "T2",
+   "text": "…j'ai payé le bateau pour transporter de l'air ?!",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N4",
+   "text": "Demande à ton fournisseur des cartons bien remplis."
+  },
+  {
+   "id": "N5",
+   "text": "Moins de vide… moins de mètres cubes."
+  },
+  {
+   "id": "N6",
+   "text": "Enlève le vide… pas la protection."
+  },
+  {
+   "id": "N7",
+   "text": "Chez Bonzini Trading Cargo, tes cartons sont mesurés dès la réception en Chine."
+  },
+  {
+   "id": "N8",
+   "text": "Écris CBM en commentaire. Maintenant, tu sais.",
+   "tts": "Écris « cé bé ème » en commentaire. Maintenant, tu sais."
+  }
+ ]
+}

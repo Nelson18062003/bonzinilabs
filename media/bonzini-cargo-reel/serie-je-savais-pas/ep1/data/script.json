@@ -1,0 +1,60 @@
+{
+ "segments": [
+  {
+   "id": "N1",
+   "text": "Revendue dix mille…"
+  },
+  {
+   "id": "N2",
+   "text": "…achetée cinq mille en Chine."
+  },
+  {
+   "id": "T1",
+   "text": "Facile : cinq mille de bénéfice !",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N3",
+   "text": "Le transport : mille. Tchac !",
+   "tts": "Le transport : mille. Tchak !"
+  },
+  {
+   "id": "N4",
+   "text": "La douane : trois mille. Tchac, tchac !",
+   "tts": "La douane : trois mille. Tchak, tchak !"
+  },
+  {
+   "id": "N5",
+   "text": "Les petits frais : cinq cents. Tchac !",
+   "tts": "Les petits frais : cinq cents. Tchak !"
+  },
+  {
+   "id": "N6",
+   "text": "Cinq paires sur cent : deux pieds gauches ! Tchac.",
+   "tts": "Cinq paires sur cent : deux pieds gauches ! Tchak."
+  },
+  {
+   "id": "N7",
+   "text": "Prix chinois fois deux… égale zéro."
+  },
+  {
+   "id": "T2",
+   "text": "…zéro ?!",
+   "voice": "cml-tts/fr/1770_1028_000036-0002_enhanced.wav"
+  },
+  {
+   "id": "N8",
+   "text": "La règle : compte tout ce que tu paies… avant de fixer ton prix."
+  },
+  {
+   "id": "N9",
+   "text": "Avec Bonzini Trading Cargo, ton colis est pesé et mesuré dès Guangzhou.",
+   "tts": "Avec Bonzini Trading Cargo, ton colis est pesé et mesuré dès Gouangzou."
+  },
+  {
+   "id": "N10",
+   "text": "Écris TCHAC en commentaire. Maintenant, tu sais.",
+   "tts": "Écris « Tchak » en commentaire. Maintenant, tu sais."
+  }
+ ]
+}
