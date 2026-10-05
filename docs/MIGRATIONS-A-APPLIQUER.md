@@ -84,6 +84,30 @@ prérequis en tête, rejouable), puis `npx supabase migration repair --status ap
    les outils de Mola). La nouvelle version refuse le commercial et tout rôle inconnu ;
 5. app BONZINI HQ : `cd hq-app && npm run update:production` (le rôle commercial, l'espace `/v`, ses onglets).
 
+### `20261005170000_air_packages.sql` (à passer APRÈS `20261005150000`)
+**PR :** Cargo aérien › les paquets de 32 kg, de Guangzhou à Douala · LTA provisoire
+**Contenu :**
+- `air_packages` (numéros `PQ-000001`…, lecture RLS réception / cargo / Douala, aucune écriture directe) et
+  `parcels.air_package_id`.
+- Un colis emballé suit son paquet : jamais en conteneur, jamais chargé ni retiré seul d'une expédition (déclencheur
+  `parcels_package_guard`) ; la réception ne le modifie plus tant qu'il est dans un paquet.
+- RPC `air_package_*` (toutes `@mola`) : créer, lister, trouver (scan), ajouter / retirer un colis (colis avion, pesé,
+  avec client, 32 kg au plus), fermer (pesée brute ≤ 32 kg, dimensions), rouvrir, supprimer un paquet vide, affecter à
+  une expédition / l'en retirer, scanner au départ, refus de l'aéroport (avant ou après le départ : le paquet sort avec
+  ses colis, ré-affectable), réception et ouverture à Douala (pointer un colis ouvre son paquet).
+- `cargo_air_set_status` : pas de départ tant qu'un paquet n'est pas scanné ; une arrivée déjà travaillée à Douala ne
+  s'annule plus. Fiches expédition / colis / arrivée : leurs paquets.
+- LTA provisoire : `cargo_air_create` avec une LTA vide (et une date de départ) ouvre l'expédition en `PROV-…` ; la
+  vraie LTA se pose ensuite, même après le départ.
+- Testée sur Postgres 16 (schéma cargo réel) : fichier passé deux fois dans une transaction, 67 contrôles, et les 61
+  contrôles du lot remise / vols repassés avec ce lot ; contrôle des prérequis éprouvé (refuse de passer sans la
+  migration remise / vols).
+
+**Comment pousser :** coller `migrations/20261005_consolidated_paquets-avion.sql`, puis
+`npx supabase migration repair --status applied 20261005170000`, puis `/gen-types`, puis l'app BONZINI HQ
+(`cd hq-app && npm run update:production` : le scan d'un `PQ-…` ouvre le paquet à Guangzhou, le reçoit à Douala),
+et `npx supabase functions deploy admin-assistant` (Mola connaît les paquets — même redéploiement que le lot précédent).
+
 ## Appliquées
 
 _Vérifié en production le 05/10/2026 (objets présents dans la base). Les détails ci-dessous restent pour l'historique._

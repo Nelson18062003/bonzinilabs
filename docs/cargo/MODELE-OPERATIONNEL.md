@@ -69,3 +69,22 @@ transitaire : booking, camion, douane d'export.
 
 **Levier principal** : si la société Bonzini en Chine devient le **chargeur** sur le BL,
 c'est Bonzini qui détient les originaux. Le télex release ne dépend alors plus d'un tiers.
+
+---
+
+## 6. L'aérien : les paquets de 32 kg (05/10/2026)
+
+Expliqué par Nelson lors de la réunion du 05/10. Pour l'avion, le colis n'est pas l'unité qui voyage :
+
+| # | Étape | Où, qui | Dans la plateforme |
+|---|---|---|---|
+| 1 | Le colis avion est reçu au **bureau** de Guangzhou, pesé, étiqueté (`RC-000123-01`) | réception (`/r`) | dépôt « bureau » (`location = 'office'`) |
+| 2 | Les colis sont regroupés dans des **paquets de 32 kg au plus** ; un paquet réunit des colis de plusieurs clients, un client peut avoir des colis dans plusieurs paquets | réception (`/r/paquets`) | `air_packages` (`PQ-000001`), scan des étiquettes, jauge 32 kg |
+| 3 | Le paquet est **fermé, pesé** (poids brut ≤ 32 kg) et reçoit **son étiquette** | réception | `air_package_seal`, étiquette PQ (QR + code-barres) |
+| 4 | Les paquets sont **affectés** à une expédition (LTA, vol, date) — la LTA peut venir plus tard | cargo (`/m/cargo/avion`) | `air_package_assign` ; LTA provisoire `PROV-…` |
+| 5 | Les paquets sont **scannés au départ** ; l'expédition ne part pas tant qu'il en manque un | réception ou cargo | `air_package_scan_departure` |
+| 6 | L'aéroport peut **refuser** un paquet (avant ou après le départ) : il revient au bureau avec ses colis et repart par une autre expédition | cargo | `air_package_refuse` |
+| 7 | À Douala, l'équipe amène les paquets à l'entrepôt ; le responsable vérifie qu'**ils sont tous là** | entrepôt (`/w`) | `air_package_receive` : « paquets reçus X / Y » |
+| 8 | Il **ouvre chaque paquet** et **pointe chaque colis** | entrepôt | `air_package_open`, pointage existant (pointer un colis ouvre son paquet) |
+
+Le maritime suivra le même modèle plus tard (colis → unités de chargement → conteneur).

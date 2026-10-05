@@ -11,6 +11,8 @@ import type { Tone } from '@/mobile/designKit';
 import type { ParcelWithDeposit, ReceptionClient } from '@/lib/reception';
 import type { QuoteStatus } from '@/lib/cargoQuote';
 import { xaf } from '@/lib/cargoQuote';
+import { parsePackageCode, type AirPackage } from '@/lib/airPackage';
+import { awbLabel, isProvisionalAwb } from '@/lib/airShipment';
 
 export type ParcelCondition = 'ok' | 'damaged' | 'missing';
 
@@ -32,6 +34,20 @@ export interface WarehouseParcel extends ParcelWithDeposit {
   quote_total_xaf?: number | null;
   quote_paid_xaf?: number | null;
   invoice_no?: string | null;
+  /** Avion : le paquet de 32 kg dans lequel il a voyagé (null = colis libre). */
+  air_package_id?: string | null;
+  package_no?: string | null;
+}
+
+/** Une arrivée ouverte pour le pointage (warehouse_arrival_parcels). */
+export interface WarehouseArrivalDetail {
+  kind: 'air' | 'sea';
+  id: string;
+  label: string;
+  sub: string | null;
+  /** Avion : ses paquets, sans leurs colis (parcel_count, checked_count…). Vide en bateau. */
+  packages?: AirPackage[];
+  parcels: WarehouseParcel[];
 }
 
 export interface WarehouseArrival {
@@ -141,9 +157,17 @@ export function releaseBlockers(parcels: WarehouseParcel[], quotes: ClientQuoteS
   return blockers;
 }
 
-/** Le contenu d'un QR ou d'une saisie : un code client, un numéro de colis, ou rien de connu. */
-export function parseWarehouseScan(text: string): { kind: 'customer'; code: string } | { kind: 'parcel'; no: string } | null {
+/**
+ * Le contenu d'un QR ou d'une saisie : un code client, un numéro de colis, un
+ * paquet avion (PQ-…), ou rien de connu. Le paquet est lu AVANT le repli
+ * « six chiffres = un client » : PQ-100045 ne doit jamais devenir BZ-100045.
+ */
+export function parseWarehouseScan(
+  text: string,
+): { kind: 'customer'; code: string } | { kind: 'parcel'; no: string } | { kind: 'package'; no: string } | null {
   const t = (text ?? '').trim();
+  const pkg = parsePackageCode(t);
+  if (pkg && !/RC[^0-9]{0,3}\d{6}/i.test(t)) return { kind: 'package', no: pkg };
   const parcel = /(\d{6})[^0-9]{0,3}(\d{2})\b/.exec(t.toUpperCase());
   if (/RC[^0-9]{0,3}\d{6}/i.test(t) && parcel) return { kind: 'parcel', no: `RC-${parcel[1]}-${parcel[2]}` };
   const cust = /BZ[^0-9]{0,3}([1-9][0-9]{5})/i.exec(t);
@@ -203,4 +227,73 @@ export function releaseWord(chosen: number, blockers: ClientQuoteSummary[]): { t
   const due = blockers.reduce((s, q) => s + q.balance_xaf, 0);
   if (due > 0) return { tone: 'warn', text: `Reste à payer ${xaf(due)} avant la remise` };
   return { tone: 'good', text: `${nParcels(chosen)} prêts à partir` };
+}
+
+/* ── Les paquets avion de 32 kg, vus de Douala ─────────────────────────────
+ * L'équipe apporte les PAQUETS (PQ-…) : on vérifie qu'ils sont tous là, puis
+ * on ouvre chacun et on pointe ses colis. */
+
+/** Où en est un paquet à Douala : attendu (pas encore scanné), reçu, ouvert. */
+export type PackageStage = 'expected' | 'received' | 'opened';
+
+export function packageStage(p: Pick<AirPackage, 'status' | 'received_at' | 'opened_at'>): PackageStage {
+  if (p.status === 'opened' || p.opened_at) return 'opened';
+  if (p.status === 'received' || p.received_at) return 'received';
+  return 'expected';
+}
+
+export const PACKAGE_STAGE_META: Record<PackageStage, { label: string; tone: Tone }> = {
+  expected: { label: 'Attendu', tone: 'pending' },
+  received: { label: 'Reçu', tone: 'info' },
+  opened: { label: 'Ouvert', tone: 'success' },
+};
+
+/** Les paquets d'une arrivée : combien sont là, combien ouverts, et lesquels manquent encore. */
+export function packagesProgress<T extends Pick<AirPackage, 'status' | 'received_at' | 'opened_at'>>(packages: readonly T[]) {
+  let received = 0;
+  let opened = 0;
+  const missing: T[] = [];
+  for (const p of packages) {
+    const s = packageStage(p);
+    if (s === 'expected') missing.push(p);
+    else {
+      received += 1;
+      if (s === 'opened') opened += 1;
+    }
+  }
+  return { total: packages.length, received, opened, missing, done: packages.length > 0 && missing.length === 0 };
+}
+
+/** Les colis d'une arrivée, paquet par paquet ; les colis libres (sans paquet) à part. */
+export function parcelsByPackage<T extends Pick<WarehouseParcel, 'air_package_id'>>(parcels: readonly T[]): { loose: T[]; byPackage: Map<string, T[]> } {
+  const loose: T[] = [];
+  const byPackage = new Map<string, T[]>();
+  for (const p of parcels) {
+    if (!p.air_package_id) { loose.push(p); continue; }
+    const list = byPackage.get(p.air_package_id) ?? [];
+    list.push(p);
+    byPackage.set(p.air_package_id, list);
+  }
+  return { loose, byPackage };
+}
+
+/** Un paquet vient d'être reçu ou ouvert : il remplace l'ancien dans la liste de l'arrivée (sans ses colis, comme le serveur la renvoie). Un paquet d'une autre arrivée n'y entre pas. */
+export function withPackage(packages: readonly AirPackage[], pkg: AirPackage): AirPackage[] {
+  return packages.map((k) => (k.id === pkg.id ? { ...pkg, parcels: null } : k));
+}
+
+/** Ce que dit l'écran (et le bip) après le scan d'un paquet à l'entrepôt (air_package_receive). */
+export function packageReceivedWord(
+  r: { already: boolean; package_no: string; received: number; total: number; package?: Pick<AirPackage, 'air_shipment_id' | 'awb_number'> | null },
+  arrivalId?: string,
+): { outcome: 'ok' | 'again' | 'unknown'; text: string } {
+  if (arrivalId && r.package && r.package.air_shipment_id !== arrivalId) {
+    const awb = r.package.awb_number;
+    const where = awb && !isProvisionalAwb(awb) ? `il voyage par ${awbLabel({ awb_number: awb })}` : 'il voyage par une autre expédition';
+    return { outcome: 'unknown', text: `${r.package_no} reçu, mais il n'est pas dans cette arrivée : ${where}` };
+  }
+  const count = `${r.received} / ${r.total} paquet${r.total > 1 ? 's' : ''} reçu${r.received > 1 ? 's' : ''}`;
+  if (r.already) return { outcome: 'again', text: `${r.package_no} déjà reçu · ${count}` };
+  if (r.total > 0 && r.received >= r.total) return { outcome: 'ok', text: `${r.package_no} reçu · ${r.total > 1 ? `les ${r.total} paquets sont là` : 'le paquet est là'}` };
+  return { outcome: 'ok', text: `${r.package_no} reçu · ${count}` };
 }

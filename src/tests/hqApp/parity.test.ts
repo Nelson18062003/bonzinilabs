@@ -7,7 +7,8 @@ import { staffHomeFor } from '@/lib/staffHome';
 import { normalizeCustomerCode } from '@/lib/customerCode';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { can, staffHome, ROLE_LABEL } from '../../../hq-app/src/roles';
-import { cashPaymentId, customerCode, routeScan } from '../../../hq-app/src/scan';
+import { cashPaymentId, customerCode, packageCode, routeScan } from '../../../hq-app/src/scan';
+import { parsePackageCode } from '@/lib/airPackage';
 import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/actionable';
 import { CASH_TO_HAND_OVER_STATUSES } from '@/hooks/useAgentCashPayments';
 import { BADGE_TABS, CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from '../../../hq-app/src/statuses';
@@ -39,6 +40,12 @@ describe('BONZINI HQ ↔ site', () => {
     expect(customerCode('SF1234567890')).toBeNull();
   });
 
+  it('lit les numéros de paquet comme le site', () => {
+    for (const s of ['PQ-000123', 'pq 12', 'PQ1234567', 'BZ-482913', 'RC-000123-01']) {
+      expect(packageCode(s), s).toBe(parsePackageCode(s));
+    }
+  });
+
   it('lit les QR de paiement cash comme le site', () => {
     const id = '0f8fad5b-d9cb-469f-a165-70867728950e';
     for (const s of [JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id, v: 1 }), `https://bonzinilabs.com/pay?paymentId=${id}`]) {
@@ -57,6 +64,12 @@ describe('BONZINI HQ ↔ site', () => {
     expect(routeScan('treasurer', 'BZ-482913').kind).toBe('unknown');
     expect(routeScan('commercial', 'BZ-482913').kind).toBe('unknown');
     expect(routeScan('commercial', cash).kind).toBe('unknown');
+    // Paquet avion : la réception (et ops) ouvre sa fiche, Douala le reçoit.
+    expect(routeScan('receptionist', 'PQ-000123')).toEqual({ kind: 'open', path: '/r/paquets?code=PQ-000123' });
+    expect(routeScan('ops', 'pq 123')).toEqual({ kind: 'open', path: '/r/paquets?code=PQ-000123' });
+    expect(routeScan('warehouse_agent', 'PQ-000123')).toEqual({ kind: 'open', path: '/w/arrivees?paquet=PQ-000123' });
+    expect(routeScan('commercial', 'PQ-000123').kind).toBe('unknown');
+    expect(routeScan('receptionist', 'RC-000123-01')).toEqual({ kind: 'deliver', path: '/r/new', text: 'RC-000123-01' });
   });
 
   it('compte « à traiter » avec les mêmes statuts que le site', () => {
