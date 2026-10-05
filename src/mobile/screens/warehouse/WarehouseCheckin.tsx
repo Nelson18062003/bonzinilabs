@@ -20,6 +20,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCheckinMany, useCheckinParcel, useFindParcel, useFlagMissingMany, useSetArrivalPackage, useWarehouseArrival } from '@/hooks/useWarehouse';
 import { useOpenAirPackage, useReceiveAirPackage } from '@/hooks/useAirPackages';
 import { fmtKg1, type AirPackage } from '@/lib/airPackage';
+import { isProvisionalAwb } from '@/lib/airShipment';
 import {
   PACKAGE_STAGE_META, checkinSummary, findScannedParcel, groupParcelsByClient, isPending, nParcels, packageReceivedWord, packageStage,
   packagesProgress, parcelsByPackage, parseWarehouseScan, type WarehouseParcel,
@@ -147,7 +148,7 @@ export function WarehouseCheckin() {
     if (!scan || scan.kind !== 'parcel') return { outcome: 'unknown', text: `${text.trim()} : ce n'est pas un numéro de colis${kind === 'air' ? ' ni de paquet' : ''}` };
     try {
       const p = await find.mutateAsync(scan.no);
-      const where = p.awb_number ? `il voyage par LTA ${p.awb_number}` : p.container_number ? `il voyage dans ${p.container_number}` : 'il n\'a pas quitté la Chine';
+      const where = p.awb_number ? (isProvisionalAwb(p.awb_number) ? 'il voyage par une autre expédition' : `il voyage par LTA ${p.awb_number}`) : p.container_number ? `il voyage dans ${p.container_number}` : 'il n\'a pas quitté la Chine';
       return { outcome: 'unknown', text: `${p.parcel_no} n'est pas dans cette arrivée : ${where}` };
     } catch { return { outcome: 'unknown', text: `${text.trim()} : colis inconnu` }; }
   };

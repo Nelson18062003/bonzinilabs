@@ -49,7 +49,7 @@ import type { ShippingSettings } from '@/lib/customerCode';
 import { CARGO_COMPANY, companyBankAccounts } from '@/lib/companyIdentity';
 import { xafInWords } from '@/lib/amountInWords';
 import { countryName, isoFromCountryLabel } from '@/data/countries';
-import { formatAwb } from '@/lib/airShipment';
+import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
 
 export type CargoDocLang = 'fr' | 'en';
 
@@ -153,7 +153,7 @@ const TXT = {
     name: 'Nom', company: 'Société', bonziniId: 'Identifiant Bonzini', phone: 'Téléphone', city: 'Ville', account: 'Compte',
     toAssign: 'À attribuer', toCreate: 'À créer', toFill: 'À renseigner',
     deposit: 'Dépôt', mode: 'Mode', reception: 'Réception', receivedBy: 'Reçu par', supplier: 'Fournisseur', buyingAgent: 'Agent d’achat',
-    container: 'Conteneur', vessel: 'Navire', flight: 'Vol', awb: 'LTA', eta: 'Arrivée estimée', arrived: 'Arrivée', etaPending: 'À confirmer',
+    container: 'Conteneur', vessel: 'Navire', flight: 'Vol', awb: 'LTA', awbPending: 'LTA à venir', eta: 'Arrivée estimée', arrived: 'Arrivée', etaPending: 'À confirmer',
     modeSea: 'Sea Cargo — Groupage', modeAir: 'Air Cargo',
     atWarehouse: 'Entrepôt de Guangzhou', atOffice: 'Bureau de Guangzhou',
     parcelsN: (n: number) => `${n}${NBSP}colis`,
@@ -213,7 +213,7 @@ const TXT = {
     name: 'Name', company: 'Company', bonziniId: 'Bonzini ID', phone: 'Phone', city: 'City', account: 'Account',
     toAssign: 'To be assigned', toCreate: 'To be created', toFill: 'To be provided',
     deposit: 'Deposit', mode: 'Mode', reception: 'Received', receivedBy: 'Received by', supplier: 'Supplier', buyingAgent: 'Buying agent',
-    container: 'Container', vessel: 'Vessel', flight: 'Flight', awb: 'AWB', eta: 'Estimated arrival', arrived: 'Arrival', etaPending: 'To be confirmed',
+    container: 'Container', vessel: 'Vessel', flight: 'Flight', awb: 'AWB', awbPending: 'AWB to be confirmed', eta: 'Estimated arrival', arrived: 'Arrival', etaPending: 'To be confirmed',
     modeSea: 'Sea Cargo — LCL', modeAir: 'Air Cargo',
     atWarehouse: 'Guangzhou warehouse', atOffice: 'Guangzhou office',
     parcelsN: (n: number) => `${n}${NBSP}parcel${n === 1 ? '' : 's'}`,
@@ -282,6 +282,8 @@ const fitted = (s: string | null | undefined, width: number, size: number, maxLi
 };
 /** Un numéro et son libellé ne se séparent pas : « B/L MAEU 2261 8834 ». */
 const nb = (s: string) => s.replace(/ /g, NBSP);
+/** « LTA 071-12345675 », ou « LTA à venir » tant qu'elle est provisoire (PROV-… ne s'imprime jamais). */
+const awbText = (n: string, t: Txt) => nb(isProvisionalAwb(n) ? t.awbPending : `${t.awb} ${formatAwb(n)}`);
 /** « A · B · C » : le point reste collé au mot qui le précède. */
 const dots = (parts: Array<string | null | undefined | false>) => parts.filter(Boolean).join(`${NBSP}· `);
 
@@ -438,7 +440,7 @@ function ShipmentBlock({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?:
   const flights = q.flights ?? [];
   // Plusieurs moyens de transport : chaque navire et chaque arrivée disent à quoi ils se rapportent (repère gris au-dessus).
   const multi = containers.length + flights.length > 1;
-  const awb = (n: string) => nb(`${t.awb} ${formatAwb(n)}`);
+  const awb = (n: string) => awbText(n, t);
   if (containers.length) {
     rows.push([t.container, containers.map((c) => [nb(c.container_number), c.bl_number ? nb(`B/L ${c.bl_number}`) : null].filter(Boolean).join('\n')).join('\n')]);
     if (containers.some((c) => c.vessel_name || c.voyage)) {
@@ -480,7 +482,7 @@ const COL = { no: 26, dims: 86, weight: 54, vol: 54, rate: 60, amount: 72 };
 const DESIGNATION_W = 180 * MM - (COL.no + COL.dims + COL.weight + COL.vol + COL.rate + COL.amount) - 10;
 
 /** Où voyage le colis, quand le dépôt est réparti entre plusieurs conteneurs ou vols. */
-const whereIs = (l: QuoteLine, t: Txt) => (l.container_number ? nb(l.container_number) : l.awb_number ? nb(`${t.awb} ${formatAwb(l.awb_number)}`) : null);
+const whereIs = (l: QuoteLine, t: Txt) => (l.container_number ? nb(l.container_number) : l.awb_number ? awbText(l.awb_number, t) : null);
 
 /** `footer` : ce qui suit la ligne de total (le montant, la signature) — total et montant changent de page ensemble. */
 function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?: ReactNode }) {

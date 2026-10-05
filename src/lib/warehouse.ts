@@ -120,7 +120,7 @@ export interface Release extends ReleaseSummary {
 
 /** Le transport d'un colis, en un mot : « LTA 071-… » ou « MSKU 482913-7 ». */
 export function transportLabel(p: Pick<WarehouseParcel, 'awb_number' | 'container_number' | 'air_shipment_id'>): string {
-  if (p.air_shipment_id) return `LTA ${p.awb_number ?? ''}`.trim();
+  if (p.air_shipment_id) return isProvisionalAwb(p.awb_number) ? 'LTA à venir' : `LTA ${p.awb_number ?? ''}`.trim();
   return p.container_number ?? 'boîte';
 }
 

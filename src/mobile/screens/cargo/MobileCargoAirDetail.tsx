@@ -3,9 +3,12 @@
 //
 // En haut la fiche (LTA, vol, dates) et l'état. Puis LE bouton du moment :
 // « L'avion est parti » ou « L'avion est arrivé à Douala » — les colis
-// suivent tout seuls. Puis les colis, client par client, avec « payé » ou
-// « reste … » (ce que Douala regardera). « Charger des colis » tant que
-// l'avion n'est pas arrivé ; « Manifeste (PDF) » toujours.
+// suivent tout seuls. Puis les paquets de 32 kg (ajouter, scanner au
+// départ, retirer, refus de l'aéroport) — l'avion ne part qu'avec tous ses
+// paquets scannés. Puis les colis, client par client, avec « payé » ou
+// « reste … » (ce que Douala regardera) et leur paquet. « Charger des
+// colis » (colis seuls) tant que l'avion n'est pas arrivé ; « Manifeste
+// (PDF) » toujours.
 // ============================================================
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -14,13 +17,14 @@ import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAirShipment, useAirUnloadParcel, useSetAirStatus } from '@/hooks/useAirShipments';
-import { airStatusMeta, awbLabel, flightSentence, fmtDay, groupByClient, nextAirStep, parcelUnpaid, type AirParcel } from '@/lib/airShipment';
+import { airStatusMeta, awbLabel, departureBlocker, flightSentence, fmtDay, groupByClient, nextAirStep, packageProgress, parcelUnpaid, type AirParcel } from '@/lib/airShipment';
 import { deliverAirManifestPdf } from '@/lib/airManifestPdf';
 import { xaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatDims, formatKg, initials } from '@/lib/reception';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, BottomSheet, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BottomSheet, Card, Holder, Line, PrimaryPill, Row, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
 import { formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { AirPackagesPanel, PackageChip } from '@/components/cargo/air/AirPackagesPanel';
 
 function payLabel(p: AirParcel): { text: string; bad: boolean } {
   const total = Number(p.quote_total_xaf ?? 0); const paid = Number(p.quote_paid_xaf ?? 0);
@@ -38,6 +42,8 @@ export function MobileCargoAirDetail() {
   const setStatus = useSetAirStatus();
   const unload = useAirUnloadParcel();
   const [confirm, setConfirm] = useState<'next' | 'back' | null>(null);
+  /** Le refus du serveur sur le jalon (ex. paquets pas scannés), affiché dans la feuille. */
+  const [stepError, setStepError] = useState<string | null>(null);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
   if (isLoading || !a) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -48,11 +54,19 @@ export function MobileCargoAirDetail() {
   const parcels = a.parcels ?? [];
   const groups = groupByClient(parcels);
   const canLoad = canManage && (a.status === 'PLANNED' || a.status === 'DEPARTED');
+  const pkg = packageProgress(a);
+  const blocker = departureBlocker(a);
 
+  const openConfirm = (c: 'next' | 'back') => { setStepError(null); setConfirm(c); };
   const step = async (to: 'PLANNED' | 'DEPARTED' | 'ARRIVED') => {
-    setConfirm(null);
-    const s = await setStatus.mutateAsync({ id: a.id, status: to });
-    toast.success(to === 'DEPARTED' ? `Parti · ${s.parcel_count} colis en vol` : to === 'ARRIVED' ? 'Arrivé à Douala' : 'Retour en préparation');
+    setStepError(null);
+    try {
+      const s = await setStatus.mutateAsync({ id: a.id, status: to });
+      setConfirm(null);
+      toast.success(to === 'DEPARTED' ? `Parti · ${s.parcel_count} colis en vol` : to === 'ARRIVED' ? 'Arrivé à Douala' : 'Retour en préparation');
+    } catch (e) {
+      setStepError((e as Error).message);
+    }
   };
 
   return (
@@ -77,17 +91,24 @@ export function MobileCargoAirDetail() {
             {a.notes && <Row label="Notes" value={a.notes} />}
           </div>
           {canManage && next && (
-            <PrimaryPill onClick={() => setConfirm('next')} className="h-14 w-full text-[17px]" disabled={a.status === 'PLANNED' && parcels.length === 0}>
+            <PrimaryPill onClick={() => openConfirm('next')} className="h-14 w-full text-[17px]" disabled={a.status === 'PLANNED' && parcels.length === 0}>
               {a.status === 'PLANNED' ? <PlaneTakeoff /> : <PlaneLanding />} {next.label}
             </PrimaryPill>
           )}
-          {canManage && a.status === 'PLANNED' && parcels.length === 0 && <p className={cn(TYPE.small, TEXT.muted)}>Chargez des colis avant de marquer le départ.</p>}
+          {canManage && a.status === 'PLANNED' && pkg.total > 0 && (
+            <p className={cn('tabular-nums', TYPE.small, blocker ? 'font-semibold text-[#975102] dark:text-[#E8B931]' : 'font-semibold text-[#009951] dark:text-[#14AE5C]')}>
+              Paquets scannés au départ : {pkg.scanned}/{pkg.total}{blocker ? " — l'avion ne part qu'une fois tous scannés (« Scanner au départ », plus bas)." : ' — prêt à partir.'}
+            </p>
+          )}
+          {canManage && a.status === 'PLANNED' && parcels.length === 0 && <p className={cn(TYPE.small, TEXT.muted)}>Ajoutez des paquets (ou chargez des colis) avant de marquer le départ.</p>}
           <div className="flex flex-wrap gap-2">
             <SoftPill onClick={() => void deliverAirManifestPdf(a).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className="h-11 flex-1 text-[15px]"><FileText /> Manifeste (PDF)</SoftPill>
             {canManage && <SoftPill onClick={() => navigate(`/m/cargo/avion/${a.id}/modifier`)} className="h-11 px-4 text-[15px]"><Pencil /> Fiche</SoftPill>}
-            {canManage && a.status === 'DEPARTED' && <SoftPill onClick={() => setConfirm('back')} className="h-11 px-4 text-[15px]"><Undo2 /> Pas parti</SoftPill>}
+            {canManage && a.status === 'DEPARTED' && <SoftPill onClick={() => openConfirm('back')} className="h-11 px-4 text-[15px]"><Undo2 /> Pas parti</SoftPill>}
           </div>
         </Card>
+
+        <AirPackagesPanel shipment={a} variant="mobile" />
 
         <section>
           <div className="mb-3 flex items-baseline justify-between">
@@ -120,8 +141,10 @@ export function MobileCargoAirDetail() {
                       <span className="min-w-0 flex-1">
                         <span className={cn('block', TYPE.body, TEXT.strong)}><span className={cn('mr-2 tabular-nums', TEXT.muted)}>{p.parcel_no}</span>{p.description || labels.kind(p.kind)}</span>
                         <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{formatKg(p.weight_kg)} · {formatDims(p)} · <span className={cn(pay.bad && 'font-semibold text-[#975102] dark:text-[#E8B931]')}>{pay.text}</span></span>
+                        {p.package_no && <span className="mt-1 flex"><PackageChip packageNo={p.package_no} variant="mobile" /></span>}
                       </span>
-                      {canManage && a.status === 'PLANNED' && (
+                      {/* Un colis emballé suit son paquet : il ne se retire pas seul (la base refuse). */}
+                      {canManage && a.status === 'PLANNED' && !p.air_package_id && (
                         <button type="button" onClick={() => unload.mutate(p.id)} aria-label={`Retirer ${p.parcel_no}`} className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}><Trash2 className="h-4 w-4" /></button>
                       )}
                     </div>
@@ -137,8 +160,10 @@ export function MobileCargoAirDetail() {
       <BottomSheet open={confirm !== null} onClose={() => setConfirm(null)} title={confirm === 'back' ? "L'avion n'est pas parti ?" : next?.label}>
         <div className="space-y-4">
           <p className={cn(TYPE.body, TEXT.muted)}>
-            {confirm === 'back' ? `Les ${parcels.length} colis repassent « chargés », en préparation.` : a.status === 'PLANNED' ? `Les ${parcels.length} colis passent « en vol ». Le client peut voir que sa marchandise a quitté la Chine.` : `Les ${parcels.length} colis passent « arrivés ». L'entrepôt de Douala pourra les pointer et les remettre.`}
+            {confirm === 'back' ? `Les ${parcels.length} colis repassent « chargés », en préparation.` : a.status === 'PLANNED' ? `Les ${parcels.length} colis${pkg.total > 0 ? ` (${pkg.total} paquet${pkg.total > 1 ? 's' : ''})` : ''} passent « en vol ». Le client peut voir que sa marchandise a quitté la Chine.` : `Les ${parcels.length} colis passent « arrivés ». L'entrepôt de Douala pourra les pointer et les remettre.`}
           </p>
+          {confirm === 'next' && blocker && <Line tone="warn">{blocker}</Line>}
+          {stepError && <Line tone="bad">{stepError}</Line>}
           <PrimaryPill onClick={() => void step(confirm === 'back' ? 'PLANNED' : next!.to)} loading={setStatus.isPending} className="h-14 w-full text-[17px]">Confirmer</PrimaryPill>
         </div>
       </BottomSheet>

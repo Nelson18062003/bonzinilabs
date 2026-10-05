@@ -2,14 +2,17 @@
 // LE MANIFESTE D'UNE EXPÉDITION AÉRIENNE — une page A4 (ou plus), pour la
 // compagnie, le transitaire et l'entrepôt de Douala : la LTA, le vol, les
 // dates, puis les colis client par client — numéro, contenu, poids,
-// dimensions, m³ — et, pour l'entrepôt, si le devis est payé. jsPDF,
+// dimensions, m³ — et, pour l'entrepôt, si le devis est payé. En avion,
+// quand les colis voyagent en paquets de 32 kg, une colonne « PAQUET » dit
+// dans quel paquet chercher chaque colis (le manifeste maritime n'en a pas).
+// La LTA provisoire (PROV-…) ne s'imprime jamais : « à venir ». jsPDF,
 // Helvetica. Remise : TÉLÉCHARGÉ sur ordinateur (jamais la feuille de partage
 // de Windows), partagé sur téléphone (deliverFile).
 // ============================================================
 import { jsPDF } from 'jspdf';
 import { LEGAL_NAME } from '@/lib/companyIdentity';
 import { saveOrShareFile, type Outcome } from '@/components/customer-code/exportShippingLabel';
-import { awbLabel, flightSentence, fmtDay, groupByClient, parcelUnpaid, type AirParcel, type AirShipment } from '@/lib/airShipment';
+import { awbFileRef, awbLabel, flightSentence, fmtDay, formatAwb, groupByClient, parcelUnpaid, type AirParcel, type AirShipment } from '@/lib/airShipment';
 import type { CargoShipment } from '@/lib/cargo/model';
 import type { ParcelWithDeposit } from '@/lib/reception';
 
@@ -22,6 +25,8 @@ export interface ManifestHead {
   facts: [string, string][];
   notes?: string | null;
   fileRef: string;
+  /** Avion : une colonne « PAQUET » (le paquet de 32 kg de chaque colis). Absente du manifeste maritime. */
+  packageColumn?: boolean;
 }
 import { xaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
@@ -32,17 +37,24 @@ const ascii = (s: string) => s.replace(/³/g, '3').replace(/[\u00A0\u202F]/g, ' 
 
 export function buildAirManifestPdf(a: AirShipment): jsPDF {
   const parcels = a.parcels ?? [];
+  const packages = a.packages ?? [];
+  const facts: [string, string][] = [
+    ['LTA', formatAwb(a.awb_number)],
+    ['Vol', flightSentence(a)],
+    ['Départ', `${a.origin}${a.etd ? ` · ${fmtDay(a.etd)}` : ''}`],
+    ['Arrivée', `${a.destination}${a.eta ? ` · ${fmtDay(a.eta)}` : ''}`],
+  ];
+  if (packages.length > 0) {
+    const gross = packages.reduce((t, k) => t + Number(k.gross_weight_kg ?? k.net_weight_kg ?? 0), 0);
+    facts.push(['Paquets', `${packages.length}${gross > 0 ? ` · ${formatKg(gross)} brut` : ''}`]);
+  }
   return buildManifestPdf({
     mode: 'Air cargo · Guangzhou → Douala',
     ref: awbLabel(a),
-    facts: [
-      ['LTA', awbLabel(a).replace('LTA ', '')],
-      ['Vol', flightSentence(a)],
-      ['Départ', `${a.origin}${a.etd ? ` · ${fmtDay(a.etd)}` : ''}`],
-      ['Arrivée', `${a.destination}${a.eta ? ` · ${fmtDay(a.eta)}` : ''}`],
-    ],
+    facts,
     notes: a.notes,
-    fileRef: a.awb_number,
+    fileRef: awbFileRef(a),
+    packageColumn: parcels.some((p) => !!p.package_no),
   }, parcels);
 }
 
@@ -92,14 +104,19 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
     pdf.setFontSize(7.5); pdf.setTextColor(120); pdf.text(k.toUpperCase(), x, yy);
     pdf.setFontSize(10.5); pdf.setTextColor(0); pdf.setFont('helvetica', 'bold'); pdf.text(ascii(v), x, yy + 5); pdf.setFont('helvetica', 'normal');
   });
-  y += 30;
+  // Deux lignes de faits (30 mm) ; une troisième quand l'avion a des paquets.
+  y += Math.ceil(facts.length / 3) * 12 + 6;
 
-  // Le tableau, client par client.
-  const cols = { n: M, c: M + 30, d: M + 78, w: M + 122, dim: M + 142, cbm: M + 166, pay: 210 - M };
+  // Le tableau, client par client. Avec la colonne PAQUET, client et contenu cèdent de la place.
+  const pk = !!h.packageColumn;
+  const cols = pk
+    ? { n: M, k: M + 25, c: M + 44, d: M + 84, w: M + 122, dim: M + 142, cbm: M + 166, pay: 210 - M }
+    : { n: M, k: 0, c: M + 30, d: M + 78, w: M + 122, dim: M + 142, cbm: M + 166, pay: 210 - M };
   const head = () => {
     pdf.setFillColor(245, 245, 245); pdf.rect(M, y, W, 7, 'F');
     pdf.setFontSize(7.5); pdf.setTextColor(90); pdf.setFont('helvetica', 'bold');
     pdf.text('N° COLIS', cols.n + 2, y + 5); pdf.text('CLIENT', cols.c, y + 5); pdf.text('CONTENU', cols.d, y + 5);
+    if (pk) pdf.text('PAQUET', cols.k, y + 5);
     pdf.text('POIDS', cols.w + 12, y + 5, { align: 'right' }); pdf.text('DIMENSIONS', cols.dim + 20, y + 5, { align: 'right' }); pdf.text('M3', cols.cbm + 10, y + 5, { align: 'right' }); pdf.text('DEVIS', cols.pay, y + 5, { align: 'right' });
     y += 7; pdf.setTextColor(0); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8.5);
   };
@@ -110,7 +127,9 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
       if (y > 272) { pdf.addPage(); y = M; head(); }
       const desc = pdf.splitTextToSize(ascii(p.description || p.kind || 'Colis'), cols.w - cols.d - 3) as string[];
       pdf.setFont('helvetica', 'bold'); pdf.text(p.parcel_no, cols.n + 2, y + 4.5); pdf.setFont('helvetica', 'normal');
-      pdf.text(pdf.splitTextToSize(ascii(`${name}${g.client?.customer_code ? ` · ${g.client.customer_code}` : ''}`), cols.d - cols.c - 3) as string[], cols.c, y + 4.5);
+      if (pk) pdf.text(p.package_no ?? '—', cols.k, y + 4.5);
+      const who = pdf.splitTextToSize(ascii(`${name}${g.client?.customer_code ? ` · ${g.client.customer_code}` : ''}`), cols.d - cols.c - 3) as string[];
+      pdf.text(who, cols.c, y + 4.5);
       pdf.text(desc, cols.d, y + 4.5);
       pdf.text(ascii(formatKg(p.weight_kg)), cols.w + 12, y + 4.5, { align: 'right' });
       pdf.text(ascii(formatDims(p)), cols.dim + 20, y + 4.5, { align: 'right' });
@@ -119,7 +138,8 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
       if (unpaid) pdf.setTextColor(180, 30, 30);
       pdf.text(unpaid ? (Number(p.quote_total_xaf ?? 0) > 0 ? ascii(`reste ${xaf(Number(p.quote_total_xaf) - Number(p.quote_paid_xaf ?? 0))}`) : 'sans prix') : 'payé', cols.pay, y + 4.5, { align: 'right' });
       pdf.setTextColor(0);
-      y += 3 + Math.max(1, desc.length) * 3.8;
+      // La ligne prend la hauteur du plus long des deux textes (contenu, client) : rien ne déborde sur la suivante.
+      y += 3 + Math.max(1, desc.length, who.length) * 3.8;
       pdf.setDrawColor(230); pdf.line(M, y, 210 - M, y);
     }
     // Le sous-total du client.
@@ -149,7 +169,7 @@ function buildManifestPdf(h: ManifestHead, parcels: AirParcel[]): jsPDF {
 }
 
 export function manifestFileName(a: AirShipment): string {
-  return `bonzini-manifeste-${a.awb_number}.pdf`;
+  return `bonzini-manifeste-${awbFileRef(a)}.pdf`;
 }
 
 export async function deliverAirManifestPdf(a: AirShipment): Promise<Outcome> {

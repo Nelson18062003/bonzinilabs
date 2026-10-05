@@ -7,6 +7,7 @@
 import type { Deposit, Parcel } from '@/lib/reception';
 import type { Quote, QuotePayment } from '@/lib/cargoQuote';
 import { PLACE_SHORT, xaf } from '@/lib/cargoQuote';
+import { isProvisionalAwb } from '@/lib/airShipment';
 
 export type TimelineKind = 'opened' | 'closed' | 'quote_sent' | 'payment' | 'payment_cancelled' | 'invoice' | 'loaded' | 'checked_in' | 'missing' | 'delivered';
 
@@ -47,7 +48,8 @@ export function depositTimeline(deposit: Pick<Deposit, 'opened_at' | 'closed_at'
   // Le transport : les colis chargés dans une boîte ou une LTA (la base ne date pas le chargement ; on le dit sans date propre).
   for (const [ref, ps] of byGroup(parcels, (p) => p.container_number ?? p.awb_number ?? null)) {
     const air = !!ps[0].awb_number;
-    ev.push({ kind: 'loaded', at: deposit.closed_at ?? deposit.opened_at, text: `${plural(ps.length, 'colis')} chargé${ps.length > 1 ? 's' : ''} ${air ? 'sur la LTA' : 'dans le conteneur'} ${ref}`, tone: 'info' });
+    const where = air ? (isProvisionalAwb(ref) ? 'dans une expédition aérienne (LTA à venir)' : `sur la LTA ${ref}`) : `dans le conteneur ${ref}`;
+    ev.push({ kind: 'loaded', at: deposit.closed_at ?? deposit.opened_at, text: `${plural(ps.length, 'colis')} chargé${ps.length > 1 ? 's' : ''} ${where}`, tone: 'info' });
   }
 
   // Douala : pointés (regroupés par jour), manquants, remis (par bon de retrait).

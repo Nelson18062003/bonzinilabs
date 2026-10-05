@@ -84,7 +84,7 @@ export function MobileCargoAir() {
                 <p className={cn('text-[16px] leading-snug', TEXT.strong)}>{flightSentence(a)}</p>
                 <p className={cn('text-[16px] leading-snug', TEXT.muted)}>{dateLine(a)}</p>
                 <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>
-                  {a.parcel_count} colis · {formatKg(a.total_weight_kg)} · {a.client_count} client{a.client_count > 1 ? 's' : ''}
+                  {a.parcel_count} colis{(a.package_count ?? 0) > 0 ? ` en ${a.package_count} paquet${(a.package_count ?? 0) > 1 ? 's' : ''}` : ''} · {formatKg(a.total_weight_kg)} · {a.client_count} client{a.client_count > 1 ? 's' : ''}
                   {a.unpaid_count > 0 && <span className="font-semibold text-[#975102] dark:text-[#E8B931]"> · {a.unpaid_count} non soldé{a.unpaid_count > 1 ? 's' : ''}</span>}
                 </p>
               </div>
