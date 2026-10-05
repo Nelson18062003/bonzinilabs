@@ -109,7 +109,9 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
+    // `!m-0` : la fenêtre est rendue dans des conteneurs `space-y-*`, dont la
+    // marge du haut décalait l'overlay fixe (bande claire en haut de l'écran).
+    <div className="fixed inset-0 z-50 !m-0 flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -157,7 +159,10 @@ export function PasswordReveal({ email, password, name }: { email: string; passw
     <div className="space-y-3">
       <div className="rounded-2xl bg-muted/60 p-4">
         <div className="text-[12.5px] font-medium text-muted-foreground">Mot de passe provisoire</div>
-        <div className="mt-1 select-all break-all font-mono text-[22px] font-bold tracking-wider">{password}</div>
+        {/* Vraie chasse fixe (le « 0 » ne doit pas ressembler au « O ») : `font-mono` est DM Sans dans la config Tailwind. */}
+        <div className="mt-1 select-all break-all text-[22px] font-bold tracking-wider" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+          {password}
+        </div>
         <div className="mt-2 text-[13px] text-muted-foreground">
           Email de connexion : <span className="select-all font-medium text-foreground">{email}</span>
         </div>

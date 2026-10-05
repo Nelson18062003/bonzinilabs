@@ -44,6 +44,9 @@ function TeamList() {
     (g) => (team === 'all' ? g.rows.length > 0 || g.team.key === 'ventes' : g.team.key === team),
   );
   const activeCount = all.length - disabledCount;
+  // Une seule règle pour les puces et les en-têtes de section : on compte ce
+  // que la liste montre (désactivés compris quand ils sont affichés, recherche comprise).
+  const shownIn = (key: TeamKey) => visible.filter((m) => teamOf(m.role).key === key).length;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
@@ -51,7 +54,10 @@ function TeamList() {
         <div>
           <h1 className="text-[26px] font-bold tracking-tight">Mes équipes</h1>
           <p className="mt-0.5 text-[14px] text-muted-foreground">
-            {members.isLoading ? '…' : `${activeCount} accès actifs${disabledCount ? ` · ${disabledCount} désactivés` : ''}`} · vous seul créez et retirez les accès
+            {members.isLoading
+              ? '…'
+              : `${activeCount} accès actif${activeCount > 1 ? 's' : ''}${disabledCount ? ` · ${disabledCount} désactivé${disabledCount > 1 ? 's' : ''}` : ''}`}{' '}
+            · vous seul créez et retirez les accès
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -68,12 +74,12 @@ function TeamList() {
 
       {/* Les équipes en un coup d'œil : un filtre chacune */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        <TeamChip label="Toute l’équipe" count={activeCount} active={team === 'all'} onClick={() => setTeam('all')} />
+        <TeamChip label="Toute l’équipe" count={visible.length} active={team === 'all'} onClick={() => setTeam('all')} />
         {TEAMS.map((t) => (
           <TeamChip
             key={t.key}
             label={t.label}
-            count={all.filter((m) => !m.is_disabled && teamOf(m.role).key === t.key).length}
+            count={shownIn(t.key)}
             active={team === t.key}
             onClick={() => setTeam(team === t.key ? 'all' : t.key)}
           />
@@ -165,6 +171,7 @@ function TeamChip({ label, count, active, onClick }: { label: string; count: num
 function MemberRow({ m, onOpen }: { m: TeamMember; onOpen: () => void }) {
   const name = memberName(m);
   const noSource = m.role === 'commercial' && !m.source;
+  const contact = [m.email, m.phone, m.role === 'commercial' && m.source ? `fiche « ${m.source.label} »` : null].filter(Boolean);
   return (
     <li>
       <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-muted/40 active:bg-muted/60">
@@ -175,9 +182,14 @@ function MemberRow({ m, onOpen }: { m: TeamMember; onOpen: () => void }) {
             <RolePill role={m.role} />
             {m.is_disabled && <span className="rounded-full bg-muted px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">désactivé</span>}
           </span>
-          <span className="mt-0.5 block truncate text-[12.5px] text-muted-foreground">
-            {[m.email, m.phone].filter(Boolean).join(' · ')}
-            {m.role === 'commercial' && m.source && ` · fiche « ${m.source.label} »`}
+          {/* Téléphone : une ligne chacun (email, numéro, fiche) pour que le numéro reste lisible ; une seule ligne sur ordinateur. */}
+          <span className="mt-0.5 block text-[12.5px] text-muted-foreground sm:truncate">
+            {contact.map((part, i) => (
+              <span key={i} className="block truncate sm:inline">
+                {i > 0 && <span className="hidden sm:inline"> · </span>}
+                {part}
+              </span>
+            ))}
           </span>
           {noSource && <span className="mt-0.5 block text-[12.5px] font-medium text-amber-700 dark:text-amber-400">Pas encore relié à sa fiche commercial</span>}
         </span>

@@ -129,6 +129,8 @@ function ProspectEditor({ prospect }: { prospect?: Prospect }) {
 
   const original = prospect ? draftOf(prospect) : EMPTY;
   const phoneChanged = !!prospect && !won && e164 !== prospect.phone_e164;
+  // « Sera enregistré » : seulement si le numéro normalisé diffère de la saisie ET, pour une fiche existante, de celui enregistré.
+  const willSave = e164 && draft.phone.trim() !== e164 && (!prospect || phoneChanged) ? e164 : null;
   const dirty =
     isNew ||
     draft.firstName.trim() !== original.firstName.trim() ||
@@ -307,7 +309,7 @@ function ProspectEditor({ prospect }: { prospect?: Prospect }) {
               required={!won}
               htmlFor="pr-phone"
               error={tried ? errors.phone : null}
-              hint={won ? 'Le numéro d’un prospect devenu client ne change plus.' : e164 && draft.phone.trim() !== e164 ? `Sera enregistré : ${formatE164ForDisplay(e164)}` : 'Avec l’indicatif, ex. +237 6 99 12 34 56 (le +237 s’ajoute seul pour un numéro à 9 chiffres).'}
+              hint={won ? 'Le numéro d’un prospect devenu client ne change plus.' : willSave ? `Sera enregistré : ${formatE164ForDisplay(willSave)}` : 'Avec l’indicatif, ex. +237 6 99 12 34 56 (le +237 s’ajoute seul pour un numéro à 9 chiffres).'}
             >
               <TextInput
                 id="pr-phone"

@@ -17,7 +17,7 @@ import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { ListSkeleton, LoadError, ProspectStatusPill, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
 import { followUpLabel, initialsOf, isDue, isOpenProspect, isUnlinkedError, plural, prospectName } from './salesHelpers';
 
-type Filter = 'open' | 'due' | ProspectStatus;
+type Filter = 'open' | 'due' | ProspectStatus | 'all';
 
 /** Les filtres, dans l'ordre des puces ; `param` est la valeur de `?filtre=`. */
 const FILTERS: { value: Filter; label: string; param: string | null }[] = [
@@ -28,9 +28,11 @@ const FILTERS: { value: Filter; label: string; param: string | null }[] = [
   { value: 'interested', label: 'Intéressé', param: 'interesse' },
   { value: 'won', label: 'Devenus clients', param: 'clients' },
   { value: 'lost', label: 'Perdus', param: 'perdus' },
+  { value: 'all', label: 'Tous', param: 'tous' },
 ];
 
 function matches(p: Prospect, f: Filter, now: Date): boolean {
+  if (f === 'all') return true;
   if (f === 'open') return isOpenProspect(p);
   if (f === 'due') return isDue(p, now);
   return p.status === f;
@@ -38,9 +40,10 @@ function matches(p: Prospect, f: Filter, now: Date): boolean {
 
 const time = (iso: string | null) => (iso ? new Date(iso).getTime() : Number.POSITIVE_INFINITY);
 
-/** Ouverts : les relances échues d'abord, puis la prochaine relance, puis le plus récent. Clos : le plus récent. */
+/** Ouverts : les relances échues d'abord, puis la prochaine relance, puis le plus récent. Clos : le plus récent. Tous : les ouverts, puis les clos. */
 function sortFor(f: Filter, list: Prospect[], now: Date): Prospect[] {
   if (f === 'won' || f === 'lost') return list;
+  if (f === 'all') return [...sortFor('open', list.filter(isOpenProspect), now), ...list.filter((p) => !isOpenProspect(p))];
   return [...list].sort(
     (a, b) =>
       Number(isDue(b, now)) - Number(isDue(a, now)) ||

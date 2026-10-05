@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ROLE_PERMISSIONS, type AppRole } from '@/contexts/AdminAuthContext';
 import { ROLE_DESCRIPTION, TEAMS, lastSeen, memberName, roleSpace, teamOf } from '@/lib/team';
-import { OBJECTIVES, currentMonth, monthLabel, progress, shiftMonth, toE164 } from '@/lib/sales';
+import { OBJECTIVES, currentMonth, monthLabel, ofMonth, progress, shiftMonth, toE164 } from '@/lib/sales';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS) as AppRole[];
 
@@ -49,6 +49,13 @@ describe('Ventes — numéros, mois, objectifs', () => {
     expect(shiftMonth('2026-01-01', -1)).toBe('2025-12-01');
     expect(shiftMonth('2026-12-01', 1)).toBe('2027-01-01');
     expect(monthLabel('2026-10-01')).toBe('octobre 2026');
+  });
+
+  it('élide « de » devant avril, août et octobre', () => {
+    expect(ofMonth(monthLabel('2026-10-01'))).toBe('d’octobre 2026');
+    expect(ofMonth('avril')).toBe('d’avril');
+    expect(ofMonth('août')).toBe('d’août');
+    expect(ofMonth('mars')).toBe('de mars');
   });
 
   it('borne l’avancement d’un objectif', () => {

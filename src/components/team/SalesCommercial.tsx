@@ -20,12 +20,12 @@ import {
   fmtObjective,
   fmtXaf,
   monthLabel,
+  ofMonth,
   type CommercialCard,
   type ObjectiveMetric,
   type ProspectStatus,
 } from '@/lib/sales';
-import { MonthSwitcher, ObjectiveBar } from '@/components/sales/SalesBits';
-import { StatusPill } from '@/mobile/designKit';
+import { MonthSwitcher, ObjectiveBar, ProspectStatusPill } from '@/components/sales/SalesBits';
 import { TextField } from '@/components/form';
 import { BTN_PRIMARY, BTN_SOFT, CARD, Modal, Skeleton } from './TeamBits';
 import { TEAM_BASE } from './TeamScreen';
@@ -127,7 +127,7 @@ function Objectives({ card, month, sourceId }: { card: CommercialCard; month: st
     <section className={cn(CARD, 'space-y-4 p-5')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-[16px] font-semibold">Objectifs de {monthLabel(month)}</h2>
+          <h2 className="text-[16px] font-semibold">Objectifs {ofMonth(monthLabel(month))}</h2>
           <p className="text-[12.5px] text-muted-foreground">Il les voit dans son espace, avec son avancement.</p>
         </div>
         <button type="button" onClick={() => setEditing(true)} className={BTN_SOFT}>
@@ -150,23 +150,22 @@ function Objectives({ card, month, sourceId }: { card: CommercialCard; month: st
 
 function ObjectivesDialog({ card, month, sourceId, onClose }: { card: CommercialCard; month: string; sourceId: string; onClose: () => void }) {
   const save = useSetObjective();
-  const initial = useMemo(() => Object.fromEntries(OBJECTIVES.map((o) => [o.metric, String(card.objectives.find((x) => x.metric === o.metric)?.target ?? '')])), [card.objectives]) as Record<ObjectiveMetric, string>;
+  const initial = useMemo(
+    () => Object.fromEntries(OBJECTIVES.map((o) => [o.metric, groupTarget(card.objectives.find((x) => x.metric === o.metric)?.target ?? null)])),
+    [card.objectives],
+  ) as Record<ObjectiveMetric, string>;
   const [values, setValues] = useState<Record<ObjectiveMetric, string>>(initial);
   const [saving, setSaving] = useState(false);
 
-  const parse = (v: string) => {
-    const n = Number(v.replace(/\s/g, '').replace(',', '.'));
-    return v.trim() === '' ? null : Number.isFinite(n) && n >= 0 ? n : NaN;
-  };
-  const invalid = OBJECTIVES.some((o) => Number.isNaN(parse(values[o.metric])));
+  const invalid = OBJECTIVES.some((o) => Number.isNaN(parseTarget(values[o.metric])));
 
   const submit = async () => {
     if (invalid || saving) return;
     setSaving(true);
     try {
       for (const o of OBJECTIVES) {
-        if (values[o.metric] === initial[o.metric]) continue;
-        const n = parse(values[o.metric]);
+        const n = parseTarget(values[o.metric]);
+        if (n === parseTarget(initial[o.metric])) continue;
         await save.mutateAsync({ sourceId, month, metric: o.metric, target: n && n > 0 ? n : null });
       }
       onClose();
@@ -179,7 +178,7 @@ function ObjectivesDialog({ card, month, sourceId, onClose }: { card: Commercial
 
   return (
     <Modal
-      title={`Objectifs de ${monthLabel(month)}`}
+      title={`Objectifs ${ofMonth(monthLabel(month))}`}
       onClose={onClose}
       footer={
         <>
@@ -196,7 +195,7 @@ function ObjectivesDialog({ card, month, sourceId, onClose }: { card: Commercial
       <div className="space-y-3">
         {OBJECTIVES.map((o) => {
           const actual = card.objectives.find((x) => x.metric === o.metric)?.actual ?? actualOf(card, o.metric);
-          const bad = Number.isNaN(parse(values[o.metric]));
+          const bad = Number.isNaN(parseTarget(values[o.metric]));
           return (
             <label key={o.metric} className="flex items-center gap-3">
               <span className="min-w-0 flex-1">
@@ -207,6 +206,7 @@ function ObjectivesDialog({ card, month, sourceId, onClose }: { card: Commercial
                 variant="decimal"
                 value={values[o.metric]}
                 onChange={(e) => setValues((v) => ({ ...v, [o.metric]: e.target.value }))}
+                onBlur={() => setValues((v) => ({ ...v, [o.metric]: groupTarget(parseTarget(v[o.metric]), v[o.metric]) }))}
                 placeholder="—"
                 aria-label={o.label}
                 error={bad ? ' ' : undefined}
@@ -220,6 +220,19 @@ function ObjectivesDialog({ card, month, sourceId, onClose }: { card: Commercial
       </div>
     </Modal>
   );
+}
+
+/** Une cible tapée (« 50 000 000 », « 2,5 ») : null si vide, NaN si invalide. */
+function parseTarget(v: string): number | null {
+  const n = Number(v.replace(/\s/g, '').replace(',', '.'));
+  return v.trim() === '' ? null : Number.isFinite(n) && n >= 0 ? n : NaN;
+}
+
+/** La cible lisible, avec séparateur de milliers (« 50 000 000 ») ; `raw` est gardé tel quel s'il est invalide. */
+function groupTarget(n: number | null, raw = ''): string {
+  if (n === null) return '';
+  if (Number.isNaN(n)) return raw;
+  return n.toLocaleString('fr-FR', { maximumFractionDigits: 3 });
 }
 
 function actualOf(card: CommercialCard, metric: ObjectiveMetric): number {
@@ -280,25 +293,29 @@ function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
       ) : (
         <ul className="divide-y divide-border/60 px-2 pb-2">
           {list.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-3">
-              <span className="min-w-[180px] flex-1">
+            // Le statut et « Confier à… » toujours au même endroit, à droite ; la relance sous les coordonnées.
+            <li key={p.id} className="flex items-start gap-3 px-3 py-3">
+              <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold">{[p.first_name, p.last_name].filter(Boolean).join(' ')}</span>
                 <span className="block text-[12.5px] text-muted-foreground">
-                  {[p.company, p.city, p.phone].filter(Boolean).join(' · ')}
+                  {(p.company || p.city) && `${[p.company, p.city].filter(Boolean).join(' · ')} · `}
+                  <span className="whitespace-nowrap">{p.phone}</span>
                   {p.status === 'lost' && p.lost_reason && ` · ${p.lost_reason}`}
                 </span>
+                {p.next_action_at && p.status !== 'won' && p.status !== 'lost' && (
+                  <span className={cn('block text-[12.5px]', new Date(p.next_action_at) <= new Date() ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
+                    relance le {new Date(p.next_action_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </span>
+                )}
               </span>
-              {p.next_action_at && p.status !== 'won' && p.status !== 'lost' && (
-                <span className={cn('text-[12.5px]', new Date(p.next_action_at) <= new Date() ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
-                  relance le {new Date(p.next_action_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                </span>
-              )}
-              <StatusPill tone={PROSPECT_STATUS[p.status].tone} label={PROSPECT_STATUS[p.status].label} />
-              {p.status !== 'won' && (
-                <button type="button" onClick={() => setMoving(p)} className="text-[13px] font-semibold text-primary hover:underline">
-                  Confier à…
-                </button>
-              )}
+              <span className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+                <ProspectStatusPill status={p.status} />
+                {p.status !== 'won' && (
+                  <button type="button" onClick={() => setMoving(p)} className="text-[13px] font-semibold text-primary hover:underline">
+                    Confier à…
+                  </button>
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -381,22 +398,25 @@ function Clients({ sourceId, month }: { sourceId: string; month: string }) {
         <ul className="px-2 pb-2">
           {list.map((c) => (
             <li key={c.user_id}>
-              <button type="button" onClick={() => navigate(`/m/clients/${c.user_id}`)} className="flex w-full flex-wrap items-center gap-x-5 gap-y-1 rounded-xl px-3 py-3 text-left hover:bg-muted/40">
-                <span className="min-w-[180px] flex-1">
+              {/* Téléphone : nom, appel et chevron sur la première ligne, les trois chiffres en dessous ; une seule ligne sur ordinateur. */}
+              <button type="button" onClick={() => navigate(`/m/clients/${c.user_id}`)} className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-xl px-3 py-3 text-left hover:bg-muted/40 sm:flex-nowrap sm:gap-x-5">
+                <span className="min-w-0 flex-1">
                   <span className="block truncate text-[14.5px] font-semibold">{c.name || '—'}</span>
                   <span className="block text-[12.5px] text-muted-foreground">
                     {[c.customer_code, c.company].filter(Boolean).join(' · ') || 'Client'} · depuis le {new Date(c.created_at).toLocaleDateString('fr-FR')}
                   </span>
                 </span>
-                <Metric label="Paiements" value={c.payments_xaf ? fmtXaf(c.payments_xaf) : '—'} />
-                <Metric label="Avion" value={c.air_parcels ? fmtKg(c.air_kg) : '—'} />
-                <Metric label="Bateau" value={c.sea_parcels ? fmtCbm(c.sea_cbm) : '—'} />
+                <span className="order-last grid w-full grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 rounded-xl bg-muted/50 px-3 py-2 sm:order-none sm:flex sm:w-auto sm:gap-5 sm:bg-transparent sm:p-0">
+                  <Metric label="Paiements" value={c.payments_xaf ? fmtXaf(c.payments_xaf) : '—'} />
+                  <Metric label="Avion" value={c.air_parcels ? fmtKg(c.air_kg) : '—'} />
+                  <Metric label="Bateau" value={c.sea_parcels ? fmtCbm(c.sea_cbm) : '—'} />
+                </span>
                 {c.phone && (
-                  <a href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} className="rounded-full p-2 text-muted-foreground hover:bg-accent" aria-label="Appeler">
+                  <a href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent" aria-label="Appeler">
                     <Phone className="h-4 w-4" />
                   </a>
                 )}
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             </li>
           ))}
@@ -408,7 +428,7 @@ function Clients({ sourceId, month }: { sourceId: string; month: string }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <span className="w-[120px] text-right tabular-nums">
+    <span className="min-w-0 tabular-nums sm:w-[120px] sm:text-right">
       <span className="block text-[11.5px] text-muted-foreground">{label}</span>
       <span className="block text-[13.5px] font-medium">{value}</span>
     </span>

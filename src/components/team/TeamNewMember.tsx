@@ -22,6 +22,9 @@ function isRole(v: string | null): v is AppRole {
   return !!v && v in ADMIN_ROLE_LABELS;
 }
 
+/** L'accès créé ; pour un commercial, la fiche à laquelle il est relié (`sourceId` de la RPC). */
+type Created = CreatedMember & { name: string; role: AppRole; fiche: { label: string; reused: boolean } | null };
+
 export function TeamNewMember() {
   const { hasPermission } = useAdminAuth();
   if (!hasPermission('canManageUsers')) return <Navigate to="/m" replace />;
@@ -33,7 +36,7 @@ function NewMemberFlow() {
   const [params] = useSearchParams();
   const preset = params.get('role');
   const [role, setRole] = useState<AppRole | null>(isRole(preset) ? preset : null);
-  const [created, setCreated] = useState<(CreatedMember & { name: string; role: AppRole }) | null>(null);
+  const [created, setCreated] = useState<Created | null>(null);
 
   if (created) {
     return (
@@ -50,6 +53,13 @@ function NewMemberFlow() {
               </p>
             </div>
           </div>
+          {created.fiche && (
+            <p className="rounded-xl bg-muted/50 px-4 py-3 text-[13.5px] leading-relaxed">
+              {created.fiche.reused ? 'Relié à la fiche commercial existante ' : 'Relié à une nouvelle fiche commercial '}
+              <span className="font-semibold">« {created.fiche.label} »</span>
+              {created.fiche.reused ? ' (fiche reprise) : il garde les clients déjà apportés sous ce nom.' : ', créée à son nom.'}
+            </p>
+          )}
           <PasswordReveal email={created.email} password={created.tempPassword} name={created.name} />
           <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
             <button type="button" onClick={() => navigate(`${TEAM_BASE}/${created.userId}`)} className={BTN_SOFT}>
@@ -103,7 +113,7 @@ function NewMemberFlow() {
   return <MemberForm role={role} onChangeRole={() => setRole(null)} onCreated={setCreated} />;
 }
 
-function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChangeRole: () => void; onCreated: (c: CreatedMember & { name: string; role: AppRole }) => void }) {
+function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChangeRole: () => void; onCreated: (c: Created) => void }) {
   const create = useCreateTeamMember();
   const sources = useClientSources(false);
   const [firstName, setFirstName] = useState('');
@@ -132,7 +142,15 @@ function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChange
     if (!valid || create.isPending) return;
     create.mutate(
       { email, firstName, lastName, role, phone: phone.trim() || null, sourceId: isCommercial && sourceMode === 'existing' ? sourceId : null },
-      { onSuccess: (r) => onCreated({ ...r, name: fullName, role }) },
+      {
+        onSuccess: (r) => {
+          // La RPC renvoie `sourceId` : la fiche reprise (choisie dans la liste) ou la nouvelle, à son nom (même libellé que côté serveur).
+          const reused = sourceMode === 'existing';
+          const label = reused ? freeFiches.find((f) => f.id === r.sourceId)?.label : fullName.slice(0, 80);
+          const fiche = isCommercial && r.sourceId && label ? { label, reused } : null;
+          onCreated({ ...r, name: fullName, role, fiche });
+        },
+      },
     );
   };
 

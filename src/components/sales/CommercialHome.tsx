@@ -11,7 +11,7 @@ import { AlarmClock, ChevronRight, LogOut, Plane, Ship, UserCheck, UserPlus, Wal
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCommercialDashboard } from '@/hooks/useSales';
-import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, type ObjectiveMetric } from '@/lib/sales';
+import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, ofMonth, type ObjectiveMetric } from '@/lib/sales';
 import { Figure, LoadError, MonthSwitcher, ObjectiveList, SALES_CARD, UnlinkedNotice } from './SalesBits';
 import { initialsOf, isUnlinkedError, plural } from './salesHelpers';
 
@@ -24,9 +24,6 @@ function greeting(now = new Date()): string {
   const hour = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone: 'Africa/Douala' }).formatToParts(now).find((p) => p.type === 'hour')?.value;
   return Number(hour ?? 12) >= 18 ? 'Bonsoir' : 'Bonjour';
 }
-
-/** « de mars », « d’octobre ». */
-const ofMonth = (name: string) => (/^[aeiouyàâéèêîôû]/i.test(name) ? `d’${name}` : `de ${name}`);
 
 export function CommercialHome() {
   const navigate = useNavigate();
@@ -151,7 +148,8 @@ export function CommercialHome() {
 
                 <section>
                   <h2 className="mb-3 text-[16px] font-semibold">Mes prospects</h2>
-                  <div className="grid grid-cols-3 gap-3">
+                  {/* Trois colonnes seulement sur grand écran : à 390 px, « À relancer » était coupé. */}
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     <Figure
                       label="Ouverts"
                       value={fmtCount(m.prospects_open)}
@@ -165,6 +163,7 @@ export function CommercialHome() {
                       onClick={() => navigate('/v/prospects?filtre=relancer')}
                     />
                     <Figure
+                      className="col-span-2 md:col-span-1"
                       label="Devenus clients"
                       value={fmtCount(m.prospects_won)}
                       hint={`en ${monthName}`}
@@ -197,9 +196,9 @@ function HomeSkeleton() {
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="col-span-2 h-24 animate-pulse rounded-2xl bg-muted md:col-span-1" />
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />
+          <div key={i} className={cn('h-24 animate-pulse rounded-2xl bg-muted', i === 2 && 'col-span-2 md:col-span-1')} />
         ))}
       </div>
     </div>

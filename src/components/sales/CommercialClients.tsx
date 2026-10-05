@@ -66,7 +66,7 @@ export function CommercialClients() {
               <>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />
+                    <div key={i} className={cn('h-24 animate-pulse rounded-2xl bg-muted', i < 2 && 'col-span-2 md:col-span-1')} />
                   ))}
                 </div>
                 <div className={SALES_CARD}>
@@ -90,9 +90,10 @@ export function CommercialClients() {
               </div>
             ) : (
               <>
+                {/* Téléphone : clients et paiements sur toute la largeur (un montant en XAF passait sur deux lignes dans une demi-tuile). */}
                 <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <Figure icon={Users} label="Clients" value={fmtCount(rows.length)} hint={`${sum.active} actif${sum.active > 1 ? 's' : ''} en ${monthName}`} />
-                  <Figure icon={Wallet} label="Paiements" value={fmtXaf(sum.pay)} hint={plural(sum.payN, 'paiement', 'paiements')} />
+                  <Figure className="col-span-2 md:col-span-1" icon={Users} label="Clients" value={fmtCount(rows.length)} hint={`${sum.active} actif${sum.active > 1 ? 's' : ''} en ${monthName}`} />
+                  <Figure className="col-span-2 md:col-span-1" icon={Wallet} label="Paiements" value={fmtXaf(sum.pay)} hint={plural(sum.payN, 'paiement', 'paiements')} />
                   <Figure icon={Plane} label="Fret avion" value={fmtKg(sum.airKg)} hint={plural(sum.airN, 'colis', 'colis')} />
                   <Figure icon={Ship} label="Fret bateau" value={fmtCbm(sum.seaCbm)} hint={plural(sum.seaN, 'colis', 'colis')} />
                 </section>
@@ -148,34 +149,38 @@ function ClientRow({ c }: { c: CommercialClient }) {
         <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold', isActive(c) ? 'bg-primary/10 text-foreground' : 'bg-muted text-muted-foreground')} aria-hidden>
           {initialsOf(c.name)}
         </span>
+        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[15px] font-semibold">{c.name || '—'}</div>
-          <div className="truncate text-[13px] tabular-nums text-muted-foreground">
-            {sub && `${sub} · `}client depuis le {fmtLongDay(c.created_at)}
-          </div>
-        </div>
-        {tel && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <a
-              href={`tel:${tel}`}
-              aria-label={`Appeler ${c.name}`}
-              className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-black/10 transition-colors hover:bg-accent dark:ring-white/15"
-            >
-              <Phone className="h-4 w-4" />
-            </a>
-            {e164 && (
-              <a
-                href={whatsappLink(e164)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`Écrire à ${c.name} sur WhatsApp`}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white transition-colors hover:bg-[#1DA851]"
-              >
-                <MessageCircle className="h-4 w-4" />
-              </a>
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1 truncate text-[15px] font-semibold">{c.name || '—'}</div>
+            {tel && (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <a
+                  href={`tel:${tel}`}
+                  aria-label={`Appeler ${c.name}`}
+                  className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-black/10 transition-colors hover:bg-accent dark:ring-white/15"
+                >
+                  <Phone className="h-4 w-4" />
+                </a>
+                {e164 && (
+                  <a
+                    href={whatsappLink(e164)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Écrire à ${c.name} sur WhatsApp`}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white transition-colors hover:bg-[#1DA851]"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
             )}
           </div>
-        )}
+          <div className="text-[13px] tabular-nums text-muted-foreground">
+            {sub && `${sub} · `}
+            <span className="whitespace-nowrap">client depuis le {fmtLongDay(c.created_at)}</span>
+          </div>
+        </div>
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-muted/50 px-3 py-2.5 text-[13px] tabular-nums sm:ml-[3.25rem] sm:grid-cols-3">
         <Cell className="col-span-2 sm:col-span-1" label="Paiements" value={c.payments_xaf ? fmtXaf(c.payments_xaf) : '—'} hint={c.payments_count ? plural(c.payments_count, 'paiement', 'paiements') : undefined} />

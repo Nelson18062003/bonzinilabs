@@ -123,6 +123,9 @@ export function monthLabel(month: string): string {
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
+/** « de mars », « d’octobre » (élision devant avril, août, octobre). */
+export const ofMonth = (name: string) => (/^[aeiouyàâéèêîôû]/i.test(name) ? `d’${name}` : `de ${name}`);
+
 /** Un numéro tapé (« 699 12 34 56 ») au format international ; le Cameroun par défaut. */
 export function toE164(raw: string, defaultCountry = '237'): string | null {
   let v = raw.replace(/[\s.()-]/g, '');

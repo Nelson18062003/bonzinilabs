@@ -133,7 +133,15 @@ const PROSPECTS = [
 ];
 
 // ── Écrans, dans l'ordre de l'histoire ──────────────────────────────────
+// DM Sans servie en local (paquet @fontsource, via Vite) à la place de Google Fonts :
+// sans cela, la feuille de Google échoue souvent derrière le proxy et la page
+// retombe sur une police système.
+const FONT_CSS = [400, 500, 600, 700, 800, 900]
+  .map((w) => `@font-face{font-family:'DM Sans';font-style:normal;font-weight:${w};font-display:block;src:url(http://localhost:8080/node_modules/@fontsource/dm-sans/files/dm-sans-latin-${w}-normal.woff2) format('woff2');}`)
+  .join('\n');
+
 const init = async (page) => {
+  await page.route(/fonts\.googleapis\.com\/css2/, (r) => r.fulfill({ status: 200, contentType: 'text/css', headers: { 'access-control-allow-origin': '*' }, body: FONT_CSS }));
   await page.clock.setFixedTime(new Date(NOW));
   // La proposition de clé d'accès ne doit pas couvrir l'écran.
   await page.addInitScript(() => {
@@ -141,9 +149,8 @@ const init = async (page) => {
   });
 };
 
-// Les étiquettes des champs ne sont pas reliées à leur <input> (TextField ne pose pas l'id) :
-// on vise le champ qui suit l'étiquette.
-const field = (page, label) => page.locator(`xpath=//label[normalize-space(.)="${label}"]/following-sibling::div//input`).first();
+// TextField pose l'id sur son <input> : l'étiquette est reliée au champ.
+const field = (page, label) => page.getByLabel(label, { exact: true });
 
 /** Remplit le formulaire « Nouvel accès » pour Carine Ewane, en reprenant sa fiche existante. */
 async function fillCarine(page) {
@@ -184,8 +191,8 @@ const LIST = [
     key: 'j.teams.list-desk', name: '01-equipes-ordinateur', desktop: true, viewport: '1440x1630',
     before: async (page) => { await page.getByRole('button', { name: /Voir les désactivés/ }).click(); },
   },
-  { key: 'j.teams.list-phone', name: '02-equipes-telephone', viewport: '390x1730' },
-  { key: 'j.teams.new-roles', name: '03a-nouvel-acces-roles', desktop: true, viewport: '1440x1290' },
+  { key: 'j.teams.list-phone', name: '02-equipes-telephone', viewport: '390x1935' },
+  { key: 'j.teams.new-roles', name: '03a-nouvel-acces-roles', desktop: true, viewport: '1440x1455' },
   { key: 'j.teams.new-desk', name: '03b-nouvel-acces-commercial', desktop: true, viewport: '1440x920', before: fillCarine },
   { key: 'j.teams.new-desk', name: '04-acces-cree', desktop: true, fullPage: false, before: createCarine },
   { key: 'j.teams.member-desk', name: '05a-fiche-rodrigue', desktop: true, viewport: '1440x920' },

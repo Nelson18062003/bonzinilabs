@@ -60,7 +60,7 @@ function Board() {
         <Figure label="Paiements" value={overview.isLoading ? '…' : fmtXaf(sum.pay)} />
         <Figure label="Fret avion" value={overview.isLoading ? '…' : fmtKg(sum.air)} />
         <Figure label="Fret bateau" value={overview.isLoading ? '…' : fmtCbm(sum.sea)} />
-        <Figure label="Prospects devenus clients" value={overview.isLoading ? '…' : fmtCount(sum.won)} />
+        <Figure className="col-span-2 sm:col-span-1" label="Prospects devenus clients" value={overview.isLoading ? '…' : fmtCount(sum.won)} />
       </section>
 
       {overview.isLoading ? (
@@ -97,7 +97,8 @@ function CommercialTile({ card, onOpen }: { card: CommercialCard; onOpen: () => 
   const m = card.metrics;
   const name = card.staff?.name || card.source.label;
   return (
-    <button type="button" onClick={onOpen} className={cn(CARD, 'w-full space-y-4 p-5 text-left transition hover:ring-primary/40')}>
+    // flex-col : un <button> centre son contenu verticalement ; dans la grille, la carte la plus courte gardait un vide en haut.
+    <button type="button" onClick={onOpen} className={cn(CARD, 'flex w-full flex-col justify-start space-y-4 p-5 text-left transition hover:ring-primary/40')}>
       <div className="flex items-center gap-3">
         <Initials name={name} disabled={!card.staff || card.staff.is_disabled} />
         <div className="min-w-0 flex-1">
@@ -147,9 +148,9 @@ function Line({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+function Figure({ label, value, className }: { label: string; value: string; className?: string }) {
   return (
-    <div className={cn(CARD, 'p-3.5 sm:p-4')}>
+    <div className={cn(CARD, 'p-3.5 sm:p-4', className)}>
       <div className="text-[12px] font-medium leading-tight text-muted-foreground">{label}</div>
       <div className="mt-1 text-[18px] font-bold tracking-tight tabular-nums sm:text-[20px]">{value}</div>
     </div>
