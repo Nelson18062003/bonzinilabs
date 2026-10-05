@@ -8,13 +8,13 @@ import { cn } from '@/lib/utils';
 /* ── Jetons ─────────────────────────────────────────────────────────────── */
 
 export const TK = {
-  card: 'rounded-[12px] border border-border bg-card',
-  inset: 'rounded-[10px] border border-border/70 bg-muted/50',
+  card: 'rounded-2xl bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_8px_rgba(16,24,40,0.03)] ring-1 ring-black/[0.06] dark:ring-white/10',
+  inset: 'rounded-xl bg-muted/60',
   ink: 'text-foreground',
   body: 'text-foreground/85',
   muted: 'text-muted-foreground',
   num: 'tabular-nums',
-  label: 'text-[12px] font-semibold uppercase tracking-[0.04em] text-muted-foreground',
+  label: 'text-[13px] font-medium text-muted-foreground',
   in: 'text-emerald-700 dark:text-emerald-400',
   out: 'text-red-700 dark:text-red-400',
   warn: 'text-amber-700 dark:text-amber-400',
@@ -22,20 +22,20 @@ export const TK = {
 } as const;
 
 const BTN_BASE =
-  'inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg px-3.5 text-[13.5px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-[14px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50';
 
 export const BTN = {
   primary: cn(BTN_BASE, TK.focus, 'bg-primary text-primary-foreground hover:bg-primary/90'),
-  soft: cn(BTN_BASE, TK.focus, 'border border-border bg-card text-foreground hover:bg-accent'),
+  soft: cn(BTN_BASE, TK.focus, 'bg-card text-foreground ring-1 ring-black/10 hover:bg-accent dark:ring-white/15'),
   ghost: cn(BTN_BASE, TK.focus, 'text-foreground hover:bg-accent'),
-  danger: cn(BTN_BASE, TK.focus, 'border border-red-200 bg-card text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40'),
+  danger: cn(BTN_BASE, TK.focus, 'text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40'),
   dangerSolid: cn(BTN_BASE, TK.focus, 'bg-red-600 text-white hover:bg-red-700'),
-  icon: cn('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground transition-colors hover:bg-accent', TK.focus),
+  icon: cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-card text-foreground ring-1 ring-black/10 transition-colors hover:bg-accent dark:ring-white/15', TK.focus),
 } as const;
 
 /** Champ de saisie : 44 px de haut, bordure qui se renforce au survol. */
 export const INPUT =
-  'h-11 w-full rounded-lg border border-input bg-card px-3 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring';
+  'h-12 w-full rounded-xl border border-input bg-card px-3.5 text-[15px] text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring';
 
 
 /**

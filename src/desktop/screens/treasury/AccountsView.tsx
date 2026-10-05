@@ -10,12 +10,12 @@
 import { useNavigate } from 'react-router-dom';
 import { ClipboardCheck, SlidersHorizontal, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useInventorySnapshots, useTreasuryAccountBalances, useTreasuryLedger, type TreasuryAccountBalance } from '@/hooks/useTreasury';
+import { useInventorySnapshots, useTreasuryAccountBalances, useTreasuryLedger } from '@/hooks/useTreasury';
 import { BTN, TK } from './tstyle';
-import { BackLink, Card, CardHead, Empty, ErrorState, Loading, Money, OriginCell, RowButton, StatusPill, Td, Th } from './tkit';
+import { BackLink, Card, CardHead, Empty, ErrorState, Loading, Money, OriginCell, StatusPill, Td, Th } from './tkit';
 import { useTreasuryActions } from './treasuryActions';
 import { treasuryPaths } from './treasuryNav';
-import { accountKindLabel, fmtAmount, fmtNum, fmtWhen, type TreasuryCurrency } from './treasuryFormat';
+import { accountKindLabel, fmtAmount, fmtWhen, type TreasuryCurrency } from './treasuryFormat';
 import { canInventory, entryKindLabel, plural } from './treasuryLabels';
 
 const GROUPS: ReadonlyArray<{ cur: TreasuryCurrency; title: string; hint: string }> = [
@@ -34,84 +34,49 @@ type BalancesQuery = ReturnType<typeof useTreasuryAccountBalances>;
 
 function AccountList({ balances }: { balances: BalancesQuery }) {
   const navigate = useNavigate();
-  const actions = useTreasuryActions();
 
   if (balances.isLoading) return <Card><Loading rows={8} /></Card>;
   if (balances.isError) return <Card><ErrorState onRetry={() => void balances.refetch()} /></Card>;
   const all = (balances.data ?? []).filter((b) => b.is_active !== false);
   if (all.length === 0) return <Card><Empty icon={Wallet} title="Aucun compte de trésorerie" /></Card>;
 
+  // Une carte par devise : jamais de total qui additionne XAF et CNY. Les
+  // gestes (ajuster, inventorier) sont sur la page du compte.
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-3">
       {GROUPS.map((g) => {
         const rows = all.filter((b) => b.currency === g.cur);
         if (rows.length === 0) return null;
         const total = rows.reduce((s, r) => s + Number(r.balance ?? 0), 0);
         return (
           <Card key={g.cur} className="overflow-hidden">
-            <CardHead
-              title={g.title}
-              meta={`${plural(rows.length, 'compte')} · ${g.hint}`}
-              action={
-                <div className="text-right">
-                  <div className="text-[12px] text-muted-foreground">Total</div>
-                  <Money value={total} cur={g.cur} size="lg" />
-                </div>
-              }
-              className="py-3"
-            />
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <Th>Compte</Th>
-                  <Th>Nature</Th>
-                  <Th align="right">Mouvements</Th>
-                  <Th>Dernier mouvement</Th>
-                  <Th align="right">Solde</Th>
-                  {actions.canManage && <Th align="right"><span className="sr-only">Actions</span></Th>}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <RowButton key={r.id ?? r.code} onOpen={() => r.id && navigate(treasuryPaths.account(r.id))} label={`Ouvrir le compte ${r.label}`}>
-                    <Td className="font-semibold">{r.label}</Td>
-                    <Td muted>{accountKindLabel(r.kind)}</Td>
-                    <Td align="right" muted className={TK.num}>{fmtNum(r.entry_count ?? 0, 0)}</Td>
-                    <Td muted>{r.last_entry_at ? fmtWhen(r.last_entry_at) : 'Jamais'}</Td>
-                    <Td align="right">
-                      <Money value={Number(r.balance ?? 0)} cur={g.cur} showCur={false} className={Number(r.balance ?? 0) < 0 ? TK.out : ''} />
-                    </Td>
-                    {actions.canManage && (
-                      <Td align="right" className="py-2">
-                        <RowActions row={r} />
-                      </Td>
-                    )}
-                  </RowButton>
-                ))}
-              </tbody>
-            </table>
+            <div className="px-6 pb-2 pt-6">
+              <div className={TK.label}>{g.title}</div>
+              <div className="mt-2">
+                <Money value={total} cur={g.cur} size="xl" />
+              </div>
+              <div className="mt-1.5 text-[13px] text-muted-foreground">{g.hint}</div>
+            </div>
+            <ul className="px-3 pb-3 pt-2">
+              {rows.map((r) => (
+                <li key={r.id ?? r.code}>
+                  <button
+                    type="button"
+                    onClick={() => r.id && navigate(treasuryPaths.account(r.id))}
+                    className={cn('flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/50', TK.focus)}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-[15px] font-semibold">{r.label}</span>
+                      <span className="block text-[13px] text-muted-foreground">{accountKindLabel(r.kind)}</span>
+                    </span>
+                    <Money value={Number(r.balance ?? 0)} cur={g.cur} showCur={false} className={Number(r.balance ?? 0) < 0 ? TK.out : ''} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </Card>
         );
       })}
-    </div>
-  );
-}
-
-/** Les gestes d'une ligne — sans ouvrir la fiche (le clic ne remonte pas). */
-function RowActions({ row }: { row: TreasuryAccountBalance }) {
-  const actions = useTreasuryActions();
-  if (!row.id) return null;
-  const id = row.id;
-  return (
-    <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <button type="button" className={cn(BTN.ghost, 'h-8 px-2.5 text-[13px]')} onClick={() => actions.adjust(id)}>
-        <SlidersHorizontal className="h-3.5 w-3.5" /> Ajuster
-      </button>
-      {canInventory(row.kind) && (
-        <button type="button" className={cn(BTN.ghost, 'h-8 px-2.5 text-[13px]')} onClick={() => actions.inventory(id)}>
-          <ClipboardCheck className="h-3.5 w-3.5" /> Inventorier
-        </button>
-      )}
     </div>
   );
 }

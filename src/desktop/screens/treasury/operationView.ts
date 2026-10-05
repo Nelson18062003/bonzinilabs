@@ -17,7 +17,10 @@ export interface OperationView {
   at: string;
   voided: boolean;
   counterpartyId: string | null;
+  /** « F-003 · Ets Kamga » — pour la recherche et les listes denses. */
   counterparty: string;
+  /** Le nom seul, pour les listes aérées. */
+  counterpartyName: string;
   counterpartyShort: string | null;
   usdt: number;
   counter: number;
@@ -42,6 +45,7 @@ export function viewOperation(op: OperationRow): OperationView {
       voided: !!op.voided_at,
       counterpartyId: op.supplier?.id ?? op.supplier_id ?? null,
       counterparty: counterpartyLabel(op.supplier),
+      counterpartyName: op.supplier?.display_name ?? '—',
       counterpartyShort: op.supplier?.short_id ?? null,
       usdt: Number(op.usdt_amount),
       counter: Number(op.xaf_amount),
@@ -61,6 +65,7 @@ export function viewOperation(op: OperationRow): OperationView {
     voided: !!op.voided_at,
     counterpartyId: op.buyer?.id ?? op.buyer_id ?? null,
     counterparty: counterpartyLabel(op.buyer),
+    counterpartyName: op.buyer?.display_name ?? '—',
     counterpartyShort: op.buyer?.short_id ?? null,
     usdt: Number(op.usdt_amount),
     counter: Number(op.cny_amount),

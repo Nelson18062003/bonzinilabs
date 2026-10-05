@@ -12,9 +12,11 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Result<T> = { data: T; isLoading: boolean; isError: boolean; refetch: () => Promise<unknown> };
 const ok = <T,>(data: T): Result<T> => ({ data, isLoading: false, isError: false, refetch: async () => undefined });
+// `mutate` répond comme le serveur : l'écran de réussite (le reçu) s'affiche.
+const MUTATION_RESULT = { success: true, purchase_id: '3f2c9b12-7a41-4c1e-9d0b-1a2b3c4d5e6f', sale_id: '8e1d4a77-2b90-4f3a-a6c5-0f1e2d3c4b5a', id: 'c9' };
 const noopMutation = () => ({
-  mutate: () => undefined,
-  mutateAsync: async () => ({ success: true }),
+  mutate: (_args?: unknown, opts?: { onSuccess?: (r: typeof MUTATION_RESULT) => void }) => opts?.onSuccess?.(MUTATION_RESULT),
+  mutateAsync: async () => MUTATION_RESULT,
   isPending: false,
 });
 

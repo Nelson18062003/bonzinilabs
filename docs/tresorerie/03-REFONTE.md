@@ -44,16 +44,30 @@ au même endroit sur ordinateur.
 - Formulaires : `PurchaseForm`, `SaleForm`, `AccountForms` (ajuster,
   inventorier), `CounterpartyForm`, `VoidForm`.
 
+## Version 2 (après retour : « trop chargé, trop complexe »)
+
+- **Moins d'informations** : vue d'ensemble réduite à trois chiffres et la
+  liste des dernières opérations ; table des opérations en cinq colonnes ;
+  comptes en trois cartes (XAF, USDT, CNY) ; police DM Sans, cartes douces,
+  devise écrite discrètement au lieu des pastilles.
+- **Achat et vente sur un seul écran**, sans étapes ni « mode » : trois
+  montants liés (USDT, taux, XAF ou CNY) — on en tape deux, le troisième se
+  calcule (`linkedAmounts.ts`). La date (« maintenant ») et la référence /
+  note sont repliées. Plus de deuxième confirmation.
+- **Le reçu** (`OperationReceipt.tsx`) : l'image à envoyer au fournisseur ou
+  à l'acheteur comme preuve — bande aux trois couleurs du logo, montant en
+  grand, taux, montant payé ou reçu, contrepartie, compte, date, référence,
+  n° d'opération (ACH-… / VTE-…). Jamais la note interne ni le coût moyen.
+  « Copier l'image » (WhatsApp, WeChat) et « Télécharger » (PNG).
+  Il s'affiche juste après l'enregistrement, et quand on ouvre une opération.
+
 ## Règles des formulaires
 
-1. Étapes numérotées ; une valeur calculée est montrée dans un encadré.
-2. On tape deux valeurs, la troisième se calcule (USDT, montant, taux).
-3. Achat réparti : la répartition doit tomber juste sur le total.
-4. « Vérifier et enregistrer » montre un récapitulatif (stock et coût moyen
-   avant → après) ; rien n'est écrit avant la confirmation.
-5. Fermer une saisie remplie demande confirmation.
-6. XAF entier et exact (`isValidXafAmount`), USDT et CNY à deux décimales ;
+1. Un seul écran ; on tape deux montants, le troisième se calcule.
+2. Achat réparti : « Plusieurs comptes ? », la répartition doit tomber juste.
+3. Fermer une saisie remplie demande confirmation.
+4. XAF entier et exact (`isValidXafAmount`), USDT et CNY à deux décimales ;
    une date d'opération ne peut pas être dans le futur.
-7. Motif de 10 caractères au moins : ajustement, écart d'inventaire, annulation.
+5. Motif de 10 caractères au moins : ajustement, écart d'inventaire, annulation.
 
 Captures du rendu : `captures/` (harnais `treasury-preview.html`, données fictives).

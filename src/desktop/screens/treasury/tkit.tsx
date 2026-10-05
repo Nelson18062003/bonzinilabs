@@ -37,7 +37,7 @@ export function Cur({ c, className }: { c: string; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex h-5 items-center rounded-[5px] bg-muted px-1.5 text-[11px] font-bold tracking-[0.03em] text-foreground/75',
+        'text-[12px] font-semibold tracking-[0.02em] text-muted-foreground',
         className,
       )}
     >
@@ -75,13 +75,13 @@ export function Money({
   const text = n === null ? '—' : `${sign ? (n > 0 ? '+ ' : n < 0 ? '− ' : '') : n < 0 ? '− ' : ''}${fmtNum(Math.abs(n), d)}`;
   const color = tone && n !== null && n !== 0 ? (n > 0 ? TK.in : TK.out) : '';
   const sz =
-    size === 'xl' ? 'text-[30px] font-extrabold tracking-tight' :
-    size === 'lg' ? 'text-[20px] font-bold tracking-tight' :
-    size === 'sm' ? 'text-[13px] font-semibold' : 'text-[14px] font-semibold';
+    size === 'xl' ? 'text-[34px] font-bold leading-none tracking-[-0.025em]' :
+    size === 'lg' ? 'text-[22px] font-semibold tracking-[-0.015em]' :
+    size === 'sm' ? 'text-[14px] font-medium' : 'text-[15px] font-semibold';
   return (
     <span className={cn('inline-flex items-baseline gap-1.5 whitespace-nowrap', TK.num, className)}>
       <span className={cn(sz, color)}>{text}</span>
-      {showCur && n !== null && <Cur c={cur} className={size === 'xl' || size === 'lg' ? 'translate-y-[-3px]' : ''} />}
+      {showCur && n !== null && <Cur c={cur} className={size === 'xl' ? 'text-[15px]' : size === 'lg' ? 'text-[13px]' : ''} />}
     </span>
   );
 }
@@ -105,10 +105,10 @@ export function Card({ className, children, as: As = 'section' }: { className?: 
 
 export function CardHead({ title, meta, action, className }: { title: React.ReactNode; meta?: React.ReactNode; action?: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex min-h-[56px] items-center justify-between gap-4 border-b border-border px-5', className)}>
+    <div className={cn('flex min-h-[64px] items-center justify-between gap-4 px-6 pt-1', className)}>
       <div className="min-w-0">
-        <h3 className="truncate text-[15px] font-bold text-foreground">{title}</h3>
-        {meta && <div className="text-[12.5px] text-muted-foreground">{meta}</div>}
+        <h3 className="truncate text-[16px] font-semibold tracking-[-0.01em] text-foreground">{title}</h3>
+        {meta && <div className="text-[13px] text-muted-foreground">{meta}</div>}
       </div>
       {action}
     </div>
@@ -138,11 +138,11 @@ export function Stat({ label, children, hint, className }: { label: string; chil
 /** Rangée de chiffres sous un en-tête de carte : « Achats 14 · USDT 40 500 … ». */
 export function SummaryBar({ items }: { items: Array<{ label: string; value: React.ReactNode }> }) {
   return (
-    <div className="flex min-h-[48px] flex-wrap items-center gap-x-7 gap-y-1 border-b border-border px-5 py-2 text-[13px]">
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-1 px-6 pb-4 text-[13.5px]">
       {items.map((it) => (
         <div key={it.label} className="flex items-baseline gap-1.5">
           <span className="text-muted-foreground">{it.label}</span>
-          <span className={cn('font-bold text-foreground', TK.num)}>{it.value}</span>
+          <span className={cn('font-semibold text-foreground', TK.num)}>{it.value}</span>
         </div>
       ))}
     </div>
@@ -156,7 +156,7 @@ export function Th({ children, align = 'left', className }: { children?: React.R
     <th
       scope="col"
       className={cn(
-        'whitespace-nowrap border-b border-border bg-muted/40 px-4 py-2.5 text-[12px] font-semibold text-muted-foreground',
+        'whitespace-nowrap border-b border-border/70 px-6 pb-3 pt-2 text-[12.5px] font-medium text-muted-foreground',
         align === 'right' ? 'text-right' : 'text-left',
         className,
       )}
@@ -170,7 +170,7 @@ export function Td({ children, align = 'left', className, muted }: { children?: 
   return (
     <td
       className={cn(
-        'whitespace-nowrap border-b border-border/60 px-4 py-3 text-[13.5px]',
+        'whitespace-nowrap border-b border-border/50 px-6 py-4 text-[14px]',
         align === 'right' && 'text-right',
         muted ? 'text-muted-foreground' : 'text-foreground',
         className,
@@ -212,7 +212,7 @@ export function RowButton({
         }
       }}
       className={cn(
-        'cursor-pointer transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none',
+        'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/60 focus-visible:outline-none [&:last-child>td]:border-0',
         selected && 'bg-muted/70 hover:bg-muted/70',
         muted && 'text-muted-foreground [&_td]:text-muted-foreground',
       )}
@@ -287,7 +287,7 @@ export function Segmented<V extends string>({
   size?: 'sm' | 'md';
 }) {
   return (
-    <div role="tablist" aria-label={ariaLabel} className="inline-flex shrink-0 gap-1 rounded-lg bg-muted p-1">
+    <div role="tablist" aria-label={ariaLabel} className="inline-flex shrink-0 gap-0.5 rounded-xl bg-black/[0.045] p-1 dark:bg-white/[0.07]">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -298,10 +298,10 @@ export function Segmented<V extends string>({
             aria-selected={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-md px-3.5 font-semibold transition-colors',
-              size === 'sm' ? 'h-7 text-[12.5px]' : 'h-8 text-[13.5px]',
+              'inline-flex items-center gap-1.5 rounded-lg px-3.5 font-semibold transition-colors',
+              size === 'sm' ? 'h-7 text-[13px]' : 'h-8 text-[14px]',
               TK.focus,
-              active ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-foreground/70 hover:text-foreground',
+              active ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.08)]' : 'text-foreground/60 hover:text-foreground',
             )}
           >
             {o.label}
@@ -415,8 +415,8 @@ export function Picker({
           'flex w-full items-center gap-2 text-left transition-colors',
           TK.focus,
           variant === 'filter'
-            ? cn('h-9 rounded-lg border bg-card px-3 text-[13.5px] font-medium hover:bg-accent', value ? 'border-foreground/40' : 'border-border')
-            : cn('h-11 rounded-lg border bg-card px-3 text-[14px]', invalid ? 'border-red-500' : 'border-input hover:border-foreground/40'),
+            ? cn('h-10 rounded-xl bg-card px-3.5 text-[14px] font-medium ring-1 hover:bg-accent', value ? 'ring-foreground/40' : 'ring-black/10 dark:ring-white/15')
+            : cn('h-12 rounded-xl border bg-card px-3.5 text-[15px]', invalid ? 'border-red-500' : 'border-input hover:border-foreground/30'),
         )}
       >
         {variant === 'field' && selected?.tag && (
@@ -466,8 +466,8 @@ export function Picker({
 
 function PickRow({ active, onClick, tag, hint, children }: { active: boolean; onClick: () => void; tag?: string; hint?: string; children: React.ReactNode }) {
   return (
-    <li role="option" aria-selected={active}>
-      <button type="button" onClick={onClick} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13.5px] hover:bg-accent">
+    <li role="presentation">
+      <button type="button" role="option" aria-selected={active} onClick={onClick} className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13.5px] hover:bg-accent">
         <Check className={cn('h-4 w-4 shrink-0', active ? 'opacity-100' : 'opacity-0')} />
         {tag && <span className="rounded bg-muted px-1.5 text-[11.5px] font-bold text-foreground/80">{tag}</span>}
         <span className="min-w-0 flex-1 truncate">{children}</span>
@@ -480,7 +480,7 @@ function PickRow({ active, onClick, tag, hint, children }: { active: boolean; on
 /** Champ de recherche de barre d'outils. */
 export function SearchInput({ value, onChange, placeholder = 'Rechercher…', className }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
   return (
-    <label className={cn('flex h-9 items-center gap-2 rounded-lg border border-border bg-card px-3 focus-within:ring-2 focus-within:ring-ring', className)}>
+    <label className={cn('flex h-10 items-center gap-2 rounded-xl bg-card px-3.5 ring-1 ring-black/10 focus-within:ring-2 focus-within:ring-ring dark:ring-white/15', className)}>
       <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
       <input
         value={value}
@@ -565,8 +565,8 @@ export function AmountInput({
   return (
     <div
       className={cn(
-        'flex h-11 items-center gap-2 rounded-lg border bg-card px-3 transition-colors focus-within:ring-2 focus-within:ring-ring',
-        invalid ? 'border-red-500' : 'border-input hover:border-foreground/40',
+        'flex h-12 items-center gap-2 rounded-xl border bg-card px-3.5 transition-colors focus-within:ring-2 focus-within:ring-ring',
+        invalid ? 'border-red-500' : 'border-input hover:border-foreground/30',
         readOnly && 'bg-muted/50',
       )}
     >
@@ -589,9 +589,9 @@ export function AmountInput({
           setText(raw);
           onChange(parseAmount(raw, decimals));
         }}
-        className={cn('h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground', TK.num)}
+        className={cn('h-full min-w-0 flex-1 bg-transparent text-[17px] font-semibold outline-none placeholder:font-normal placeholder:text-muted-foreground/60', TK.num)}
       />
-      <span className="shrink-0 rounded-[5px] bg-muted px-1.5 py-0.5 text-[11.5px] font-bold text-foreground/75">{unit}</span>
+      <span className="shrink-0 text-[13px] font-semibold text-muted-foreground">{unit}</span>
     </div>
   );
 }
@@ -629,7 +629,7 @@ export function WhenField({ value, onChange, id }: { value: string; onChange: (i
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
-          className={cn('flex h-11 w-full items-center gap-2 rounded-lg border border-input bg-card px-3 text-left text-[14px] hover:border-foreground/40', TK.focus)}
+          className={cn('flex h-12 w-full items-center gap-2 rounded-xl border border-input bg-card px-3.5 text-left text-[15px] hover:border-foreground/30', TK.focus)}
         >
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
           <span className="first-letter:uppercase">{label}</span>
@@ -653,7 +653,7 @@ export function WhenField({ value, onChange, id }: { value: string; onChange: (i
           </div>
         )}
       </div>
-      <label className="flex h-11 w-[108px] items-center gap-2 rounded-lg border border-input bg-card px-3 focus-within:ring-2 focus-within:ring-ring">
+      <label className="flex h-12 w-[108px] items-center gap-2 rounded-xl border border-input bg-card px-3 focus-within:ring-2 focus-within:ring-ring">
         <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
         <input
           inputMode="numeric"
@@ -791,7 +791,7 @@ export function SideSheet({
       <div className="absolute inset-y-0 right-0 flex w-full flex-col border-l border-border bg-card shadow-2xl" style={{ maxWidth: width }}>
         <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
           <div>
-            <h2 className="text-[18px] font-extrabold tracking-tight text-foreground">{title}</h2>
+            <h2 className="text-[20px] font-bold tracking-[-0.015em] text-foreground">{title}</h2>
             {description && <p className="mt-0.5 text-[13px] text-muted-foreground">{description}</p>}
           </div>
           <button type="button" onClick={requestClose} className={BTN.icon} aria-label="Fermer">
@@ -826,6 +826,8 @@ export function Modal({
   description,
   footer,
   width = 480,
+  scrollable,
+  bodyClassName,
   children,
 }: {
   open: boolean;
@@ -834,6 +836,9 @@ export function Modal({
   description?: React.ReactNode;
   footer?: React.ReactNode;
   width?: number;
+  /** Contenu haut (une fiche) : la fenêtre tient dans l'écran et défile. */
+  scrollable?: boolean;
+  bodyClassName?: string;
   children?: React.ReactNode;
 }) {
   useLayer(open, onClose);
@@ -841,10 +846,10 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-[70] !mt-0 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="Fermer" tabIndex={-1} onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-black/30" />
-      <div className="relative flex w-full flex-col rounded-[14px] border border-border bg-card shadow-2xl" style={{ maxWidth: width }}>
+      <div className={cn('relative flex w-full flex-col rounded-[20px] bg-card shadow-2xl ring-1 ring-black/5', scrollable && 'max-h-full overflow-hidden')} style={{ maxWidth: width }}>
         <header className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
           <div>
-            <h2 className="text-[17px] font-extrabold tracking-tight text-foreground">{title}</h2>
+            <h2 className="text-[18px] font-bold tracking-[-0.015em] text-foreground">{title}</h2>
             {description && <div className="mt-1 text-[13.5px] leading-snug text-muted-foreground">{description}</div>}
           </div>
           <button type="button" onClick={onClose} className={BTN.icon} aria-label="Fermer">
@@ -852,7 +857,7 @@ export function Modal({
           </button>
         </header>
         {/* Pas de `overflow` : la liste d'un sélecteur dépasse de la fenêtre au lieu d'y être coupée. */}
-        {children && <div className="space-y-4 px-6 py-3">{children}</div>}
+        {children && <div className={cn('space-y-4 px-6 py-3', scrollable && 'overflow-y-auto', bodyClassName)}>{children}</div>}
         {footer && <footer className="flex items-center justify-end gap-2 px-6 pb-5 pt-3">{footer}</footer>}
       </div>
     </div>
@@ -901,9 +906,9 @@ export function Confirm({
 }
 
 /** Bouton d'enregistrement avec état « en cours ». */
-export function SubmitButton({ busy, disabled, onClick, children }: { busy?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+export function SubmitButton({ busy, disabled, onClick, children, className }: { busy?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode; className?: string }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled || busy} className={BTN.primary}>
+    <button type="button" onClick={onClick} disabled={disabled || busy} className={cn(BTN.primary, className)}>
       {busy && <Loader2 className="h-4 w-4 animate-spin" />}
       {children}
     </button>

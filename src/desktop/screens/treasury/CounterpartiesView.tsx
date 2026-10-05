@@ -71,7 +71,7 @@ function CounterpartyList({ filter }: { filter: CounterpartyFilter }) {
   const rows = all
     .filter((c) => showArchived || c.is_active)
     .filter((c) => !q || normalizeText(`${c.short_id} ${c.display_name} ${c.legal_name ?? ''} ${c.phone ?? ''} ${c.wechat_id ?? ''}`).includes(normalizeText(q)))
-    .map((c) => ({ c, s: totalsOf((byCp.get(c.id) ?? []).filter((o) => !o.voided)), last: (byCp.get(c.id) ?? [])[0]?.at ?? null }))
+    .map((c) => ({ c, s: totalsOf((byCp.get(c.id) ?? []).filter((o) => !o.voided)) }))
     .sort((a, b) => b.s.usdt - a.s.usdt || a.c.display_name.localeCompare(b.c.display_name));
 
   return (
@@ -100,7 +100,7 @@ function CounterpartyList({ filter }: { filter: CounterpartyFilter }) {
       <Card className="overflow-hidden">
         <CardHead
           title={t.many}
-          meta="Opérations, volumes et taux sur la période choisie (hors opérations annulées)"
+          meta="Sur la période choisie, hors opérations annulées"
           action={
             archivedCount > 0 ? (
               <label className="flex items-center gap-2 text-[13px] text-muted-foreground">
@@ -121,28 +121,27 @@ function CounterpartyList({ filter }: { filter: CounterpartyFilter }) {
             <thead>
               <tr>
                 <Th>Nom</Th>
-                <Th>Contact</Th>
                 <Th align="right">Opérations</Th>
                 <Th align="right">USDT</Th>
-                <Th align="right">Taux moyen ({t.unit})</Th>
-                <Th>Dernière</Th>
+                <Th align="right">Taux moyen</Th>
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ c, s, last }) => (
+              {rows.map(({ c, s }) => (
                 <RowButton key={c.id} muted={!c.is_active} onOpen={() => navigate(treasuryPaths.counterparty(c.id))} label={`Ouvrir la fiche de ${c.display_name}`}>
                   <Td>
-                    <span className="flex items-center gap-2.5">
-                      <IdTag>{c.short_id}</IdTag>
-                      <span className="font-semibold">{c.display_name}</span>
-                      {!c.is_active && <StatusPill tone="neutral">Archivé</StatusPill>}
+                    <span className="block font-semibold">
+                      {c.display_name}
+                      {!c.is_active && <span className="ml-2 text-[12.5px] font-medium text-muted-foreground">archivé</span>}
+                    </span>
+                    <span className="block text-[12.5px] text-muted-foreground">
+                      {c.short_id}
+                      {c.phone && ` · ${c.phone}`}
                     </span>
                   </Td>
-                  <Td muted>{[c.phone, c.wechat_id && `WeChat ${c.wechat_id}`].filter(Boolean).join(' · ') || '—'}</Td>
                   <Td align="right" className={TK.num}>{ops.isLoading ? '…' : s.count}</Td>
                   <Td align="right" className={cn('font-semibold', TK.num)}>{ops.isLoading ? '…' : s.count ? fmtNum(s.usdt, 2) : '—'}</Td>
-                  <Td align="right" className={TK.num}>{s.avgRate ? fmtNum(s.avgRate, t.decimals) : '—'}</Td>
-                  <Td muted>{last ? fmtWhen(last) : '—'}</Td>
+                  <Td align="right" muted className={TK.num}>{s.avgRate ? `${fmtNum(s.avgRate, t.decimals)} ${t.unit}` : '—'}</Td>
                 </RowButton>
               ))}
             </tbody>

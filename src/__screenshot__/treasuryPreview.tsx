@@ -18,6 +18,13 @@ import { ThemeProvider } from 'next-themes';
 import { DesktopTreasuryScreen } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
 import { TREASURY_ROOT } from '@/desktop/screens/treasury/treasuryNav';
 import '../index.css';
+// DM Sans servie localement : le harnais tourne sans accès à Google Fonts, et
+// une capture en police de repli ne montre pas l'écran réel.
+import '@fontsource/dm-sans/latin-400.css';
+import '@fontsource/dm-sans/latin-500.css';
+import '@fontsource/dm-sans/latin-600.css';
+import '@fontsource/dm-sans/latin-700.css';
+import '@fontsource/dm-sans/latin-800.css';
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get('view') ?? '';
