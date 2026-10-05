@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAssignDeposit, useReceptionDeposit, useReceptionSearch } from '@/hooks/useReception';
-import { clientFullName, depositSupplier, formatCbm, formatKg, initials, parcelStage, supplierLine } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatKg, initials, parcelStage, supplierLine, waitingWhere } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
 import { paidSentence, quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
@@ -52,11 +52,11 @@ export function MobileCargoDepositDetail() {
 
   const name = deposit.client ? clientFullName(deposit.client) : 'Client à attribuer';
   const st = labels.status(deposit);
-  const loaded = deposit.parcels.filter((p) => p.shipment_id);
+  const loaded = deposit.parcels.filter((p) => p.shipment_id || p.air_shipment_id);
   const waiting = deposit.parcels.length - loaded.length;
   const supplier = depositSupplier(deposit);
   const photos = deposit.parcels.filter((p) => p.photo_path).length;
-  const viewerParcels = deposit.parcels.map((p) => ({ ...p, note: parcelStage(p).label }));
+  const viewerParcels = deposit.parcels.map((p) => ({ ...p, note: parcelStage(p, deposit.location).label }));
   const events = depositTimeline(deposit, quote);
 
   return (
@@ -111,7 +111,7 @@ export function MobileCargoDepositDetail() {
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className={cn(TYPE.lead, TEXT.strong)}>Colis</h2>
             <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>
-              {photos > 0 ? `${photos} photo${photos > 1 ? 's' : ''}` : 'Sans photo'}{waiting > 0 && ` · ${waiting} à l'entrepôt`}{loaded.length > 0 && ` · ${loaded.length} chargés`}
+              {photos > 0 ? `${photos} photo${photos > 1 ? 's' : ''}` : 'Sans photo'}{waiting > 0 && ` · ${waiting} ${waitingWhere([deposit.location])}`}{loaded.length > 0 && ` · ${loaded.length} chargés`}
             </span>
           </div>
           <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
@@ -120,7 +120,7 @@ export function MobileCargoDepositDetail() {
                 <ParcelRow parcel={p} onClick={() => viewer.open(i)} onPhoto={() => viewer.open(i)} />
                 {(p.shipment_id || p.checked_in_at || p.delivered_at) && (
                   <button type="button" onClick={() => p.shipment_id && navigate(`/m/cargo/${p.shipment_id}/dedans`)} className="-mt-2 mb-3 inline-flex">
-                    <StatusPill tone={parcelStage(p).tone} label={parcelStage(p).label} className="h-7 text-[14px]" />
+                    <StatusPill tone={parcelStage(p, deposit.location).tone} label={parcelStage(p, deposit.location).label} className="h-7 text-[14px]" />
                   </button>
                 )}
               </div>

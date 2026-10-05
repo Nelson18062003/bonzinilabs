@@ -29,19 +29,26 @@ export function cargoPartPath(part: CargoPart): string {
   return CARGO_PARTS.find((p) => p.key === part)!.to;
 }
 
-/** Mobile : deux gros segments sous l'en-tête « Cargo ». */
+/**
+ * Mobile : trois segments sous l'en-tête « Cargo ». Avec leurs icônes et leurs
+ * chiffres, ils demandent ~405 px : sous 440 px d'écran (390 sur un iPhone),
+ * les icônes s'effacent ; sur un écran plus étroit encore, le dernier segment
+ * passe à la ligne — jamais de défilement horizontal de la page.
+ */
 export function MobileCargoParts({ active, className }: { active: CargoPart; className?: string }) {
   const navigate = useNavigate();
   const { data } = useCargoPartsSummary();
+  const icon = 'h-5 w-5 max-[439px]:hidden';
   return (
     <div className={cn('px-4 pt-3', className)}>
       <Segmented<CargoPart>
         value={active}
         onChange={(part) => { if (part !== active) navigate(cargoPartPath(part)); }}
+        className="flex-wrap"
         options={[
-          { value: 'container', label: <span className="inline-flex items-center gap-1.5"><Ship className="h-5 w-5" /> Container</span>, count: data?.containers ?? null },
-          { value: 'air', label: <span className="inline-flex items-center gap-1.5"><Plane className="h-5 w-5" /> Avion</span>, count: data?.air_open ?? null },
-          { value: 'reception', label: <span className="inline-flex items-center gap-1.5"><PackageOpen className="h-5 w-5" /> Réception</span>, count: data?.parcels_waiting ?? null },
+          { value: 'container', label: <span className="inline-flex items-center gap-1.5"><Ship className={icon} /> Container</span>, count: data?.containers ?? null },
+          { value: 'air', label: <span className="inline-flex items-center gap-1.5"><Plane className={icon} /> Avion</span>, count: data?.air_open ?? null },
+          { value: 'reception', label: <span className="inline-flex items-center gap-1.5"><PackageOpen className={icon} /> Réception</span>, count: data?.parcels_waiting ?? null },
         ]}
       />
     </div>
@@ -55,7 +62,7 @@ export function DesktopCargoParts({ active, className }: { active: CargoPart; cl
   const meta: Record<CargoPart, string | null> = {
     container: data ? `${data.containers} suivi${data.containers > 1 ? 's' : ''}${data.containers_at_sea > 0 ? ` · ${data.containers_at_sea} en mer` : ''}` : null,
     air: data ? `${data.air_open ?? 0} en cours${(data.air_in_flight ?? 0) > 0 ? ` · ${data.air_in_flight} en vol` : ''}` : null,
-    reception: data ? `${data.parcels_waiting} colis à l'entrepôt${data.deposits_pending > 0 ? ` · ${data.deposits_pending} à attribuer` : ''}` : null,
+    reception: data ? `${data.parcels_waiting} colis à l'entrepôt et au bureau${data.deposits_pending > 0 ? ` · ${data.deposits_pending} à attribuer` : ''}` : null,
   };
   return (
     <Tabs value={active} onValueChange={(v) => { if (v !== active) navigate(cargoPartPath(v as CargoPart)); }} className={className}>

@@ -16,7 +16,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useReceptionOverview, useReceptionStock } from '@/hooks/useReception';
 import { useWarehouseDay } from '@/hooks/useWarehouse';
-import { clientFullName, formatCbm, formatKg, initials, type ReceptionLocation } from '@/lib/reception';
+import { clientFullName, formatCbm, formatKg, initials, waitingWhere, type ReceptionLocation } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, ScreenLoader, Segmented, StatCard, StatusPill } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
@@ -56,7 +56,7 @@ export function MobileCargoReception() {
 
   return (
     <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-      <MobileHeader title="Cargo" subtitle={stats ? `${stats.parcels} colis à l'entrepôt · ${formatCbm(stats.cbm)}${stats.pending > 0 ? ` · ${stats.pending} à attribuer` : ''}` : 'Réception des colis'} />
+      <MobileHeader title="Cargo" subtitle={stats ? `${stats.parcels} colis ${waitingWhere(where === 'all' ? ['warehouse', 'office'] : [where])} · ${formatCbm(stats.cbm)}${stats.pending > 0 ? ` · ${stats.pending} à attribuer` : ''}` : 'Réception des colis'} />
       <MobileCargoParts active="reception" />
 
       <div className="space-y-6 px-4 pb-10 pt-4">

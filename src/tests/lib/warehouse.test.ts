@@ -1,7 +1,7 @@
 // Ce que l'entrepôt de Douala décide sans la base : lire un scan, dire où en
 // est un colis, et ce qui bloque une remise.
 import { describe, expect, it } from 'vitest';
-import { checkinSummary, groupParcelsByClient, isPending, packageReceivedWord, packageStage, packagesProgress, parcelsByPackage, parseWarehouseScan, quoteWord, releaseBlockers, releaseWord, transportLabel, warehouseStage, withPackage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
+import { checkinSummary, depositQuoteWord, groupParcelsByClient, groupParcelsByDeposit, isPending, packageReceivedWord, packageStage, packagesProgress, parcelsByPackage, parseWarehouseScan, quoteWord, releaseBlockers, releaseWord, transportLabel, warehouseStage, withPackage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
 import type { AirPackage } from '@/lib/airPackage';
 import { xaf } from '@/lib/cargoQuote';
 
@@ -61,10 +61,20 @@ describe('remise : ce qui bloque', () => {
   it('seuls les dépôts des colis choisis comptent', () => {
     expect(releaseBlockers([parcel({ deposit_id: 'dep2', deposit_no: 'RC-000124' })], [quote({}), quote({ id: 'q2', deposit_id: 'dep2', amount_paid_xaf: 100, total_xaf: 100, balance_xaf: 0 })])).toHaveLength(0);
   });
-  it('le mot du devis, pour l’agent', () => {
+  it('le mot du devis, pour l’agent : sur un colis, jamais le reste du dépôt entier', () => {
     expect(quoteWord({ quote_total_xaf: 0, quote_paid_xaf: 0, invoice_no: null })).toEqual({ text: 'Sans prix', ok: false });
-    expect(quoteWord({ quote_total_xaf: 100, quote_paid_xaf: 40, invoice_no: null })).toEqual({ text: `Reste ${xaf(60)}`, ok: false });
+    expect(quoteWord({ quote_total_xaf: 100, quote_paid_xaf: 40, invoice_no: null })).toEqual({ text: 'Non payé', ok: false });
     expect(quoteWord({ quote_total_xaf: 100, quote_paid_xaf: 100, invoice_no: 'FA-000012' })).toEqual({ text: 'Facturé', ok: true });
+  });
+  it('le reste dû se dit une fois, au dépôt', () => {
+    expect(depositQuoteWord({ quote_total_xaf: 100, quote_paid_xaf: 40, invoice_no: null })).toEqual({ text: `Reste ${xaf(60)}`, ok: false });
+    expect(depositQuoteWord({ quote_total_xaf: 0, quote_paid_xaf: 0, invoice_no: null })).toEqual({ text: 'Sans prix', ok: false });
+    expect(depositQuoteWord({ quote_total_xaf: 100, quote_paid_xaf: 100, invoice_no: null })).toEqual({ text: 'Payé', ok: true });
+  });
+  it('range les colis dépôt par dépôt, dans l’ordre', () => {
+    const a1 = parcel({ id: 'a1' }); const b1 = parcel({ id: 'b1', deposit_id: 'dep2', deposit_no: 'RC-000124' }); const a2 = parcel({ id: 'a2' });
+    const g = groupParcelsByDeposit([a1, b1, a2]);
+    expect(g.map((x) => [x.deposit_no, x.parcels.map((p) => p.id)])).toEqual([[a1.deposit_no, ['a1', 'a2']], ['RC-000124', ['b1']]]);
   });
 });
 

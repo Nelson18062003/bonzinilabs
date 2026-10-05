@@ -43,7 +43,7 @@ export function MobileClientParcels() {
           </Card>
         ) : (
           deposits.map((d) => {
-            const st = depositStage(d.parcels);
+            const st = depositStage(d.parcels, d.location);
             return (
               <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className={cn('block w-full rounded-lg p-4 text-left', SURFACE.card, SURFACE.shadow)}>
                 <span className="flex flex-wrap items-center justify-between gap-2">

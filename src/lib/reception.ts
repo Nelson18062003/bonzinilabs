@@ -221,13 +221,33 @@ export function isParcelIncomplete(p: Parcel): boolean {
 export type StageTone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
 
 /**
+ * Où attend un colis reçu, pas encore parti. Bonzini a, à Guangzhou, un BUREAU
+ * (Air cargo, l'avion) et un ENTREPÔT (Sea cargo, la boîte) : un dépôt reçu au
+ * bureau ne dit jamais « À l'entrepôt ». Sans lieu connu : l'entrepôt.
+ */
+export function waitingStageLabel(location?: ReceptionLocation | null): string {
+  return location === 'office' ? 'Au bureau' : "À l'entrepôt";
+}
+
+/** « au bureau », « à l'entrepôt », ou « à l'entrepôt et au bureau » : où attendent les colis de ces dépôts (pour un compteur). */
+export function waitingWhere(locations: Iterable<ReceptionLocation | null | undefined>): string {
+  const at = new Set([...locations].map((l) => (l === 'office' ? 'office' : 'warehouse')));
+  if (at.size > 1) return "à l'entrepôt et au bureau";
+  return at.has('office') ? 'au bureau' : "à l'entrepôt";
+}
+
+/**
  * Où en est un colis, en un mot, avec le numéro de sa boîte dès qu'il en a une.
  * C'est la seule table de correspondance statut → libellé : la fiche client,
  * le dépôt, le dossier Cargo et le panneau desktop la partagent. Le statut
  * suit la boîte grâce au trigger `parcels_follow_shipment` (migration) :
- * chargé → en mer → arrivé → livré, sans rien ressaisir.
+ * chargé → en mer → arrivé → livré, sans rien ressaisir. Tant qu'il attend,
+ * le lieu de son dépôt (`location`) dit où : au bureau ou à l'entrepôt.
  */
-export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'> & { air_shipment_id?: string | null; awb_number?: string | null; checked_in_at?: string | null; warehouse_location?: string | null; condition?: string | null; delivered_at?: string | null; release_no?: string | null }): { tone: StageTone; label: string; inBox: boolean } {
+export function parcelStage(
+  p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'> & { air_shipment_id?: string | null; awb_number?: string | null; checked_in_at?: string | null; warehouse_location?: string | null; condition?: string | null; delivered_at?: string | null; release_no?: string | null; location?: ReceptionLocation | null },
+  location: ReceptionLocation | null | undefined = p.location,
+): { tone: StageTone; label: string; inBox: boolean } {
   const air = !!p.air_shipment_id;
   const box = air ? (isProvisionalAwb(p.awb_number) ? 'LTA à venir' : `LTA ${p.awb_number ?? ''}`.trim()) : p.container_number ?? 'boîte';
   // Douala parle en premier : remis, manquant, pointé.
@@ -240,11 +260,12 @@ export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'containe
     case 'arrived': return { tone: 'pending', label: `Arrivé · ${box}`, inBox: true };
     default:
       if (p.shipment_id || air) return { tone: 'info', label: `Chargé · ${box}`, inBox: true };
-      return isParcelIncomplete(p as Parcel) ? { tone: 'pending', label: 'Incomplet', inBox: false } : { tone: 'success', label: "À l'entrepôt", inBox: false };
+      return isParcelIncomplete(p as Parcel) ? { tone: 'pending', label: 'Incomplet', inBox: false } : { tone: 'success', label: waitingStageLabel(location), inBox: false };
   }
 }
 
-export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>>): { tone: StageTone; label: string } {
+/** L'état d'un dépôt d'après ses colis ; `location` (bureau ou entrepôt) dit où ils attendent. */
+export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'>>, location?: ReceptionLocation | null): { tone: StageTone; label: string } {
   const inBox = parcels.filter((p) => parcelStage(p).inBox);
   if (parcels.length === 0) return { tone: 'neutral', label: 'Vide' };
   if (inBox.length === parcels.length) {
@@ -252,7 +273,7 @@ export function depositStage(parcels: ReadonlyArray<Pick<Parcel, 'status' | 'shi
     return { tone: first.tone, label: first.label };
   }
   if (inBox.length > 0) return { tone: 'info', label: `${inBox.length}/${parcels.length} chargés` };
-  return { tone: 'success', label: "À l'entrepôt" };
+  return { tone: 'success', label: waitingStageLabel(location) };
 }
 
 /** Le lieu du réceptionnaire, mémorisé sur l'appareil : on ne le redemande pas à chaque dépôt. */

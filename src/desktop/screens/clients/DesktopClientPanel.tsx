@@ -36,7 +36,7 @@ import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
 import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
 import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
 import { useClientDeposits } from '@/hooks/useReception';
-import { depositStage, formatCbm, formatKg } from '@/lib/reception';
+import { depositStage, formatCbm, formatKg, waitingWhere } from '@/lib/reception';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
@@ -731,7 +731,9 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         {/* Colis reçus — la réception, dans Cargo */}
         {hasPermission('canViewCargo') && (clientDeposits?.length ?? 0) > 0 && (() => {
           const parcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
-          const waiting = parcels.filter((p) => !p.shipment_id).length;
+          const isWaiting = (p: { shipment_id?: string | null; air_shipment_id?: string | null }) => !p.shipment_id && !p.air_shipment_id;
+          const waiting = parcels.filter(isWaiting).length;
+          const waitingAt = waitingWhere((clientDeposits ?? []).filter((d) => d.parcels.some(isWaiting)).map((d) => d.location));
           return (
             <div className="rounded-2xl px-4 pb-2 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
               <SecLabel
@@ -745,11 +747,11 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               </SecLabel>
               <p className={cn('mt-1 text-[12.5px] tabular-nums', TEXT.body)}>
                 <b className={TEXT.strong}>{parcels.length} colis</b> · {formatKg(parcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(parcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}
-                {waiting > 0 ? <> · <span className="font-semibold text-emerald-700 dark:text-emerald-400">{waiting} à l'entrepôt</span></> : ' · tout est chargé'}
+                {waiting > 0 ? <> · <span className="font-semibold text-emerald-700 dark:text-emerald-400">{waiting} {waitingAt}</span></> : ' · tout est chargé'}
               </p>
               <div className="mt-1">
                 {(clientDeposits ?? []).slice(0, 3).map((d) => {
-                  const st = depositStage(d.parcels);
+                  const st = depositStage(d.parcels, d.location);
                   return (
                     <button key={d.id} type="button" onClick={() => navigate(`/m/cargo/reception/${d.id}`)} className="flex w-full items-center gap-2.5 border-t border-black/[0.04] py-2 text-left first:border-t-0 dark:border-white/[0.05]">
                       <LocationMark location={d.location} size={26} />

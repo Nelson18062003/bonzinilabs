@@ -134,12 +134,34 @@ export function warehouseStage(p: Pick<WarehouseParcel, 'status' | 'checked_in_a
   return { tone: 'neutral', label: 'En Chine' };
 }
 
-/** Le devis du colis, en un mot pour l'agent : payé, reste …, sans prix. */
+/**
+ * Le devis vu d'UN colis, en un mot pour l'agent : payé, facturé, non payé, sans
+ * prix. Jamais le reste : il est celui du devis du dépôt ENTIER, et répété sur
+ * chaque colis, il faisait croire que chacun devait cette somme
+ * (depositQuoteWord le dit une fois par dépôt).
+ */
 export function quoteWord(p: Pick<WarehouseParcel, 'quote_total_xaf' | 'quote_paid_xaf' | 'invoice_no'>): { text: string; ok: boolean } {
   const total = Number(p.quote_total_xaf ?? 0); const paid = Number(p.quote_paid_xaf ?? 0);
   if (total <= 0) return { text: 'Sans prix', ok: false };
   if (paid >= total) return { text: p.invoice_no ? 'Facturé' : 'Payé', ok: true };
-  return { text: `Reste ${xaf(total - paid)}`, ok: false };
+  return { text: 'Non payé', ok: false };
+}
+
+/** Le devis d'un dépôt, une seule fois pour tous ses colis : payé, facturé, reste …, sans prix. */
+export function depositQuoteWord(p: Pick<WarehouseParcel, 'quote_total_xaf' | 'quote_paid_xaf' | 'invoice_no'>): { text: string; ok: boolean } {
+  const w = quoteWord(p);
+  return w.text === 'Non payé' ? { text: `Reste ${xaf(Number(p.quote_total_xaf ?? 0) - Number(p.quote_paid_xaf ?? 0))}`, ok: false } : w;
+}
+
+/** Des colis, dépôt par dépôt (l'ordre d'arrivée est conservé) : le reste dû s'écrit une fois, en tête de chaque dépôt. */
+export function groupParcelsByDeposit<T extends Pick<WarehouseParcel, 'deposit_id' | 'deposit_no'>>(parcels: readonly T[]): { deposit_id: string; deposit_no: string; parcels: T[] }[] {
+  const by = new Map<string, { deposit_id: string; deposit_no: string; parcels: T[] }>();
+  for (const p of parcels) {
+    const g = by.get(p.deposit_id) ?? { deposit_id: p.deposit_id, deposit_no: p.deposit_no, parcels: [] };
+    g.parcels.push(p);
+    by.set(p.deposit_id, g);
+  }
+  return [...by.values()];
 }
 
 /** Ce qui bloque la remise d'une sélection : les devis non soldés, avec leur reste. */

@@ -1,8 +1,11 @@
 // Le manifeste : en avion, une colonne PAQUET quand les colis voyagent en paquets
 // de 32 kg ; le manifeste maritime n'en a pas ; la LTA provisoire (PROV-…) ne
-// s'imprime jamais, ni dans le document ni dans le nom du fichier.
+// s'imprime jamais, ni dans le document ni dans le nom du fichier. Les colonnes
+// ne se chevauchent pas (« M3 » et « DEVIS » s'imprimaient l'un sur l'autre) et
+// rien ne sort hors du jeu WinAnsi d'Helvetica (« → » devenait « !' »).
 import { describe, expect, it } from 'vitest';
-import { buildAirManifestPdf, buildSeaManifestPdf, manifestFileName } from '@/lib/airManifestPdf';
+import { jsPDF } from 'jspdf';
+import { buildAirManifestPdf, buildSeaManifestPdf, MANIFEST_COL_GAP, manifestColumns, manifestFileName } from '@/lib/airManifestPdf';
 import type { AirParcel, AirShipment } from '@/lib/airShipment';
 import type { AirPackage } from '@/lib/airPackage';
 import type { CargoShipment } from '@/lib/cargo/model';
@@ -59,5 +62,46 @@ describe('manifeste maritime', () => {
     expect(out).not.toContain('(PAQUET)');
     expect(out).not.toContain('(PQ-000123)');
     expect(out).toContain('(CONTENU)');
+  });
+});
+
+describe('les colonnes du tableau', () => {
+  const spans = (pk: boolean) => {
+    const c = manifestColumns(pk);
+    return [c.n, c.k, c.c, c.d, c.w, c.dim, c.cbm, c.pay].filter((x): x is [number, number] => !!x);
+  };
+  it.each([true, false])('se suivent sans se chevaucher, dans les marges de la page A4 (PAQUET : %s)', (pk) => {
+    const s = spans(pk);
+    expect(s).toHaveLength(pk ? 8 : 7);
+    expect(s[0][0]).toBeGreaterThanOrEqual(14);
+    expect(s[s.length - 1][1]).toBeLessThanOrEqual(210 - 14 + 1e-9);
+    s.forEach(([a, b], i) => {
+      expect(b).toBeGreaterThan(a);
+      if (i > 0) expect(a - s[i - 1][1]).toBeGreaterThanOrEqual(MANIFEST_COL_GAP - 1e-9);
+    });
+  });
+  it('chaque valeur longue tient dans sa colonne (Helvetica 8,5)', () => {
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    pdf.setFontSize(8.5);
+    const tw = (t: string, bold = false) => { pdf.setFont('helvetica', bold ? 'bold' : 'normal'); return pdf.getTextWidth(t); };
+    const width = ([a, b]: [number, number]) => b - a;
+    for (const pk of [true, false]) {
+      const c = manifestColumns(pk);
+      expect(tw('RC-000122-01', true) + 2).toBeLessThanOrEqual(width(c.n));
+      if (pk) expect(tw('PQ-000041')).toBeLessThanOrEqual(width(c.k!));
+      expect(tw('123,4 kg')).toBeLessThanOrEqual(width(c.w));
+      expect(tw('120 × 100 × 100 cm')).toBeLessThanOrEqual(width(c.dim));
+      expect(tw('0,096 m3')).toBeLessThanOrEqual(width(c.cbm));
+      expect(tw('reste 1 157 300 XAF')).toBeLessThanOrEqual(width(c.pay));
+      expect(width(c.c)).toBeGreaterThanOrEqual(20);
+      expect(width(c.d)).toBeGreaterThanOrEqual(20);
+    }
+  });
+  it('imprime un long reste en entier, la flèche en « > » et rien hors WinAnsi', () => {
+    const out = text(buildAirManifestPdf(air({ parcels: [parcel({ id: 'a', description: 'Chaussures 鞋子', quote_total_xaf: 1157300, quote_paid_xaf: 0 })] })));
+    expect(out).toContain('(reste 1 157 300 XAF)');
+    expect(out).toContain('Guangzhou > Douala)');
+    expect(out).not.toContain('Guangzhou !');
+    expect(out).toContain('(Chaussures ??)');
   });
 });

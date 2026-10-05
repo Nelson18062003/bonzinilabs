@@ -19,7 +19,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
-  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine,
+  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine, waitingWhere,
   type Parcel,
 } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
@@ -286,7 +286,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
           {/* ── Les colis ──────────────────────────────────────────────── */}
           <Band
             title="Les colis"
-            meta={`${photoCount} photo${photoCount > 1 ? 's' : ''} · ${waiting} à l'entrepôt${parcels.length - waiting > 0 ? ` · ${parcels.length - waiting} partis` : ''}`}
+            meta={`${photoCount} photo${photoCount > 1 ? 's' : ''} · ${waiting} ${waitingWhere([d.location])}${parcels.length - waiting > 0 ? ` · ${parcels.length - waiting} partis` : ''}`}
           >
             {parcels.length === 0 ? (
               <p className={cn('py-6 text-center text-[13px]', TEXT.muted)}>Aucun colis dans ce dépôt.{canAddParcel && ' Ajoutez-en un.'}</p>
@@ -307,7 +307,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
                   </thead>
                   <tbody>
                     {parcels.map((p, i) => {
-                      const stage = parcelStage(p);
+                      const stage = parcelStage(p, d.location);
                       const lock = parcelLockReason(p);
                       const rb = removeBlock(p);
                       return (
@@ -381,7 +381,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
           <Band title="L'historique"><DepositTimeline events={events} flat /></Band>
 
           <ParcelPhotoViewer
-            parcels={parcels.map((p) => ({ ...p, note: parcelStage(p).label }))}
+            parcels={parcels.map((p) => ({ ...p, note: parcelStage(p, d.location).label }))}
             index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} photo={viewer.photo} setPhoto={viewer.setPhoto}
             title={d.deposit_no}
           />
