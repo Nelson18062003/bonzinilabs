@@ -10,7 +10,7 @@
  */
 import { differenceInHours, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { bestEta, bestEtd, daysUntilArrival, etaSlipDays, fmtUsd, voyageProgress } from '@/lib/cargo/model';
+import { arrivalPort, bestEta, bestEtd, daysUntilArrival, etaSlipDays, fmtUsd, voyageProgress } from '@/lib/cargo/model';
 import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { nextSteps } from '@/lib/cargo/todo';
 
@@ -27,7 +27,7 @@ export const plural = (n: number, one: string, many: string = one + 's'): string
 export function arrivalSentence(s: CargoShipment, now = new Date()): string {
   const place = s.pod_name ?? 'destination inconnue';
   if (s.status === 'DELIVERED') return 'Livré';
-  if (s.status === 'ARRIVED') return `Arrivé à ${place}`;
+  if (s.status === 'ARRIVED') return `Arrivé à ${arrivalPort(s)}`;
   const eta = bestEta(s).date;
   if (!eta) return `Arrivée à ${place} : date inconnue`;
   const days = daysUntilArrival(s, now);
@@ -60,7 +60,7 @@ export function journeySentence(s: CargoShipment, now = new Date()): string {
 export function whereSentence(s: CargoShipment, pos: CargoVesselPosition | null, now = new Date()): string {
   switch (s.status) {
     case 'DELIVERED': return 'Livré au client';
-    case 'ARRIVED': return `Arrivé au port de ${s.pod_name ?? 'destination'}`;
+    case 'ARRIVED': return `Arrivé au port de ${arrivalPort(s)}`;
     case 'AT_SEA': return pos ? `En mer, position relevée ${agoSentence(pos.reported_at, now)}` : 'En mer, sans position connue';
     case 'AT_ORIGIN': return `Encore au port de départ${s.pol_name ? ` (${s.pol_name})` : ''}`;
     case 'BOOKED': return 'Réservé, pas encore chargé sur le navire';

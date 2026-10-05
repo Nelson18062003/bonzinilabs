@@ -27,14 +27,13 @@ import { MobileNotes } from './MobileNotes';
 import { MobileNavireSheet } from './MobileNavire';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
 import { MarkArrivedDialog, UnmarkArrivedDialog } from '@/components/cargo/dossier/VoyageDialogs';
-import { arrivalPort } from '@/lib/cargo/voyage';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
 import {
   arrivalSentence, contentSentence, customsSentence, delaySentence, departureSentence, journeySentence,
   moneySentence, papersSentence, todoSentence, whereSentence,
 } from '@/lib/cargo/plain';
-import { CARRIER_LABEL, fmtUsd, liveVesselUrl, statusMeta, timelineFromEvents } from '@/lib/cargo/model';
+import { CARRIER_LABEL, fmtUsd, hasArrived, liveVesselUrl, statusMeta, timelineFromEvents } from '@/lib/cargo/model';
 import type { CargoEvent } from '@/lib/cargo/model';
 import { fmtDayLong } from '@/lib/cargo/plain';
 import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
@@ -140,7 +139,8 @@ function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPositi
 
 function Journey({ s, pos, events, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; events: CargoEvent[]; canManage: boolean }) {
   const [dialog, setDialog] = useState<'arrived' | 'unarrived' | null>(null);
-  const arrived = s.status === 'ARRIVED' || s.status === 'DELIVERED';
+  const arrived = hasArrived(s.status);
+  const canMark = canManage && !arrived && (s.status === 'AT_SEA' || !!s.etd_actual);
   // Les jalons de l'armateur, les plus récents d'abord, en phrases : « Navire parti de Nansha le 15 août ».
   const items = timelineFromEvents(events).filter((e) => e.classifier === 'ACT').reverse().slice(0, 4);
   const planned = timelineFromEvents(events).filter((e) => e.classifier !== 'ACT');
@@ -150,14 +150,15 @@ function Journey({ s, pos, events, canManage }: { s: CargoShipment; pos: CargoVe
       <Line strong>{arrivalSentence(s)}.</Line>
       {delaySentence(s) && <Line tone="warn">{delaySentence(s)}.</Line>}
       <div className="admin-theme pt-1"><CargoJourney shipment={s} position={pos} /></div>
-      {arrived
-        ? <Line tone="good">Arrivé au port de {arrivalPort(s)} : ses colis sont pointables à Douala.</Line>
-        : canManage && <Line className={TEXT.muted}>Si l'armateur ne signale pas l'arrivée, marquez-la ici : sinon Douala ne peut pas pointer les colis.</Line>}
-      {canManage && !arrived && (
-        <Button variant="subtle" className="w-full" onClick={() => setDialog('arrived')}>
-          <CheckCircle2 />
-          Marquer le conteneur arrivé
-        </Button>
+      {s.status === 'ARRIVED' && <Line tone="good">Les colis du conteneur sont pointables à Douala.</Line>}
+      {canMark && (
+        <>
+          <Line className={TEXT.muted}>Si l'armateur ne signale pas l'arrivée, marquez-la ici : sinon Douala ne peut pas pointer les colis.</Line>
+          <Button variant="subtle" className="w-full" onClick={() => setDialog('arrived')}>
+            <CheckCircle2 />
+            Marquer le conteneur arrivé
+          </Button>
+        </>
       )}
       {canManage && s.status === 'ARRIVED' && (
         <Button variant="neutral" className="w-full" onClick={() => setDialog('unarrived')}>

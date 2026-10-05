@@ -16,24 +16,39 @@
 ## En attente
 
 ### `20261005150000_cargo_unblock_release_air_arrival.sql`
-**PR :** Cargo › débloquer la remise à Douala, les vols, et marquer un conteneur arrivé
+**PR :** Cargo › débloquer la remise à Douala, les vols, et marquer un conteneur arrivé (+ correctif sécurité Mola)
 **Contenu :**
+- **Sécurité (défaut existant, constaté en production).** `assistant_readonly_query` (SQL libre de Mola) laissait passer
+  `select set_config(..., false)` : la variable de session survivait sur la connexion partagée de PostgREST, donc
+  `auth.uid()` pouvait être usurpé pour les requêtes suivantes, et les verrous `bonzini.*` (dont
+  `bonzini.client_source_write` de la PR #224) pouvaient être forgés. La requête s'exécute désormais dans une
+  sous-transaction toujours annulée (le résultat est gardé), et `set_config` et les identifiants `U&"…"` sont refusés.
+  Même garde `canViewClients`, mêmes droits.
 - `warehouse_release_parcels` et `air_shipments_notify` sans `min(uuid)` : en production (vérifié le 05/10), la remise
   (bon de retrait BR-) et le passage d'un vol à « parti » / « arrivé » échouaient toujours (« function min(uuid) does
-  not exist », même défaut que F-085). Corps identiques à la production, à une ligne près.
+  not exist », même défaut que F-085). La remise refuse aussi un lot qui mêle un colis sans client.
+- `warehouse_checkin_many` : verrouille les colis (et leur conteneur) avant de les pointer — deux pointages simultanés
+  ne se marchent plus dessus.
 - `parcels_follow_shipment` : un conteneur « livré » côté armateur ne fait plus passer ses colis non remis en « livré ».
 - Garde-fou `cargo_shipments_status_guard` : le statut d'un conteneur n'avance que dans un sens ; la synchro ne peut plus
-  le faire reculer.
-- `cargo_mark_shipment_arrived` / `cargo_unmark_shipment_arrived` (`canManageCargo`, journalisées, `@mola`) — boutons
-  « Marquer arrivé » / « Annuler l'arrivée » dans le dossier conteneur (ordinateur et téléphone).
-- `cargo_shipments_notify_parcels` : « arrivés au port de Kribi / Douala » ; rien n'est envoyé sur une annulation.
+  le faire reculer. Seule l'annulation d'arrivée (jeton interne à la transaction, impossible à forger par l'API) peut le
+  faire revenir en arrière.
+- `cargo_mark_shipment_arrived` (`canManageCargo`, journalisée, `@mola`) : refuse un conteneur pas encore parti, une date
+  future ou antérieure au départ ; prévient les clients des colis (« arrivés au port de Kribi / Douala ») et renvoie le
+  nombre de colis et de clients.
+- `cargo_unmark_shipment_arrived` (motif obligatoire) : seulement si l'arrivée vient d'un marquage à la main, que
+  l'armateur n'a pas signalé l'arrivée, et qu'aucun colis n'est pointé, remis ou manquant ; restaure le statut, l'ETA et
+  le dernier événement d'avant. Aucun message n'est envoyé sur une annulation (les clients déjà prévenus ne sont pas
+  corrigés).
+- Boutons « Marquer le conteneur arrivé » / « Annuler l'arrivée » dans le dossier conteneur (ordinateur et téléphone).
 - Aucune table ni colonne ; aucune donnée modifiée (0 colis « livré » sans bon de retrait en production).
 - Testée sur Postgres 16 avec le schéma cargo réel : pannes reproduites avant, fichier passé deux fois dans une
-  transaction, 33 contrôles ; contrôle des prérequis éprouvé.
+  transaction, 61 contrôles (droits, refus, restauration, usurpation de session bloquée) ; contrôle des prérequis
+  éprouvé.
 
 **Comment pousser :** coller `migrations/20261005_consolidated_remise-vols-arrivee.sql` dans l'éditeur SQL (contrôle des
 prérequis en tête, rejouable), puis `npx supabase migration repair --status applied 20261005150000`, puis `/gen-types`
-(les deux nouvelles RPC ; l'app les appelle déjà).
+(les deux nouvelles RPC ; l'app les appelle déjà). Rien à redéployer côté fonctions serveur.
 
 ## Appliquées
 
