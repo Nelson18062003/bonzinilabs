@@ -42,6 +42,7 @@ qa-shots/
 playwright-report/
 test-results/
 tools/_*.tmp.*
+tools/out/
 
 # Scripts de rendu jetables (agents de relecture des PDF) — jamais versionnés
 tools/.tmp-*
