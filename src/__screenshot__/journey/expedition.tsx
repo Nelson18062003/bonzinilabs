@@ -50,9 +50,10 @@ export const SCREENS: Record<string, JourneyEntry> = {
   // Avion — téléphone
   'j.expedition.form': { Comp: () => <AsGrace><MobileCargoAirForm /></AsGrace>, route: '/m/cargo/avion/nouveau' },
   'j.expedition.list': { Comp: () => <AsGrace><MobileCargoAir /></AsGrace>, route: '/m/cargo/avion' },
+  // « et607-vide » : le vol du 06/10 ce matin, avant l'affectation des paquets.
   'j.expedition.add': { Comp: () => <AsGrace><MobileCargoAirDetail /></AsGrace>, route: '/m/cargo/avion/et607-vide', path: AIR_DETAIL },
   'j.expedition.detail': { Comp: () => <AsGrace><MobileCargoAirDetail /></AsGrace>, route: '/m/cargo/avion/et607', path: AIR_DETAIL },
-  'j.expedition.lta': { Comp: () => <AsGrace><MobileCargoAirDetail /></AsGrace>, route: '/m/cargo/avion/et607-1013', path: AIR_DETAIL },
+  // Le vol du 04/10, parti : l'aéroport a refusé un paquet.
   'j.expedition.refuse': { Comp: () => <AsGrace><MobileCargoAirDetail /></AsGrace>, route: '/m/cargo/avion/et607-0404', path: AIR_DETAIL },
   // Avion — ordinateur
   'j.expedition.desk-list': { Comp: () => desk(<DesktopCargoAir />), route: '/m/cargo/avion' },

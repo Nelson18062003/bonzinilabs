@@ -140,14 +140,15 @@ const DEPOSITS = Object.entries(DEPOSIT_TOTALS).map(([user_id, amount_xaf]) => (
 const PAYMENTS = Object.entries(PAYMENT_TOTALS).map(([user_id, amount_xaf]) => ({ user_id, amount_xaf, status: 'completed' }));
 
 // ── Préparation d'une capture ──
-// Les polices viennent de Google Fonts : un chargement raté laisse une police de secours. On recharge (3 essais).
+// Les polices viennent de Google Fonts : un chargement raté laisse une police de secours. On recharge (6 essais).
 async function fonts(page) {
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const ok = await page.evaluate(async () => {
       await document.fonts.ready;
       return [...document.fonts].some((f) => /DM Sans/.test(f.family) && f.status === 'loaded');
     });
     if (ok) return;
+    await page.waitForTimeout(500 * (i + 1));
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForTimeout(900);
   }

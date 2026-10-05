@@ -283,7 +283,7 @@ const SIGNATURE_STROKES = [
   [[378, 168], [362, 150], [342, 154], [334, 176], [344, 196], [364, 192], [376, 172], [380, 130], [384, 76]],
   ellipse(418, 174, 20, 24, -60, 390, 14),
   [[86, 222], [180, 214], [300, 212], [420, 206], [540, 196]],
-];
+].map((stroke) => stroke.map(([px, py]) => [Math.round(px + (200 - py) * 0.28) - 10, py])); // penchée, comme à la main
 /** Un trait lissé : des courbes passant par le milieu de chaque segment. */
 const smooth = (pts) => pts.length < 3 ? `M${pts.map((q) => q.join(' ')).join(' L')}` : `M${pts[0].join(' ')} ` + pts.slice(1, -1).map((q, i) => `Q${q.join(' ')} ${(q[0] + pts[i + 2][0]) / 2} ${(q[1] + pts[i + 2][1]) / 2}`).join(' ') + ` L${pts[pts.length - 1].join(' ')}`;
 const SIGNATURE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="240" viewBox="0 0 600 240"><path d="${SIGNATURE_STROKES.map(smooth).join(' ')}" fill="none" stroke="#1E1E1E" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -438,7 +438,7 @@ const STORY = [
   // 7. Le bilan : 14 colis sur 17, PQ-000045 jamais reçu, un colis abîmé.
   { key: 'j.douala.bilan', name: '07-bilan', init: phase('bilan'), wait: 1000 },
   // 8. La remise, l'après-midi : scanner le code du client…
-  { key: 'j.douala.pickup', name: '08-remise-scanner', init: phase('remise', fakeCamera), wait: 2500, fit: false, fullPage: false,
+  { key: 'j.douala.pickup', name: '08-remise-scanner', init: phase('remise', fakeCamera), wait: 2500, fit: false, fullPage: false, viewport: '390x930',
     before: async (page) => { await page.fill('input[aria-label="Code client ou numéro de colis"]', 'BZ-510224'); await page.locator('input[aria-label="Code client ou numéro de colis"]').blur(); } },
   // 9. … ou le choisir parmi ceux qui attendent.
   { key: 'j.douala.waiting', name: '09-qui-attend', init: phase('remise'), wait: 1000 },

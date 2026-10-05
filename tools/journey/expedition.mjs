@@ -16,7 +16,8 @@
 // cargo_air_json, air_package_json ; 20261005150000 : cargo_mark_shipment_arrived).
 // ============================================================
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const OUT_DIR = process.env.OUT ?? 'tools/out/journey/expedition';
@@ -286,7 +287,7 @@ async function showManifest(page) {
   mkdirSync(OUT_DIR, { recursive: true });
   const pdfPath = join(OUT_DIR, name);
   writeFileSync(pdfPath, Buffer.from(b64, 'base64'));
-  const base = join(OUT_DIR, 'manifeste-page1');
+  const base = join(mkdtempSync(join(tmpdir(), 'manifeste-')), 'page1');
   execFileSync('pdftoppm', ['-png', '-r', '170', '-f', '1', '-l', '1', '-singlefile', pdfPath, base]);
   const png = readFileSync(`${base}.png`).toString('base64');
   await page.setContent(`<!doctype html><html><body style="margin:0;background:#e9e6ef;padding:24px;box-sizing:border-box">
@@ -368,18 +369,32 @@ export const SCREENS = [
     },
   },
   // 9. Au bureau, sur ordinateur : le vol du 06/10, ses paquets, ses colis, le manifeste.
-  { key: 'j.expedition.desk-detail', name: '09-bureau-vol-et-paquets', desktop: true, role: 'ops', init: reset, viewport: '1440x1300' },
+  {
+    key: 'j.expedition.desk-detail', name: '09-bureau-vol-et-paquets', desktop: true, role: 'ops', init: reset, viewport: '1440x1300',
+    // Le tableau des paquets défile dans 320 px : on le descend pour voir les deux paquets pas encore scannés.
+    before: async (page) => {
+      await page.getByText('PQ-000045', { exact: true }).first().evaluate((el) => { const box = el.closest('.overflow-auto'); if (box) box.scrollTop = box.scrollHeight; });
+      await settle(page, 400);
+    },
+  },
   // 10. Le manifeste PDF du vol (colonne PAQUET), 1re page.
   { key: 'j.expedition.manifest', name: '10-manifeste-pdf', desktop: true, role: 'ops', init: reset, viewport: '900x1290', before: showManifest },
   // 11. La liste des vols sur ordinateur : « LTA à venir » en italique.
   { key: 'j.expedition.desk-list', name: '11-bureau-liste-vols', desktop: true, role: 'ops', init: reset },
   // 12. Maritime : MIEU3611115, déchargé à Kribi, que Maersk ne signale pas — « Marquer arrivé ».
-  { key: 'j.expedition.container', name: '12-conteneur-suivi', desktop: true, role: 'ops', init: reset, viewport: '1440x1000' },
+  {
+    key: 'j.expedition.container', name: '12-conteneur-suivi', desktop: true, role: 'ops', init: reset, viewport: '1440x1000', wait: 1500,
+    before: async (page) => {
+      await page.getByRole('button', { name: /Marquer arrivé/ }).waitFor({ state: 'visible', timeout: 15000 });
+      await page.evaluate(() => document.fonts.ready);
+      await settle(page, 600);
+    },
+  },
   // 13. Le dialogue « Marquer MIEU3611115 arrivé » rempli.
   {
-    key: 'j.expedition.container', name: '13-conteneur-marquer-arrive', desktop: true, role: 'ops', init: reset, viewport: '1440x1000',
+    key: 'j.expedition.container', name: '13-conteneur-marquer-arrive', desktop: true, role: 'ops', init: reset, viewport: '1440x1000', wait: 1500,
     before: async (page) => {
-      await page.getByRole('button', { name: /Marquer arrivé/ }).click();
+      await page.getByRole('button', { name: /Marquer arrivé/ }).click({ timeout: 15000 });
       await settle(page, 500);
       await page.fill('#arr-when', '2026-10-04T16:30');
       await page.fill('#arr-note', "Avis d'arrivée du consignataire à Kribi (reçu le 05/10) : conteneur déchargé le 04/10.");

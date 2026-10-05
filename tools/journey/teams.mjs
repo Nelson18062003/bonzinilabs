@@ -162,28 +162,53 @@ async function createCarine(page) {
   await page.getByText('Mot de passe provisoire', { exact: true }).waitFor({ timeout: 5000 });
 }
 
-export const SCREENS = [
+// Les polices viennent de Google Fonts : si le chargement échoue (ERR_TOO_MANY_RETRIES),
+// la page retombe sur une police système. On recharge alors, trois fois au plus.
+async function ensureFonts(page) {
+  for (let i = 0; i < 3; i += 1) {
+    const ok = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts].some((f) => f.family.includes('DM Sans') && f.status === 'loaded');
+    });
+    if (ok) return;
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(900);
+  }
+}
+
+// Ordinateur : la hauteur de la fenêtre suit celle de l'écran, pour que la barre
+// latérale (fixe) descende jusqu'en bas de la capture.
+// Téléphone : 390 de large ; la liste prend toute sa hauteur, barre d'onglets en bas.
+const LIST = [
   {
-    key: 'j.teams.list-desk', name: '01-equipes-ordinateur', desktop: true, init, fullPage: true,
+    key: 'j.teams.list-desk', name: '01-equipes-ordinateur', desktop: true, viewport: '1440x1630',
     before: async (page) => { await page.getByRole('button', { name: /Voir les désactivés/ }).click(); },
   },
-  { key: 'j.teams.list-phone', name: '02-equipes-telephone', init },
-  { key: 'j.teams.new-roles', name: '03a-nouvel-acces-roles', desktop: true, init, fullPage: true },
-  { key: 'j.teams.new-desk', name: '03-nouvel-acces-commercial', desktop: true, init, fullPage: true, before: fillCarine },
-  { key: 'j.teams.new-desk', name: '04-acces-cree', desktop: true, init, before: createCarine },
-  { key: 'j.teams.new-phone', name: '04b-acces-cree-telephone', init, before: createCarine },
-  { key: 'j.teams.member-desk', name: '05-fiche-rodrigue', desktop: true, init, fullPage: true },
-  { key: 'j.teams.member-phone', name: '05b-fiche-rodrigue-telephone', init },
-  { key: 'j.teams.member-kevin', name: '05c-fiche-kevin-telephone', init },
-  { key: 'j.teams.sales-desk', name: '06-chiffres-commerciaux-ordinateur', desktop: true, init, fullPage: true },
-  { key: 'j.teams.sales-phone', name: '06b-chiffres-commerciaux-telephone', init },
-  { key: 'j.teams.commercial-desk', name: '07-commercial-rodrigue', desktop: true, init, fullPage: true },
+  { key: 'j.teams.list-phone', name: '02-equipes-telephone', viewport: '390x1730' },
+  { key: 'j.teams.new-roles', name: '03a-nouvel-acces-roles', desktop: true, viewport: '1440x1290' },
+  { key: 'j.teams.new-desk', name: '03b-nouvel-acces-commercial', desktop: true, viewport: '1440x920', before: fillCarine },
+  { key: 'j.teams.new-desk', name: '04-acces-cree', desktop: true, fullPage: false, before: createCarine },
+  { key: 'j.teams.member-desk', name: '05a-fiche-rodrigue', desktop: true, viewport: '1440x920' },
+  { key: 'j.teams.member-kevin', name: '05b-fiche-kevin-telephone' },
+  { key: 'j.teams.sales-desk', name: '06a-chiffres-commerciaux-ordinateur', desktop: true, viewport: '1440x1140' },
+  { key: 'j.teams.sales-phone', name: '06b-chiffres-commerciaux-telephone' },
+  { key: 'j.teams.commercial-desk', name: '07a-commercial-rodrigue', desktop: true, viewport: '1440x1420' },
   {
-    key: 'j.teams.commercial-desk', name: '07b-objectifs-rodrigue', desktop: true, init,
+    key: 'j.teams.commercial-desk', name: '07b-objectifs-rodrigue', desktop: true, fullPage: false,
     before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
   },
-  { key: 'j.teams.commercial-phone', name: '07c-commercial-rodrigue-telephone', init },
+  { key: 'j.teams.commercial-phone', name: '07c-commercial-rodrigue-telephone' },
 ];
+
+export const SCREENS = LIST.map((s) => ({
+  fullPage: true,
+  ...s,
+  init,
+  before: async (page) => {
+    await ensureFonts(page);
+    if (s.before) await s.before(page);
+  },
+}));
 
 // ── Réponses des RPC ────────────────────────────────────────────────────
 const MONTH = '2026-10-01';
