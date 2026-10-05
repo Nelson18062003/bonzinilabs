@@ -169,6 +169,53 @@ export function useSetVesselPosition() {
   });
 }
 
+/**
+ * Marquer un conteneur arrivé quand l'armateur ne le dit pas (MSC, COSCO,
+ * saisie manuelle, synchro muette) — sans quoi Douala ne peut pas pointer ses
+ * colis. La RPC vérifie canManageCargo, refuse une date future ou antérieure
+ * au départ ; les déclencheurs passent les colis « arrivés » et préviennent
+ * les clients. L'annulation exige un motif et n'est plus possible dès qu'un
+ * colis est pointé à Douala.
+ */
+export function useMarkShipmentArrived() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { shipmentId: string; arrivedAt: string; note?: string | null }) => {
+      const { data, error } = await supabaseAdmin.rpc('cargo_mark_shipment_arrived' as never, {
+        p_shipment_id: v.shipmentId, p_arrived_at: v.arrivedAt, p_note: v.note ?? null,
+      } as never);
+      if (error) throw error;
+      return assertOk(data);
+    },
+    onSuccess: (r) => {
+      const n = Number(r.parcels ?? 0);
+      toast.success(n > 0 ? `Conteneur arrivé : ${n} colis pointables à Douala, clients prévenus` : 'Conteneur marqué arrivé');
+      qc.invalidateQueries({ queryKey: ['cargo'] });
+      qc.invalidateQueries({ queryKey: ['warehouse'] });
+    },
+    onError: (e: Error) => toast.error(`Arrivée non enregistrée : ${e.message}`),
+  });
+}
+
+export function useUnmarkShipmentArrived() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { shipmentId: string; reason: string }) => {
+      const { data, error } = await supabaseAdmin.rpc('cargo_unmark_shipment_arrived' as never, {
+        p_shipment_id: v.shipmentId, p_reason: v.reason,
+      } as never);
+      if (error) throw error;
+      return assertOk(data);
+    },
+    onSuccess: () => {
+      toast.success('Arrivée annulée : le conteneur est de nouveau en mer');
+      qc.invalidateQueries({ queryKey: ['cargo'] });
+      qc.invalidateQueries({ queryKey: ['warehouse'] });
+    },
+    onError: (e: Error) => toast.error(`Annulation impossible : ${e.message}`),
+  });
+}
+
 /* ── Suivre une référence ───────────────────────────────────────────────── */
 
 export function useRequestCargoLookup() {

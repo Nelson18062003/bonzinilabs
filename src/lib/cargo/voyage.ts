@@ -103,3 +103,13 @@ export function voyageDays(s: CargoShipment, now = new Date()): { sailed: number
 export function newCallId(): string {
   return `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
+
+/**
+ * Le port d'arrivée en clair (« Kribi », « Douala ») — le même calcul que le
+ * message envoyé aux clients par cargo_shipments_notify_parcels.
+ */
+export function arrivalPort(s: Pick<CargoShipment, 'pod_name' | 'pod_unlocode'>): string {
+  if (s.pod_unlocode === 'CMKBI' || /kribi/i.test(s.pod_name ?? '')) return 'Kribi';
+  if (s.pod_unlocode === 'CMDLA' || /douala/i.test(s.pod_name ?? '')) return 'Douala';
+  return s.pod_name?.trim() || 'Douala';
+}

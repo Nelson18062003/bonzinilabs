@@ -3,9 +3,47 @@
 > Fichier de consignation : ce qu'il faut **pousser dans Supabase à la main** et les
 > étapes post-migration. À tenir à jour à chaque PR qui embarque du SQL.
 
+> **Le déploiement automatique ne marche pas.** Le workflow `deploy-edge-functions.yml` échoue à chaque merge depuis
+> au moins le 10/08/2026 (`supabase link` → « Unauthorized » : le secret `SUPABASE_ACCESS_TOKEN` est refusé, et
+> `SUPABASE_DB_PASSWORD` est vide). **Aucune migration n'est appliquée au merge, aucune fonction serveur n'est
+> redéployée.** Chaque migration se colle à la main (fichier consolidé de `migrations/`), puis
+> `npx supabase migration repair --status applied <version>`. Pour réparer le workflow : un nouveau jeton d'accès
+> Supabase dans `SUPABASE_ACCESS_TOKEN` et le mot de passe de la base dans `SUPABASE_DB_PASSWORD` (Settings › Secrets
+> du dépôt GitHub).
+>
+> **État vérifié en production le 05/10/2026** (lecture seule) : tout ce qui est listé sous « Appliquées » est en place.
+
 ## En attente
 
-### `20261003120000_cargo_quote_document_fields.sql`
+### `20261005150000_cargo_unblock_release_air_arrival.sql`
+**PR :** Cargo › débloquer la remise à Douala, les vols, et marquer un conteneur arrivé
+**Contenu :**
+- `warehouse_release_parcels` et `air_shipments_notify` sans `min(uuid)` : en production (vérifié le 05/10), la remise
+  (bon de retrait BR-) et le passage d'un vol à « parti » / « arrivé » échouaient toujours (« function min(uuid) does
+  not exist », même défaut que F-085). Corps identiques à la production, à une ligne près.
+- `parcels_follow_shipment` : un conteneur « livré » côté armateur ne fait plus passer ses colis non remis en « livré ».
+- Garde-fou `cargo_shipments_status_guard` : le statut d'un conteneur n'avance que dans un sens ; la synchro ne peut plus
+  le faire reculer.
+- `cargo_mark_shipment_arrived` / `cargo_unmark_shipment_arrived` (`canManageCargo`, journalisées, `@mola`) — boutons
+  « Marquer arrivé » / « Annuler l'arrivée » dans le dossier conteneur (ordinateur et téléphone).
+- `cargo_shipments_notify_parcels` : « arrivés au port de Kribi / Douala » ; rien n'est envoyé sur une annulation.
+- Aucune table ni colonne ; aucune donnée modifiée (0 colis « livré » sans bon de retrait en production).
+- Testée sur Postgres 16 avec le schéma cargo réel : pannes reproduites avant, fichier passé deux fois dans une
+  transaction, 33 contrôles ; contrôle des prérequis éprouvé.
+
+**Comment pousser :** coller `migrations/20261005_consolidated_remise-vols-arrivee.sql` dans l'éditeur SQL (contrôle des
+prérequis en tête, rejouable), puis `npx supabase migration repair --status applied 20261005150000`, puis `/gen-types`
+(les deux nouvelles RPC ; l'app les appelle déjà).
+
+## Appliquées
+
+_Vérifié en production le 05/10/2026 (objets présents dans la base). Les détails ci-dessous restent pour l'historique._
+
+- `20261005120000_client_sources.sql` — sources des clients et suivi des commerciaux (PR #224), appliquée le 05/10.
+- Les 9 migrations du dossier conteneur (`migrations/20261004_consolidated.sql`, PR #223).
+- Les migrations douane (29-30/09, PR #214) et `20260926100000_staff_push_notifications.sql` (BONZINI HQ).
+
+### ✅ `20261003120000_cargo_quote_document_fields.sql`
 **PR :** Devis refait sur le modèle de la packing list client
 **Contenu :**
 - `cargo_quote_json` (helper interne du devis) redéfinie en **ajoutant** des clés, pour que le devis PDF dise ce que le
@@ -34,7 +72,7 @@ tête, rejouable) — ou `npx supabase db push --linked` —, puis `npx supabase
 nouvelles clés sont typées dans `src/lib/cargoQuote.ts`). L'app fonctionne avant la migration : le devis PDF masque
 simplement les dimensions, le fournisseur et le conteneur / vol tant qu'elle n'est pas passée.
 
-### `20261002100000_reception_full_control.sql`
+### ✅ `20261002100000_reception_full_control.sql`
 **PR :** Cargo › Réception refaite — dépôts et colis d'abord, plusieurs photos par colis, contrôle total
 **Contenu :**
 - `parcel_photos` (N photos par colis, RLS lecture staff, aucune écriture directe) ; les photos existantes y sont
@@ -57,7 +95,7 @@ posé), sinon coller `migrations/20261003_consolidated_reception.sql` dans l'éd
 tête, rejouable), puis `npx supabase migration repair --status applied 20261002100000`. Enfin `/gen-types` (les écrans
 passent par `rpcJson` en attendant).
 
-### `migrations/20260918_consolidated.sql` (= `20260918100000_wallet_overdraft.sql` + `20260918110000_payment_cancel_reason_and_edit.sql`)
+### ✅ `migrations/20260918_consolidated.sql` (= `20260918100000_wallet_overdraft.sql` + `20260918110000_payment_cancel_reason_and_edit.sql`)
 **PR :** Découvert autorisé · relevé par période · annulation / modification de paiement · formulaire client
 **Contenu :**
 - `wallets.overdraft_limit_xaf` + contrainte `balance_xaf >= -overdraft_limit_xaf` ; `admin_set_wallet_overdraft`
@@ -72,7 +110,7 @@ outil `generate_rate_flyer` avec `country_key` pour le flyer Gabon…) ainsi que
 Aucune migration SQL pour les taux par pays : ils réutilisent `rate_adjustments` / `update_rate_adjustment`.
 
 
-### `20260607120000_mola_operations_radar_and_daily_digest.sql`
+### ✅ `20260607120000_mola_operations_radar_and_daily_digest.sql`
 **PR :** Mola — profondeur + radar partagé + digest auto
 **Contenu :**
 - `mola_operations_radar(...)` — RPC **lecture seule**, étiquetée `@mola` : dépôts en
@@ -100,6 +138,3 @@ npx supabase gen types typescript --project-id fmhsohrgbznqmcvqktjw --schema pub
 **Ordre conseillé :** pousser cette migration **avant** de merger la PR (le merge
 redéploie `admin-assistant`, qui appelle la RPC ; un repli évite toute casse si l'ordre
 est inversé).
-
-## Appliquées
-_(rien encore)_

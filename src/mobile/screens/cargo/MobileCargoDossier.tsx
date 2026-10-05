@@ -15,7 +15,7 @@
 import { toast } from 'sonner';
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship, Undo2 } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
@@ -26,6 +26,8 @@ import { DossierActions, TabChargement, TabClient, TabCouts, TabDocuments, TabDo
 import { MobileNotes } from './MobileNotes';
 import { MobileNavireSheet } from './MobileNavire';
 import { CargoJourney } from '@/components/cargo/CargoJourney';
+import { MarkArrivedDialog, UnmarkArrivedDialog } from '@/components/cargo/dossier/VoyageDialogs';
+import { arrivalPort } from '@/lib/cargo/voyage';
 import { groupVessels } from '@/lib/cargo/vessels';
 import { nextSteps } from '@/lib/cargo/todo';
 import {
@@ -136,7 +138,9 @@ function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPositi
   );
 }
 
-function Journey({ s, pos, events }: { s: CargoShipment; pos: CargoVesselPosition | null; events: CargoEvent[] }) {
+function Journey({ s, pos, events, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; events: CargoEvent[]; canManage: boolean }) {
+  const [dialog, setDialog] = useState<'arrived' | 'unarrived' | null>(null);
+  const arrived = s.status === 'ARRIVED' || s.status === 'DELIVERED';
   // Les jalons de l'armateur, les plus récents d'abord, en phrases : « Navire parti de Nansha le 15 août ».
   const items = timelineFromEvents(events).filter((e) => e.classifier === 'ACT').reverse().slice(0, 4);
   const planned = timelineFromEvents(events).filter((e) => e.classifier !== 'ACT');
@@ -146,6 +150,23 @@ function Journey({ s, pos, events }: { s: CargoShipment; pos: CargoVesselPositio
       <Line strong>{arrivalSentence(s)}.</Line>
       {delaySentence(s) && <Line tone="warn">{delaySentence(s)}.</Line>}
       <div className="admin-theme pt-1"><CargoJourney shipment={s} position={pos} /></div>
+      {arrived
+        ? <Line tone="good">Arrivé au port de {arrivalPort(s)} : ses colis sont pointables à Douala.</Line>
+        : canManage && <Line className={TEXT.muted}>Si l'armateur ne signale pas l'arrivée, marquez-la ici : sinon Douala ne peut pas pointer les colis.</Line>}
+      {canManage && !arrived && (
+        <Button variant="subtle" className="w-full" onClick={() => setDialog('arrived')}>
+          <CheckCircle2 />
+          Marquer le conteneur arrivé
+        </Button>
+      )}
+      {canManage && s.status === 'ARRIVED' && (
+        <Button variant="neutral" className="w-full" onClick={() => setDialog('unarrived')}>
+          <Undo2 />
+          Annuler l'arrivée
+        </Button>
+      )}
+      {dialog === 'arrived' && <div className="admin-theme"><MarkArrivedDialog shipment={s} onClose={() => setDialog(null)} /></div>}
+      {dialog === 'unarrived' && <div className="admin-theme"><UnmarkArrivedDialog shipment={s} onClose={() => setDialog(null)} /></div>}
       {items.length > 0 && (
         <div className={cn('space-y-2 border-t pt-4', SURFACE.divider)}>
           <p className={cn('text-[16px] font-semibold', TEXT.strong)}>Ce que l'armateur a dit</p>
@@ -250,7 +271,7 @@ export function MobileCargoDossier() {
   const sections: { key: SectionKey; title: string; summary: (s: CargoShipment) => string; body: (s: CargoShipment) => React.ReactNode }[] = s ? [
     { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} onGo={go} /> },
     { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} canManage={canManage} /> },
-    { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} events={events ?? []} /> },
+    { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} events={events ?? []} canManage={canManage} /> },
     { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
     // Les modules refaits le 03-04/10/2026 (classeur, douane étape par étape, coûts justifiés, clients du groupage,
     // intervenants) servent le téléphone ET l'ordinateur : une seule version, qui se replie sur petit écran.
