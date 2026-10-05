@@ -1,3 +1,4 @@
+import { ClientOrigin } from '@/components/clients/ClientOrigin';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -403,8 +404,10 @@ export function MobileClientDetail() {
           <Line>{client.email ? <>Email : <b className={cn('break-all', TEXT.strong)}>{client.email}</b>.</> : "Pas d'adresse email."}</Line>
           {place && <Line>À {place}.</Line>}
           <Line>Client depuis le {since}.</Line>
-          {client.utmSource && (
-            <Line>Venu par {client.utmSource}{client.utmCampaign ? ` (campagne ${client.utmCampaign})` : ''}.</Line>
+          {clientId && (
+            <Line>
+              Origine : <ClientOrigin userId={clientId} utmSource={client.utmSource} />
+            </Line>
           )}
         </section>
 

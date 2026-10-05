@@ -88,6 +88,7 @@ const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then
 const DesktopCreateClient = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopCreateClientDialog })));
 const MobileClientDetail = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientDetail })));
 const MobileClientScan = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientScan })));
+const ClientSourcesScreen = lazy(() => import("./components/clients/sources/ClientSourcesScreen").then(m => ({ default: m.ClientSourcesScreen })));
 const MyCodePage = lazy(() => import("./pages/MyCodePage"));
 const PaymentDetailsPage = lazy(() => import("./pages/PaymentDetailsPage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
@@ -321,6 +322,9 @@ const App = () => (
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
+                {/* Sources & commerciaux : même écran (réactif) sur ordinateur et téléphone. */}
+                <Route path="/m/clients/sources" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients/sources/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/scan" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientScan desktop />}><MobileClientScan /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />

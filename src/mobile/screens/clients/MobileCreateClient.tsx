@@ -87,6 +87,11 @@ export function MobileCreateClient() {
                 {t('clientForm.extraPhonesFailed')}
               </p>
             )}
+            {c.sourceFailed && (
+              <p className="mt-3 rounded-lg bg-[#FDD3D0] px-3 py-2.5 text-[14px] leading-relaxed text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
+                {t('clientForm.sourceFailed')}
+              </p>
+            )}
           </Card>
 
           <div className="flex flex-col gap-2">

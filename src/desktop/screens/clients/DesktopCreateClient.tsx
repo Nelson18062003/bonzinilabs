@@ -17,6 +17,7 @@ import { SURFACE, TEXT, TYPE, Card, Holder, FormField, TextInput, PrimaryPill, S
 import { PhoneNumberInput, formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { useCreateClientForm, whatsappShareUrl, MAX_PHONES } from '@/components/clients/useCreateClientForm';
+import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
 
 interface CreateClientProps {
   /**
@@ -75,6 +76,11 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
           {c.extraPhonesFailed && (
             <div className="mt-3 rounded-2xl bg-destructive/10 px-3 py-2.5 text-[12px] leading-relaxed text-destructive">
               {t('clientForm.extraPhonesFailed')}
+            </div>
+          )}
+          {c.sourceFailed && (
+            <div className="mt-3 rounded-2xl bg-destructive/10 px-3 py-2.5 text-[12px] leading-relaxed text-destructive">
+              {t('clientForm.sourceFailed')}
             </div>
           )}
         </Card>
@@ -179,6 +185,12 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
               <TextInput id="cc-city" className={CONTROL} placeholder="Douala" value={form.fields.city} onChange={(e) => form.setField('city', e.target.value)} autoComplete="address-level2" />
             </FormField>
           </div>
+        </Section>
+
+        <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
+          <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
+            <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} controlClassName={CONTROL} />
+          </FormField>
         </Section>
       </div>
 

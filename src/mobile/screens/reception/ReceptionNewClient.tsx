@@ -67,6 +67,9 @@ export function ReceptionNewClient() {
               <MessageCircle className="h-5 w-5" />
               {tc('clientForm.sendOnWhatsapp', { number: formatE164ForDisplay(c.primaryE164) })}
             </a>
+            {c.sourceFailed && (
+              <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.sourceFailed')}</p>
+            )}
           </Card>
           <PrimaryPill onClick={() => void proceed()} loading={assign.isPending} className="h-14 w-full text-[17px]">{t('rc_continue')}</PrimaryPill>
         </div>

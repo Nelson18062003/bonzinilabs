@@ -68,6 +68,66 @@ export type Database = {
         }
         Relationships: []
       }
+      air_shipments: {
+        Row: {
+          airline: string | null
+          arrived_at: string | null
+          awb_number: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          departed_at: string | null
+          destination: string
+          eta: string | null
+          etd: string | null
+          flight_no: string | null
+          freight_usd: number | null
+          id: string
+          notes: string | null
+          origin: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          airline?: string | null
+          arrived_at?: string | null
+          awb_number: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          departed_at?: string | null
+          destination?: string
+          eta?: string | null
+          etd?: string | null
+          flight_no?: string | null
+          freight_usd?: number | null
+          id?: string
+          notes?: string | null
+          origin?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          airline?: string | null
+          arrived_at?: string | null
+          awb_number?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          departed_at?: string | null
+          destination?: string
+          eta?: string | null
+          etd?: string | null
+          flight_no?: string | null
+          freight_usd?: number | null
+          id?: string
+          notes?: string | null
+          origin?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assistant_conversations: {
         Row: {
           admin_user_id: string
@@ -291,6 +351,783 @@ export type Database = {
           sent_at?: string
           telegram_error?: string | null
           telegram_sent?: boolean
+        }
+        Relationships: []
+      }
+      cargo_accounts: {
+        Row: {
+          code: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cargo_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          incurred_on: string | null
+          invoice_ref: string | null
+          kind: string
+          label: string | null
+          note: string | null
+          paid: boolean
+          paid_on: string | null
+          payee: string | null
+          shipment_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          incurred_on?: string | null
+          invoice_ref?: string | null
+          kind: string
+          label?: string | null
+          note?: string | null
+          paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
+          shipment_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          incurred_on?: string | null
+          invoice_ref?: string | null
+          kind?: string
+          label?: string | null
+          note?: string | null
+          paid?: boolean
+          paid_on?: string | null
+          payee?: string | null
+          shipment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_costs_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_doc_folders: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          expected_count: number | null
+          id: string
+          note: string | null
+          position: number
+          shipment_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expected_count?: number | null
+          id?: string
+          note?: string | null
+          position?: number
+          shipment_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_doc_folders_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_documents: {
+        Row: {
+          cost_id: string | null
+          created_at: string
+          file_name: string
+          folder_id: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          note: string | null
+          shipment_id: string
+          size_bytes: number | null
+          storage_path: string
+          title: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          cost_id?: string | null
+          created_at?: string
+          file_name: string
+          folder_id?: string | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          note?: string | null
+          shipment_id: string
+          size_bytes?: number | null
+          storage_path: string
+          title?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          cost_id?: string | null
+          created_at?: string
+          file_name?: string
+          folder_id?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          note?: string | null
+          shipment_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          title?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_documents_cost_id_fkey"
+            columns: ["cost_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_documents_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_events: {
+        Row: {
+          carrier_event_id: string
+          classifier: string
+          created_at: string
+          event_code: string
+          event_time: string
+          event_type: string
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          raw: Json | null
+          shipment_id: string
+          unlocode: string | null
+          vessel_imo: string | null
+          vessel_name: string | null
+          voyage: string | null
+        }
+        Insert: {
+          carrier_event_id: string
+          classifier?: string
+          created_at?: string
+          event_code: string
+          event_time: string
+          event_type: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          shipment_id: string
+          unlocode?: string | null
+          vessel_imo?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Update: {
+          carrier_event_id?: string
+          classifier?: string
+          created_at?: string
+          event_code?: string
+          event_time?: string
+          event_type?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          raw?: Json | null
+          shipment_id?: string
+          unlocode?: string | null
+          vessel_imo?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_events_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_lookups: {
+        Row: {
+          carrier: string
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          reference: string
+          reference_type: string
+          requested_by: string | null
+          result: Json | null
+          status: string
+        }
+        Insert: {
+          carrier: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          reference: string
+          reference_type: string
+          requested_by?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Update: {
+          carrier?: string
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          reference?: string
+          reference_type?: string
+          requested_by?: string | null
+          result?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
+      cargo_packages: {
+        Row: {
+          cbm: number | null
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          height_cm: number | null
+          hs_code: string | null
+          id: string
+          kind: string
+          label: string
+          length_cm: number | null
+          note: string | null
+          owner_label: string | null
+          position: number
+          qty: number
+          shipment_id: string
+          stackable: boolean
+          supplier: string | null
+          updated_at: string
+          weight_kg: number | null
+          width_cm: number | null
+        }
+        Insert: {
+          cbm?: number | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          hs_code?: string | null
+          id?: string
+          kind?: string
+          label: string
+          length_cm?: number | null
+          note?: string | null
+          owner_label?: string | null
+          position?: number
+          qty?: number
+          shipment_id: string
+          stackable?: boolean
+          supplier?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+          width_cm?: number | null
+        }
+        Update: {
+          cbm?: number | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          hs_code?: string | null
+          id?: string
+          kind?: string
+          label?: string
+          length_cm?: number | null
+          note?: string | null
+          owner_label?: string | null
+          position?: number
+          qty?: number
+          shipment_id?: string
+          stackable?: boolean
+          supplier?: string | null
+          updated_at?: string
+          weight_kg?: number | null
+          width_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_packages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_packages_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_parties: {
+        Row: {
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          note: string | null
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      cargo_shipment_parties: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          party_id: string
+          position: number
+          role: string
+          shipment_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id: string
+          position?: number
+          role: string
+          shipment_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          party_id?: string
+          position?: number
+          role?: string
+          shipment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_shipment_parties_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_parties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_shipment_parties_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_shipments: {
+        Row: {
+          arrival_notice_at: string | null
+          besc_number: string | null
+          bl_number: string
+          carrier: string
+          client_id: string | null
+          client_label: string
+          container_iso: string | null
+          container_number: string
+          created_at: string
+          customs_cleared_at: string | null
+          customs_declaration_ref: string | null
+          delivery_order_at: string | null
+          empty_returned_at: string | null
+          eta_carrier: string | null
+          eta_manual: string | null
+          eta_manual_at: string | null
+          eta_manual_note: string | null
+          eta_promised: string | null
+          etd_actual: string | null
+          etd_promised: string | null
+          free_time_ends_on: string | null
+          freight_note: string | null
+          freight_paid: boolean
+          freight_usd: number | null
+          gate_out_at: string | null
+          goods_description: string | null
+          gross_weight_kg: number | null
+          id: string
+          last_event_at: string | null
+          last_event_label: string | null
+          last_synced_at: string | null
+          notes: string | null
+          packages_count: number | null
+          pod_name: string
+          pod_unlocode: string | null
+          pol_name: string | null
+          pol_unlocode: string | null
+          route_calls: Json
+          status: string
+          sync_error: string | null
+          telex_released: boolean
+          updated_at: string
+          vessel_imo: string | null
+          vessel_mmsi: string | null
+          vessel_name: string | null
+          voyage: string | null
+        }
+        Insert: {
+          arrival_notice_at?: string | null
+          besc_number?: string | null
+          bl_number: string
+          carrier: string
+          client_id?: string | null
+          client_label: string
+          container_iso?: string | null
+          container_number: string
+          created_at?: string
+          customs_cleared_at?: string | null
+          customs_declaration_ref?: string | null
+          delivery_order_at?: string | null
+          empty_returned_at?: string | null
+          eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
+          eta_promised?: string | null
+          etd_actual?: string | null
+          etd_promised?: string | null
+          free_time_ends_on?: string | null
+          freight_note?: string | null
+          freight_paid?: boolean
+          freight_usd?: number | null
+          gate_out_at?: string | null
+          goods_description?: string | null
+          gross_weight_kg?: number | null
+          id?: string
+          last_event_at?: string | null
+          last_event_label?: string | null
+          last_synced_at?: string | null
+          notes?: string | null
+          packages_count?: number | null
+          pod_name: string
+          pod_unlocode?: string | null
+          pol_name?: string | null
+          pol_unlocode?: string | null
+          route_calls?: Json
+          status?: string
+          sync_error?: string | null
+          telex_released?: boolean
+          updated_at?: string
+          vessel_imo?: string | null
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Update: {
+          arrival_notice_at?: string | null
+          besc_number?: string | null
+          bl_number?: string
+          carrier?: string
+          client_id?: string | null
+          client_label?: string
+          container_iso?: string | null
+          container_number?: string
+          created_at?: string
+          customs_cleared_at?: string | null
+          customs_declaration_ref?: string | null
+          delivery_order_at?: string | null
+          empty_returned_at?: string | null
+          eta_carrier?: string | null
+          eta_manual?: string | null
+          eta_manual_at?: string | null
+          eta_manual_note?: string | null
+          eta_promised?: string | null
+          etd_actual?: string | null
+          etd_promised?: string | null
+          free_time_ends_on?: string | null
+          freight_note?: string | null
+          freight_paid?: boolean
+          freight_usd?: number | null
+          gate_out_at?: string | null
+          goods_description?: string | null
+          gross_weight_kg?: number | null
+          id?: string
+          last_event_at?: string | null
+          last_event_label?: string | null
+          last_synced_at?: string | null
+          notes?: string | null
+          packages_count?: number | null
+          pod_name?: string
+          pod_unlocode?: string | null
+          pol_name?: string | null
+          pol_unlocode?: string | null
+          route_calls?: Json
+          status?: string
+          sync_error?: string | null
+          telex_released?: boolean
+          updated_at?: string
+          vessel_imo?: string | null
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+          voyage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_shipments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_steps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          done_on: string | null
+          due_on: string | null
+          folder_id: string | null
+          id: string
+          key: string | null
+          note: string | null
+          phase: string
+          position: number
+          reference: string | null
+          shipment_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          done_on?: string | null
+          due_on?: string | null
+          folder_id?: string | null
+          id?: string
+          key?: string | null
+          note?: string | null
+          phase?: string
+          position?: number
+          reference?: string | null
+          shipment_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_steps_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_doc_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_steps_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_vessel_positions: {
+        Row: {
+          course_deg: number | null
+          destination: string | null
+          eta: string | null
+          latitude: number
+          longitude: number
+          note: string | null
+          reported_at: string
+          source: string
+          speed_kn: number | null
+          updated_at: string
+          vessel_imo: string
+          vessel_mmsi: string | null
+          vessel_name: string | null
+        }
+        Insert: {
+          course_deg?: number | null
+          destination?: string | null
+          eta?: string | null
+          latitude: number
+          longitude: number
+          note?: string | null
+          reported_at: string
+          source?: string
+          speed_kn?: number | null
+          updated_at?: string
+          vessel_imo: string
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
+        }
+        Update: {
+          course_deg?: number | null
+          destination?: string | null
+          eta?: string | null
+          latitude?: number
+          longitude?: number
+          note?: string | null
+          reported_at?: string
+          source?: string
+          speed_kn?: number | null
+          updated_at?: string
+          vessel_imo?: string
+          vessel_mmsi?: string | null
+          vessel_name?: string | null
         }
         Relationships: []
       }
@@ -582,738 +1419,6 @@ export type Database = {
           },
         ]
       }
-      cargo_costs: {
-        Row: {
-          amount: number
-          created_at: string
-          created_by: string | null
-          currency: string
-          id: string
-          incurred_on: string | null
-          invoice_ref: string | null
-          kind: string
-          label: string | null
-          note: string | null
-          paid: boolean
-          paid_on: string | null
-          payee: string | null
-          shipment_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          created_by?: string | null
-          currency?: string
-          id?: string
-          incurred_on?: string | null
-          invoice_ref?: string | null
-          kind: string
-          label?: string | null
-          note?: string | null
-          paid?: boolean
-          paid_on?: string | null
-          payee?: string | null
-          shipment_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          created_by?: string | null
-          currency?: string
-          id?: string
-          incurred_on?: string | null
-          invoice_ref?: string | null
-          kind?: string
-          label?: string | null
-          note?: string | null
-          paid?: boolean
-          paid_on?: string | null
-          payee?: string | null
-          shipment_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_costs_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_packages: {
-        Row: {
-          cbm: number | null
-          client_id: string | null
-          hs_code: string | null
-          owner_label: string | null
-          created_at: string
-          created_by: string | null
-          height_cm: number | null
-          id: string
-          kind: string
-          label: string
-          length_cm: number | null
-          note: string | null
-          position: number
-          qty: number
-          shipment_id: string
-          stackable: boolean
-          supplier: string | null
-          updated_at: string
-          weight_kg: number | null
-          width_cm: number | null
-        }
-        Insert: {
-          cbm?: number | null
-          client_id?: string | null
-          hs_code?: string | null
-          owner_label?: string | null
-          created_at?: string
-          created_by?: string | null
-          height_cm?: number | null
-          id?: string
-          kind?: string
-          label: string
-          length_cm?: number | null
-          note?: string | null
-          position?: number
-          qty?: number
-          shipment_id: string
-          stackable?: boolean
-          supplier?: string | null
-          updated_at?: string
-          weight_kg?: number | null
-          width_cm?: number | null
-        }
-        Update: {
-          cbm?: number | null
-          client_id?: string | null
-          hs_code?: string | null
-          owner_label?: string | null
-          created_at?: string
-          created_by?: string | null
-          height_cm?: number | null
-          id?: string
-          kind?: string
-          label?: string
-          length_cm?: number | null
-          note?: string | null
-          position?: number
-          qty?: number
-          shipment_id?: string
-          stackable?: boolean
-          supplier?: string | null
-          updated_at?: string
-          weight_kg?: number | null
-          width_cm?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_packages_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_parties: {
-        Row: {
-          city: string | null
-          contact_name: string | null
-          country: string | null
-          created_at: string
-          created_by: string | null
-          email: string | null
-          id: string
-          name: string
-          note: string | null
-          phone: string | null
-          updated_at: string
-          whatsapp: string | null
-        }
-        Insert: {
-          city?: string | null
-          contact_name?: string | null
-          country?: string | null
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          id?: string
-          name: string
-          note?: string | null
-          phone?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Update: {
-          city?: string | null
-          contact_name?: string | null
-          country?: string | null
-          created_at?: string
-          created_by?: string | null
-          email?: string | null
-          id?: string
-          name?: string
-          note?: string | null
-          phone?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-        }
-        Relationships: [
-        ]
-      }
-      cargo_doc_folders: {
-        Row: {
-          category: string
-          created_at: string
-          created_by: string | null
-          expected_count: number | null
-          id: string
-          note: string | null
-          position: number
-          shipment_id: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          expected_count?: number | null
-          id?: string
-          note?: string | null
-          position?: number
-          shipment_id: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          expected_count?: number | null
-          id?: string
-          note?: string | null
-          position?: number
-          shipment_id?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_doc_folders_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_documents: {
-        Row: {
-          cost_id: string | null
-          created_at: string
-          file_name: string
-          folder_id: string | null
-          id: string
-          kind: string
-          mime_type: string | null
-          note: string | null
-          shipment_id: string
-          size_bytes: number | null
-          storage_path: string
-          title: string | null
-          updated_at: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          cost_id?: string | null
-          created_at?: string
-          file_name: string
-          folder_id?: string | null
-          id?: string
-          kind: string
-          mime_type?: string | null
-          note?: string | null
-          shipment_id: string
-          size_bytes?: number | null
-          storage_path: string
-          title?: string | null
-          updated_at?: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          cost_id?: string | null
-          created_at?: string
-          file_name?: string
-          folder_id?: string | null
-          id?: string
-          kind?: string
-          mime_type?: string | null
-          note?: string | null
-          shipment_id?: string
-          size_bytes?: number | null
-          storage_path?: string
-          title?: string | null
-          updated_at?: string
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_documents_cost_id_fkey"
-            columns: ["cost_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_costs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cargo_documents_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_doc_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cargo_documents_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_events: {
-        Row: {
-          carrier_event_id: string
-          classifier: string
-          created_at: string
-          event_code: string
-          event_time: string
-          event_type: string
-          id: string
-          latitude: number | null
-          location_name: string | null
-          longitude: number | null
-          raw: Json | null
-          shipment_id: string
-          unlocode: string | null
-          vessel_imo: string | null
-          vessel_name: string | null
-          voyage: string | null
-        }
-        Insert: {
-          carrier_event_id: string
-          classifier?: string
-          created_at?: string
-          event_code: string
-          event_time: string
-          event_type: string
-          id?: string
-          latitude?: number | null
-          location_name?: string | null
-          longitude?: number | null
-          raw?: Json | null
-          shipment_id: string
-          unlocode?: string | null
-          vessel_imo?: string | null
-          vessel_name?: string | null
-          voyage?: string | null
-        }
-        Update: {
-          carrier_event_id?: string
-          classifier?: string
-          created_at?: string
-          event_code?: string
-          event_time?: string
-          event_type?: string
-          id?: string
-          latitude?: number | null
-          location_name?: string | null
-          longitude?: number | null
-          raw?: Json | null
-          shipment_id?: string
-          unlocode?: string | null
-          vessel_imo?: string | null
-          vessel_name?: string | null
-          voyage?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_events_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_lookups: {
-        Row: {
-          carrier: string
-          completed_at: string | null
-          created_at: string
-          error: string | null
-          id: string
-          reference: string
-          reference_type: string
-          requested_by: string | null
-          result: Json | null
-          status: string
-        }
-        Insert: {
-          carrier: string
-          completed_at?: string | null
-          created_at?: string
-          error?: string | null
-          id?: string
-          reference: string
-          reference_type: string
-          requested_by?: string | null
-          result?: Json | null
-          status?: string
-        }
-        Update: {
-          carrier?: string
-          completed_at?: string | null
-          created_at?: string
-          error?: string | null
-          id?: string
-          reference?: string
-          reference_type?: string
-          requested_by?: string | null
-          result?: Json | null
-          status?: string
-        }
-        Relationships: []
-      }
-      cargo_shipment_parties: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          note: string | null
-          party_id: string
-          position: number
-          role: string
-          shipment_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          note?: string | null
-          party_id: string
-          position?: number
-          role: string
-          shipment_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          note?: string | null
-          party_id?: string
-          position?: number
-          role?: string
-          shipment_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_shipment_parties_party_id_fkey"
-            columns: ["party_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_parties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cargo_shipment_parties_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_shipments: {
-        Row: {
-          arrival_notice_at: string | null
-          besc_number: string | null
-          customs_cleared_at: string | null
-          customs_declaration_ref: string | null
-          delivery_order_at: string | null
-          empty_returned_at: string | null
-          free_time_ends_on: string | null
-          gate_out_at: string | null
-          goods_description: string | null
-          gross_weight_kg: number | null
-          packages_count: number | null
-          bl_number: string
-          carrier: string
-          client_id: string | null
-          client_label: string
-          container_iso: string | null
-          container_number: string
-          created_at: string
-          eta_carrier: string | null
-          eta_manual: string | null
-          eta_manual_at: string | null
-          eta_manual_note: string | null
-          eta_promised: string | null
-          etd_actual: string | null
-          etd_promised: string | null
-          freight_note: string | null
-          freight_paid: boolean
-          freight_usd: number | null
-          id: string
-          last_event_at: string | null
-          last_event_label: string | null
-          last_synced_at: string | null
-          notes: string | null
-          pod_name: string
-          pod_unlocode: string | null
-          pol_name: string | null
-          pol_unlocode: string | null
-          route_calls: Json
-          status: string
-          sync_error: string | null
-          telex_released: boolean
-          updated_at: string
-          vessel_imo: string | null
-          vessel_mmsi: string | null
-          vessel_name: string | null
-          voyage: string | null
-        }
-        Insert: {
-          arrival_notice_at?: string | null
-          besc_number?: string | null
-          customs_cleared_at?: string | null
-          customs_declaration_ref?: string | null
-          delivery_order_at?: string | null
-          empty_returned_at?: string | null
-          free_time_ends_on?: string | null
-          gate_out_at?: string | null
-          goods_description?: string | null
-          gross_weight_kg?: number | null
-          packages_count?: number | null
-          bl_number: string
-          carrier: string
-          client_id?: string | null
-          client_label: string
-          container_iso?: string | null
-          container_number: string
-          created_at?: string
-          eta_carrier?: string | null
-          eta_manual?: string | null
-          eta_manual_at?: string | null
-          eta_manual_note?: string | null
-          eta_promised?: string | null
-          etd_actual?: string | null
-          etd_promised?: string | null
-          freight_note?: string | null
-          freight_paid?: boolean
-          freight_usd?: number | null
-          id?: string
-          last_event_at?: string | null
-          last_event_label?: string | null
-          last_synced_at?: string | null
-          notes?: string | null
-          pod_name: string
-          pod_unlocode?: string | null
-          pol_name?: string | null
-          pol_unlocode?: string | null
-          route_calls?: Json
-          status?: string
-          sync_error?: string | null
-          telex_released?: boolean
-          updated_at?: string
-          vessel_imo?: string | null
-          vessel_mmsi?: string | null
-          vessel_name?: string | null
-          voyage?: string | null
-        }
-        Update: {
-          arrival_notice_at?: string | null
-          besc_number?: string | null
-          customs_cleared_at?: string | null
-          customs_declaration_ref?: string | null
-          delivery_order_at?: string | null
-          empty_returned_at?: string | null
-          free_time_ends_on?: string | null
-          gate_out_at?: string | null
-          goods_description?: string | null
-          gross_weight_kg?: number | null
-          packages_count?: number | null
-          bl_number?: string
-          carrier?: string
-          client_id?: string | null
-          client_label?: string
-          container_iso?: string | null
-          container_number?: string
-          created_at?: string
-          eta_carrier?: string | null
-          eta_manual?: string | null
-          eta_manual_at?: string | null
-          eta_manual_note?: string | null
-          eta_promised?: string | null
-          etd_actual?: string | null
-          etd_promised?: string | null
-          freight_note?: string | null
-          freight_paid?: boolean
-          freight_usd?: number | null
-          id?: string
-          last_event_at?: string | null
-          last_event_label?: string | null
-          last_synced_at?: string | null
-          notes?: string | null
-          pod_name?: string
-          pod_unlocode?: string | null
-          pol_name?: string | null
-          pol_unlocode?: string | null
-          route_calls?: Json
-          status?: string
-          sync_error?: string | null
-          telex_released?: boolean
-          updated_at?: string
-          vessel_imo?: string | null
-          vessel_mmsi?: string | null
-          vessel_name?: string | null
-          voyage?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_shipments_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_steps: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          done_on: string | null
-          due_on: string | null
-          folder_id: string | null
-          id: string
-          key: string | null
-          note: string | null
-          phase: string
-          position: number
-          reference: string | null
-          shipment_id: string
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          done_on?: string | null
-          due_on?: string | null
-          folder_id?: string | null
-          id?: string
-          key?: string | null
-          note?: string | null
-          phase?: string
-          position?: number
-          reference?: string | null
-          shipment_id: string
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          done_on?: string | null
-          due_on?: string | null
-          folder_id?: string | null
-          id?: string
-          key?: string | null
-          note?: string | null
-          phase?: string
-          position?: number
-          reference?: string | null
-          shipment_id?: string
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cargo_steps_folder_id_fkey"
-            columns: ["folder_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_doc_folders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cargo_steps_shipment_id_fkey"
-            columns: ["shipment_id"]
-            isOneToOne: false
-            referencedRelation: "cargo_shipments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cargo_vessel_positions: {
-        Row: {
-          course_deg: number | null
-          destination: string | null
-          eta: string | null
-          latitude: number
-          longitude: number
-          note: string | null
-          reported_at: string
-          source: string
-          speed_kn: number | null
-          updated_at: string
-          vessel_imo: string
-          vessel_mmsi: string | null
-          vessel_name: string | null
-        }
-        Insert: {
-          course_deg?: number | null
-          destination?: string | null
-          eta?: string | null
-          latitude: number
-          longitude: number
-          note?: string | null
-          reported_at: string
-          source?: string
-          speed_kn?: number | null
-          updated_at?: string
-          vessel_imo: string
-          vessel_mmsi?: string | null
-          vessel_name?: string | null
-        }
-        Update: {
-          course_deg?: number | null
-          destination?: string | null
-          eta?: string | null
-          latitude?: number
-          longitude?: number
-          note?: string | null
-          reported_at?: string
-          source?: string
-          speed_kn?: number | null
-          updated_at?: string
-          vessel_imo?: string
-          vessel_mmsi?: string | null
-          vessel_name?: string | null
-        }
-        Relationships: []
-      }
       client_phones: {
         Row: {
           client_id: string
@@ -1355,10 +1460,50 @@ export type Database = {
           },
         ]
       }
+      client_sources: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          kind: string
+          label: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          kind: string
+          label: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          kind?: string
+          label?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           activity_sector: string | null
           avatar_url: string | null
+          cargo_account_id: string | null
           city: string | null
           company_name: string | null
           country: string | null
@@ -1379,6 +1524,9 @@ export type Database = {
           phone_verified_at: string | null
           preferred_locale: string | null
           sms_marketing_opt_in: boolean
+          source_id: string | null
+          source_set_at: string | null
+          source_set_by: string | null
           status: string | null
           updated_at: string
           user_id: string
@@ -1391,11 +1539,12 @@ export type Database = {
         Insert: {
           activity_sector?: string | null
           avatar_url?: string | null
+          cargo_account_id?: string | null
           city?: string | null
           company_name?: string | null
           country?: string | null
           created_at?: string
-          customer_code?: string
+          customer_code: string
           date_of_birth?: string | null
           email?: string | null
           first_name: string
@@ -1411,6 +1560,9 @@ export type Database = {
           phone_verified_at?: string | null
           preferred_locale?: string | null
           sms_marketing_opt_in?: boolean
+          source_id?: string | null
+          source_set_at?: string | null
+          source_set_by?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
@@ -1423,6 +1575,7 @@ export type Database = {
         Update: {
           activity_sector?: string | null
           avatar_url?: string | null
+          cargo_account_id?: string | null
           city?: string | null
           company_name?: string | null
           country?: string | null
@@ -1443,6 +1596,9 @@ export type Database = {
           phone_verified_at?: string | null
           preferred_locale?: string | null
           sms_marketing_opt_in?: boolean
+          source_id?: string | null
+          source_set_at?: string | null
+          source_set_by?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -1452,7 +1608,439 @@ export type Database = {
           utm_source?: string | null
           utm_term?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "clients_cargo_account_id_fkey"
+            columns: ["cargo_account_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "client_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customs_audits: {
+        Row: {
+          ai_model: string | null
+          broker_company: string | null
+          broker_license_no: string | null
+          broker_note: string | null
+          claim_deadline: string | null
+          claimed_by: string | null
+          client_user_id: string
+          created_at: string
+          created_by: string | null
+          customs_office: string | null
+          dau_number: string | null
+          error: string | null
+          extraction: Json | null
+          file_paths: string[]
+          findings: Json
+          id: string
+          overpaid_xaf: number | null
+          paid_on: string | null
+          recoverable_xaf: number | null
+          ref: string
+          registered_on: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          total_paid_xaf: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string | null
+          broker_company?: string | null
+          broker_license_no?: string | null
+          broker_note?: string | null
+          claim_deadline?: string | null
+          claimed_by?: string | null
+          client_user_id: string
+          created_at?: string
+          created_by?: string | null
+          customs_office?: string | null
+          dau_number?: string | null
+          error?: string | null
+          extraction?: Json | null
+          file_paths?: string[]
+          findings?: Json
+          id?: string
+          overpaid_xaf?: number | null
+          paid_on?: string | null
+          recoverable_xaf?: number | null
+          ref?: string
+          registered_on?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_paid_xaf?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string | null
+          broker_company?: string | null
+          broker_license_no?: string | null
+          broker_note?: string | null
+          claim_deadline?: string | null
+          claimed_by?: string | null
+          client_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          customs_office?: string | null
+          dau_number?: string | null
+          error?: string | null
+          extraction?: Json | null
+          file_paths?: string[]
+          findings?: Json
+          id?: string
+          overpaid_xaf?: number | null
+          paid_on?: string | null
+          recoverable_xaf?: number | null
+          ref?: string
+          registered_on?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_paid_xaf?: number | null
+          updated_at?: string
+        }
         Relationships: []
+      }
+      customs_brokers: {
+        Row: {
+          active: boolean
+          company: string
+          created_at: string
+          created_by: string | null
+          license_no: string
+          representative_no: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          company: string
+          created_at?: string
+          created_by?: string | null
+          license_no: string
+          representative_no?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          company?: string
+          created_at?: string
+          created_by?: string | null
+          license_no?: string
+          representative_no?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customs_classification_messages: {
+        Row: {
+          author: string
+          author_user_id: string | null
+          body: string
+          classification_id: string
+          created_at: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          author: string
+          author_user_id?: string | null
+          body: string
+          classification_id: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          author?: string
+          author_user_id?: string | null
+          body?: string
+          classification_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customs_classification_messages_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "customs_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customs_classifications: {
+        Row: {
+          ai_model: string | null
+          broker_company: string | null
+          broker_license_no: string | null
+          broker_note: string | null
+          candidates: Json
+          claimed_by: string | null
+          client_user_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          facts: Json
+          final_code: string | null
+          id: string
+          photo_paths: string[]
+          product_name: string
+          proposed_code: string | null
+          ref: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_model?: string | null
+          broker_company?: string | null
+          broker_license_no?: string | null
+          broker_note?: string | null
+          candidates?: Json
+          claimed_by?: string | null
+          client_user_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          facts?: Json
+          final_code?: string | null
+          id?: string
+          photo_paths?: string[]
+          product_name: string
+          proposed_code?: string | null
+          ref?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_model?: string | null
+          broker_company?: string | null
+          broker_license_no?: string | null
+          broker_note?: string | null
+          candidates?: Json
+          claimed_by?: string | null
+          client_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          facts?: Json
+          final_code?: string | null
+          id?: string
+          photo_paths?: string[]
+          product_name?: string
+          proposed_code?: string | null
+          ref?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customs_notices: {
+        Row: {
+          advice: string | null
+          confidence: string
+          created_at: string
+          created_by: string | null
+          delay_days: number | null
+          ends_on: string | null
+          hs_specs: string[]
+          id: string
+          kind: string
+          places: string[]
+          published: boolean
+          published_at: string | null
+          severity: string
+          slug: string
+          source_label: string | null
+          source_url: string | null
+          starts_on: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          advice?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          delay_days?: number | null
+          ends_on?: string | null
+          hs_specs?: string[]
+          id?: string
+          kind: string
+          places?: string[]
+          published?: boolean
+          published_at?: string | null
+          severity?: string
+          slug: string
+          source_label?: string | null
+          source_url?: string | null
+          starts_on?: string | null
+          status?: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          advice?: string | null
+          confidence?: string
+          created_at?: string
+          created_by?: string | null
+          delay_days?: number | null
+          ends_on?: string | null
+          hs_specs?: string[]
+          id?: string
+          kind?: string
+          places?: string[]
+          published?: boolean
+          published_at?: string | null
+          severity?: string
+          slug?: string
+          source_label?: string | null
+          source_url?: string | null
+          starts_on?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customs_supplier_documents: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          file_name: string | null
+          file_path: string
+          id: string
+          invite_id: string
+          kind: string
+          mime: string
+          note: string | null
+          size_bytes: number
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          invite_id: string
+          kind: string
+          mime: string
+          note?: string | null
+          size_bytes: number
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          invite_id?: string
+          kind?: string
+          mime?: string
+          note?: string | null
+          size_bytes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customs_supplier_documents_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "customs_supplier_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customs_supplier_invites: {
+        Row: {
+          classification_id: string | null
+          client_user_id: string
+          created_at: string
+          due_on: string | null
+          expires_at: string
+          id: string
+          language: string
+          last_upload_at: string | null
+          message: string | null
+          requested: string[]
+          status: string
+          supplier_contact: string | null
+          supplier_name: string
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          classification_id?: string | null
+          client_user_id: string
+          created_at?: string
+          due_on?: string | null
+          expires_at?: string
+          id?: string
+          language?: string
+          last_upload_at?: string | null
+          message?: string | null
+          requested: string[]
+          status?: string
+          supplier_contact?: string | null
+          supplier_name: string
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          classification_id?: string | null
+          client_user_id?: string
+          created_at?: string
+          due_on?: string | null
+          expires_at?: string
+          id?: string
+          language?: string
+          last_upload_at?: string | null
+          message?: string | null
+          requested?: string[]
+          status?: string
+          supplier_contact?: string | null
+          supplier_name?: string
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customs_supplier_invites_classification_id_fkey"
+            columns: ["classification_id"]
+            isOneToOne: false
+            referencedRelation: "customs_classifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       daily_rates: {
         Row: {
@@ -1949,6 +2537,479 @@ export type Database = {
         }
         Relationships: []
       }
+      parcel_deposits: {
+        Row: {
+          brought_by: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          client_user_id: string | null
+          closed_at: string | null
+          created_at: string
+          deposit_no: string
+          id: string
+          last_seq: number
+          location: string
+          notes: string | null
+          opened_at: string
+          parcel_count: number
+          received_by: string
+          representative_name: string | null
+          representative_phone: string | null
+          status: string
+          supplier_address: string | null
+          supplier_contact: string | null
+          supplier_email: string | null
+          supplier_kind: string | null
+          supplier_name: string | null
+          supplier_phone: string | null
+          supplier_wechat: string | null
+          total_cbm: number
+          total_weight_kg: number
+          updated_at: string
+        }
+        Insert: {
+          brought_by?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_user_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          deposit_no?: string
+          id?: string
+          last_seq?: number
+          location: string
+          notes?: string | null
+          opened_at?: string
+          parcel_count?: number
+          received_by: string
+          representative_name?: string | null
+          representative_phone?: string | null
+          status?: string
+          supplier_address?: string | null
+          supplier_contact?: string | null
+          supplier_email?: string | null
+          supplier_kind?: string | null
+          supplier_name?: string | null
+          supplier_phone?: string | null
+          supplier_wechat?: string | null
+          total_cbm?: number
+          total_weight_kg?: number
+          updated_at?: string
+        }
+        Update: {
+          brought_by?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          client_user_id?: string | null
+          closed_at?: string | null
+          created_at?: string
+          deposit_no?: string
+          id?: string
+          last_seq?: number
+          location?: string
+          notes?: string | null
+          opened_at?: string
+          parcel_count?: number
+          received_by?: string
+          representative_name?: string | null
+          representative_phone?: string | null
+          status?: string
+          supplier_address?: string | null
+          supplier_contact?: string | null
+          supplier_email?: string | null
+          supplier_kind?: string | null
+          supplier_name?: string | null
+          supplier_phone?: string | null
+          supplier_wechat?: string | null
+          total_cbm?: number
+          total_weight_kg?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      parcel_photos: {
+        Row: {
+          created_at: string
+          id: string
+          parcel_id: string
+          path: string
+          position: number
+          taken_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parcel_id: string
+          path: string
+          position?: number
+          taken_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parcel_id?: string
+          path?: string
+          position?: number
+          taken_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_photos_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcel_quote_lines: {
+        Row: {
+          amount_xaf: number
+          basis: string
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          parcel_id: string | null
+          quantity: number | null
+          quote_id: string
+          seq: number
+          unit_price_xaf: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_xaf?: number
+          basis?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          parcel_id?: string | null
+          quantity?: number | null
+          quote_id: string
+          seq: number
+          unit_price_xaf?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_xaf?: number
+          basis?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          parcel_id?: string | null
+          quantity?: number | null
+          quote_id?: string
+          seq?: number
+          unit_price_xaf?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_quote_lines_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_quote_lines_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "parcel_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcel_quote_payments: {
+        Row: {
+          amount_xaf: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          id: string
+          method: string
+          note: string | null
+          paid_at: string
+          place: string
+          proof_path: string | null
+          quote_id: string
+          receipt_no: string
+          received_by: string | null
+          reference: string | null
+        }
+        Insert: {
+          amount_xaf: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_at?: string
+          place?: string
+          proof_path?: string | null
+          quote_id: string
+          receipt_no?: string
+          received_by?: string | null
+          reference?: string | null
+        }
+        Update: {
+          amount_xaf?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          id?: string
+          method?: string
+          note?: string | null
+          paid_at?: string
+          place?: string
+          proof_path?: string | null
+          quote_id?: string
+          receipt_no?: string
+          received_by?: string | null
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_quote_payments_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "parcel_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcel_quotes: {
+        Row: {
+          amount_paid_xaf: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          deposit_id: string
+          id: string
+          invoice_no: string | null
+          invoiced_at: string | null
+          invoiced_by: string | null
+          notes: string | null
+          paid_at: string | null
+          quote_no: string
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          total_xaf: number
+          updated_at: string
+        }
+        Insert: {
+          amount_paid_xaf?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deposit_id: string
+          id?: string
+          invoice_no?: string | null
+          invoiced_at?: string | null
+          invoiced_by?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          quote_no?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          total_xaf?: number
+          updated_at?: string
+        }
+        Update: {
+          amount_paid_xaf?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deposit_id?: string
+          id?: string
+          invoice_no?: string | null
+          invoiced_at?: string | null
+          invoiced_by?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          quote_no?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          total_xaf?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_quotes_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: true
+            referencedRelation: "parcel_deposits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parcel_releases: {
+        Row: {
+          client_user_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          parcel_count: number
+          picked_by_name: string
+          picked_by_phone: string | null
+          release_no: string
+          released_at: string
+          released_by: string | null
+          signature_path: string | null
+        }
+        Insert: {
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          parcel_count?: number
+          picked_by_name: string
+          picked_by_phone?: string | null
+          release_no?: string
+          released_at?: string
+          released_by?: string | null
+          signature_path?: string | null
+        }
+        Update: {
+          client_user_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          parcel_count?: number
+          picked_by_name?: string
+          picked_by_phone?: string | null
+          release_no?: string
+          released_at?: string
+          released_by?: string | null
+          signature_path?: string | null
+        }
+        Relationships: []
+      }
+      parcels: {
+        Row: {
+          air_shipment_id: string | null
+          cbm: number | null
+          checked_in_at: string | null
+          checked_in_by: string | null
+          condition: string | null
+          condition_note: string | null
+          courier_waybill: string | null
+          created_at: string
+          delivered_at: string | null
+          deposit_id: string
+          description: string | null
+          height_cm: number | null
+          id: string
+          kind: string
+          length_cm: number | null
+          parcel_no: string
+          photo_path: string | null
+          release_id: string | null
+          seq: number
+          shipment_id: string | null
+          status: string
+          updated_at: string
+          warehouse_location: string | null
+          weight_kg: number | null
+          width_cm: number | null
+        }
+        Insert: {
+          air_shipment_id?: string | null
+          cbm?: number | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          condition?: string | null
+          condition_note?: string | null
+          courier_waybill?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          deposit_id: string
+          description?: string | null
+          height_cm?: number | null
+          id?: string
+          kind?: string
+          length_cm?: number | null
+          parcel_no: string
+          photo_path?: string | null
+          release_id?: string | null
+          seq: number
+          shipment_id?: string | null
+          status?: string
+          updated_at?: string
+          warehouse_location?: string | null
+          weight_kg?: number | null
+          width_cm?: number | null
+        }
+        Update: {
+          air_shipment_id?: string | null
+          cbm?: number | null
+          checked_in_at?: string | null
+          checked_in_by?: string | null
+          condition?: string | null
+          condition_note?: string | null
+          courier_waybill?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          deposit_id?: string
+          description?: string | null
+          height_cm?: number | null
+          id?: string
+          kind?: string
+          length_cm?: number | null
+          parcel_no?: string
+          photo_path?: string | null
+          release_id?: string | null
+          seq?: number
+          shipment_id?: string | null
+          status?: string
+          updated_at?: string
+          warehouse_location?: string | null
+          weight_kg?: number | null
+          width_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcels_air_shipment_id_fkey"
+            columns: ["air_shipment_id"]
+            isOneToOne: false
+            referencedRelation: "air_shipments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcels_deposit_id_fkey"
+            columns: ["deposit_id"]
+            isOneToOne: false
+            referencedRelation: "parcel_deposits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcels_release_fk"
+            columns: ["release_id"]
+            isOneToOne: false
+            referencedRelation: "parcel_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcels_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_batches: {
         Row: {
           created_at: string
@@ -2075,9 +3136,6 @@ export type Database = {
           balance_after: number
           balance_before: number
           batch_id: string | null
-          cancelled_at: string | null
-          cancelled_by: string | null
-          cancelled_reason: string | null
           beneficiary_bank_account: string | null
           beneficiary_bank_extra: string | null
           beneficiary_bank_name: string | null
@@ -2090,6 +3148,9 @@ export type Database = {
           beneficiary_notes: string | null
           beneficiary_phone: string | null
           beneficiary_qr_code_url: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
           cash_beneficiary_first_name: string | null
           cash_beneficiary_last_name: string | null
           cash_beneficiary_phone: string | null
@@ -2123,9 +3184,6 @@ export type Database = {
           balance_after: number
           balance_before: number
           batch_id?: string | null
-          cancelled_at?: string | null
-          cancelled_by?: string | null
-          cancelled_reason?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -2138,6 +3196,9 @@ export type Database = {
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null
           beneficiary_qr_code_url?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           cash_beneficiary_first_name?: string | null
           cash_beneficiary_last_name?: string | null
           cash_beneficiary_phone?: string | null
@@ -2171,9 +3232,6 @@ export type Database = {
           balance_after?: number
           balance_before?: number
           batch_id?: string | null
-          cancelled_at?: string | null
-          cancelled_by?: string | null
-          cancelled_reason?: string | null
           beneficiary_bank_account?: string | null
           beneficiary_bank_extra?: string | null
           beneficiary_bank_name?: string | null
@@ -2186,6 +3244,9 @@ export type Database = {
           beneficiary_notes?: string | null
           beneficiary_phone?: string | null
           beneficiary_qr_code_url?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
           cash_beneficiary_first_name?: string | null
           cash_beneficiary_last_name?: string | null
           cash_beneficiary_phone?: string | null
@@ -2641,6 +3702,39 @@ export type Database = {
           notification_type?: string
           requires_verified_phone?: boolean
           template?: string
+        }
+        Relationships: []
+      }
+      staff_push_devices: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_name: string | null
+          expo_token: string
+          id: string
+          last_seen_at: string
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_name?: string | null
+          expo_token: string
+          id?: string
+          last_seen_at?: string
+          platform: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_name?: string | null
+          expo_token?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3294,6 +4388,14 @@ export type Database = {
       }
     }
     Functions: {
+      _create_client_and_wallet: {
+        Args: { p_email: string; p_id: string; p_meta: Json }
+        Returns: undefined
+      }
+      _enqueue_welcome: {
+        Args: { p_first: string; p_user_id: string }
+        Returns: undefined
+      }
       add_cargo_shipment: {
         Args: {
           p_client_label: string
@@ -3304,78 +4406,6 @@ export type Database = {
           p_lookup_id: string
         }
         Returns: Json
-      }
-      create_cargo_shipment_manual: {
-        Args: {
-          p_bl_number: string
-          p_carrier: string
-          p_client_label: string
-          p_container_number: string
-          p_eta_promised?: string
-          p_etd_promised?: string
-          p_freight_usd?: number
-          p_pod_name: string
-          p_pod_unlocode?: string
-          p_pol_name?: string
-          p_pol_unlocode?: string
-          p_vessel_imo?: string
-          p_vessel_mmsi?: string
-          p_vessel_name?: string
-          p_voyage?: string
-        }
-        Returns: Json
-      }
-      cargo_detect_carrier: {
-        Args: { p_ref: string }
-        Returns: { carrier: string; reference_type: string }[]
-      }
-      cargo_fleet_status: {
-        Args: { p_client?: string }
-        Returns: Json
-      }
-      cargo_set_vessel_position: {
-        Args: {
-          p_course_deg?: number
-          p_imo: string
-          p_latitude: number
-          p_longitude: number
-          p_note?: string
-          p_reported_at?: string
-          p_speed_kn?: number
-        }
-        Returns: Json
-      }
-      cargo_set_freight_paid: {
-        Args: { p_shipment_id: string; p_paid?: boolean }
-        Returns: Json
-      }
-      cargo_set_telex: {
-        Args: { p_shipment_id: string; p_received?: boolean }
-        Returns: Json
-      }
-      find_client_by_customer_code: {
-        Args: { p_code: string }
-        Returns: Json
-      }
-      remove_cargo_shipment: {
-        Args: { p_id: string }
-        Returns: Json
-      }
-      request_cargo_lookup: {
-        Args: { p_reference: string }
-        Returns: Json
-      }
-      request_cargo_sync: {
-        Args: never
-        Returns: Json
-      }
-      _create_client_and_wallet: {
-        Args: { p_email: string; p_id: string; p_meta: Json }
-        Returns: undefined
-      }
-      _enqueue_welcome: {
-        Args: { p_first: string; p_user_id: string }
-        Returns: undefined
       }
       adjust_treasury_account: {
         Args: {
@@ -3559,6 +4589,174 @@ export type Database = {
         Args: { p_payment_id: string; p_reason?: string }
         Returns: Json
       }
+      cargo_account_assign: {
+        Args: { p_account_id?: string; p_client_user_id: string }
+        Returns: Json
+      }
+      cargo_account_clients: { Args: { p_account_id: string }; Returns: Json }
+      cargo_account_list: {
+        Args: { p_include_inactive?: boolean }
+        Returns: Json
+      }
+      cargo_account_upsert: {
+        Args: {
+          p_code?: string
+          p_contact_name?: string
+          p_contact_phone?: string
+          p_id?: string
+          p_is_active?: boolean
+          p_name?: string
+          p_notes?: string
+        }
+        Returns: Json
+      }
+      cargo_air_create: {
+        Args: {
+          p_airline?: string
+          p_awb_number: string
+          p_destination?: string
+          p_eta?: string
+          p_etd?: string
+          p_flight_no?: string
+          p_freight_usd?: number
+          p_notes?: string
+          p_origin?: string
+        }
+        Returns: Json
+      }
+      cargo_air_get: { Args: { p_air_id: string }; Returns: Json }
+      cargo_air_json: {
+        Args: { p_air_id: string; p_with_parcels?: boolean }
+        Returns: Json
+      }
+      cargo_air_list: { Args: never; Returns: Json }
+      cargo_air_load_parcels: {
+        Args: { p_air_id: string; p_parcel_ids: string[] }
+        Returns: Json
+      }
+      cargo_air_loadable_parcels: { Args: { p_air_id: string }; Returns: Json }
+      cargo_air_set_status: {
+        Args: { p_air_id: string; p_at?: string; p_status: string }
+        Returns: Json
+      }
+      cargo_air_unload_parcel: { Args: { p_parcel_id: string }; Returns: Json }
+      cargo_air_update: {
+        Args: {
+          p_air_id: string
+          p_airline?: string
+          p_awb_number?: string
+          p_destination?: string
+          p_eta?: string
+          p_etd?: string
+          p_flight_no?: string
+          p_freight_usd?: number
+          p_notes?: string
+          p_origin?: string
+        }
+        Returns: Json
+      }
+      cargo_detect_carrier: {
+        Args: { p_ref: string }
+        Returns: {
+          carrier: string
+          reference_type: string
+        }[]
+      }
+      cargo_fleet_status: { Args: { p_client?: string }; Returns: Json }
+      cargo_fmt_xaf: { Args: { p: number }; Returns: string }
+      cargo_load_parcels: {
+        Args: { p_parcel_ids: string[]; p_shipment_id: string }
+        Returns: Json
+      }
+      cargo_notify_client: {
+        Args: {
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      cargo_parts_summary: { Args: never; Returns: Json }
+      cargo_pricing_get: { Args: never; Returns: Json }
+      cargo_pricing_set: {
+        Args: { p_air_per_kg_xaf: number; p_sea_per_cbm_xaf: number }
+        Returns: Json
+      }
+      cargo_quote_add_line: {
+        Args: {
+          p_amount_xaf: number
+          p_kind: string
+          p_label: string
+          p_quote_id: string
+        }
+        Returns: Json
+      }
+      cargo_quote_add_payment: {
+        Args: {
+          p_amount_xaf: number
+          p_method?: string
+          p_note?: string
+          p_paid_at?: string
+          p_place?: string
+          p_proof_path?: string
+          p_quote_id: string
+          p_reference?: string
+        }
+        Returns: Json
+      }
+      cargo_quote_cancel_payment: {
+        Args: { p_payment_id: string; p_reason: string }
+        Returns: Json
+      }
+      cargo_quote_ensure: { Args: { p_deposit_id: string }; Returns: Json }
+      cargo_quote_get: { Args: { p_deposit_id: string }; Returns: Json }
+      cargo_quote_invoice: { Args: { p_quote_id: string }; Returns: Json }
+      cargo_quote_json: { Args: { p_quote_id: string }; Returns: Json }
+      cargo_quote_pay_from_wallet: {
+        Args: { p_amount_xaf: number; p_note?: string; p_quote_id: string }
+        Returns: Json
+      }
+      cargo_quote_recompute: {
+        Args: { p_quote_id: string }
+        Returns: undefined
+      }
+      cargo_quote_remove_line: { Args: { p_line_id: string }; Returns: Json }
+      cargo_quote_send: { Args: { p_quote_id: string }; Returns: Json }
+      cargo_quote_set_line: {
+        Args: {
+          p_amount_xaf?: number
+          p_basis?: string
+          p_label?: string
+          p_line_id: string
+          p_unit_price_xaf?: number
+        }
+        Returns: Json
+      }
+      cargo_secret: { Args: { p_name: string }; Returns: string }
+      cargo_set_freight_paid: {
+        Args: { p_paid?: boolean; p_shipment_id: string }
+        Returns: Json
+      }
+      cargo_set_telex: {
+        Args: { p_received?: boolean; p_shipment_id: string }
+        Returns: Json
+      }
+      cargo_set_vessel_position: {
+        Args: {
+          p_course_deg?: number
+          p_imo: string
+          p_latitude: number
+          p_longitude: number
+          p_note?: string
+          p_reported_at?: string
+          p_speed_kn?: number
+        }
+        Returns: Json
+      }
+      cargo_shipment_parcels: { Args: { p_shipment_id: string }; Returns: Json }
+      cargo_unload_parcel: { Args: { p_parcel_id: string }; Returns: Json }
       chat_avg_response_seconds_today: { Args: never; Returns: number }
       check_wallet_reconciliation: {
         Args: { p_user_id: string }
@@ -3675,6 +4873,26 @@ export type Database = {
         }
         Returns: Json
       }
+      create_cargo_shipment_manual: {
+        Args: {
+          p_bl_number: string
+          p_carrier: string
+          p_client_label: string
+          p_container_number: string
+          p_eta_promised?: string
+          p_etd_promised?: string
+          p_freight_usd?: number
+          p_pod_name: string
+          p_pod_unlocode?: string
+          p_pol_name?: string
+          p_pol_unlocode?: string
+          p_vessel_imo?: string
+          p_vessel_mmsi?: string
+          p_vessel_name?: string
+          p_voyage?: string
+        }
+        Returns: Json
+      }
       create_client_deposit: {
         Args: {
           p_agency_name?: string
@@ -3684,6 +4902,15 @@ export type Database = {
           p_desired_date?: string
           p_method: Database["public"]["Enums"]["deposit_method"]
           p_user_id: string
+        }
+        Returns: Json
+      }
+      create_client_source: {
+        Args: {
+          p_kind: string
+          p_label: string
+          p_notes?: string
+          p_phone?: string
         }
         Returns: Json
       }
@@ -3745,11 +4972,183 @@ export type Database = {
         }
         Returns: Json
       }
+      customs_active_broker: {
+        Args: { p_user_id: string }
+        Returns: {
+          active: boolean
+          company: string
+          created_at: string
+          created_by: string | null
+          license_no: string
+          representative_no: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customs_brokers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      customs_audit_cancel: { Args: { p_id: string }; Returns: Json }
+      customs_audit_claim: { Args: { p_id: string }; Returns: Json }
+      customs_audit_create: {
+        Args: {
+          p_client_user_id?: string
+          p_dau_number?: string
+          p_file_paths: string[]
+          p_paid_on?: string
+        }
+        Returns: Json
+      }
+      customs_audit_get: { Args: { p_id: string }; Returns: Json }
+      customs_audit_review: {
+        Args: { p_id: string; p_note: string; p_recoverable_xaf?: number }
+        Returns: Json
+      }
+      customs_audit_save_findings: {
+        Args: {
+          p_findings: Json
+          p_id: string
+          p_overpaid_xaf?: number
+          p_paid_on?: string
+          p_total_paid_xaf?: number
+        }
+        Returns: Json
+      }
+      customs_audit_submit: { Args: { p_id: string }; Returns: Json }
+      customs_broker_register: {
+        Args: {
+          p_active?: boolean
+          p_company: string
+          p_license_no: string
+          p_representative_no?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      customs_classification_cancel: { Args: { p_id: string }; Returns: Json }
+      customs_classification_claim: { Args: { p_id: string }; Returns: Json }
+      customs_classification_create: {
+        Args: {
+          p_client_user_id?: string
+          p_description?: string
+          p_facts?: Json
+          p_photo_paths?: string[]
+          p_product_name: string
+        }
+        Returns: Json
+      }
+      customs_classification_decide: {
+        Args: {
+          p_decision: string
+          p_final_code?: string
+          p_id: string
+          p_note?: string
+        }
+        Returns: Json
+      }
+      customs_classification_get: { Args: { p_id: string }; Returns: Json }
+      customs_classification_json: { Args: { p_id: string }; Returns: Json }
+      customs_classification_post: {
+        Args: { p_body: string; p_facts?: Json; p_id: string }
+        Returns: Json
+      }
+      customs_classification_submit: { Args: { p_id: string }; Returns: Json }
+      customs_client_supplier_documents: {
+        Args: { p_client_user_id: string }
+        Returns: Json
+      }
+      customs_invite_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          classification_id: string | null
+          client_user_id: string
+          created_at: string
+          due_on: string | null
+          expires_at: string
+          id: string
+          language: string
+          last_upload_at: string | null
+          message: string | null
+          requested: string[]
+          status: string
+          supplier_contact: string | null
+          supplier_name: string
+          token_hash: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "customs_supplier_invites"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      customs_invite_create: {
+        Args: {
+          p_classification_id?: string
+          p_due_on?: string
+          p_language?: string
+          p_message?: string
+          p_requested: string[]
+          p_supplier_contact?: string
+          p_supplier_name: string
+        }
+        Returns: Json
+      }
+      customs_invite_hash: { Args: { p_token: string }; Returns: string }
+      customs_invite_public: { Args: { p_token: string }; Returns: Json }
+      customs_invite_record_document: {
+        Args: {
+          p_kind: string
+          p_mime: string
+          p_name: string
+          p_note?: string
+          p_path: string
+          p_size: number
+          p_token: string
+        }
+        Returns: Json
+      }
+      customs_invite_revoke: { Args: { p_id: string }; Returns: Json }
+      customs_invite_rotate: { Args: { p_id: string }; Returns: Json }
+      customs_invite_upload_target: {
+        Args: {
+          p_kind: string
+          p_mime: string
+          p_size: number
+          p_token: string
+        }
+        Returns: Json
+      }
+      customs_my_files: { Args: never; Returns: Json }
+      customs_my_invites: { Args: never; Returns: Json }
+      customs_notice_archive: { Args: { p_id: string }; Returns: Json }
+      customs_notice_upsert: { Args: { p_notice: Json }; Returns: Json }
+      customs_notify_brokers: {
+        Args: { p_body: string; p_path: string; p_title: string }
+        Returns: undefined
+      }
+      customs_notify_client: {
+        Args: {
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      customs_review_queue: { Args: never; Returns: Json }
       delete_daily_rate: { Args: { p_rate_id: string }; Returns: Json }
       delete_payment_proof: { Args: { p_proof_id: string }; Returns: Json }
       delete_treasury_counterparty: { Args: { p_id: string }; Returns: Json }
       enqueue_password_changed_email: { Args: never; Returns: undefined }
       enqueue_welcome_email: { Args: never; Returns: undefined }
+      find_client_by_customer_code: { Args: { p_code: string }; Returns: Json }
+      generate_customer_code: { Args: never; Returns: string }
       generate_deposit_reference: { Args: never; Returns: string }
       generate_payment_batch_reference: { Args: never; Returns: string }
       generate_payment_reference: { Args: never; Returns: string }
@@ -3777,6 +5176,14 @@ export type Database = {
           user_id: string
           wallet_id: string
         }[]
+      }
+      get_client_source_clients: {
+        Args: { p_from: string; p_source_id: string; p_to: string }
+        Returns: Json
+      }
+      get_client_source_report: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
       }
       get_dashboard_stats: { Args: never; Returns: Json }
       get_deposit_stats: { Args: never; Returns: Json }
@@ -3818,6 +5225,7 @@ export type Database = {
       is_cash_agent: { Args: { _user_id: string }; Returns: boolean }
       is_support_admin: { Args: { _user_id: string }; Returns: boolean }
       is_treasurer: { Args: { _user_id: string }; Returns: boolean }
+      logistics_observed_transit: { Args: never; Returns: Json }
       mark_conversation_read_admin: {
         Args: { p_conversation_id: string }
         Returns: undefined
@@ -3856,12 +5264,182 @@ export type Database = {
           scope: string
         }[]
       }
+      parcel_status_for_air: { Args: { p_status: string }; Returns: string }
+      parcel_status_for_shipment: {
+        Args: { p_shipment_status: string }
+        Returns: string
+      }
       phone_country_from_e164: { Args: { p_phone: string }; Returns: string }
       process_payment: {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
       purge_webauthn_challenges: { Args: never; Returns: undefined }
+      reception_add_parcel: {
+        Args: {
+          p_copies?: number
+          p_courier_waybill?: string
+          p_deposit_id: string
+          p_description?: string
+          p_height_cm?: number
+          p_kind?: string
+          p_length_cm?: number
+          p_photo_path?: string
+          p_photo_paths?: string[]
+          p_weight_kg?: number
+          p_width_cm?: number
+        }
+        Returns: Json
+      }
+      reception_add_parcel_photos: {
+        Args: { p_parcel_id: string; p_paths: string[] }
+        Returns: Json
+      }
+      reception_assign_client: {
+        Args: { p_client_user_id: string; p_deposit_id: string }
+        Returns: Json
+      }
+      reception_attach_photos: {
+        Args: {
+          p_cover?: boolean
+          p_parcel_id: string
+          p_paths: string[]
+          p_uid: string
+        }
+        Returns: string
+      }
+      reception_board: {
+        Args: {
+          p_from?: string
+          p_limit?: number
+          p_location?: string
+          p_scope?: string
+          p_to?: string
+        }
+        Returns: Json
+      }
+      reception_can_edit: {
+        Args: {
+          p_deposit: Database["public"]["Tables"]["parcel_deposits"]["Row"]
+          p_uid: string
+        }
+        Returns: boolean
+      }
+      reception_cancel_deposit: {
+        Args: { p_deposit_id: string; p_reason?: string }
+        Returns: Json
+      }
+      reception_client: { Args: { p_user_id: string }; Returns: Json }
+      reception_client_by_code: { Args: { p_code: string }; Returns: Json }
+      reception_client_card: { Args: { p_user_id: string }; Returns: Json }
+      reception_client_deposits: { Args: { p_user_id: string }; Returns: Json }
+      reception_client_suppliers: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: Json
+      }
+      reception_close_deposit: {
+        Args: { p_deposit_id: string; p_notes?: string }
+        Returns: Json
+      }
+      reception_deposit_json: { Args: { p_deposit_id: string }; Returns: Json }
+      reception_get_deposit: { Args: { p_deposit_id: string }; Returns: Json }
+      reception_loadable_parcels: {
+        Args: { p_shipment_id: string }
+        Returns: Json
+      }
+      reception_my_day: { Args: { p_day?: string }; Returns: Json }
+      reception_open_deposit: {
+        Args: {
+          p_brought_by?: string
+          p_client_user_id?: string
+          p_location: string
+          p_representative_name?: string
+          p_representative_phone?: string
+          p_supplier_address?: string
+          p_supplier_contact?: string
+          p_supplier_email?: string
+          p_supplier_kind?: string
+          p_supplier_name?: string
+          p_supplier_phone?: string
+          p_supplier_wechat?: string
+        }
+        Returns: Json
+      }
+      reception_overview: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
+      }
+      reception_parcel_locked: {
+        Args: { p: Database["public"]["Tables"]["parcels"]["Row"] }
+        Returns: string
+      }
+      reception_pending_deposits: { Args: never; Returns: Json }
+      reception_quote_engaged: {
+        Args: { p_deposit_id: string }
+        Returns: string
+      }
+      reception_recent_clients: { Args: { p_limit?: number }; Returns: Json }
+      reception_recount_deposit: {
+        Args: { p_deposit_id: string }
+        Returns: undefined
+      }
+      reception_remove_parcel: {
+        Args: { p_parcel_id: string; p_reason?: string }
+        Returns: Json
+      }
+      reception_remove_parcel_photo: {
+        Args: { p_photo_id: string }
+        Returns: Json
+      }
+      reception_restore_deposit: {
+        Args: { p_deposit_id: string }
+        Returns: Json
+      }
+      reception_search_clients: { Args: { p_query: string }; Returns: Json }
+      reception_set_parcel_cover: {
+        Args: { p_photo_id: string }
+        Returns: Json
+      }
+      reception_set_supplier: {
+        Args: {
+          p_deposit_id: string
+          p_supplier_address?: string
+          p_supplier_contact?: string
+          p_supplier_email?: string
+          p_supplier_kind?: string
+          p_supplier_name?: string
+          p_supplier_phone?: string
+          p_supplier_wechat?: string
+        }
+        Returns: Json
+      }
+      reception_stock: { Args: { p_location?: string }; Returns: Json }
+      reception_update_deposit: {
+        Args: {
+          p_brought_by?: string
+          p_deposit_id: string
+          p_location?: string
+          p_notes?: string
+          p_representative_name?: string
+          p_representative_phone?: string
+        }
+        Returns: Json
+      }
+      reception_update_parcel: {
+        Args: {
+          p_courier_waybill?: string
+          p_description?: string
+          p_height_cm?: number
+          p_kind?: string
+          p_length_cm?: number
+          p_parcel_id: string
+          p_photo_path?: string
+          p_photo_paths?: string[]
+          p_weight_kg?: number
+          p_width_cm?: number
+        }
+        Returns: Json
+      }
       record_inventory_snapshot: {
         Args: {
           p_account_id: string
@@ -3894,10 +5472,20 @@ export type Database = {
         }
         Returns: Json
       }
+      register_staff_push_device: {
+        Args: {
+          p_app_version?: string
+          p_device_name?: string
+          p_platform: string
+          p_token: string
+        }
+        Returns: Json
+      }
       reject_deposit: {
         Args: { p_deposit_id: string; p_reason: string }
         Returns: Json
       }
+      remove_cargo_shipment: { Args: { p_id: string }; Returns: Json }
       reopen_chat_conversation: {
         Args: { p_conversation_id: string }
         Returns: undefined
@@ -3907,6 +5495,8 @@ export type Database = {
         Returns: undefined
       }
       reorder_quick_replies: { Args: { p_ids: string[] }; Returns: undefined }
+      request_cargo_lookup: { Args: { p_reference: string }; Returns: Json }
+      request_cargo_sync: { Args: never; Returns: Json }
       request_phone_verification: {
         Args: { p_country?: string; p_phone_e164: string }
         Returns: Json
@@ -3922,6 +5512,7 @@ export type Database = {
         Args: { p_deposit_id: string }
         Returns: Json
       }
+      run_cargo_sync: { Args: never; Returns: undefined }
       run_deposit_reminders: { Args: never; Returns: undefined }
       run_email_drainer: { Args: never; Returns: undefined }
       run_mola_daily_digest: { Args: never; Returns: undefined }
@@ -3940,6 +5531,21 @@ export type Database = {
           match_count: number
           snippet: string
         }[]
+      }
+      send_staff_push: {
+        Args: {
+          p_body: string
+          p_exclude?: string
+          p_path: string
+          p_permission: string
+          p_roles?: string[]
+          p_title: string
+        }
+        Returns: number
+      }
+      set_client_source: {
+        Args: { p_source_id: string; p_user_id: string }
+        Returns: Json
       }
       set_counterparty_settlement_rate: {
         Args: { p_counterparty_id: string; p_rate: number }
@@ -3971,12 +5577,15 @@ export type Database = {
           verified: boolean
         }[]
       }
+      staff_push_amount: { Args: { p: number }; Returns: string }
+      staff_push_client_name: { Args: { p_user_id: string }; Returns: string }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
       toggle_admin_status: {
         Args: { p_disabled: boolean; p_target_user_id: string }
         Returns: Json
       }
+      unregister_staff_push_device: { Args: { p_token: string }; Returns: Json }
       update_admin_last_login: { Args: never; Returns: Json }
       update_admin_profile: {
         Args: {
@@ -3990,6 +5599,16 @@ export type Database = {
         Args: {
           p_new_role: Database["public"]["Enums"]["app_role"]
           p_target_user_id: string
+        }
+        Returns: Json
+      }
+      update_client_source: {
+        Args: {
+          p_id: string
+          p_is_active?: boolean
+          p_label?: string
+          p_notes?: string
+          p_phone?: string
         }
         Returns: Json
       }
@@ -4059,6 +5678,47 @@ export type Database = {
           p_source_id: string
           p_source_table: Database["public"]["Enums"]["treasury_ledger_source_table"]
           p_void_reason: string
+        }
+        Returns: Json
+      }
+      warehouse_arrival_parcels: {
+        Args: { p_id: string; p_kind: string }
+        Returns: Json
+      }
+      warehouse_checkin_many: {
+        Args: { p_location?: string; p_parcel_ids: string[] }
+        Returns: Json
+      }
+      warehouse_checkin_parcel: {
+        Args: {
+          p_condition?: string
+          p_location?: string
+          p_note?: string
+          p_parcel_id: string
+        }
+        Returns: Json
+      }
+      warehouse_client_parcels: { Args: { p_code: string }; Returns: Json }
+      warehouse_day: { Args: never; Returns: Json }
+      warehouse_find_parcel: { Args: { p_query: string }; Returns: Json }
+      warehouse_flag_missing: {
+        Args: { p_missing?: boolean; p_note?: string; p_parcel_id: string }
+        Returns: Json
+      }
+      warehouse_flag_missing_many: {
+        Args: { p_note?: string; p_parcel_ids: string[] }
+        Returns: Json
+      }
+      warehouse_parcel_json: { Args: { p_parcel_id: string }; Returns: Json }
+      warehouse_release_get: { Args: { p_release_id: string }; Returns: Json }
+      warehouse_release_json: { Args: { p_release_id: string }; Returns: Json }
+      warehouse_release_parcels: {
+        Args: {
+          p_note?: string
+          p_parcel_ids: string[]
+          p_picked_by_name: string
+          p_picked_by_phone?: string
+          p_signature_path?: string
         }
         Returns: Json
       }
