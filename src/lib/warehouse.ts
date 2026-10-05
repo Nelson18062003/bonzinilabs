@@ -263,6 +263,7 @@ export function packagesProgress<T extends Pick<AirPackage, 'status' | 'received
   }
   return { total: packages.length, received, opened, missing, done: packages.length > 0 && missing.length === 0 };
 }
+export type PackagesProgress = ReturnType<typeof packagesProgress<AirPackage>>;
 
 /** Les colis d'une arrivée, paquet par paquet ; les colis libres (sans paquet) à part. */
 export function parcelsByPackage<T extends Pick<WarehouseParcel, 'air_package_id'>>(parcels: readonly T[]): { loose: T[]; byPackage: Map<string, T[]> } {

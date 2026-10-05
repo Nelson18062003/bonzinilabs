@@ -7,7 +7,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import type { ClientAtWarehouse, Release, WarehouseDay, WarehouseParcel } from '@/lib/warehouse';
+import { withPackage, type ClientAtWarehouse, type Release, type WarehouseArrivalDetail, type WarehouseDay, type WarehouseParcel } from '@/lib/warehouse';
+import type { AirPackage } from '@/lib/airPackage';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string; code?: string };
 
@@ -41,10 +42,17 @@ export function useWarehouseDay(enabled = true) {
 export function useWarehouseArrival(kind: 'air' | 'sea' | undefined, id: string | undefined) {
   return useQuery({
     queryKey: WH_KEYS.arrival(kind ?? '', id ?? ''),
-    queryFn: () => rpcJson<{ kind: 'air' | 'sea'; id: string; label: string; sub: string | null; parcels: WarehouseParcel[] }>('warehouse_arrival_parcels', { p_kind: kind, p_id: id }),
+    queryFn: () => rpcJson<WarehouseArrivalDetail>('warehouse_arrival_parcels', { p_kind: kind, p_id: id }),
     enabled: !!kind && !!id,
     staleTime: 10_000,
   });
+}
+
+/** Un paquet vient d'être reçu ou ouvert : l'arrivée le montre tout de suite, sans attendre son rechargement. */
+export function useSetArrivalPackage() {
+  const qc = useQueryClient();
+  return (kind: 'air' | 'sea', id: string, pkg: AirPackage) =>
+    qc.setQueryData<WarehouseArrivalDetail>(WH_KEYS.arrival(kind, id), (old) => (old?.packages ? { ...old, packages: withPackage(old.packages, pkg) } : old));
 }
 
 function useWhMutation<TArgs, TOut>(name: string, args: (a: TArgs) => Record<string, unknown>, success?: string) {

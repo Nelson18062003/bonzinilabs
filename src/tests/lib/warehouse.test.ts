@@ -1,7 +1,8 @@
 // Ce que l'entrepôt de Douala décide sans la base : lire un scan, dire où en
 // est un colis, et ce qui bloque une remise.
 import { describe, expect, it } from 'vitest';
-import { checkinSummary, groupParcelsByClient, isPending, parseWarehouseScan, quoteWord, releaseBlockers, releaseWord, transportLabel, warehouseStage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
+import { checkinSummary, groupParcelsByClient, isPending, packageReceivedWord, packageStage, packagesProgress, parcelsByPackage, parseWarehouseScan, quoteWord, releaseBlockers, releaseWord, transportLabel, warehouseStage, withPackage, type ClientQuoteSummary, type WarehouseParcel } from '@/lib/warehouse';
+import type { AirPackage } from '@/lib/airPackage';
 import { xaf } from '@/lib/cargoQuote';
 
 const parcel = (o: Partial<WarehouseParcel> = {}): WarehouseParcel => ({
@@ -110,5 +111,69 @@ describe('le fournisseur du dépôt', () => {
     expect(s).toMatchObject({ kind: 'supplier', name: '广州鞋业', contact: 'Li Wei', phone: '138' });
     expect(supplierLine(s)).toBe('广州鞋业 · Li Wei · 138');
     expect(supplierLine(null)).toBe('');
+  });
+});
+
+describe('les paquets avion de 32 kg, à Douala', () => {
+  const pkg = (o: Partial<AirPackage> = {}): AirPackage => ({
+    id: 'k1', package_no: 'PQ-000001', status: 'handed_over', air_shipment_id: 'a1', awb_number: '07112345675', air_status: 'ARRIVED', etd: null, flight_no: null,
+    max_weight_kg: 32, gross_weight_kg: 30, length_cm: null, width_cm: null, height_cm: null, notes: null, net_weight_kg: 28,
+    parcel_count: 3, client_count: 2, checked_count: 0, missing_count: 0, sealed_at: null, handed_over_at: null, refused_at: null,
+    refusal_reason: null, refused_air_shipment_id: null, received_at: null, opened_at: null, created_at: 'x', updated_at: 'x', parcels: null,
+    ...o,
+  });
+
+  it('dit où en est un paquet : attendu, reçu, ouvert', () => {
+    expect(packageStage(pkg({ status: 'sealed' }))).toBe('expected');
+    expect(packageStage(pkg({ status: 'handed_over' }))).toBe('expected');
+    expect(packageStage(pkg({ status: 'received', received_at: 'x' }))).toBe('received');
+    expect(packageStage(pkg({ status: 'opened', received_at: 'x', opened_at: 'x' }))).toBe('opened');
+  });
+
+  it('compte les paquets reçus et nomme ceux qui manquent encore', () => {
+    const list = [
+      pkg({ id: 'k1', package_no: 'PQ-000001', status: 'opened', received_at: 'x', opened_at: 'x' }),
+      pkg({ id: 'k2', package_no: 'PQ-000002', status: 'received', received_at: 'x' }),
+      pkg({ id: 'k3', package_no: 'PQ-000003' }),
+    ];
+    const p = packagesProgress(list);
+    expect(p).toMatchObject({ total: 3, received: 2, opened: 1, done: false });
+    expect(p.missing.map((k) => k.package_no)).toEqual(['PQ-000003']);
+    expect(packagesProgress(list.slice(0, 2)).done).toBe(true);
+    // Une arrivée sans paquet n'est pas « tout reçu » : il n'y a rien à recevoir.
+    expect(packagesProgress([]).done).toBe(false);
+  });
+
+  it('range les colis par paquet ; les colis libres à part, dans l’ordre', () => {
+    const { loose, byPackage } = parcelsByPackage([
+      parcel({ id: 'a', air_package_id: 'k1', package_no: 'PQ-000001' }),
+      parcel({ id: 'b' }),
+      parcel({ id: 'c', air_package_id: 'k2', package_no: 'PQ-000002' }),
+      parcel({ id: 'd', air_package_id: 'k1', package_no: 'PQ-000001' }),
+      parcel({ id: 'e', air_package_id: null }),
+    ]);
+    expect(loose.map((p) => p.id)).toEqual(['b', 'e']);
+    expect(byPackage.get('k1')?.map((p) => p.id)).toEqual(['a', 'd']);
+    expect(byPackage.get('k2')?.map((p) => p.id)).toEqual(['c']);
+  });
+
+  it('remplace un paquet reçu dans la liste de l’arrivée, sans y faire entrer un paquet d’ailleurs', () => {
+    const list = [pkg({ id: 'k1' }), pkg({ id: 'k2', package_no: 'PQ-000002' })];
+    const next = withPackage(list, pkg({ id: 'k2', package_no: 'PQ-000002', status: 'received', received_at: 'x', parcels: [] }));
+    expect(next.map((k) => k.status)).toEqual(['handed_over', 'received']);
+    expect(next[1].parcels).toBeNull();
+    expect(withPackage(list, pkg({ id: 'other' }))).toHaveLength(2);
+  });
+
+  it('le mot du scan d’un paquet : reçu, déjà reçu, tous là, ou d’une autre arrivée', () => {
+    const r = { already: false, package_no: 'PQ-000002', received: 2, total: 3, package: { air_shipment_id: 'a1', awb_number: '07112345675' } };
+    expect(packageReceivedWord(r, 'a1')).toEqual({ outcome: 'ok', text: 'PQ-000002 reçu · 2 / 3 paquets reçus' });
+    expect(packageReceivedWord({ ...r, already: true }, 'a1')).toEqual({ outcome: 'again', text: 'PQ-000002 déjà reçu · 2 / 3 paquets reçus' });
+    expect(packageReceivedWord({ ...r, received: 3 }, 'a1')).toEqual({ outcome: 'ok', text: 'PQ-000002 reçu · les 3 paquets sont là' });
+    expect(packageReceivedWord({ ...r, received: 1, total: 1 })).toEqual({ outcome: 'ok', text: 'PQ-000002 reçu · le paquet est là' });
+    expect(packageReceivedWord(r, 'a2')).toEqual({ outcome: 'unknown', text: 'PQ-000002 reçu, mais il n\'est pas dans cette arrivée : il voyage par LTA 071-12345675' });
+    expect(packageReceivedWord({ ...r, package: { air_shipment_id: 'a1', awb_number: 'PROV-ABC123' } }, 'a2').text).toContain('une autre expédition');
+    // Sans arrivée de référence (le lien du scanner), pas de comparaison.
+    expect(packageReceivedWord(r).outcome).toBe('ok');
   });
 });
