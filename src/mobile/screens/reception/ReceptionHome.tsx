@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
+import { useAirPackages } from '@/hooks/useAirPackages';
 import { SURFACE, TEXT, TYPE, BottomSheet, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, SoftPill, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
 import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
@@ -93,6 +94,9 @@ export function ReceptionHome() {
           </button>
         </div>
 
+        {/* Au bureau (avion), les paquets de 32 kg sont le second geste de la journée. */}
+        {location === 'office' && <PackagesEntry prominent />}
+
         {pending > 0 && (
           <button type="button" onClick={() => navigate('/r/pending')} className="flex w-full items-center gap-4 rounded-lg bg-[#FFF1C2] px-4 py-4 text-left text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
             <HelpCircle className="h-6 w-6 shrink-0" />
@@ -136,6 +140,8 @@ export function ReceptionHome() {
             )}
           </section>
         )}
+
+        {location === 'warehouse' && <PackagesEntry prominent={false} />}
       </div>
 
       {/* La pédagogie tient en quatre lignes, à portée de main, jamais imposée. */}
@@ -151,5 +157,37 @@ export function ReceptionHome() {
         <SoftPill onClick={() => setHelpOpen(false)} className="mt-6 h-14 w-full text-[17px]">{t('rc_got_it')}</SoftPill>
       </BottomSheet>
     </div>
+  );
+}
+
+/**
+ * L'entrée des paquets avion : grande carte au bureau (le lieu de l'avion),
+ * simple ligne à l'entrepôt. Le chiffre : les paquets en cours de remplissage.
+ */
+function PackagesEntry({ prominent }: { prominent: boolean }) {
+  const navigate = useNavigate();
+  const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
+  const { data } = useAirPackages('bureau');
+  const open = data?.filter((p) => p.status === 'open').length ?? 0;
+  const ready = data?.filter((p) => p.status === 'sealed' && !p.air_shipment_id).length ?? 0;
+  const summary = [open > 0 ? ti('rc_pk_home_open', { count: open }) : t('rc_pk_home_none'), ready > 0 ? ti('rc_pk_home_ready', { count: ready }) : null].filter(Boolean).join(' · ');
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/r/paquets')}
+      className={cn('flex w-full items-center gap-4 rounded-lg text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]', prominent ? 'min-h-[88px] px-4 py-4' : 'min-h-[64px] px-4 py-3')}
+    >
+      <LocationMark location="office" size={prominent ? 48 : 32} />
+      <span className="min-w-0 flex-1">
+        <span className={cn('block', prominent ? TYPE.lead : TYPE.bodyStrong, TEXT.strong)}>{t('rc_pk_title')}</span>
+        <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{summary}</span>
+        {prominent && <span className={cn('mt-0.5 block', TYPE.small, TEXT.muted)}>{t('rc_pk_home_hint')}</span>}
+      </span>
+      {open > 0 && (
+        <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-[#2C2C2C] px-2.5 text-[16px] font-semibold tabular-nums text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">{open}</span>
+      )}
+      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+    </button>
   );
 }

@@ -11,3 +11,5 @@ export { ReceptionClients } from './ReceptionClients';
 export { ReceptionClientCard } from './ReceptionClientCard';
 export { ReceptionSearch } from './ReceptionSearch';
 export { ReceptionSupplier } from './ReceptionSupplier';
+export { ReceptionPackages } from './ReceptionPackages';
+export { ReceptionPackage } from './ReceptionPackage';

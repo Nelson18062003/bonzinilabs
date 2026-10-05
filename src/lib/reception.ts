@@ -11,6 +11,7 @@
 import type { ShippingDestination } from '@/lib/customerCode';
 import { getCurrentLocale } from '@/i18n';
 import { normalizeCustomerCode } from '@/lib/customerCode';
+import { isProvisionalAwb } from '@/lib/airShipment';
 
 export type ReceptionLocation = ShippingDestination; // 'warehouse' (Sea cargo) | 'office' (Air cargo)
 export type BroughtBy = 'courier' | 'client' | 'representative' | 'pickup';
@@ -225,7 +226,7 @@ export type StageTone = 'success' | 'pending' | 'danger' | 'info' | 'neutral';
  */
 export function parcelStage(p: Pick<Parcel, 'status' | 'shipment_id' | 'container_number' | 'weight_kg' | 'cbm' | 'photo_path'> & { air_shipment_id?: string | null; awb_number?: string | null; checked_in_at?: string | null; warehouse_location?: string | null; condition?: string | null; delivered_at?: string | null; release_no?: string | null }): { tone: StageTone; label: string; inBox: boolean } {
   const air = !!p.air_shipment_id;
-  const box = air ? `LTA ${p.awb_number ?? ''}`.trim() : p.container_number ?? 'boîte';
+  const box = air ? (isProvisionalAwb(p.awb_number) ? 'LTA à venir' : `LTA ${p.awb_number ?? ''}`.trim()) : p.container_number ?? 'boîte';
   // Douala parle en premier : remis, manquant, pointé.
   if (p.delivered_at || p.status === 'delivered') return { tone: 'success', label: `Remis · ${p.release_no ?? box}`, inBox: true };
   if (p.condition === 'missing') return { tone: 'danger', label: 'Manquant à Douala', inBox: true };
