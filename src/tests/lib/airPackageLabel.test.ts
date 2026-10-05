@@ -41,8 +41,8 @@ describe("l'étiquette du paquet avion", () => {
     const no = textOps(base).find((o) => o.row === 'no');
     expect(no?.text).toBe('PQ-000123');
     expect(Number(/(\d+(?:\.\d+)?)px/.exec(no!.font)?.[1])).toBeGreaterThanOrEqual(80);
-    expect(all).toContain('31,5 kg');
-    expect(all).toContain('/ 32 kg');
+    expect(all).toContain('31,5\u00a0kg');
+    expect(all).toContain('/ 32\u00a0kg');
     expect(all).toContain('60 × 40 × 40 cm');
     expect(all).toContain('2026-10-05 12:29'); // heure de Guangzhou
   });

@@ -109,7 +109,8 @@ export function weightGauge(p: Pick<AirPackage, 'net_weight_kg' | 'max_weight_kg
   return { net, max, left: Math.max(0, Math.round((max - net) * 10) / 10), ratio, tone: ratio >= 0.99 ? 'full' : ratio >= 0.85 ? 'near' : 'ok' };
 }
 
-export const fmtKg1 = (n: number | null | undefined) => `${(Number(n) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} kg`;
+/** « 27,9 kg » — espace insécable : le nombre et l'unité ne se séparent jamais en fin de ligne. */
+export const fmtKg1 = (n: number | null | undefined) => `${(Number(n) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}\u00a0kg`;
 
 /** Un paquet peut-il encore partir (être affecté à une expédition) ? */
 export function isAssignable(p: Pick<AirPackage, 'status' | 'air_shipment_id'>): boolean {
