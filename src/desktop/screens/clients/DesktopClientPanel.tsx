@@ -24,6 +24,7 @@ import { StatementPeriodSheet } from '@/components/statement/StatementPeriodShee
 import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { ClientOrigin } from '@/components/clients/ClientOrigin';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { formatXAF, formatCurrency, formatDate } from '@/lib/formatters';
 import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
@@ -77,7 +78,6 @@ import {
   Copy,
   FileDown,
   Key,
-  Link2,
   Loader2,
   MoreHorizontal,
   Minus,
@@ -681,20 +681,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <KV k="Entreprise" v={client.companyName || '—'} />
             <KV k="Ville / Pays" v={[client.city, client.country].filter(Boolean).join(' · ') || '—'} />
             <KV k="Client depuis" v={formatDate(client.createdAt)} />
-            <KV
-              k="Source"
-              v={
-                client.utmSource ? (
-                  <span className="inline-flex items-center gap-1">
-                    <Link2 className={cn('h-3 w-3 shrink-0', TEXT.muted)} />
-                    <span className="capitalize">{client.utmSource}</span>
-                    {client.utmCampaign ? <span className={TEXT.muted}> · {client.utmCampaign}</span> : null}
-                  </span>
-                ) : (
-                  '—'
-                )
-              }
-            />
+            <KV k="Origine" v={<ClientOrigin userId={clientId} utmSource={client.utmSource} />} />
           </div>
         </div>
 

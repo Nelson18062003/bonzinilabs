@@ -3,10 +3,13 @@
  * et le rendu desktop. Un seul endroit décide de ce qui est valide, de ce
  * qui est envoyé et de ce qui se passe après.
  *
- * Trois sections, sept champs :
+ * Quatre sections :
  *   · Identité      : prénom*, nom*, entreprise
  *   · Contact       : WhatsApp* (+ autres numéros), e-mail
  *   · Localisation  : pays*, ville
+ *   · Origine       : source* (commercial, recommandation, réseau social…,
+ *                     ou « Je ne sais pas ») — posée APRÈS la création par
+ *                     `set_client_source`, seul chemin autorisé en base.
  *
  * Numéros : le PREMIER est le principal — celui qui reçoit le mot de passe
  * et que `clients.phone` stocke. Les suivants vont dans `client_phones` par
@@ -22,6 +25,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useCreateClient } from '@/hooks/useClientManagement';
 import { useSetClientPhones, type ClientPhoneInput } from '@/hooks/useClientPhones';
+import { useSetClientSource } from '@/hooks/useClientSources';
 import { countryLabelFr, type CountryIso } from '@/data/countries';
 import {
   EMPTY_PHONE,
@@ -60,6 +64,8 @@ export interface CreatedClient {
   primaryE164: string;
   /** Les numéros secondaires n'ont pas pu être enregistrés (le client, lui, existe). */
   extraPhonesFailed: boolean;
+  /** L'origine n'a pas pu être enregistrée (le client existe ; elle se pose depuis sa fiche). */
+  sourceFailed: boolean;
 }
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,6 +73,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function useCreateClientForm() {
   const createClient = useCreateClient();
   const setPhones = useSetClientPhones();
+  const setSource = useSetClientSource();
 
   const [fields, setFields] = useState<CreateClientFields>({
     firstName: '',
@@ -79,6 +86,9 @@ export function useCreateClientForm() {
   const [countryIso, setCountryIso] = useState<CountryIso>(EMPTY_PHONE.country);
   const [countryTouched, setCountryTouched] = useState(false);
   const [created, setCreated] = useState<CreatedClient | null>(null);
+  // Origine du client (commercial, recommandation, réseau social…) :
+  // OBLIGATOIRE — « Je ne sais pas » est une réponse acceptée.
+  const [sourceId, setSourceId] = useState<string | null>(null);
 
   const setField = useCallback(<K extends keyof CreateClientFields>(key: K, value: CreateClientFields[K]) => {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -116,17 +126,18 @@ export function useCreateClientForm() {
   const emailValid = emailTrim === '' || EMAIL_SHAPE.test(emailTrim);
 
   const errors = useMemo(() => {
-    const e: Partial<Record<'firstName' | 'lastName' | 'primaryPhone' | 'extraPhones' | 'email', true>> = {};
+    const e: Partial<Record<'firstName' | 'lastName' | 'primaryPhone' | 'extraPhones' | 'email' | 'source', true>> = {};
     if (fields.firstName.trim() === '') e.firstName = true;
     if (fields.lastName.trim() === '') e.lastName = true;
     if (!isPhoneComplete(primary.value)) e.primaryPhone = true;
     if (!filledExtras.every((row) => isPhoneComplete(row.value))) e.extraPhones = true;
     if (!emailValid) e.email = true;
+    if (!sourceId) e.source = true;
     return e;
-  }, [fields.firstName, fields.lastName, primary.value, filledExtras, emailValid]);
+  }, [fields.firstName, fields.lastName, primary.value, filledExtras, emailValid, sourceId]);
 
   const canSubmit = Object.keys(errors).length === 0 && !createClient.isPending;
-  const isSubmitting = createClient.isPending || setPhones.isPending;
+  const isSubmitting = createClient.isPending || setPhones.isPending || setSource.isPending;
 
   // ── Envoi ─────────────────────────────────────────────────────────────
   const submit = useCallback(async (): Promise<CreatedClient | null> => {
@@ -171,16 +182,27 @@ export function useCreateClientForm() {
       }
     }
 
+    // L'origine se pose juste après la création (le client doit exister).
+    let sourceFailed = false;
+    if (result.clientId && sourceId) {
+      try {
+        await setSource.mutateAsync({ userId: result.clientId, sourceId, silent: true });
+      } catch {
+        sourceFailed = true;
+      }
+    }
+
     const done: CreatedClient = {
       clientId: result.clientId ?? '',
       tempPassword: result.tempPassword ?? '',
       fullName,
       primaryE164,
       extraPhonesFailed,
+      sourceFailed,
     };
     setCreated(done);
     return done;
-  }, [canSubmit, primary, fields, emailTrim, countryIso, filledExtras, createClient, setPhones]);
+  }, [canSubmit, primary, fields, emailTrim, countryIso, filledExtras, createClient, setPhones, sourceId, setSource]);
 
   return {
     fields,
@@ -192,6 +214,8 @@ export function useCreateClientForm() {
     countryIso,
     chooseCountry,
     errors,
+    sourceId,
+    setSourceId,
     emailValid,
     canSubmit,
     isSubmitting,

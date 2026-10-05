@@ -32,6 +32,8 @@ interface DateRangePickerProps {
   showGranularity?: boolean;
   /** « Comparer à la période précédente » — idem, propre au tableau de bord. */
   showCompare?: boolean;
+  /** `sm` : 36 px, à la hauteur des filtres d'une barre d'outils (Trésorerie). */
+  size?: 'md' | 'sm';
 }
 
 /**
@@ -45,7 +47,7 @@ interface DateRangePickerProps {
  * calculs de bornes, c'est ainsi que l'un a régressé sans que l'autre ne le
  * voie.
  */
-export function DateRangePicker({ showGranularity = true, showCompare = true }: DateRangePickerProps = {}) {
+export function DateRangePicker({ showGranularity = true, showCompare = true, size = 'md' }: DateRangePickerProps = {}) {
   const { range, setPreset, setCustom, setGranularity, setCompareToPrevious } = useDateRange();
   const [open, setOpen] = React.useState(false);
 
@@ -76,7 +78,10 @@ export function DateRangePicker({ showGranularity = true, showCompare = true }: 
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-[#D9D9D9] bg-white px-3 text-[16px] font-medium text-[#1E1E1E] dark:border-[#444444] dark:bg-[#2C2C2C] dark:text-[#F5F5F5]"
+          className={cn(
+            'inline-flex items-center gap-2 rounded-lg border border-[#D9D9D9] bg-white px-3 font-medium text-[#1E1E1E] dark:border-[#444444] dark:bg-[#2C2C2C] dark:text-[#F5F5F5]',
+            size === 'sm' ? 'h-9 text-[13.5px]' : 'min-h-11 text-[16px]',
+          )}
         >
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
           <span className="whitespace-nowrap">{label}</span>
