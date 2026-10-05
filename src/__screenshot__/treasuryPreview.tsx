@@ -7,7 +7,9 @@
  * n'est pas vérifiée.
  *
  * Lancement : SCREENSHOT_MOCK=1 npx vite --port 8081, puis /treasury-preview.html
- * La vue est choisie par ?view=operations|analysis|accounts|counterparties|purchase|sale
+ * La vue est le chemin sous la trésorerie : ?view=operations/purchase/p2,
+ * ?view=accounts/a2, ?view=purchase… (vide = vue d'ensemble) ; ?type= est
+ * transmis tel quel (filtre des opérations, des contreparties).
  */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -18,11 +20,13 @@ import { TREASURY_ROOT } from '@/desktop/screens/treasury/treasuryNav';
 import '../index.css';
 
 const params = new URLSearchParams(window.location.search);
-const view = params.get('view') ?? 'operations';
+const view = params.get('view') ?? '';
+const type = params.get('type');
+const initialPath = `${TREASURY_ROOT}${view ? `/${view}` : ''}${type ? `?type=${type}` : ''}`;
 const dark = params.get('theme') === 'dark';
 
-// `purchase` et `sale` sont rendus par l'écran lui-même, en fenêtre
-// par-dessus Opérations — exactement comme en production.
+// `purchase` et `sale` sont rendus par l'écran lui-même, en panneau
+// par-dessus la rubrique — exactement comme en production.
 function Screen() {
   return <DesktopTreasuryScreen />;
 }
@@ -32,7 +36,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider attribute="class" defaultTheme={dark ? 'dark' : 'light'} forcedTheme={dark ? 'dark' : 'light'}>
       {/* La vue se lit dans l'URL : le harnais monte donc le routeur sur la
           route voulue, exactement comme la production. */}
-      <MemoryRouter initialEntries={[`${TREASURY_ROOT}/${view}`]}>
+      <MemoryRouter initialEntries={[initialPath]}>
         {/* MÊME racine que `DesktopAppShell` : la classe `admin-theme` porte
             les variables du design system. Le harnais peignait auparavant son
             propre fond (SURFACE.canvas) — il montrait donc un thème que la

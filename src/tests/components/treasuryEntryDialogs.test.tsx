@@ -1,16 +1,12 @@
 /**
- * Achat et vente USDT s'ouvrent EN FENÊTRE, par-dessus le module — pas dans
- * une page à part.
+ * Trésorerie desktop (refonte d'octobre 2026) — le contrat de l'écran :
  *
- * RETOUR UTILISATEUR, mot pour mot : « je ne veux pas que ça ouvre tout un
- * nouvel écran… une longue formule inutile… montre-moi un formulaire qui
- * apparaît avec un fond flouté ». Ce test fixe le contrat :
- *
- *   · à `/treasury/purchase` et `/treasury/sale`, une boîte de dialogue est
- *     ouverte ET l'écran Trésorerie est toujours là derrière ;
- *   · à `/treasury/operations`, aucune boîte de dialogue ;
- *   · fermer la fenêtre ramène à la vue de fond, sans quitter le module ;
- *   · le formulaire est structuré en étapes numérotées, pas en cartes.
+ *   · achat et vente s'ouvrent en PANNEAU par-dessus la rubrique courante,
+ *     jamais dans une page à part ; la rubrique reste montée derrière ;
+ *   · le formulaire est en étapes numérotées, et « Vérifier et enregistrer »
+ *     n'enregistre rien tant que la saisie est incomplète ;
+ *   · l'URL est l'état : un lien vers une opération ouvre SA fiche, un lien
+ *     vers un compte ouvre SA page.
  */
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
@@ -19,9 +15,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('@/hooks/useTreasury', () => import('@/__screenshot__/mockTreasury'));
 vi.mock('@/desktop/screens/treasury/TreasuryRateChart', () => ({ TreasuryRateChart: () => null }));
-// Le sujet est la fenêtre, pas les droits : un administrateur qui a tout.
+// Le sujet est l'écran, pas les droits : un super admin qui a tout.
 vi.mock('@/contexts/AdminAuthContext', () => ({
-  useAdminAuth: () => ({ hasPermission: () => true, admin: null, loading: false }),
+  useAdminAuth: () => ({ hasPermission: () => true, currentUser: { role: 'super_admin' }, admin: null, loading: false }),
 }));
 
 import { DesktopTreasuryScreen } from '@/desktop/screens/treasury/DesktopTreasuryScreen';
@@ -43,7 +39,7 @@ function mountAt(pathname: string) {
   );
 }
 
-describe('Achat et vente USDT en fenêtre', () => {
+describe('Trésorerie desktop', () => {
   const originalError = console.error;
   beforeAll(() => {
     console.error = () => undefined;
@@ -52,51 +48,62 @@ describe('Achat et vente USDT en fenêtre', () => {
     console.error = originalError;
   });
 
-  it("à /purchase, la fenêtre « Nouvel achat USDT » est ouverte PAR-DESSUS l'écran Trésorerie", async () => {
+  it("à /purchase, le panneau « Nouvel achat d’USDT » s'ouvre PAR-DESSUS la trésorerie, en quatre étapes", async () => {
     mountAt('/m/more/treasury/purchase');
-    const dialog = await screen.findByRole('dialog', { name: /Nouvel achat USDT/i });
-    expect(dialog).toBeTruthy();
-    // L'écran derrière est toujours monté : le module n'a pas été quitté.
-    // (Radix le marque `aria-hidden` tant que la fenêtre est ouverte — c'est
-    // précisément « derrière », d'où `hidden: true`.)
-    expect(screen.getByRole('heading', { name: 'Trésorerie', hidden: true })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Opérations', hidden: true })).toBeTruthy();
-    // Quatre décisions numérotées, pas quatre cartes équivalentes.
+    const dialog = await screen.findByRole('dialog', { name: /Nouvel achat d’USDT/i });
+    expect(screen.getByRole('heading', { level: 1, name: 'Trésorerie' })).toBeTruthy();
+    expect(screen.getByRole('navigation', { name: /Rubriques/i })).toBeTruthy();
     const inside = within(dialog);
-    expect(inside.getByText('Fournisseur')).toBeTruthy();
-    expect(inside.getByText('Compte XAF débité')).toBeTruthy();
-    expect(inside.getByText('Montant')).toBeTruthy();
-    expect(inside.getByText('Date et référence')).toBeTruthy();
-    expect(inside.getByRole('button', { name: "Enregistrer l'achat" })).toBeTruthy();
+    for (const step of ['Fournisseur', 'Montant', 'Payé depuis', 'Date et référence']) {
+      expect(inside.getByRole('heading', { name: step })).toBeTruthy();
+    }
+    expect(inside.getByRole('button', { name: 'Vérifier et enregistrer' })).toBeTruthy();
   });
 
-  it('à /sale, la fenêtre « Nouvelle vente USDT » est ouverte, avec le stock après vente', async () => {
+  it('à /sale, le panneau de vente montre le stock USDT pendant la saisie', async () => {
     mountAt('/m/more/treasury/sale');
-    const dialog = await screen.findByRole('dialog', { name: /Nouvelle vente USDT/i });
+    const dialog = await screen.findByRole('dialog', { name: /Nouvelle vente d’USDT/i });
     const inside = within(dialog);
-    expect(inside.getByText('Acheteur')).toBeTruthy();
-    expect(inside.getByText('Stock actuel → après')).toBeTruthy();
-    expect(inside.getByRole('button', { name: 'Enregistrer la vente' })).toBeTruthy();
+    expect(inside.getByRole('heading', { name: 'Acheteur' })).toBeTruthy();
+    expect(inside.getByText('Stock USDT')).toBeTruthy();
   });
 
   it('à /operations, aucune fenêtre', async () => {
     mountAt('/m/more/treasury/operations');
-    await screen.findByRole('heading', { name: 'Trésorerie' });
+    await screen.findByRole('heading', { level: 1, name: 'Opérations' });
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('fermer la fenêtre ramène sur la vue de fond, sans quitter le module', async () => {
+  it('fermer un panneau vide ramène à la rubrique de fond, sans quitter le module', async () => {
     mountAt('/m/more/treasury/purchase');
-    await screen.findByRole('dialog', { name: /Nouvel achat USDT/i });
-    fireEvent.click(screen.getByRole('button', { name: 'Fermer' }));
-    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/m/more/treasury/operations'));
+    const dialog = await screen.findByRole('dialog', { name: /Nouvel achat d’USDT/i });
+    fireEvent.click(within(dialog).getAllByRole('button', { name: 'Fermer' })[0]);
+    await waitFor(() => expect(screen.getByTestId('pathname').textContent).toBe('/m/more/treasury'));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it("le bouton « Enregistrer » reste désactivé tant que la saisie n'est pas complète", async () => {
+  it("une saisie incomplète n'ouvre pas la confirmation et dit ce qui manque", async () => {
     mountAt('/m/more/treasury/purchase');
-    const dialog = await screen.findByRole('dialog', { name: /Nouvel achat USDT/i });
-    const submit = within(dialog).getByRole('button', { name: "Enregistrer l'achat" });
-    expect((submit as HTMLButtonElement).disabled).toBe(true);
+    const dialog = await screen.findByRole('dialog', { name: /Nouvel achat d’USDT/i });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vérifier et enregistrer' }));
+    expect(await within(dialog).findByText(/Il manque des informations/)).toBeTruthy();
+    expect(within(dialog).getByText('Choisissez le fournisseur.')).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: /Enregistrer cet achat/ })).toBeNull();
+  });
+
+  it("un lien vers un achat réparti ouvre SA fiche, avec les deux comptes payeurs", async () => {
+    mountAt('/m/more/treasury/operations/purchase/p2');
+    const panel = await screen.findByRole('button', { name: 'Fermer la fiche' });
+    const aside = panel.closest('aside')!;
+    expect(within(aside).getAllByText('UBA Cameroun').length).toBeGreaterThan(0);
+    expect(within(aside).getAllByText('Orange Money Douala').length).toBeGreaterThan(0);
+    expect(within(aside).getByRole('button', { name: /Annuler cette opération/ })).toBeTruthy();
+  });
+
+  it('un lien vers un compte ouvre SA page, avec ses mouvements', async () => {
+    mountAt('/m/more/treasury/accounts/a2');
+    expect(await screen.findByRole('heading', { name: 'UBA Cameroun' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Mouvements' })).toBeTruthy();
+    expect(screen.getAllByText('Achat USDT · paiement').length).toBeGreaterThan(0);
   });
 });

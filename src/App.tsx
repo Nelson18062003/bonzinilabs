@@ -153,7 +153,6 @@ const DesktopCargoMap = lazy(() => import("./desktop/screens/cargo").then(m => (
 const DesktopCargoDossier = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoDossier })));
 const DesktopCargoReception = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoReception })));
 const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
-const DesktopBalanceDashboard = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopBalanceDashboard })));
 const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
 const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewSale })));
 const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartiesScreen })));
@@ -394,12 +393,13 @@ const App = () => (
                 <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts/:accountId" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopBalanceDashboard />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
