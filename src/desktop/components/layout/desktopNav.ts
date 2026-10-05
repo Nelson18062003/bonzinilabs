@@ -84,7 +84,7 @@ export const DESKTOP_NAV: DesktopNavGroup[] = [
   {
     label: 'Système',
     items: [
-      { to: '/m/more/admins', label: 'Administrateurs', icon: Shield, perm: 'canManageUsers' },
+      { to: '/m/equipe', label: 'Mes équipes', icon: Shield, perm: 'canManageUsers' },
       { to: '/m/more/history', label: 'Journaux', icon: ScrollText, perm: 'canViewLogs' },
       { to: '/m/more/settings', label: 'Paramètres', icon: Settings },
       { to: '/m/more', label: 'Tous les outils', icon: LayoutGrid, end: true },

@@ -50,6 +50,40 @@
 prérequis en tête, rejouable), puis `npx supabase migration repair --status applied 20261005150000`, puis `/gen-types`
 (les deux nouvelles RPC ; l'app les appelle déjà). Rien à redéployer côté fonctions serveur.
 
+### `20261005160000_teams_commercials.sql` (à passer APRÈS la précédente)
+**PR :** Mes équipes + commerciaux (rôle isolé, prospects, objectifs, tableaux de bord)
+**Contenu :**
+- Rôle `commercial` (`app_role`) ; permissions `canProspect` (le commercial) et `canManageSales` (super admin) dans
+  `admin_has_permission`, l'app et la passerelle Mola.
+- **Isolation** : `is_admin()` exclut désormais le commercial — une soixantaine de politiques (portefeuilles, dépôts,
+  paiements, bénéficiaires, colis, preuves…) et une quinzaine de RPC lui sont fermées d'un coup. Trois politiques qui
+  testaient « a une ligne `user_roles` » à la main (portefeuilles, journal d'audit) passent par `is_admin()` (elles
+  laissaient aussi passer un admin désactivé). Le commercial n'a que SES RPC, limitées à sa fiche.
+- `user_roles.phone` ; `client_sources.staff_user_id` (un compte commercial = une fiche « commercial »).
+- Mes équipes : `team_members`, `team_create_member` (compte + fiche en une transaction, tout est vérifié avant de
+  créer le compte), `team_update_member` (journalisée ; personne ne change son propre rôle ; il reste toujours un super
+  admin actif ; un commercial qui change de rôle est détaché de sa fiche, qui garde ses clients), `team_link_commercial`.
+- Prospects (`prospects`, lecture : ses prospects pour le commercial, tous pour le responsable ; aucune écriture
+  directe) : créer, modifier, statut, confier à un autre, rattacher à un client, recherche par numéro (pour pré-remplir
+  l'origine d'un nouveau client). Un compte client créé avec le numéro d'un prospect est attribué à son commercial et le
+  prospect passe « devenu client » (déclencheur `prospect_match_client`, jamais bloquant).
+- `set_client_source` : la même origine ne réécrit plus l'auteur ni la date ; chaque changement est journalisé.
+- Objectifs du mois (`commercial_objectives`) ; `commercial_dashboard`, `commercial_clients`, `sales_overview`
+  (clients, paiements terminés, fret avion en kg, bateau en m³, prospects — mois de Douala).
+- Aucune donnée existante modifiée. Testée sur Postgres 16 : fichier passé deux fois dans une transaction, 105 contrôles ;
+  contrôle des prérequis éprouvé.
+
+**Comment pousser :**
+1. coller `migrations/20261005_consolidated_equipes-commerciaux.sql` dans l'éditeur SQL (contrôle des prérequis en
+   tête, rejouable) ;
+2. `npx supabase migration repair --status applied 20261005160000` ;
+3. `/gen-types` (les types des deux tables et de l'énumération sont déjà ajoutés à la main ; l'app appelle les RPC sans
+   attendre) ;
+4. **`npx supabase functions deploy admin-assistant` AVANT de créer le premier commercial** : la passerelle déployée
+   aujourd'hui donnerait à un rôle inconnu les droits d'un chargé de clientèle (avec lecture de toute la plateforme par
+   les outils de Mola). La nouvelle version refuse le commercial et tout rôle inconnu ;
+5. app BONZINI HQ : `cd hq-app && npm run update:production` (le rôle commercial, l'espace `/v`, ses onglets).
+
 ## Appliquées
 
 _Vérifié en production le 05/10/2026 (objets présents dans la base). Les détails ci-dessous restent pour l'historique._

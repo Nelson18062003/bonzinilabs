@@ -26,8 +26,9 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   // Le réceptionnaire a sa propre app (« /r ») : l'accueil admin ne lui
   // montrerait rien qu'il puisse faire. On l'y emmène, quelle que soit la
   // porte par laquelle il est entré (connexion admin, lien, retour arrière).
-  // L'agent d'entrepôt de Douala aussi (« /w »).
-  if (currentUser?.role === 'receptionist' || currentUser?.role === 'warehouse_agent') {
+  // L'agent d'entrepôt de Douala aussi (« /w »), et le commercial (« /v ») :
+  // côté serveur il ne lit rien de l'administration (is_admin l'exclut).
+  if (currentUser?.role === 'receptionist' || currentUser?.role === 'warehouse_agent' || currentUser?.role === 'commercial') {
     return <Navigate to={staffHomeFor(currentUser.role)} replace />;
   }
 

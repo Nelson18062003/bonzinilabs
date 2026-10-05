@@ -85,6 +85,7 @@ export const ROLE_META: Record<string, { label: string; tone: Tone }> = {
   receptionist: { label: 'Réceptionnaire', tone: 'info' },
   warehouse_agent: { label: "Agent d'entrepôt", tone: 'info' },
   customs_broker: { label: 'Commissionnaire agréé', tone: 'success' },
+  commercial: { label: 'Commercial', tone: 'pending' },
   admin: { label: 'Admin', tone: 'info' },
 };
 

@@ -1,0 +1,244 @@
+// ============================================================
+// Mes équipes › Nouvel accès — en deux temps : le rôle (rangé par équipe,
+// avec ce qu'il fait et où il arrive), puis la personne. Pour un commercial,
+// sa fiche : une nouvelle à son nom, ou celle sous laquelle il apportait
+// déjà des clients (il les garde). Le mot de passe provisoire s'affiche une
+// seule fois à la fin. Écriture : team_create_member (super admin seul).
+// ============================================================
+import { useMemo, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Check, MapPin, UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { ADMIN_ROLE_LABELS, useAdminAuth, type AppRole } from '@/contexts/AdminAuthContext';
+import { useCreateTeamMember, type CreatedMember } from '@/hooks/useTeam';
+import { useClientSources } from '@/hooks/useClientSources';
+import { ROLE_DESCRIPTION, TEAMS, roleSpace } from '@/lib/team';
+import { BTN_PRIMARY, BTN_SOFT, CARD, Field, PasswordReveal, RolePill } from './TeamBits';
+import { TEAM_BASE } from './TeamScreen';
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function isRole(v: string | null): v is AppRole {
+  return !!v && v in ADMIN_ROLE_LABELS;
+}
+
+export function TeamNewMember() {
+  const { hasPermission } = useAdminAuth();
+  if (!hasPermission('canManageUsers')) return <Navigate to="/m" replace />;
+  return <NewMemberFlow />;
+}
+
+function NewMemberFlow() {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const preset = params.get('role');
+  const [role, setRole] = useState<AppRole | null>(isRole(preset) ? preset : null);
+  const [created, setCreated] = useState<(CreatedMember & { name: string; role: AppRole }) | null>(null);
+
+  if (created) {
+    return (
+      <Shell onBack={() => navigate(TEAM_BASE)} backLabel="Mes équipes">
+        <div className={cn(CARD, 'space-y-5 p-5 sm:p-6')}>
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              <Check className="h-5 w-5" />
+            </span>
+            <div>
+              <h1 className="text-[20px] font-bold tracking-tight">Accès créé pour {created.name}</h1>
+              <p className="text-[13.5px] text-muted-foreground">
+                <RolePill role={created.role} className="mr-1.5 align-middle" /> arrive sur : {roleSpace(created.role)}
+              </p>
+            </div>
+          </div>
+          <PasswordReveal email={created.email} password={created.tempPassword} name={created.name} />
+          <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
+            <button type="button" onClick={() => navigate(`${TEAM_BASE}/${created.userId}`)} className={BTN_SOFT}>
+              Voir sa fiche
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreated(null);
+                setRole(null);
+              }}
+              className={BTN_SOFT}
+            >
+              <UserPlus className="h-4 w-4" /> Créer un autre accès
+            </button>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!role) {
+    return (
+      <Shell onBack={() => navigate(TEAM_BASE)} backLabel="Mes équipes">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-tight">Nouvel accès</h1>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">Quel est son rôle ? Chacun ne voit que ce dont il a besoin.</p>
+        </div>
+        <div className="space-y-5">
+          {TEAMS.map((t) => (
+            <section key={t.key}>
+              <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.label}</h2>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {t.roles.map((r) => (
+                  <button key={r} type="button" onClick={() => setRole(r)} className={cn(CARD, 'p-4 text-left transition hover:ring-primary/40 active:scale-[0.99]')}>
+                    <div className="text-[15px] font-semibold">{ADMIN_ROLE_LABELS[r]}</div>
+                    <div className="mt-1 text-[13px] leading-snug text-muted-foreground">{ROLE_DESCRIPTION[r]}</div>
+                    <div className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" /> {roleSpace(r)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </Shell>
+    );
+  }
+
+  return <MemberForm role={role} onChangeRole={() => setRole(null)} onCreated={setCreated} />;
+}
+
+function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChangeRole: () => void; onCreated: (c: CreatedMember & { name: string; role: AppRole }) => void }) {
+  const create = useCreateTeamMember();
+  const sources = useClientSources(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [sourceMode, setSourceMode] = useState<'new' | 'existing'>('new');
+  const [sourceId, setSourceId] = useState<string | null>(null);
+  const [tried, setTried] = useState(false);
+
+  const freeFiches = useMemo(() => (sources.data ?? []).filter((s) => s.kind === 'commercial' && !s.staff_user_id), [sources.data]);
+  const isCommercial = role === 'commercial';
+  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+  const sameName = isCommercial && sourceMode === 'new' ? freeFiches.find((s) => s.label.trim().toLowerCase() === fullName.toLowerCase()) : undefined;
+
+  const errors = {
+    firstName: !firstName.trim() ? 'Le prénom est requis' : null,
+    lastName: !lastName.trim() ? 'Le nom est requis' : null,
+    email: !EMAIL.test(email.trim()) ? 'Adresse email invalide' : null,
+    source: isCommercial && sourceMode === 'existing' && !sourceId ? 'Choisissez sa fiche' : null,
+  };
+  const valid = !Object.values(errors).some(Boolean);
+
+  const submit = () => {
+    setTried(true);
+    if (!valid || create.isPending) return;
+    create.mutate(
+      { email, firstName, lastName, role, phone: phone.trim() || null, sourceId: isCommercial && sourceMode === 'existing' ? sourceId : null },
+      { onSuccess: (r) => onCreated({ ...r, name: fullName, role }) },
+    );
+  };
+
+  return (
+    <Shell onBack={onChangeRole} backLabel="Changer de rôle">
+      <div>
+        <h1 className="text-[26px] font-bold tracking-tight">Nouvel accès</h1>
+        <p className="mt-1 flex flex-wrap items-center gap-2 text-[14px] text-muted-foreground">
+          <RolePill role={role} /> {ROLE_DESCRIPTION[role]}
+        </p>
+      </div>
+
+      <div className={cn(CARD, 'space-y-4 p-5 sm:p-6')}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Prénom" value={firstName} onChange={setFirstName} autoFocus maxLength={80} error={tried ? errors.firstName : null} autoComplete="off" />
+          <Field label="Nom" value={lastName} onChange={setLastName} maxLength={80} error={tried ? errors.lastName : null} autoComplete="off" />
+        </div>
+        <Field
+          label="Email (sert à se connecter)"
+          type="email"
+          inputMode="email"
+          value={email}
+          onChange={setEmail}
+          error={tried ? errors.email : null}
+          hint="Sa propre adresse : un email ne sert qu’à un seul compte (client ou équipe)."
+          autoComplete="off"
+        />
+        <Field label="Téléphone (facultatif)" type="tel" inputMode="tel" value={phone} onChange={setPhone} placeholder="+237 6…" maxLength={32} />
+
+        {isCommercial && (
+          <div className="space-y-3 rounded-2xl bg-muted/50 p-4">
+            <div>
+              <div className="text-[14px] font-semibold">Sa fiche commercial</div>
+              <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                C’est le nom que la réception choisit comme origine d’un nouveau client. S’il apportait déjà des clients sous son nom, reprenez sa fiche : il les garde.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ModeChip active={sourceMode === 'new'} onClick={() => setSourceMode('new')}>
+                Nouvelle fiche à son nom
+              </ModeChip>
+              <ModeChip active={sourceMode === 'existing'} onClick={() => setSourceMode('existing')} disabled={freeFiches.length === 0}>
+                Reprendre une fiche existante{freeFiches.length ? ` (${freeFiches.length})` : ''}
+              </ModeChip>
+            </div>
+            {sourceMode === 'existing' && (
+              <div className="space-y-1.5">
+                {freeFiches.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSourceId(s.id)}
+                    className={cn('flex w-full items-center justify-between rounded-xl bg-card px-3.5 py-2.5 text-left ring-1', sourceId === s.id ? 'ring-2 ring-primary' : 'ring-black/10 dark:ring-white/15')}
+                  >
+                    <span>
+                      <span className="block text-[14px] font-semibold">{s.label}</span>
+                      {s.phone && <span className="block text-[12.5px] text-muted-foreground">{s.phone}</span>}
+                    </span>
+                    {sourceId === s.id && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+                ))}
+                {tried && errors.source && <p className="text-[12.5px] text-red-600 dark:text-red-400">{errors.source}</p>}
+              </div>
+            )}
+            {sameName && (
+              <p className="text-[12.5px] font-medium text-amber-700 dark:text-amber-400">
+                Une fiche « {sameName.label} » existe déjà : reprenez-la pour qu’il garde ses clients.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border/60 pt-4">
+          <button type="button" onClick={onChangeRole} className={BTN_SOFT}>
+            Changer de rôle
+          </button>
+          <button type="button" onClick={submit} disabled={create.isPending} className={BTN_PRIMARY}>
+            {create.isPending ? 'Création…' : 'Créer l’accès'}
+          </button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function ModeChip({ active, onClick, disabled, children }: { active: boolean; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={cn('h-9 rounded-full px-3.5 text-[13.5px] font-medium disabled:opacity-40', active ? 'bg-primary text-primary-foreground' : 'bg-card ring-1 ring-black/10 hover:bg-accent dark:ring-white/15')}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Shell({ onBack, backLabel, children }: { onBack: () => void; backLabel: string; children: React.ReactNode }) {
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-0">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-3.5 w-3.5" /> {backLabel}
+      </button>
+      {children}
+    </div>
+  );
+}

@@ -16,6 +16,7 @@ import { CountryFlag } from '@/components/form/CountryFlag';
 import { countryName, toCountryLang } from '@/data/countries';
 import { MAX_PHONES, type useCreateClientForm } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
+import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
 
 export function ClientFormSections({ form }: { form: ReturnType<typeof useCreateClientForm> }) {
   const { t, i18n } = useTranslation('common');
@@ -96,6 +97,7 @@ export function ClientFormSections({ form }: { form: ReturnType<typeof useCreate
       <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
         <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
           <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} />
+          <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
         </FormField>
       </Section>
 

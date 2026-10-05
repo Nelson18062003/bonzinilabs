@@ -8,6 +8,7 @@ describe('staffHomeFor — une connexion, chacun chez soi', () => {
     expect(staffHomeFor('cash_agent')).toBe('/a');
     expect(staffHomeFor('receptionist')).toBe('/r');
     expect(staffHomeFor('warehouse_agent')).toBe('/w');
+    expect(staffHomeFor('commercial')).toBe('/v');
     for (const r of ['super_admin', 'ops', 'support', 'customer_success', 'treasurer'] as AppRole[]) expect(staffHomeFor(r)).toBe('/m');
     expect(staffHomeFor(null)).toBe('/m');
   });
@@ -20,7 +21,8 @@ describe('staffHomeFor — une connexion, chacun chez soi', () => {
       if (home === '/a') expect(role).toBe('cash_agent');
       if (home === '/r') expect(p.canReceiveParcels).toBe(true);
       if (home === '/w') expect(p.canReceiveAtDestination || p.canReleaseParcels).toBe(true);
-      if (home === '/m') expect(['receptionist', 'warehouse_agent']).not.toContain(role);
+      if (home === '/v') expect(p.canProspect).toBe(true);
+      if (home === '/m') expect(['receptionist', 'warehouse_agent', 'commercial']).not.toContain(role);
     }
   });
 });

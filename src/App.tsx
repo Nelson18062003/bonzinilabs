@@ -102,12 +102,13 @@ const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
-const MobileAdminsScreen = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminsScreen })));
-const DesktopAdminsScreen = lazy(() => import("./desktop/screens/admins").then(m => ({ default: m.DesktopAdminsScreen })));
+const TeamScreen = lazy(() => import("./components/team/TeamScreen").then(m => ({ default: m.TeamScreen })));
+const TeamNewMember = lazy(() => import("./components/team/TeamNewMember").then(m => ({ default: m.TeamNewMember })));
+const TeamMemberScreen = lazy(() => import("./components/team/TeamMemberScreen").then(m => ({ default: m.TeamMemberScreen })));
+const SalesBoard = lazy(() => import("./components/team/SalesBoard").then(m => ({ default: m.SalesBoard })));
+const SalesCommercial = lazy(() => import("./components/team/SalesCommercial").then(m => ({ default: m.SalesCommercial })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
 const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
-const MobileAdminDetail = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileAdminDetail })));
-const MobileCreateAdmin = lazy(() => import("./mobile/screens/admins").then(m => ({ default: m.MobileCreateAdmin })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
 // Importé à part (pas par le barrel « more ») : il embarque le moteur PDF, les autres écrans n'en ont pas besoin.
 const MobilePaymentDetailsScreen = lazy(() => import("./mobile/screens/more/MobilePaymentDetailsScreen").then(m => ({ default: m.MobilePaymentDetailsScreen })));
@@ -206,6 +207,13 @@ const WarehouseHandover = lazy(() => import("./mobile/screens/warehouse").then(m
 const WarehouseSign = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseSign })));
 const WarehouseReleaseDone = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseReleaseDone })));
 
+// ── Lazy-loaded Commercial Screens (commercial, /v) ──────
+import { CommercialRouteWrapper } from "./components/sales/CommercialRouteWrapper";
+const CommercialHome = lazy(() => import("./components/sales/CommercialHome").then(m => ({ default: m.CommercialHome })));
+const CommercialProspects = lazy(() => import("./components/sales/CommercialProspects").then(m => ({ default: m.CommercialProspects })));
+const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
+const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
+
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
   import("./components/form/__showcase__/FormShowcase").then(m => ({ default: m.FormShowcase })),
@@ -228,6 +236,12 @@ function UtmCapture() {
 function CustomerCodeRedirect() {
   const { code } = useParams();
   return <Navigate to={`/m/clients/scan?code=${encodeURIComponent(code ?? '')}`} replace />;
+}
+
+/** Ancienne fiche « Administrateurs » → sa fiche dans Mes équipes. */
+function LegacyAdminRedirect() {
+  const { adminId } = useParams();
+  return <Navigate to={`/m/equipe/${adminId ?? ''}`} replace />;
 }
 
 const App = () => (
@@ -337,9 +351,15 @@ const App = () => (
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins/new" element={<AdminRouteWrapper desktop={<MobileCreateAdmin desktop />}><MobileCreateAdmin /></AdminRouteWrapper>} />
-                <Route path="/m/more/admins/:adminId" element={<AdminRouteWrapper desktop={<DesktopAdminsScreen />}><MobileAdminDetail /></AdminRouteWrapper>} />
+                {/* Mes équipes (remplace « Administrateurs ») : les anciens liens y mènent. */}
+                <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamScreen /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewMember /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesBoard />}><SalesBoard /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercial /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/admins" element={<Navigate to="/m/equipe" replace />} />
+                <Route path="/m/more/admins/new" element={<Navigate to="/m/equipe/nouveau" replace />} />
+                <Route path="/m/more/admins/:adminId" element={<LegacyAdminRedirect />} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
@@ -443,6 +463,12 @@ const App = () => (
                 <Route path="/w/remise/:code/qui" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseHandover /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code/signature" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseSign /></WarehouseRouteWrapper>} />
                 <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
+                {/* ── Espace commercial (« /v ») : prospects, clients, chiffres du mois ── */}
+                <Route path="/v" element={<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>} />
+                <Route path="/v/prospects" element={<CommercialRouteWrapper><CommercialProspects /></CommercialRouteWrapper>} />
+                <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
+                <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
+                <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

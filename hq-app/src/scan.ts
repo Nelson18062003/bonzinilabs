@@ -48,13 +48,13 @@ export function routeScan(role: StaffRole, raw: string): ScanAction {
   const cash = cashPaymentId(text);
   if (cash) {
     if (role === 'cash_agent') return { kind: 'open', path: `/a/payment/${cash}` };
-    if (role !== 'receptionist' && role !== 'warehouse_agent' && role !== 'treasurer') return { kind: 'open', path: `/m/payments/${cash}` };
+    if (role !== 'receptionist' && role !== 'warehouse_agent' && role !== 'treasurer' && role !== 'commercial') return { kind: 'open', path: `/m/payments/${cash}` };
     return { kind: 'unknown', text };
   }
   const code = customerCode(text);
   if (role === 'receptionist') return { kind: 'deliver', path: '/r/new', text: code ?? text };
   if (role === 'warehouse_agent') return { kind: 'deliver', path: '/w/remise', text: code ?? text };
-  if (code && role !== 'cash_agent' && role !== 'treasurer') return { kind: 'open', path: `/m/clients/scan?code=${encodeURIComponent(code)}` };
+  if (code && role !== 'cash_agent' && role !== 'treasurer' && role !== 'commercial') return { kind: 'open', path: `/m/clients/scan?code=${encodeURIComponent(code)}` };
   if (role === 'super_admin' || role === 'ops' || role === 'support' || role === 'customer_success') {
     return { kind: 'open', path: `/m/cargo/track?ref=${encodeURIComponent(text)}` };
   }

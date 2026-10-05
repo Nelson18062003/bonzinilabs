@@ -4,7 +4,7 @@
 // besoin pour ses écrans natifs sont reprises ; la sécurité réelle reste
 // côté serveur (admin_has_permission dans chaque RPC).
 // ============================================================
-export type StaffRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker';
+export type StaffRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker' | 'commercial';
 
 export interface StaffUser {
   id: string;
@@ -24,6 +24,7 @@ export const ROLE_LABEL: Record<StaffRole, string> = {
   receptionist: 'Réceptionnaire',
   warehouse_agent: "Agent d'entrepôt",
   customs_broker: 'Commissionnaire agréé',
+  commercial: 'Commercial',
 };
 
 type Perm = 'viewClients' | 'viewDeposits' | 'viewPayments' | 'manageRates' | 'viewTreasury' | 'supportChat' | 'viewCargo' | 'receiveParcels' | 'destination';
@@ -37,6 +38,7 @@ const PERMS: Record<StaffRole, Perm[]> = {
   receptionist: ['receiveParcels'],
   warehouse_agent: ['destination'],
   customs_broker: [],
+  commercial: [],
 };
 
 export function can(role: StaffRole | undefined, perm: Perm): boolean {
@@ -53,6 +55,7 @@ export function staffHome(role: StaffRole): string {
   if (role === 'receptionist') return '/r';
   if (role === 'warehouse_agent') return '/w';
   if (role === 'customs_broker') return '/m/douane';
+  if (role === 'commercial') return '/v';
   return '/m';
 }
 

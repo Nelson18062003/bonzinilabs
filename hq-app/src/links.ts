@@ -1,7 +1,7 @@
 // ============================================================
 // Liens entrants : « bonzinihq://… », une page bonzinilabs.com, une
 // notification touchée. Ils deviennent une page du personnel (/m, /a, /r,
-// /w) mise en attente, ouverte dès que la personne est connectée et que le
+// /w, /v) mise en attente, ouverte dès que la personne est connectée et que le
 // site a quitté la page de connexion (sinon la redirection du site après
 // connexion l'écraserait).
 //
@@ -14,8 +14,8 @@
 // ============================================================
 
 const SITE_HOSTS = ['www.bonzinilabs.com', 'bonzinilabs.com'];
-const STAFF_PATH = /^\/(m|a|r|w)(\/[A-Za-z0-9._~%\-/]*)?(\?[A-Za-z0-9._~%\-=&+]*)?$/;
-const LOGIN = /^\/(m|a|r|w)\/login\b/;
+const STAFF_PATH = /^\/(m|a|r|w|v)(\/[A-Za-z0-9._~%\-/]*)?(\?[A-Za-z0-9._~%\-=&+]*)?$/;
+const LOGIN = /^\/(m|a|r|w|v)\/login\b/;
 
 /** Une page du personnel sûre, ou null. */
 export function staffPath(path: string): string | null {

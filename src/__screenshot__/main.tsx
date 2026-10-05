@@ -109,11 +109,6 @@ import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
 import { MobileRatesMarketScreen } from '@/mobile/screens/rates/MobileRatesMarketScreen';
 import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import {
-  MobileAdminsScreen,
-  MobileCreateAdmin,
-  MobileAdminDetail,
-} from '@/mobile/screens/admins';
-import {
   MobileSupportListScreen,
   MobileSupportConversationScreen,
   MobileSupportStatsScreen,
@@ -378,10 +373,6 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'bulk-create': { Comp: BulkPaymentCreate, route: '/m/payments/batch/new' },
   // Rates module (Phase 2 M5)
   rates: { Comp: MobileRatesScreen, route: '/m/rates' },
-  // Admins module (Phase 2 M6)
-  admins: { Comp: MobileAdminsScreen, route: '/m/more/admins' },
-  'admin-create': { Comp: MobileCreateAdmin, route: '/m/more/admins/new' },
-  'admin-detail': { Comp: MobileAdminDetail, route: '/m/more/admins/a1', path: '/m/more/admins/:adminId' },
   // Support module (Phase 2 M7)
   support: { Comp: MobileSupportListScreen, route: '/m/support' },
   'support-conversation': { Comp: MobileSupportConversationScreen, route: '/m/support/c1', path: '/m/support/:conversationId' },

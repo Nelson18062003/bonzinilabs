@@ -40,6 +40,17 @@ Migration : `supabase/migrations/20261005120000_client_sources.sql`
 suivi (ChatGPT, Facebook) ont reçu leur origine ; les autres sont « Non
 renseigné » et se complètent depuis leur fiche.
 
+## Les commerciaux ont un compte (05/10/2026)
+
+Un commercial créé dans **Mes équipes** (`/m/equipe`) est relié à SA fiche
+« commercial » (`client_sources.staff_user_id`) — une nouvelle à son nom, ou
+celle sous laquelle il apportait déjà des clients. Il a son espace `/v` : ses
+prospects, ses clients, ses chiffres du mois (paiements, fret avion en kg,
+bateau en m³) et ses objectifs. Un compte client créé avec le numéro d'un de
+ses prospects lui est attribué automatiquement, et le formulaire « Nouveau
+client » pré-remplit l'origine. Migration :
+`supabase/migrations/20261005160000_teams_commercials.sql`.
+
 ## Pour plus tard
 
 - Commissions : un taux par commercial et le montant dû par période, à

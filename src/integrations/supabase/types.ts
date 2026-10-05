@@ -1471,6 +1471,7 @@ export type Database = {
           label: string
           notes: string | null
           phone: string | null
+          staff_user_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1483,6 +1484,7 @@ export type Database = {
           label: string
           notes?: string | null
           phone?: string | null
+          staff_user_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1495,6 +1497,7 @@ export type Database = {
           label?: string
           notes?: string | null
           phone?: string | null
+          staff_user_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1624,6 +1627,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      commercial_objectives: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metric: string
+          month: string
+          source_id: string
+          target: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric: string
+          month: string
+          source_id: string
+          target: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metric?: string
+          month?: string
+          source_id?: string
+          target?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       customs_audits: {
         Row: {
@@ -3350,6 +3386,72 @@ export type Database = {
         }
         Relationships: []
       }
+      prospects: {
+        Row: {
+          city: string | null
+          company: string | null
+          converted_at: string | null
+          converted_user_id: string | null
+          created_at: string
+          created_by: string | null
+          first_name: string
+          id: string
+          interests: string[]
+          last_name: string | null
+          lost_reason: string | null
+          next_action_at: string | null
+          notes: string | null
+          phone: string
+          phone_e164: string
+          source_id: string
+          status: string
+          status_changed_at: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          first_name: string
+          id?: string
+          interests?: string[]
+          last_name?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          notes?: string | null
+          phone: string
+          phone_e164: string
+          source_id: string
+          status?: string
+          status_changed_at?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          company?: string | null
+          converted_at?: string | null
+          converted_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          first_name?: string
+          id?: string
+          interests?: string[]
+          last_name?: string | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          notes?: string | null
+          phone?: string
+          phone_e164?: string
+          source_id?: string
+          status?: string
+          status_changed_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rate_adjustments: {
         Row: {
           id: string
@@ -4178,6 +4280,7 @@ export type Database = {
           is_disabled: boolean
           last_login_at: string | null
           last_name: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -4190,6 +4293,7 @@ export type Database = {
           is_disabled?: boolean
           last_login_at?: string | null
           last_name?: string | null
+          phone?: string | null
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
@@ -4202,6 +4306,7 @@ export type Database = {
           is_disabled?: boolean
           last_login_at?: string | null
           last_name?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -5734,6 +5839,7 @@ export type Database = {
         | "receptionist"
         | "warehouse_agent"
         | "customs_broker"
+        | "commercial"
       deposit_method:
         | "bank_transfer"
         | "bank_cash"
@@ -5935,6 +6041,7 @@ export const Constants = {
         "receptionist",
         "warehouse_agent",
         "customs_broker",
+        "commercial",
       ],
       deposit_method: [
         "bank_transfer",

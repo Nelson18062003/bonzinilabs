@@ -55,6 +55,8 @@ describe('BONZINI HQ ↔ site', () => {
     expect(routeScan('warehouse_agent', 'BZ-482913')).toEqual({ kind: 'deliver', path: '/w/remise', text: 'BZ-482913' });
     expect(routeScan('super_admin', 'BZ-482913')).toEqual({ kind: 'open', path: '/m/clients/scan?code=BZ-482913' });
     expect(routeScan('treasurer', 'BZ-482913').kind).toBe('unknown');
+    expect(routeScan('commercial', 'BZ-482913').kind).toBe('unknown');
+    expect(routeScan('commercial', cash).kind).toBe('unknown');
   });
 
   it('compte « à traiter » avec les mêmes statuts que le site', () => {
@@ -89,7 +91,7 @@ describe('BONZINI HQ ↔ site', () => {
 
   it('accepte chaque page ouverte par une notification', () => {
     const id = '0b9f6f0e-1c1a-4c3e-9b1e-2f6a7d9c1e55';
-    for (const p of [`/m/deposits/${id}`, `/m/payments/${id}`, `/a/payment/${id}`, `/m/support/${id}`, '/w/arrivees']) {
+    for (const p of [`/m/deposits/${id}`, `/m/payments/${id}`, `/a/payment/${id}`, `/m/support/${id}`, '/w/arrivees', '/v/prospects']) {
       expect(staffPath(p), p).toBe(p);
     }
   });

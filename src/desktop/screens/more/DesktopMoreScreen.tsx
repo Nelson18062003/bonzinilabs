@@ -114,7 +114,7 @@ export function DesktopMoreScreen() {
     {
       title: 'Administration',
       items: [
-        { icon: UserCog, label: 'Administrateurs', desc: 'Gérer les accès admin', to: '/m/more/admins', perm: 'canManageUsers' },
+        { icon: UserCog, label: 'Mes équipes', desc: 'Créer et gérer les accès de toute l’équipe', to: '/m/equipe', perm: 'canManageUsers' },
         { icon: Settings, label: 'Paramètres', desc: 'Thème, compte, à propos', to: '/m/more/settings' },
       ],
     },

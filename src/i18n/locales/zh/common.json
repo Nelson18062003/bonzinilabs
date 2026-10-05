@@ -562,6 +562,9 @@
     "sourceCancel": "取消",
     "sourceNoResult": "没有匹配的来源",
     "sourceFailed": "客户已创建，但来源未能保存。请在客户资料中填写。",
+    "sourceProspect": "该号码是 {{label}} 的潜在客户：客户将归属于该销售。",
+    "sourceProspectOther": "该号码是 {{label}} 的潜在客户：您的选择将取代该销售。",
+    "sourceProspectKept": "该号码是 {{label}} 的潜在客户：客户仍将归属于该销售。之后只有负责人可以更改来源。",
     "sourceSummary": "来源",
     "sourceKinds": {
       "commercial": "销售人员",

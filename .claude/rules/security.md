@@ -13,8 +13,16 @@
 ## Autorisation serveur — RÈGLE ABSOLUE (ne jamais garder une RPC avec `is_admin` seul)
 
 `is_admin(uid)` ne teste **aucun rôle** : il renvoie vrai pour toute ligne
-non désactivée de `user_roles`. Il signifie « membre du staff », pas
-« autorisé ». Une RPC gardée par `is_admin()` est donc exécutable par
+non désactivée de `user_roles` — **sauf le rôle `commercial`** (05/10/2026),
+qui est exclu pour l'isoler du reste de la plateforme. Il signifie « membre
+du staff de l'administration », pas « autorisé ».
+
+**Le commercial** n'a que `canProspect` et ses propres RPC, toutes limitées à
+SA fiche par `current_commercial_source_id()` (prospects, chiffres, objectifs).
+Ne lui ouvrez jamais une politique ou une RPC par `is_admin` ; une nouvelle
+politique qui teste « a une ligne `user_roles` » à la main le laisserait
+entrer : passez par `is_admin()` ou `admin_has_permission()`. La passerelle
+Mola le refuse (ses lectures tournent avec la clé service). Une RPC gardée par `is_admin()` est donc exécutable par
 **tous** les rôles (cash_agent, treasurer, support…) via un appel direct à
 PostgREST, même si l'UI cache le bouton.
 

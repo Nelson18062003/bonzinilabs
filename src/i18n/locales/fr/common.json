@@ -562,6 +562,9 @@
     "sourceCancel": "Annuler",
     "sourceNoResult": "Aucune source ne correspond",
     "sourceFailed": "Le client est créé, mais son origine n’a pas pu être enregistrée. Renseignez-la depuis sa fiche.",
+    "sourceProspect": "Ce numéro est un prospect de {{label}} : le client lui sera attribué.",
+    "sourceProspectOther": "Ce numéro est un prospect de {{label}} : votre choix remplacera son commercial.",
+    "sourceProspectKept": "Ce numéro est un prospect de {{label}} : le client lui sera attribué quand même. Seul un responsable peut changer son origine ensuite.",
     "sourceSummary": "Origine",
     "sourceKinds": {
       "commercial": "Commercial",

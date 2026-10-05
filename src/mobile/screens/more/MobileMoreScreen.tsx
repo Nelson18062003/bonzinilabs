@@ -222,9 +222,9 @@ export function MobileMoreScreen() {
             {canManageUsers && (
               <MenuRow
                 icon={UserCog}
-                label={t('administrators', { defaultValue: 'Administrateurs' })}
-                description={t('manageAdminAccess', { defaultValue: 'Gérer les accès admin' })}
-                onClick={() => navigate('/m/more/admins')}
+                label="Mes équipes"
+                description="Créer et gérer les accès de toute l’équipe"
+                onClick={() => navigate('/m/equipe')}
               />
             )}
             <MenuRow

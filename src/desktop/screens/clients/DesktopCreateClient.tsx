@@ -18,6 +18,7 @@ import { PhoneNumberInput, formatE164ForDisplay } from '@/components/form/PhoneN
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { useCreateClientForm, whatsappShareUrl, MAX_PHONES } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
+import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
 
 interface CreateClientProps {
   /**
@@ -190,6 +191,7 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
         <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
           <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
             <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} controlClassName={CONTROL} />
+            <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
           </FormField>
         </Section>
       </div>

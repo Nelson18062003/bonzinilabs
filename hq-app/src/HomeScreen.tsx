@@ -25,12 +25,12 @@ function shortcuts(user: StaffUser): Shortcut[] {
     { key: 'pay', label: 'Nouveau paiement', icon: 'arrow-up-circle', path: '/m/payments/new', color: C.orange, show: r === 'super_admin' || r === 'ops' },
     { key: 'dep', label: 'Nouveau dépôt', icon: 'arrow-down-circle', path: '/m/deposits/new', color: C.green, show: r === 'super_admin' || r === 'ops' || r === 'customer_success' },
     { key: 'clients', label: 'Clients', icon: 'people', path: '/m/clients', color: C.ink, show: can(r, 'viewClients') },
-    { key: 'mola', label: 'Mola', icon: 'sparkles', path: '/m/assistant', color: C.violet, show: r !== 'treasurer' },
+    { key: 'mola', label: 'Mola', icon: 'sparkles', path: '/m/assistant', color: C.violet, show: r !== 'treasurer' && r !== 'commercial' },
     { key: 'cargo', label: 'Cargo', icon: 'boat', path: '/m/cargo', color: C.ink, show: can(r, 'viewCargo') },
     { key: 'rates', label: 'Taux du jour', icon: 'trending-up', path: '/m/more/rates', color: C.amber, show: can(r, 'manageRates') },
     { key: 'treasury', label: 'Trésorerie', icon: 'wallet', path: '/m/more/treasury', color: C.green, show: can(r, 'viewTreasury') },
     { key: 'support', label: 'Messagerie', icon: 'chatbubbles', path: '/m/support', color: C.violet, show: can(r, 'supportChat') },
-    { key: 'details', label: 'Coordonnées de paiement', icon: 'card', path: '/m/more/payment-details', color: C.orange, show: r !== 'treasurer' },
+    { key: 'details', label: 'Coordonnées de paiement', icon: 'card', path: '/m/more/payment-details', color: C.orange, show: r !== 'treasurer' && r !== 'commercial' },
   ];
   return all.filter((s) => s.show);
 }
