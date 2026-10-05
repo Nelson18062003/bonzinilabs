@@ -85,6 +85,9 @@ export interface Parcel {
   /** L'expédition aérienne (LTA) où le colis a été chargé — l'autre chemin vers Douala. */
   air_shipment_id?: string | null;
   awb_number?: string | null;
+  /** Le paquet avion de 32 kg où le colis est emballé (reception_deposit_json, 05/10). */
+  air_package_id?: string | null;
+  package_no?: string | null;
   /** À Douala (phase 4) : pointé, sa place, son état, remis. */
   checked_in_at?: string | null;
   warehouse_location?: string | null;
@@ -332,11 +335,12 @@ export function parcelPhotoPaths(p: Pick<Parcel, 'photo_path' | 'photos'>): stri
  * Miroir de `reception_parcel_locked` (SQL) : la base refuse de toute façon,
  * l'écran le dit avant le clic.
  */
-export function parcelLockReason(p: Pick<Parcel, 'delivered_at' | 'release_id' | 'checked_in_at' | 'shipment_id' | 'air_shipment_id'>): string | null {
+export function parcelLockReason(p: Pick<Parcel, 'delivered_at' | 'release_id' | 'checked_in_at' | 'shipment_id' | 'air_shipment_id' | 'air_package_id' | 'package_no'>): string | null {
   if (p.delivered_at || p.release_id) return 'Remis au client';
   if (p.checked_in_at) return 'Déjà arrivé à Douala';
   if (p.shipment_id) return 'Chargé dans un conteneur : retirez-le d\'abord de la boîte';
   if (p.air_shipment_id) return 'Chargé dans une LTA : retirez-le d\'abord de l\'expédition';
+  if (p.air_package_id) return `Dans le paquet ${p.package_no ?? 'avion'} : retirez-le d'abord du paquet`;
   return null;
 }
 

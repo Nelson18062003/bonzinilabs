@@ -45,6 +45,9 @@ describe('parcelLockReason — miroir de reception_parcel_locked', () => {
     expect(parcelLockReason(parcel({ checked_in_at: '2026-10-01T00:00:00Z' }))).toMatch(/Douala/);
     expect(parcelLockReason(parcel({ release_id: 'r1' }))).toMatch(/Remis/);
   });
+  it('emballé dans un paquet avion : verrouillé tant qu\'il n\'en est pas retiré', () => {
+    expect(parcelLockReason(parcel({ air_package_id: 'k1', package_no: 'PQ-000041' }))).toBe('Dans le paquet PQ-000041 : retirez-le d\'abord du paquet');
+  });
 });
 
 describe('isParcelWaiting', () => {

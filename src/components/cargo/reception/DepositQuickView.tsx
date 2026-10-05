@@ -130,7 +130,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const canAddParcel = !!d && !cancelled && !(d.status === 'closed' && paid) && (isCargo || (d.status === 'open' && owner));
   const canEditParcels = !!d && !cancelled && (isCargo || owner);
   const canCancel = !!d && !cancelled && (isCargo || (d.status === 'open' && owner));
-  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà partis' : (quote && (quote.amount_paid_xaf > 0 || paid || quote.invoice_no)) ? 'Des encaissements existent : annulez-les d’abord' : null;
+  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà emballés dans un paquet avion ou partis' : (quote && (quote.amount_paid_xaf > 0 || paid || quote.invoice_no)) ? 'Des encaissements existent : annulez-les d’abord' : null;
   const removeBlock = (p: Parcel): string | null => {
     if (!d || cancelled) return 'Dépôt supprimé';
     if (!(isCargo || (d.status === 'open' && owner))) return 'Réservé à l’équipe cargo';

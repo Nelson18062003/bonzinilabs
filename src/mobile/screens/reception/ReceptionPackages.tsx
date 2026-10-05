@@ -73,7 +73,9 @@ export function ReceptionPackages() {
   const code = params.get('code');
   const handled = useRef<string | null>(null);
   useEffect(() => {
-    if (!code || handled.current === code) return;
+    // Le lien effacé (après un échec) réarme : un nouveau scan du même code se retente.
+    if (!code) { handled.current = null; return; }
+    if (handled.current === code) return;
     handled.current = code;
     void openCode(code, true).then((r) => {
       if (r.outcome === 'ok') return;

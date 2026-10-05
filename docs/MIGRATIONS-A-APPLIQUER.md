@@ -98,8 +98,15 @@ prérequis en tête, rejouable), puis `npx supabase migration repair --status ap
 - `cargo_air_set_status` : pas de départ tant qu'un paquet n'est pas scanné ; une arrivée déjà travaillée à Douala ne
   s'annule plus. Fiches expédition / colis / arrivée : leurs paquets.
 - LTA provisoire : `cargo_air_create` avec une LTA vide (et une date de départ) ouvre l'expédition en `PROV-…` ; la
-  vraie LTA se pose ensuite, même après le départ.
-- Testée sur Postgres 16 (schéma cargo réel) : fichier passé deux fois dans une transaction, 67 contrôles, et les 61
+  vraie LTA se pose ensuite, même après le départ. Une LTA provisoire ne s'affiche jamais « PROV-… » : journée de
+  Douala (`warehouse_day`), messages aux clients au départ / à l'arrivée (`air_shipments_notify` : référence = la LTA,
+  sinon le vol, sinon les dépôts), notification de l'équipe (`staff_push_on_air_arrival`).
+- Relecture du 05/10 : annuler une arrivée (`ARRIVED → DEPARTED`) verrouille d'abord ses colis puis ses paquets (un
+  pointage concurrent ne passe plus entre le contrôle et l'écriture) ; `reception_deposit_json` dit le paquet de
+  chaque colis ; les anciens chargements à l'unité (`cargo_load_parcels`, `cargo_air_load_parcels`) sautent un colis
+  emballé au lieu d'annuler tout le lot, `cargo_air_unload_parcel` le refuse proprement ; étiquettes `@mola` des
+  envois alignées sur le droit réel (`canReceiveParcels` : réception de Guangzhou ou cargo).
+- Testée sur Postgres 16 (schéma cargo réel) : fichier passé deux fois dans une transaction, 79 contrôles, et les 61
   contrôles du lot remise / vols repassés avec ce lot ; contrôle des prérequis éprouvé (refuse de passer sans la
   migration remise / vols).
 

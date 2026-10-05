@@ -31,6 +31,7 @@ export function WarehousePickup() {
     const scan = parseWarehouseScan(text);
     if (!scan) { toast.error('Code illisible', { description: 'Un code client BZ-482913, ou un numéro de colis RC-000123-01.' }); return; }
     if (scan.kind === 'customer') { goTo(scan.code); return; }
+    if (scan.kind === 'package') { toast.error(`${scan.no} est l'étiquette d'un paquet avion`, { description: 'Pour remettre, scannez la carte du client ou l’étiquette d’un de ses colis (RC-000123-01).' }); return; }
     try {
       const p = await find.mutateAsync(scan.no);
       if (!p.client) { toast.error(`${p.parcel_no} n'a pas de client attribué`); return; }

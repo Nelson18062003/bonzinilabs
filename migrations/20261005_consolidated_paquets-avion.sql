@@ -26,18 +26,24 @@
 --        déjà travaillée à Douala ne s'annule plus ;
 --      · LTA provisoire : une expédition s'ouvre avec une date de départ et
 --        sans LTA (PROV-…), la vraie LTA se pose ensuite, même après le départ ;
---      · fiches expédition / colis / arrivée à Douala : leurs paquets.
+--      · fiches expédition / colis / arrivée à Douala : leurs paquets ;
+--      · une LTA provisoire ne s'affiche jamais « LTA PROV-… » : journée de
+--        Douala, messages aux clients (départ, arrivée), notification de
+--        l'équipe ; le dépôt dit le paquet de chaque colis ; les anciens
+--        chargements à l'unité sautent les colis emballés au lieu d'échouer.
 --      Une table et une colonne créées ; aucune donnée existante modifiée.
 --
 -- Idempotent : rejouable sans dégât. Vérifié sur Postgres 16 avec le schéma
 -- cargo réel (migrations du dépôt) : ce fichier passé deux fois dans UNE
--- transaction, 67 contrôles (lecture des codes, droits de chaque rôle, 32 kg,
+-- transaction, 79 contrôles (lecture des codes, droits de chaque rôle, 32 kg,
 -- colis bateau / sans client / non pesé / d'un dépôt supprimé refusés, un
 -- colis dans un seul paquet, conteneur et chargement à l'unité bloqués,
 -- pesée, réouverture, affectation, scan au départ, départ refusé tant qu'il
 -- manque un scan, refus de l'aéroport après le départ, ré-affectation,
 -- Douala : réception, ouverture au pointage, arrivée non annulable, LTA
--- provisoire, étiquettes @mola) ; et les 61 contrôles du lot remise / vols
+-- provisoire et jamais affichée PROV-… (Douala, messages clients), le dépôt
+-- dit le paquet de chaque colis, chargements à l'unité qui sautent les colis
+-- emballés, étiquettes @mola) ; et les 61 contrôles du lot remise / vols
 -- repassés avec ce lot en place.
 --
 -- Après passage :
@@ -63,6 +69,8 @@ BEGIN
       ('parcel_quotes',    'devis cargo, 21/09'),
       ('parcel_releases',  'entrepôt de Douala, 21/09'),
       ('cargo_shipments',  'module cargo, 11/09'),
+      ('parcel_photos',    'photos multiples, 02/10'),
+      ('notifications',    'notifications'),
       ('admin_audit_logs', 'journal d''audit')
     ) AS t(tbl, origin)
     WHERE to_regclass('public.' || t.tbl) IS NULL
@@ -100,6 +108,9 @@ BEGIN
       ('reception_client_card',       'comptes cargo, 22/09'),
       ('parcel_status_for_air',       'cargo aérien, 21/09'),
       ('warehouse_checkin_parcel',    'entrepôt de Douala, 21/09'),
+      ('warehouse_day',               'entrepôt de Douala, 21/09'),
+      ('cargo_notify_client',         'notifications cargo, 21/09'),
+      ('send_staff_push',             'notifications de l''équipe (BONZINI HQ), 26/09'),
       ('cargo_mark_shipment_arrived', 'remise / vols / arrivée, 05/10 — à coller AVANT ce fichier')
     ) AS f(fn, origin)
     WHERE NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = f.fn AND pronamespace = 'public'::regnamespace)
@@ -140,11 +151,16 @@ $pre$;
 --   5. le reste sait les paquets : verrou d'un colis, colis chargeables
 --      (avion, conteneur), jalons de l'expédition (le départ exige les
 --      paquets scannés ; une arrivée pointée ne s'annule plus), fiches
---      expédition / colis / arrivée à Douala
+--      expédition / colis / arrivée à Douala ; la journée de Douala, les
+--      messages aux clients et la notification de l'équipe n'affichent jamais
+--      une LTA provisoire ; le dépôt dit le paquet de chaque colis ; les
+--      anciens chargements à l'unité sautent les colis emballés
 --   6. LTA provisoire : une expédition s'ouvre avant que la LTA soit connue
 --      (PROV-…), la vraie LTA se pose ensuite, même après le départ
 --
--- Ordre de verrouillage partout : expédition, puis paquet, puis colis.
+-- Ordre de verrouillage partout : expédition, puis paquet, puis colis — sauf
+-- le jalon « arrivé → parti », qui verrouille les colis puis les paquets
+-- (l'ordre du pointage de Douala, qui verrouille le colis puis son paquet).
 -- Idempotent. Suppose 20261005150000 (remise / vols) passée.
 -- ============================================================================
 
@@ -994,6 +1010,12 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Un jalon à la fois : ' || CASE WHEN p_status = 'ARRIVED' THEN 'marquez d''abord le départ' ELSE 'revenez d''abord à « parti »' END);
   END IF;
   -- Une arrivée déjà travaillée à Douala ne se défait pas : les colis pointés redeviendraient « en vol ».
+  -- Verrouiller d'abord ce qu'on vérifie (colis, puis paquets : l'ordre du pointage, qui verrouille le
+  -- colis puis son paquet) : un pointage ou une réception concurrents attendent ce jalon, ou le font refuser.
+  IF v_a.status = 'ARRIVED' THEN
+    PERFORM 1 FROM public.parcels WHERE air_shipment_id = v_a.id ORDER BY id FOR UPDATE;
+    PERFORM 1 FROM public.air_packages WHERE air_shipment_id = v_a.id ORDER BY id FOR UPDATE;
+  END IF;
   IF v_a.status = 'ARRIVED' AND (
        EXISTS (SELECT 1 FROM public.parcels WHERE air_shipment_id = v_a.id AND (checked_in_at IS NOT NULL OR delivered_at IS NOT NULL OR condition = 'missing'))
     OR EXISTS (SELECT 1 FROM public.air_packages WHERE air_shipment_id = v_a.id AND status IN ('received','opened'))) THEN
@@ -1123,6 +1145,296 @@ BEGIN
 END;
 $fn$;
 
+-- 5.7 La journée de Douala : une expédition à LTA provisoire se lit « Expédition du JJ/MM », jamais « LTA PROV-… ».
+CREATE OR REPLACE FUNCTION public.warehouse_day()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_today DATE := (now() AT TIME ZONE 'Africa/Douala')::date;
+BEGIN
+  IF NOT (public.admin_has_permission(v_uid, 'canReceiveAtDestination') OR public.admin_has_permission(v_uid, 'canReleaseParcels')) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN jsonb_build_object(
+    'success', true,
+    'day', v_today,
+    'stats', jsonb_build_object(
+      'to_checkin', (SELECT count(*) FROM public.parcels p WHERE p.status IN ('shipped','arrived') AND p.checked_in_at IS NULL AND p.delivered_at IS NULL AND COALESCE(p.condition, '') <> 'missing'
+                       AND (EXISTS (SELECT 1 FROM public.air_shipments a WHERE a.id = p.air_shipment_id AND a.status = 'ARRIVED')
+                         OR EXISTS (SELECT 1 FROM public.cargo_shipments cs WHERE cs.id = p.shipment_id AND cs.status IN ('ARRIVED','DELIVERED')))),
+      'waiting', (SELECT count(*) FROM public.parcels p WHERE p.status = 'arrived' AND p.checked_in_at IS NOT NULL AND p.delivered_at IS NULL),
+      'missing', (SELECT count(*) FROM public.parcels p WHERE p.condition = 'missing' AND p.delivered_at IS NULL),
+      'delivered_today', (SELECT count(*) FROM public.parcels p WHERE p.delivered_at IS NOT NULL AND (p.delivered_at AT TIME ZONE 'Africa/Douala')::date = v_today)
+    ),
+    -- Les arrivées : un avion arrivé ou une boîte arrivée dont il reste des colis à pointer.
+    'arrivals', COALESCE((
+      SELECT jsonb_agg(row ORDER BY (row->>'arrived_at') DESC) FROM (
+        SELECT jsonb_build_object('kind', 'air', 'id', a.id, 'ref', a.awb_number, 'label', CASE WHEN a.awb_number LIKE 'PROV-%' THEN 'Expédition' || COALESCE(' du ' || to_char(a.etd, 'DD/MM'), '') ELSE 'LTA ' || a.awb_number END, 'sub', COALESCE(a.flight_no || ' · ', '') || COALESCE(a.airline, ''),
+          'arrived_at', a.arrived_at,
+          'expected', (SELECT count(*) FROM public.parcels p WHERE p.air_shipment_id = a.id AND p.delivered_at IS NULL),
+          'checked', (SELECT count(*) FROM public.parcels p WHERE p.air_shipment_id = a.id AND p.checked_in_at IS NOT NULL AND p.delivered_at IS NULL),
+          'missing', (SELECT count(*) FROM public.parcels p WHERE p.air_shipment_id = a.id AND p.condition = 'missing'),
+          'delivered', (SELECT count(*) FROM public.parcels p WHERE p.air_shipment_id = a.id AND p.delivered_at IS NOT NULL)) AS row
+        FROM public.air_shipments a WHERE a.status = 'ARRIVED'
+        UNION ALL
+        SELECT jsonb_build_object('kind', 'sea', 'id', cs.id, 'ref', cs.container_number, 'label', cs.container_number, 'sub', cs.client_label || COALESCE(' · ' || cs.vessel_name, ''),
+          'arrived_at', COALESCE(cs.eta_carrier, cs.last_event_at, cs.updated_at),
+          'expected', (SELECT count(*) FROM public.parcels p WHERE p.shipment_id = cs.id AND p.delivered_at IS NULL),
+          'checked', (SELECT count(*) FROM public.parcels p WHERE p.shipment_id = cs.id AND p.checked_in_at IS NOT NULL AND p.delivered_at IS NULL),
+          'missing', (SELECT count(*) FROM public.parcels p WHERE p.shipment_id = cs.id AND p.condition = 'missing'),
+          'delivered', (SELECT count(*) FROM public.parcels p WHERE p.shipment_id = cs.id AND p.delivered_at IS NOT NULL)) AS row
+        FROM public.cargo_shipments cs WHERE cs.status IN ('ARRIVED','DELIVERED') AND EXISTS (SELECT 1 FROM public.parcels p WHERE p.shipment_id = cs.id AND p.delivered_at IS NULL)
+      ) r), '[]'::jsonb),
+    -- Ce qui attend son client, par client : pointé, pas remis.
+    'waiting_by_client', COALESCE((
+      SELECT jsonb_agg(row ORDER BY (row->>'since')) FROM (
+        SELECT jsonb_build_object(
+          'client', public.reception_client_card(d.client_user_id),
+          'parcels', count(*), 'weight_kg', COALESCE(sum(p.weight_kg), 0), 'since', min(p.checked_in_at),
+          'unpaid', bool_or(q.id IS NULL OR q.total_xaf <= 0 OR q.amount_paid_xaf < q.total_xaf),
+          'balance_xaf', COALESCE(sum(GREATEST(q.total_xaf - q.amount_paid_xaf, 0)) FILTER (WHERE q.id IS NOT NULL), 0)
+        ) AS row
+        FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id LEFT JOIN public.parcel_quotes q ON q.deposit_id = d.id
+        WHERE p.status = 'arrived' AND p.checked_in_at IS NOT NULL AND p.delivered_at IS NULL
+        GROUP BY d.client_user_id
+      ) g), '[]'::jsonb),
+    'releases_today', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object('id', r.id, 'release_no', r.release_no, 'released_at', r.released_at, 'picked_by_name', r.picked_by_name, 'parcel_count', r.parcel_count,
+                                          'client', public.reception_client_card(r.client_user_id)) ORDER BY r.released_at DESC)
+      FROM public.parcel_releases r WHERE (r.released_at AT TIME ZONE 'Africa/Douala')::date = v_today), '[]'::jsonb)
+  );
+END;
+$fn$;
+
+-- 5.8 Les messages aux clients au départ et à l'arrivée : la référence est la LTA, ou à défaut
+--     le vol, ou les dépôts — jamais une LTA provisoire.
+CREATE OR REPLACE FUNCTION public.air_shipments_notify()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE r RECORD; v_flight TEXT; v_awb TEXT;
+BEGIN
+  IF NEW.status IS NOT DISTINCT FROM OLD.status OR NEW.status NOT IN ('DEPARTED','ARRIVED') THEN RETURN NEW; END IF;
+  v_flight := COALESCE(NEW.flight_no, 'Air cargo');
+  -- Une LTA provisoire (PROV-…) n'est pas un numéro que le client peut suivre : on ne l'envoie pas.
+  v_awb := CASE WHEN NEW.awb_number LIKE 'PROV-%' THEN NULL ELSE NEW.awb_number END;
+  FOR r IN
+    SELECT d.client_user_id AS user_id, count(*) AS n, string_agg(DISTINCT d.deposit_no, ', ') AS deposits, (array_agg(d.id ORDER BY d.deposit_no))[1] AS deposit_id
+    FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+    WHERE p.air_shipment_id = NEW.id AND d.client_user_id IS NOT NULL AND p.delivered_at IS NULL
+    GROUP BY d.client_user_id
+  LOOP
+    IF NEW.status = 'DEPARTED' THEN
+      PERFORM public.cargo_notify_client(r.user_id, 'parcel_departed',
+        'Vos colis ont quitté la Chine',
+        'Vos ' || r.n || ' colis (' || r.deposits || ') ont quitté Guangzhou par avion, vol ' || v_flight || COALESCE(', arrivée prévue le ' || to_char(NEW.eta, 'DD/MM'), '') || '.',
+        jsonb_build_object('deposit_id', r.deposit_id, 'deposit_no', r.deposits, 'parcel_count', r.n, 'air_shipment_id', NEW.id, 'awb_number', v_awb, 'flight_no', NEW.flight_no, 'eta', NEW.eta, 'reference', COALESCE(v_awb, NULLIF(NEW.flight_no, ''), r.deposits)));
+    ELSE
+      PERFORM public.cargo_notify_client(r.user_id, 'parcel_arrived',
+        'Vos colis sont arrivés à Douala',
+        'Vos ' || r.n || ' colis (' || r.deposits || ') sont arrivés à Douala. Nous vous prévenons dès qu''ils sont prêts au retrait.',
+        jsonb_build_object('deposit_id', r.deposit_id, 'deposit_no', r.deposits, 'parcel_count', r.n, 'air_shipment_id', NEW.id, 'awb_number', v_awb, 'reference', COALESCE(v_awb, NULLIF(NEW.flight_no, ''), r.deposits)));
+    END IF;
+  END LOOP;
+  RETURN NEW;
+END;
+$fn$;
+
+-- 5.9 La notification « arrivée à Douala » de l'équipe : le vol, ou la LTA si elle est connue.
+create or replace function public.staff_push_on_air_arrival()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_count integer;
+begin
+  if new.status = 'ARRIVED' and old.status is distinct from new.status then
+    select count(*) into v_count from public.parcels where air_shipment_id = new.id;
+    if v_count > 0 then
+      perform public.send_staff_push('canReceiveAtDestination', 'Arrivée à Douala · avion',
+        coalesce(nullif(new.flight_no, ''), case when new.awb_number like 'PROV-%' then null else new.awb_number end, 'Vol') || ' · ' || v_count || ' colis à pointer',
+        '/w/arrivees', null, auth.uid());
+    end if;
+  end if;
+  return new;
+exception when others then
+  raise warning 'staff_push_on_air_arrival: %', sqlerrm;
+  return new;
+end;
+$$;
+
+-- 5.10 Le dépôt, tel que les écrans le lisent : chaque colis dit aussi son paquet.
+CREATE OR REPLACE FUNCTION public.reception_deposit_json(p_deposit_id UUID)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+  SELECT jsonb_build_object(
+    'id',                   d.id,
+    'deposit_no',           d.deposit_no,
+    'client',               public.reception_client_card(d.client_user_id),
+    'location',             d.location,
+    'brought_by',           d.brought_by,
+    'representative_name',  d.representative_name,
+    'representative_phone', d.representative_phone,
+    'supplier_kind',        d.supplier_kind,
+    'supplier_name',        d.supplier_name,
+    'supplier_contact',     d.supplier_contact,
+    'supplier_phone',       d.supplier_phone,
+    'supplier_email',       d.supplier_email,
+    'supplier_wechat',      d.supplier_wechat,
+    'supplier_address',     d.supplier_address,
+    'status',               d.status,
+    'received_by',          d.received_by,
+    'received_by_name',     (SELECT TRIM(COALESCE(ur.first_name,'') || ' ' || COALESCE(ur.last_name,'')) FROM public.user_roles ur WHERE ur.user_id = d.received_by),
+    'opened_at',            d.opened_at,
+    'closed_at',            d.closed_at,
+    'updated_at',           d.updated_at,
+    'cancelled_at',         d.cancelled_at,
+    'cancel_reason',        d.cancel_reason,
+    'cancelled_by_name',    (SELECT TRIM(COALESCE(ur.first_name,'') || ' ' || COALESCE(ur.last_name,'')) FROM public.user_roles ur WHERE ur.user_id = d.cancelled_by),
+    'parcel_count',         (SELECT count(*) FROM public.parcels p WHERE p.deposit_id = d.id),
+    'total_weight_kg',      (SELECT COALESCE(sum(p.weight_kg), 0) FROM public.parcels p WHERE p.deposit_id = d.id),
+    'total_cbm',            (SELECT COALESCE(sum(p.cbm), 0) FROM public.parcels p WHERE p.deposit_id = d.id),
+    'notes',                d.notes,
+    'parcels',              COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', p.id, 'seq', p.seq, 'parcel_no', p.parcel_no, 'kind', p.kind,
+        'weight_kg', p.weight_kg, 'length_cm', p.length_cm, 'width_cm', p.width_cm, 'height_cm', p.height_cm,
+        'cbm', p.cbm, 'description', p.description, 'courier_waybill', p.courier_waybill,
+        'photo_path', p.photo_path,
+        'photos', COALESCE((
+          SELECT jsonb_agg(jsonb_build_object('id', ph.id, 'path', ph.path, 'position', ph.position, 'created_at', ph.created_at)
+                           ORDER BY ph.position, ph.created_at)
+          FROM public.parcel_photos ph WHERE ph.parcel_id = p.id), '[]'::jsonb),
+        'status', p.status, 'shipment_id', p.shipment_id,
+        'container_number', (SELECT cs.container_number FROM public.cargo_shipments cs WHERE cs.id = p.shipment_id),
+        'air_shipment_id', p.air_shipment_id,
+        'air_package_id', p.air_package_id,
+        'package_no', (SELECT k.package_no FROM public.air_packages k WHERE k.id = p.air_package_id),
+        'awb_number', (SELECT a.awb_number FROM public.air_shipments a WHERE a.id = p.air_shipment_id),
+        'checked_in_at', p.checked_in_at, 'warehouse_location', p.warehouse_location, 'condition', p.condition, 'condition_note', p.condition_note,
+        'delivered_at', p.delivered_at, 'release_id', p.release_id,
+        'release_no', (SELECT r.release_no FROM public.parcel_releases r WHERE r.id = p.release_id),
+        'created_at', p.created_at, 'updated_at', p.updated_at
+      ) ORDER BY p.seq)
+      FROM public.parcels p WHERE p.deposit_id = d.id), '[]'::jsonb)
+  )
+  FROM public.parcel_deposits d
+  WHERE d.id = p_deposit_id;
+$fn$;
+
+-- 5.11 Charger une boîte : un colis emballé dans un paquet avion est sauté, pas une erreur pour tout le lot.
+CREATE OR REPLACE FUNCTION public.cargo_load_parcels(p_shipment_id UUID, p_parcel_ids UUID[])
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE
+  v_uid UUID := auth.uid();
+  v_ship public.cargo_shipments;
+  v_status TEXT;
+  v_n INTEGER; v_kg NUMERIC; v_cbm NUMERIC;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_ship FROM public.cargo_shipments WHERE id = p_shipment_id FOR UPDATE;
+  IF v_ship.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Boîte introuvable');
+  END IF;
+  IF v_ship.status = 'DELIVERED' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Cette boîte est déjà livrée : on ne charge plus rien dedans');
+  END IF;
+  IF p_parcel_ids IS NULL OR array_length(p_parcel_ids, 1) IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Aucun colis choisi');
+  END IF;
+  v_status := public.parcel_status_for_shipment(v_ship.status);
+  -- Seuls les colis qui attendent : un colis déjà dans une boîte ne bouge pas d'ici.
+  WITH moved AS (
+    UPDATE public.parcels p
+       SET shipment_id = p_shipment_id, status = v_status, updated_at = now()
+     WHERE p.id = ANY(p_parcel_ids) AND p.shipment_id IS NULL AND p.air_package_id IS NULL AND p.status IN ('received','stored')
+     RETURNING p.weight_kg, p.cbm
+  )
+  SELECT count(*), COALESCE(sum(weight_kg), 0), COALESCE(sum(cbm), 0) INTO v_n, v_kg, v_cbm FROM moved;
+  IF v_n = 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ces colis sont déjà chargés ou introuvables');
+  END IF;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'load_parcels', 'cargo_shipment', p_shipment_id,
+          jsonb_build_object('description', v_n || ' colis chargés dans ' || v_ship.container_number || ' (' || v_kg || ' kg, ' || v_cbm || ' m³)', 'parcel_ids', to_jsonb(p_parcel_ids), 'count', v_n, 'weight_kg', v_kg, 'cbm', v_cbm));
+  RETURN jsonb_build_object('success', true, 'loaded', v_n, 'weight_kg', v_kg, 'cbm', v_cbm, 'status', v_status);
+END;
+$fn$;
+
+-- 5.12 Charger un avion colis par colis : même règle (le colis emballé part avec son paquet).
+CREATE OR REPLACE FUNCTION public.cargo_air_load_parcels(p_air_id UUID, p_parcel_ids UUID[])
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_a public.air_shipments; v_status TEXT; v_n INTEGER; v_kg NUMERIC; v_cbm NUMERIC;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_a FROM public.air_shipments WHERE id = p_air_id FOR UPDATE;
+  IF v_a.id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Expédition introuvable'); END IF;
+  IF v_a.status IN ('ARRIVED','DELIVERED') THEN RETURN jsonb_build_object('success', false, 'error', 'Cet avion est déjà arrivé : on ne charge plus rien dedans'); END IF;
+  IF p_parcel_ids IS NULL OR array_length(p_parcel_ids, 1) IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Aucun colis choisi'); END IF;
+  v_status := public.parcel_status_for_air(v_a.status);
+  WITH moved AS (
+    UPDATE public.parcels p
+       SET air_shipment_id = p_air_id, status = v_status, updated_at = now()
+     WHERE p.id = ANY(p_parcel_ids) AND p.shipment_id IS NULL AND p.air_shipment_id IS NULL AND p.air_package_id IS NULL AND p.status IN ('received','stored')
+     RETURNING p.weight_kg, p.cbm
+  )
+  SELECT count(*), COALESCE(sum(weight_kg), 0), COALESCE(sum(cbm), 0) INTO v_n, v_kg, v_cbm FROM moved;
+  IF v_n = 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Ces colis sont déjà chargés ou introuvables'); END IF;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'air_load_parcels', 'air_shipment', p_air_id,
+          jsonb_build_object('description', v_n || ' colis chargés dans la LTA ' || v_a.awb_number || ' (' || v_kg || ' kg)', 'parcel_ids', to_jsonb(p_parcel_ids), 'count', v_n, 'weight_kg', v_kg, 'cbm', v_cbm));
+  RETURN jsonb_build_object('success', true, 'loaded', v_n, 'weight_kg', v_kg, 'cbm', v_cbm, 'status', v_status);
+END;
+$fn$;
+
+-- 5.13 Retirer un colis d'un avion : un colis emballé ne sort qu'avec son paquet.
+CREATE OR REPLACE FUNCTION public.cargo_air_unload_parcel(p_parcel_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_p public.parcels; v_a public.air_shipments;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canManageCargo') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_p FROM public.parcels WHERE id = p_parcel_id FOR UPDATE;
+  IF v_p.id IS NULL OR v_p.air_shipment_id IS NULL THEN RETURN jsonb_build_object('success', false, 'error', 'Ce colis n''est pas dans un avion'); END IF;
+  IF v_p.air_package_id IS NOT NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Ce colis voyage dans le paquet '
+      || COALESCE((SELECT k.package_no FROM public.air_packages k WHERE k.id = v_p.air_package_id), '')
+      || ' : retirez le paquet de l''expédition');
+  END IF;
+  SELECT * INTO v_a FROM public.air_shipments WHERE id = v_p.air_shipment_id;
+  IF v_a.status <> 'PLANNED' THEN RETURN jsonb_build_object('success', false, 'error', 'L''avion est parti : le colis ne se retire plus'); END IF;
+  UPDATE public.parcels SET air_shipment_id = NULL, status = 'received', updated_at = now() WHERE id = v_p.id;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'air_unload_parcel', 'air_shipment', v_a.id,
+          jsonb_build_object('description', 'Colis ' || v_p.parcel_no || ' retiré de la LTA ' || v_a.awb_number, 'parcel_id', v_p.id, 'parcel_no', v_p.parcel_no));
+  RETURN jsonb_build_object('success', true);
+END;
+$fn$;
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- 6. LTA provisoire : l'expédition s'ouvre avant que la LTA soit connue
 -- ─────────────────────────────────────────────────────────────────────────
@@ -1245,6 +1557,7 @@ REVOKE ALL ON FUNCTION public.air_packages_follow_checkin() FROM PUBLIC, anon, a
 REVOKE ALL ON FUNCTION public.reception_parcel_locked(public.parcels) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.cargo_air_json(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.warehouse_parcel_json(UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.reception_deposit_json(UUID) FROM PUBLIC, anon, authenticated;
 -- Lecteurs de code : purs, sans données.
 REVOKE ALL ON FUNCTION public.air_package_code(TEXT) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.parcel_code(TEXT) FROM PUBLIC, anon;
@@ -1274,7 +1587,11 @@ BEGIN
     'public.cargo_air_set_status(uuid, text, timestamptz)',
     'public.warehouse_arrival_parcels(text, uuid)',
     'public.cargo_air_create(text, text, text, date, date, text, text, numeric, text)',
-    'public.cargo_air_update(uuid, text, text, text, date, date, text, text, numeric, text)'
+    'public.cargo_air_update(uuid, text, text, text, date, date, text, text, numeric, text)',
+    'public.warehouse_day()',
+    'public.cargo_load_parcels(uuid, uuid[])',
+    'public.cargo_air_load_parcels(uuid, uuid[])',
+    'public.cargo_air_unload_parcel(uuid)'
   ] LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon', f);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role', f);
@@ -1282,9 +1599,9 @@ BEGIN
 END $$;
 
 COMMENT ON FUNCTION public.air_package_list(text, uuid) IS
-  '@mola:{"expose":true,"kind":"read","permission":"canReceiveParcels","label":"Les paquets avion de 32 kg : au bureau (en cours, fermés, refusés, pas encore partis), ou ceux d''une expédition"}';
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","label":"Les paquets avion de 32 kg : au bureau (en cours, fermés, refusés, pas encore partis), ou ceux d''une expédition"}';
 COMMENT ON FUNCTION public.air_package_get(uuid, text) IS
-  '@mola:{"expose":true,"kind":"read","permission":"canReceiveParcels","label":"Un paquet avion (par son numéro PQ-…) : poids, expédition, colis et clients"}';
+  '@mola:{"expose":true,"kind":"read","permission":"canViewCargo","label":"Un paquet avion (par son numéro PQ-…) : poids, expédition, colis et clients"}';
 COMMENT ON FUNCTION public.air_package_create(text) IS
   '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Ouvrir un nouveau paquet avion (32 kg au plus)"}';
 COMMENT ON FUNCTION public.air_package_add_parcel(uuid, text) IS
@@ -1298,13 +1615,13 @@ COMMENT ON FUNCTION public.air_package_reopen(uuid) IS
 COMMENT ON FUNCTION public.air_package_delete(uuid) IS
   '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Supprimer un paquet ouvert et vide"}';
 COMMENT ON FUNCTION public.air_package_assign(uuid, uuid[]) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Affecter des paquets fermés à une expédition aérienne pas encore partie"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Affecter des paquets fermés à une expédition aérienne pas encore partie"}';
 COMMENT ON FUNCTION public.air_package_unassign(uuid) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Retirer un paquet d''une expédition pas encore partie"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Retirer un paquet d''une expédition pas encore partie"}';
 COMMENT ON FUNCTION public.air_package_scan_departure(uuid, text) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":false,"danger":false,"label":"Scanner un paquet au départ (remise à l''aéroport)"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Scanner un paquet au départ (remise à l''aéroport)"}';
 COMMENT ON FUNCTION public.air_package_refuse(uuid, text) IS
-  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":true,"label":"Déclarer un paquet refusé à l''aéroport (motif) : il sort de l''expédition avec ses colis"}';
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":true,"label":"Déclarer un paquet refusé à l''aéroport (motif) : il sort de l''expédition avec ses colis"}';
 COMMENT ON FUNCTION public.air_package_receive(text) IS
   '@mola:{"expose":true,"kind":"write","permission":"canReceiveAtDestination","confirm":false,"danger":false,"label":"Douala : recevoir un paquet à l''entrepôt (scan PQ-…)"}';
 COMMENT ON FUNCTION public.air_package_open(uuid) IS
@@ -1314,7 +1631,7 @@ COMMENT ON FUNCTION public.air_package_json(uuid, boolean) IS
 COMMENT ON FUNCTION public._air_package_can_read() IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","label":"Interne : peut lire les paquets"}';
 COMMENT ON FUNCTION public._air_package_can_ship() IS
-  '@mola:{"expose":false,"kind":"read","permission":"canManageCargo","label":"Interne : peut envoyer les paquets à l''aéroport"}';
+  '@mola:{"expose":false,"kind":"read","permission":"canReceiveParcels","label":"Interne : peut envoyer les paquets à l''aéroport"}';
 COMMENT ON FUNCTION public.air_package_code(text) IS
   '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","label":"Interne : lire un numéro de paquet scanné"}';
 COMMENT ON FUNCTION public.parcel_code(text) IS
@@ -1341,5 +1658,20 @@ COMMENT ON FUNCTION public.cargo_air_create(text, text, text, date, date, text, 
   '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Ouvrir une expédition aérienne (LTA, ou vide = LTA à venir avec une date de départ ; compagnie, vol, dates)"}';
 COMMENT ON FUNCTION public.cargo_air_update(uuid, text, text, text, date, date, text, text, numeric, text) IS
   '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Corriger une expédition aérienne (LTA provisoire à remplacer, vol, dates, fret, notes)"}';
+
+COMMENT ON FUNCTION public.warehouse_day() IS
+  '@mola:{"expose":true,"kind":"read","permission":"canReceiveAtDestination","confirm":false,"danger":false,"label":"La journée de l''entrepôt de Douala : arrivées à pointer, colis qui attendent leur client, remises du jour"}';
+COMMENT ON FUNCTION public.air_shipments_notify() IS
+  '@mola:{"expose":false,"kind":"write","permission":"canManageCargo","confirm":false,"danger":false,"label":"Interne : prévenir les clients au départ et à l''arrivée d''un vol"}';
+COMMENT ON FUNCTION public.staff_push_on_air_arrival() IS
+  '@mola:{"expose":false,"kind":"write","permission":"canReceiveAtDestination","confirm":false,"danger":false,"label":"Interne : prévenir l''équipe de Douala qu''un vol est arrivé"}';
+COMMENT ON FUNCTION public.reception_deposit_json(uuid) IS
+  '@mola:{"expose":false,"kind":"read","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Sérialiser un dépôt de colis, avec ses photos et le paquet de chaque colis (helper interne)"}';
+COMMENT ON FUNCTION public.cargo_load_parcels(uuid, uuid[]) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Charger des colis reçus dans une boîte (dossier Cargo) — hors colis emballés dans un paquet avion"}';
+COMMENT ON FUNCTION public.cargo_air_load_parcels(uuid, uuid[]) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Charger des colis reçus dans une expédition aérienne (colis hors paquet)"}';
+COMMENT ON FUNCTION public.cargo_air_unload_parcel(uuid) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canManageCargo","confirm":true,"danger":false,"label":"Retirer un colis (hors paquet) d''une expédition aérienne pas encore partie"}';
 
 NOTIFY pgrst, 'reload schema';

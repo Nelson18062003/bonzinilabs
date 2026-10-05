@@ -188,8 +188,6 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
   const total = prog.total;
   const allScanned = total > 0 && scannedCount >= total;
 
-  // Rien à montrer pour une ancienne expédition sans paquet qui n'est plus en préparation.
-  if (packages.length === 0 && !planned) return null;
 
   const summary = total === 0
     ? 'Aucun paquet pour l’instant'
@@ -199,7 +197,7 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
   const togglePick = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const closeAdd = () => { setAdding(false); setPicked(new Set()); };
   const submitAdd = async () => {
-    if (chosen.length === 0) return;
+    if (chosen.length === 0 || assign.isPending) return;
     try { await assign.mutateAsync(chosen.map((k) => k.id)); closeAdd(); } catch { /* le hook affiche le refus */ }
   };
 
@@ -486,6 +484,10 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
       </Sheet>
     </>
   );
+
+  // Rien à montrer pour une ancienne expédition sans paquet qui n'est plus en préparation —
+  // sauf la feuille « prévenez les clients » : le refus du dernier paquet vide la liste au rechargement.
+  if (packages.length === 0 && !planned) return refused ? dialogs : null;
 
   if (desk) {
     return (
