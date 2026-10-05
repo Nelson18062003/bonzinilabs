@@ -4,17 +4,22 @@
 // chaque accès, voit qui s'est connecté et quand, et ouvre la fiche d'un
 // membre. Un seul écran pour l'ordinateur et le téléphone.
 // Lecture : team_members (canManageUsers, garde serveur).
+//
+// Sites (06/10) : chaque ligne montre le site du membre et son numéro
+// principal lisible ; une rangée de puces filtre par site ; la recherche
+// porte aussi sur le site et sur tous les numéros.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ChevronRight, Plus, TrendingUp, UserX } from 'lucide-react';
 import { SearchField } from '@/components/form';
+import { CountryFlag } from '@/components/form/CountryFlag';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useTeamMembers, type TeamMember } from '@/hooks/useTeam';
-import { TEAMS, lastSeen, memberName, teamOf, type TeamKey } from '@/lib/team';
-import { normalizeText } from '@/lib/clientSearch';
-import { BTN_PRIMARY, BTN_SOFT, CARD, Initials, RolePill, Skeleton } from './TeamBits';
+import { TEAMS, compareSites, lastSeen, matchesMember, memberName, memberPhones, teamOf, type TeamKey } from '@/lib/team';
+import { BTN_PRIMARY, BTN_SOFT, CARD, Initials, RolePill, SiteTag, Skeleton } from './TeamBits';
 
 export const TEAM_BASE = '/m/equipe';
 
@@ -31,18 +36,29 @@ function TeamList() {
   const [team, setTeam] = useState<TeamKey | 'all'>('all');
   const [query, setQuery] = useState('');
   const [showDisabled, setShowDisabled] = useState(false);
+  /** Le filtre par site : un id de site, « sans site », ou tous. */
+  const [site, setSite] = useState<string>(ALL_SITES);
 
   const all = useMemo(() => members.data ?? [], [members.data]);
   const disabledCount = all.filter((m) => m.is_disabled).length;
-  const q = normalizeText(query.trim());
-  const visible = all.filter(
-    (m) =>
-      (showDisabled || !m.is_disabled) &&
-      (!q || normalizeText([memberName(m), m.email, m.phone, m.source?.label].filter(Boolean).join(' ')).includes(q)),
-  );
+  // Les sites où quelqu'un travaille (les autres n'ont rien à filtrer).
+  const sites = useMemo(() => {
+    const byId = new Map<string, NonNullable<TeamMember['site']>>();
+    for (const m of all) if (m.site) byId.set(m.site.id, m.site);
+    return [...byId.values()].sort(compareSites);
+  }, [all]);
+  const someWithoutSite = all.some((m) => !m.site);
+  const inSite = (m: TeamMember, key: string) => key === ALL_SITES || (key === NO_SITE ? !m.site : m.site?.id === key);
+  const inTeam = (m: TeamMember) => team === 'all' || teamOf(m.role).key === team;
+
+  const searched = all.filter((m) => (showDisabled || !m.is_disabled) && matchesMember(m, query));
+  const visible = searched.filter((m) => inSite(m, site));
+  const filtering = query.trim() !== '' || site !== ALL_SITES;
   const byTeam = TEAMS.map((t) => ({ team: t, rows: visible.filter((m) => teamOf(m.role).key === t.key) })).filter(
-    (g) => (team === 'all' ? g.rows.length > 0 || g.team.key === 'ventes' : g.team.key === team),
+    // « Commerciaux » reste affiché vide (pour inviter à en créer un), sauf pendant une recherche ou un filtre.
+    (g) => (team === 'all' ? g.rows.length > 0 || (g.team.key === 'ventes' && !filtering) : g.team.key === team),
   );
+  const shownInSite = (key: string) => searched.filter((m) => inTeam(m) && inSite(m, key)).length;
   const activeCount = all.length - disabledCount;
   // Une seule règle pour les puces et les en-têtes de section : on compte ce
   // que la liste montre (désactivés compris quand ils sont affichés, recherche comprise).
@@ -86,12 +102,32 @@ function TeamList() {
         ))}
       </div>
 
+      {/* Les sites : où chacun travaille (Guangzhou · bureau, Douala…) */}
+      {sites.length > 0 && (
+        <div className="-mx-4 -mt-3 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrer par site">
+          <SiteChip label="Tous les sites" count={shownInSite(ALL_SITES)} active={site === ALL_SITES} onClick={() => setSite(ALL_SITES)} />
+          {sites.map((s) => (
+            <SiteChip
+              key={s.id}
+              label={s.label}
+              iso={s.country_iso}
+              count={shownInSite(s.id)}
+              active={site === s.id}
+              onClick={() => setSite(site === s.id ? ALL_SITES : s.id)}
+            />
+          ))}
+          {someWithoutSite && (
+            <SiteChip label="Sans site" count={shownInSite(NO_SITE)} active={site === NO_SITE} onClick={() => setSite(site === NO_SITE ? ALL_SITES : NO_SITE)} />
+          )}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <SearchField
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onClear={() => setQuery('')}
-          placeholder="Nom, email, téléphone…"
+          placeholder="Nom, email, téléphone, site…"
           aria-label="Chercher un membre"
           wrapperClassName="min-w-[220px] flex-1"
           controlClassName="rounded-xl bg-card"
@@ -151,6 +187,27 @@ function TeamList() {
   );
 }
 
+const ALL_SITES = 'all';
+const NO_SITE = 'none';
+
+function SiteChip({ label, iso, count, active, onClick }: { label: string; iso?: string | null; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors',
+        active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground ring-1 ring-black/10 hover:bg-accent hover:text-foreground dark:ring-white/15',
+      )}
+    >
+      {iso && <CountryFlag iso={iso} size={16} />}
+      {label}
+      <span className={cn('tabular-nums text-[12px]', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{count}</span>
+    </button>
+  );
+}
+
 function TeamChip({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
   return (
     <button
@@ -171,7 +228,11 @@ function TeamChip({ label, count, active, onClick }: { label: string; count: num
 function MemberRow({ m, onOpen }: { m: TeamMember; onOpen: () => void }) {
   const name = memberName(m);
   const noSource = m.role === 'commercial' && !m.source;
-  const contact = [m.email, m.phone, m.role === 'commercial' && m.source ? `fiche « ${m.source.label} »` : null].filter(Boolean);
+  const phones = memberPhones(m);
+  const phone = phones[0]
+    ? `${formatE164ForDisplay(phones[0].phone_e164)}${phones.length > 1 ? ` et ${phones.length - 1} autre${phones.length > 2 ? 's' : ''}` : ''}`
+    : null;
+  const contact = [m.email, phone, m.role === 'commercial' && m.source ? `fiche « ${m.source.label} »` : null].filter(Boolean);
   return (
     <li>
       <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left hover:bg-muted/40 active:bg-muted/60">
@@ -180,6 +241,7 @@ function MemberRow({ m, onOpen }: { m: TeamMember; onOpen: () => void }) {
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className={cn('truncate text-[15px] font-semibold', m.is_disabled && 'text-muted-foreground line-through decoration-1')}>{name}</span>
             <RolePill role={m.role} />
+            {m.site && <SiteTag site={m.site} className="text-[12.5px] font-medium text-muted-foreground" />}
             {m.is_disabled && <span className="rounded-full bg-muted px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">désactivé</span>}
           </span>
           {/* Téléphone : une ligne chacun (email, numéro, fiche) pour que le numéro reste lisible ; une seule ligne sur ordinateur. */}

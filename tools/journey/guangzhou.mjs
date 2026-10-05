@@ -160,6 +160,10 @@ const quotePaid = (amount, b) => {
 };
 
 export const RPC = {
+  // Nouveau client créé à la réception (06/10) : l'origine « colis reçu » se pose d'office.
+  prospect_lookup_phone: { success: true, found: false },
+  admin_create_client: { success: true, clientId: 'u-new', walletId: 'w-new', authEmail: '237677998877@bonzini-client.local', tempPassword: 'k7d2m9q4', message: 'Client Joseph Etame créé avec succès' },
+  reception_set_client_origin: { success: true, kept: false, source_id: 'src-parcel-office', label: 'Bureau de Guangzhou (avion)', kind: 'parcel' },
   // Réception (/r)
   reception_my_day: {
     success: true, day: '2026-10-05',
@@ -222,6 +226,12 @@ export const RPC = {
 
 /** Les lectures directes : réglages d'expédition (étiquettes) et solde du client. */
 export function REST(url) {
+  // La fiche client : l'origine posée par la réception et « Enregistré par » (06/10).
+  if (/\/rest\/v1\/clients\?select=source_id/.test(url)) {
+    return [{ source_id: 'src-parcel-office', source_set_at: '2026-10-06T07:12:00Z', created_at: '2026-10-06T07:11:00Z',
+      registered_by: 'kevin', registered_by_name: 'Kevin Nkolo', registered_role: 'receptionist', registered_site: 'Guangzhou · bureau', registered_at: '2026-10-06T07:11:00Z',
+      source: { id: 'src-parcel-office', kind: 'parcel', label: 'Bureau de Guangzhou (avion)', phone: null } }];
+  }
   if (/\/rest\/v1\/platform_settings/.test(url)) {
     return [{ key: 'shipping', value: {
       company: { email: 'contact@bonzinilabs.com', phone: '+8618667439286', nameEn: 'NORTON GAUSS BONZINI', nameZh: '诺顿·高斯·邦齐尼', wechat: '+8618667439286', whatsapp: '+8618667439286' },
@@ -317,6 +327,28 @@ async function openSeal(page) {
 }
 
 export const SCREENS = [
+  // 14. Au bureau, la fiche du client : « Origine » et « Enregistré par ».
+  { key: 'j.guangzhou.client-sheet', name: '14-fiche-client-enregistre-par', role: 'super_admin', desktop: true, viewport: '1440x1000', wait: 2500 },
+  // 12. Le propriétaire d'un colis n'existe pas encore : Kevin crée le client — l'origine ne se choisit pas.
+  { key: 'j.guangzhou.new-client', name: '12-nouveau-client-origine-auto', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1500',
+    before: async (page) => {
+      await fontsReady(page);
+      await page.locator('#cc-first').fill('Joseph');
+      await page.locator('#cc-last').fill('Etame');
+      await page.locator('input[type=tel]').first().fill('677998877');
+      await page.waitForTimeout(900);
+    } },
+  // 13. Créé : mot de passe à envoyer, et l'origine posée d'office (bureau de Guangzhou).
+  { key: 'j.guangzhou.new-client', name: '13-nouveau-client-cree', role: 'receptionist', init: setup, wait: 1500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.locator('#cc-first').fill('Joseph');
+      await page.locator('#cc-last').fill('Etame');
+      await page.locator('input[type=tel]').first().fill('677998877');
+      await page.waitForTimeout(700);
+      await page.getByRole('button', { name: /Créer|Create|创建/ }).last().click();
+      await page.waitForTimeout(1500);
+    } },
   // 1. L'accueil de Kevin, au bureau : « Nouveau dépôt », puis la carte « Paquets avion ».
   { key: 'j.guangzhou.home', name: '01-accueil-reception', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1370', fullPage: false, before: fontsReady },
   // 2. Le dépôt d'Aïcha en cours : 3 colis pesés, mesurés, photographiés.

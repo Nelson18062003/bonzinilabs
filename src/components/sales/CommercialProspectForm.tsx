@@ -7,8 +7,10 @@
 // « devenu client » ne se pilote plus : son numéro est figé (c'est par lui
 // que le compte client a été reconnu).
 //
-// Le numéro part toujours au format international (+237…) : `toE164`
-// complète un numéro camerounais à 9 chiffres. La relance se pose à 9 h,
+// Le numéro se saisit avec son pays (drapeau et indicatif, Cameroun par
+// défaut) et part au format international : `toE164` de `PhoneNumberInput`
+// (libphonenumber) le valide pour CE pays. Les doublons (client existant,
+// prospect déjà suivi) se vérifient au serveur. La relance se pose à 9 h,
 // heure de Douala. Les erreurs du serveur s'affichent en toast (les hooks
 // s'en chargent) et le formulaire garde ce qui a été tapé.
 // ============================================================
@@ -18,20 +20,23 @@ import { toast } from 'sonner';
 import { Check, CircleCheck, MessageCircle, Phone, RotateCcw, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCreateProspect, useProspects, useSetProspectStatus, useUpdateProspect, type Prospect } from '@/hooks/useSales';
-import { INTERESTS, PROSPECT_STATUS, toE164, whatsappLink, type Interest, type ProspectStatus } from '@/lib/sales';
+import { INTERESTS, PROSPECT_STATUS, whatsappLink, type Interest, type ProspectStatus } from '@/lib/sales';
 import { BottomSheet, TextArea, TextInput } from '@/mobile/designKit';
-import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
-import { ListSkeleton, LoadError, ProspectStatusPill, SALES_CARD, ScreenHeader } from './SalesBits';
+import { EMPTY_PHONE, PhoneNumberInput, formatE164ForDisplay, fromE164, toE164, type PhoneValue } from '@/components/form/PhoneNumberInput';
+import { ListSkeleton, LoadError, PhoneNumber, ProspectStatusPill, SALES_CARD, ScreenHeader } from './SalesBits';
 import { addDays, doualaDay, fmtLongDay, followUpIso, prospectName } from './salesHelpers';
 
 const NOTES_MAX = 1000;
 const REASON_MAX = 300;
 const FIELD = 'h-12 rounded-xl border-input bg-card dark:bg-card';
+/** Le même gabarit pour l'indicatif et le numéro ; la couleur du filet suit la validité (voir plus bas). */
+const PHONE_FIELD = 'h-12 rounded-xl bg-card dark:bg-card';
 
 interface Draft {
   firstName: string;
   lastName: string;
-  phone: string;
+  /** Pays + chiffres tels qu'affichés ; l'E.164 s'en déduit (`toE164`). */
+  phone: PhoneValue;
   company: string;
   city: string;
   interests: Interest[];
@@ -40,13 +45,13 @@ interface Draft {
   followUp: string;
 }
 
-const EMPTY: Draft = { firstName: '', lastName: '', phone: '', company: '', city: '', interests: [], notes: '', followUp: '' };
+const EMPTY: Draft = { firstName: '', lastName: '', phone: EMPTY_PHONE, company: '', city: '', interests: [], notes: '', followUp: '' };
 
 function draftOf(p: Prospect): Draft {
   return {
     firstName: p.first_name,
     lastName: p.last_name ?? '',
-    phone: p.phone,
+    phone: fromE164(p.phone_e164),
     company: p.company ?? '',
     city: p.city ?? '',
     interests: [...p.interests],
@@ -56,6 +61,8 @@ function draftOf(p: Prospect): Draft {
 }
 
 const sameSet = (a: Interest[], b: Interest[]) => a.length === b.length && a.every((x) => b.includes(x));
+const digitsOf = (v: PhoneValue) => v.national.replace(/\D/g, '');
+const samePhone = (a: PhoneValue, b: PhoneValue) => a.country === b.country && digitsOf(a) === digitsOf(b);
 
 /* ── Écran ─────────────────────────────────────────────────────────────── */
 
@@ -120,17 +127,20 @@ function ProspectEditor({ prospect }: { prospect?: Prospect }) {
   const busy = create.isPending || update.isPending || setStatus.isPending;
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
+  const original = prospect ? draftOf(prospect) : EMPTY;
   const e164 = toE164(draft.phone);
+  // Sur une fiche, un numéro qu'on n'a pas touché ne se revalide pas : il est déjà enregistré
+  // (et un ancien numéro que libphonenumber relit mal ne doit pas bloquer le reste de la fiche).
+  const phoneTouched = !prospect || !samePhone(draft.phone, original.phone);
   const errors = {
     firstName: draft.firstName.trim() === '' ? 'Le prénom est requis' : null,
-    phone: won ? null : draft.phone.trim() === '' ? 'Le numéro est requis' : !e164 ? 'Numéro invalide : indiquez l’indicatif (+237…)' : null,
+    phone: won || !phoneTouched ? null : !digitsOf(draft.phone) ? 'Le numéro est requis' : !e164 ? 'Numéro invalide : vérifiez l’indicatif et les chiffres' : null,
   };
   const valid = !errors.firstName && !errors.phone;
 
-  const original = prospect ? draftOf(prospect) : EMPTY;
-  const phoneChanged = !!prospect && !won && e164 !== prospect.phone_e164;
-  // « Sera enregistré » : seulement si le numéro normalisé diffère de la saisie ET, pour une fiche existante, de celui enregistré.
-  const willSave = e164 && draft.phone.trim() !== e164 && (!prospect || phoneChanged) ? e164 : null;
+  const phoneChanged = !!prospect && !won && phoneTouched && e164 !== prospect.phone_e164;
+  // « Sera enregistré » : le numéro international qui partira — pour un nouveau prospect, ou quand celui d'une fiche change ; jamais pour un numéro inchangé.
+  const willSave = e164 && (!prospect || phoneChanged) ? e164 : null;
   const dirty =
     isNew ||
     draft.firstName.trim() !== original.firstName.trim() ||
@@ -222,7 +232,9 @@ function ProspectEditor({ prospect }: { prospect?: Prospect }) {
                 <MessageCircle className="h-5 w-5" /> WhatsApp
               </a>
             </div>
-            <p className="-mt-2 text-center text-[13px] tabular-nums text-muted-foreground">{formatE164ForDisplay(prospect.phone_e164)}</p>
+            <p className="-mt-2 text-center text-[13px] text-muted-foreground">
+              <PhoneNumber e164={prospect.phone_e164} />
+            </p>
 
             {won ? (
               <div className="flex items-start gap-3 rounded-2xl bg-emerald-50 px-4 py-3.5 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:ring-emerald-400/25">
@@ -309,19 +321,19 @@ function ProspectEditor({ prospect }: { prospect?: Prospect }) {
               required={!won}
               htmlFor="pr-phone"
               error={tried ? errors.phone : null}
-              hint={won ? 'Le numéro d’un prospect devenu client ne change plus.' : willSave ? `Sera enregistré : ${formatE164ForDisplay(willSave)}` : 'Avec l’indicatif, ex. +237 6 99 12 34 56 (le +237 s’ajoute seul pour un numéro à 9 chiffres).'}
+              hint={won ? 'Le numéro d’un prospect devenu client ne change plus.' : willSave ? `Sera enregistré : ${formatE164ForDisplay(willSave)}` : 'Pour un autre pays, touchez le drapeau.'}
             >
-              <TextInput
+              <PhoneNumberInput
                 id="pr-phone"
-                className={FIELD}
-                type="tel"
-                inputMode="tel"
-                autoComplete="off"
-                placeholder="+237 6…"
+                aria-label="Téléphone"
                 value={draft.phone}
-                onChange={(e) => set('phone', e.target.value)}
+                onChange={(v) => set('phone', v)}
                 disabled={won}
-                maxLength={32}
+                // Le message sous le champ est celui du formulaire (indice, « Sera enregistré », erreur).
+                showValidity={false}
+                invalid={tried && !!errors.phone}
+                // Hauteur, rayon et fond des autres champs ; leur filet clair tant que le numéro n'est pas en défaut (sinon, l'ambre ou le rouge du composant).
+                controlClassName={cn(PHONE_FIELD, (!digitsOf(draft.phone) || !!e164) && !(tried && errors.phone) && 'border-input')}
               />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">

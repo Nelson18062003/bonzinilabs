@@ -9,8 +9,11 @@
 // ============================================================
 import type { ElementType, ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, CircleCheck, Link2Off, Target } from 'lucide-react';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { cn } from '@/lib/utils';
 import { TONE_PILL } from '@/mobile/designKit';
+import { CountryFlag } from '@/components/form/CountryFlag';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import {
   OBJECTIVES,
   PROSPECT_STATUS,
@@ -250,6 +253,29 @@ export function ProspectStatusPill({ status, className }: { status: ProspectStat
   return (
     <span className={cn('inline-flex h-7 shrink-0 items-center whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold', TONE_PILL[meta.tone], className)}>
       {meta.label}
+    </span>
+  );
+}
+
+/* ── Numéro de téléphone ───────────────────────────────────────────────── */
+
+/** Le pays d'un numéro E.164 (« CN » pour +86…), pour son drapeau. */
+function phoneCountry(e164: string): string | undefined {
+  try {
+    return parsePhoneNumberFromString(e164)?.country;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Un numéro tel qu'on le lit : le drapeau de son pays, puis « +237 6 99 12 34 56 ». Illisible : tel quel, sans drapeau. */
+export function PhoneNumber({ e164, className }: { e164: string; className?: string }) {
+  const iso = phoneCountry(e164);
+  return (
+    // align-middle : posé dans une ligne de texte, le drapeau ne fait pas monter les chiffres.
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap align-middle tabular-nums', className)}>
+      {iso && <CountryFlag iso={iso} size={16} />}
+      {formatE164ForDisplay(e164)}
     </span>
   );
 }

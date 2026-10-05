@@ -1,7 +1,8 @@
 // Captures du parcours — domaine « teams » : clés « j.teams.<écran> » (données : tools/journey/teams.mjs).
 // « Mes équipes » vue par le propriétaire (super admin, Nelson Ngango) : la liste
-// des accès, la création d'un accès commercial, la fiche d'un membre, et le
-// pilotage des commerciaux (chiffres du mois, objectifs).
+// des accès (sites, numéros), la création d'un accès (commercial, réceptionnaire
+// avec deux numéros et son site), la fiche d'un membre, et le pilotage des
+// commerciaux (chiffres du mois, objectifs).
 // Ordinateur : la coquille DesktopAppShell, comme AdminRouteWrapper au-dessus de `lg`.
 // Téléphone : la coquille MobileAppShell, avec ou sans barre d'onglets comme dans App.tsx.
 import React, { useContext } from 'react';
@@ -56,10 +57,16 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.teams.new-desk': { Comp: desk(TeamNewMember), route: '/m/equipe/nouveau?role=commercial', path: '/m/equipe/nouveau' },
   'j.teams.new-phone': { Comp: phone(TeamNewMember), route: '/m/equipe/nouveau?role=commercial', path: '/m/equipe/nouveau' },
   'j.teams.new-roles': { Comp: desk(TeamNewMember), route: '/m/equipe/nouveau', path: '/m/equipe/nouveau' },
+  // Un réceptionnaire : le site proposé (Guangzhou · bureau), deux numéros (Cameroun, Chine « WeChat »).
+  'j.teams.new-reception-desk': { Comp: desk(TeamNewMember), route: '/m/equipe/nouveau?role=receptionist', path: '/m/equipe/nouveau' },
+  'j.teams.new-reception-phone': { Comp: phone(TeamNewMember), route: '/m/equipe/nouveau?role=receptionist', path: '/m/equipe/nouveau' },
   // 5. La fiche d'un membre.
   'j.teams.member-desk': { Comp: desk(TeamMemberScreen), route: '/m/equipe/u-rodrigue', path: '/m/equipe/:userId' },
   'j.teams.member-phone': { Comp: phone(TeamMemberScreen), route: '/m/equipe/u-rodrigue', path: '/m/equipe/:userId' },
   'j.teams.member-kevin': { Comp: phone(TeamMemberScreen), route: '/m/equipe/u-kevin', path: '/m/equipe/:userId' },
+  'j.teams.member-kevin-desk': { Comp: desk(TeamMemberScreen), route: '/m/equipe/u-kevin', path: '/m/equipe/:userId' },
+  // Une réponse d'avant le 06/10 (ni `phones` ni `site`) : la fiche tient.
+  'j.teams.member-paul': { Comp: phone(TeamMemberScreen), route: '/m/equipe/u-paul', path: '/m/equipe/:userId' },
   // 6. Les chiffres des commerciaux.
   'j.teams.sales-desk': { Comp: desk(SalesBoard), route: '/m/equipe/ventes', path: '/m/equipe/ventes' },
   'j.teams.sales-phone': { Comp: phone(SalesBoard), route: '/m/equipe/ventes', path: '/m/equipe/ventes' },

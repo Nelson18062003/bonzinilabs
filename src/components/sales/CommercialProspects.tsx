@@ -13,8 +13,7 @@ import { normalizeText } from '@/lib/clientSearch';
 import { useCommercialDashboard, useProspects, type Prospect } from '@/hooks/useSales';
 import { currentMonth, type ProspectStatus } from '@/lib/sales';
 import { TextInput } from '@/mobile/designKit';
-import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
-import { ListSkeleton, LoadError, ProspectStatusPill, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
+import { ListSkeleton, LoadError, PhoneNumber, ProspectStatusPill, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
 import { followUpLabel, initialsOf, isDue, isOpenProspect, isUnlinkedError, plural, prospectName } from './salesHelpers';
 
 type Filter = 'open' | 'due' | ProspectStatus | 'all';
@@ -197,7 +196,7 @@ function ProspectRow({ p, now, onClick }: { p: Prospect; now: Date; onClick: () 
         <span className="block truncate text-[15px] font-semibold">{name}</span>
         {where && <span className="block truncate text-[13px] text-muted-foreground">{where}</span>}
         <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] tabular-nums">
-          <span className="text-muted-foreground">{formatE164ForDisplay(p.phone_e164)}</span>
+          <PhoneNumber e164={p.phone_e164} className="text-muted-foreground" />
           {isOpenProspect(p) && p.next_action_at && (
             <span className={cn('inline-flex items-center gap-1', due ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
               <AlarmClock className="h-3.5 w-3.5" />

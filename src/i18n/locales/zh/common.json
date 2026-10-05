@@ -539,6 +539,11 @@
     "duplicateNumber": "该号码已在列表中。",
     "labelOther": "自定义备注：微信、家…",
     "addNumberShort": "添加号码",
+    "staffPhonesTitle": "电话号码（选填）",
+    "staffPrimaryNumber": "主号码",
+    "staffPrimaryBadge": "主号码",
+    "staffPrimaryHint": "联系这位同事的号码。",
+    "staffPrimaryMissing": "主号码为空：请填写，或将其他号码设为主号码。",
     "quickLabel": {
       "mtn": "MTN",
       "orange": "Orange",
@@ -566,6 +571,10 @@
     "sourceProspectOther": "该号码是 {{label}} 的潜在客户：您的选择将取代该销售。",
     "sourceProspectKept": "该号码是 {{label}} 的潜在客户：客户仍将归属于该销售。之后只有负责人可以更改来源。",
     "sourceSummary": "来源",
+    "sourceAuto": "自动设置：收到包裹 · {{place}}",
+    "sourceAutoHint": "在广州收到包裹的客户：来源自动设置，无需选择。",
+    "sourceOptionalHint": "可选：不选择时，来源为「未填写」。",
+    "registeredByYou": "该客户将以您的名义登记。",
     "sourceKinds": {
       "commercial": "销售人员",
       "referral": "推荐",
@@ -573,7 +582,8 @@
       "online": "网络",
       "event": "活动",
       "other": "其他",
-      "unknown": "未知"
+      "unknown": "未知",
+      "parcel": "收到包裹"
     }
   },
   "overdraft": {

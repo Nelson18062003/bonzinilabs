@@ -14,15 +14,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, renderHook, screen } from '@testing-library/react';
 
+const createClient = vi.fn(async () => ({ success: true, clientId: 'u-new', tempPassword: 'pw123456', authEmail: 'x@y' }));
+const setSource = vi.fn(async () => ({ success: true }));
+const setReceptionOrigin = vi.fn(async () => ({ success: true, kept: false, source_id: 's-gz', label: 'Bureau de Guangzhou (avion)', kind: 'parcel' }));
 vi.mock('@/hooks/useClientManagement', () => ({
-  useCreateClient: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreateClient: () => ({ mutateAsync: createClient, isPending: false }),
 }));
 vi.mock('@/hooks/useClientPhones', () => ({
   useSetClientPhones: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock('@/hooks/useClientSources', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/hooks/useClientSources')>()),
-  useSetClientSource: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useSetClientSource: () => ({ mutateAsync: setSource, isPending: false }),
+  useSetReceptionOrigin: () => ({ mutateAsync: setReceptionOrigin, isPending: false }),
 }));
 
 vi.mock('@/hooks/useSales', () => ({
@@ -130,5 +134,61 @@ describe('ProspectSourceNote', () => {
   it('pas de prospect : rien', () => {
     const { container } = render(<ProspectSourceNote prospect={null} sourceId="s-fb" />);
     expect(container.textContent).toBe('');
+  });
+});
+
+describe('Nouveau client — origine facultative, posée d’office à la réception (06/10)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    createClient.mockClear();
+    setSource.mockClear();
+    setReceptionOrigin.mockClear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function fill(result: { current: ReturnType<typeof useCreateClientForm> }) {
+    act(() => result.current.setField('firstName', 'Awa'));
+    act(() => result.current.setField('lastName', 'Ndiaye'));
+    typePhone(result, '677 00 00 00');
+  }
+
+  it('sans origine choisie, le client se crée quand même (elle reste « Non renseignée »)', async () => {
+    const { result } = renderHook(() => useCreateClientForm());
+    fill(result);
+    expect(result.current.errors).toEqual({});
+    expect(result.current.canSubmit).toBe(true);
+    await act(async () => { await result.current.submit(); });
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(setSource).not.toHaveBeenCalled();
+    expect(setReceptionOrigin).not.toHaveBeenCalled();
+    expect(result.current.created?.sourceFailed).toBe(false);
+  });
+
+  it('origine choisie au bureau : elle est posée après la création', async () => {
+    const { result } = renderHook(() => useCreateClientForm());
+    fill(result);
+    act(() => result.current.setSourceId('s-fb'));
+    await act(async () => { await result.current.submit(); });
+    expect(setSource).toHaveBeenCalledWith({ userId: 'u-new', sourceId: 's-fb', silent: true });
+  });
+
+  it('réception (bureau de Guangzhou) : l’origine ne se choisit pas, elle suit le lieu', async () => {
+    const { result } = renderHook(() => useCreateClientForm({ reception: { location: 'office' } }));
+    expect(result.current.originMode).toBe('reception');
+    fill(result);
+    await act(async () => { await result.current.submit(); });
+    expect(setReceptionOrigin).toHaveBeenCalledWith({ userId: 'u-new', location: 'office' });
+    expect(setSource).not.toHaveBeenCalled();
+    expect(result.current.created?.originLabel).toBe('Colis reçu · Bureau de Guangzhou (avion)');
+  });
+
+  it('réception sans lieu choisi : aucune origine posée, rien ne casse', async () => {
+    const { result } = renderHook(() => useCreateClientForm({ reception: { location: null } }));
+    fill(result);
+    await act(async () => { await result.current.submit(); });
+    expect(setReceptionOrigin).not.toHaveBeenCalled();
+    expect(result.current.created?.originLabel).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ROLE_PERMISSIONS, type AppRole } from '@/contexts/AdminAuthContext';
 import { ROLE_DESCRIPTION, TEAMS, lastSeen, memberName, roleSpace, teamOf } from '@/lib/team';
-import { OBJECTIVES, currentMonth, monthLabel, ofMonth, progress, shiftMonth, toE164 } from '@/lib/sales';
+import { OBJECTIVES, clientPhoneE164, currentMonth, monthLabel, ofMonth, progress, shiftMonth } from '@/lib/sales';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS) as AppRole[];
 
@@ -35,12 +35,15 @@ describe('Mes équipes — chaque rôle a sa place', () => {
 });
 
 describe('Ventes — numéros, mois, objectifs', () => {
-  it('met un numéro au format international, Cameroun par défaut', () => {
-    expect(toE164('+237 699 12 34 56')).toBe('+237699123456');
-    expect(toE164('00237699123456')).toBe('+237699123456');
-    expect(toE164('699 12 34 56')).toBe('+237699123456');
-    expect(toE164('+86 138-0000-0000')).toBe('+8613800000000');
-    expect(toE164('12345')).toBeNull();
+  it('met le numéro d’un client au format international, un ancien numéro local lu comme camerounais', () => {
+    expect(clientPhoneE164('+237 699 12 34 56')).toBe('+237699123456');
+    expect(clientPhoneE164('00237699123456')).toBe('+237699123456');
+    expect(clientPhoneE164('699 12 34 56')).toBe('+237699123456');
+    expect(clientPhoneE164('+86 138-0000-0000')).toBe('+8613800000000');
+    // libphonenumber vérifie le plan de numérotation : 9 chiffres ne suffisent plus.
+    expect(clientPhoneE164('123456789')).toBeNull();
+    expect(clientPhoneE164('12345')).toBeNull();
+    expect(clientPhoneE164(null)).toBeNull();
   });
 
   it('compte les mois de Douala', () => {

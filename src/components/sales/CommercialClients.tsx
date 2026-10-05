@@ -10,9 +10,9 @@ import { Handshake, MessageCircle, Phone, Plane, Search, Ship, Users, Wallet } f
 import { cn } from '@/lib/utils';
 import { normalizeText } from '@/lib/clientSearch';
 import { useCommercialClients } from '@/hooks/useSales';
-import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, toE164, whatsappLink, type CommercialClient } from '@/lib/sales';
+import { clientPhoneE164, currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, whatsappLink, type CommercialClient } from '@/lib/sales';
 import { TextInput } from '@/mobile/designKit';
-import { Figure, ListSkeleton, LoadError, MonthSwitcher, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
+import { Figure, ListSkeleton, LoadError, MonthSwitcher, PhoneNumber, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
 import { fmtLongDay, initialsOf, isUnlinkedError, plural } from './salesHelpers';
 
 const isActive = (c: CommercialClient) => c.payments_count + c.air_parcels + c.sea_parcels > 0;
@@ -46,7 +46,7 @@ export function CommercialClients() {
     : rows.filter(
         (c) =>
           normalizeText(`${c.name} ${c.company ?? ''} ${c.customer_code ?? ''}`).includes(nq) ||
-          (digits.length >= 3 && (c.phone ?? '').replace(/\D/g, '').includes(digits)),
+          (digits.length >= 3 && [clientPhoneE164(c.phone), c.phone].some((n) => (n ?? '').replace(/\D/g, '').includes(digits))),
       );
 
   return (
@@ -140,7 +140,7 @@ export function CommercialClients() {
 }
 
 function ClientRow({ c }: { c: CommercialClient }) {
-  const e164 = c.phone ? toE164(c.phone) : null;
+  const e164 = clientPhoneE164(c.phone);
   const tel = e164 ?? c.phone?.replace(/[^\d+]/g, '') ?? null;
   const sub = [c.company, c.customer_code].filter(Boolean).join(' · ');
   return (
@@ -149,7 +149,7 @@ function ClientRow({ c }: { c: CommercialClient }) {
         <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold', isActive(c) ? 'bg-primary/10 text-foreground' : 'bg-muted text-muted-foreground')} aria-hidden>
           {initialsOf(c.name)}
         </span>
-        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
+        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; le numéro (drapeau, format international), puis l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1 truncate text-[15px] font-semibold">{c.name || '—'}</div>
@@ -176,6 +176,11 @@ function ClientRow({ c }: { c: CommercialClient }) {
               </div>
             )}
           </div>
+          {c.phone && (
+            <div className="text-[13px] text-muted-foreground">
+              <PhoneNumber e164={e164 ?? c.phone} />
+            </div>
+          )}
           <div className="text-[13px] tabular-nums text-muted-foreground">
             {sub && `${sub} · `}
             <span className="whitespace-nowrap">client depuis le {fmtLongDay(c.created_at)}</span>

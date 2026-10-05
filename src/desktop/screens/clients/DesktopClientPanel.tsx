@@ -25,6 +25,7 @@ import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod'
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
+import { ClientRegistration } from '@/components/clients/ClientRegistration';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { formatXAF, formatCurrency, formatDate } from '@/lib/formatters';
 import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
@@ -214,6 +215,9 @@ function AdjustmentDialog({
   );
 }
 
+
+/** Une cellule de faits sur toute la largeur, dont la valeur va à la ligne au lieu d'être coupée. */
+const WRAP_KV = 'col-span-2 [&>div:last-child]:overflow-visible [&>div:last-child]:whitespace-normal';
 export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId);
@@ -681,7 +685,10 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <KV k="Entreprise" v={client.companyName || '—'} />
             <KV k="Ville / Pays" v={[client.city, client.country].filter(Boolean).join(' · ') || '—'} />
             <KV k="Client depuis" v={formatDate(client.createdAt)} />
-            <KV k="Origine" v={<ClientOrigin userId={clientId} utmSource={client.utmSource} />} />
+            {/* Pleine largeur, sur plusieurs lignes : « Colis reçu · Bureau de Guangzhou (avion) »
+                et « Kevin Nkolo · Réceptionnaire · Guangzhou · bureau » ne se coupent pas. */}
+            <KV k="Origine" className={WRAP_KV} v={<ClientOrigin userId={clientId} utmSource={client.utmSource} />} />
+            <KV k="Enregistré par" className={WRAP_KV} v={<ClientRegistration userId={clientId} />} />
           </div>
         </div>
 

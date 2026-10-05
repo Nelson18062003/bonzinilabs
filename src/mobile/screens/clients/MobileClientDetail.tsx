@@ -1,4 +1,5 @@
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
+import { ClientRegistration } from '@/components/clients/ClientRegistration';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -407,6 +408,11 @@ export function MobileClientDetail() {
           {clientId && (
             <Line>
               Origine : <ClientOrigin userId={clientId} utmSource={client.utmSource} />
+            </Line>
+          )}
+          {clientId && (
+            <Line>
+              Enregistré par : <ClientRegistration userId={clientId} />
             </Line>
           )}
         </section>

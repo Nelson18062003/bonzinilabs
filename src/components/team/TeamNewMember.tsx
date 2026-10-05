@@ -4,16 +4,25 @@
 // sa fiche : une nouvelle à son nom, ou celle sous laquelle il apportait
 // déjà des clients (il les garde). Le mot de passe provisoire s'affiche une
 // seule fois à la fin. Écriture : team_create_member (super admin seul).
+//
+// Numéros et site (06/10) : l'éditeur de numéros des clients (pays, drapeau,
+// validation, plusieurs numéros), principal FACULTATIF ; le site, proposé
+// d'après le rôle (réceptionnaire → Guangzhou · bureau, agent d'entrepôt →
+// Douala). Ils partent juste après la création (team_set_member_profile) ;
+// s'ils échouent, l'accès existe quand même et l'écran de fin le dit.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, MapPin, UserPlus } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, MapPin, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ADMIN_ROLE_LABELS, useAdminAuth, type AppRole } from '@/contexts/AdminAuthContext';
-import { useCreateTeamMember, type CreatedMember } from '@/hooks/useTeam';
+import { useCreateTeamMember, useTeamSites, type CreatedMember, type StaffSite } from '@/hooks/useTeam';
 import { useClientSources } from '@/hooks/useClientSources';
-import { ROLE_DESCRIPTION, TEAMS, roleSpace } from '@/lib/team';
-import { BTN_PRIMARY, BTN_SOFT, CARD, Field, PasswordReveal, RolePill } from './TeamBits';
+import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
+import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
+import { ROLE_DESCRIPTION, TEAMS, defaultSiteFor, profileFailedMessage, roleSpace } from '@/lib/team';
+import { BTN_PRIMARY, BTN_SOFT, CARD, Field, PasswordReveal, RolePill, SiteTag } from './TeamBits';
+import { TeamSitePicker } from './TeamSitePicker';
 import { TEAM_BASE } from './TeamScreen';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -22,8 +31,18 @@ function isRole(v: string | null): v is AppRole {
   return !!v && v in ADMIN_ROLE_LABELS;
 }
 
-/** L'accès créé ; pour un commercial, la fiche à laquelle il est relié (`sourceId` de la RPC). */
-type Created = CreatedMember & { name: string; role: AppRole; fiche: { label: string; reused: boolean } | null };
+/**
+ * L'accès créé ; pour un commercial, la fiche à laquelle il est relié
+ * (`sourceId` de la RPC). `site` et `sent` : ce qui a été demandé en plus,
+ * pour dire précisément quoi refaire si `profileFailed`.
+ */
+type Created = CreatedMember & {
+  name: string;
+  role: AppRole;
+  fiche: { label: string; reused: boolean } | null;
+  site: Pick<StaffSite, 'label' | 'country_iso'> | null;
+  sent: { phones: boolean; site: boolean };
+};
 
 export function TeamNewMember() {
   const { hasPermission } = useAdminAuth();
@@ -50,9 +69,21 @@ function NewMemberFlow() {
               <h1 className="text-[20px] font-bold tracking-tight">Accès créé pour {created.name}</h1>
               <p className="text-[13.5px] text-muted-foreground">
                 <RolePill role={created.role} className="mr-1.5 align-middle" /> arrive sur : {roleSpace(created.role)}
+                {created.site && !created.profileFailed && (
+                  <>
+                    {' · '}
+                    <SiteTag site={created.site} className="align-middle" />
+                  </>
+                )}
               </p>
             </div>
           </div>
+          {created.profileFailed && (
+            <div role="alert" className="flex gap-3 rounded-xl bg-amber-50 px-4 py-3 text-[13.5px] leading-relaxed text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p className="font-medium">{profileFailedMessage(created.sent)}</p>
+            </div>
+          )}
           {created.fiche && (
             <p className="rounded-xl bg-muted/50 px-4 py-3 text-[13.5px] leading-relaxed">
               {created.fiche.reused ? 'Relié à la fiche commercial existante ' : 'Relié à une nouvelle fiche commercial '}
@@ -119,7 +150,10 @@ function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChange
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const phones = useClientPhonesEditor({ primaryOptional: true });
+  const sites = useTeamSites();
+  // `undefined` : pas encore touché — le site proposé d'après le rôle s'applique.
+  const [siteChoice, setSiteChoice] = useState<string | null | undefined>(undefined);
   const [sourceMode, setSourceMode] = useState<'new' | 'existing'>('new');
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [tried, setTried] = useState(false);
@@ -128,27 +162,33 @@ function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChange
   const isCommercial = role === 'commercial';
   const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
   const sameName = isCommercial && sourceMode === 'new' ? freeFiches.find((s) => s.label.trim().toLowerCase() === fullName.toLowerCase()) : undefined;
+  const siteId = siteChoice !== undefined ? siteChoice : (defaultSiteFor(role, sites.data)?.id ?? null);
 
   const errors = {
     firstName: !firstName.trim() ? 'Le prénom est requis' : null,
     lastName: !lastName.trim() ? 'Le nom est requis' : null,
     email: !EMAIL.test(email.trim()) ? 'Adresse email invalide' : null,
     source: isCommercial && sourceMode === 'existing' && !sourceId ? 'Choisissez sa fiche' : null,
+    phones: phones.primaryMissing
+      ? 'Le numéro principal est vide : remplissez-le, ou mettez un autre numéro en principal.'
+      : phones.primaryInvalid || phones.extrasInvalid ? 'Un numéro est incomplet : complétez-le ou effacez-le.' : null,
   };
   const valid = !Object.values(errors).some(Boolean);
 
   const submit = () => {
     setTried(true);
     if (!valid || create.isPending) return;
+    const list = phones.toInputs();
+    const site = (sites.data ?? []).find((s) => s.id === siteId) ?? null;
     create.mutate(
-      { email, firstName, lastName, role, phone: phone.trim() || null, sourceId: isCommercial && sourceMode === 'existing' ? sourceId : null },
+      { email, firstName, lastName, role, phones: list, siteId, sourceId: isCommercial && sourceMode === 'existing' ? sourceId : null },
       {
         onSuccess: (r) => {
           // La RPC renvoie `sourceId` : la fiche reprise (choisie dans la liste) ou la nouvelle, à son nom (même libellé que côté serveur).
           const reused = sourceMode === 'existing';
           const label = reused ? freeFiches.find((f) => f.id === r.sourceId)?.label : fullName.slice(0, 80);
           const fiche = isCommercial && r.sourceId && label ? { label, reused } : null;
-          onCreated({ ...r, name: fullName, role, fiche });
+          onCreated({ ...r, name: fullName, role, fiche, site, sent: { phones: list.length > 0, site: !!siteId } });
         },
       },
     );
@@ -178,7 +218,19 @@ function MemberForm({ role, onChangeRole, onCreated }: { role: AppRole; onChange
           hint="Sa propre adresse : un email ne sert qu’à un seul compte (client ou équipe)."
           autoComplete="off"
         />
-        <Field label="Téléphone (facultatif)" type="tel" inputMode="tel" value={phone} onChange={setPhone} placeholder="+237 6…" maxLength={32} />
+
+        <div className="space-y-2 border-t border-border/60 pt-4">
+          <ClientPhonesEditor editor={phones} variant="staff" idPrefix="team-phone" />
+          {tried && errors.phones && <p className="text-[12.5px] font-medium text-red-600 dark:text-red-400">{errors.phones}</p>}
+        </div>
+
+        <div className="border-t border-border/60 pt-4">
+          <TeamSitePicker
+            value={siteId}
+            onChange={setSiteChoice}
+            hint="Où il travaille. Son site s’affiche avec son nom sur la fiche des clients qu’il enregistre."
+          />
+        </div>
 
         {isCommercial && (
           <div className="space-y-3 rounded-2xl bg-muted/50 p-4">

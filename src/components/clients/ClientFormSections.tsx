@@ -14,7 +14,7 @@ import { PhoneNumberInput, formatE164ForDisplay, toE164 } from '@/components/for
 import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { CountryFlag } from '@/components/form/CountryFlag';
 import { countryName, toCountryLang } from '@/data/countries';
-import { MAX_PHONES, type useCreateClientForm } from '@/components/clients/useCreateClientForm';
+import { MAX_PHONES, receptionOriginPlace, type useCreateClientForm } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
 import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
 
@@ -93,12 +93,27 @@ export function ClientFormSections({ form }: { form: ReturnType<typeof useCreate
         </FormField>
       </Section>
 
-      {/* Origine — qui l'a amené (commercial, recommandation, réseau social…) */}
+      {/* Origine — qui l'a amené (commercial, recommandation, réseau social…).
+          Facultative ; à la réception de Guangzhou, posée d'office selon le lieu. */}
       <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
-        <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
-          <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} />
-          <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
-        </FormField>
+        {form.originMode === 'reception' ? (
+          <div className="space-y-2">
+            <div className={cn(TYPE.bodyStrong, TEXT.strong)}>
+              {receptionOriginPlace(form.receptionLocation)
+                ? t('clientForm.sourceAuto', { place: receptionOriginPlace(form.receptionLocation) })
+                : t('clientForm.sourceSummary')}
+            </div>
+            <p className={cn(TYPE.small, TEXT.muted)}>{t('clientForm.sourceAutoHint')}</p>
+            <ProspectSourceNote prospect={form.prospect} sourceId={form.prospect?.sourceId ?? null} />
+          </div>
+        ) : (
+          <FormField label={<>{t('clientForm.sourceSummary')}{optional}</>} htmlFor="cc-source">
+            <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} />
+            <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
+            {!form.sourceId && <p className={cn('mt-1.5', TYPE.small, TEXT.muted)}>{t('clientForm.sourceOptionalHint')}</p>}
+          </FormField>
+        )}
+        <p className={cn(TYPE.small, TEXT.muted)}>{t('clientForm.registeredByYou')}</p>
       </Section>
 
       {/* Récapitulatif court, toujours visible en bas du formulaire */}

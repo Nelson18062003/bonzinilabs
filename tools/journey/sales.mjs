@@ -182,19 +182,49 @@ export const SCREENS = [
       await page.locator('[role="tablist"]').evaluate((el) => { el.scrollLeft = el.scrollWidth; });
     }),
   },
-  // 3. Un nouveau prospect, saisi sur le marché.
+  // 3. Un nouveau prospect, saisi sur le marché : le Cameroun est déjà choisi, il tape le numéro (formaté au fil de la frappe).
   {
     key: 'j.sales.prospect-new', name: '04-nouveau-prospect',
     ...phone(async (page) => {
       await page.fill('#pr-first', 'Gaëlle');
       await page.fill('#pr-last', 'Nkoulou');
-      await page.fill('#pr-phone', '677 84 21 90');
+      await page.locator('#pr-phone').pressSequentially('677842190', { delay: 30 });
       await page.fill('#pr-company', 'GN Textiles');
       await page.fill('#pr-city', 'Douala');
       await page.getByRole('button', { name: 'Payer ses fournisseurs' }).click();
       await page.getByRole('button', { name: 'Fret bateau' }).click();
       await page.getByRole('button', { name: 'Dans 3 jours' }).click();
       await page.fill('#pr-notes', 'Rencontrée au marché Mboppi. Importe du wax de Guangzhou, un conteneur partagé tous les deux mois. Paie ses fournisseurs par un cousin en Chine. Lui envoyer nos taux, la rappeler jeudi.');
+      await page.locator('#pr-notes').blur();
+    }),
+  },
+  // 3 bis. Un importateur camerounais installé à Guangzhou, joignable sur son numéro chinois :
+  // il touche le drapeau, la feuille des pays s'ouvre (fréquents en tête, le Cameroun coché).
+  {
+    key: 'j.sales.prospect-new', name: '04b-nouveau-prospect-choix-du-pays', role: 'commercial', fullPage: false,
+    before: async (page) => {
+      await fonts(page);
+      await page.fill('#pr-first', 'Hervé');
+      await page.fill('#pr-last', 'Ndongo');
+      await page.getByRole('button', { name: 'Indicatif' }).click();
+      await page.getByRole('option', { name: /Chine/ }).waitFor();
+    },
+  },
+  // 3 ter. Chine choisie : le numéro se formate à la chinoise et part en +86.
+  {
+    key: 'j.sales.prospect-new', name: '04c-nouveau-prospect-numero-chinois',
+    ...phone(async (page) => {
+      await page.fill('#pr-first', 'Hervé');
+      await page.fill('#pr-last', 'Ndongo');
+      await page.getByRole('button', { name: 'Indicatif' }).click();
+      await page.getByRole('option', { name: /Chine/ }).click();
+      await page.locator('#pr-phone').pressSequentially('13826014477', { delay: 30 });
+      await page.fill('#pr-company', 'Ndongo Trading');
+      await page.fill('#pr-city', 'Guangzhou');
+      await page.getByRole('button', { name: 'Payer ses fournisseurs' }).click();
+      await page.getByRole('button', { name: 'Fret avion' }).click();
+      await page.getByRole('button', { name: 'Demain' }).click();
+      await page.fill('#pr-notes', 'Vit à Sanyuanli depuis 2019, achète des pièces détachées pour des garages de Douala. Joignable sur WeChat et WhatsApp au même numéro.');
       await page.locator('#pr-notes').blur();
     }),
   },

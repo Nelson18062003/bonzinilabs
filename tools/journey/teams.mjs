@@ -4,18 +4,36 @@
 //   node tools/shoot-journey.mjs teams [clé-ou-nom…]
 // Formes des réponses : supabase/migrations/20261005160000_teams_commercials.sql
 // (team_members, team_create_member, commercial_dashboard, commercial_clients,
-// sales_overview) et 20260921090000_admin_create_admin_any_role.sql (userId,
-// email, tempPassword). Lectures REST : client_sources, prospects.
+// sales_overview), 20260921090000_admin_create_admin_any_role.sql (userId,
+// email, tempPassword) et 20261006100000_staff_sites_phones_registration.sql
+// (team_members.phones / .site, team_sites, team_create_site,
+// team_set_member_profile). Lectures REST : client_sources, prospects.
 // ============================================================
 
 // L'heure figée des captures : « il y a 2 h », « jamais connecté »… restent stables.
 const NOW = '2026-10-05T14:30:00Z';
 
+// ── Les sites du personnel (team_sites ; ordre de la RPC : position, puis nom) ──
+const site = (id, code, label, country_iso, members) => ({ id, code, label, country_iso, is_active: true, members });
+const SITES = [
+  site('site-gz-office', 'gz_office', 'Guangzhou · bureau', 'CN', 2),
+  site('site-gz-warehouse', 'gz_warehouse', 'Guangzhou · entrepôt', 'CN', 0),
+  site('site-douala', 'douala', 'Douala', 'CM', 5),
+  site('site-yaounde', 'yaounde', 'Yaoundé', 'CM', 1),
+];
+const SITE = Object.fromEntries(SITES.map(({ id, code, label, country_iso }) => [code, { id, code, label, country_iso }]));
+
 // ── L'équipe (team_members) ─────────────────────────────────────────────
-const member = (user_id, role, first_name, last_name, phone, created_at, last_sign_in_at, o = {}) => ({
+// `phones` : principal d'abord ; `phone` en est la recopie (comme la RPC).
+// `legacy` : une réponse d'avant le 06/10, sans `phones` ni `site` — la page doit tenir.
+const tel = (phone_e164, country_iso, label = null) => ({ phone_e164, country_iso, label });
+const member = (user_id, role, first_name, last_name, phones, created_at, last_sign_in_at, o = {}) => ({
   user_id, role,
   email: o.email ?? `${first_name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')}.${last_name.toLowerCase()}@bonzinilabs.com`,
-  first_name, last_name, phone, avatar_url: null,
+  first_name, last_name,
+  phone: phones[0]?.phone_e164 ?? null,
+  ...(o.legacy ? {} : { phones, site: o.site ?? null }),
+  avatar_url: null,
   is_disabled: o.is_disabled ?? false,
   created_at, last_sign_in_at,
   source: o.source ?? null,
@@ -25,16 +43,18 @@ const SRC_CARINE = { id: 'src-carine', label: 'Carine Ewane', phone: '+237 677 4
 
 // Trié comme la RPC : les actifs d'abord, puis par prénom et nom.
 const TEAM = [
-  member('u-ali', 'cash_agent', 'Ali', 'Moussa', '+86 159 1872 4406', '2026-02-09T08:30:00Z', '2026-10-05T03:40:00Z'),
-  member('u-brice', 'warehouse_agent', 'Brice', 'Ndzana', '+237 694 52 38 10', '2026-07-06T09:00:00Z', '2026-10-05T07:58:00Z'),
-  member('u-carine', 'commercial', 'Carine', 'Ewane', '+237 677 45 67 89', '2026-10-05T14:12:00Z', null, { source: SRC_CARINE }),
-  member('u-grace', 'ops', 'Grace', 'Ebogo', '+237 677 21 08 54', '2026-01-19T09:00:00Z', '2026-10-05T13:52:00Z'),
-  member('u-herve', 'customs_broker', 'Hervé', 'Kamga', '+237 699 87 21 05', '2026-09-21T10:00:00Z', '2026-10-03T09:20:00Z'),
-  member('u-kevin', 'receptionist', 'Kevin', 'Nkolo', '+86 138 2604 7731', '2026-04-14T02:00:00Z', '2026-10-05T01:05:00Z'),
-  member('u-nelson', 'super_admin', 'Nelson', 'Ngango', '+237 699 40 18 25', '2025-11-03T08:00:00Z', '2026-10-05T14:29:30Z', { email: 'nelson@bonzinilabs.com' }),
-  member('u-rodrigue', 'commercial', 'Rodrigue', 'Tchami', '+237 690 11 22 33', '2026-10-05T08:40:00Z', '2026-10-05T12:47:00Z', { source: SRC_RODRIGUE }),
-  member('u-sandrine', 'treasurer', 'Sandrine', 'Mvogo', '+237 655 30 72 19', '2026-03-02T09:00:00Z', '2026-10-05T11:10:00Z'),
-  member('u-paul', 'customer_success', 'Paul', 'Nana', '+237 670 64 13 92', '2026-03-23T09:00:00Z', '2026-08-27T16:20:00Z', { is_disabled: true }),
+  member('u-ali', 'cash_agent', 'Ali', 'Moussa', [tel('+8615918724406', 'CN')], '2026-02-09T08:30:00Z', '2026-10-05T03:40:00Z', { site: SITE.gz_office }),
+  member('u-brice', 'warehouse_agent', 'Brice', 'Ndzana', [tel('+237694523810', 'CM')], '2026-07-06T09:00:00Z', '2026-10-05T07:58:00Z', { site: SITE.douala }),
+  member('u-carine', 'commercial', 'Carine', 'Ewane', [tel('+237677456789', 'CM')], '2026-10-05T14:12:00Z', null, { source: SRC_CARINE }),
+  member('u-grace', 'ops', 'Grace', 'Ebogo', [tel('+237677210854', 'CM'), tel('+237696140877', 'CM', 'Orange')], '2026-01-19T09:00:00Z', '2026-10-05T13:52:00Z', { site: SITE.douala }),
+  member('u-herve', 'customs_broker', 'Hervé', 'Kamga', [tel('+237699872105', 'CM')], '2026-09-21T10:00:00Z', '2026-10-03T09:20:00Z', { site: SITE.douala }),
+  // Kevin vit à Guangzhou : son numéro chinois d'abord, son numéro camerounais ensuite.
+  member('u-kevin', 'receptionist', 'Kevin', 'Nkolo', [tel('+8613826047731', 'CN'), tel('+237671513376', 'CM', 'MTN')], '2026-04-14T02:00:00Z', '2026-10-05T01:05:00Z', { site: SITE.gz_office }),
+  member('u-nelson', 'super_admin', 'Nelson', 'Ngango', [tel('+237699401825', 'CM')], '2025-11-03T08:00:00Z', '2026-10-05T14:29:30Z', { email: 'nelson@bonzinilabs.com', site: SITE.douala }),
+  member('u-rodrigue', 'commercial', 'Rodrigue', 'Tchami', [tel('+237690112233', 'CM')], '2026-10-05T08:40:00Z', '2026-10-05T12:47:00Z', { source: SRC_RODRIGUE, site: SITE.douala }),
+  member('u-sandrine', 'treasurer', 'Sandrine', 'Mvogo', [tel('+237655307219', 'CM')], '2026-03-02T09:00:00Z', '2026-10-05T11:10:00Z', { site: SITE.yaounde }),
+  // Désactivé avant le 06/10 : réponse ancienne, un seul numéro en texte libre.
+  { ...member('u-paul', 'customer_success', 'Paul', 'Nana', [], '2026-03-23T09:00:00Z', '2026-08-27T16:20:00Z', { is_disabled: true, legacy: true }), phone: '+237 670 64 13 92' },
 ];
 
 // ── Les fiches d'origine (client_sources, lues en REST) ─────────────────
@@ -152,15 +172,49 @@ const init = async (page) => {
 // TextField pose l'id sur son <input> : l'étiquette est reliée au champ.
 const field = (page, label) => page.getByLabel(label, { exact: true });
 
+const blur = (page) => page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+
 /** Remplit le formulaire « Nouvel accès » pour Carine Ewane, en reprenant sa fiche existante. */
 async function fillCarine(page) {
   await field(page, 'Prénom').fill('Carine');
   await field(page, 'Nom').fill('Ewane');
   await field(page, 'Email (sert à se connecter)').fill('carine.ewane@bonzinilabs.com');
-  await field(page, 'Téléphone (facultatif)').fill('+237 677 45 67 89');
+  // L'éditeur de numéros : indicatif +237 (Cameroun) par défaut, le numéro se formate à la frappe.
+  await page.locator('#team-phone-0').fill('677456789');
   await page.getByRole('button', { name: /Reprendre une fiche existante/ }).click();
   await page.getByRole('button', { name: /Carine Ewane/ }).click();
-  await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+  await blur(page);
+}
+
+/** Choisit un pays dans le sélecteur ouvert (recherche, puis la ligne du pays). */
+async function pickCountry(page, search, name) {
+  await page.getByPlaceholder('Rechercher un pays, un code ou un indicatif…').fill(search);
+  await page.getByRole('option', { name: new RegExp(name) }).first().click();
+}
+
+/**
+ * « Nouvel accès » d'un réceptionnaire, Joël Essomba : le site proposé est
+ * « Guangzhou · bureau » ; deux numéros — camerounais (principal) et chinois
+ * (« WeChat »).
+ */
+async function fillJoel(page) {
+  await field(page, 'Prénom').fill('Joël');
+  await field(page, 'Nom').fill('Essomba');
+  await field(page, 'Email (sert à se connecter)').fill('joel.essomba@bonzinilabs.com');
+  await page.locator('#team-phone-0').fill('677214598');
+  await page.getByRole('button', { name: 'Ajouter un numéro' }).click();
+  await page.getByRole('button', { name: 'Indicatif' }).nth(1).click();
+  await pickCountry(page, 'chine', 'Chine');
+  await page.locator('#team-phone-1').fill('13922145530');
+  await page.getByRole('button', { name: 'Autre…' }).click();
+  await page.getByPlaceholder('Votre libellé : WeChat, Maison…').fill('WeChat');
+  await blur(page);
+}
+
+async function createJoel(page) {
+  await fillJoel(page);
+  await page.getByRole('button', { name: 'Créer l’accès' }).click();
+  await page.getByText('Mot de passe provisoire', { exact: true }).waitFor({ timeout: 5000 });
 }
 
 async function createCarine(page) {
@@ -188,18 +242,48 @@ async function ensureFonts(page) {
 // Téléphone : 390 de large ; la liste prend toute sa hauteur, barre d'onglets en bas.
 const LIST = [
   {
-    key: 'j.teams.list-desk', name: '01-equipes-ordinateur', desktop: true, viewport: '1440x1630',
+    key: 'j.teams.list-desk', name: '01-equipes-ordinateur', desktop: true, viewport: '1440x1682',
     before: async (page) => { await page.getByRole('button', { name: /Voir les désactivés/ }).click(); },
   },
-  { key: 'j.teams.list-phone', name: '02-equipes-telephone', viewport: '390x1935' },
+  { key: 'j.teams.list-phone', name: '02-equipes-telephone', viewport: '390x2177' },
   { key: 'j.teams.new-roles', name: '03a-nouvel-acces-roles', desktop: true, viewport: '1440x1455' },
-  { key: 'j.teams.new-desk', name: '03b-nouvel-acces-commercial', desktop: true, viewport: '1440x920', before: fillCarine },
+  { key: 'j.teams.new-desk', name: '03b-nouvel-acces-commercial', desktop: true, viewport: '1440x1265', before: fillCarine },
+  { key: 'j.teams.new-reception-desk', name: '03c-nouvel-acces-reception-numeros-site', desktop: true, viewport: '1440x1260', before: fillJoel },
+  { key: 'j.teams.new-reception-phone', name: '03d-nouvel-acces-reception-telephone', before: fillJoel },
+  {
+    key: 'j.teams.new-reception-desk', name: '03e-ajouter-un-site', desktop: true, viewport: '1440x1150',
+    before: async (page) => {
+      await page.getByRole('button', { name: 'Ajouter un site…' }).click();
+      await field(page, 'Nom du site').fill('Bafoussam');
+      await page.locator('#team-site-country').click();
+      await pickCountry(page, 'camer', 'Cameroun');
+      await blur(page);
+    },
+  },
   { key: 'j.teams.new-desk', name: '04-acces-cree', desktop: true, fullPage: false, before: createCarine },
-  { key: 'j.teams.member-desk', name: '05a-fiche-rodrigue', desktop: true, viewport: '1440x920' },
+  { key: 'j.teams.new-reception-desk', name: '04b-acces-cree-reception', desktop: true, fullPage: false, before: createJoel },
+  {
+    // Les numéros et le site n'ont pas suivi : l'accès existe, l'écran de fin le dit.
+    key: 'j.teams.new-reception-desk', name: '04c-acces-cree-profil-en-echec', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.route(/\/rpc\/team_set_member_profile/, (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ success: false, error: 'Numéro invalide' }),
+      }));
+      await createJoel(page);
+    },
+  },
+  { key: 'j.teams.member-desk', name: '05a-fiche-rodrigue', desktop: true, viewport: '1440x1005' },
   { key: 'j.teams.member-kevin', name: '05b-fiche-kevin-telephone' },
+  { key: 'j.teams.member-kevin-desk', name: '05c-fiche-kevin-ordinateur', desktop: true, viewport: '1440x920' },
+  {
+    key: 'j.teams.member-kevin', name: '05d-modifier-kevin-telephone', viewport: '390x1500', fullPage: false,
+    before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
+  },
+  { key: 'j.teams.member-paul', name: '05e-fiche-paul-ancienne-reponse', viewport: '390x844' },
   { key: 'j.teams.sales-desk', name: '06a-chiffres-commerciaux-ordinateur', desktop: true, viewport: '1440x1140' },
   { key: 'j.teams.sales-phone', name: '06b-chiffres-commerciaux-telephone' },
-  { key: 'j.teams.commercial-desk', name: '07a-commercial-rodrigue', desktop: true, viewport: '1440x1420' },
+  { key: 'j.teams.commercial-desk', name: '07a-commercial-rodrigue', desktop: true, viewport: '1440x1467' },
   {
     key: 'j.teams.commercial-desk', name: '07b-objectifs-rodrigue', desktop: true, fullPage: false,
     before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
@@ -221,13 +305,16 @@ export const SCREENS = LIST.map((s) => ({
 const MONTH = '2026-10-01';
 export const RPC = {
   team_members: { success: true, rows: TEAM },
+  team_sites: { success: true, sites: SITES },
+  team_create_site: (b) => ({ success: true, id: 'site-new', label: String(b?.p_label ?? 'Bafoussam') }),
+  team_set_member_profile: (b) => ({ success: true, phone: b?.p_phones?.[0]?.phone_e164 ?? null }),
   team_create_member: (b) => ({
     success: true,
-    userId: 'u-carine',
+    userId: String(b?.p_email ?? '').includes('essomba') ? 'u-joel' : 'u-carine',
     email: String(b?.p_email ?? 'carine.ewane@bonzinilabs.com').trim().toLowerCase(),
     tempPassword: '7c4e19ab52f0',
     message: `Admin ${b?.p_first_name ?? 'Carine'} ${b?.p_last_name ?? 'Ewane'} créé avec succès`,
-    sourceId: b?.p_source_id ?? 'src-carine',
+    sourceId: b?.p_role === 'commercial' ? (b?.p_source_id ?? 'src-carine') : null,
   }),
   team_update_member: (b) => ({ success: true, role: b?.p_role ?? 'commercial' }),
   team_link_commercial: (b) => ({ success: true, source_id: b?.p_source_id ?? 'src-carine', label: 'Carine Ewane' }),

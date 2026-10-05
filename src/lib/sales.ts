@@ -5,6 +5,7 @@
 // (commercial_dashboard, commercial_clients, sales_overview).
 // ============================================================
 import type { Tone } from '@/mobile/designKit/tokens';
+import { normalizePhone } from '@/lib/phone';
 
 export type ProspectStatus = 'new' | 'contacted' | 'interested' | 'won' | 'lost';
 export type Interest = 'payments' | 'air' | 'sea';
@@ -126,12 +127,15 @@ export function monthLabel(month: string): string {
 /** « de mars », « d’octobre » (élision devant avril, août, octobre). */
 export const ofMonth = (name: string) => (/^[aeiouyàâéèêîôû]/i.test(name) ? `d’${name}` : `de ${name}`);
 
-/** Un numéro tapé (« 699 12 34 56 ») au format international ; le Cameroun par défaut. */
-export function toE164(raw: string, defaultCountry = '237'): string | null {
-  let v = raw.replace(/[\s.()-]/g, '');
-  if (v.startsWith('00')) v = `+${v.slice(2)}`;
-  if (!v.startsWith('+') && /^[62]\d{8}$/.test(v)) v = `+${defaultCountry}${v}`;
-  return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
+/**
+ * Le numéro d'un client (`clients.phone`, texte libre) au format E.164, pour
+ * l'afficher et l'appeler. Les comptes récents sont déjà en « +… » ; un
+ * ancien numéro local est lu comme camerounais, comme cette liste l'a
+ * toujours fait (libphonenumber vérifie qu'il en est bien un). `null` sinon.
+ * Les prospects, eux, ont leur `phone_e164`, fixé à la saisie.
+ */
+export function clientPhoneE164(raw: string | null | undefined): string | null {
+  return normalizePhone(raw, 'CM')?.e164 ?? null;
 }
 
 /** Lien WhatsApp vers un numéro international. */

@@ -13,6 +13,7 @@ import { useCommercialClients, useCommercialDashboard, useProspects, useReassign
 import {
   OBJECTIVES,
   PROSPECT_STATUS,
+  clientPhoneE164,
   currentMonth,
   fmtCbm,
   fmtCount,
@@ -25,7 +26,8 @@ import {
   type ObjectiveMetric,
   type ProspectStatus,
 } from '@/lib/sales';
-import { MonthSwitcher, ObjectiveBar, ProspectStatusPill } from '@/components/sales/SalesBits';
+import { MonthSwitcher, ObjectiveBar, PhoneNumber, ProspectStatusPill } from '@/components/sales/SalesBits';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { TextField } from '@/components/form';
 import { BTN_PRIMARY, BTN_SOFT, CARD, Modal, Skeleton } from './TeamBits';
 import { TEAM_BASE } from './TeamScreen';
@@ -56,7 +58,7 @@ function Page() {
           <h1 className="truncate text-[26px] font-bold tracking-tight">{title}</h1>
           {card && (
             <p className="mt-0.5 text-[14px] text-muted-foreground">
-              Fiche « {card.source.label} »{card.source.phone && ` · ${card.source.phone}`}
+              Fiche « {card.source.label} »{card.source.phone && ` · ${formatE164ForDisplay(card.source.phone)}`}
               {!card.staff && ' · sans compte'}
               {card.staff?.is_disabled && ' · accès désactivé'}
             </p>
@@ -299,7 +301,7 @@ function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
                 <span className="block text-[14.5px] font-semibold">{[p.first_name, p.last_name].filter(Boolean).join(' ')}</span>
                 <span className="block text-[12.5px] text-muted-foreground">
                   {(p.company || p.city) && `${[p.company, p.city].filter(Boolean).join(' · ')} · `}
-                  <span className="whitespace-nowrap">{p.phone}</span>
+                  <PhoneNumber e164={p.phone_e164} />
                   {p.status === 'lost' && p.lost_reason && ` · ${p.lost_reason}`}
                 </span>
                 {p.next_action_at && p.status !== 'won' && p.status !== 'lost' && (
@@ -411,11 +413,7 @@ function Clients({ sourceId, month }: { sourceId: string; month: string }) {
                   <Metric label="Avion" value={c.air_parcels ? fmtKg(c.air_kg) : '—'} />
                   <Metric label="Bateau" value={c.sea_parcels ? fmtCbm(c.sea_cbm) : '—'} />
                 </span>
-                {c.phone && (
-                  <a href={`tel:${c.phone}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent" aria-label="Appeler">
-                    <Phone className="h-4 w-4" />
-                  </a>
-                )}
+                {c.phone && <CallClient phone={c.phone} />}
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             </li>
@@ -423,6 +421,23 @@ function Clients({ sourceId, month }: { sourceId: string; month: string }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/** Appeler un client : le lien part en E.164 (un ancien numéro local est lu comme camerounais) ; le numéro lisible au survol. */
+function CallClient({ phone }: { phone: string }) {
+  const e164 = clientPhoneE164(phone);
+  const readable = formatE164ForDisplay(e164 ?? phone);
+  return (
+    <a
+      href={`tel:${e164 ?? phone.replace(/[^\d+]/g, '')}`}
+      onClick={(e) => e.stopPropagation()}
+      className="shrink-0 rounded-full p-2 text-muted-foreground hover:bg-accent"
+      aria-label={`Appeler le ${readable}`}
+      title={readable}
+    >
+      <Phone className="h-4 w-4" />
+    </a>
   );
 }
 

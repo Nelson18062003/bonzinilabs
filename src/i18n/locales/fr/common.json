@@ -539,6 +539,11 @@
     "duplicateNumber": "Ce numéro est déjà dans la liste.",
     "labelOther": "Votre libellé : WeChat, Maison…",
     "addNumberShort": "Ajouter un numéro",
+    "staffPhonesTitle": "Numéros de téléphone (facultatif)",
+    "staffPrimaryNumber": "Numéro principal",
+    "staffPrimaryBadge": "Principal",
+    "staffPrimaryHint": "Le numéro où l’on joint ce collaborateur.",
+    "staffPrimaryMissing": "Le numéro principal est vide : remplissez-le, ou mettez un autre numéro en principal.",
     "quickLabel": {
       "mtn": "MTN",
       "orange": "Orange",
@@ -566,6 +571,10 @@
     "sourceProspectOther": "Ce numéro est un prospect de {{label}} : votre choix remplacera son commercial.",
     "sourceProspectKept": "Ce numéro est un prospect de {{label}} : le client lui sera attribué quand même. Seul un responsable peut changer son origine ensuite.",
     "sourceSummary": "Origine",
+    "sourceAuto": "Posée d’office : colis reçu · {{place}}",
+    "sourceAutoHint": "Le client d’un colis arrivé à Guangzhou : l’origine se pose toute seule, vous n’avez rien à choisir.",
+    "sourceOptionalHint": "Facultatif : sans choix, l’origine reste « Non renseignée ».",
+    "registeredByYou": "Ce client sera enregistré à votre nom.",
     "sourceKinds": {
       "commercial": "Commercial",
       "referral": "Recommandation",
@@ -573,7 +582,8 @@
       "online": "En ligne",
       "event": "Événement",
       "other": "Autre",
-      "unknown": "Inconnue"
+      "unknown": "Inconnue",
+      "parcel": "Colis reçu"
     }
   },
   "overdraft": {

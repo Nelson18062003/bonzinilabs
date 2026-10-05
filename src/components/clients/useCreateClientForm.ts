@@ -7,9 +7,16 @@
  *   · Identité      : prénom*, nom*, entreprise
  *   · Contact       : WhatsApp* (+ autres numéros), e-mail
  *   · Localisation  : pays*, ville
- *   · Origine       : source* (commercial, recommandation, réseau social…,
- *                     ou « Je ne sais pas ») — posée APRÈS la création par
+ *   · Origine       : source FACULTATIVE (commercial, recommandation, réseau
+ *                     social…, ou « Je ne sais pas » ; vide = « Non
+ *                     renseignée ») — posée APRÈS la création par
  *                     `set_client_source`, seul chemin autorisé en base.
+ *                     À la RÉCEPTION de Guangzhou, elle ne se choisit pas :
+ *                     « Colis reçu · Entrepôt / Bureau de Guangzhou », selon
+ *                     le lieu, par `reception_set_client_origin`.
+ *
+ * « Enregistré par » (qui a créé la fiche, son rôle, son site) se pose en
+ * base, à la création, depuis la session : rien à faire ici.
  *
  * Numéros : le PREMIER est le principal — celui qui reçoit le mot de passe
  * et que `clients.phone` stocke. Les suivants vont dans `client_phones` par
@@ -32,7 +39,8 @@ import { useCreateClient } from '@/hooks/useClientManagement';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useProspectLookup } from '@/hooks/useSales';
 import { useSetClientPhones, type ClientPhoneInput } from '@/hooks/useClientPhones';
-import { useSetClientSource } from '@/hooks/useClientSources';
+import { useSetClientSource, useSetReceptionOrigin } from '@/hooks/useClientSources';
+import type { ReceptionLocation } from '@/lib/reception';
 import { countryLabelFr, type CountryIso } from '@/data/countries';
 import {
   EMPTY_PHONE,
@@ -73,6 +81,24 @@ export interface CreatedClient {
   extraPhonesFailed: boolean;
   /** L'origine n'a pas pu être enregistrée (le client existe ; elle se pose depuis sa fiche). */
   sourceFailed: boolean;
+  /** Réception : l'origine posée d'office (ou celle du prospect, gardée), sinon null. */
+  originLabel: string | null;
+}
+
+/**
+ * `reception` : le formulaire de la réception de Guangzhou — l'origine ne se
+ * choisit pas, elle suit le lieu de réception (null : lieu pas encore choisi,
+ * l'origine reste « Non renseignée »).
+ */
+export interface CreateClientFormOptions {
+  reception?: { location: ReceptionLocation | null };
+}
+
+/** « Bureau de Guangzhou (avion) » / « Entrepôt de Guangzhou (bateau) » — les libellés des origines système. */
+export function receptionOriginPlace(location: ReceptionLocation | null | undefined): string | null {
+  if (location === 'office') return 'Bureau de Guangzhou (avion)';
+  if (location === 'warehouse') return 'Entrepôt de Guangzhou (bateau)';
+  return null;
 }
 
 /** Le numéro principal est celui d'un prospect ouvert : de quel commercial. */
@@ -84,10 +110,13 @@ export interface ProspectSourceMatch {
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function useCreateClientForm() {
+export function useCreateClientForm(options: CreateClientFormOptions = {}) {
   const createClient = useCreateClient();
   const setPhones = useSetClientPhones();
   const setSource = useSetClientSource();
+  const setReceptionOrigin = useSetReceptionOrigin();
+  const reception = options.reception ?? null;
+  const receptionLocation = reception?.location ?? null;
 
   const [fields, setFields] = useState<CreateClientFields>({
     firstName: '',
@@ -101,7 +130,7 @@ export function useCreateClientForm() {
   const [countryTouched, setCountryTouched] = useState(false);
   const [created, setCreated] = useState<CreatedClient | null>(null);
   // Origine du client (commercial, recommandation, réseau social…) :
-  // OBLIGATOIRE — « Je ne sais pas » est une réponse acceptée.
+  // FACULTATIVE — vide, elle reste « Non renseignée » (décision du 06/10).
   const [sourceId, setSourceIdState] = useState<string | null>(null);
   // Choisie à la main ? Alors le pré-remplissage par un prospect ne la touche plus.
   const [sourceTouched, setSourceTouched] = useState(false);
@@ -178,12 +207,11 @@ export function useCreateClientForm() {
     if (!isPhoneComplete(primary.value)) e.primaryPhone = true;
     if (!filledExtras.every((row) => isPhoneComplete(row.value))) e.extraPhones = true;
     if (!emailValid) e.email = true;
-    if (!sourceId) e.source = true;
     return e;
-  }, [fields.firstName, fields.lastName, primary.value, filledExtras, emailValid, sourceId]);
+  }, [fields.firstName, fields.lastName, primary.value, filledExtras, emailValid]);
 
   const canSubmit = Object.keys(errors).length === 0 && !createClient.isPending;
-  const isSubmitting = createClient.isPending || setPhones.isPending || setSource.isPending;
+  const isSubmitting = createClient.isPending || setPhones.isPending || setSource.isPending || setReceptionOrigin.isPending;
 
   // ── Envoi ─────────────────────────────────────────────────────────────
   const submit = useCallback(async (): Promise<CreatedClient | null> => {
@@ -230,7 +258,19 @@ export function useCreateClientForm() {
 
     // L'origine se pose juste après la création (le client doit exister).
     let sourceFailed = false;
-    if (result.clientId && sourceId) {
+    let originLabel: string | null = null;
+    if (result.clientId && reception) {
+      // Réception : d'office, selon le lieu. Le prospect d'un commercial, déjà
+      // attribué à la création, reste (`kept`).
+      if (receptionLocation) {
+        try {
+          const r = await setReceptionOrigin.mutateAsync({ userId: result.clientId, location: receptionLocation });
+          originLabel = r.kind === 'parcel' ? `Colis reçu · ${r.label}` : r.label;
+        } catch {
+          sourceFailed = true;
+        }
+      }
+    } else if (result.clientId && sourceId) {
       try {
         await setSource.mutateAsync({ userId: result.clientId, sourceId, silent: true });
       } catch {
@@ -245,10 +285,11 @@ export function useCreateClientForm() {
       primaryE164,
       extraPhonesFailed,
       sourceFailed,
+      originLabel,
     };
     setCreated(done);
     return done;
-  }, [canSubmit, primary, fields, emailTrim, countryIso, filledExtras, createClient, setPhones, sourceId, setSource]);
+  }, [canSubmit, primary, fields, emailTrim, countryIso, filledExtras, createClient, setPhones, sourceId, setSource, reception, receptionLocation, setReceptionOrigin]);
 
   return {
     fields,
@@ -262,6 +303,9 @@ export function useCreateClientForm() {
     errors,
     sourceId,
     setSourceId,
+    /** Réception : l'origine ne se choisit pas (elle suit le lieu). */
+    originMode: (reception ? 'reception' : 'choose') as 'reception' | 'choose',
+    receptionLocation,
     /** Le numéro est celui d'un prospect ouvert (fiche commercial active), sinon null. */
     prospect,
     emailValid,

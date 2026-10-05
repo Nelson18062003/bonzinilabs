@@ -539,6 +539,11 @@
     "duplicateNumber": "This number is already in the list.",
     "labelOther": "Your label: WeChat, Home…",
     "addNumberShort": "Add a number",
+    "staffPhonesTitle": "Phone numbers (optional)",
+    "staffPrimaryNumber": "Main number",
+    "staffPrimaryBadge": "Main",
+    "staffPrimaryHint": "The number to reach this team member on.",
+    "staffPrimaryMissing": "The main number is empty: fill it in, or make another number the main one.",
     "quickLabel": {
       "mtn": "MTN",
       "orange": "Orange",
@@ -566,6 +571,10 @@
     "sourceProspectOther": "This number is a prospect of {{label}}: your choice will replace their sales rep.",
     "sourceProspectKept": "This number is a prospect of {{label}}: the client will be assigned to them anyway. Only a manager can change the origin afterwards.",
     "sourceSummary": "Source",
+    "sourceAuto": "Set automatically: parcel received · {{place}}",
+    "sourceAutoHint": "The owner of a parcel that arrived in Guangzhou: the origin is set automatically, nothing to choose.",
+    "sourceOptionalHint": "Optional: if left empty, the origin stays “Not specified”.",
+    "registeredByYou": "This client will be registered under your name.",
     "sourceKinds": {
       "commercial": "Sales agent",
       "referral": "Referral",
@@ -573,7 +582,8 @@
       "online": "Online",
       "event": "Event",
       "other": "Other",
-      "unknown": "Unknown"
+      "unknown": "Unknown",
+      "parcel": "Parcel received"
     }
   },
   "overdraft": {

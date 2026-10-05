@@ -15,6 +15,31 @@
 
 ## En attente
 
+### `20261006100000_staff_sites_phones_registration.sql` (à passer APRÈS `migrations/20261005_consolidated.sql`)
+**PR :** Équipe : sites et numéros à drapeau · Clients : « Enregistré par », origine facultative, origine posée par la réception
+**Contenu :**
+- `staff_sites` : les sites du personnel. Quatre au départ (Guangzhou · bureau, Guangzhou · entrepôt, Douala, Yaoundé), le
+  super admin en ajoute (`team_create_site`). `user_roles.site_id`.
+- `staff_phones` : plusieurs numéros par collaborateur, au format international (E.164), le premier recopié dans
+  `user_roles.phone` (`team_set_member_profile`, canManageUsers, journalisée). Les numéros déjà saisis au format
+  international sont repris ; les autres (sans indicatif) restent à ressaisir depuis la fiche du membre.
+- `clients.registered_by / _name / _role / _site / _at` : **« Enregistré par »**. Posé par le déclencheur
+  `clients_stamp_registration` à la création d'un client, depuis la session (`auth.uid()` d'un membre actif du
+  personnel) : obligatoire de fait, jamais choisi, jamais réécrit (même par le super admin). Vide pour un client inscrit
+  lui-même. Rattrapage des clients créés par l'équipe depuis le journal (`create_client`, depuis le 10/02/2026), sans site.
+- Origine `parcel` (« Colis reçu · Entrepôt de Guangzhou (bateau) » / « … · Bureau de Guangzhou (avion) »), réservée
+  au système, posée par `reception_set_client_origin` sur un client que la réception vient d'enregistrer (jamais par-dessus
+  une origine : le prospect d'un commercial reste prioritaire). Ailleurs, l'origine devient **facultative** (vide =
+  « Non renseignée »).
+- `team_members` renvoie aussi `phones` et `site`.
+- Testée sur Postgres 16 : fichier passé deux fois dans une transaction, 40 contrôles, et les 105 contrôles de Mes
+  équipes / commerciaux repassés ; contrôle des prérequis éprouvé (refuse de passer sans Mes équipes, rien n'est créé).
+
+**Comment pousser :** coller `migrations/20261006_consolidated.sql` dans l'éditeur SQL, puis
+`npx supabase migration repair --status applied 20261006100000`, puis `/gen-types` (les types sont déjà ajoutés à la
+main ; l'app appelle les RPC sans attendre).
+
+
 > **Les trois migrations du 05/10 se collent en UN fichier : `migrations/20261005_consolidated.sql`.** Il contient,
 > dans l'ordre obligatoire, la partie A (`20261005150000`, remise / vols / arrivée), la partie B (`20261005160000`,
 > Mes équipes + commerciaux) et la partie C (`20261005170000`, paquets avion). Chaque partie vérifie d'abord ses

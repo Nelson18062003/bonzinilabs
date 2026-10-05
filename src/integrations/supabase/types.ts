@@ -1472,6 +1472,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           staff_user_id: string | null
+          system_code: string | null
           updated_at: string
         }
         Insert: {
@@ -1485,6 +1486,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           staff_user_id?: string | null
+          system_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -1498,6 +1500,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           staff_user_id?: string | null
+          system_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1526,6 +1529,11 @@ export type Database = {
           phone_e164: string | null
           phone_verified_at: string | null
           preferred_locale: string | null
+          registered_at: string | null
+          registered_by: string | null
+          registered_by_name: string | null
+          registered_role: string | null
+          registered_site: string | null
           sms_marketing_opt_in: boolean
           source_id: string | null
           source_set_at: string | null
@@ -1562,6 +1570,11 @@ export type Database = {
           phone_e164?: string | null
           phone_verified_at?: string | null
           preferred_locale?: string | null
+          registered_at?: string | null
+          registered_by?: string | null
+          registered_by_name?: string | null
+          registered_role?: string | null
+          registered_site?: string | null
           sms_marketing_opt_in?: boolean
           source_id?: string | null
           source_set_at?: string | null
@@ -1598,6 +1611,11 @@ export type Database = {
           phone_e164?: string | null
           phone_verified_at?: string | null
           preferred_locale?: string | null
+          registered_at?: string | null
+          registered_by?: string | null
+          registered_by_name?: string | null
+          registered_role?: string | null
+          registered_site?: string | null
           sms_marketing_opt_in?: boolean
           source_id?: string | null
           source_set_at?: string | null
@@ -3807,6 +3825,36 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_phones: {
+        Row: {
+          country_iso: string | null
+          created_at: string
+          id: string
+          label: string | null
+          phone_e164: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_push_devices: {
         Row: {
           app_version: string | null
@@ -3837,6 +3885,39 @@ export type Database = {
           last_seen_at?: string
           platform?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      staff_sites: {
+        Row: {
+          code: string | null
+          country_iso: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string
+          position: number
+        }
+        Insert: {
+          code?: string | null
+          country_iso?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          position?: number
+        }
+        Update: {
+          code?: string | null
+          country_iso?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          position?: number
         }
         Relationships: []
       }
@@ -4282,6 +4363,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
+          site_id: string | null
           user_id: string
         }
         Insert: {
@@ -4295,6 +4377,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          site_id?: string | null
           user_id: string
         }
         Update: {
@@ -4308,6 +4391,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          site_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -5501,6 +5585,13 @@ export type Database = {
         Returns: Json
       }
       reception_search_clients: { Args: { p_query: string }; Returns: Json }
+      reception_set_client_origin: {
+        Args: {
+          p_location: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       reception_set_parcel_cover: {
         Args: { p_photo_id: string }
         Returns: Json
@@ -5686,6 +5777,23 @@ export type Database = {
       staff_push_client_name: { Args: { p_user_id: string }; Returns: string }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
+      team_create_site: {
+        Args: {
+          p_country_iso?: string
+          p_label: string
+        }
+        Returns: Json
+      }
+      team_set_member_profile: {
+        Args: {
+          p_clear_site?: boolean
+          p_phones?: Json
+          p_site_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      team_sites: { Args: never; Returns: Json }
       toggle_admin_status: {
         Args: { p_disabled: boolean; p_target_user_id: string }
         Returns: Json

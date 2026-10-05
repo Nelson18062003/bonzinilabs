@@ -4,12 +4,14 @@
 // thème `.admin-theme` de la coquille, comme la trésorerie.
 // ============================================================
 import { useEffect, useState, type ReactNode } from 'react';
-import { Check, Copy, Share2, X } from 'lucide-react';
+import { Check, Copy, MapPin, Share2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AppRole } from '@/contexts/AdminAuthContext';
+import type { StaffSite } from '@/hooks/useTeam';
 import { roleLabel } from '@/lib/team';
 import { TextField } from '@/components/form';
+import { CountryFlag } from '@/components/form/CountryFlag';
 
 export const CARD = 'rounded-2xl bg-card ring-1 ring-black/[0.06] dark:ring-white/10';
 export const BTN_PRIMARY =
@@ -32,6 +34,16 @@ export function RolePill({ role, className }: { role: AppRole; className?: strin
   return (
     <span className={cn('inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-semibold', ROLE_TONE[role] ?? 'bg-muted text-foreground', className)}>
       {roleLabel(role)}
+    </span>
+  );
+}
+
+/** Le site d'un membre : le drapeau de son pays (à défaut, une épingle) et son nom. */
+export function SiteTag({ site, className }: { site: Pick<StaffSite, 'label' | 'country_iso'>; className?: string }) {
+  return (
+    <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
+      {site.country_iso ? <CountryFlag iso={site.country_iso} size={16} /> : <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+      <span className="truncate">{site.label}</span>
     </span>
   );
 }

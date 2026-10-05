@@ -5,10 +5,11 @@
 import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
-import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage } from '@/mobile/screens/reception';
+import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionNewClient } from '@/mobile/screens/reception';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { DesktopCargoReception } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
+import { ShippedClients } from '../adminRedesign/beforeScreens';
 
 type Staff = { first: string; last: string; role: string; email: string };
 const KEVIN: Staff = { first: 'Kevin', last: 'Nkolo', role: 'receptionist', email: 'kevin.nkolo@bonzinilabs.com' };
@@ -52,6 +53,7 @@ const Deposit = reception(ReceptionDeposit, false);
 const Done = reception(ReceptionDone, false);
 const Packages = reception(ReceptionPackages, true);
 const Package = reception(ReceptionPackage, false);
+const NewClient = reception(ReceptionNewClient, false);
 
 export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.home': { Comp: Home, route: '/r', wrap: 'lang' },
@@ -60,4 +62,8 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
   'j.guangzhou.quote': { Comp: DeskReception, route: '/m/cargo/reception/dep1c', path: '/m/cargo/reception/:depositId' },
+  // Le propriétaire d'un colis n'existe pas : la réception crée le client, l'origine se pose d'office (06/10).
+  'j.guangzhou.new-client': { Comp: NewClient, route: '/r/new/client', wrap: 'lang' },
+  // La fiche du client au bureau : son origine et « Enregistré par » (qui, quel rôle, quel site).
+  'j.guangzhou.client-sheet': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
 };

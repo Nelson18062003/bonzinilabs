@@ -11,6 +11,11 @@
 // Enregistrement : `admin_set_client_phones` remplace le lot entier et
 // recopie le principal dans `clients.phone` — une seule écriture, gardée
 // côté serveur par canManageUsers (le même droit que le bouton Modifier).
+//
+// `variant="staff"` (Mes équipes, 06/10) : les numéros d'un collaborateur.
+// Même éditeur ; seuls les textes du principal changent (il ne sert ni à la
+// connexion ni aux SMS : c'est le numéro où l'on joint la personne). Le
+// principal facultatif se règle dans le hook (`primaryOptional`).
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,8 +33,18 @@ const QUICK_DEFAULT: Record<(typeof QUICK_LABELS)[number], string> = { mtn: 'MTN
 
 const PILL_ON = 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]';
 
-export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor: ClientPhonesEditorApi; idPrefix?: string }) {
+export function ClientPhonesEditor({
+  editor,
+  idPrefix = 'edit-phone',
+  variant = 'client',
+}: {
+  editor: ClientPhonesEditorApi;
+  idPrefix?: string;
+  /** `staff` : un collaborateur — textes du principal adaptés. */
+  variant?: 'client' | 'staff';
+}) {
   const { t, i18n } = useTranslation('common');
+  const staff = variant === 'staff';
   const lang = toCountryLang(i18n.language);
   const quick = QUICK_LABELS.map((k) => t(`clientForm.quickLabel.${k}`, { defaultValue: QUICK_DEFAULT[k] }));
   const isQuick = (label: string) => quick.some((q) => q.toLowerCase() === label.trim().toLowerCase());
@@ -53,7 +68,11 @@ export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor
   return (
     <div className="space-y-2.5">
       <div className="flex items-baseline justify-between gap-2">
-        <span className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('clientForm.phonesTitle', { defaultValue: 'Numéros de téléphone' })}</span>
+        <span className={cn(TYPE.bodyStrong, TEXT.strong)}>
+          {staff
+            ? t('clientForm.staffPhonesTitle', { defaultValue: 'Numéros de téléphone (facultatif)' })
+            : t('clientForm.phonesTitle', { defaultValue: 'Numéros de téléphone' })}
+        </span>
         <span className={cn(TYPE.small, 'tabular-nums', TEXT.muted)}>{count} / {MAX_PHONES}</span>
       </div>
 
@@ -62,7 +81,9 @@ export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor
         const incomplete = row.value.national.replace(/\D/g, '') !== '' && !isPhoneComplete(row.value);
         const duplicate = !!e164s[index] && e164s.indexOf(e164s[index]) < index;
         const title = primary
-          ? t('clientForm.primaryNumber', { defaultValue: 'Numéro principal (WhatsApp)' })
+          ? staff
+            ? t('clientForm.staffPrimaryNumber', { defaultValue: 'Numéro principal' })
+            : t('clientForm.primaryNumber', { defaultValue: 'Numéro principal (WhatsApp)' })
           : row.label.trim() || t('clientForm.otherNumber', { n: index + 1 });
         return (
           <div key={row.key} className={cn('space-y-2.5 rounded-xl p-3', primary ? 'border-2 border-[#2C2C2C] dark:border-[#E3E3E3]' : SURFACE.shadow)}>
@@ -70,7 +91,11 @@ export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor
               {primary ? (
                 <label htmlFor={`${idPrefix}-${index}`} className={cn('inline-flex min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-semibold', PILL_ON)}>
                   <Star className="h-3.5 w-3.5 shrink-0 fill-current" />
-                  <span className="truncate">{t('clientForm.primaryBadge', { defaultValue: 'Principal · connexion et SMS' })}</span>
+                  <span className="truncate">
+                    {staff
+                      ? t('clientForm.staffPrimaryBadge', { defaultValue: 'Principal' })
+                      : t('clientForm.primaryBadge', { defaultValue: 'Principal · connexion et SMS' })}
+                  </span>
                 </label>
               ) : (
                 <label htmlFor={`${idPrefix}-${index}`} className={cn('min-w-0 truncate', TYPE.bodyStrong, TEXT.strong)}>{title}</label>
@@ -106,6 +131,11 @@ export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor
               showValidity={false}
               invalid={duplicate}
             />
+            {primary && editor.primaryMissing && (
+              <p className="text-[14px] text-[#975102] dark:text-[#E8B931]">
+                {t('clientForm.staffPrimaryMissing', { defaultValue: 'Le numéro principal est vide : remplissez-le, ou mettez un autre numéro en principal.' })}
+              </p>
+            )}
             {(incomplete || duplicate) && (
               <p className={cn('text-[14px]', duplicate ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : 'text-[#975102] dark:text-[#E8B931]')}>
                 {duplicate
@@ -116,7 +146,9 @@ export function ClientPhonesEditor({ editor, idPrefix = 'edit-phone' }: { editor
 
             {primary ? (
               <p className={cn(TYPE.small, TEXT.muted)}>
-                {t('clientForm.primaryHint', { defaultValue: 'Il sert à la connexion et reçoit le mot de passe et les SMS.' })}
+                {staff
+                  ? t('clientForm.staffPrimaryHint', { defaultValue: 'Le numéro où l’on joint ce collaborateur.' })
+                  : t('clientForm.primaryHint', { defaultValue: 'Il sert à la connexion et reçoit le mot de passe et les SMS.' })}
               </p>
             ) : (
               <div className="space-y-2">
