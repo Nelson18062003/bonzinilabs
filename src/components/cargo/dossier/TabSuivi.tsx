@@ -1,6 +1,7 @@
 /**
  * Onglet Suivi — le voyage escale par escale, les jalons de l'armateur, et
- * les trois arrivées confrontées (promise, armateur, relevée).
+ * les trois arrivées confrontées (promise, armateur, relevée), et le statut
+ * « arrivé » que l'équipe pose à la main quand l'armateur se tait.
  *
  * Les jalons Maersk arrivaient en double (« Navire parti » six fois, cinq
  * estimations d'arrivée successives) : on n'en garde qu'un par événement,
@@ -8,12 +9,12 @@
  * du retard, résumée en une ligne.
  */
 import { useMemo, useState } from 'react';
-import { Anchor, CalendarClock, History, MapPin, Pencil, Route } from 'lucide-react';
+import { Anchor, CalendarClock, CheckCircle2, History, MapPin, Pencil, Route, Undo2 } from 'lucide-react';
 import { useCargoEvents } from '@/hooks/useCargo';
 import { CargoTimeline } from '@/components/cargo/CargoTimeline';
 import { Empty, Fact, Facts, Section, Tag, ToolButton } from '@/components/cargo/dossier/kit';
-import { CallsDialog, EtaDialog } from '@/components/cargo/dossier/VoyageDialogs';
-import { CARRIER_LABEL, ETA_SOURCE_LABEL, bestEta, etaSlipDays, fmtDay, fmtDayFull, fmtDayTime, timelineFromEvents } from '@/lib/cargo/model';
+import { CallsDialog, EtaDialog, MarkArrivedDialog, UnmarkArrivedDialog } from '@/components/cargo/dossier/VoyageDialogs';
+import { CARRIER_LABEL, ETA_SOURCE_LABEL, arrivalPort, bestEta, etaSlipDays, fmtDay, fmtDayFull, fmtDayTime, hasArrived, timelineFromEvents } from '@/lib/cargo/model';
 import type { CargoEvent, CargoShipment } from '@/lib/cargo/model';
 import { callDateLine, callStates, voyageCalls, type CallState } from '@/lib/cargo/voyage';
 import { cn } from '@/lib/utils';
@@ -55,7 +56,10 @@ export function TabSuivi({ shipment: s, canManage = false }: { shipment: CargoSh
   const states = callStates(calls);
   const eta = bestEta(s);
   const slip = etaSlipDays(s);
-  const [dialog, setDialog] = useState<'eta' | 'calls' | null>(null);
+  const [dialog, setDialog] = useState<'eta' | 'calls' | 'arrived' | 'unarrived' | null>(null);
+  const arrived = hasArrived(s.status);
+  // On ne marque arrivé qu'un conteneur parti (en mer, ou un départ connu) — comme la RPC.
+  const canMark = canManage && !arrived && (s.status === 'AT_SEA' || !!s.etd_actual);
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_380px] gap-5 max-lg:grid-cols-1">
@@ -123,6 +127,24 @@ export function TabSuivi({ shipment: s, canManage = false }: { shipment: CargoSh
             <Fact label="Retenue" value={fmtDay(eta.date)} hint={eta.source ? ETA_SOURCE_LABEL[eta.source] : undefined} />
           </Facts>
           {s.eta_manual_note && <p className={cn('mt-4 border-t border-black/[0.06] pt-3 text-[12.5px] max-lg:text-[14px] leading-relaxed dark:border-white/[0.06]', TEXT.body)}>{s.eta_manual_note}</p>}
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-black/[0.06] pt-3 dark:border-white/[0.06]">
+            {arrived ? (
+              <>
+                <span className={cn('inline-flex items-center gap-1.5 text-[13px] max-lg:text-[15px] font-bold', TEXT.strong)}>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Arrivé au port de {arrivalPort(s)}
+                </span>
+                {s.status === 'ARRIVED' && <span className={cn('text-[12.5px] max-lg:text-[14px]', TEXT.muted)}>les colis du conteneur sont pointables à Douala</span>}
+                {canManage && s.status === 'ARRIVED' && <span className="ml-auto"><ToolButton icon={Undo2} onClick={() => setDialog('unarrived')}>Annuler l'arrivée</ToolButton></span>}
+              </>
+            ) : (
+              <>
+                <span className={cn('text-[12.5px] max-lg:text-[14px] leading-relaxed', TEXT.body)}>
+                  Pas encore arrivé{canMark ? ' : si l’armateur ne le signale pas, marquez-le — sinon Douala ne peut pas pointer les colis.' : '.'}
+                </span>
+                {canMark && <span className="ml-auto"><ToolButton icon={CheckCircle2} onClick={() => setDialog('arrived')}>Marquer arrivé</ToolButton></span>}
+              </>
+            )}
+          </div>
         </Section>
 
         {etaHistory.length > 1 && (
@@ -153,6 +175,8 @@ export function TabSuivi({ shipment: s, canManage = false }: { shipment: CargoSh
 
       {dialog === 'eta' && <EtaDialog shipment={s} onClose={() => setDialog(null)} />}
       {dialog === 'calls' && <CallsDialog shipment={s} onClose={() => setDialog(null)} />}
+      {dialog === 'arrived' && <MarkArrivedDialog shipment={s} onClose={() => setDialog(null)} />}
+      {dialog === 'unarrived' && <UnmarkArrivedDialog shipment={s} onClose={() => setDialog(null)} />}
     </div>
   );
 }

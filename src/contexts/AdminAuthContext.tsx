@@ -5,7 +5,7 @@ import { authenticateWithPasskey } from '@/lib/passkey';
 import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
 
 // Types based on database app_role enum
-export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker';
+export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker' | 'commercial';
 
 // Admin account status
 export type AdminStatus = 'ACTIVE' | 'DISABLED';
@@ -53,6 +53,10 @@ export interface RolePermission {
   canSignCustoms: boolean;
   /** Piloter la douane : veille tarifaire, perturbations, suivi des fiches. */
   canManageCustoms: boolean;
+  /** Commercial : ses prospects, SES clients et SES chiffres (espace « /v »). Rien d'autre de la plateforme. */
+  canProspect: boolean;
+  /** Piloter les ventes : tous les commerciaux, leurs prospects, leurs objectifs du mois. */
+  canManageSales: boolean;
 }
 
 export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
@@ -81,6 +85,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: true,
     canSignCustoms: false,
     canManageCustoms: true,
+    canProspect: false,
+    canManageSales: true,
   },
   ops: {
     canViewClients: true,
@@ -107,6 +113,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: true,
     canSignCustoms: false,
     canManageCustoms: true,
+    canProspect: false,
+    canManageSales: false,
   },
   support: {
     canViewClients: true,
@@ -133,6 +141,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: true,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   customer_success: {
     canViewClients: true,
@@ -159,6 +169,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: true,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   cash_agent: {
     canViewClients: false,
@@ -185,6 +197,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: false,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   treasurer: {
     canViewClients: false,
@@ -211,6 +225,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: false,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   /**
    * Réceptionnaire (entrepôt ou bureau de Guangzhou) : le minimum pour coller
@@ -243,6 +259,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: false,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   /**
    * Agent d'entrepôt (Douala) : le dernier maillon. Il pointe ce qui arrive,
@@ -274,6 +292,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: false,
     canSignCustoms: false,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
   },
   /**
    * Commissionnaire agréé en douane (CAD) : le seul qui SIGNE un code SH ou un
@@ -305,6 +325,42 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewCustoms: true,
     canSignCustoms: true,
     canManageCustoms: false,
+    canProspect: false,
+    canManageSales: false,
+  },
+  /**
+   * Commercial : prospecte, apporte des clients, suit SES chiffres (paiements,
+   * colis avion et bateau) et SES objectifs dans son espace « /v ». Aucune
+   * permission d'administration : côté serveur, is_admin() l'exclut et ses
+   * RPC ne lisent que sa fiche (current_commercial_source_id).
+   */
+  commercial: {
+    canViewClients: false,
+    canEditClients: false,
+    canViewDeposits: false,
+    canProcessDeposits: false,
+    canViewPayments: false,
+    canProcessPayments: false,
+    canManageRates: false,
+    canViewLogs: false,
+    canManageUsers: false,
+    canViewTreasury: false,
+    canManageTreasury: false,
+    canAccessSupportChat: false,
+    canViewCargo: false,
+    canManageCargo: false,
+    canGrantOverdraft: false,
+    canReceiveParcels: false,
+    canRegisterClients: false,
+    canPriceParcels: false,
+    canCollectParcelPayments: false,
+    canReceiveAtDestination: false,
+    canReleaseParcels: false,
+    canViewCustoms: false,
+    canSignCustoms: false,
+    canManageCustoms: false,
+    canProspect: true,
+    canManageSales: false,
   },
 };
 
@@ -318,6 +374,7 @@ export const ADMIN_ROLE_LABELS: Record<AppRole, string> = {
   receptionist: 'Réceptionnaire',
   warehouse_agent: "Agent d'entrepôt",
   customs_broker: 'Commissionnaire agréé (CAD)',
+  commercial: 'Commercial',
 };
 
 interface AdminAuthContextType {

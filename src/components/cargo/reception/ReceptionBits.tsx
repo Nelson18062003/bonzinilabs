@@ -51,7 +51,7 @@ export function PhotoTile({ path, caption, sub, onClick }: { path: string | null
 export function DepositStatePill({ deposit }: { deposit: Deposit }) {
   if (deposit.status === 'cancelled') return <StatusPill tone="danger" label="Supprimé" />;
   if (deposit.status === 'open') return <StatusPill tone="info" label="En cours de saisie" />;
-  const st = depositStage(deposit.parcels);
+  const st = depositStage(deposit.parcels, deposit.location);
   return <StatusPill tone={st.tone} label={st.label} />;
 }
 

@@ -109,11 +109,6 @@ import { MobileRatesScreen } from '@/mobile/screens/rates/MobileRatesScreen';
 import { MobileRatesMarketScreen } from '@/mobile/screens/rates/MobileRatesMarketScreen';
 import { DesktopRatesScreen } from '@/desktop/screens/rates';
 import {
-  MobileAdminsScreen,
-  MobileCreateAdmin,
-  MobileAdminDetail,
-} from '@/mobile/screens/admins';
-import {
   MobileSupportListScreen,
   MobileSupportConversationScreen,
   MobileSupportStatsScreen,
@@ -186,6 +181,7 @@ function FlyerGabon() {
   );
 }
 import { BeforeDeposits, BeforePayments, BeforeNewDeposit, BeforeNewPayment, ShippedClients, ShippedRates, ShippedRatesPublish, ShippedRatesHistory, ShippedRatesSettings, ShippedAnalytics, ShippedCreateClient } from './adminRedesign/beforeScreens';
+import type { JourneyEntry } from './journey/types';
 
 /** Les documents rastérisés dans le navigateur (harnais des images). */
 const RIB_UBA = { kind: 'rib', bank: 'UBA' } as const;
@@ -378,10 +374,6 @@ const SCREENS: Record<string, { Comp: React.ComponentType; route: string; path?:
   'bulk-create': { Comp: BulkPaymentCreate, route: '/m/payments/batch/new' },
   // Rates module (Phase 2 M5)
   rates: { Comp: MobileRatesScreen, route: '/m/rates' },
-  // Admins module (Phase 2 M6)
-  admins: { Comp: MobileAdminsScreen, route: '/m/more/admins' },
-  'admin-create': { Comp: MobileCreateAdmin, route: '/m/more/admins/new' },
-  'admin-detail': { Comp: MobileAdminDetail, route: '/m/more/admins/a1', path: '/m/more/admins/:adminId' },
   // Support module (Phase 2 M7)
   support: { Comp: MobileSupportListScreen, route: '/m/support' },
   'support-conversation': { Comp: MobileSupportConversationScreen, route: '/m/support/c1', path: '/m/support/:conversationId' },
@@ -521,7 +513,14 @@ const qc = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, staleTime: 60_000 } },
 });
 
-const entry = SCREENS[screenKey] ?? SCREENS.home;
+// Le parcours complet du 05/10 (équipes, commerciaux, paquets avion) : ?screen=j.<domaine>.<écran>,
+// un fichier par domaine dans ./journey/, chargé à la demande — un domaine en
+// cours d'écriture ne casse pas les captures des autres.
+const JOURNEY = import.meta.glob<Record<string, JourneyEntry>>('./journey/*.tsx', { import: 'SCREENS' });
+const journeyDomain = /^j\.([a-z]+)\./.exec(screenKey)?.[1];
+const journey = journeyDomain ? await JOURNEY[`./journey/${journeyDomain}.tsx`]?.() : undefined;
+
+const entry = journey?.[screenKey] ?? SCREENS[screenKey] ?? SCREENS.home;
 const Screen = entry.Comp;
 
 const routed = entry.path ? (

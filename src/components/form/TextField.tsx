@@ -54,6 +54,9 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(func
   const reactId = React.useId();
   const id = idProp ?? reactId;
   const hasError = Boolean(error);
+  // Mêmes identifiants que ceux calculés par FormFieldWrapper.
+  const describedBy =
+    [hasError ? `${id}-error` : null, hint && !hasError ? `${id}-hint` : null].filter(Boolean).join(' ') || undefined;
   const keyboard = KEYBOARD[variant];
 
   const control = (
@@ -63,6 +66,13 @@ export const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(func
         {leftIcon ? <LeftIcon>{leftIcon}</LeftIcon> : null}
         <input
           ref={ref}
+          // Posé ici et non par FormFieldWrapper : l'<input> est enveloppé dans
+          // des div (icônes, addons), l'injection du wrapper n'y arrive pas et
+          // le <label for> restait orphelin.
+          id={id}
+          aria-describedby={describedBy}
+          aria-invalid={hasError}
+          aria-required={required}
           type={type}
           inputMode={keyboard.inputMode}
           autoCapitalize={keyboard.autoCapitalize}

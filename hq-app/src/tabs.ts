@@ -58,6 +58,13 @@ export function tabsFor(role: StaffRole): Tab[] {
         { key: 'simulator', label: 'Simulateur', icon: 'calculator', path: '/m/douane/simulateur', match: ['/m/douane/simulateur'] },
         ME,
       ];
+    case 'commercial':
+      return [
+        { key: 'sales', label: 'Mon mois', icon: 'trending-up', path: '/v', exact: true, match: ['/v'] },
+        { key: 'prospects', label: 'Prospects', icon: 'person-add', path: '/v/prospects', match: ['/v/prospects'] },
+        { key: 'clients', label: 'Mes clients', icon: 'people', path: '/v/clients', match: ['/v/clients'] },
+        ME,
+      ];
     case 'treasurer':
       return [
         HOME,

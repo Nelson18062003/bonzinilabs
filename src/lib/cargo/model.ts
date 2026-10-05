@@ -35,6 +35,25 @@ export function statusMeta(status: string): { label: string; tone: Tone } {
   return STATUS_META[(status as CargoStatus) in STATUS_META ? (status as CargoStatus) : 'UNKNOWN'];
 }
 
+/** Le conteneur est arrivé (ou livré) : ses colis se pointent à Douala. */
+export const hasArrived = (status: string | null | undefined): boolean => status === 'ARRIVED' || status === 'DELIVERED';
+
+/** « POINTE-NOIRE » → « Pointe-Noire » : la règle d'initcap de Postgres (mot = suite de lettres et chiffres). */
+const initcap = (t: string): string => t.toLowerCase().replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
+
+/**
+ * Le port d'arrivée en clair — la même règle que le message envoyé aux
+ * clients (cargo_shipments_notify_parcels) : Kribi, Douala, un autre port
+ * camerounais tel quel, sinon Douala.
+ */
+export function arrivalPort(s: Pick<CargoShipment, 'pod_name' | 'pod_unlocode'>): string {
+  const name = s.pod_name?.trim() ?? '';
+  if (s.pod_unlocode === 'CMKBI' || /kribi/i.test(name)) return 'Kribi';
+  if (s.pod_unlocode === 'CMDLA' || /douala/i.test(name)) return 'Douala';
+  if (s.pod_unlocode?.startsWith('CM') && name) return initcap(name);
+  return 'Douala';
+}
+
 export const CARRIER_LABEL: Record<string, string> = {
   MAERSK: 'Maersk',
   CMA_CGM: 'CMA CGM',
@@ -116,7 +135,7 @@ export function voyageProgress(s: CargoShipment, now = new Date()): { day: numbe
   if (!etd || !eta) return null;
   const total = Math.max(1, differenceInCalendarDays(eta, etd));
   const day = Math.max(0, Math.min(total, differenceInCalendarDays(now, etd)));
-  const pct = s.status === 'ARRIVED' || s.status === 'DELIVERED' ? 100 : Math.max(2, Math.min(98, Math.round((day / total) * 100)));
+  const pct = hasArrived(s.status) ? 100 : Math.max(2, Math.min(98, Math.round((day / total) * 100)));
   return { day, total, pct };
 }
 

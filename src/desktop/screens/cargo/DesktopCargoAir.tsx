@@ -15,7 +15,7 @@ import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { AirQuickView } from '@/components/cargo/air/AirQuickView';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAirShipments } from '@/hooks/useAirShipments';
-import { airStatusMeta, flightSentence, fmtDay, formatAwb, type AirStatus } from '@/lib/airShipment';
+import { airStatusMeta, flightSentence, fmtDay, formatAwb, isProvisionalAwb, type AirStatus } from '@/lib/airShipment';
 import { formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, PRIMARY_PILL, Card, CardHeader, Chip, KV, Th, Td, StatusPill, ScreenLoader } from '@/desktop/designKit';
@@ -113,12 +113,12 @@ export function DesktopCargoAir() {
                 const st = airStatusMeta(a.status);
                 return (
                   <tr key={a.id} onClick={() => navigate(`/m/cargo/avion/${a.id}`)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', airId === a.id && 'bg-accent')}>
-                    <Td first><span className="inline-flex items-center gap-2"><span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-white', a.status === 'DEPARTED' ? 'bg-[#0B5FA5]' : 'bg-[#C8102E]')}><Plane className="h-3.5 w-3.5" /></span><span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{formatAwb(a.awb_number)}</span></span></Td>
+                    <Td first><span className="inline-flex items-center gap-2"><span className={cn('flex h-6 w-6 items-center justify-center rounded-md text-white', a.status === 'DEPARTED' ? 'bg-[#0B5FA5]' : 'bg-[#C8102E]')}><Plane className="h-3.5 w-3.5" /></span>{isProvisionalAwb(a.awb_number) ? <span className={cn('text-[12px] font-semibold italic', TEXT.muted)}>LTA à venir</span> : <span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{formatAwb(a.awb_number)}</span>}</span></Td>
                     <Td><span className="text-[12.5px]">{flightSentence(a)}</span></Td>
                     <Td><StatusPill tone={st.tone} label={st.short} /></Td>
                     <Td><span className={cn('text-[12.5px] tabular-nums', a.departed_at ? TEXT.strong : TEXT.muted)}>{a.departed_at ? fmtDay(a.departed_at) : a.etd ? `prévu ${fmtDay(a.etd)}` : '—'}</span></Td>
                     <Td><span className={cn('text-[12.5px] tabular-nums', a.arrived_at ? TEXT.strong : TEXT.muted)}>{a.arrived_at ? fmtDay(a.arrived_at) : a.eta ? `prévue ${fmtDay(a.eta)}` : '—'}</span></Td>
-                    <Td align="right"><span className="text-[13px] font-semibold tabular-nums">{a.parcel_count}</span></Td>
+                    <Td align="right"><span className="text-[13px] font-semibold tabular-nums">{a.parcel_count}</span>{(a.package_count ?? 0) > 0 && <div className={cn('text-[11px] tabular-nums', TEXT.muted)}>{a.package_count} paquet{(a.package_count ?? 0) > 1 ? 's' : ''}</div>}</Td>
                     <Td align="right"><span className="text-[13px] tabular-nums">{formatKg(a.total_weight_kg)}</span></Td>
                     <Td align="right"><span className="text-[13px] tabular-nums">{formatCbm(a.total_cbm)}</span></Td>
                     <Td align="right"><span className="text-[13px] tabular-nums">{a.client_count}</span></Td>

@@ -19,7 +19,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
-  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine,
+  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine, waitingWhere,
   type Parcel,
 } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
@@ -130,7 +130,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const canAddParcel = !!d && !cancelled && !(d.status === 'closed' && paid) && (isCargo || (d.status === 'open' && owner));
   const canEditParcels = !!d && !cancelled && (isCargo || owner);
   const canCancel = !!d && !cancelled && (isCargo || (d.status === 'open' && owner));
-  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà partis' : (quote && (quote.amount_paid_xaf > 0 || paid || quote.invoice_no)) ? 'Des encaissements existent : annulez-les d’abord' : null;
+  const cancelBlock = departed.length > 0 ? 'Des colis sont déjà emballés dans un paquet avion ou partis' : (quote && (quote.amount_paid_xaf > 0 || paid || quote.invoice_no)) ? 'Des encaissements existent : annulez-les d’abord' : null;
   const removeBlock = (p: Parcel): string | null => {
     if (!d || cancelled) return 'Dépôt supprimé';
     if (!(isCargo || (d.status === 'open' && owner))) return 'Réservé à l’équipe cargo';
@@ -286,7 +286,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
           {/* ── Les colis ──────────────────────────────────────────────── */}
           <Band
             title="Les colis"
-            meta={`${photoCount} photo${photoCount > 1 ? 's' : ''} · ${waiting} à l'entrepôt${parcels.length - waiting > 0 ? ` · ${parcels.length - waiting} partis` : ''}`}
+            meta={`${photoCount} photo${photoCount > 1 ? 's' : ''} · ${waiting} ${waitingWhere([d.location])}${parcels.length - waiting > 0 ? ` · ${parcels.length - waiting} partis` : ''}`}
           >
             {parcels.length === 0 ? (
               <p className={cn('py-6 text-center text-[13px]', TEXT.muted)}>Aucun colis dans ce dépôt.{canAddParcel && ' Ajoutez-en un.'}</p>
@@ -307,7 +307,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
                   </thead>
                   <tbody>
                     {parcels.map((p, i) => {
-                      const stage = parcelStage(p);
+                      const stage = parcelStage(p, d.location);
                       const lock = parcelLockReason(p);
                       const rb = removeBlock(p);
                       return (
@@ -381,7 +381,7 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
           <Band title="L'historique"><DepositTimeline events={events} flat /></Band>
 
           <ParcelPhotoViewer
-            parcels={parcels.map((p) => ({ ...p, note: parcelStage(p).label }))}
+            parcels={parcels.map((p) => ({ ...p, note: parcelStage(p, d.location).label }))}
             index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} photo={viewer.photo} setPhoto={viewer.setPhoto}
             title={d.deposit_no}
           />

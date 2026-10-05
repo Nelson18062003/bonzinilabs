@@ -147,7 +147,7 @@ export function AnswerButton({ icon: Icon, title, help, onClick, tone = 'neutral
 
 /** La pédagogie tient en quatre lignes, à portée de main, jamais imposée. */
 const HOW = [
-  'Un avion ou une boîte arrive : touchez chaque colis présent pour le pointer. Abîmé ou manquant : ouvrez sa fiche et dites-le.',
+  'Un avion ou une boîte arrive : touchez chaque colis présent pour le pointer. Abîmé ou manquant : ouvrez sa fiche et dites-le. Un avion en paquets : scannez chaque paquet (PQ-…) jusqu\'à les avoir tous, puis ouvrez-les un par un.',
   'Le client se présente : scannez son code, ou choisissez-le dans la liste de ceux qui attendent.',
   'S\'il reste à payer, encaissez sur place : le reçu part aussitôt. Rien ne sort sans être payé.',
   'Dites qui emporte les colis, faites signer : le bon de retrait est la preuve de la remise.',

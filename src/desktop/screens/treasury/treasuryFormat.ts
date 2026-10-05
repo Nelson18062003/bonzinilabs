@@ -59,3 +59,35 @@ export function accountKindLabel(kind: string | null | undefined): string {
   if (!kind) return '';
   return ACCOUNT_KIND_LABELS[kind] ?? kind.replace(/_/g, ' ');
 }
+
+/* ── Dates, en heure de Douala ──────────────────────────────────────────
+ *
+ * Les périodes du module sont bornées en jours civils de Douala ; les dates
+ * affichées doivent l'être aussi (l'ancien écran utilisait le fuseau du
+ * navigateur : une opération de 23 h 30 changeait de jour selon le poste). */
+
+const TZ = 'Africa/Douala';
+const dayKey = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+const hm = (d: Date) => new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(d);
+
+/** « Aujourd'hui 14:20 », « Hier 17:42 », « 3 oct. 16:30 », « 3 oct. 2025 ». */
+export function fmtWhen(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const k = dayKey(d);
+  if (k === dayKey(now)) return `Aujourd’hui ${hm(d)}`;
+  if (k === dayKey(new Date(now.getTime() - 86_400_000))) return `Hier ${hm(d)}`;
+  const sameYear = k.slice(0, 4) === dayKey(now).slice(0, 4);
+  const day = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }) }).format(d);
+  return sameYear ? `${day} ${hm(d)}` : day;
+}
+
+/** « jeudi 3 octobre 2026 à 14:20 » — pour les fiches. */
+export function fmtLongDate(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  const day = new Intl.DateTimeFormat('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  return `${day} à ${hm(d)}`;
+}

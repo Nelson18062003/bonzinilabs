@@ -5,7 +5,7 @@
 // Un colis déjà pointé, abîmé ou manquant se corrige ici, de la même façon.
 // ============================================================
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Check, PackageX } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -18,6 +18,7 @@ import { formatDateTime } from '@/mobile/components/reception/bits';
 import { AnswerButton, CheckMark, ClientHead, ParcelText, WhQuestion } from '@/mobile/components/warehouse/bits';
 import { ParcelThumb } from '@/mobile/components/reception/bits';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
+import { PackageChip } from '@/mobile/components/warehouse/packages';
 
 type Step = 'state' | 'damaged' | 'missing';
 
@@ -30,7 +31,9 @@ export function WarehouseCheckinParcel() {
   const [step, setStep] = useState<Step>('state');
   const [note, setNote] = useState('');
   const viewer = useParcelViewer();
-  const back = `/w/arrivees/${kind}/${id}`;
+  // Ouvert depuis un paquet (?paquet=PQ-…) : on y revient.
+  const fromPackage = useSearchParams()[0].get('paquet');
+  const back = `/w/arrivees/${kind}/${id}${fromPackage ? `?paquet=${encodeURIComponent(fromPackage)}` : ''}`;
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
   const parcel = data?.parcels.find((p) => p.id === parcelId);
@@ -48,7 +51,7 @@ export function WarehouseCheckinParcel() {
           <ClientHead client={parcel.client} size="md" />
           <div className="flex items-center gap-3 border-t pt-3 dark:border-[#444444]"><CheckMark parcel={parcel} size="lg" /><ParcelText parcel={parcel} withTransport /><ParcelThumb path={parcel.photo_path} onOpen={() => viewer.open(0)} size="h-16 w-16" /></div>
           <div className="flex items-center justify-between gap-3">
-            <StatusPill tone={st.tone} label={st.label} />
+            <span className="flex flex-wrap items-center gap-2"><StatusPill tone={st.tone} label={st.label} />{parcel.package_no && <PackageChip no={parcel.package_no} className="h-8" />}</span>
             {parcel.checked_in_at && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>pointé le {formatDateTime(parcel.checked_in_at)}</span>}
           </div>
         </Card>

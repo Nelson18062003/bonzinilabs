@@ -11,7 +11,7 @@
  */
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, User } from 'lucide-react';
+import { Megaphone, Plus, User } from 'lucide-react';
 import { useClients } from '@/hooks/useClientManagement';
 import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib/clientSearch';
 import { formatXAF } from '@/lib/formatters';
@@ -20,6 +20,7 @@ import {
   SURFACE,
   TEXT,
   PRIMARY_PILL,
+  SOFT_PILL,
   clientStatusTone,
   Avatar,
   StatusPill,
@@ -163,13 +164,22 @@ export function DesktopClientsScreen() {
             )}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/m/clients/new')}
-          className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
-        >
-          <Plus className="h-4 w-4" /> Nouveau client
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/m/clients/sources')}
+            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', SOFT_PILL)}
+          >
+            <Megaphone className="h-4 w-4" /> Sources & commerciaux
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/m/clients/new')}
+            className={cn('inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold', PRIMARY_PILL)}
+          >
+            <Plus className="h-4 w-4" /> Nouveau client
+          </button>
+        </div>
       </header>
 
       {/* ── Barre d'outils — UNE ligne, hauteur 36px ────────────────────── */}

@@ -70,7 +70,7 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: 'cancelled', label: 'Supprimés' },
 ];
 const QUEUE_LABEL: Record<ReceptionQueue, string> = {
-  all: 'Tous', waiting: "À l'entrepôt", loaded: 'Partis', pending: 'À attribuer', incomplete: 'Incomplets', nophoto: 'Sans photo', open: 'En cours',
+  all: 'Tous', waiting: 'En attente', loaded: 'Partis', pending: 'À attribuer', incomplete: 'Incomplets', nophoto: 'Sans photo', open: 'En cours',
 };
 const PAGE = { deposits: 40, parcels: 80, photos: 16 } as const;
 const VIEW_KEY = 'bonzini-reception-view';
@@ -260,7 +260,7 @@ export function DesktopCargoReception() {
     const stamp = new Date().toISOString().slice(0, 10);
     if (view === 'parcels' || view === 'photos') {
       exportToCSV(
-        parcelRows.map(({ parcel: p, deposit: d }) => ({ colis: p.parcel_no, depot: d.deposit_no, recu_le: formatDateTime(depositDate(d)), client: d.client ? clientFullName(d.client) : '', code: d.client?.customer_code ?? '', lieu: labels.location(d.location), type: labels.kind(p.kind), contenu: p.description ?? '', bordereau: p.courier_waybill ?? '', poids_kg: p.weight_kg ?? '', longueur_cm: p.length_cm ?? '', largeur_cm: p.width_cm ?? '', hauteur_cm: p.height_cm ?? '', volume_m3: p.cbm ?? '', photos: parcelPhotoPaths(p).length, etat: parcelStage(p).label })),
+        parcelRows.map(({ parcel: p, deposit: d }) => ({ colis: p.parcel_no, depot: d.deposit_no, recu_le: formatDateTime(depositDate(d)), client: d.client ? clientFullName(d.client) : '', code: d.client?.customer_code ?? '', lieu: labels.location(d.location), type: labels.kind(p.kind), contenu: p.description ?? '', bordereau: p.courier_waybill ?? '', poids_kg: p.weight_kg ?? '', longueur_cm: p.length_cm ?? '', largeur_cm: p.width_cm ?? '', hauteur_cm: p.height_cm ?? '', volume_m3: p.cbm ?? '', photos: parcelPhotoPaths(p).length, etat: parcelStage(p, d.location).label })),
         [{ key: 'colis', header: 'N° colis' }, { key: 'depot', header: 'Dépôt' }, { key: 'recu_le', header: 'Reçu le' }, { key: 'client', header: 'Client' }, { key: 'code', header: 'Code' }, { key: 'lieu', header: 'Lieu' }, { key: 'type', header: 'Type' }, { key: 'contenu', header: 'Contenu' }, { key: 'bordereau', header: 'Bordereau' }, { key: 'poids_kg', header: 'Poids (kg)' }, { key: 'longueur_cm', header: 'L (cm)' }, { key: 'largeur_cm', header: 'l (cm)' }, { key: 'hauteur_cm', header: 'H (cm)' }, { key: 'volume_m3', header: 'Volume (m³)' }, { key: 'photos', header: 'Photos' }, { key: 'etat', header: 'État' }],
         `bonzini-reception-colis-${stamp}.csv`,
       );
@@ -390,7 +390,7 @@ export function DesktopCargoReception() {
           {view === 'clients' ? (
             <>
               <CardHeader title="Ce qui attend, par client" meta={`${byClient.length} ligne${byClient.length > 1 ? 's' : ''} · en stock`} />
-              {stock.isLoading ? <ScreenLoader /> : byClient.length === 0 ? empty("Rien n'attend à l'entrepôt.") : (
+              {stock.isLoading ? <ScreenLoader /> : byClient.length === 0 ? empty("Rien n'attend à l'entrepôt ni au bureau.") : (
                 <table className="w-full text-left">
                   <thead className={SURFACE.card}>
                     <tr><Th first>Client</Th><Th>Lieu</Th><Th align="right">Dépôts</Th><Th align="right">Colis</Th><Th align="right">Poids</Th><Th align="right">Volume</Th><Th>Dernière réception</Th><Th last className="w-[36px]" /></tr>
@@ -489,7 +489,7 @@ export function DesktopCargoReception() {
                             </Td>
                           </tr>
                           {open && sorted.map((p) => {
-                            const st = parcelStage(p);
+                            const st = parcelStage(p, d.location);
                             return (
                               <tr key={p.id} onClick={() => openDeposit(d, p.id)} className={cn('cursor-pointer bg-muted/25 transition-colors hover:bg-muted/50', !inScope(p, d) && 'opacity-60')}>
                                 <Td first />
@@ -571,7 +571,7 @@ export function DesktopCargoReception() {
                   </thead>
                   <tbody>
                     {slice(parcelRows).map(({ parcel: p, deposit: d }) => {
-                      const st = d.status === 'cancelled' ? { tone: 'danger' as const, label: 'Dépôt supprimé' } : parcelStage(p);
+                      const st = d.status === 'cancelled' ? { tone: 'danger' as const, label: 'Dépôt supprimé' } : parcelStage(p, d.location);
                       const on = selected.has(p.id);
                       return (
                         <tr key={p.id} onClick={() => openDeposit(d, p.id)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', on && 'bg-accent/60')}>
@@ -716,7 +716,7 @@ export function DesktopCargoReception() {
       {labelsFor && <DepositLabelsDialog deposit={labelsFor} open onClose={() => setLabelsFor(null)} />}
       {viewerDeposit && (
         <ParcelPhotoViewer
-          parcels={viewerDeposit.parcels.map((p) => ({ ...p, note: parcelStage(p).label }))}
+          parcels={viewerDeposit.parcels.map((p) => ({ ...p, note: parcelStage(p, viewerDeposit.location).label }))}
           index={viewer.index} close={() => { viewer.close(); setViewerDeposit(null); }} setIndex={viewer.setIndex} photo={viewer.photo} setPhoto={viewer.setPhoto}
           title={`${viewerDeposit.deposit_no}${viewerDeposit.client ? ` · ${clientFullName(viewerDeposit.client)}` : ''}`}
         />

@@ -1,0 +1,64 @@
+// ============================================================
+// ESPACE COMMERCIAL — la coquille de « /v », sur le modèle de la réception :
+// une session du personnel (AdminAuthProvider est monté une fois dans
+// App.tsx), le droit vérifié ici, une barre à trois onglets.
+//
+// Seul canProspect entre (le commercial). Tout autre membre du personnel
+// est renvoyé vers SON espace ; sans session, vers la connexion unique.
+// Le thème `.admin-theme` donne l'encre neutre de l'administration.
+// ============================================================
+import type { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AnimatedPage } from '@/components/transitions/AnimatedPage';
+import { staffHomeFor } from '@/lib/staffHome';
+import { isNativeApp } from '@/lib/nativeApp';
+import { cn } from '@/lib/utils';
+import { CommercialTabBar } from './CommercialTabBar';
+
+/** Dans l'app BONZINI HQ, la barre d'onglets est native : celle du site se retire. */
+const inApp = isNativeApp();
+
+function Protected({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading, hasPermission, currentUser } = useAdminAuth();
+  if (isLoading) {
+    return (
+      <div className="admin-theme flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return <Navigate to="/m/login" replace />;
+  // Connecté mais pas commercial : vers SON espace, pas vers une connexion en boucle.
+  if (!hasPermission('canProspect')) return <Navigate to={staffHomeFor(currentUser?.role)} replace />;
+  return <>{children}</>;
+}
+
+export function CommercialShell({ children, showTabBar = true }: { children: ReactNode; showTabBar?: boolean }) {
+  const withBar = showTabBar && !inApp;
+  return (
+    <div className="admin-theme min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col md:max-w-2xl">
+        <main className={cn('flex-1', withBar ? 'pb-28' : 'pb-10')}>
+          <AnimatedPage>{children}</AnimatedPage>
+        </main>
+        {withBar && <CommercialTabBar />}
+      </div>
+    </div>
+  );
+}
+
+export function CommercialRouteWrapper({ children, showTabBar = true }: { children: ReactNode; showTabBar?: boolean }) {
+  return (
+    <LanguageProvider>
+      <ErrorBoundary onError={(error, info) => console.error('[Commercial] Route error:', error.message, error.stack, info.componentStack)}>
+        <Protected>
+          <CommercialShell showTabBar={showTabBar}>{children}</CommercialShell>
+        </Protected>
+      </ErrorBoundary>
+    </LanguageProvider>
+  );
+}

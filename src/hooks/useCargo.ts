@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { validateUploadFile } from '@/lib/utils';
 import { shouldPollLookup } from '@/lib/cargo/lookup';
-import type { CargoCost, CargoDocument, CargoEvent, CargoLookup, CargoPackage, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import { statusMeta, type CargoCost, type CargoDocument, type CargoEvent, type CargoLookup, type CargoPackage, type CargoShipment, type CargoVesselPosition } from '@/lib/cargo/model';
 import type { CargoDocFolder } from '@/lib/cargo/documents';
 import type { CargoParty, CargoShipmentPartyWithParty } from '@/lib/cargo/parties';
 import type { CargoStep } from '@/lib/cargo/steps';
@@ -166,6 +166,59 @@ export function useSetVesselPosition() {
       qc.invalidateQueries({ queryKey: ['cargo', 'positions'] });
     },
     onError: (e: Error) => toast.error(`Position non enregistrée : ${e.message}`),
+  });
+}
+
+/**
+ * Marquer un conteneur arrivé quand l'armateur ne le dit pas (MSC, COSCO,
+ * saisie manuelle, synchro muette) — sans quoi Douala ne peut pas pointer ses
+ * colis. La RPC vérifie canManageCargo, refuse un conteneur pas encore parti,
+ * une date future ou antérieure au départ ; les déclencheurs passent les colis
+ * « arrivés » et préviennent les clients. L'annulation exige un motif, remet
+ * le statut et les dates d'avant, et n'est permise que pour une arrivée posée
+ * par l'équipe, non confirmée par l'armateur, sans colis traité à Douala.
+ */
+/** Une arrivée change le dossier, l'entrepôt de Douala et la console Réception. */
+function invalidateArrival(qc: ReturnType<typeof useQueryClient>) {
+  for (const key of ['cargo', 'warehouse', 'reception']) qc.invalidateQueries({ queryKey: [key] });
+}
+
+export function useMarkShipmentArrived() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { shipmentId: string; arrivedAt: string; note?: string | null }) => {
+      const { data, error } = await supabaseAdmin.rpc('cargo_mark_shipment_arrived' as never, {
+        p_shipment_id: v.shipmentId, p_arrived_at: v.arrivedAt, p_note: v.note ?? null,
+      } as never);
+      if (error) throw error;
+      return assertOk(data);
+    },
+    onSuccess: (r) => {
+      const n = Number(r.parcels ?? 0);
+      const c = Number(r.clients ?? 0);
+      toast.success(n === 0 ? 'Conteneur marqué arrivé'
+        : `Conteneur arrivé : ${n} colis pointables à Douala${c > 0 ? `, ${c} client${c > 1 ? 's' : ''} prévenu${c > 1 ? 's' : ''}` : ''}`);
+      invalidateArrival(qc);
+    },
+    onError: (e: Error) => toast.error(`Arrivée non enregistrée : ${e.message}`),
+  });
+}
+
+export function useUnmarkShipmentArrived() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { shipmentId: string; reason: string }) => {
+      const { data, error } = await supabaseAdmin.rpc('cargo_unmark_shipment_arrived' as never, {
+        p_shipment_id: v.shipmentId, p_reason: v.reason,
+      } as never);
+      if (error) throw error;
+      return assertOk(data);
+    },
+    onSuccess: (r) => {
+      toast.success(`Arrivée annulée : le conteneur est revenu à « ${statusMeta(String(r.status ?? '')).label} »`);
+      invalidateArrival(qc);
+    },
+    onError: (e: Error) => toast.error(`Annulation impossible : ${e.message}`),
   });
 }
 

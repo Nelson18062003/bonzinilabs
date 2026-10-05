@@ -91,9 +91,11 @@ export function useCreateCounterparty() {
       if (!result.success) throw new Error(result.error ?? 'Erreur création contrepartie');
       return result;
     },
+    // Renvoyer la promesse : l'appelant (création rapide dans une saisie)
+    // choisit la nouvelle contrepartie une fois la liste rechargée.
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['treasury', 'counterparties'] });
       toast.success('Contrepartie créée');
+      return qc.invalidateQueries({ queryKey: ['treasury', 'counterparties'] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -225,7 +227,9 @@ export function useRecordUsdtPurchase() {
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['treasury'] });
-      toast.success(`Achat enregistré. Nouveau WAC: ${r.new_wac?.toFixed(4)} XAF/USDT`);
+      toast.success('Achat enregistré', {
+        description: r.new_wac ? `Coût moyen d’un USDT : ${r.new_wac.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} XAF` : undefined,
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -297,9 +301,13 @@ export function useRecordUsdtSale() {
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['treasury'] });
       if (r.warning_negative_stock) {
-        toast.warning(`Vente enregistrée. ATTENTION: stock USDT négatif (${r.stock_usdt_after?.toFixed(2)})`);
+        toast.warning('Vente enregistrée — le stock USDT est maintenant négatif', {
+          description: `Stock : ${(r.stock_usdt_after ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USDT. Enregistrez l’achat correspondant.`,
+        });
       } else {
-        toast.success(`Vente enregistrée. Stock USDT: ${r.stock_usdt_after?.toFixed(2)}`);
+        toast.success('Vente enregistrée', {
+          description: `Stock restant : ${(r.stock_usdt_after ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USDT`,
+        });
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -332,7 +340,9 @@ export function useRecordInventorySnapshot() {
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['treasury'] });
-      toast.success(`Inventaire enregistré. Écart: ${r.variance?.toFixed(2) ?? '0'}`);
+      toast.success('Inventaire enregistré', {
+        description: r.variance ? `Écart constaté : ${r.variance > 0 ? '+' : ''}${r.variance.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}` : 'Aucun écart',
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -437,7 +447,9 @@ export function useTreasuryDashboard(fromIso: string, toIso: string) {
         p_to_date: toIso,
       });
       if (error) throw error;
-      return data as unknown as TreasuryDashboard;
+      const result = data as unknown as TreasuryDashboard & { error?: string };
+      if (!result?.success) throw new Error(result?.error ?? 'Tableau de bord indisponible');
+      return result;
     },
     staleTime: 30_000,
   });
@@ -477,7 +489,9 @@ export function useTopCounterparties(type: CounterpartyType, fromIso: string, to
         p_limit: limit,
       });
       if (error) throw error;
-      return data as unknown as TopCounterpartiesResult;
+      const result = data as unknown as TopCounterpartiesResult & { error?: string };
+      if (!result?.success) throw new Error(result?.error ?? 'Classement indisponible');
+      return result;
     },
     staleTime: 30_000,
   });
@@ -486,12 +500,14 @@ export function useTopCounterparties(type: CounterpartyType, fromIso: string, to
 // ─── Operations feed (purchases + sales merged) ────────────
 
 export type PurchaseRow = Database['public']['Tables']['usdt_purchases']['Row'] & {
-  supplier?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> | null;
+  supplier?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> & Partial<Pick<TreasuryCounterparty, 'short_id'>> | null;
   xaf_account?: Pick<TreasuryAccount, 'id' | 'code' | 'label'> | null;
+  /** Comptes XAF débités (achat réparti sur plusieurs comptes) — rempli par `useTreasuryOperations`. */
+  debit_accounts?: Array<{ id: string; label: string; amount: number }>;
 };
 
 export type SaleRow = Database['public']['Tables']['usdt_sales']['Row'] & {
-  buyer?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> | null;
+  buyer?: Pick<TreasuryCounterparty, 'id' | 'display_name' | 'phone' | 'wechat_id'> & Partial<Pick<TreasuryCounterparty, 'short_id'>> | null;
   cny_account?: Pick<TreasuryAccount, 'id' | 'code' | 'label' | 'kind'> | null;
 };
 
@@ -506,13 +522,13 @@ export function useTreasuryOperations(fromIso: string, toIso: string) {
       const [purchases, sales] = await Promise.all([
         supabaseAdmin
           .from('usdt_purchases')
-          .select('*, supplier:treasury_counterparties!supplier_id(id,display_name,phone,wechat_id), xaf_account:treasury_accounts!xaf_account_id(id,code,label)')
+          .select('*, supplier:treasury_counterparties!supplier_id(id,short_id,display_name,phone,wechat_id), xaf_account:treasury_accounts!xaf_account_id(id,code,label)')
           .gte('occurred_at', fromIso)
           .lte('occurred_at', toIso)
           .order('occurred_at', { ascending: false }),
         supabaseAdmin
           .from('usdt_sales')
-          .select('*, buyer:treasury_counterparties!buyer_id(id,display_name,phone,wechat_id), cny_account:treasury_accounts!cny_account_id(id,code,label,kind)')
+          .select('*, buyer:treasury_counterparties!buyer_id(id,short_id,display_name,phone,wechat_id), cny_account:treasury_accounts!cny_account_id(id,code,label,kind)')
           .gte('occurred_at', fromIso)
           .lte('occurred_at', toIso)
           .order('occurred_at', { ascending: false }),
@@ -520,8 +536,36 @@ export function useTreasuryOperations(fromIso: string, toIso: string) {
       if (purchases.error) throw purchases.error;
       if (sales.error) throw sales.error;
 
+      // Les comptes réellement débités, lus au grand livre : un achat réparti
+      // n'a pas de `xaf_account_id`, et la liste disait « — ».
+      const purchaseIds = (purchases.data ?? []).map((p) => p.id);
+      const debits = new Map<string, Array<{ id: string; label: string; amount: number }>>();
+      const batches: string[][] = [];
+      for (let i = 0; i < purchaseIds.length; i += 150) batches.push(purchaseIds.slice(i, i + 150));
+      // Les lots partent en parallèle : une longue période ne s'additionne
+      // plus en allers-retours successifs.
+      const results = await Promise.all(
+        batches.map((ids) =>
+          supabaseAdmin
+            .from('treasury_ledger_entries')
+            .select('source_id, amount, account:treasury_accounts!account_id(id,label)')
+            .eq('source_table', 'usdt_purchase')
+            .eq('entry_kind', 'usdt_purchase_debit_xaf')
+            .in('source_id', ids),
+        ),
+      );
+      for (const { data: rows, error: e } of results) {
+        if (e) throw e;
+        for (const r of (rows ?? []) as Array<{ source_id: string; amount: number; account: { id: string; label: string } | null }>) {
+          if (!r.account) continue;
+          const list = debits.get(r.source_id) ?? [];
+          list.push({ id: r.account.id, label: r.account.label, amount: Math.abs(Number(r.amount)) });
+          debits.set(r.source_id, list);
+        }
+      }
+
       const merged: OperationRow[] = [
-        ...((purchases.data ?? []) as PurchaseRow[]).map((p) => ({ ...p, kind: 'purchase' as const })),
+        ...((purchases.data ?? []) as PurchaseRow[]).map((p) => ({ ...p, debit_accounts: debits.get(p.id) ?? [], kind: 'purchase' as const })),
         ...((sales.data ?? []) as SaleRow[]).map((s) => ({ ...s, kind: 'sale' as const })),
       ];
       merged.sort((a, b) => (b.occurred_at ?? '').localeCompare(a.occurred_at ?? ''));
@@ -760,5 +804,26 @@ export function useTreasuryLedger(params?: {
       return (data ?? []) as unknown as LedgerEntry[];
     },
     staleTime: 30_000,
+  });
+}
+
+// ─── Écritures d'une opération (détail) ─────────────────────
+//
+// Toutes les lignes du grand livre rattachées à une opération : les débits
+// et crédits d'origine, et leurs contre-passations si elle a été annulée.
+export function useOperationEntries(sourceId: string | undefined) {
+  return useQuery({
+    queryKey: ['treasury', 'operation-entries', sourceId],
+    queryFn: async (): Promise<LedgerEntry[]> => {
+      const { data, error } = await supabaseAdmin
+        .from('treasury_ledger_entries')
+        .select('id, account_id, currency, amount, occurred_at, entry_kind, source_table, source_id, created_at, account:treasury_accounts!treasury_ledger_entries_account_id_fkey(id, label, currency)')
+        .eq('source_id', sourceId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as LedgerEntry[];
+    },
+    enabled: !!sourceId,
+    staleTime: 15_000,
   });
 }

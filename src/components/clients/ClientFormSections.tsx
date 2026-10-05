@@ -1,6 +1,6 @@
 // ============================================================
-// Les trois sections du formulaire « Nouveau client » — Identité · Contact ·
-// Localisation — et le récapitulatif. Partagées par l'écran admin
+// Les sections du formulaire « Nouveau client » — Identité · Contact ·
+// Localisation · Origine — et le récapitulatif. Partagées par l'écran admin
 // (MobileCreateClient) et par la réception des colis (ReceptionNewClient) :
 // mêmes drapeaux, mêmes numéros multiples, même validation. La logique vit
 // dans `useCreateClientForm` ; ici, seulement le rendu.
@@ -15,6 +15,8 @@ import { CountryCombobox } from '@/components/form/CountryCombobox';
 import { CountryFlag } from '@/components/form/CountryFlag';
 import { countryName, toCountryLang } from '@/data/countries';
 import { MAX_PHONES, type useCreateClientForm } from '@/components/clients/useCreateClientForm';
+import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
+import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
 
 export function ClientFormSections({ form }: { form: ReturnType<typeof useCreateClientForm> }) {
   const { t, i18n } = useTranslation('common');
@@ -88,6 +90,14 @@ export function ClientFormSections({ form }: { form: ReturnType<typeof useCreate
         </FormField>
         <FormField label={<>{t('city')}{optional}</>} htmlFor="cc-city">
           <TextInput id="cc-city" placeholder="Douala" value={form.fields.city} onChange={(e) => form.setField('city', e.target.value)} autoComplete="address-level2" autoCapitalize="words" />
+        </FormField>
+      </Section>
+
+      {/* Origine — qui l'a amené (commercial, recommandation, réseau social…) */}
+      <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
+        <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
+          <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} />
+          <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
         </FormField>
       </Section>
 

@@ -18,6 +18,7 @@ publiée par **BONZINILABS LTD**. Code : dossier `hq-app/` (Expo SDK 57).
 | Agent cash | `cash_agent` | Agent cash (`/a`) | Remettre les paiements en espèces |
 | Tina (entrepôt de Guangzhou) | `receptionist` | Réception (`/r`) | Scanner, enregistrer colis et clients |
 | Agent Douala | `warehouse_agent` | Entrepôt (`/w`) | Arrivées, encaissement, remise |
+| Commercial | `commercial` | Espace commercial (`/v`) | Ses prospects, ses clients, ses chiffres et objectifs du mois |
 
 La personne tape son email, puis choisit **« Recevoir un code par email »**
 ou **« Mot de passe »**. L'app lit son rôle et l'envoie dans **son** espace.
@@ -245,7 +246,7 @@ Un lien ouvre directement une page de l'app (après connexion si besoin),
 par exemple dans un message WhatsApp à l'équipe :
 
 - `bonzinihq://open?path=/m/deposits/<id>` — ou `bonzinihq:///m/payments/<id>`
-- seules les pages du personnel (`/m`, `/a`, `/r`, `/w`) sont acceptées ; le
+- seules les pages du personnel (`/m`, `/a`, `/r`, `/w`, `/v`) sont acceptées ; le
   reste ouvre simplement l'app.
 
 Plus tard, les liens `https://www.bonzinilabs.com/m/…` pourront ouvrir l'app

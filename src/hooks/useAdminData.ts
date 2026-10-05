@@ -7,35 +7,6 @@ import { getProofSignedUrl } from '@/hooks/useAdminDeposits';
 const STALE_TIME = 30 * 1000; // 30 seconds
 const CACHE_TIME = 5 * 60 * 1000; // 5 minutes
 
-// Fetch all user roles (admin users) with profile info
-export function useAdminUsers() {
-  return useQuery({
-    queryKey: ['admin-users'],
-    staleTime: STALE_TIME,
-    gcTime: CACHE_TIME,
-    queryFn: async () => {
-      const { data: roles, error: rolesError } = await supabaseAdmin
-        .from('user_roles')
-        .select('user_id, email, first_name, last_name, role, is_disabled, created_at')
-        .order('created_at', { ascending: false });
-
-      if (rolesError) throw rolesError;
-      if (!roles) return [];
-
-      return roles.map(role => ({
-        id: role.user_id,
-        email: role.email || '',
-        firstName: role.first_name || 'Admin',
-        lastName: role.last_name || '',
-        role: role.role,
-        status: 'ACTIVE' as const,
-        createdAt: role.created_at,
-        lastLoginAt: null,
-      }));
-    },
-  });
-}
-
 // Fetch admin audit logs
 export function useAdminAuditLogs() {
   return useQuery({

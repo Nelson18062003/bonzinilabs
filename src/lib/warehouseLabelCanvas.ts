@@ -281,7 +281,8 @@ export function layoutWarehouseLabel(d: WarehouseLabelData, measure: Measure): O
 
 const ZH_SAMPLE = '入库标签仓库收货后贴在纸箱上箱号货物编号入仓单客户姓名账户编号电话非洲目的地品名重量尺寸立方总包数到货日期收货人位置供货商发件人采购代理联系人邮箱微信地址提货凭客户编号和有效证件提货货款结清后放行海运空运';
 
-async function ensureFonts(sample: string): Promise<void> {
+/** Charge DM Sans et Noto Sans SC (avec les idéogrammes de `sample`) avant de peindre une étiquette ; 4 s au plus. */
+export async function ensureFonts(sample: string): Promise<void> {
   if (typeof document === 'undefined' || !('fonts' in document)) return;
   const specs: Array<[string, string?]> = [
     ['600 16px "DM Sans"'], ['700 16px "DM Sans"'], ['800 16px "DM Sans"'], ['900 16px "DM Sans"'],

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClients } from '@/hooks/useClientManagement';
 import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib/clientSearch';
-import { Search, Plus, User, ArrowUpDown, Check, ScanLine } from 'lucide-react';
+import { ArrowUpDown, Check, Megaphone, Plus, ScanLine, Search, User } from 'lucide-react';
 import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { formatXAF } from '@/lib/formatters';
@@ -73,7 +73,7 @@ export function MobileClientsScreen() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<div className="flex items-center gap-2"><IconButton icon={ScanLine} onClick={() => navigate('/m/clients/scan')} ariaLabel={t('scanCustomerCode', { defaultValue: 'Scanner un identifiant client' })} /><IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} /></div>} />
+      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<div className="flex items-center gap-2"><IconButton icon={Megaphone} onClick={() => navigate('/m/clients/sources')} ariaLabel="Sources & commerciaux" /><IconButton icon={ScanLine} onClick={() => navigate('/m/clients/scan')} ariaLabel={t('scanCustomerCode', { defaultValue: 'Scanner un identifiant client' })} /><IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} /></div>} />
 
       <PullToRefresh
         onRefresh={refetch}

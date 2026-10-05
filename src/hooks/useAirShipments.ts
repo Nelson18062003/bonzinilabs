@@ -59,7 +59,8 @@ export function useAirShipment(id: string | null | undefined) {
   });
 }
 
-function useAirMutation<TArgs>(name: string, args: (a: TArgs) => Record<string, unknown>, success?: string) {
+/** `inlineError` : l'écran affiche lui-même le refus (sous le bouton) — pas de toast en double. */
+function useAirMutation<TArgs>(name: string, args: (a: TArgs) => Record<string, unknown>, success?: string, inlineError = false) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (a: TArgs) => rpcJson<{ shipment: AirShipment }>(name, args(a)).then((r) => r.shipment),
@@ -67,15 +68,17 @@ function useAirMutation<TArgs>(name: string, args: (a: TArgs) => Record<string, 
       qc.setQueryData(AIR_KEYS.one(s.id), s);
       qc.invalidateQueries({ queryKey: AIR_KEYS.list });
       qc.invalidateQueries({ queryKey: ['reception'] });
+      // Les paquets suivent l'expédition (partis, reçus) : /r/paquets et Douala se rafraîchissent.
+      qc.invalidateQueries({ queryKey: ['air-packages'] });
       if (success) toast.success(success);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (!inlineError) toast.error(e.message); },
   });
 }
 
 export const useCreateAirShipment = () => useAirMutation<AirShipmentInput>('cargo_air_create', toArgs, 'Expédition ouverte');
 export const useUpdateAirShipment = () => useAirMutation<{ id: string } & AirShipmentInput>('cargo_air_update', (a) => ({ p_air_id: a.id, ...toArgs(a) }), 'Fiche enregistrée');
-export const useSetAirStatus = () => useAirMutation<{ id: string; status: AirStatus; at?: string | null }>('cargo_air_set_status', (a) => ({ p_air_id: a.id, p_status: a.status, p_at: a.at ?? null }));
+export const useSetAirStatus = () => useAirMutation<{ id: string; status: AirStatus; at?: string | null }>('cargo_air_set_status', (a) => ({ p_air_id: a.id, p_status: a.status, p_at: a.at ?? null }), undefined, true);
 
 /** Ce qu'on peut mettre dans cet avion : les colis reçus, ni en boîte ni en vol. */
 export function useAirLoadableParcels(id: string | null | undefined) {

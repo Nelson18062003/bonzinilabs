@@ -114,7 +114,7 @@ export function DepositEditDialog({ deposit, open, onClose }: { deposit: Deposit
               </button>
             ))}
           </div>
-          {locationLocked && <p className={cn('mt-1.5 text-[12px]', TEXT.muted)}>{departed ? 'Des colis sont déjà partis' : 'Le devis est réglé'} : le lieu ne change plus.</p>}
+          {locationLocked && <p className={cn('mt-1.5 text-[12px]', TEXT.muted)}>{departed ? 'Des colis sont déjà emballés dans un paquet avion ou partis' : 'Le devis est réglé'} : le lieu ne change plus.</p>}
         </div>
 
         <div>

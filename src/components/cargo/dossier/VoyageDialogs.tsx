@@ -1,9 +1,11 @@
 /**
- * Les trois corrections du suivi que l'équipe fait à la main quand les flux
- * se taisent ou se trompent :
+ * Les corrections du suivi que l'équipe fait à la main quand les flux se
+ * taisent ou se trompent :
  *   · la POSITION du navire (aucune source AIS n'est branchée) ;
  *   · l'ARRIVÉE relevée (Atlas, consignataire) quand celle de l'armateur
  *     retarde sur le terrain ;
+ *   · le conteneur ARRIVÉ (statut) quand l'armateur ne le dit pas — sans quoi
+ *     Douala ne peut pas pointer ses colis — et son annulation ;
  *   · les ESCALES du voyage (la rotation change d'un voyage à l'autre).
  * Chaque saisie garde sa SOURCE : on doit toujours savoir d'où vient un chiffre.
  */
@@ -11,9 +13,9 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, ExternalLink, MapPin, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateField, TextArea, TextField } from '@/components/form';
-import { useSetVesselPosition, useUpdateCargoShipment } from '@/hooks/useCargo';
+import { useMarkShipmentArrived, useSetVesselPosition, useUnmarkShipmentArrived, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { FieldLabel, IconButton, ToolButton } from '@/components/cargo/dossier/kit';
-import { PORTS, liveVesselUrl } from '@/lib/cargo/model';
+import { PORTS, arrivalPort, liveVesselUrl } from '@/lib/cargo/model';
 import type { CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
 import { newCallId, voyageCalls, type RouteCall } from '@/lib/cargo/voyage';
 import type { Json } from '@/integrations/supabase/types';
@@ -135,6 +137,73 @@ export function EtaDialog({ shipment: s, onClose }: { shipment: CargoShipment; o
         <div>
           <FieldLabel htmlFor="eta-note">Source et précision</FieldLabel>
           <TextArea id="eta-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Au mouillage devant Kribi (Flexport Atlas, 03/10). Escale prévue du 03 au 04/10…" />
+        </div>
+      </div>
+    </CenterDialog>
+  );
+}
+
+/* ── Conteneur arrivé ────────────────────────────────────────────────────── */
+
+/**
+ * Marquer le conteneur arrivé quand l'armateur ne le dit pas : ses colis
+ * deviennent pointables à Douala et leurs clients sont prévenus (message non
+ * rappelable). La date va du départ du navire à maintenant ; la source reste
+ * écrite à côté de l'arrivée relevée.
+ */
+export function MarkArrivedDialog({ shipment: s, onClose }: { shipment: CargoShipment; onClose: () => void }) {
+  const mark = useMarkShipmentArrived();
+  const [when, setWhen] = useState(() => toLocalInput(new Date()));
+  const [note, setNote] = useState('');
+  const port = arrivalPort(s);
+  const departed = s.etd_actual ? new Date(s.etd_actual) : s.etd_promised ? new Date(`${s.etd_promised}T00:00:00`) : null;
+  const at = when ? new Date(when) : null;
+  const valid = !!at && !Number.isNaN(at.getTime()) && at.getTime() <= Date.now() && (!departed || at >= departed);
+  const save = () => {
+    if (!valid || !at || mark.isPending) return;
+    mark.mutate({ shipmentId: s.id, arrivedAt: at.toISOString(), note: note.trim() || null }, { onSuccess: onClose });
+  };
+  return (
+    <CenterDialog open onClose={onClose} onConfirm={save} width={540} title={`Marquer ${s.container_number} arrivé`} footer={<Footer onClose={onClose} onSave={save} saving={mark.isPending} disabled={!valid} label="Marquer arrivé" />}>
+      <div className="space-y-4">
+        <p className={cn('text-[13px] max-lg:text-[15px] leading-relaxed', TEXT.body)}>
+          À faire quand le conteneur est <b>déchargé au port de {port}</b> et que l'armateur ne l'a pas signalé. Ses colis deviennent pointables à Douala, et chaque client concerné est prévenu que ses colis sont arrivés au port de {port}. Ce message ne se rappelle pas.
+        </p>
+        <div>
+          <FieldLabel htmlFor="arr-when" hint={departed ? `après le départ du ${format(departed, 'dd/MM')}` : undefined}>Arrivé le</FieldLabel>
+          <input id="arr-when" type="datetime-local" value={when} min={departed ? toLocalInput(departed) : undefined} max={toLocalInput(new Date())} onChange={(e) => setWhen(e.target.value)} className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] max-lg:h-11 max-lg:text-[16px]" />
+        </div>
+        <div>
+          <FieldLabel htmlFor="arr-note" hint="facultatif">Source</FieldLabel>
+          <TextArea id="arr-note" rows={2} maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Avis d'arrivée du consignataire, Flexport Atlas, appel du transitaire…" />
+        </div>
+      </div>
+    </CenterDialog>
+  );
+}
+
+/**
+ * Annuler une arrivée posée par erreur par l'équipe : le statut, l'arrivée
+ * relevée et le dernier mouvement d'avant reviennent. Le serveur refuse si
+ * l'armateur a confirmé l'arrivée ou si un colis est déjà traité à Douala.
+ */
+export function UnmarkArrivedDialog({ shipment: s, onClose }: { shipment: CargoShipment; onClose: () => void }) {
+  const unmark = useUnmarkShipmentArrived();
+  const [reason, setReason] = useState('');
+  const valid = reason.trim().length >= 5;
+  const save = () => { if (valid && !unmark.isPending) unmark.mutate({ shipmentId: s.id, reason: reason.trim() }, { onSuccess: onClose }); };
+  return (
+    <CenterDialog open onClose={onClose} onConfirm={save} width={540} title={`Annuler l'arrivée de ${s.container_number}`} footer={<Footer onClose={onClose} onSave={save} saving={unmark.isPending} disabled={!valid} label="Annuler l'arrivée" />}>
+      <div className="space-y-4">
+        <p className={cn('text-[13px] max-lg:text-[15px] leading-relaxed', TEXT.body)}>
+          Le conteneur revient à son statut d'avant le marquage, avec l'arrivée relevée d'avant, et ses colis ne sont plus pointables. Aucun nouveau message ne part — mais les clients déjà prévenus de l'arrivée ne sont pas rectifiés : appelez-les.
+        </p>
+        <p className={cn('text-[12.5px] max-lg:text-[14px] leading-relaxed', TEXT.muted)}>
+          Impossible si l'armateur a confirmé l'arrivée, ou si un colis est déjà pointé, remis ou déclaré manquant à Douala.
+        </p>
+        <div>
+          <FieldLabel htmlFor="unarr-reason">Pourquoi</FieldLabel>
+          <TextArea id="unarr-reason" rows={2} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Marqué sur le mauvais conteneur, navire encore au mouillage…" />
         </div>
       </div>
     </CenterDialog>

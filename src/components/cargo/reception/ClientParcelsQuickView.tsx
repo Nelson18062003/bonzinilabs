@@ -6,7 +6,7 @@
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useClientDeposits } from '@/hooks/useReception';
-import { clientFullName, depositStage, formatCbm, formatKg, initials } from '@/lib/reception';
+import { clientFullName, depositStage, formatCbm, formatKg, initials, waitingWhere } from '@/lib/reception';
 import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { Band, Empty, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
@@ -20,6 +20,8 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
   const name = client ? clientFullName(client) : 'Client';
   const parcels = deposits?.flatMap((d) => d.parcels) ?? [];
   const waiting = parcels.filter((p) => !p.shipment_id && !p.air_shipment_id);
+  // Où ils attendent : au bureau (avion), à l'entrepôt (bateau), ou les deux.
+  const waitingAt = waitingWhere((deposits ?? []).filter((d) => d.parcels.some((p) => !p.shipment_id && !p.air_shipment_id)).map((d) => d.location));
   const kg = parcels.reduce((s, p) => s + Number(p.weight_kg ?? 0), 0);
   const cbm = parcels.reduce((s, p) => s + Number(p.cbm ?? 0), 0);
 
@@ -50,7 +52,7 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
         <>
           <Band first>
             <Facts cols={3}>
-              <Fact label="Colis reçus" value={String(parcels.length)} hint={waiting.length > 0 ? `${waiting.length} à l'entrepôt, pas encore chargés` : 'tout est parti ou remis'} />
+              <Fact label="Colis reçus" value={String(parcels.length)} hint={waiting.length > 0 ? `${waiting.length} ${waitingAt}, pas encore chargés` : 'tout est parti ou remis'} />
               <Fact label="Poids" value={formatKg(kg)} />
               <Fact label="Volume" value={formatCbm(cbm)} />
             </Facts>
@@ -74,7 +76,7 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
                   </thead>
                   <tbody>
                     {deposits.map((d) => {
-                      const st = depositStage(d.parcels);
+                      const st = depositStage(d.parcels, d.location);
                       const q = quoteStatusMeta(d.quote_status);
                       return (
                         <tr key={d.id} onClick={() => onOpenDeposit(d.id)} className="cursor-pointer transition-colors hover:bg-muted/40">

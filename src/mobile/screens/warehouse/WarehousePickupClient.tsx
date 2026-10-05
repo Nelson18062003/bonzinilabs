@@ -5,13 +5,13 @@
 // devis n'est pas soldé, « Encaisser d'abord », qui mène à l'écran de caisse.
 // Rien ne sort sans être payé : la base le garantit, l'écran l'explique.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Banknote, FileSignature, PackageCheck } from 'lucide-react';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { UnknownCodeError, useClientAtWarehouse } from '@/hooks/useWarehouse';
-import { nParcels, quoteWord, releaseBlockers, releaseWord, warehouseStage } from '@/lib/warehouse';
+import { depositQuoteWord, groupParcelsByDeposit, nParcels, quoteWord, releaseBlockers, releaseWord, warehouseStage } from '@/lib/warehouse';
 import { formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Fold, Line, PrimaryPill, ScreenError, ScreenLoader, StatusPill } from '@/mobile/designKit';
@@ -63,12 +63,24 @@ export function WarehousePickupClient() {
         <WhStep step={2} total={3} title={ready.length > 0 ? 'Quels colis emporte-t-il ?' : 'Rien à remettre'} help={ready.length > 0 ? 'Tout est coché. Décochez ce qui reste à l\'entrepôt.' : 'Aucun colis pointé pour ce client. Ce qui est en route apparaît ci-dessous.'} />
         <Card><ClientHead client={client} sub={`${client.customer_code}${client.phone ? ` · ${client.phone}` : ''}${data.releases.length > 0 ? ` · ${data.releases.length} retrait${data.releases.length > 1 ? 's' : ''} déjà fait${data.releases.length > 1 ? 's' : ''}` : ''}`} /></Card>
 
+        {/* Dépôt par dépôt : le reste dû du devis s'écrit UNE fois, en tête ; chaque colis dit seulement « Non payé ». */}
         {ready.length > 0 && (
           <Card className="py-0">
-            {ready.map((p) => {
-              const on = !!picked?.has(p.id);
-              const qw = quoteWord(p);
-              return <ParcelLine key={p.id} parcel={p} onTap={() => toggle(p.id)} lead={<TickBox on={on} />} badge={<StatusPill tone={qw.ok ? 'success' : 'pending'} label={qw.text} />} withTransport onPhoto={() => viewer.open(ready.indexOf(p))} />;
+            {groupParcelsByDeposit(ready).map((g) => {
+              const dw = depositQuoteWord(g.parcels[0]);
+              return (
+                <Fragment key={g.deposit_id}>
+                  <div className={cn('flex items-center justify-between gap-3 border-b py-3', SURFACE.divider)}>
+                    <span className={cn('tabular-nums', TYPE.smallStrong, TEXT.muted)}>Dépôt {g.deposit_no}</span>
+                    <StatusPill tone={dw.ok ? 'success' : 'pending'} label={dw.text} />
+                  </div>
+                  {g.parcels.map((p) => {
+                    const on = !!picked?.has(p.id);
+                    const qw = quoteWord(p);
+                    return <ParcelLine key={p.id} parcel={p} onTap={() => toggle(p.id)} lead={<TickBox on={on} />} badge={<StatusPill tone={qw.ok ? 'success' : 'pending'} label={qw.text} />} withTransport onPhoto={() => viewer.open(ready.indexOf(p))} />;
+                  })}
+                </Fragment>
+              );
             })}
           </Card>
         )}

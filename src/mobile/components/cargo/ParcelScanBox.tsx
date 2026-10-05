@@ -52,6 +52,24 @@ const OUTCOME_STYLE: Record<ScanOutcome, string> = {
 
 export interface ScanResult { outcome: ScanOutcome; text: string }
 
+/** Les textes de la boîte : l'écran qui l'emploie les traduit ; à défaut, le français. */
+export interface ScanBoxTexts {
+  /** La ligne d'aide, tant que rien n'a été lu. */
+  hint: string;
+  openCamera: string;
+  closeCamera: string;
+  cameraStarting: string;
+  cameraError: string;
+}
+
+const DEFAULT_TEXTS: ScanBoxTexts = {
+  hint: 'Douchette Bluetooth ou caméra : chaque carton lu répond par un bip. Aigu = pointé, grave = inconnu.',
+  openCamera: 'Ouvrir la caméra',
+  closeCamera: 'Fermer la caméra',
+  cameraStarting: 'Caméra…',
+  cameraError: "La caméra ne s'ouvre pas. Utilisez la douchette ou tapez le numéro.",
+};
+
 interface Props {
   /** Reçoit le texte lu (douchette ou caméra) et dit ce qu'il en est advenu. */
   onScan: (text: string) => ScanResult | Promise<ScanResult>;
@@ -59,9 +77,17 @@ interface Props {
   /** Un compteur à droite, ex. « 12 / 40 ». */
   counter?: string;
   className?: string;
+  texts?: Partial<ScanBoxTexts>;
+  /**
+   * Garder le focus sur le champ pour la douchette (par défaut). `false` : le
+   * champ ne reprend pas le focus tout seul — pour un écran où le scan n'est
+   * pas le geste principal (le clavier du téléphone ne surgit pas).
+   */
+  keepFocus?: boolean;
 }
 
-export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', counter, className }: Props) {
+export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', counter, className, texts, keepFocus = true }: Props) {
+  const tx = { ...DEFAULT_TEXTS, ...texts };
   const scannerId = `parcel-scan-${useId().replace(/:/g, '')}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState('');
@@ -85,7 +111,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
     } finally {
       busyRef.current = false;
       setValue('');
-      inputRef.current?.focus({ preventScroll: true });
+      if (keepFocus) inputRef.current?.focus({ preventScroll: true });
     }
   };
 
@@ -95,7 +121,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
   // écrit ailleurs (un autre champ, la fiche d'un colis).
   useEffect(() => {
     const el = inputRef.current;
-    if (!el) return;
+    if (!el || !keepFocus) return;
     const refocus = () => {
       const active = document.activeElement;
       const typingElsewhere = active && active !== el && active !== document.body && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable);
@@ -104,7 +130,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
     refocus();
     const t = window.setInterval(refocus, 1500);
     return () => window.clearInterval(t);
-  }, []);
+  }, [keepFocus]);
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -131,7 +157,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
           type="button"
           onClick={() => setCamera((c) => !c)}
           aria-pressed={camera}
-          aria-label={camera ? 'Fermer la caméra' : 'Ouvrir la caméra'}
+          aria-label={camera ? tx.closeCamera : tx.openCamera}
           className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border', camera ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : cn(SURFACE.card, SURFACE.divider, TEXT.strong))}
         >
           {camera ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
@@ -141,8 +167,8 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
       {camera && (
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
           <div id={scannerId} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
-          {cam.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">Caméra…</div>}
-          {cam.error && <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-[16px] font-medium leading-relaxed text-white/90">La caméra ne s'ouvre pas. Utilisez la douchette ou tapez le numéro.</div>}
+          {cam.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{tx.cameraStarting}</div>}
+          {cam.error && <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-[16px] font-medium leading-relaxed text-white/90">{tx.cameraError}</div>}
         </div>
       )}
 
@@ -150,7 +176,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
         <p className={cn('rounded-lg px-4 py-2.5', TYPE.bodyStrong, OUTCOME_STYLE[last.outcome])} role="status" aria-live="polite">{last.text}</p>
       )}
 
-      {!last && <p className={cn(TYPE.small, TEXT.muted)}>Douchette Bluetooth ou caméra : chaque carton lu répond par un bip. Aigu = pointé, grave = inconnu.</p>}
+      {!last && <p className={cn(TYPE.small, TEXT.muted)}>{tx.hint}</p>}
     </div>
   );
 }

@@ -9,10 +9,14 @@ import { Check, Home, PackageCheck, PackageX } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useFlagMissingMany, useWarehouseArrival } from '@/hooks/useWarehouse';
-import { checkinSummary, isPending, nParcels } from '@/lib/warehouse';
+import { checkinSummary, isPending, nParcels, packagesProgress, type WarehouseParcel } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, BottomSheet, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatCard } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BottomSheet, Card, Line, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatCard } from '@/mobile/designKit';
 import { ParcelLine, WhQuestion } from '@/mobile/components/warehouse/bits';
+import { PackageChip } from '@/mobile/components/warehouse/packages';
+
+/** Le paquet du colis, s'il a voyagé dans un paquet de 32 kg. */
+const chip = (p: WarehouseParcel) => (p.package_no ? <PackageChip no={p.package_no} /> : undefined);
 
 export function WarehouseCheckinDone() {
   const navigate = useNavigate();
@@ -25,6 +29,7 @@ export function WarehouseCheckinDone() {
   const pending = parcels.filter(isPending);
   const damaged = parcels.filter((p) => p.checked_in_at && p.condition === 'damaged' && !p.delivered_at);
   const missing = parcels.filter((p) => p.condition === 'missing');
+  const packs = packagesProgress(data?.packages ?? []);
   const base = `/w/arrivees/${kind}/${id}`;
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -38,6 +43,11 @@ export function WarehouseCheckinDone() {
           <span className={cn('flex h-20 w-20 items-center justify-center rounded-full text-white', sum.pending === 0 ? 'bg-[#14AE5C]' : 'bg-[#E8B931] text-[#401B01]')}>{sum.pending === 0 ? <Check className="h-10 w-10" strokeWidth={3} /> : <PackageX className="h-10 w-10" />}</span>
           <p className={cn('mt-4', TYPE.heading, TEXT.strong)}>{sum.seen} sur {sum.total} pointés</p>
           <p className={cn('mt-1', TYPE.body, TEXT.muted)}>{sum.pending === 0 ? 'Tout ce qui était attendu a été vu.' : `${nParcels(sum.pending)} n'ont pas été vus.`}</p>
+          {packs.total > 0 && (
+            <Line tone={packs.done ? 'good' : 'bad'} className="mt-2">
+              {packs.done ? `Paquets : les ${packs.total} reçus` : `Paquets reçus ${packs.received} / ${packs.total} · jamais reçus : ${packs.missing.map((k) => k.package_no).join(', ')}`}
+            </Line>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <StatCard label="En bon état" value={sum.ok} tone="success" />
@@ -49,7 +59,7 @@ export function WarehouseCheckinDone() {
         {pending.length > 0 && (
           <section className="space-y-3">
             <WhQuestion title="Les déclarer manquants ?" help="Ils n'étaient pas dans l'arrivée. L'équipe le verra et cherchera avec Guangzhou. Vous pourrez les pointer s'ils arrivent plus tard." />
-            <Card className="py-0">{pending.map((p) => <ParcelLine key={p.id} parcel={p} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
+            <Card className="py-0">{pending.map((p) => <ParcelLine key={p.id} parcel={p} badge={chip(p)} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
             <PrimaryPill onClick={() => setConfirm(true)} className="h-14 w-full text-[17px]"><PackageX /> Déclarer les {pending.length} manquants</PrimaryPill>
             <SoftPill onClick={() => navigate(base)} className="h-12 w-full text-[16px]">Pas encore, je continue à pointer</SoftPill>
           </section>
@@ -58,13 +68,13 @@ export function WarehouseCheckinDone() {
         {damaged.length > 0 && (
           <section>
             <h2 className={cn('mb-2', TYPE.lead, TEXT.strong)}>Abîmés</h2>
-            <Card className="py-0">{damaged.map((p) => <ParcelLine key={p.id} parcel={p} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
+            <Card className="py-0">{damaged.map((p) => <ParcelLine key={p.id} parcel={p} badge={chip(p)} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
           </section>
         )}
         {missing.length > 0 && (
           <section>
             <h2 className={cn('mb-2', TYPE.lead, TEXT.strong)}>Manquants</h2>
-            <Card className="py-0">{missing.map((p) => <ParcelLine key={p.id} parcel={p} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
+            <Card className="py-0">{missing.map((p) => <ParcelLine key={p.id} parcel={p} badge={chip(p)} onTap={() => navigate(`${base}/colis/${p.id}`)} />)}</Card>
           </section>
         )}
 
