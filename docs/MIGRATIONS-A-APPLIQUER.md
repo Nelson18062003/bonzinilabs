@@ -15,6 +15,17 @@
 
 ## En attente
 
+> **Les trois migrations du 05/10 se collent en UN fichier : `migrations/20261005_consolidated.sql`.** Il contient,
+> dans l'ordre obligatoire, la partie A (`20261005150000`, remise / vols / arrivée), la partie B (`20261005160000`,
+> Mes équipes + commerciaux) et la partie C (`20261005170000`, paquets avion). Chaque partie vérifie d'abord ses
+> prérequis et s'arrête net, sans rien modifier, s'il en manque un. Le fichier est rejouable, et il est vérifié passé
+> deux fois d'affilée dans une seule transaction. Ensuite, dans cet ordre :
+> 1. `npx supabase migration repair --status applied 20261005150000 20261005160000 20261005170000`
+> 2. `/gen-types`
+> 3. `npx supabase functions deploy admin-assistant`, **avant de créer le premier commercial** (lire la partie B).
+> 4. App BONZINI HQ : `cd hq-app && npm run update:production`.
+
+
 ### `20261005150000_cargo_unblock_release_air_arrival.sql`
 **PR :** Cargo › débloquer la remise à Douala, les vols, et marquer un conteneur arrivé (+ correctif sécurité Mola)
 **Contenu :**
@@ -46,7 +57,7 @@
   transaction, 61 contrôles (droits, refus, restauration, usurpation de session bloquée) ; contrôle des prérequis
   éprouvé.
 
-**Comment pousser :** coller `migrations/20261005_consolidated_remise-vols-arrivee.sql` dans l'éditeur SQL (contrôle des
+**Comment pousser :** partie A de `migrations/20261005_consolidated.sql`, à coller dans l'éditeur SQL (contrôle des
 prérequis en tête, rejouable), puis `npx supabase migration repair --status applied 20261005150000`, puis `/gen-types`
 (les deux nouvelles RPC ; l'app les appelle déjà). Rien à redéployer côté fonctions serveur.
 
@@ -74,7 +85,7 @@ prérequis en tête, rejouable), puis `npx supabase migration repair --status ap
   contrôle des prérequis éprouvé.
 
 **Comment pousser :**
-1. coller `migrations/20261005_consolidated_equipes-commerciaux.sql` dans l'éditeur SQL (contrôle des prérequis en
+1. partie B de `migrations/20261005_consolidated.sql`, à coller dans l'éditeur SQL (contrôle des prérequis en
    tête, rejouable) ;
 2. `npx supabase migration repair --status applied 20261005160000` ;
 3. `/gen-types` (les types des deux tables et de l'énumération sont déjà ajoutés à la main ; l'app appelle les RPC sans
@@ -110,7 +121,7 @@ prérequis en tête, rejouable), puis `npx supabase migration repair --status ap
   contrôles du lot remise / vols repassés avec ce lot ; contrôle des prérequis éprouvé (refuse de passer sans la
   migration remise / vols).
 
-**Comment pousser :** coller `migrations/20261005_consolidated_paquets-avion.sql`, puis
+**Comment pousser :** partie C de `migrations/20261005_consolidated.sql`, puis
 `npx supabase migration repair --status applied 20261005170000`, puis `/gen-types`, puis l'app BONZINI HQ
 (`cd hq-app && npm run update:production` : le scan d'un `PQ-…` ouvre le paquet à Guangzhou, le reçoit à Douala),
 et `npx supabase functions deploy admin-assistant` (Mola connaît les paquets — même redéploiement que le lot précédent).
