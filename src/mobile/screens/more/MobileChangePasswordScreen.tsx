@@ -26,7 +26,16 @@ import { cn } from '@/lib/utils';
 /** Un compte qui signe des paiements mérite mieux que les 6 caractères du client. */
 const MIN_LENGTH = 10;
 
-export function MobileChangePasswordScreen({ desktop = false }: { desktop?: boolean } = {}) {
+/**
+ * `doneTo` : où revenir une fois enregistré (le commercial : « /v »).
+ * `field` : personnel de terrain (commercial) — le mot de passe est SA façon
+ * d'entrer, pas un dernier recours : l'explication le dit.
+ */
+export function MobileChangePasswordScreen({
+  desktop = false,
+  doneTo = '/m/more/settings',
+  field = false,
+}: { desktop?: boolean; doneTo?: string; field?: boolean } = {}) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { changeOwnPassword } = useAdminAuth();
@@ -63,7 +72,7 @@ export function MobileChangePasswordScreen({ desktop = false }: { desktop?: bool
     }
 
     toast.success(t('passwordUpdated', { defaultValue: 'Mot de passe mis à jour' }));
-    navigate('/m/more/settings', { replace: true });
+    navigate(doneTo, { replace: true });
   };
 
   return (
@@ -85,10 +94,15 @@ export function MobileChangePasswordScreen({ desktop = false }: { desktop?: bool
               <Info className="h-[18px] w-[18px]" />
             </div>
             <p className={cn('text-[14px] leading-relaxed', TEXT.muted)}>
-              {t('choosePasswordHint', {
-                defaultValue:
-                  'Choisissez un mot de passe dont vous vous souviendrez. Il ne sert qu’en dernier recours : le code par email et la connexion rapide restent plus simples.',
-              })}
+              {field
+                ? t('choosePasswordHintField', {
+                    defaultValue:
+                      'Choisissez un mot de passe dont vous vous souviendrez : c’est lui qui ouvre votre espace, sur le site comme dans l’app BONZINI HQ.',
+                  })
+                : t('choosePasswordHint', {
+                    defaultValue:
+                      'Choisissez un mot de passe dont vous vous souviendrez. Il ne sert qu’en dernier recours : le code par email et la connexion rapide restent plus simples.',
+                  })}
             </p>
           </div>
         </Card>

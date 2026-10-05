@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AppRole } from '@/contexts/AdminAuthContext';
 import type { StaffSite } from '@/hooks/useTeam';
-import { roleLabel } from '@/lib/team';
+import { accessLogin, accessMessage, roleLabel } from '@/lib/team';
 import { TextField } from '@/components/form';
 import { CountryFlag } from '@/components/form/CountryFlag';
 
@@ -148,9 +148,17 @@ export function Modal({ title, onClose, children, footer }: { title: string; onC
  * Le mot de passe provisoire, une seule fois : à copier ou partager tout de
  * suite (il n'est conservé nulle part en clair).
  */
-export function PasswordReveal({ email, password, name }: { email: string; password: string; name: string }) {
+/**
+ * Le mot de passe provisoire et le message à transmettre. La page de
+ * connexion dépend du RÔLE : le commercial, la réception, l'entrepôt et
+ * l'agent cash ont la leur (email + mot de passe) ; /m/login, sur le site,
+ * n'accepte que le code email — d'où le message d'avant, qui envoyait un
+ * commercial à l'adresse inventée vers une page où il ne pouvait pas entrer.
+ */
+export function PasswordReveal({ email, password, name, role }: { email: string; password: string; name: string; role: AppRole }) {
   const [copied, setCopied] = useState(false);
-  const message = `Bonjour ${name.split(' ')[0] || ''}, voici ton accès Bonzini Labs.\nConnexion : https://www.bonzinilabs.com/m/login (ou l'app BONZINI HQ)\nEmail : ${email}\nMot de passe provisoire : ${password}\nChange-le après ta première connexion.`;
+  const login = accessLogin(role);
+  const message = accessMessage({ name, email, password, role });
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(message);
@@ -178,9 +186,19 @@ export function PasswordReveal({ email, password, name }: { email: string; passw
         <div className="mt-2 text-[13px] text-muted-foreground">
           Email de connexion : <span className="select-all font-medium text-foreground">{email}</span>
         </div>
+        <div className="mt-1 text-[13px] text-muted-foreground">
+          Page de connexion : <span className="select-all break-all font-medium text-foreground">{login.url.replace(/^https:\/\//, '')}</span>
+        </div>
       </div>
+      {!login.password && (
+        <p className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+          Sur le site, cette page envoie un code à l’adresse email : si elle est inventée, la personne se connecte par l’app BONZINI HQ, avec ce mot de passe.
+        </p>
+      )}
       <p className="text-[13px] leading-relaxed text-muted-foreground">
-        Il n’est montré qu’une fois. Transmettez-le en privé ; la personne le change après sa première connexion.
+        {login.canChange
+          ? 'Il n’est montré qu’une fois. Transmettez-le en privé ; la personne le change après sa première connexion.'
+          : 'Il n’est montré qu’une fois. Transmettez-le en privé.'}
       </p>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={copy} className={BTN_PRIMARY}>

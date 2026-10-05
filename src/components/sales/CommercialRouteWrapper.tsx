@@ -4,7 +4,9 @@
 // App.tsx), le droit vérifié ici, une barre à trois onglets.
 //
 // Seul canProspect entre (le commercial). Tout autre membre du personnel
-// est renvoyé vers SON espace ; sans session, vers la connexion unique.
+// est renvoyé vers SON espace ; sans session, vers « /v/login » (email +
+// mot de passe) : son adresse est souvent inventée, et le code par email
+// de /m/login ne lui arriverait pas (06/10).
 // Le thème `.admin-theme` donne l'encre neutre de l'administration.
 // ============================================================
 import type { ReactNode } from 'react';
@@ -31,7 +33,7 @@ function Protected({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!isAuthenticated) return <Navigate to="/m/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/v/login" replace />;
   // Connecté mais pas commercial : vers SON espace, pas vers une connexion en boucle.
   if (!hasPermission('canProspect')) return <Navigate to={staffHomeFor(currentUser?.role)} replace />;
   return <>{children}</>;
@@ -51,13 +53,17 @@ export function CommercialShell({ children, showTabBar = true }: { children: Rea
   );
 }
 
-export function CommercialRouteWrapper({ children, showTabBar = true }: { children: ReactNode; showTabBar?: boolean }) {
+export function CommercialRouteWrapper({ children, requireAuth = true, showTabBar = true }: { children: ReactNode; requireAuth?: boolean; showTabBar?: boolean }) {
   return (
     <LanguageProvider>
       <ErrorBoundary onError={(error, info) => console.error('[Commercial] Route error:', error.message, error.stack, info.componentStack)}>
-        <Protected>
-          <CommercialShell showTabBar={showTabBar}>{children}</CommercialShell>
-        </Protected>
+        {requireAuth ? (
+          <Protected>
+            <CommercialShell showTabBar={showTabBar}>{children}</CommercialShell>
+          </Protected>
+        ) : (
+          <CommercialShell showTabBar={false}>{children}</CommercialShell>
+        )}
       </ErrorBoundary>
     </LanguageProvider>
   );

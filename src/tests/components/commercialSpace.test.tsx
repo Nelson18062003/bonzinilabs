@@ -5,7 +5,9 @@
  *     requêtes, rien d'autre (la session du personnel est fournie par
  *     App.tsx pour toute l'application — ici, son hook est simulé) ;
  *   · la coquille renvoie un non-commercial vers SON espace, et une
- *     personne non connectée vers la connexion unique ;
+ *     personne non connectée vers SA connexion, « /v/login » (email + mot
+ *     de passe : son adresse est souvent inventée, aucun code ne lui arrive) ;
+ *   · son menu mène à « Changer mon mot de passe », la sortie à « /v/login » ;
  *   · un compte pas encore relié à sa fiche voit un message clair ;
  *   · « À relancer » ne montre que les relances échues ;
  *   · le formulaire envoie un numéro international et une relance à 9 h
@@ -129,10 +131,24 @@ describe('Espace commercial — accès', () => {
     expect(screen.getByTestId('where').textContent).toBe('/r');
   });
 
-  it('sans session : vers la connexion unique « /m/login »', () => {
+  it('sans session : vers SA connexion « /v/login » (email + mot de passe), pas vers le code email de « /m/login »', () => {
     h.auth.isAuthenticated = false;
     mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
-    expect(screen.getByTestId('where').textContent).toBe('/m/login');
+    expect(screen.getByTestId('where').textContent).toBe('/v/login');
+  });
+
+  it('« /v/login » s’affiche sans session (pas de boucle de redirection)', () => {
+    h.auth.isAuthenticated = false;
+    mount(<CommercialRouteWrapper requireAuth={false}><p>écran de connexion</p></CommercialRouteWrapper>, { route: '/v/login', path: '/v/login' });
+    expect(screen.getByText('écran de connexion')).toBeTruthy();
+    expect(screen.queryByTestId('where')).toBeNull();
+  });
+
+  it('le menu du compte mène à « Changer mon mot de passe »', () => {
+    mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
+    fireEvent.click(screen.getByRole('button', { name: 'Mon compte' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Changer mon mot de passe/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/v/password');
   });
 
   it('le commercial entre', () => {

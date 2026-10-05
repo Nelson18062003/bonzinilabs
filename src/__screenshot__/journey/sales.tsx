@@ -13,6 +13,8 @@ import { CommercialHome } from '@/components/sales/CommercialHome';
 import { CommercialProspects } from '@/components/sales/CommercialProspects';
 import { CommercialProspectForm } from '@/components/sales/CommercialProspectForm';
 import { CommercialClients } from '@/components/sales/CommercialClients';
+import { CommercialLogin } from '@/components/sales/CommercialLogin';
+import { MobileChangePasswordScreen } from '@/mobile/screens/more/MobileChangePasswordScreen';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { DesktopCreateClientDialog } from '@/desktop/screens/clients';
 
@@ -58,6 +60,17 @@ const Clients = () => (
     <CommercialClients />
   </V>
 );
+/** « /v/login » : sans session, comme dans App.tsx. */
+const Login = () => (
+  <CommercialRouteWrapper requireAuth={false}>
+    <CommercialLogin />
+  </CommercialRouteWrapper>
+);
+const Password = () => (
+  <V tabs={false}>
+    <MobileChangePasswordScreen doneTo="/v" field />
+  </V>
+);
 const OfficeNewClient = () => (
   <As user={NELSON}>
     <DesktopAppShell>
@@ -67,6 +80,8 @@ const OfficeNewClient = () => (
 );
 
 export const SCREENS: Record<string, JourneyEntry> = {
+  'j.sales.login': { Comp: Login, route: '/v/login' },
+  'j.sales.password': { Comp: Password, route: '/v/password' },
   'j.sales.home': { Comp: Home, route: '/v' },
   'j.sales.prospects': { Comp: Prospects, route: '/v/prospects' },
   'j.sales.prospects-closed': { Comp: Prospects, route: '/v/prospects?filtre=clients' },

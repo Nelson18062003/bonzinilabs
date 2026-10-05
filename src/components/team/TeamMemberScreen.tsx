@@ -491,7 +491,7 @@ function PasswordDialog({ m, onClose }: { m: TeamMember; onClose: () => void }) 
       }
     >
       {password ? (
-        <PasswordReveal email={m.email ?? ''} password={password} name={memberName(m)} />
+        <PasswordReveal email={m.email ?? ''} password={password} name={memberName(m)} role={m.role} />
       ) : (
         <p className="text-[14px] leading-relaxed text-muted-foreground">Son mot de passe actuel cessera de fonctionner. Un mot de passe provisoire s’affichera une seule fois.</p>
       )}

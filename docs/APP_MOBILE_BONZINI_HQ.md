@@ -24,6 +24,14 @@ La personne tape son email, puis choisit **« Recevoir un code par email »**
 ou **« Mot de passe »**. L'app lit son rôle et l'envoie dans **son** espace.
 Personne n'a à choisir « quelle app » ouvrir.
 
+**Sur le site (navigateur)**, chaque espace de terrain a sa page **email +
+mot de passe** : `/a/login`, `/r/login`, `/w/login` et `/v/login`
+(commercial, 06/10). Les adresses de ces comptes sont souvent inventées
+(« prenom@bonzini.com ») : aucun code email ne leur arrive. `/m/login`, sur
+le site, ne propose que le code email, la clé d'accès et Google. Le message
+d'accès de « Mes équipes » donne la bonne page selon le rôle
+(`staffLoginFor`, `src/lib/staffHome.ts`).
+
 ### Ce qui est natif (et ce qui ne l'est pas)
 
 | Natif (code de l'app) | Écrans du site, pilotés par l'app |

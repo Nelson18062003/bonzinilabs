@@ -5,7 +5,7 @@
 // ============================================================
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { ADMIN_ROLE_LABELS, type AppRole } from '@/contexts/AdminAuthContext';
-import { staffHomeFor } from '@/lib/staffHome';
+import { staffHomeFor, staffLoginFor, staffLoginTakesPassword } from '@/lib/staffHome';
 import { normalizeText } from '@/lib/clientSearch';
 import type { StaffPhone, StaffSite, TeamMember } from '@/hooks/useTeam';
 
@@ -176,4 +176,46 @@ export function matchesMember(
     const d = token.replace(/\D/g, '');
     return d.length >= 2 && digits.some((n) => n.includes(d));
   });
+}
+
+// ── L'accès à transmettre (création, nouveau mot de passe) ─────────────────
+
+/** Le site, tel qu'on le donne au personnel. */
+export const STAFF_SITE = 'https://www.bonzinilabs.com';
+
+export interface AccessLogin {
+  /** La page de connexion à donner, complète. */
+  url: string;
+  /** Cette page accepte le mot de passe dans un navigateur (sinon : code email, ou l'app HQ). */
+  password: boolean;
+  /** La personne peut changer son mot de passe elle-même, depuis son espace. */
+  canChange: boolean;
+}
+
+/**
+ * Où et comment le membre se connecte. Les espaces de terrain (/a, /r, /w,
+ * /v) ont leur page email + mot de passe ; les autres passent par /m/login,
+ * qui sur le site envoie un code à l'adresse — inutile si elle est inventée.
+ * Changer son mot de passe : /m/more/password (rôles de /m) et /v/password
+ * (commercial) ; l'agent cash, la réception et l'entrepôt (comptes souvent
+ * partagés) n'ont pas cet écran.
+ */
+export function accessLogin(role: AppRole): AccessLogin {
+  const password = staffLoginTakesPassword(role);
+  return { url: STAFF_SITE + staffLoginFor(role), password, canChange: role === 'commercial' || !password };
+}
+
+/** Le message prêt à envoyer (WhatsApp, SMS) : où, quel email, quel mot de passe. */
+export function accessMessage({ name, email, password, role }: { name: string; email: string; password: string; role: AppRole }): string {
+  const login = accessLogin(role);
+  const where = login.password
+    ? `Connexion : ${login.url} (ou l'app BONZINI HQ)`
+    : `Connexion : l'app BONZINI HQ avec cet email et ce mot de passe, ou ${login.url} (code envoyé à ton email)`;
+  return [
+    `Bonjour ${name.split(' ')[0] || ''}, voici ton accès Bonzini Labs.`,
+    where,
+    `Email : ${email}`,
+    `Mot de passe provisoire : ${password}`,
+    ...(login.canChange ? ['Change-le après ta première connexion.'] : []),
+  ].join('\n');
 }

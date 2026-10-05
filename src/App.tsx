@@ -215,6 +215,7 @@ const CommercialHome = lazy(() => import("./components/sales/CommercialHome").th
 const CommercialProspects = lazy(() => import("./components/sales/CommercialProspects").then(m => ({ default: m.CommercialProspects })));
 const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
 const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
+const CommercialLogin = lazy(() => import("./components/sales/CommercialLogin").then(m => ({ default: m.CommercialLogin })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -468,11 +469,13 @@ const App = () => (
                 <Route path="/w/remise/:code/signature" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseSign /></WarehouseRouteWrapper>} />
                 <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
                 {/* ── Espace commercial (« /v ») : prospects, clients, chiffres du mois ── */}
+                <Route path="/v/login" element={<CommercialRouteWrapper requireAuth={false}><CommercialLogin /></CommercialRouteWrapper>} />
                 <Route path="/v" element={<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects" element={<CommercialRouteWrapper><CommercialProspects /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
+                <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false}><MobileChangePasswordScreen doneTo="/v" field /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

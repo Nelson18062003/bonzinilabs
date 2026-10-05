@@ -171,8 +171,30 @@ const phone = (extra) => ({
 });
 
 export const SCREENS = [
+  // 0. Sa connexion, « /v/login » : son email (souvent inventé) puis son mot de passe — aucun code email.
+  { key: 'j.sales.login', name: '00a-connexion-commercial', ...phone() },
+  {
+    key: 'j.sales.login', name: '00b-connexion-commercial-mot-de-passe',
+    ...phone(async (page) => {
+      await page.fill('#agent-email', 'aristidelandry@bonzini.com');
+      await page.locator('form button[type="submit"]').click();
+      await page.locator('#agent-password').waitFor();
+      await page.fill('#agent-password', '7c4e19ab52f0');
+    }),
+  },
   // 1. Lundi : son mois, ses objectifs, les chiffres de ses clients.
   { key: 'j.sales.home', name: '01-accueil-commercial', ...phone() },
+  // 1 bis. Le menu de son compte : changer son mot de passe, se déconnecter.
+  {
+    key: 'j.sales.home', name: '01b-menu-du-compte', role: 'commercial', fullPage: false,
+    before: async (page) => {
+      await fonts(page);
+      await page.getByRole('button', { name: 'Mon compte' }).click();
+      await page.getByRole('menuitem', { name: /Changer mon mot de passe/ }).waitFor();
+    },
+  },
+  // 1 ter. Changer son mot de passe provisoire.
+  { key: 'j.sales.password', name: '01c-changer-mot-de-passe', ...phone() },
   // 2. Ses prospects ouverts (à contacter, contacté, intéressé), relances échues en tête.
   { key: 'j.sales.prospects', name: '02-prospects', ...phone() },
   // 2 bis. Les puces de statut jusqu'au bout : « Devenus clients » choisi, « Perdus » à côté.

@@ -81,6 +81,7 @@
   "qr_already_scanned_continue": "QR码已扫描——继续？",
   "wh_login": "仓库登录",
   "rc_login": "收货员登录",
+  "cm_login": "销售登录",
   "rc_hello": "你好",
   "rc_warehouse": "仓库 · 海运",
   "rc_office": "办公室 · 空运",

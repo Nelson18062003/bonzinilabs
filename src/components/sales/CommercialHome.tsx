@@ -7,7 +7,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlarmClock, ChevronRight, LogOut, Plane, Ship, UserCheck, UserPlus, Wallet } from 'lucide-react';
+import { AlarmClock, ChevronRight, KeyRound, LogOut, Plane, Ship, UserCheck, UserPlus, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCommercialDashboard } from '@/hooks/useSales';
@@ -205,7 +205,7 @@ function HomeSkeleton() {
   );
 }
 
-/** L'avatar en haut à droite : qui est connecté, et la sortie. */
+/** L'avatar en haut à droite : qui est connecté, son mot de passe, et la sortie. */
 function AccountMenu() {
   const navigate = useNavigate();
   const { currentUser, logout } = useAdminAuth();
@@ -237,7 +237,7 @@ function AccountMenu() {
     try {
       await logout();
     } finally {
-      navigate('/m/login', { replace: true });
+      navigate('/v/login', { replace: true });
     }
   };
 
@@ -254,13 +254,21 @@ function AccountMenu() {
         {initialsOf(name)}
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] z-40 w-64 rounded-2xl bg-popover p-1.5 text-popover-foreground shadow-xl ring-1 ring-black/[0.08] dark:ring-white/10">
+        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] z-40 w-72 rounded-2xl bg-popover p-1.5 text-popover-foreground shadow-xl ring-1 ring-black/[0.08] dark:ring-white/10">
           <div className="px-3 py-2.5">
             <div className="truncate text-[15px] font-semibold">{name}</div>
             {currentUser?.email && <div className="truncate text-[13px] text-muted-foreground">{currentUser.email}</div>}
             <div className="mt-0.5 text-[13px] text-muted-foreground">Commercial</div>
           </div>
           <div className="my-1 h-px bg-border" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => navigate('/v/password')}
+            className="flex h-11 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-[15px] font-semibold transition-colors hover:bg-accent"
+          >
+            <KeyRound className="h-4 w-4" /> Changer mon mot de passe
+          </button>
           <button
             type="button"
             role="menuitem"

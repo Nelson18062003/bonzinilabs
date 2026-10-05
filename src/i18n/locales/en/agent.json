@@ -81,6 +81,7 @@
   "qr_already_scanned_continue": "QR already scanned — continue?",
   "wh_login": "Warehouse sign in",
   "rc_login": "Reception sign in",
+  "cm_login": "Sales sign in",
   "rc_hello": "Hello",
   "rc_warehouse": "Warehouse · Sea cargo",
   "rc_office": "Office · Air cargo",

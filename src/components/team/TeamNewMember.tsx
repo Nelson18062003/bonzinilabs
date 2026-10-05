@@ -91,7 +91,7 @@ function NewMemberFlow() {
               {created.fiche.reused ? ' (fiche reprise) : il garde les clients déjà apportés sous ce nom.' : ', créée à son nom.'}
             </p>
           )}
-          <PasswordReveal email={created.email} password={created.tempPassword} name={created.name} />
+          <PasswordReveal email={created.email} password={created.tempPassword} name={created.name} role={created.role} />
           <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
             <button type="button" onClick={() => navigate(`${TEAM_BASE}/${created.userId}`)} className={BTN_SOFT}>
               Voir sa fiche
