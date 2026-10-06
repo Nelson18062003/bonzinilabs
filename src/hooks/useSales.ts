@@ -9,6 +9,14 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { CommercialCard, CommercialClient, Interest, ObjectiveMetric, ProspectStatus } from '@/lib/sales';
+import type { Gender } from '@/lib/people';
+
+/** Un numéro de plus d'un prospect (le principal reste `phone_e164`). */
+export interface ProspectPhone {
+  phone_e164: string;
+  country_iso: string | null;
+  label: string | null;
+}
 
 export interface Prospect {
   id: string;
@@ -19,6 +27,17 @@ export interface Prospect {
   phone: string;
   phone_e164: string;
   city: string | null;
+  /** MALE / FEMALE ; null pour un prospect saisi avant le 06/10. */
+  gender: Gender | null;
+  /** « AAAA-MM-JJ » ou null. */
+  birth_date: string | null;
+  email: string | null;
+  /** « Ses plus gros problèmes aujourd'hui » — champ libre, le cœur de l'entretien. */
+  pain_points: string | null;
+  /** « Ce que nous pouvons faire pour l'aider » — champ libre. */
+  help_needed: string | null;
+  /** Les autres numéros (table prospect_phones), par `position` ; absent sur une réponse ancienne. */
+  phones?: (ProspectPhone & { position?: number })[];
   interests: Interest[];
   notes: string | null;
   status: ProspectStatus;
@@ -49,26 +68,51 @@ function invalidateSales(qc: QueryClient) {
 
 /* ── Prospects ─────────────────────────────────────────────────────────── */
 
-/** Les prospects lisibles : les siens (commercial), ou ceux d'une fiche (responsable). */
+const WITH_PHONES = '*, phones:prospect_phones(phone_e164, country_iso, label, position)';
+
+/**
+ * Les prospects lisibles : les siens (commercial), ou ceux d'une fiche
+ * (responsable). Avec leurs autres numéros (`prospect_phones`) ; tant que la
+ * migration du 06/10 n'est pas passée, PostgREST ne connaît pas la relation
+ * (PGRST200) : la liste se relit sans eux plutôt que de tomber en erreur.
+ */
 export function useProspects(sourceId?: string | null) {
   return useQuery({
     queryKey: [...SALES_KEY, 'prospects', sourceId ?? 'mine'],
     queryFn: async () => {
-      let q = supabaseAdmin.from('prospects').select('*').order('status_changed_at', { ascending: false });
-      if (sourceId) q = q.eq('source_id', sourceId);
-      const { data, error } = await q;
+      const read = (columns: string) => {
+        let q = supabaseAdmin.from('prospects').select(columns).order('status_changed_at', { ascending: false });
+        if (sourceId) q = q.eq('source_id', sourceId);
+        return q;
+      };
+      let { data, error } = await read(WITH_PHONES);
+      if (error?.code === 'PGRST200') ({ data, error } = await read('*'));
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as Prospect[];
+      // Les autres numéros dans leur ordre de saisie.
+      return ((data ?? []) as unknown as Prospect[]).map((p) => ({
+        ...p,
+        phones: [...(p.phones ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+      }));
     },
   });
 }
 
 export interface ProspectInput {
   firstName: string;
-  lastName?: string;
+  /** Obligatoire au serveur depuis le 06/10, comme `city` et `gender`. */
+  lastName: string;
+  /** Le numéro principal, au format international. */
   phone: string;
+  /** Les AUTRES numéros (sans le principal), au format international. */
+  phones?: ProspectPhone[];
   company?: string;
-  city?: string;
+  city: string;
+  gender: Gender;
+  /** « AAAA-MM-JJ », facultative. */
+  birthDate?: string | null;
+  email?: string;
+  painPoints?: string;
+  helpNeeded?: string;
   notes?: string;
   nextActionAt?: string | null;
   interests?: Interest[];
@@ -76,7 +120,19 @@ export interface ProspectInput {
   sourceId?: string | null;
 }
 
-export function useCreateProspect() {
+/**
+ * Options des mutations de l'assistant. `onCreated` / `onUpdated`
+ * s'exécutent même si l'écran a été quitté pendant l'envoi (rappels de la
+ * mutation, pas de l'appel) : le brouillon s'efface quoi qu'il arrive. `quietErrors` : l'écran
+ * dit lui-même le refus, sous le champ en cause — pas de toast en double.
+ */
+export interface ProspectMutationOptions {
+  onCreated?: (id: string) => void;
+  onUpdated?: () => void;
+  quietErrors?: boolean;
+}
+
+export function useCreateProspect({ onCreated, quietErrors = false }: ProspectMutationOptions = {}) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: ProspectInput) =>
@@ -90,29 +146,49 @@ export function useCreateProspect() {
         p_next_action_at: p.nextActionAt || null,
         p_interests: p.interests ?? [],
         p_source_id: p.sourceId ?? null,
+        p_gender: p.gender,
+        p_birth_date: p.birthDate || null,
+        p_email: p.email?.trim() || null,
+        p_phones: p.phones ?? [],
+        p_pain_points: p.painPoints?.trim() || null,
+        p_help_needed: p.helpNeeded?.trim() || null,
       }),
-    onSuccess: () => {
+    onSuccess: (r) => {
       invalidateSales(qc);
       toast.success('Prospect ajouté');
+      onCreated?.(r.id);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (!quietErrors) toast.error(e.message);
+    },
   });
 }
 
 export interface ProspectPatch {
   id: string;
   firstName?: string;
-  /** '' efface ; absent = inchangé (de même pour les champs facultatifs). */
+  /** Absent = inchangé. Nom et ville sont obligatoires : '' est refusé par le serveur. */
   lastName?: string;
   phone?: string;
+  /** La liste COMPLÈTE des autres numéros (absent = inchangée, [] = aucun). */
+  phones?: ProspectPhone[];
+  /** '' efface ; absent = inchangé (de même pour les champs facultatifs). */
   company?: string;
   city?: string;
+  gender?: Gender;
+  /** « AAAA-MM-JJ » ; null = l'effacer ; absent = inchangée. */
+  birthDate?: string | null;
+  /** '' efface ; absent = inchangée. */
+  email?: string;
+  /** '' efface ; absent = inchangé. */
+  painPoints?: string;
+  helpNeeded?: string;
   notes?: string;
   nextActionAt?: string | null;
   interests?: Interest[];
 }
 
-export function useUpdateProspect() {
+export function useUpdateProspect({ onUpdated, quietErrors = false }: Pick<ProspectMutationOptions, 'onUpdated' | 'quietErrors'> = {}) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: ProspectPatch) =>
@@ -127,12 +203,22 @@ export function useUpdateProspect() {
         p_next_action_at: p.nextActionAt ?? null,
         p_clear_next_action: p.nextActionAt === null,
         p_interests: p.interests ?? null,
+        p_gender: p.gender ?? null,
+        p_birth_date: p.birthDate || null,
+        p_clear_birth_date: p.birthDate === null,
+        p_email: p.email ?? null,
+        p_phones: p.phones ?? null,
+        p_pain_points: p.painPoints ?? null,
+        p_help_needed: p.helpNeeded ?? null,
       }),
     onSuccess: () => {
       invalidateSales(qc);
       toast.success('Prospect enregistré');
+      onUpdated?.();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (!quietErrors) toast.error(e.message);
+    },
   });
 }
 
@@ -203,6 +289,18 @@ export interface ProspectMatch {
   source_id?: string;
   source_label?: string;
   source_active?: boolean;
+  /** Sa fiche, pour pré-remplir le nouveau client (06/10) — absents sur une base pas encore migrée. */
+  first_name?: string;
+  last_name?: string | null;
+  company?: string | null;
+  city?: string | null;
+  email?: string | null;
+  gender?: Gender | null;
+  birth_date?: string | null;
+  /** Son numéro principal (celui tapé peut être un de ses autres numéros). */
+  phone_e164?: string;
+  /** Ses autres numéros. */
+  phones?: ProspectPhone[];
 }
 
 /** Ce numéro est-il le prospect d'un commercial ? (`phone` au format international, sinon rien.) */

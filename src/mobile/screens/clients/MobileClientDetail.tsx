@@ -1,5 +1,8 @@
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
 import { ClientRegistration } from '@/components/clients/ClientRegistration';
+import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
+import { birthTextIssue, identityPatch, isoToBirthText } from '@/components/clients/clientIdentity';
+import { formatBirthDate, genderLabel, isGender, type Gender } from '@/lib/people';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -10,6 +13,7 @@ import {
   useClientLedger,
   useClientLedgerCount,
   useUpdateClient,
+  useSetClientIdentity,
   fetchLedgerEntriesInRange,
   fetchLastLedgerEntryBefore,
 } from '@/hooks/useClientManagement';
@@ -177,12 +181,16 @@ export function MobileClientDetail() {
   const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
   const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
   const updateClientMutation = useUpdateClient();
+  const setIdentity = useSetClientIdentity();
 
   // Edit client drawer state
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
   });
+  // Sexe et date de naissance (« JJ/MM/AAAA ») : `admin_set_client_identity`, seulement s'ils changent.
+  const [editGender, setEditGender] = useState<Gender | null>(null);
+  const [editBirth, setEditBirth] = useState('');
   // `client.id` est le user_id : la clé que lit useClientPhones.
   const { data: clientPhones } = useClientPhones(client?.id);
   const phonesEditor = useClientPhonesEditor();
@@ -199,11 +207,22 @@ export function MobileClientDetail() {
       country: client.country,
       city: client.city,
     });
+    setEditGender(isGender(client.gender) ? client.gender : null);
+    setEditBirth(isoToBirthText(client.dateOfBirth));
     setEditOpen(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!client || updateClientMutation.isPending || setPhones.isPending) return;
+    if (!client || updateClientMutation.isPending || setPhones.isPending || setIdentity.isPending) return;
+    // Avant toute écriture : une date de naissance TOUCHÉE doit être bonne. Celle
+    // déjà en base, même hors de 16 à 110 ans (l'inscription en libre-service
+    // ne la vérifie pas), ne bloque pas la modification du nom ou des numéros :
+    // `identityPatch` ne l'envoie pas tant qu'elle n'a pas changé.
+    if (editBirth !== isoToBirthText(client.dateOfBirth) && birthTextIssue(editBirth) !== null) {
+      toast.error(t('clientIdentity.birthInvalid'));
+      return;
+    }
+    const identity = identityPatch(client, { gender: editGender, birthText: editBirth });
 
     // Un numéro invalide n'est pas seulement mal saisi : le déclencheur de
     // synchronisation met alors phone_e164 à NULL, et le client cesse
@@ -233,12 +252,24 @@ export function MobileClientDetail() {
         companyName: editForm.companyName.trim(),
         country: editForm.country.trim(),
         city: editForm.city.trim(),
+        // Le sexe ou la date change aussi : un seul message, dit plus bas.
+        silent: identity !== null,
       });
-      setEditOpen(false);
-      refetch();
     } catch {
       /* message affiché par le hook */
+      return;
     }
+    if (identity) {
+      try {
+        await setIdentity.mutateAsync({ userId: client.id, ...identity });
+        toast.success(t('clientIdentity.saved'));
+      } catch (e) {
+        // Le reste est enregistré : on le dit, et quoi refaire.
+        toast.error(t('clientIdentity.failed'), { description: `${(e as Error).message} — ${t('clientIdentity.failedHint')}` });
+      }
+    }
+    setEditOpen(false);
+    refetch();
   };
 
   const deleteClientMutation = useAdminDeleteClient();
@@ -404,6 +435,19 @@ export function MobileClientDetail() {
           )}
           <Line>{client.email ? <>Email : <b className={cn('break-all', TEXT.strong)}>{client.email}</b>.</> : "Pas d'adresse email."}</Line>
           {place && <Line>À {place}.</Line>}
+          <Line>
+            {t('clientIdentity.gender')} :{' '}
+            {genderLabel(client.gender) ? <b className={TEXT.strong}>{genderLabel(client.gender)}</b> : <span className={TEXT.faint}>{t('clientIdentity.genderUnset').toLowerCase()}</span>}.
+          </Line>
+          <Line>
+            {t('clientIdentity.birthDate')} :{' '}
+            {formatBirthDate(client.dateOfBirth) ? (
+              <b className={cn('tabular-nums', TEXT.strong)}>{formatBirthDate(client.dateOfBirth)}</b>
+            ) : (
+              <span className={TEXT.faint}>{t('clientIdentity.birthUnset').toLowerCase()}</span>
+            )}
+            .
+          </Line>
           <Line>Client depuis le {since}.</Line>
           {clientId && (
             <Line>
@@ -561,7 +605,7 @@ export function MobileClientDetail() {
               <ActionRow
                 icon={Pencil}
                 label="Modifier ses informations"
-                description="Nom, téléphone, email, entreprise."
+                description="Nom, sexe, naissance, téléphone, email, entreprise."
                 onClick={openEdit}
               />
             )}
@@ -645,12 +689,25 @@ export function MobileClientDetail() {
           {([
             { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const },
             { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const },
+            { label: '', key: 'identity' as const },
             { label: '', key: 'phones' as const },
             { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const },
             { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const },
             { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const },
             { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const },
-          ]).map(({ label, key }) => key === 'phones' ? (
+          ]).map(({ label, key }) => key === 'identity' ? (
+            /* Sexe et date de naissance : enregistrés à part, seulement s'ils changent. */
+            <div key={key} className="space-y-3">
+              <GenderField
+                id="edit-gender"
+                label={t('clientIdentity.gender')}
+                value={editGender}
+                onChange={setEditGender}
+                hint={isGender(client.gender) ? undefined : t('clientIdentity.genderKeptHint')}
+              />
+              <BirthDateField id="edit-birth" label={t('clientIdentity.birthDate')} value={editBirth} onChange={setEditBirth} />
+            </div>
+          ) : key === 'phones' ? (
             /* Plusieurs numéros, comme à la création : le premier est le principal. */
             <ClientPhonesEditor key={key} editor={phonesEditor} />
           ) : (
@@ -674,7 +731,7 @@ export function MobileClientDetail() {
           ))}
         </div>
         <div className="mt-5 flex flex-col gap-2">
-          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending || setPhones.isPending} className="w-full">
+          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending || setPhones.isPending || setIdentity.isPending} className="w-full">
             {t('save', { defaultValue: 'Enregistrer' })}
           </PrimaryPill>
           <SoftPill onClick={() => setEditOpen(false)} className="w-full">

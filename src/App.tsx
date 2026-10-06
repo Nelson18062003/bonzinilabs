@@ -216,6 +216,7 @@ const CommercialProspects = lazy(() => import("./components/sales/CommercialPros
 const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
 const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
 const CommercialLogin = lazy(() => import("./components/sales/CommercialLogin").then(m => ({ default: m.CommercialLogin })));
+const CommercialPassword = lazy(() => import("./components/sales/CommercialPassword").then(m => ({ default: m.CommercialPassword })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -475,7 +476,7 @@ const App = () => (
                 <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
-                <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false}><MobileChangePasswordScreen doneTo="/v" field /></CommercialRouteWrapper>} />
+                <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false} bare><CommercialPassword /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

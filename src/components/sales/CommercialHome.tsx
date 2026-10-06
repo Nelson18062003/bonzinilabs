@@ -13,6 +13,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCommercialDashboard } from '@/hooks/useSales';
 import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, ofMonth, type ObjectiveMetric } from '@/lib/sales';
 import { Figure, LoadError, MonthSwitcher, ObjectiveList, SALES_CARD, UnlinkedNotice } from './SalesBits';
+import { SECTION_TITLE, btn } from './uiClasses';
 import { initialsOf, isUnlinkedError, plural } from './salesHelpers';
 
 /** Dans SON espace, le commercial lit « mes clients », pas « ses clients ». */
@@ -42,16 +43,16 @@ export function CommercialHome() {
 
   return (
     <div>
-      <header className="flex items-start justify-between gap-4 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:px-6">
+      <header className="s-enter flex items-start justify-between gap-4 px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:px-6">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-muted-foreground">Espace commercial</p>
-          <h1 className="mt-0.5 break-words text-[28px] font-bold leading-tight tracking-tight">
+          <p className="text-[13px] font-medium s-ink-3">Espace commercial</p>
+          <h1 className="mt-1 break-words text-[30px] font-semibold leading-[1.1] tracking-[-0.025em] s-ink">
             {greeting()}
             {currentUser?.firstName ? ` ${currentUser.firstName}` : ''}
           </h1>
           {card && (
-            <p className="mt-1 text-[14px] text-muted-foreground">
-              Fiche « {card.source.label} »{archived && <span className="ml-1.5 font-semibold text-amber-700 dark:text-amber-400">· archivée</span>}
+            <p className="mt-1.5 text-[15px] s-ink-2">
+              Fiche « {card.source.label} »{archived && <span className="ml-1.5 font-semibold s-warn">· archivée</span>}
             </p>
           )}
         </div>
@@ -68,12 +69,13 @@ export function CommercialHome() {
                 type="button"
                 onClick={() => navigate('/v/prospects/new')}
                 disabled={archived}
-                className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-primary text-[17px] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                className={btn('ink', 'xl', 's-enter w-full gap-2.5')}
+                style={{ animationDelay: '40ms' }}
               >
                 <UserPlus className="h-5 w-5" /> Nouveau prospect
               </button>
               {archived && (
-                <p className="text-center text-[13px] text-muted-foreground">
+                <p className="text-center text-[13px] s-ink-2">
                   Votre fiche est archivée : l’ajout de prospects est fermé. Parlez-en au responsable.
                 </p>
               )}
@@ -83,18 +85,18 @@ export function CommercialHome() {
               <button
                 type="button"
                 onClick={() => navigate('/v/prospects?filtre=relancer')}
-                className="flex w-full items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3.5 text-left ring-1 ring-amber-200 transition-colors hover:bg-amber-100/70 dark:bg-amber-500/10 dark:ring-amber-400/25 dark:hover:bg-amber-500/15"
+                data-tone="warn"
+                className="s-note s-enter flex w-full items-center gap-3 rounded-[16px] px-4 py-3.5 text-left transition-transform active:scale-[0.99]"
+                style={{ animationDelay: '80ms' }}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
-                  <AlarmClock className="h-5 w-5" />
+                <span className="s-surface flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-[0_0_0_1px_hsl(var(--s-orange)/0.2)]">
+                  <AlarmClock className="h-5 w-5 s-warn" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-semibold text-amber-900 dark:text-amber-200">
-                    {plural(m.prospects_due, 'prospect à relancer', 'prospects à relancer')}
-                  </span>
-                  <span className="block text-[13px] text-amber-800/80 dark:text-amber-300/80">La date de relance est arrivée</span>
+                  <span className="block text-[16px] font-semibold s-ink">{plural(m.prospects_due, 'prospect à relancer', 'prospects à relancer')}</span>
+                  <span className="block text-[13px] s-ink-2">La date de relance est arrivée</span>
                 </span>
-                <ChevronRight className="h-5 w-5 shrink-0 text-amber-800 dark:text-amber-300" />
+                <ChevronRight className="h-5 w-5 shrink-0 s-warn" />
               </button>
             )}
 
@@ -110,11 +112,11 @@ export function CommercialHome() {
               </div>
             ) : (
               <>
-                <section className={cn(SALES_CARD, 'p-5 sm:p-6')}>
-                  <div className="mb-4 flex items-baseline justify-between gap-3">
-                    <h2 className="text-[16px] font-semibold">Objectifs {isCurrent ? 'du mois' : ofMonth(monthName)}</h2>
+                <section className={cn(SALES_CARD, 's-enter p-5 sm:p-6')}>
+                  <div className="mb-5 flex items-baseline justify-between gap-3">
+                    <h2 className={SECTION_TITLE}>Objectifs {isCurrent ? 'du mois' : ofMonth(monthName)}</h2>
                     {card.objectives.length > 0 && (
-                      <span className="text-[13px] tabular-nums text-muted-foreground">
+                      <span className="text-[13px] tabular-nums s-ink-2">
                         {reached} / {card.objectives.length} atteint{card.objectives.length > 1 ? 's' : ''}
                       </span>
                     )}
@@ -122,8 +124,8 @@ export function CommercialHome() {
                   <ObjectiveList objectives={card.objectives} labels={SELF_LABELS} emptyHint="Votre responsable les fixe chaque mois." />
                 </section>
 
-                <section>
-                  <h2 className="mb-3 text-[16px] font-semibold">Mes clients · {monthName}</h2>
+                <section className="s-enter" style={{ animationDelay: '60ms' }}>
+                  <h2 className={cn(SECTION_TITLE, 'mb-3 px-1')}>Mes clients · {monthName}</h2>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     <Figure
                       className="col-span-2 md:col-span-3"
@@ -146,8 +148,8 @@ export function CommercialHome() {
                   </div>
                 </section>
 
-                <section>
-                  <h2 className="mb-3 text-[16px] font-semibold">Mes prospects</h2>
+                <section className="s-enter" style={{ animationDelay: '120ms' }}>
+                  <h2 className={cn(SECTION_TITLE, 'mb-3 px-1')}>Mes prospects</h2>
                   {/* Trois colonnes seulement sur grand écran : à 390 px, « À relancer » était coupé. */}
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     <Figure
@@ -173,7 +175,7 @@ export function CommercialHome() {
                   </div>
                 </section>
 
-                <p className="pb-2 text-[12.5px] leading-relaxed text-muted-foreground">
+                <p className="px-1 pb-2 text-[13px] leading-relaxed s-ink-3">
                   Paiements : terminés dans le mois. Colis : enregistrés dans le mois (avion au bureau, bateau à l’entrepôt). Un client compte pour vous
                   quand vous êtes son origine.
                 </p>
@@ -189,16 +191,16 @@ export function CommercialHome() {
 function HomeSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Chargement">
-      <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+      <div className="s-skeleton h-40 animate-pulse rounded-[18px] bg-muted" />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        <div className="col-span-2 h-28 animate-pulse rounded-2xl bg-muted md:col-span-3" />
-        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-        <div className="col-span-2 h-24 animate-pulse rounded-2xl bg-muted md:col-span-1" />
+        <div className="s-skeleton col-span-2 h-28 animate-pulse rounded-[18px] bg-muted md:col-span-3" />
+        <div className="s-skeleton h-24 animate-pulse rounded-[18px] bg-muted" />
+        <div className="s-skeleton h-24 animate-pulse rounded-[18px] bg-muted" />
+        <div className="s-skeleton col-span-2 h-24 animate-pulse rounded-[18px] bg-muted md:col-span-1" />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <div key={i} className={cn('h-24 animate-pulse rounded-2xl bg-muted', i === 2 && 'col-span-2 md:col-span-1')} />
+          <div key={i} className={cn('s-skeleton h-24 animate-pulse rounded-[18px] bg-muted', i === 2 && 'col-span-2 md:col-span-1')} />
         ))}
       </div>
     </div>
@@ -249,23 +251,26 @@ function AccountMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Mon compte"
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-[14px] font-bold ring-1 ring-black/[0.08] transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:ring-white/15"
+        className={btn('quiet', 'icon', 'text-[14px] font-semibold')}
       >
         {initialsOf(name)}
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-[calc(100%+8px)] z-40 w-72 rounded-2xl bg-popover p-1.5 text-popover-foreground shadow-xl ring-1 ring-black/[0.08] dark:ring-white/10">
+        <div
+          role="menu"
+          className="s-overlay s-pop absolute right-0 top-[calc(100%+8px)] z-40 w-72 origin-top-right rounded-2xl p-1.5 text-popover-foreground"
+        >
           <div className="px-3 py-2.5">
             <div className="truncate text-[15px] font-semibold">{name}</div>
             {currentUser?.email && <div className="truncate text-[13px] text-muted-foreground">{currentUser.email}</div>}
             <div className="mt-0.5 text-[13px] text-muted-foreground">Commercial</div>
           </div>
-          <div className="my-1 h-px bg-border" />
+          <div className="s-rule my-1 h-px bg-border" />
           <button
             type="button"
             role="menuitem"
             onClick={() => navigate('/v/password')}
-            className="flex h-11 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-[15px] font-semibold transition-colors hover:bg-accent"
+            className="s-row flex h-11 w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3 text-left text-[15px] font-semibold transition-colors hover:bg-accent"
           >
             <KeyRound className="h-4 w-4" /> Changer mon mot de passe
           </button>
@@ -274,7 +279,7 @@ function AccountMenu() {
             role="menuitem"
             onClick={() => void signOut()}
             disabled={leaving}
-            className="flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[15px] font-semibold text-red-600 transition-colors hover:bg-accent disabled:opacity-50 dark:text-red-400"
+            className="s-row flex h-11 w-full items-center gap-2.5 rounded-xl px-3 text-left text-[15px] font-semibold text-red-600 transition-colors hover:bg-accent disabled:opacity-50 dark:text-red-400"
           >
             <LogOut className="h-4 w-4" /> {leaving ? 'Déconnexion…' : 'Se déconnecter'}
           </button>

@@ -4,6 +4,11 @@
 // (MobileCreateClient) et par la réception des colis (ReceptionNewClient) :
 // mêmes drapeaux, mêmes numéros multiples, même validation. La logique vit
 // dans `useCreateClientForm` ; ici, seulement le rendu.
+//
+// Identité : sexe (obligatoire au bureau, facultatif à la réception, qui ne
+// voit souvent que l'étiquette du colis) et date de naissance facultative.
+// Sous le numéro, ce que la fiche d'un prospect a repris d'office ; sous
+// l'email, celui qu'elle PROPOSE (jamais posé d'office : adresse de connexion).
 // ============================================================
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +21,8 @@ import { CountryFlag } from '@/components/form/CountryFlag';
 import { countryName, toCountryLang } from '@/data/countries';
 import { MAX_PHONES, receptionOriginPlace, type useCreateClientForm } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
-import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
+import { ProspectEmailSuggestion, ProspectPrefillNote, ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
+import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
 
 export function ClientFormSections({ form }: { form: ReturnType<typeof useCreateClientForm> }) {
   const { t, i18n } = useTranslation('common');
@@ -34,6 +40,19 @@ export function ClientFormSections({ form }: { form: ReturnType<typeof useCreate
         <FormField label={<>{t('lastName')}{required}</>} htmlFor="cc-last">
           <TextInput id="cc-last" placeholder="Bienvenue" value={form.fields.lastName} onChange={(e) => form.setField('lastName', e.target.value)} autoComplete="family-name" autoCapitalize="words" />
         </FormField>
+        <GenderField
+          id="cc-gender"
+          label={<>{t('clientForm.gender')}{form.genderRequired ? required : optional}</>}
+          value={form.gender}
+          onChange={form.setGender}
+          hint={form.genderRequired ? undefined : t('clientForm.genderReceptionHint')}
+        />
+        <BirthDateField
+          id="cc-birth"
+          label={<>{t('clientForm.birthDate')}{optional}</>}
+          value={form.fields.birthDate}
+          onChange={(v) => form.setField('birthDate', v)}
+        />
         <FormField label={<>{t('company')}{optional}</>} htmlFor="cc-company">
           <TextInput id="cc-company" placeholder="Jako Cargo SARL" value={form.fields.company} onChange={(e) => form.setField('company', e.target.value)} autoComplete="organization" />
         </FormField>
@@ -76,10 +95,12 @@ export function ClientFormSections({ form }: { form: ReturnType<typeof useCreate
             </Button>
           )}
           <p className={cn(TYPE.small, TEXT.muted)}>{t('clientForm.primaryReceivesPassword')}</p>
+          <ProspectPrefillNote prefill={form.prefill} stale={form.prefillStale} />
         </div>
 
         <FormField label={<>{t('email')}{optional}</>} htmlFor="cc-email" error={form.errors.email ? t('clientForm.emailInvalid') : undefined}>
           <TextInput id="cc-email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" placeholder="fabrice@jakocargo.com" value={form.fields.email} onChange={(e) => form.setField('email', e.target.value)} />
+          <ProspectEmailSuggestion email={form.emailSuggestion} onUse={form.acceptEmailSuggestion} />
         </FormField>
       </Section>
 

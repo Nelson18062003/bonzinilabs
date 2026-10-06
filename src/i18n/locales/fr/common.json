@@ -507,7 +507,7 @@
     "optional": "optionnel",
     "subtitle": "Identité, contact et localisation",
     "identity": "Identité",
-    "identityHint": "Prénom, nom et entreprise du client.",
+    "identityHint": "Prénom, nom, sexe et date de naissance du client, et son entreprise.",
     "contact": "Contact",
     "contactHint": "Le numéro WhatsApp reçoit le mot de passe temporaire.",
     "location": "Localisation",
@@ -584,7 +584,37 @@
       "other": "Autre",
       "unknown": "Inconnue",
       "parcel": "Colis reçu"
-    }
+    },
+    "gender": "Sexe",
+    "genderMale": "Homme",
+    "genderFemale": "Femme",
+    "genderReceptionHint": "Facultatif ici : vous ne voyez souvent que l’étiquette du colis.",
+    "birthDate": "Date de naissance",
+    "birthPlaceholder": "JJ/MM/AAAA",
+    "birthHint": "Les barres « / » se posent seules.",
+    "birthIncomplete": "Date incomplète : le jour, le mois et l’année (JJ/MM/AAAA).",
+    "birthInvalid": "Cette date n’existe pas.",
+    "birthAge": "Date de naissance invalide : l’âge doit être entre {{min}} et {{max}} ans.",
+    "identityFailed": "Le client est créé, mais sa date de naissance n’a pas pu être enregistrée. Ajoutez-la depuis sa fiche (« Modifier »).",
+    "identityFailedReception": "Le client est créé, mais sa date de naissance n’a pas pu être enregistrée. Demandez au bureau de l’ajouter sur sa fiche.",
+    "prefillNote": "Repris de la fiche de {{name}} (prospect de {{label}}) : {{list}}.",
+    "prefillNoteNoLabel": "Repris de la fiche prospect de {{name}} : {{list}}.",
+    "prefillNoteAnon": "Repris de sa fiche prospect : {{list}}.",
+    "prefillStale": "Le numéro principal n’est plus celui de {{name}} : vérifiez ce qui a été repris de sa fiche ({{list}}).",
+    "prefillStaleAnon": "Le numéro principal a changé : vérifiez ce qui a été repris de la fiche prospect ({{list}}).",
+    "emailSuggestion": "Email noté par le commercial :",
+    "emailSuggestionWarn": "Il deviendra l’adresse de connexion du client : utilisez-le seulement si le client vous le confirme.",
+    "emailSuggestionUse": "Confirmé : l’utiliser",
+    "prefillKeys": {
+      "firstName": "prénom",
+      "lastName": "nom",
+      "company": "entreprise",
+      "city": "ville",
+      "gender": "sexe",
+      "birthDate": "date de naissance",
+      "phones": "autres numéros"
+    },
+    "ageYears": "{{age}} ans"
   },
   "overdraft": {
     "title": "Découvert autorisé",
@@ -610,5 +640,16 @@
   "signInWithPassword": "Mot de passe",
   "signInWithPasswordHint": "Celui qui vous a été donné avec votre compte",
   "enterPassword": "Votre mot de passe",
-  "scanOpenNative": "Ouvrir le scanner"
+  "scanOpenNative": "Ouvrir le scanner",
+  "clientIdentity": {
+    "gender": "Sexe",
+    "birthDate": "Date de naissance",
+    "genderUnset": "Non renseigné",
+    "birthUnset": "Non renseignée",
+    "saved": "Profil client modifié",
+    "failed": "Le profil est enregistré, mais pas le sexe ni la date de naissance.",
+    "failedHint": "Rouvrez « Modifier » pour réessayer.",
+    "birthInvalid": "Date de naissance invalide",
+    "genderKeptHint": "Une fois choisi, le sexe ne revient pas à « non renseigné »."
+  }
 }

@@ -136,6 +136,9 @@ interface Props {
   controlClassName?: string;
   autoFocus?: boolean;
   'aria-label'?: string;
+  /** Posés sur le champ des chiffres : son message (erreur, indice) et son caractère obligatoire. */
+  'aria-describedby'?: string;
+  'aria-required'?: boolean;
 }
 
 export function PhoneNumberInput({
@@ -150,6 +153,8 @@ export function PhoneNumberInput({
   controlClassName,
   autoFocus,
   'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
+  'aria-required': ariaRequired,
 }: Props) {
   const { t, i18n } = useTranslation('common');
   const lang = toCountryLang(i18n.language);
@@ -183,6 +188,8 @@ export function PhoneNumberInput({
           autoComplete="tel-national"
           autoFocus={autoFocus}
           aria-label={ariaLabel ?? t('phone')}
+          aria-describedby={ariaDescribedBy}
+          aria-required={ariaRequired}
           aria-invalid={invalid || showWarn}
           disabled={disabled}
           className={cn(

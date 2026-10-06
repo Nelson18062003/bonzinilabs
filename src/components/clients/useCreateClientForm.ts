@@ -4,7 +4,9 @@
  * qui est envoyé et de ce qui se passe après.
  *
  * Quatre sections :
- *   · Identité      : prénom*, nom*, entreprise
+ *   · Identité      : prénom*, nom*, sexe* (facultatif à la réception, qui
+ *                     ne voit souvent que l'étiquette du colis), date de
+ *                     naissance, entreprise
  *   · Contact       : WhatsApp* (+ autres numéros), e-mail
  *   · Localisation  : pays*, ville
  *   · Origine       : source FACULTATIVE (commercial, recommandation, réseau
@@ -24,10 +26,24 @@
  * Tout numéro commencé doit être complet : un numéro tronqué en base est
  * pire qu'un numéro absent.
  *
+ * Sexe et date de naissance : le sexe part avec la création
+ * (`admin_create_client`, 'OTHER' = non renseigné, réception seulement) ;
+ * la date, facultative, se pose APRÈS par `admin_set_client_identity` (le
+ * client doit exister). Un échec ne défait pas le client : `identityFailed`.
+ *
  * Prospect : si le numéro principal est celui d'un prospect ouvert d'un
  * commercial (`prospect_lookup_phone`, 400 ms après la frappe), l'origine se
  * pré-remplit avec sa fiche — sauf si l'opérateur a déjà choisi lui-même :
  * un choix manuel n'est jamais écrasé (`prospect` le signale seulement).
+ * Sa fiche remplit aussi les champs encore vides (nom, entreprise, ville,
+ * sexe, date de naissance, autres numéros — `prospectPrefill.ts`), une
+ * seule fois par prospect trouvé : un champ vidé ensuite le reste.
+ * `prefill` dit ce qui a été repris, pour la note ; `prefillStale`, que le
+ * numéro principal n'est plus le sien (les valeurs reprises restent : la
+ * note devient un avertissement, à vérifier). Son EMAIL n'est que proposé
+ * (`emailSuggestion`, `acceptEmailSuggestion`) : il deviendrait l'adresse de
+ * connexion du client, déjà confirmée — l'opérateur la prend d'un geste,
+ * après confirmation par le client.
  *
  * Pays : suit le pays de l'indicatif du numéro principal tant que
  * l'opérateur ne l'a pas choisi lui-même — un importateur camerounais a
@@ -42,6 +58,10 @@ import { useSetClientPhones, type ClientPhoneInput } from '@/hooks/useClientPhon
 import { useSetClientSource, useSetReceptionOrigin } from '@/hooks/useClientSources';
 import type { ReceptionLocation } from '@/lib/reception';
 import { countryLabelFr, type CountryIso } from '@/data/countries';
+import type { Gender } from '@/lib/people';
+import { useSetClientIdentity } from '@/hooks/useClientManagement';
+import { birthTextIssue, validBirthIso, type BirthIssue } from './clientIdentity';
+import { mergeProspectPhones, planProspectPrefill, type ProspectPrefill } from './prospectPrefill';
 import {
   EMPTY_PHONE,
   isPhoneComplete,
@@ -58,8 +78,9 @@ export interface PhoneRow {
   label: string;
 }
 
+const rowKey = () => Math.random().toString(36).slice(2);
 const newPhoneRow = (country: CountryIso = EMPTY_PHONE.country): PhoneRow => ({
-  key: Math.random().toString(36).slice(2),
+  key: rowKey(),
   value: { country, national: '' },
   label: '',
 });
@@ -70,6 +91,8 @@ export interface CreateClientFields {
   company: string;
   email: string;
   city: string;
+  /** La date de naissance telle qu'elle est tapée, « JJ/MM/AAAA » (facultative). */
+  birthDate: string;
 }
 
 export interface CreatedClient {
@@ -81,6 +104,8 @@ export interface CreatedClient {
   extraPhonesFailed: boolean;
   /** L'origine n'a pas pu être enregistrée (le client existe ; elle se pose depuis sa fiche). */
   sourceFailed: boolean;
+  /** La date de naissance n'a pas pu être enregistrée (le client existe ; elle se pose depuis sa fiche). */
+  identityFailed: boolean;
   /** Réception : l'origine posée d'office (ou celle du prospect, gardée), sinon null. */
   originLabel: string | null;
 }
@@ -110,11 +135,14 @@ export interface ProspectSourceMatch {
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export type CreateClientErrorKey = 'firstName' | 'lastName' | 'gender' | 'birthDate' | 'primaryPhone' | 'extraPhones' | 'email' | 'source';
+
 export function useCreateClientForm(options: CreateClientFormOptions = {}) {
   const createClient = useCreateClient();
   const setPhones = useSetClientPhones();
   const setSource = useSetClientSource();
   const setReceptionOrigin = useSetReceptionOrigin();
+  const setIdentity = useSetClientIdentity();
   const reception = options.reception ?? null;
   const receptionLocation = reception?.location ?? null;
 
@@ -124,7 +152,10 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
     company: '',
     email: '',
     city: '',
+    birthDate: '',
   });
+  // Le sexe : aucun choix au départ (obligatoire au bureau, facultatif à la réception).
+  const [gender, setGender] = useState<Gender | null>(null);
   const [phones, setPhonesState] = useState<PhoneRow[]>(() => [newPhoneRow()]);
   const [countryIso, setCountryIso] = useState<CountryIso>(EMPTY_PHONE.country);
   const [countryTouched, setCountryTouched] = useState(false);
@@ -193,25 +224,81 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
     }
   }, [lookupSettled, sourceTouched, prospect]);
 
+  // ── Reprise de la fiche prospect ──────────────────────────────────────
+  // Les champs encore vides, une seule fois par prospect trouvé : si
+  // l'opérateur vide ensuite un champ, il le reste. Le formulaire du moment
+  // est lu dans une référence (l'effet ne doit pas repartir à chaque frappe).
+  const [prefill, setPrefill] = useState<ProspectPrefill | null>(null);
+  const prefilledRef = useRef<Set<string>>(new Set());
+  const latest = useRef({ fields, gender, phones });
+  // Déclaré AVANT l'effet de reprise : il s'exécute avant lui, au même rendu.
+  useEffect(() => {
+    latest.current = { fields, gender, phones };
+  });
+  const match = lookupSettled && lookup.data?.found ? lookup.data : null;
+  useEffect(() => {
+    if (!match?.prospect_id || prefilledRef.current.has(match.prospect_id)) return;
+    prefilledRef.current.add(match.prospect_id);
+    const now = latest.current;
+    const plan = planProspectPrefill(match, now);
+    const merged = mergeProspectPhones(now.phones, match, MAX_PHONES, rowKey);
+    const filled = merged.added > 0 ? [...plan.filled, 'phones' as const] : plan.filled;
+    if (filled.length === 0 && !plan.suggestedEmail) return; // base pas encore migrée, ou tout était déjà saisi
+    if (Object.keys(plan.fields).length > 0) {
+      // Revérifié sur l'état le plus frais : un champ tapé entre-temps n'est pas écrasé.
+      setFields((prev) => {
+        const next = { ...prev };
+        for (const [k, v] of Object.entries(plan.fields) as [keyof CreateClientFields, string][]) {
+          if (prev[k].trim() === '') next[k] = v;
+        }
+        return next;
+      });
+    }
+    if (plan.gender) setGender((cur) => cur ?? plan.gender);
+    if (merged.added > 0) setPhonesState((prev) => mergeProspectPhones(prev, match, MAX_PHONES, rowKey).rows);
+    setPrefill({
+      prospectId: match.prospect_id,
+      sourceLabel: match.source_label ?? '',
+      prospectName: match.prospect_name ?? '',
+      filled,
+      suggestedEmail: plan.suggestedEmail,
+    });
+  }, [match]);
+
+  // Le numéro principal (complet, réponse arrivée) n'est plus celui du
+  // prospect repris : les valeurs restent, la note devient un avertissement.
+  const prefillStale = !!prefill && lookupSettled && !!lookupE164 && match?.prospect_id !== prefill.prospectId;
+  // L'email de sa fiche : proposé tant que le champ est vide et que le numéro est toujours le sien.
+  const emailSuggestion = prefill?.suggestedEmail && !prefillStale && fields.email.trim() === '' ? prefill.suggestedEmail : null;
+  const acceptEmailSuggestion = useCallback(() => {
+    if (emailSuggestion) setFields((prev) => (prev.email.trim() === '' ? { ...prev, email: emailSuggestion } : prev));
+  }, [emailSuggestion]);
+
   // ── Validation ────────────────────────────────────────────────────────
   const primary = phones[0];
   const extras = phones.slice(1);
   const filledExtras = extras.filter((row) => row.value.national.replace(/\D/g, '').length > 0);
   const emailTrim = fields.email.trim();
   const emailValid = emailTrim === '' || EMAIL_SHAPE.test(emailTrim);
+  // La date de naissance : facultative, mais juste si elle est donnée.
+  const birthIssue: BirthIssue | null = birthTextIssue(fields.birthDate);
+  // Le sexe : obligatoire au bureau ; la réception ne voit souvent que l'étiquette du colis.
+  const genderRequired = !reception;
 
   const errors = useMemo(() => {
-    const e: Partial<Record<'firstName' | 'lastName' | 'primaryPhone' | 'extraPhones' | 'email' | 'source', true>> = {};
+    const e: Partial<Record<CreateClientErrorKey, true>> = {};
     if (fields.firstName.trim() === '') e.firstName = true;
     if (fields.lastName.trim() === '') e.lastName = true;
+    if (genderRequired && gender === null) e.gender = true;
+    if (birthIssue !== null) e.birthDate = true;
     if (!isPhoneComplete(primary.value)) e.primaryPhone = true;
     if (!filledExtras.every((row) => isPhoneComplete(row.value))) e.extraPhones = true;
     if (!emailValid) e.email = true;
     return e;
-  }, [fields.firstName, fields.lastName, primary.value, filledExtras, emailValid]);
+  }, [fields.firstName, fields.lastName, genderRequired, gender, birthIssue, primary.value, filledExtras, emailValid]);
 
   const canSubmit = Object.keys(errors).length === 0 && !createClient.isPending;
-  const isSubmitting = createClient.isPending || setPhones.isPending || setSource.isPending || setReceptionOrigin.isPending;
+  const isSubmitting = createClient.isPending || setPhones.isPending || setIdentity.isPending || setSource.isPending || setReceptionOrigin.isPending;
 
   // ── Envoi ─────────────────────────────────────────────────────────────
   const submit = useCallback(async (): Promise<CreatedClient | null> => {
@@ -231,6 +318,8 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
         email: emailTrim || undefined,
         country: countryLabelFr(countryIso),
         city: fields.city.trim() || undefined,
+        // 'OTHER' = non renseigné (réception seulement : au bureau, il est obligatoire).
+        gender: gender ?? 'OTHER',
       });
     } catch {
       return null; // la mutation a déjà affiché l'erreur
@@ -253,6 +342,18 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
         });
       } catch {
         extraPhonesFailed = true;
+      }
+    }
+
+    // La date de naissance : seulement si elle est saisie, après la création
+    // (le client doit exister). Un échec ne défait pas le client.
+    let identityFailed = false;
+    const birthIso = validBirthIso(fields.birthDate);
+    if (result.clientId && birthIso) {
+      try {
+        await setIdentity.mutateAsync({ userId: result.clientId, birthDate: birthIso });
+      } catch {
+        identityFailed = true;
       }
     }
 
@@ -285,11 +386,12 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
       primaryE164,
       extraPhonesFailed,
       sourceFailed,
+      identityFailed,
       originLabel,
     };
     setCreated(done);
     return done;
-  }, [canSubmit, primary, fields, emailTrim, countryIso, filledExtras, createClient, setPhones, sourceId, setSource, reception, receptionLocation, setReceptionOrigin]);
+  }, [canSubmit, primary, fields, gender, emailTrim, countryIso, filledExtras, createClient, setPhones, setIdentity, sourceId, setSource, reception, receptionLocation, setReceptionOrigin]);
 
   return {
     fields,
@@ -300,6 +402,10 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
     removePhone,
     countryIso,
     chooseCountry,
+    gender,
+    setGender,
+    /** Bureau : obligatoire ; réception : facultatif. */
+    genderRequired,
     errors,
     sourceId,
     setSourceId,
@@ -308,6 +414,13 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
     receptionLocation,
     /** Le numéro est celui d'un prospect ouvert (fiche commercial active), sinon null. */
     prospect,
+    /** Ce qui a été repris de la fiche du prospect (la note), sinon null. */
+    prefill,
+    /** Le numéro principal n'est plus celui du prospect repris : la note devient un avertissement. */
+    prefillStale,
+    /** L'email de la fiche du prospect, proposé sous le champ (jamais posé d'office), sinon null. */
+    emailSuggestion,
+    acceptEmailSuggestion,
     emailValid,
     canSubmit,
     isSubmitting,

@@ -1,8 +1,8 @@
 // ============================================================
 // Ventes — le vocabulaire commun à l'espace commercial (« /v ») et au
-// pilotage dans « Mes équipes » : statuts d'un prospect, intérêts, objectifs
-// du mois, mois de Douala. Les chiffres viennent du serveur
-// (commercial_dashboard, commercial_clients, sales_overview).
+// pilotage dans « Mes équipes » : statuts d'un prospect, intérêts, idées de
+// problèmes, objectifs du mois, mois de Douala. Les chiffres viennent du
+// serveur (commercial_dashboard, commercial_clients, sales_overview).
 // ============================================================
 import type { Tone } from '@/mobile/designKit/tokens';
 import { normalizePhone } from '@/lib/phone';
@@ -28,6 +28,53 @@ export const INTERESTS: { value: Interest; label: string }[] = [
   { value: 'air', label: 'Fret avion' },
   { value: 'sea', label: 'Fret bateau' },
 ];
+
+/**
+ * « Ses plus gros problèmes aujourd'hui » : des idées qu'un toucher ajoute au
+ * champ libre (06/10). Ce ne sont que des amorces — le commercial écrit avec
+ * les mots du prospect ; le champ reste du texte.
+ */
+export const PAIN_IDEAS = [
+  'Payer ses fournisseurs en Chine',
+  'Manque de capital',
+  'Gérer son capital',
+  'Transport avion',
+  'Transport bateau',
+  'Trouver les bons fournisseurs',
+  'La douane et sa procédure',
+  'Fixer ses prix de vente',
+] as const;
+
+/** Les libellés d'un numéro de plus, à choisir d'un toucher (la saisie reste libre). */
+export const PHONE_LABEL_IDEAS = ['WhatsApp', 'WeChat', 'Bureau', 'Domicile', 'Chine'] as const;
+
+/** Les libellés qui disent un numéro chinois : choisis sur une ligne encore vide, l'indicatif passe à +86. */
+export const CHINESE_PHONE_LABELS: readonly string[] = ['WeChat', 'Chine'];
+
+/**
+ * Les brouillons de l'espace commercial gardés dans l'appareil (prospect en
+ * cours de saisie, modification de fiche en cours), rangés sous le compte
+ * de leur auteur : `bonzini.v.prospect-draft:<compte>`, `…-edit:<compte>:…`.
+ */
+export const SALES_DRAFT_PREFIX = 'bonzini.v.prospect-';
+
+/**
+ * À la déconnexion : plus aucun brouillon (nom, numéros, date de naissance,
+ * « ses plus gros problèmes » d'un prospect) ne reste dans l'appareil — un
+ * téléphone ou un navigateur peut être partagé.
+ */
+export function clearSalesDrafts(): void {
+  try {
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(SALES_DRAFT_PREFIX)) doomed.push(k);
+    }
+    for (const k of doomed) localStorage.removeItem(k);
+  } catch {
+    /* stockage indisponible : rien n'y a été gardé */
+  }
+}
 
 export const OBJECTIVES: { metric: ObjectiveMetric; label: string; unit: 'count' | 'xaf' | 'kg' | 'cbm' }[] = [
   { metric: 'new_clients', label: 'Nouveaux clients', unit: 'count' },

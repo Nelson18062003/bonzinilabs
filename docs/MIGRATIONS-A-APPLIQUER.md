@@ -15,6 +15,54 @@
 
 ## En attente
 
+> **Les deux migrations du 06/10 se collent en UN fichier : `migrations/20261006_consolidated.sql`** (à coller APRÈS
+> `migrations/20261005_consolidated.sql`). Il contient, dans l'ordre, un contrôle des prérequis (s'arrête net, sans
+> rien modifier, s'il en manque un), `20261006100000` (sites, numéros du personnel, « Enregistré par ») puis
+> `20261006120000` (fiche prospect complète, sexe et date de naissance des clients). Rejouable, y compris si
+> l'ancienne version de ce fichier (`20261006100000` seule) a déjà été collée. Ensuite :
+> 1. `npx supabase migration repair --status applied 20261006100000 20261006120000`
+> 2. `/gen-types`
+>
+> **Ordre de déploiement — coller le SQL, PUIS fusionner et déployer le site IMMÉDIATEMENT.** Il n'existe pas d'ordre
+> sans coupure de la création d'un prospect : `20261006120000` supprime les anciennes signatures de `prospect_create` /
+> `prospect_update` et exige désormais nom, sexe et ville — l'ancien formulaire (encore en ligne entre le SQL et le
+> déploiement) est refusé (« Indiquez le sexe : homme ou femme ») ; à l'inverse, le nouveau site avant le SQL appelle
+> des fonctions qui n'existent pas encore. Faire les deux à la suite, hors des heures de terrain des commerciaux.
+> Dans l'intervalle, la LISTE des prospects reste lisible dans les deux sens (si `prospect_phones` n'existe pas encore,
+> le nouveau site la relit sans les autres numéros) ; seules la création et la modification attendent.
+
+### `20261006120000_prospect_details_client_identity.sql` (à passer APRÈS `20261006100000` — même fichier consolidé)
+**PR :** Espace commercial : la fiche prospect complète, en étapes · Clients : sexe et date de naissance
+**Contenu :**
+- `prospects` : `gender` (MALE / FEMALE), `birth_date`, `email` (minuscules, forme x@y.z), `pain_points` (« ses plus
+  gros problèmes aujourd'hui », champ libre, 2 000 caractères) et `help_needed` (« ce que nous pouvons faire pour
+  l'aider »). **Nom, sexe et ville deviennent obligatoires** à la création (`prospect_create`) ; un prospect saisi
+  avant reste modifiable tant qu'on ne vide pas ces champs. Date de naissance : de 16 à 110 ans.
+- `prospect_phones` : les **autres numéros** d'un prospect (neuf au plus ; le principal reste `prospects.phone_e164`).
+  Lecture comme la fiche (le commercial les siens, le responsable tous), aucune politique d'écriture. Un numéro —
+  principal ou non — n'est suivi que par UN prospect ouvert, et jamais s'il est celui d'un client ; tout est vérifié
+  avant d'écrire, les numéros saisis sont verrouillés (deux saisies simultanées passent l'une après l'autre).
+- `prospect_create` / `prospect_update` : **anciennes signatures supprimées**, recréées avec `p_gender`, `p_birth_date`,
+  (`p_clear_birth_date`), `p_email`, `p_phones` (jsonb, la liste complète), `p_pain_points`, `p_help_needed`. Un
+  prospect « devenu client » garde ses numéros. `prospect_set_status` : un prospect perdu qu'on rouvre ne reprend pas
+  un autre numéro suivi ailleurs entre-temps.
+- `prospect_lookup_phone` (même signature) : trouve aussi par un **autre** numéro et renvoie la fiche (nom, entreprise,
+  ville, email, sexe, date de naissance, numéros) pour la reprendre dans « Nouveau client ». L'email n'y est que
+  **proposé** (un geste de l'opérateur, après confirmation par le client) : `admin_create_client` en fait l'adresse de
+  connexion déjà confirmée du client, et c'est un commercial qui l'a saisie, sans vérification.
+- `clients_match_prospect` : un compte client créé avec **l'un quelconque** des numéros d'un prospect est attribué à son
+  commercial (le déclencheur lui-même ne change pas).
+- `admin_set_client_identity(p_user_id, p_gender, p_date_of_birth, p_clear_birth_date)` : sexe et date de naissance d'un
+  client — `canEditClients`, ou `canRegisterClients` pour un client qu'on a soi-même enregistré (sans limite de
+  temps, comme l'origine posée par la réception) ; journalisée
+  (`set_client_identity`) ; `@mola` exposée (canEditClients, confirmation).
+- Aucune donnée existante modifiée. Testée sur Postgres 16 : migration passée deux fois dans une transaction, 80
+  contrôles (et une saisie simultanée réelle sur deux connexions), les 40 contrôles du 06/10 et les 105 de Mes équipes /
+  commerciaux repassés ; le fichier consolidé de même (deux fois d'affilée, après l'ancienne version, et refus net
+  sans Mes équipes).
+
+**Comment pousser :** voir l'encadré ci-dessus (un seul fichier pour les deux migrations du 06/10).
+
 ### `20261006100000_staff_sites_phones_registration.sql` (à passer APRÈS `migrations/20261005_consolidated.sql`)
 **PR :** Équipe : sites et numéros à drapeau · Clients : « Enregistré par », origine facultative, origine posée par la réception
 **Contenu :**
@@ -35,9 +83,9 @@
 - Testée sur Postgres 16 : fichier passé deux fois dans une transaction, 40 contrôles, et les 105 contrôles de Mes
   équipes / commerciaux repassés ; contrôle des prérequis éprouvé (refuse de passer sans Mes équipes, rien n'est créé).
 
-**Comment pousser :** coller `migrations/20261006_consolidated.sql` dans l'éditeur SQL, puis
-`npx supabase migration repair --status applied 20261006100000`, puis `/gen-types` (les types sont déjà ajoutés à la
-main ; l'app appelle les RPC sans attendre).
+**Comment pousser :** coller `migrations/20261006_consolidated.sql` dans l'éditeur SQL (il contient aussi
+`20261006120000`), puis `npx supabase migration repair --status applied 20261006100000 20261006120000`, puis
+`/gen-types` (les types sont déjà ajoutés à la main ; l'app appelle les RPC sans attendre).
 
 
 > **Les trois migrations du 05/10 se collent en UN fichier : `migrations/20261005_consolidated.sql`.** Il contient,

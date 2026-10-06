@@ -1,7 +1,8 @@
 // ============================================================
 // RÉCEPTION — Nouveau client. LE MÊME formulaire que l'admin (drapeaux,
-// indicatifs, plusieurs numéros, e-mail, pays, ville) : `ClientFormSections`
-// sur `useCreateClientForm`. Après la création, le mot de passe provisoire
+// indicatifs, plusieurs numéros, e-mail, pays, ville, sexe, date de
+// naissance) : `ClientFormSections` sur `useCreateClientForm`. Le sexe y
+// est facultatif : la réception ne voit souvent que l'étiquette du colis. Après la création, le mot de passe provisoire
 // et le bouton WhatsApp, puis on continue vers le dépôt avec ce client.
 // ============================================================
 import { useState } from 'react';
@@ -73,8 +74,14 @@ export function ReceptionNewClient() {
             {c.originLabel && (
               <p className={cn(TYPE.small, TEXT.muted)}>{tc('clientForm.sourceSummary')} : <b className={TEXT.strong}>{c.originLabel}</b></p>
             )}
+            {c.extraPhonesFailed && (
+              <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.extraPhonesFailed')}</p>
+            )}
             {c.sourceFailed && (
               <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.sourceFailed')}</p>
+            )}
+            {c.identityFailed && (
+              <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.identityFailedReception')}</p>
             )}
           </Card>
           <PrimaryPill onClick={() => void proceed()} loading={assign.isPending} className="h-14 w-full text-[17px]">{t('rc_continue')}</PrimaryPill>

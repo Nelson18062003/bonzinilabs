@@ -10,6 +10,7 @@ import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrap
 import { DesktopCargoReception } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { ShippedClients } from '../adminRedesign/beforeScreens';
+import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
 
 type Staff = { first: string; last: string; role: string; email: string };
 const KEVIN: Staff = { first: 'Kevin', last: 'Nkolo', role: 'receptionist', email: 'kevin.nkolo@bonzinilabs.com' };
@@ -64,6 +65,9 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.quote': { Comp: DeskReception, route: '/m/cargo/reception/dep1c', path: '/m/cargo/reception/:depositId' },
   // Le propriétaire d'un colis n'existe pas : la réception crée le client, l'origine se pose d'office (06/10).
   'j.guangzhou.new-client': { Comp: NewClient, route: '/r/new/client', wrap: 'lang' },
-  // La fiche du client au bureau : son origine et « Enregistré par » (qui, quel rôle, quel site).
+  // La fiche du client au bureau : son origine et « Enregistré par » (qui, quel rôle, quel site),
+  // son sexe et sa date de naissance (06/10) — et « Modifier » qui les change.
   'j.guangzhou.client-sheet': { Comp: ShippedClients, route: '/m/clients/u5', path: '/m/clients/:clientId' },
+  // La même fiche sur le téléphone de l'équipe (/m).
+  'j.guangzhou.client-mobile': { Comp: MobileClientDetail, route: '/m/clients/u5', path: '/m/clients/:clientId' },
 };

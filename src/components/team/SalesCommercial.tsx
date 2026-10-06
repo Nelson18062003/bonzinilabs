@@ -302,8 +302,16 @@ function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
                 <span className="block text-[12.5px] text-muted-foreground">
                   {(p.company || p.city) && `${[p.company, p.city].filter(Boolean).join(' · ')} · `}
                   <PhoneNumber e164={p.phone_e164} />
+                  {(p.phones ?? []).length > 0 && ` +${(p.phones ?? []).length}`}
                   {p.status === 'lost' && p.lost_reason && ` · ${p.lost_reason}`}
                 </span>
+                {/* Ses plus gros problèmes (06/10) : ce que le responsable veut lire d'abord. */}
+                {p.pain_points && (
+                  <span className="mt-1 line-clamp-2 block whitespace-pre-line text-[12.5px] text-foreground/80">
+                    <span className="font-semibold">Problèmes : </span>
+                    {p.pain_points}
+                  </span>
+                )}
                 {p.next_action_at && p.status !== 'won' && p.status !== 'lost' && (
                   <span className={cn('block text-[12.5px]', new Date(p.next_action_at) <= new Date() ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
                     relance le {new Date(p.next_action_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}

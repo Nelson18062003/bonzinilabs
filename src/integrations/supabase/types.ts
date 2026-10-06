@@ -3404,21 +3404,64 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_phones: {
+        Row: {
+          country_iso: string | null
+          created_at: string
+          id: string
+          label: string | null
+          phone_e164: string
+          position: number
+          prospect_id: string
+        }
+        Insert: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164: string
+          position?: number
+          prospect_id: string
+        }
+        Update: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164?: string
+          position?: number
+          prospect_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_phones_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prospects: {
         Row: {
+          birth_date: string | null
           city: string | null
           company: string | null
           converted_at: string | null
           converted_user_id: string | null
           created_at: string
           created_by: string | null
+          email: string | null
           first_name: string
+          gender: string | null
+          help_needed: string | null
           id: string
           interests: string[]
           last_name: string | null
           lost_reason: string | null
           next_action_at: string | null
           notes: string | null
+          pain_points: string | null
           phone: string
           phone_e164: string
           source_id: string
@@ -3427,19 +3470,24 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
           city?: string | null
           company?: string | null
           converted_at?: string | null
           converted_user_id?: string | null
           created_at?: string
           created_by?: string | null
+          email?: string | null
           first_name: string
+          gender?: string | null
+          help_needed?: string | null
           id?: string
           interests?: string[]
           last_name?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
           notes?: string | null
+          pain_points?: string | null
           phone: string
           phone_e164: string
           source_id: string
@@ -3448,19 +3496,24 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
           city?: string | null
           company?: string | null
           converted_at?: string | null
           converted_user_id?: string | null
           created_at?: string
           created_by?: string | null
+          email?: string | null
           first_name?: string
+          gender?: string | null
+          help_needed?: string | null
           id?: string
           interests?: string[]
           last_name?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
           notes?: string | null
+          pain_points?: string | null
           phone?: string
           phone_e164?: string
           source_id?: string
@@ -4678,6 +4731,15 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_passkey: { Args: { p_credential: string }; Returns: Json }
+      admin_set_client_identity: {
+        Args: {
+          p_clear_birth_date?: boolean
+          p_date_of_birth?: string
+          p_gender?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_set_client_locale: {
         Args: { p_locale: string; p_user_id: string }
         Returns: Json

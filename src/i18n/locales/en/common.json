@@ -507,7 +507,7 @@
     "optional": "optional",
     "subtitle": "Identity, contact and location",
     "identity": "Identity",
-    "identityHint": "The client's first name, last name and company.",
+    "identityHint": "The client's first and last name, sex, date of birth and company.",
     "contact": "Contact",
     "contactHint": "The WhatsApp number receives the temporary password.",
     "location": "Location",
@@ -584,7 +584,37 @@
       "other": "Other",
       "unknown": "Unknown",
       "parcel": "Parcel received"
-    }
+    },
+    "gender": "Sex",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderReceptionHint": "Optional here: you often only see the parcel label.",
+    "birthDate": "Date of birth",
+    "birthPlaceholder": "DD/MM/YYYY",
+    "birthHint": "The “/” slashes appear on their own.",
+    "birthIncomplete": "Incomplete date: day, month and year (DD/MM/YYYY).",
+    "birthInvalid": "This date does not exist.",
+    "birthAge": "Invalid date of birth: the age must be between {{min}} and {{max}}.",
+    "identityFailed": "The client was created, but their date of birth could not be saved. Add it from their profile (“Edit”).",
+    "identityFailedReception": "The client was created, but their date of birth could not be saved. Ask the office to add it to their profile.",
+    "prefillNote": "Filled from {{name}}'s prospect record ({{label}}): {{list}}.",
+    "prefillNoteNoLabel": "Filled from {{name}}'s prospect record: {{list}}.",
+    "prefillNoteAnon": "Filled from their prospect record: {{list}}.",
+    "prefillStale": "The main number is no longer {{name}}'s: check what was filled from their record ({{list}}).",
+    "prefillStaleAnon": "The main number changed: check what was filled from the prospect record ({{list}}).",
+    "emailSuggestion": "Email noted by the sales rep:",
+    "emailSuggestionWarn": "It will become the client's sign-in address: use it only if the client confirms it.",
+    "emailSuggestionUse": "Confirmed: use it",
+    "prefillKeys": {
+      "firstName": "first name",
+      "lastName": "last name",
+      "company": "company",
+      "city": "city",
+      "gender": "sex",
+      "birthDate": "date of birth",
+      "phones": "other numbers"
+    },
+    "ageYears": "{{age}} years old"
   },
   "overdraft": {
     "title": "Authorised overdraft",
@@ -610,5 +640,16 @@
   "signInWithPassword": "Password",
   "signInWithPasswordHint": "The one you were given with your account",
   "enterPassword": "Your password",
-  "scanOpenNative": "Open the scanner"
+  "scanOpenNative": "Open the scanner",
+  "clientIdentity": {
+    "gender": "Sex",
+    "birthDate": "Date of birth",
+    "genderUnset": "Not provided",
+    "birthUnset": "Not provided",
+    "saved": "Client profile updated",
+    "failed": "The profile was saved, but not the sex or the date of birth.",
+    "failedHint": "Open “Edit” again to retry.",
+    "birthInvalid": "Invalid date of birth",
+    "genderKeptHint": "Once chosen, the sex cannot go back to “not provided”."
+  }
 }

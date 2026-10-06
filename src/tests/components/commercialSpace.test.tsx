@@ -7,17 +7,21 @@
  *   · la coquille renvoie un non-commercial vers SON espace, et une
  *     personne non connectée vers SA connexion, « /v/login » (email + mot
  *     de passe : son adresse est souvent inventée, aucun code ne lui arrive) ;
+ *     elle pose la portée `.sales-ui` (le langage visuel de « /v ») ;
  *   · son menu mène à « Changer mon mot de passe », la sortie à « /v/login » ;
  *   · un compte pas encore relié à sa fiche voit un message clair ;
- *   · « À relancer » ne montre que les relances échues ;
- *   · le formulaire envoie un numéro international et une relance à 9 h
- *     (Douala) ; « Perdu » exige un motif ;
- *   · le téléphone se saisit avec son pays (drapeau, indicatif) : un numéro
- *     chinois part en +86, une fiche se rouvre sur son pays ;
- *   · les listes affichent les numéros au format international, et les
- *     liens d'appel / WhatsApp partent en E.164.
+ *   · « À relancer » ne montre que les relances échues ; la recherche trouve
+ *     aussi par un autre numéro et par l'email ;
+ *   · la fiche : appeler et WhatsApp pour CHAQUE numéro (E.164), le statut
+ *     d'un toucher, « Perdu » exige un motif, un perdu se rouvre, une fiche
+ *     d'avant le 06/10 se dit incomplète (dans la liste aussi, « À
+ *     compléter »), « Modifier » ouvre l'étape, « Compléter » enchaîne ce qui
+ *     manque ; le brouillon d'un collègue ne s'affiche pas ;
+ *   · les listes affichent les numéros au format international.
+ * L'assistant « Nouveau prospect » a son propre fichier
+ * (salesProspectWizard.test.tsx).
  */
-import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -40,10 +44,16 @@ const h = vi.hoisted(() => {
   const base = {
     source_id: 's-jean', last_name: null, company: null, city: null, interests: [], notes: null, lost_reason: null,
     converted_user_id: null, converted_at: null, status_changed_at: past, created_at: past, updated_at: past,
+    gender: null, birth_date: null, email: null, pain_points: null, help_needed: null, phones: [] as unknown[],
   };
   const prospects = [
     { ...base, id: 'p-due', first_name: 'Awa', phone: '+237690000001', phone_e164: '+237690000001', status: 'contacted', next_action_at: past },
-    { ...base, id: 'p-later', first_name: 'Bruno', phone: '+237690000002', phone_e164: '+237690000002', status: 'new', next_action_at: future },
+    {
+      ...base, id: 'p-later', first_name: 'Bruno', last_name: 'Ekané', city: 'Douala', gender: 'MALE', email: 'bruno.ekane@gmail.com',
+      phone: '+237690000002', phone_e164: '+237690000002', status: 'new', next_action_at: future,
+      pain_points: 'Payer ses fournisseurs en Chine : trop lent', help_needed: 'Régler en 48 h',
+      phones: [{ phone_e164: '+8613812345678', country_iso: 'CN', label: 'WeChat', position: 0 }],
+    },
     { ...base, id: 'p-lost', first_name: 'Chantal', phone: '+237690000003', phone_e164: '+237690000003', status: 'lost', next_action_at: past, lost_reason: 'Prix' },
   ];
   return {
@@ -110,6 +120,7 @@ beforeEach(() => {
   h.update.mockReset();
   h.setStatus.mockReset();
   h.clients = { ...h.clients, data: [] };
+  localStorage.clear();
 });
 
 describe('Espace commercial — montage', () => {
@@ -151,10 +162,11 @@ describe('Espace commercial — accès', () => {
     expect(screen.getByTestId('where').textContent).toBe('/v/password');
   });
 
-  it('le commercial entre', () => {
-    mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
+  it('le commercial entre, dans le langage visuel de « /v » (portée `.sales-ui`)', () => {
+    const { container } = mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
     expect(screen.getByText(/Jean$/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Nouveau prospect/ })).toBeTruthy();
+    expect(container.querySelector('.admin-theme.sales-ui')).not.toBeNull();
   });
 });
 
@@ -186,44 +198,21 @@ describe('Espace commercial — prospects', () => {
   it('par défaut : les ouverts, sans les perdus', () => {
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
     expect(screen.getByText('Awa')).toBeTruthy();
-    expect(screen.getByText('Bruno')).toBeTruthy();
+    expect(screen.getByText('Bruno Ekané')).toBeTruthy();
     expect(screen.queryByText('Chantal')).toBeNull();
   });
 
   it('« ?filtre=relancer » : seulement les relances échues', () => {
     mount(<CommercialProspects />, { route: '/v/prospects?filtre=relancer', path: '/v/prospects' });
-    expect(screen.getByRole('tab', { name: /À relancer/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('button', { name: /À relancer/ }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('Awa')).toBeTruthy();
-    expect(screen.queryByText('Bruno')).toBeNull();
+    expect(screen.queryByText('Bruno Ekané')).toBeNull();
     expect(screen.queryByText('Chantal')).toBeNull();
   });
 });
 
-describe('Espace commercial — formulaire', () => {
-  it('envoie le numéro au format international et une relance à 9 h (Douala)', () => {
-    mount(<CommercialProspectForm />, { route: '/v/prospects/new', path: '/v/prospects/new' });
-    fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Paul' } });
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '699 12 34 56' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Fret bateau' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Demain' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter le prospect' }));
-    expect(h.create).toHaveBeenCalledTimes(1);
-    const [input] = h.create.mock.calls[0];
-    expect(input).toMatchObject({ firstName: 'Paul', phone: '+237699123456', interests: ['sea'] });
-    expect(input.nextActionAt).toMatch(/^\d{4}-\d{2}-\d{2}T09:00:00\+01:00$/);
-  });
-
-  it('numéro invalide : un message, rien n’est envoyé, la saisie reste', () => {
-    mount(<CommercialProspectForm />, { route: '/v/prospects/new', path: '/v/prospects/new' });
-    fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Paul' } });
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter le prospect' }));
-    expect(h.create).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toMatch(/indicatif/);
-    expect((screen.getByLabelText(/Prénom/) as HTMLInputElement).value).toBe('Paul');
-  });
-
-  it('« Perdu » exige un motif d’au moins 3 caractères', () => {
+describe('Espace commercial — la fiche', () => {
+  it('« Perdu » exige un motif d’au moins 3 caractères (un motif fréquent d’un toucher)', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-due', path: '/v/prospects/:id' });
     fireEvent.click(screen.getByRole('button', { name: /Marquer perdu/ }));
     const sheet = screen.getByRole('dialog');
@@ -234,6 +223,8 @@ describe('Espace commercial — formulaire', () => {
     expect(confirm.disabled).toBe(false);
     fireEvent.click(confirm);
     expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-due', status: 'lost', reason: 'Trop cher' }, expect.any(Object));
+    fireEvent.click(within(sheet).getByRole('button', { name: 'A déjà un transitaire' }));
+    expect((within(sheet).getByLabelText('Pourquoi ?') as HTMLTextAreaElement).value).toBe('A déjà un transitaire');
   });
 
   it('un perdu se rouvre (statut « À contacter »)', () => {
@@ -241,75 +232,65 @@ describe('Espace commercial — formulaire', () => {
     fireEvent.click(screen.getByRole('button', { name: /Rouvrir/ }));
     expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-lost', status: 'new', reason: undefined }, expect.any(Object));
   });
-});
 
-describe('Espace commercial — téléphone avec son pays', () => {
-  // Le sélecteur de pays (cmdk dans un popover Radix) mesure sa liste et la fait défiler : jsdom n'a ni l'un ni l'autre.
-  beforeAll(() => {
-    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
-    Element.prototype.scrollIntoView ??= () => undefined;
-  });
-  afterAll(() => {
-    vi.unstubAllGlobals();
-  });
-
-  const newForm = () => {
-    mount(<CommercialProspectForm />, { route: '/v/prospects/new', path: '/v/prospects/new' });
-    fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Wei' } });
-  };
-  const pickCountry = (name: RegExp) => {
-    fireEvent.click(screen.getByRole('button', { name: 'Indicatif' }));
-    fireEvent.change(screen.getByPlaceholderText(/Rechercher un pays/), { target: { value: 'Chine' } });
-    fireEvent.click(screen.getByRole('option', { name }));
-  };
-
-  it('le Cameroun par défaut, et la note « Sera enregistré » donne le numéro international', () => {
-    newForm();
-    expect(screen.getByRole('button', { name: 'Indicatif' }).textContent).toContain('+237');
-    expect(screen.getByText('Pour un autre pays, touchez le drapeau.')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '677842190' } });
-    expect((screen.getByLabelText(/Téléphone/) as HTMLInputElement).value).toBe('6 77 84 21 90');
-    expect(screen.getByText('Sera enregistré : +237 6 77 84 21 90')).toBeTruthy();
-  });
-
-  it('un numéro chinois saisi avec le pays Chine part en +86', () => {
-    newForm();
-    pickCountry(/Chine/);
-    expect(screen.getByRole('button', { name: 'Indicatif' }).textContent).toContain('+86');
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '138 1234 5678' } });
-    expect(screen.getByText('Sera enregistré : +86 138 1234 5678')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter le prospect' }));
-    expect(h.create).toHaveBeenCalledTimes(1);
-    expect(h.create.mock.calls[0][0]).toMatchObject({ firstName: 'Wei', phone: '+8613812345678' });
-  });
-
-  it('le même numéro chinois sous l’indicatif du Cameroun est refusé', () => {
-    newForm();
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '138 1234 5678' } });
-    expect(screen.queryByText(/Sera enregistré/)).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Ajouter le prospect' }));
-    expect(h.create).not.toHaveBeenCalled();
-    expect(screen.getByRole('alert').textContent).toBe('Numéro invalide : vérifiez l’indicatif et les chiffres');
-  });
-
-  it('une fiche se rouvre sur son pays ; numéro inchangé : ni note, ni numéro envoyé', () => {
+  it('le statut se change d’un toucher sur le segmenté', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
-    expect(screen.getByRole('button', { name: 'Indicatif' }).textContent).toContain('+237');
-    expect((screen.getByLabelText(/Téléphone/) as HTMLInputElement).value).toBe('6 90 00 00 02');
-    expect(screen.queryByText(/Sera enregistré/)).toBeNull();
-    fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Bruno-Pierre' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(h.update).toHaveBeenCalledTimes(1);
-    expect(h.update.mock.calls[0][0]).toMatchObject({ id: 'p-later', firstName: 'Bruno-Pierre' });
-    expect(h.update.mock.calls[0][0]).not.toHaveProperty('phone');
+    const group = screen.getByRole('radiogroup', { name: 'Statut du prospect' });
+    expect(within(group).getByRole('radio', { name: 'À contacter' }).getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(within(group).getByRole('radio', { name: 'Contacté' }));
+    expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-later', status: 'contacted', reason: undefined }, expect.any(Object));
   });
 
-  it('une fiche dont le numéro change : la note, puis le nouveau numéro en E.164', () => {
+  it('appeler et WhatsApp pour CHAQUE numéro, en E.164 ; l’email en lien', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
-    fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: '6 99 12 34 56' } });
-    expect(screen.getByText('Sera enregistré : +237 6 99 12 34 56')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
-    expect(h.update.mock.calls[0][0]).toMatchObject({ id: 'p-later', phone: '+237699123456' });
+    expect(screen.getByRole('link', { name: 'Appeler le +237 6 90 00 00 02' }).getAttribute('href')).toBe('tel:+237690000002');
+    expect(screen.getByRole('link', { name: 'WhatsApp : +237 6 90 00 00 02' }).getAttribute('href')).toBe('https://wa.me/237690000002');
+    expect(screen.getByRole('link', { name: 'Appeler le +86 138 1234 5678' }).getAttribute('href')).toBe('tel:+8613812345678');
+    expect(screen.getByRole('link', { name: 'WhatsApp : +86 138 1234 5678' }).getAttribute('href')).toBe('https://wa.me/8613812345678');
+    expect(screen.getByText('WeChat')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Écrire à bruno.ekane@gmail.com' }).getAttribute('href')).toBe('mailto:bruno.ekane@gmail.com');
+  });
+
+  it('ses besoins sont mis en valeur ; une fiche complète n’a pas de bandeau', () => {
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
+    expect(screen.getByText('Payer ses fournisseurs en Chine : trop lent')).toBeTruthy();
+    expect(screen.getByText('Régler en 48 h')).toBeTruthy();
+    expect(screen.queryByText('Fiche incomplète')).toBeNull();
+  });
+
+  it('une fiche d’avant le 06/10 (sans nom, sexe, ville ni « ses plus gros problèmes ») le dit ; « Compléter » enchaîne ce qui manque', () => {
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-due', path: '/v/prospects/:id' });
+    expect(screen.getByText('Fiche incomplète')).toBeTruthy();
+    // Le bandeau dit ce qui manque — sans renvoyer « à la prochaine modification » à côté d'un bouton « Compléter ».
+    expect(screen.getByText('Il manque le nom, le sexe, la ville et ses plus gros problèmes.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Compléter' }));
+    expect(screen.getByText('Compléter la fiche')).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Étape 1 sur 3' })).toBeTruthy();
+  });
+
+  it('dans la liste, une fiche incomplète porte « À compléter » ; une fiche complète, non', () => {
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    const row = (name: string) => screen.getByText(name).closest('button') as HTMLElement;
+    expect(within(row('Awa')).getByText('À compléter')).toBeTruthy();
+    expect(within(row('Bruno Ekané')).queryByText('À compléter')).toBeNull();
+  });
+
+  it('le brouillon d’un collègue, laissé sur le même téléphone, n’apparaît pas dans la liste', () => {
+    const draft = { v: 1, step: 'reach', savedAt: '', draft: { firstName: 'Gaëlle', lastName: 'Nkoulou', gender: 'FEMALE', phone: { country: 'CM', national: '' } } };
+    localStorage.setItem('bonzini.v.prospect-draft:u-autre', JSON.stringify({ ...draft, owner: 'u-autre' }));
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    expect(screen.queryByText(/Saisie en cours/)).toBeNull();
+    // Le sien, oui.
+    localStorage.setItem('bonzini.v.prospect-draft:u1', JSON.stringify({ ...draft, owner: 'u1' }));
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    expect(screen.getByText('Saisie en cours : Gaëlle Nkoulou')).toBeTruthy();
+  });
+
+  it('« Modifier » sur une section ouvre l’étape de l’assistant, pré-remplie', () => {
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier ses problèmes' }));
+    expect(screen.getByText(/Modifier · Ses problèmes/)).toBeTruthy();
+    expect((screen.getByLabelText(/Ses plus gros problèmes/) as HTMLTextAreaElement).value).toBe('Payer ses fournisseurs en Chine : trop lent');
   });
 });
 
@@ -320,11 +301,13 @@ describe('Espace commercial — numéros dans les listes', () => {
     expect(screen.queryByText('+237690000001')).toBeNull();
   });
 
-  it('la fiche : numéro lisible, appel et WhatsApp en E.164', () => {
-    mount(<CommercialProspectForm />, { route: '/v/prospects/p-due', path: '/v/prospects/:id' });
-    expect(screen.getByText('+237 6 90 00 00 01')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Appeler/ }).getAttribute('href')).toBe('tel:+237690000001');
-    expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toBe('https://wa.me/237690000001');
+  it('la recherche trouve aussi par un autre numéro et par l’email', () => {
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    fireEvent.change(screen.getByLabelText('Rechercher un prospect'), { target: { value: '138 1234' } });
+    expect(screen.getByText('Bruno Ekané')).toBeTruthy();
+    expect(screen.queryByText('Awa')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Rechercher un prospect'), { target: { value: 'ekane@gmail' } });
+    expect(screen.getByText('Bruno Ekané')).toBeTruthy();
   });
 
   it('les clients : un ancien numéro local s’affiche en +237, appel et WhatsApp en E.164', () => {

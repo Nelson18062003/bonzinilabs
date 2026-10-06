@@ -11,6 +11,7 @@ import type {
   LedgerEntryType,
   LedgerFilters,
   ClientStatus,
+  ClientGender,
 } from '@/types/admin';
 
 // Cache configuration
@@ -186,6 +187,10 @@ export function useClient(userId: string) {
         customerCode: client.customer_code || '',
         country: client.country || '',
         city: client.city || '',
+        // MALE / FEMALE ; 'OTHER' (la valeur par défaut historique) se lit « non renseigné ».
+        gender: (client.gender as ClientGender | null) ?? 'OTHER',
+        /** « AAAA-MM-JJ » ou null. */
+        dateOfBirth: client.date_of_birth ?? null,
         avatarUrl: client.avatar_url,
         createdAt: client.created_at,
         updatedAt: client.updated_at,
@@ -450,13 +455,45 @@ export function useCreateClient() {
 }
 
 /**
+ * Sexe et date de naissance d'un client (06/10) — `admin_set_client_identity` :
+ * canEditClients, ou canRegisterClients pour un client qu'on a soi-même
+ * enregistré (« Enregistré par », sans limite de temps). `gender` absent =
+ * inchangé ; `birthDate` null =
+ * l'effacer, absent = inchangée. Pas de toast : l'appelant dit ce qui s'est passé.
+ */
+export function useSetClientIdentity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { userId: string; gender?: 'MALE' | 'FEMALE'; birthDate?: string | null }) => {
+      const { data: result, error } = await supabaseAdmin.rpc('admin_set_client_identity', {
+        p_user_id: data.userId,
+        p_gender: data.gender ?? null,
+        p_date_of_birth: data.birthDate || null,
+        p_clear_birth_date: data.birthDate === null,
+      } as never);
+      if (error) throw new Error(error.message);
+      const res = result as { success?: boolean; error?: string } | null;
+      if (!res?.success) throw new Error(res?.error || 'Impossible d’enregistrer le sexe et la date de naissance');
+      return res;
+    },
+    onSuccess: (_, v) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['client', v.userId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+    },
+  });
+}
+
+/**
  * Update client profile
  */
 export function useUpdateClient() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; phone?: string; email?: string; companyName?: string; country?: string; city?: string }) => {
+    // `silent` : pas de toast de succès — l'appelant le dit lui-même (la fiche,
+    // quand le sexe ou la date de naissance s'enregistrent aussi).
+    mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; phone?: string; email?: string; companyName?: string; country?: string; city?: string; silent?: boolean }) => {
       const updateData: Record<string, string> = {};
       if (data.firstName !== undefined) updateData.first_name = data.firstName;
       if (data.lastName !== undefined) updateData.last_name = data.lastName;
@@ -477,7 +514,7 @@ export function useUpdateClient() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
-      toast.success(i18n.t('hooks.updateClient.success', { ns: 'common', defaultValue: 'Profil client modifié' }));
+      if (!variables.silent) toast.success(i18n.t('hooks.updateClient.success', { ns: 'common', defaultValue: 'Profil client modifié' }));
     },
     onError: (error: Error) => {
       toast.error(error.message || i18n.t('hooks.updateClient.error', { ns: 'common', defaultValue: 'Erreur lors de la modification' }));

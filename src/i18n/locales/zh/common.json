@@ -507,7 +507,7 @@
     "optional": "选填",
     "subtitle": "身份、联系方式与所在地",
     "identity": "身份",
-    "identityHint": "客户的名、姓和公司。",
+    "identityHint": "客户的名、姓、性别、出生日期和公司。",
     "contact": "联系方式",
     "contactHint": "WhatsApp 号码将收到临时密码。",
     "location": "所在地",
@@ -584,7 +584,37 @@
       "other": "其他",
       "unknown": "未知",
       "parcel": "收到包裹"
-    }
+    },
+    "gender": "性别",
+    "genderMale": "男",
+    "genderFemale": "女",
+    "genderReceptionHint": "此处可不填：您通常只能看到包裹标签。",
+    "birthDate": "出生日期",
+    "birthPlaceholder": "日/月/年",
+    "birthHint": "斜杠“/”会自动加上。",
+    "birthIncomplete": "日期不完整：请填写日、月、年（日/月/年）。",
+    "birthInvalid": "该日期不存在。",
+    "birthAge": "出生日期无效：年龄须在 {{min}} 至 {{max}} 岁之间。",
+    "identityFailed": "客户已创建，但出生日期未能保存。请在客户资料中补填（“修改”）。",
+    "identityFailedReception": "客户已创建，但出生日期未能保存。请让办公室在客户资料中补填。",
+    "prefillNote": "已从 {{name}} 的潜在客户资料（{{label}}）中带入：{{list}}。",
+    "prefillNoteNoLabel": "已从 {{name}} 的潜在客户资料中带入：{{list}}。",
+    "prefillNoteAnon": "已从其潜在客户资料中带入：{{list}}。",
+    "prefillStale": "主号码已不是 {{name}} 的号码：请核对从其资料带入的内容（{{list}}）。",
+    "prefillStaleAnon": "主号码已更改：请核对从潜在客户资料带入的内容（{{list}}）。",
+    "emailSuggestion": "销售记录的邮箱：",
+    "emailSuggestionWarn": "该邮箱将成为客户的登录地址：仅在客户本人确认后使用。",
+    "emailSuggestionUse": "已确认，使用此邮箱",
+    "prefillKeys": {
+      "firstName": "名",
+      "lastName": "姓",
+      "company": "公司",
+      "city": "城市",
+      "gender": "性别",
+      "birthDate": "出生日期",
+      "phones": "其他号码"
+    },
+    "ageYears": "{{age}} 岁"
   },
   "overdraft": {
     "title": "授权透支",
@@ -610,5 +640,16 @@
   "signInWithPassword": "密码",
   "signInWithPasswordHint": "开通账号时提供给您的密码",
   "enterPassword": "请输入密码",
-  "scanOpenNative": "打开扫码"
+  "scanOpenNative": "打开扫码",
+  "clientIdentity": {
+    "gender": "性别",
+    "birthDate": "出生日期",
+    "genderUnset": "未填写",
+    "birthUnset": "未填写",
+    "saved": "客户资料已修改",
+    "failed": "资料已保存，但性别和出生日期未能保存。",
+    "failedHint": "请重新打开“修改”再试一次。",
+    "birthInvalid": "出生日期无效",
+    "genderKeptHint": "性别一旦选定，就不能改回“未填写”。"
+  }
 }
