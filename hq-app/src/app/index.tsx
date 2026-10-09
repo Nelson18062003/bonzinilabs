@@ -36,7 +36,7 @@ import { C } from '../theme';
 import type { BridgeMessage } from '../bridge';
 import * as Notifications from 'expo-notifications';
 import { pathOf, registerForPush } from '../push';
-import { onSitePathQueued, peekSitePath, queueSitePath, staffPath, takeSitePath } from '../links';
+import { LOGIN_PATHS, onSitePathQueued, peekSitePath, queueSitePath, staffPath, takeSitePath } from '../links';
 import { applyUpdate, fetchUpdate, updateReady } from '../updates';
 
 /** « rgb(30, 30, 30) » → sombre ? (couleur de la barre d'état) */
@@ -46,8 +46,6 @@ function isDark(color: string): boolean {
   const [r, g, b] = m.map(Number);
   return 0.299 * r + 0.587 * g + 0.114 * b < 128;
 }
-
-const LOGIN_PATHS = ['/m/login', '/a/login', '/r/login', '/w/login', '/auth'];
 
 export default function Main() {
   const { user, setUser, route, setRoute, web, setScan, nativeTab, setNativeTab } = useHQ();

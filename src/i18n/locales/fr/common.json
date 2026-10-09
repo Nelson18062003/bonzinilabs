@@ -152,7 +152,10 @@
       "depositNeedsReview": "Dépôt à examiner",
       "paymentProcessing": "Paiement en cours",
       "paymentReady": "Paiement à traiter",
-      "unknownClient": "Client inconnu"
+      "unknownClient": "Client inconnu",
+      "prospectToVerify": "Numéro déjà client · {{commercial}}",
+      "prospectToVerifyOne": "{{prospect}} · client reconnu : {{client}}",
+      "prospectToVerifyMany": "{{prospect}} · {{count}} clients reconnus"
     },
     "adminProofMultiUpload": {
       "allFailed": "Échec du téléchargement",
@@ -507,7 +510,7 @@
     "optional": "optionnel",
     "subtitle": "Identité, contact et localisation",
     "identity": "Identité",
-    "identityHint": "Prénom, nom et entreprise du client.",
+    "identityHint": "Prénom, nom, sexe et date de naissance du client, et son entreprise.",
     "contact": "Contact",
     "contactHint": "Le numéro WhatsApp reçoit le mot de passe temporaire.",
     "location": "Localisation",
@@ -539,6 +542,11 @@
     "duplicateNumber": "Ce numéro est déjà dans la liste.",
     "labelOther": "Votre libellé : WeChat, Maison…",
     "addNumberShort": "Ajouter un numéro",
+    "staffPhonesTitle": "Numéros de téléphone (facultatif)",
+    "staffPrimaryNumber": "Numéro principal",
+    "staffPrimaryBadge": "Principal",
+    "staffPrimaryHint": "Le numéro où l’on joint ce collaborateur.",
+    "staffPrimaryMissing": "Le numéro principal est vide : remplissez-le, ou mettez un autre numéro en principal.",
     "quickLabel": {
       "mtn": "MTN",
       "orange": "Orange",
@@ -566,6 +574,10 @@
     "sourceProspectOther": "Ce numéro est un prospect de {{label}} : votre choix remplacera son commercial.",
     "sourceProspectKept": "Ce numéro est un prospect de {{label}} : le client lui sera attribué quand même. Seul un responsable peut changer son origine ensuite.",
     "sourceSummary": "Origine",
+    "sourceAuto": "Posée d’office : colis reçu · {{place}}",
+    "sourceAutoHint": "Le client d’un colis arrivé à Guangzhou : l’origine se pose toute seule, vous n’avez rien à choisir.",
+    "sourceOptionalHint": "Facultatif : sans choix, l’origine reste « Non renseignée ».",
+    "registeredByYou": "Ce client sera enregistré à votre nom.",
     "sourceKinds": {
       "commercial": "Commercial",
       "referral": "Recommandation",
@@ -573,8 +585,39 @@
       "online": "En ligne",
       "event": "Événement",
       "other": "Autre",
-      "unknown": "Inconnue"
-    }
+      "unknown": "Inconnue",
+      "parcel": "Colis reçu"
+    },
+    "gender": "Sexe",
+    "genderMale": "Homme",
+    "genderFemale": "Femme",
+    "genderReceptionHint": "Facultatif ici : vous ne voyez souvent que l’étiquette du colis.",
+    "birthDate": "Date de naissance",
+    "birthPlaceholder": "JJ/MM/AAAA",
+    "birthHint": "Les barres « / » se posent seules.",
+    "birthIncomplete": "Date incomplète : le jour, le mois et l’année (JJ/MM/AAAA).",
+    "birthInvalid": "Cette date n’existe pas.",
+    "birthAge": "Date de naissance invalide : l’âge doit être entre {{min}} et {{max}} ans.",
+    "identityFailed": "Le client est créé, mais sa date de naissance n’a pas pu être enregistrée. Ajoutez-la depuis sa fiche (« Modifier »).",
+    "identityFailedReception": "Le client est créé, mais sa date de naissance n’a pas pu être enregistrée. Demandez au bureau de l’ajouter sur sa fiche.",
+    "prefillNote": "Repris de la fiche de {{name}} (prospect de {{label}}) : {{list}}.",
+    "prefillNoteNoLabel": "Repris de la fiche prospect de {{name}} : {{list}}.",
+    "prefillNoteAnon": "Repris de sa fiche prospect : {{list}}.",
+    "prefillStale": "Le numéro principal n’est plus celui de {{name}} : vérifiez ce qui a été repris de sa fiche ({{list}}).",
+    "prefillStaleAnon": "Le numéro principal a changé : vérifiez ce qui a été repris de la fiche prospect ({{list}}).",
+    "emailSuggestion": "Email noté par le commercial :",
+    "emailSuggestionWarn": "Il deviendra l’adresse de connexion du client : utilisez-le seulement si le client vous le confirme.",
+    "emailSuggestionUse": "Confirmé : l’utiliser",
+    "prefillKeys": {
+      "firstName": "prénom",
+      "lastName": "nom",
+      "company": "entreprise",
+      "city": "ville",
+      "gender": "sexe",
+      "birthDate": "date de naissance",
+      "phones": "autres numéros"
+    },
+    "ageYears": "{{age}} ans"
   },
   "overdraft": {
     "title": "Découvert autorisé",
@@ -600,5 +643,39 @@
   "signInWithPassword": "Mot de passe",
   "signInWithPasswordHint": "Celui qui vous a été donné avec votre compte",
   "enterPassword": "Votre mot de passe",
-  "scanOpenNative": "Ouvrir le scanner"
+  "scanOpenNative": "Ouvrir le scanner",
+  "clientIdentity": {
+    "gender": "Sexe",
+    "birthDate": "Date de naissance",
+    "genderUnset": "Non renseigné",
+    "birthUnset": "Non renseignée",
+    "saved": "Profil client modifié",
+    "failed": "Le profil est enregistré, mais pas le sexe ni la date de naissance.",
+    "failedHint": "Rouvrez « Modifier » pour réessayer.",
+    "birthInvalid": "Date de naissance invalide",
+    "genderKeptHint": "Une fois choisi, le sexe ne revient pas à « non renseigné »."
+  },
+  "clientToProspect": {
+    "action": "Repasser en prospect",
+    "actionHint": "Seulement s’il n’a fait aucune opération : son compte devient une fiche prospect.",
+    "title": "Repasser {{name}} en prospect",
+    "checking": "Vérification de son activité…",
+    "loadError": "La vérification n’a pas pu se faire.",
+    "blockedTitle": "{{name}} ne peut pas redevenir prospect",
+    "blockedBody": "Ce compte a déjà une activité chez Bonzini : un client qui a fait la moindre opération reste client.",
+    "blockersTitle": "Ce qui bloque",
+    "warningsTitle": "Effacé aussi avec le compte (gardé au journal)",
+    "explain": "Son compte sera supprimé : il ne pourra plus se connecter. Ses informations deviennent une fiche prospect confiée au commercial choisi.",
+    "reopen": "Son ancienne fiche prospect est rouverte, au statut « Contacté ».",
+    "create": "Une fiche prospect est créée avec ses coordonnées : nom, numéros, entreprise, ville.",
+    "commercial": "Le commercial qui suivra ce prospect",
+    "suggested": "proposé",
+    "noCommercial": "Aucun commercial actif : créez d’abord l’accès d’un commercial dans « Mes équipes ».",
+    "reason": "Motif (facultatif)",
+    "reasonPlaceholder": "Compte créé trop tôt, n’a jamais commencé…",
+    "confirm": "Je confirme : le compte de {{name}} est supprimé et devient une fiche prospect.",
+    "submit": "Repasser en prospect",
+    "done": "{{name}} est maintenant un prospect de {{commercial}}",
+    "openCommercial": "Voir le commercial"
+  }
 }

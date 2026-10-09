@@ -10,11 +10,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import type { ClientRegistrationFields } from '@/lib/clientRegistration';
 
 export type ClientSource = Database['public']['Tables']['client_sources']['Row'];
-export type ClientSourceKind = 'commercial' | 'referral' | 'social' | 'online' | 'event' | 'other' | 'unknown';
+/**
+ * `parcel` (06/10) : « Colis reçu à Guangzhou » — posée d'office par la
+ * réception quand elle crée le client d'un colis arrivé (entrepôt ou bureau),
+ * jamais choisie ni créée à la main.
+ */
+export type ClientSourceKind = 'commercial' | 'referral' | 'social' | 'online' | 'event' | 'other' | 'unknown' | 'parcel';
 
-/** Les catégories qu'on peut créer (« Je ne sais pas » est fournie d'office). */
+/** Les catégories qu'on peut créer (« Je ne sais pas » et « Colis reçu » sont fournies d'office). */
 export const SOURCE_KINDS: ReadonlyArray<{ kind: Exclude<ClientSourceKind, 'unknown'>; label: string; hint: string; withPhone: boolean }> = [
   { kind: 'commercial', label: 'Commercial', hint: 'Une personne qui apporte des clients', withPhone: true },
   { kind: 'referral', label: 'Recommandation', hint: 'Un client ou un proche qui a recommandé Bonzini', withPhone: true },
@@ -26,6 +32,7 @@ export const SOURCE_KINDS: ReadonlyArray<{ kind: Exclude<ClientSourceKind, 'unkn
 
 export function sourceKindLabel(kind: string | null | undefined): string {
   if (kind === 'unknown') return 'Inconnue';
+  if (kind === 'parcel') return 'Colis reçu';
   if (kind === 'none') return 'Non renseignée';
   return SOURCE_KINDS.find((k) => k.kind === kind)?.label ?? 'Autre';
 }
@@ -121,18 +128,43 @@ export function useSetClientSource() {
   });
 }
 
-/** L'origine d'un client (fiche client). */
+/**
+ * La réception vient de créer ce client (le propriétaire d'un colis n'existait
+ * pas) : l'origine « Colis reçu · Entrepôt / Bureau de Guangzhou » se pose
+ * d'office, selon le lieu. Le prospect d'un commercial reste prioritaire
+ * (`kept` : l'origine déjà posée ne bouge pas).
+ */
+export function useSetReceptionOrigin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { userId: string; location: 'office' | 'warehouse' }) => {
+      const { data, error } = await supabaseAdmin.rpc('reception_set_client_origin', { p_user_id: args.userId, p_location: args.location });
+      if (error) throw error;
+      return unwrap<RpcResult & { kept: boolean; source_id: string; label: string; kind: ClientSourceKind }>(data, 'Impossible d’enregistrer l’origine du client');
+    },
+    onSuccess: (_r, args) => {
+      qc.invalidateQueries({ queryKey: ['client-origin', args.userId] });
+      qc.invalidateQueries({ queryKey: ['client-source-report'] });
+    },
+  });
+}
+
+/** L'origine d'un client (fiche client), et qui l'a enregistré. */
 export function useClientOrigin(userId: string | undefined) {
   return useQuery({
     queryKey: ['client-origin', userId],
     queryFn: async () => {
       const { data, error } = await supabaseAdmin
         .from('clients')
-        .select('source_id, source_set_at, source:client_sources!clients_source_id_fkey(id, kind, label, phone)')
+        .select('source_id, source_set_at, created_at, registered_by, registered_by_name, registered_role, registered_site, registered_at, source:client_sources!clients_source_id_fkey(id, kind, label, phone)')
         .eq('user_id', userId!)
         .maybeSingle();
       if (error) throw error;
-      const row = data as { source_id: string | null; source_set_at: string | null; source: Pick<ClientSource, 'id' | 'kind' | 'label' | 'phone'> | null } | null;
+      const row = data as ({
+        source_id: string | null;
+        source_set_at: string | null;
+        source: Pick<ClientSource, 'id' | 'kind' | 'label' | 'phone'> | null;
+      } & ClientRegistrationFields) | null;
       return row;
     },
     enabled: !!userId,

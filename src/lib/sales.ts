@@ -1,12 +1,18 @@
 // ============================================================
 // Ventes — le vocabulaire commun à l'espace commercial (« /v ») et au
-// pilotage dans « Mes équipes » : statuts d'un prospect, intérêts, objectifs
-// du mois, mois de Douala. Les chiffres viennent du serveur
-// (commercial_dashboard, commercial_clients, sales_overview).
+// pilotage dans « Mes équipes » : statuts d'un prospect, intérêts, idées de
+// problèmes, objectifs du mois, mois de Douala. Les chiffres viennent du
+// serveur (commercial_dashboard, commercial_clients, sales_overview).
 // ============================================================
 import type { Tone } from '@/mobile/designKit/tokens';
+import { normalizePhone } from '@/lib/phone';
 
-export type ProspectStatus = 'new' | 'contacted' | 'interested' | 'won' | 'lost';
+/**
+ * `to_verify` (07/10) : un des numéros saisis est déjà celui d'un client
+ * Bonzini — la fiche attend la décision de la direction (attribuer ce client
+ * au commercial, ou non). Le commercial ne sait pas de quel client il s'agit.
+ */
+export type ProspectStatus = 'new' | 'contacted' | 'interested' | 'to_verify' | 'won' | 'lost';
 export type Interest = 'payments' | 'air' | 'sea';
 export type ObjectiveMetric = 'new_clients' | 'payments_xaf' | 'air_kg' | 'sea_cbm' | 'prospects_new' | 'prospects_won';
 
@@ -14,19 +20,80 @@ export const PROSPECT_STATUS: Record<ProspectStatus, { label: string; tone: Tone
   new: { label: 'À contacter', tone: 'info' },
   contacted: { label: 'Contacté', tone: 'pending' },
   interested: { label: 'Intéressé', tone: 'pending' },
+  to_verify: { label: 'À vérifier', tone: 'pending' },
   won: { label: 'Devenu client', tone: 'success' },
   lost: { label: 'Perdu', tone: 'neutral' },
 };
 
-/** Les statuts qu'un commercial pose lui-même (« devenu client » vient du compte créé). */
-export const SETTABLE_STATUSES: Exclude<ProspectStatus, 'won'>[] = ['new', 'contacted', 'interested', 'lost'];
+/** Les statuts qu'un commercial pose lui-même (« devenu client » vient du compte créé, « à vérifier » du serveur). */
+export const SETTABLE_STATUSES: Exclude<ProspectStatus, 'won' | 'to_verify'>[] = ['new', 'contacted', 'interested', 'lost'];
 export const OPEN_STATUSES: ProspectStatus[] = ['new', 'contacted', 'interested'];
+
+/**
+ * Ce que le commercial lit quand un numéro qu'il saisit est déjà celui d'un
+ * client Bonzini (07/10) : sans nom — il ne sait pas de quel client il
+ * s'agit —, et sans blocage : il continue, la direction décide.
+ */
+export const CLIENT_NUMBER_NOTE = {
+  title: 'Ce numéro est déjà celui d’un client Bonzini.',
+  next: 'Continuez\u00a0: la direction sera prévenue et décidera.',
+} as const;
+
+/** Une fiche « À vérifier » enregistrée : ce qui va se passer (toast, fiche). Espaces insécables avant « : » (pas de deux-points seul en tête de ligne). */
+export const TO_VERIFY_NOTE = 'La direction est prévenue\u00a0: elle vous attribuera ce client si c’est bien vous qui l’avez convaincu.';
 
 export const INTERESTS: { value: Interest; label: string }[] = [
   { value: 'payments', label: 'Payer ses fournisseurs' },
   { value: 'air', label: 'Fret avion' },
   { value: 'sea', label: 'Fret bateau' },
 ];
+
+/**
+ * « Ses plus gros problèmes aujourd'hui » : des idées qu'un toucher ajoute au
+ * champ libre (06/10). Ce ne sont que des amorces — le commercial écrit avec
+ * les mots du prospect ; le champ reste du texte.
+ */
+export const PAIN_IDEAS = [
+  'Payer ses fournisseurs en Chine',
+  'Manque de capital',
+  'Gérer son capital',
+  'Transport avion',
+  'Transport bateau',
+  'Trouver les bons fournisseurs',
+  'La douane et sa procédure',
+  'Fixer ses prix de vente',
+] as const;
+
+/** Les libellés d'un numéro de plus, à choisir d'un toucher (la saisie reste libre). */
+export const PHONE_LABEL_IDEAS = ['WhatsApp', 'WeChat', 'Bureau', 'Domicile', 'Chine'] as const;
+
+/** Les libellés qui disent un numéro chinois : choisis sur une ligne encore vide, l'indicatif passe à +86. */
+export const CHINESE_PHONE_LABELS: readonly string[] = ['WeChat', 'Chine'];
+
+/**
+ * Les brouillons de l'espace commercial gardés dans l'appareil (prospect en
+ * cours de saisie, modification de fiche en cours), rangés sous le compte
+ * de leur auteur : `bonzini.v.prospect-draft:<compte>`, `…-edit:<compte>:…`.
+ */
+export const SALES_DRAFT_PREFIX = 'bonzini.v.prospect-';
+
+/**
+ * À la déconnexion : plus aucun brouillon (nom, numéros, date de naissance,
+ * « ses plus gros problèmes » d'un prospect) ne reste dans l'appareil — un
+ * téléphone ou un navigateur peut être partagé.
+ */
+export function clearSalesDrafts(): void {
+  try {
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(SALES_DRAFT_PREFIX)) doomed.push(k);
+    }
+    for (const k of doomed) localStorage.removeItem(k);
+  } catch {
+    /* stockage indisponible : rien n'y a été gardé */
+  }
+}
 
 export const OBJECTIVES: { metric: ObjectiveMetric; label: string; unit: 'count' | 'xaf' | 'kg' | 'cbm' }[] = [
   { metric: 'new_clients', label: 'Nouveaux clients', unit: 'count' },
@@ -126,12 +193,15 @@ export function monthLabel(month: string): string {
 /** « de mars », « d’octobre » (élision devant avril, août, octobre). */
 export const ofMonth = (name: string) => (/^[aeiouyàâéèêîôû]/i.test(name) ? `d’${name}` : `de ${name}`);
 
-/** Un numéro tapé (« 699 12 34 56 ») au format international ; le Cameroun par défaut. */
-export function toE164(raw: string, defaultCountry = '237'): string | null {
-  let v = raw.replace(/[\s.()-]/g, '');
-  if (v.startsWith('00')) v = `+${v.slice(2)}`;
-  if (!v.startsWith('+') && /^[62]\d{8}$/.test(v)) v = `+${defaultCountry}${v}`;
-  return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
+/**
+ * Le numéro d'un client (`clients.phone`, texte libre) au format E.164, pour
+ * l'afficher et l'appeler. Les comptes récents sont déjà en « +… » ; un
+ * ancien numéro local est lu comme camerounais, comme cette liste l'a
+ * toujours fait (libphonenumber vérifie qu'il en est bien un). `null` sinon.
+ * Les prospects, eux, ont leur `phone_e164`, fixé à la saisie.
+ */
+export function clientPhoneE164(raw: string | null | undefined): string | null {
+  return normalizePhone(raw, 'CM')?.e164 ?? null;
 }
 
 /** Lien WhatsApp vers un numéro international. */

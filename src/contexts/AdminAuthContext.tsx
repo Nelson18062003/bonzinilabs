@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { authenticateWithPasskey } from '@/lib/passkey';
 import { authCodeFromUrl, authErrorFromUrl } from '@/lib/authCallbackUrl';
+import { clearSalesDrafts } from '@/lib/sales';
 
 // Types based on database app_role enum
 export type AppRole = 'super_admin' | 'ops' | 'support' | 'customer_success' | 'cash_agent' | 'treasurer' | 'receptionist' | 'warehouse_agent' | 'customs_broker' | 'commercial';
@@ -750,6 +751,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Les brouillons de l'espace commercial (prospects en cours de saisie) ne survivent pas à la session.
+    clearSalesDrafts();
     await supabaseAdmin.auth.signOut();
     setCurrentUser(null);
     setSession(null);

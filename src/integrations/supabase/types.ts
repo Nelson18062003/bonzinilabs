@@ -1472,6 +1472,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           staff_user_id: string | null
+          system_code: string | null
           updated_at: string
         }
         Insert: {
@@ -1485,6 +1486,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           staff_user_id?: string | null
+          system_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -1498,6 +1500,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           staff_user_id?: string | null
+          system_code?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1526,6 +1529,11 @@ export type Database = {
           phone_e164: string | null
           phone_verified_at: string | null
           preferred_locale: string | null
+          registered_at: string | null
+          registered_by: string | null
+          registered_by_name: string | null
+          registered_role: string | null
+          registered_site: string | null
           sms_marketing_opt_in: boolean
           source_id: string | null
           source_set_at: string | null
@@ -1562,6 +1570,11 @@ export type Database = {
           phone_e164?: string | null
           phone_verified_at?: string | null
           preferred_locale?: string | null
+          registered_at?: string | null
+          registered_by?: string | null
+          registered_by_name?: string | null
+          registered_role?: string | null
+          registered_site?: string | null
           sms_marketing_opt_in?: boolean
           source_id?: string | null
           source_set_at?: string | null
@@ -1598,6 +1611,11 @@ export type Database = {
           phone_e164?: string | null
           phone_verified_at?: string | null
           preferred_locale?: string | null
+          registered_at?: string | null
+          registered_by?: string | null
+          registered_by_name?: string | null
+          registered_role?: string | null
+          registered_site?: string | null
           sms_marketing_opt_in?: boolean
           source_id?: string | null
           source_set_at?: string | null
@@ -3386,21 +3404,114 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_client_claims: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          created_by: string | null
+          direction_rejected_at: string | null
+          id: string
+          matched_phone: string
+          note: string | null
+          prospect_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          created_by?: string | null
+          direction_rejected_at?: string | null
+          id?: string
+          matched_phone: string
+          note?: string | null
+          prospect_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          direction_rejected_at?: string | null
+          id?: string
+          matched_phone?: string
+          note?: string | null
+          prospect_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_client_claims_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prospect_phones: {
+        Row: {
+          country_iso: string | null
+          created_at: string
+          id: string
+          label: string | null
+          phone_e164: string
+          position: number
+          prospect_id: string
+        }
+        Insert: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164: string
+          position?: number
+          prospect_id: string
+        }
+        Update: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164?: string
+          position?: number
+          prospect_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_phones_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prospects: {
         Row: {
+          birth_date: string | null
           city: string | null
           company: string | null
           converted_at: string | null
           converted_user_id: string | null
           created_at: string
           created_by: string | null
+          email: string | null
           first_name: string
+          gender: string | null
+          help_needed: string | null
           id: string
           interests: string[]
           last_name: string | null
           lost_reason: string | null
           next_action_at: string | null
           notes: string | null
+          pain_points: string | null
           phone: string
           phone_e164: string
           source_id: string
@@ -3409,19 +3520,24 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
           city?: string | null
           company?: string | null
           converted_at?: string | null
           converted_user_id?: string | null
           created_at?: string
           created_by?: string | null
+          email?: string | null
           first_name: string
+          gender?: string | null
+          help_needed?: string | null
           id?: string
           interests?: string[]
           last_name?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
           notes?: string | null
+          pain_points?: string | null
           phone: string
           phone_e164: string
           source_id: string
@@ -3430,19 +3546,24 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
           city?: string | null
           company?: string | null
           converted_at?: string | null
           converted_user_id?: string | null
           created_at?: string
           created_by?: string | null
+          email?: string | null
           first_name?: string
+          gender?: string | null
+          help_needed?: string | null
           id?: string
           interests?: string[]
           last_name?: string | null
           lost_reason?: string | null
           next_action_at?: string | null
           notes?: string | null
+          pain_points?: string | null
           phone?: string
           phone_e164?: string
           source_id?: string
@@ -3807,6 +3928,36 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_phones: {
+        Row: {
+          country_iso: string | null
+          created_at: string
+          id: string
+          label: string | null
+          phone_e164: string
+          position: number
+          user_id: string
+        }
+        Insert: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164: string
+          position?: number
+          user_id: string
+        }
+        Update: {
+          country_iso?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          phone_e164?: string
+          position?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_push_devices: {
         Row: {
           app_version: string | null
@@ -3837,6 +3988,39 @@ export type Database = {
           last_seen_at?: string
           platform?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      staff_sites: {
+        Row: {
+          code: string | null
+          country_iso: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string
+          position: number
+        }
+        Insert: {
+          code?: string | null
+          country_iso?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          position?: number
+        }
+        Update: {
+          code?: string | null
+          country_iso?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          position?: number
         }
         Relationships: []
       }
@@ -4282,6 +4466,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
+          site_id: string | null
           user_id: string
         }
         Insert: {
@@ -4295,6 +4480,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          site_id?: string | null
           user_id: string
         }
         Update: {
@@ -4308,6 +4494,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          site_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -4530,6 +4717,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_client_prospect_eligibility: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      admin_client_to_prospect: {
+        Args: { p_reason?: string; p_source_id: string; p_user_id: string }
+        Returns: Json
+      }
       admin_correct_payment: {
         Args: {
           p_amount_rmb?: number
@@ -4594,6 +4789,15 @@ export type Database = {
         Returns: Json
       }
       admin_revoke_passkey: { Args: { p_credential: string }; Returns: Json }
+      admin_set_client_identity: {
+        Args: {
+          p_clear_birth_date?: boolean
+          p_date_of_birth?: string
+          p_gender?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_set_client_locale: {
         Args: { p_locale: string; p_user_id: string }
         Returns: Json
@@ -5379,6 +5583,20 @@ export type Database = {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
+      prospect_claims_pending: { Args: never; Returns: Json }
+      prospect_phone_check: {
+        Args: { p_exclude_prospect_id?: string; p_phone: string }
+        Returns: Json
+      }
+      prospect_resolve_claim: {
+        Args: {
+          p_client_user_id?: string
+          p_decision: string
+          p_note?: string
+          p_prospect_id: string
+        }
+        Returns: Json
+      }
       purge_webauthn_challenges: { Args: never; Returns: undefined }
       reception_add_parcel: {
         Args: {
@@ -5501,6 +5719,13 @@ export type Database = {
         Returns: Json
       }
       reception_search_clients: { Args: { p_query: string }; Returns: Json }
+      reception_set_client_origin: {
+        Args: {
+          p_location: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       reception_set_parcel_cover: {
         Args: { p_photo_id: string }
         Returns: Json
@@ -5624,6 +5849,15 @@ export type Database = {
       run_profile_reminders: { Args: never; Returns: undefined }
       run_sms_deposit_reminders: { Args: never; Returns: undefined }
       run_sms_drainer: { Args: never; Returns: undefined }
+      sales_series: {
+        Args: {
+          p_from: string
+          p_grain?: string
+          p_source_id?: string
+          p_to: string
+        }
+        Returns: Json
+      }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
       search_chat_conversations: {
         Args: { p_query: string }
@@ -5645,6 +5879,15 @@ export type Database = {
           p_permission: string
           p_roles?: string[]
           p_title: string
+        }
+        Returns: number
+      }
+      send_staff_push_user: {
+        Args: {
+          p_body: string
+          p_path: string
+          p_title: string
+          p_user_id: string
         }
         Returns: number
       }
@@ -5686,6 +5929,23 @@ export type Database = {
       staff_push_client_name: { Args: { p_user_id: string }; Returns: string }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
+      team_create_site: {
+        Args: {
+          p_country_iso?: string
+          p_label: string
+        }
+        Returns: Json
+      }
+      team_set_member_profile: {
+        Args: {
+          p_clear_site?: boolean
+          p_phones?: Json
+          p_site_id?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      team_sites: { Args: never; Returns: Json }
       toggle_admin_status: {
         Args: { p_disabled: boolean; p_target_user_id: string }
         Returns: Json

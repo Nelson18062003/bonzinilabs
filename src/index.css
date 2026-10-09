@@ -1757,3 +1757,326 @@
 }
 .dz-scroll-x { scrollbar-width: none; }
 .dz-scroll-x::-webkit-scrollbar { display: none; }
+
+/* ============================================================================
+   ESPACE COMMERCIAL (« /v ») — le langage visuel de beautifului.dev
+   (« Crafted primitives for AI-native interfaces », MIT), adapté au téléphone.
+
+   Encre quasi noire sur surface blanche, filets d'un pixel, ombres en couches
+   à peine visibles, rayons doux, beaucoup d'air, chiffres tabulaires ; des
+   apparitions par flou léger, un reflet qui court sur ce qui charge, des
+   segmentés à pastille glissante. Le violet de la marque est l'ACCENT
+   (focus, étape en cours, idées retenues) ; les actions sont à l'encre.
+
+   PORTÉE : `.sales-ui`, posée par CommercialShell à côté de `.admin-theme`.
+   Rien ici ne touche l'administration, l'app client ni la landing page.
+   Les jetons de l'administration (--background, --card, --primary…) sont
+   relus dans ce langage : les pièces partagées (SalesBits, la barre
+   d'onglets, les champs du kit) suivent sans changer de code.
+
+   Couleurs en HSL et non en oklch comme l'original : la WebView de
+   BONZINI HQ sur un vieil Android ne lit pas oklch.
+   ========================================================================= */
+.admin-theme.sales-ui {
+  --s-page: 240 9% 98%;
+  --s-surface: 0 0% 100%;
+  --s-inset: 220 14% 97.3%;
+  --s-hover: 220 12% 96%;
+  --s-hover-2: 216 9% 91.5%;
+  --s-field: 240 6% 95.5%;
+  --s-ink: 216 9% 12%;
+  --s-ink-2: 220 5% 38%;
+  /* Le gris tertiaire porte de l'information (titres de section, « facultatif »,
+   * « Non renseigné ») : 4,5:1 au moins sur la surface, la page et un champ
+   * (AA, lu au soleil). Le gris le plus pâle reste aux textes d'exemple. */
+  --s-ink-3: 220 5% 44%;
+  --s-ink-4: 220 4% 56%;
+  --s-line: 220 9% 92.5%;
+  --s-line-strong: 216 10% 87%;
+  --s-accent: 258 84% 58%;
+  --s-accent-ink: 258 66% 47%;
+  --s-accent-tint: 258 100% 97.5%;
+  --s-green: 148 70% 29%;
+  --s-green-tint: 143 48% 94.5%;
+  --s-orange: 27 90% 39%;
+  --s-orange-tint: 34 95% 95%;
+  --s-red: 358 68% 47%;
+  --s-red-tint: 0 80% 96.5%;
+  --s-shadow-hairline: 0 0 0 1px hsl(var(--s-line));
+  --s-shadow-btn: 0 0 0 1px hsl(var(--s-line-strong)), 0 1px 2px rgb(16 24 40 / 0.04);
+  --s-shadow-card: 0 0 0 1px hsl(var(--s-line)), 0 18px 47px rgb(0 0 0 / 0.03), 0 7.5px 19px rgb(0 0 0 / 0.02),
+    0 4px 10.5px rgb(0 0 0 / 0.02), 0 2.3px 5.8px rgb(0 0 0 / 0.012), 0 1.2px 3.1px rgb(0 0 0 / 0.012);
+  --s-shadow-raised: 0 0 0 1px hsl(var(--s-line)), 0 17.5px 23.4px rgb(0 0 0 / 0.04), 0 9.4px 12.5px rgb(0 0 0 / 0.03),
+    0 5.25px 7px rgb(0 0 0 / 0.02), 0 1.16px 1.5px rgb(0 0 0 / 0.012);
+  --s-shadow-overlay: 0 0 0 1px hsl(var(--s-line)), 0 25px 50px rgb(0 0 0 / 0.05), 0 12px 24px rgb(0 0 0 / 0.04),
+    0 6px 12px rgb(0 0 0 / 0.03), 0 3px 6px rgb(0 0 0 / 0.02);
+  --s-ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Les jetons partagés, relus dans ce langage. */
+  --background: var(--s-page);
+  --foreground: var(--s-ink);
+  --card: var(--s-surface);
+  --card-foreground: var(--s-ink);
+  --popover: var(--s-surface);
+  --popover-foreground: var(--s-ink);
+  --primary: var(--s-ink);
+  --primary-foreground: var(--s-surface);
+  --secondary: var(--s-field);
+  --secondary-foreground: var(--s-ink);
+  --muted: var(--s-field);
+  --muted-foreground: var(--s-ink-2);
+  --accent: var(--s-hover);
+  --accent-foreground: var(--s-ink);
+  --border: var(--s-line-strong);
+  --input: var(--s-line-strong);
+  --ring: var(--s-accent);
+
+  color: hsl(var(--s-ink));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark .admin-theme.sales-ui,
+.admin-theme.sales-ui.dark {
+  --s-page: 220 6% 9.5%;
+  --s-surface: 225 6% 14%;
+  --s-inset: 220 5% 12.5%;
+  --s-hover: 225 5% 17.5%;
+  --s-hover-2: 228 5% 21%;
+  --s-field: 225 5% 17.5%;
+  --s-ink: 210 10% 95%;
+  --s-ink-2: 217 6% 69%;
+  --s-ink-3: 220 5% 60%;
+  --s-ink-4: 220 4% 51%;
+  --s-line: 216 5% 19%;
+  --s-line-strong: 220 5% 25%;
+  --s-accent: 258 92% 74%;
+  --s-accent-ink: 258 95% 83%;
+  --s-accent-tint: 258 40% 21%;
+  --s-green: 145 55% 58%;
+  --s-green-tint: 147 35% 15%;
+  --s-orange: 31 92% 63%;
+  --s-orange-tint: 28 42% 14%;
+  --s-red: 358 82% 68%;
+  --s-red-tint: 358 45% 17%;
+  --s-shadow-btn: 0 0 0 1px rgb(255 255 255 / 0.1), 0 1px 2px rgb(0 0 0 / 0.3);
+  --s-shadow-card: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.2), 0 2px 6px rgb(0 0 0 / 0.2);
+  --s-shadow-raised: 0 0 0 1px rgb(255 255 255 / 0.1), 0 2px 10px rgb(0 0 0 / 0.22);
+  --s-shadow-overlay: 0 0 0 1px rgb(255 255 255 / 0.12), 0 8px 28px rgb(0 0 0 / 0.34);
+}
+
+.sales-ui ::selection { background: hsl(var(--s-accent) / 0.2); }
+
+/* ── Surfaces et encres ─────────────────────────────────────────────────── */
+.sales-ui .s-surface { background-color: hsl(var(--s-surface)); }
+.sales-ui .s-card { background-color: hsl(var(--s-surface)); box-shadow: var(--s-shadow-card); }
+.sales-ui .s-card[data-tone="warn"] { background-color: hsl(var(--s-orange-tint)); box-shadow: inset 0 0 0 1px hsl(var(--s-orange) / 0.22); }
+.sales-ui .s-raised { background-color: hsl(var(--s-surface)); box-shadow: var(--s-shadow-raised); }
+.sales-ui .s-overlay { background-color: hsl(var(--s-surface)); box-shadow: var(--s-shadow-overlay); }
+.sales-ui .s-inset { background-color: hsl(var(--s-inset)); box-shadow: var(--s-shadow-hairline); }
+.sales-ui .s-field-bg { background-color: hsl(var(--s-field)); }
+.sales-ui .s-ink { color: hsl(var(--s-ink)); }
+.sales-ui .s-ink-2 { color: hsl(var(--s-ink-2)); }
+.sales-ui .s-ink-3 { color: hsl(var(--s-ink-3)); }
+.sales-ui .s-accent { color: hsl(var(--s-accent-ink)); }
+.sales-ui .s-good { color: hsl(var(--s-green)); }
+.sales-ui .s-warn { color: hsl(var(--s-orange)); }
+.sales-ui .s-bad { color: hsl(var(--s-red)); }
+.sales-ui .s-divide > * + * { border-top: 1px solid hsl(var(--s-line)); }
+.sales-ui .s-rule { background-color: hsl(var(--s-line)); }
+.sales-ui .s-row { transition: background-color 0.12s ease-out; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) {
+  .sales-ui .s-row:hover { background-color: hsl(var(--s-hover)); }
+}
+.sales-ui .s-row:active { background-color: hsl(var(--s-hover-2)); }
+.sales-ui .s-row:focus-visible { outline: 2px solid hsl(var(--s-accent)); outline-offset: -2px; }
+
+/* ── Boutons ────────────────────────────────────────────────────────────── */
+.sales-ui .s-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-weight: 600; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s, box-shadow 0.15s, color 0.15s, opacity 0.15s, transform 0.18s var(--s-ease);
+}
+.sales-ui .s-btn:active:not(:disabled) { transform: scale(0.98); }
+.sales-ui .s-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--s-surface)), 0 0 0 4px hsl(var(--s-accent)); }
+.sales-ui .s-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.sales-ui .s-btn-ink {
+  background-color: hsl(var(--s-ink)); color: hsl(var(--s-surface));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(16 24 40 / 0.1);
+}
+@media (hover: hover) {
+  .sales-ui .s-btn-ink:hover:not(:disabled) { background-color: hsl(var(--s-ink) / 0.86); }
+  .sales-ui .s-btn-quiet:hover:not(:disabled), .sales-ui .s-btn-ghost:hover:not(:disabled) { background-color: hsl(var(--s-hover)); color: hsl(var(--s-ink)); }
+  .sales-ui .s-btn-danger:hover:not(:disabled) { background-color: hsl(var(--s-red-tint)); }
+  .sales-ui .s-btn-whatsapp:hover:not(:disabled) { background-color: #198f48; }
+}
+.sales-ui .s-btn-quiet { background-color: hsl(var(--s-surface)); color: hsl(var(--s-ink)); box-shadow: var(--s-shadow-btn); }
+.sales-ui .s-btn-ghost { color: hsl(var(--s-ink-2)); }
+.sales-ui .s-btn-danger { color: hsl(var(--s-red)); }
+.sales-ui .s-btn-red { background-color: hsl(var(--s-red)); color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14); }
+.sales-ui .s-btn-whatsapp { background-color: #1fa855; color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(16 24 40 / 0.1); }
+
+/* ── Champs : remplis, sans bord ; au focus, la surface et l'anneau violet ─ */
+.sales-ui .s-input {
+  background-color: hsl(var(--s-field)); color: hsl(var(--s-ink));
+  border: 1px solid transparent; outline: none;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+.sales-ui .s-input::placeholder { color: hsl(var(--s-ink-4)); }
+.sales-ui .s-input:focus { background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-accent)); box-shadow: 0 0 0 4px hsl(var(--s-accent) / 0.14); }
+.sales-ui .s-input[aria-invalid="true"] { background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-red)); }
+.sales-ui .s-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 4px hsl(var(--s-red) / 0.12); }
+.sales-ui .s-input:disabled { opacity: 0.55; cursor: not-allowed; }
+.sales-ui .s-input::-webkit-calendar-picker-indicator { opacity: 0.55; }
+
+/* Le champ téléphone partagé (drapeau + indicatif + numéro), dans la même
+ * matière. Ses couleurs propres (ambre pendant la frappe) sont remplacées :
+ * ici, seul `data-invalid` (posé par le formulaire) le dit en rouge. */
+.sales-ui .s-phone input[type="tel"],
+.sales-ui .s-phone button[aria-haspopup="listbox"] {
+  height: 52px; border-radius: 14px; font-size: 17px;
+  background-color: hsl(var(--s-field)); color: hsl(var(--s-ink));
+  border-color: transparent; box-shadow: none;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+.sales-ui .s-phone input[type="tel"]::placeholder { color: hsl(var(--s-ink-4)); }
+.sales-ui .s-phone input[type="tel"]:focus,
+.sales-ui .s-phone button[aria-haspopup="listbox"]:focus-visible,
+.sales-ui .s-phone button[aria-expanded="true"] {
+  background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-accent)); box-shadow: 0 0 0 4px hsl(var(--s-accent) / 0.14);
+}
+.sales-ui .s-phone[data-invalid="true"] input[type="tel"] { background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-red)); }
+.sales-ui .s-phone[data-invalid="true"] input[type="tel"]:focus { box-shadow: 0 0 0 4px hsl(var(--s-red) / 0.12); }
+.sales-ui .s-phone input[type="tel"]:disabled,
+.sales-ui .s-phone button[aria-haspopup="listbox"]:disabled { opacity: 0.55; background-color: hsl(var(--s-field)); color: hsl(var(--s-ink)); }
+
+/* ── Pastilles ──────────────────────────────────────────────────────────── */
+.sales-ui .s-chip {
+  background-color: hsl(var(--s-surface)); color: hsl(var(--s-ink)); box-shadow: var(--s-shadow-btn);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.18s var(--s-ease);
+}
+@media (hover: hover) {
+  .sales-ui .s-chip:hover:not([aria-pressed="true"]):not([aria-checked="true"]) { background-color: hsl(var(--s-hover)); }
+  .sales-ui .s-filter:hover:not([aria-pressed="true"]) { background-color: hsl(var(--s-hover)); }
+}
+.sales-ui .s-chip:active { transform: scale(0.97); }
+.sales-ui .s-chip[aria-pressed="true"],
+.sales-ui .s-chip[aria-checked="true"] { background-color: hsl(var(--s-ink)); color: hsl(var(--s-surface)); box-shadow: none; }
+.sales-ui .s-chip:focus-visible,
+.sales-ui .s-filter:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--s-surface)), 0 0 0 4px hsl(var(--s-accent)); }
+/* Une idée : discrète tant qu'elle n'est pas retenue, violette ensuite. */
+.sales-ui .s-idea { background-color: hsl(var(--s-field)); color: hsl(var(--s-ink-2)); transition: background-color 0.15s, color 0.15s, transform 0.18s var(--s-ease); }
+.sales-ui .s-idea:active { transform: scale(0.97); }
+.sales-ui .s-idea[aria-pressed="true"] { background-color: hsl(var(--s-accent-tint)); color: hsl(var(--s-accent-ink)); box-shadow: inset 0 0 0 1px hsl(var(--s-accent) / 0.28); }
+.sales-ui .s-idea:focus-visible { outline: 2px solid hsl(var(--s-accent)); outline-offset: 2px; }
+/* Les filtres d'une liste (comme FILTER TABLE) : le choisi se pose en relief. */
+.sales-ui .s-filter { color: hsl(var(--s-ink-2)); transition: background-color 0.2s, box-shadow 0.2s, color 0.2s; }
+.sales-ui .s-filter[aria-pressed="true"] { background-color: hsl(var(--s-surface)); color: hsl(var(--s-ink)); box-shadow: var(--s-shadow-btn); }
+.sales-ui .s-filter .s-count { color: hsl(var(--s-ink-3)); }
+.sales-ui .s-filter[aria-pressed="true"] .s-count { background-color: hsl(var(--s-field)); color: hsl(var(--s-ink-2)); }
+/* Une rangée qui défile en largeur, fondue aux deux bords (une puce coupée net ressemble à un défaut). */
+.sales-ui .s-fade-x {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+
+/* Un choix exclusif en grande carte (Homme / Femme) et son rond « radio »
+ * (comme APPROVAL CARD) ; l'ajout d'une ligne, en pointillés. */
+.sales-ui .s-option {
+  background-color: hsl(var(--s-surface)); color: hsl(var(--s-ink)); box-shadow: var(--s-shadow-btn);
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.2s, background-color 0.15s, transform 0.18s var(--s-ease);
+}
+.sales-ui .s-option:active { transform: scale(0.98); }
+.sales-ui .s-option[aria-checked="true"] { box-shadow: 0 0 0 2px hsl(var(--s-ink)), var(--s-shadow-card); }
+.sales-ui .s-option[data-invalid="true"] { box-shadow: 0 0 0 1.5px hsl(var(--s-red)); }
+.sales-ui .s-option:focus-visible { outline: 2px solid hsl(var(--s-accent)); outline-offset: 3px; }
+.sales-ui .s-radio { box-shadow: inset 0 0 0 1.5px hsl(var(--s-line-strong)); transition: background-color 0.2s, box-shadow 0.2s; }
+.sales-ui .s-radio > i { background-color: hsl(var(--s-surface)); transform: scale(0); transition: transform 0.22s var(--s-ease); }
+.sales-ui [aria-checked="true"] > .s-radio { background-color: hsl(var(--s-ink)); box-shadow: none; }
+.sales-ui [aria-checked="true"] > .s-radio > i { transform: scale(1); }
+.sales-ui .s-add { border: 1.5px dashed hsl(var(--s-line-strong)); color: hsl(var(--s-ink-2)); transition: border-color 0.15s, color 0.15s, background-color 0.15s; }
+@media (hover: hover) {
+  .sales-ui .s-add:hover { border-color: hsl(var(--s-ink-3)); color: hsl(var(--s-ink)); background-color: hsl(var(--s-hover)); }
+}
+.sales-ui .s-add:focus-visible { outline: 2px solid hsl(var(--s-accent)); outline-offset: 2px; }
+
+/* ── Étiquettes de statut (comme RECORDS TABLE) ─────────────────────────── */
+.sales-ui .s-tag {
+  --tag-fg: var(--s-ink-2); --tag-bg: var(--s-field); --tag-line: var(--s-line-strong); --tag-dot: var(--s-ink-3);
+  color: hsl(var(--tag-fg)); background-color: hsl(var(--tag-bg)); box-shadow: inset 0 0 0 1px hsl(var(--tag-line));
+}
+.sales-ui .s-tag .s-tag-dot { background-color: hsl(var(--tag-dot)); }
+.sales-ui .s-tag[data-tone="info"] { --tag-fg: 201 85% 29%; --tag-bg: 199 90% 96.5%; --tag-line: 199 70% 86%; --tag-dot: 199 85% 46%; }
+.sales-ui .s-tag[data-tone="pending"] { --tag-fg: 30 90% 29%; --tag-bg: 40 95% 95%; --tag-line: 38 80% 82%; --tag-dot: 35 92% 50%; }
+.sales-ui .s-tag[data-tone="accent"] { --tag-fg: 258 60% 45%; --tag-bg: 258 100% 97.5%; --tag-line: 258 80% 90%; --tag-dot: 258 84% 62%; }
+.sales-ui .s-tag[data-tone="success"] { --tag-fg: 148 65% 25%; --tag-bg: 143 50% 95%; --tag-line: 143 40% 83%; --tag-dot: 148 62% 40%; }
+.sales-ui .s-tag[data-tone="warn"] { --tag-fg: 27 90% 33%; --tag-bg: 34 95% 95%; --tag-line: 32 80% 83%; --tag-dot: 27 90% 50%; }
+.dark .sales-ui .s-tag[data-tone="info"] { --tag-fg: 199 85% 75%; --tag-bg: 201 45% 16%; --tag-line: 201 40% 26%; --tag-dot: 199 85% 58%; }
+.dark .sales-ui .s-tag[data-tone="pending"] { --tag-fg: 38 92% 70%; --tag-bg: 34 45% 15%; --tag-line: 34 40% 25%; --tag-dot: 38 92% 58%; }
+.dark .sales-ui .s-tag[data-tone="accent"] { --tag-fg: 258 95% 84%; --tag-bg: 258 35% 20%; --tag-line: 258 30% 31%; --tag-dot: 258 92% 74%; }
+.dark .sales-ui .s-tag[data-tone="success"] { --tag-fg: 145 55% 70%; --tag-bg: 147 35% 14%; --tag-line: 147 30% 24%; --tag-dot: 145 55% 55%; }
+.dark .sales-ui .s-tag[data-tone="warn"] { --tag-fg: 31 92% 70%; --tag-bg: 30 50% 15%; --tag-line: 30 40% 25%; --tag-dot: 31 92% 60%; }
+
+/* ── Encarts (fiche incomplète, devenu client, brouillon repris…) ──────── */
+.sales-ui .s-note { background-color: hsl(var(--s-inset)); box-shadow: var(--s-shadow-hairline); }
+.sales-ui .s-note[data-tone="warn"] { background-color: hsl(var(--s-orange-tint)); box-shadow: inset 0 0 0 1px hsl(var(--s-orange) / 0.2); }
+.sales-ui .s-note[data-tone="good"] { background-color: hsl(var(--s-green-tint)); box-shadow: inset 0 0 0 1px hsl(var(--s-green) / 0.18); }
+.sales-ui .s-note[data-tone="accent"] { background-color: hsl(var(--s-accent-tint)); box-shadow: inset 0 0 0 1px hsl(var(--s-accent) / 0.18); }
+/* Ce que le prospect a confié : mis en valeur, d'un filet violet. */
+.sales-ui .s-quote { background-color: hsl(var(--s-accent-tint)); box-shadow: inset 3px 0 0 hsl(var(--s-accent)); }
+
+/* ── Segmenté à pastille glissante, progression, barres ─────────────────── */
+.sales-ui .s-seg { background-color: hsl(var(--s-field)); }
+.sales-ui .s-seg-thumb { background-color: hsl(var(--s-surface)); box-shadow: var(--s-shadow-btn); transition: transform 0.34s var(--s-ease); }
+.sales-ui .s-seg-opt { color: hsl(var(--s-ink-2)); transition: color 0.2s; -webkit-tap-highlight-color: transparent; }
+.sales-ui .s-seg-opt[aria-checked="true"] { color: hsl(var(--s-ink)); }
+.sales-ui .s-seg-opt:focus-visible { outline: 2px solid hsl(var(--s-accent)); outline-offset: -2px; }
+.sales-ui .s-progress > span { background-color: hsl(var(--s-line-strong)); }
+.sales-ui .s-progress > span > i { background-color: hsl(var(--s-ink)); transform-origin: left center; transition: transform 0.45s var(--s-ease); }
+.sales-ui .s-progress > span[data-current="true"] > i { background-color: hsl(var(--s-accent)); }
+
+/* ── Mouvement : apparitions par flou léger, reflet de chargement ───────── */
+@keyframes s-blur-in { from { opacity: 0; filter: blur(6px); transform: translateY(6px); } }
+@keyframes s-step-fwd { from { opacity: 0; filter: blur(4px); transform: translateX(22px); } }
+@keyframes s-step-back { from { opacity: 0; filter: blur(4px); transform: translateX(-22px); } }
+@keyframes s-pop { from { opacity: 0; transform: scale(0.96); } }
+@keyframes s-roll-up { from { transform: translateY(100%); opacity: 0; } }
+@keyframes s-roll-down { from { transform: translateY(-100%); opacity: 0; } }
+@keyframes s-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+/* `backwards` et non `both` : l'animation finie, plus de `filter` ni de
+ * `transform` sur l'élément (un ancêtre filtré piégerait une feuille `fixed`). */
+.sales-ui .s-enter { animation: s-blur-in 0.5s var(--s-ease) backwards; }
+.sales-ui .s-step-fwd { animation: s-step-fwd 0.42s var(--s-ease) backwards; }
+.sales-ui .s-step-back { animation: s-step-back 0.42s var(--s-ease) backwards; }
+.sales-ui .s-pop { animation: s-pop 0.22s var(--s-ease) backwards; }
+.sales-ui .s-roll-up { display: inline-block; animation: s-roll-up 0.35s var(--s-ease) backwards; }
+.sales-ui .s-roll-down { display: inline-block; animation: s-roll-down 0.35s var(--s-ease) backwards; }
+.sales-ui .s-shimmer {
+  background-image: linear-gradient(90deg, hsl(var(--s-ink-3)) 35%, hsl(var(--s-ink)) 50%, hsl(var(--s-ink-3)) 65%);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: s-shimmer 1.4s linear infinite;
+}
+.sales-ui .s-btn-ink .s-shimmer {
+  background-image: linear-gradient(90deg, hsl(var(--s-surface) / 0.55) 35%, hsl(var(--s-surface)) 50%, hsl(var(--s-surface) / 0.55) 65%);
+}
+.sales-ui .s-skeleton {
+  background-image: linear-gradient(90deg, hsl(var(--s-field)) 30%, hsl(var(--s-hover-2)) 50%, hsl(var(--s-field)) 70%);
+  background-size: 200% 100%; animation: s-shimmer 1.4s linear infinite;
+}
+
+/* ── La barre d'onglets et la feuille basse, dans la même matière ───────── */
+.sales-ui .liquid-nav { background: hsl(var(--s-surface) / 0.84); border-color: transparent; box-shadow: var(--s-shadow-overlay); }
+.sales-ui .liquid-nav-tint { display: none; }
+.sales-ui .liquid-pill-body { background: hsl(var(--s-ink) / 0.06); }
+.sales-ui .liquid-tab-active { color: hsl(var(--s-ink)); }
+.sales-ui .s-sheet { background-color: hsl(var(--s-surface)); border-color: transparent; box-shadow: var(--s-shadow-overlay); border-top-left-radius: 22px; border-top-right-radius: 22px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-ui .s-enter, .sales-ui .s-step-fwd, .sales-ui .s-step-back, .sales-ui .s-pop,
+  .sales-ui .s-roll-up, .sales-ui .s-roll-down, .sales-ui .s-skeleton { animation: none; }
+  .sales-ui .s-shimmer { animation: none; background: none; color: inherit; }
+  .sales-ui .s-seg-thumb, .sales-ui .s-progress > span > i, .sales-ui .s-btn, .sales-ui .s-chip, .sales-ui .s-idea,
+  .sales-ui .s-option, .sales-ui .s-radio > i { transition: none; }
+}

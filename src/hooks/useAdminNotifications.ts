@@ -1,7 +1,15 @@
 // ============================================================
 // Admin Notifications — Actionable items needing attention
 // Uses supabaseAdmin (admin session)
+//
+// Depuis le 07/10, la direction (canManageSales) y lit aussi les fiches
+// « À vérifier » : un commercial a saisi le numéro d'un client Bonzini —
+// une entrée par fiche, vers l'écran où elle décide. Lues par
+// `useProspectClaims` (clé ['sales', 'claims']) : une décision prise sur
+// l'écran rafraîchit la cloche d'elle-même. Les autres rôles n'envoient
+// AUCUNE requête (le serveur la refuserait de toute façon).
 // ============================================================
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/actionable';
 import { supabaseAdmin } from '@/integrations/supabase/client';
@@ -11,6 +19,8 @@ import { alertLevel } from '@/lib/cargo/palette';
 import { arrivalSentence, delaySentence } from '@/lib/cargo/plain';
 import { daysUntilArrival } from '@/lib/cargo/model';
 import type { CargoShipment } from '@/lib/cargo/model';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useProspectClaims, type ProspectClaim } from '@/hooks/useSales';
 
 export type AdminNotificationType =
   | 'deposit_needs_review'
@@ -18,7 +28,8 @@ export type AdminNotificationType =
   | 'payment_ready'
   | 'payment_processing'
   | 'cargo_late'
-  | 'cargo_arriving';
+  | 'cargo_arriving'
+  | 'prospect_to_verify';
 
 export interface AdminNotification {
   id: string;
@@ -75,11 +86,95 @@ function cargoNotifications(shipments: CargoShipment[]): AdminNotification[] {
   return out;
 }
 
+/** L'écran « À vérifier » de la direction (Mes équipes › Les commerciaux). */
+export const PROSPECT_CLAIMS_PATH = '/m/equipe/ventes/a-verifier';
+
+/** Les vérifications en attente, regroupées par fiche prospect (plusieurs clients peuvent être reconnus pour une fiche). */
+export function groupClaimsByProspect(claims: readonly ProspectClaim[]): ProspectClaim[][] {
+  const groups = new Map<string, ProspectClaim[]>();
+  for (const c of claims) {
+    const id = c.prospect?.id ?? c.claim_id;
+    const g = groups.get(id);
+    if (g) g.push(c);
+    else groups.set(id, [c]);
+  }
+  return [...groups.values()];
+}
+
+/**
+ * Une notification par fiche « À vérifier » : « Numéro déjà client ·
+ * <commercial> », le prospect saisi et le client reconnu, vers l'écran de
+ * décision (la fiche y est mise en évidence).
+ */
+export function prospectClaimNotifications(claims: readonly ProspectClaim[]): AdminNotification[] {
+  return groupClaimsByProspect(claims).map((group) => {
+    const first = group[0];
+    const p = first.prospect;
+    const prospect = [p?.first_name, p?.last_name].filter(Boolean).join(' ') || '—';
+    const subtitle =
+      group.length > 1
+        ? i18n.t('hooks.adminNotifications.prospectToVerifyMany', { ns: 'common', prospect, count: group.length, defaultValue: `${prospect} · ${group.length} clients reconnus` })
+        : i18n.t('hooks.adminNotifications.prospectToVerifyOne', {
+            ns: 'common',
+            prospect,
+            client: first.client.name,
+            defaultValue: `${prospect} · client reconnu : ${first.client.name}`,
+          });
+    const createdAt = group.reduce((latest, c) => (c.created_at > latest ? c.created_at : latest), first.created_at);
+    return {
+      id: `prospect-claim-${p?.id ?? first.claim_id}`,
+      type: 'prospect_to_verify' as const,
+      title: i18n.t('hooks.adminNotifications.prospectToVerify', {
+        ns: 'common',
+        commercial: first.source_label,
+        defaultValue: `Numéro déjà client · ${first.source_label}`,
+      }),
+      subtitle,
+      createdAt,
+      targetPath: p?.id ? `${PROSPECT_CLAIMS_PATH}?fiche=${encodeURIComponent(p.id)}` : PROSPECT_CLAIMS_PATH,
+    };
+  });
+}
+
+const NO_CLAIMS: readonly ProspectClaim[] = [];
+
+/** Les fiches « À vérifier », pour la direction seulement (sinon : aucune requête, rien). */
+function usePendingClaims() {
+  const { hasPermission } = useAdminAuth();
+  const canManageSales = hasPermission('canManageSales');
+  const claims = useProspectClaims(canManageSales);
+  return { canManageSales, claims, rows: canManageSales ? claims.data ?? NO_CLAIMS : NO_CLAIMS };
+}
 
 /**
  * Fetches all actionable items for the admin notification center.
  */
 export function useAdminNotifications() {
+  const pending = usePendingClaims();
+  const base = useAdminActionNotifications();
+  const { refetch: refetchBase } = base;
+  const { refetch: refetchClaims } = pending.claims;
+  const canManageSales = pending.canManageSales;
+  const claimRows = pending.rows;
+  const data = useMemo(() => {
+    if (!base.data) return base.data;
+    if (claimRows.length === 0) return base.data;
+    return [...base.data, ...prospectClaimNotifications(claimRows)].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [base.data, claimRows]);
+  return {
+    data,
+    isLoading: base.isLoading,
+    isError: base.isError,
+    refetch: async () => {
+      await Promise.all([refetchBase(), canManageSales ? refetchClaims() : undefined]);
+    },
+  };
+}
+
+/** Dépôts, paiements et conteneurs à traiter (le fil commun à tous les rôles). */
+function useAdminActionNotifications() {
   return useQuery({
     queryKey: ['admin-notifications'],
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,
@@ -161,9 +256,20 @@ export function useAdminNotifications() {
 }
 
 /**
- * Count of all actionable items (for badge display)
+ * Count of all actionable items (for badge display) — fiches « À vérifier »
+ * comprises pour la direction (une par fiche, comme la liste).
  */
 export function useAdminNotificationCount() {
+  const pending = usePendingClaims();
+  const base = useAdminActionCount();
+  const claims = useMemo(() => groupClaimsByProspect(pending.rows).length, [pending.rows]);
+  return {
+    data: base.data === undefined && claims === 0 ? undefined : (base.data ?? 0) + claims,
+    isLoading: base.isLoading,
+  };
+}
+
+function useAdminActionCount() {
   return useQuery({
     queryKey: ['admin-notification-count'],
     staleTime: CACHE_CONFIG.STALE_TIME.LISTS,

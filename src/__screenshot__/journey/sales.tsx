@@ -3,9 +3,21 @@
 // L'espace du commercial (« /v ») tel que l'application le monte (App.tsx) :
 // CommercialRouteWrapper (LanguageProvider, garde canProspect, coquille et
 // barre d'onglets), avec la session de Rodrigue Tchami à la place de la
-// fausse session « Demo Admin » du harnais. Puis, côté bureau, la fenêtre
+// fausse session « Demo Admin » du harnais. Le prospect : l'assistant en sept
+// étapes, la fiche (complète ou d'avant le 06/10), la modification d'une
+// section (« ?modifier=… ») et « Compléter » (« ?completer »). Puis, côté bureau, la fenêtre
 // « Nouveau client » de l'administration desktop, ouverte par Nelson Ngango.
+// 07/10 : un numéro déjà celui d'un client Bonzini — la note pendant la saisie, la fiche
+// « À vérifier » (juste enregistrée, puis plus tard) et sa puce dans la liste.
+// 08/10 : « Mon mois » refait (paiements et dépôts sur 6 mois, objectifs et rythme, clients, prospects,
+// fret) — sales_series servie par tools/journey/salesSeriesFixture.mjs, une seule fiche (Rodrigue).
 import { useContext, useMemo, type ReactNode } from 'react';
+// DM Sans servie en local : Google Fonts passe mal par le mandataire des captures.
+import '@fontsource/dm-sans/latin-400.css';
+import '@fontsource/dm-sans/latin-500.css';
+import '@fontsource/dm-sans/latin-600.css';
+import '@fontsource/dm-sans/latin-700.css';
+import { Route, Routes } from 'react-router-dom';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext, type AdminUser } from '@/contexts/AdminAuthContext';
 import { CommercialRouteWrapper } from '@/components/sales/CommercialRouteWrapper';
@@ -13,6 +25,8 @@ import { CommercialHome } from '@/components/sales/CommercialHome';
 import { CommercialProspects } from '@/components/sales/CommercialProspects';
 import { CommercialProspectForm } from '@/components/sales/CommercialProspectForm';
 import { CommercialClients } from '@/components/sales/CommercialClients';
+import { CommercialLogin } from '@/components/sales/CommercialLogin';
+import { CommercialPassword } from '@/components/sales/CommercialPassword';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { DesktopCreateClientDialog } from '@/desktop/screens/clients';
 
@@ -53,10 +67,32 @@ const ProspectForm = () => (
     <CommercialProspectForm />
   </V>
 );
+/** L'assistant, puis la fiche qu'il ouvre à l'enregistrement (« /v/prospects/new » → « /v/prospects/:id »). */
+const ProspectFlow = () => (
+  <V tabs={false}>
+    <Routes>
+      <Route path="/v/prospects/new" element={<CommercialProspectForm />} />
+      <Route path="/v/prospects/:id" element={<CommercialProspectForm />} />
+    </Routes>
+  </V>
+);
 const Clients = () => (
   <V>
     <CommercialClients />
   </V>
+);
+/** « /v/login » : sans session, comme dans App.tsx. */
+const Login = () => (
+  <CommercialRouteWrapper requireAuth={false}>
+    <CommercialLogin />
+  </CommercialRouteWrapper>
+);
+const Password = () => (
+  <As user={RODRIGUE}>
+    <CommercialRouteWrapper showTabBar={false} bare>
+      <CommercialPassword />
+    </CommercialRouteWrapper>
+  </As>
 );
 const OfficeNewClient = () => (
   <As user={NELSON}>
@@ -67,11 +103,20 @@ const OfficeNewClient = () => (
 );
 
 export const SCREENS: Record<string, JourneyEntry> = {
+  'j.sales.login': { Comp: Login, route: '/v/login' },
+  'j.sales.password': { Comp: Password, route: '/v/password' },
   'j.sales.home': { Comp: Home, route: '/v' },
   'j.sales.prospects': { Comp: Prospects, route: '/v/prospects' },
   'j.sales.prospects-closed': { Comp: Prospects, route: '/v/prospects?filtre=clients' },
+  'j.sales.prospects-verify': { Comp: Prospects, route: '/v/prospects?filtre=a-verifier' },
   'j.sales.prospect-new': { Comp: ProspectForm, route: '/v/prospects/new' },
+  'j.sales.prospect-flow': { Comp: ProspectFlow, route: '/v/prospects/new' },
+  'j.sales.prospect-verify': { Comp: ProspectForm, route: '/v/prospects/p-linda', path: '/v/prospects/:id' },
+  'j.sales.prospect-refused': { Comp: ProspectForm, route: '/v/prospects/p-nadege', path: '/v/prospects/:id' },
   'j.sales.prospect-card': { Comp: ProspectForm, route: '/v/prospects/p-mireille', path: '/v/prospects/:id' },
+  'j.sales.prospect-incomplete': { Comp: ProspectForm, route: '/v/prospects/p-sylvie', path: '/v/prospects/:id' },
+  'j.sales.prospect-edit-needs': { Comp: ProspectForm, route: '/v/prospects/p-mireille?modifier=besoins', path: '/v/prospects/:id' },
+  'j.sales.prospect-edit-incomplete': { Comp: ProspectForm, route: '/v/prospects/p-sylvie?completer', path: '/v/prospects/:id' },
   'j.sales.clients': { Comp: Clients, route: '/v/clients' },
   'j.sales.office-new-client': { Comp: OfficeNewClient, route: '/m/clients/new' },
 };

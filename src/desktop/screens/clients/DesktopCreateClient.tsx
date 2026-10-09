@@ -6,19 +6,23 @@
  * (`DesktopCreateClientDialog`). Trois sections : Identité · Contact ·
  * Localisation. Tous les pays du monde avec leur drapeau, numéros validés
  * par libphonenumber, plusieurs numéros possibles (le premier est le
- * principal, celui qui reçoit le mot de passe).
+ * principal, celui qui reçoit le mot de passe). Le sexe est obligatoire,
+ * la date de naissance facultative ; le numéro d'un prospect reprend
+ * d'office sa fiche dans les champs encore vides (note sous le numéro).
  */
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Copy, UserPlus, Plus, X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, FormField, TextInput, PrimaryPill, SoftPill } from '@/desktop/designKit';
 import { PhoneNumberInput, formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { prefillPhoneFromQuery } from '@/components/clients/prospectPrefill';
 import { useCreateClientForm, whatsappShareUrl, MAX_PHONES } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
-import { ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
+import { ProspectEmailSuggestion, ProspectPrefillNote, ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
+import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
 
 interface CreateClientProps {
   /**
@@ -33,7 +37,9 @@ const CONTROL = 'h-12 rounded-2xl';
 export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const form = useCreateClientForm();
+  // `?phone=+237…` : « Créer son compte client » depuis la fiche d'un prospect (07/10).
+  const [params] = useSearchParams();
+  const form = useCreateClientForm({ initialPhone: prefillPhoneFromQuery(params.get('phone')) });
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   const optional = <span className={cn('ml-1 text-[13px] font-normal', TEXT.muted)}>{t('clientForm.optional')}</span>;
@@ -84,6 +90,11 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
               {t('clientForm.sourceFailed')}
             </div>
           )}
+          {c.identityFailed && (
+            <div className="mt-3 rounded-2xl bg-destructive/10 px-3 py-2.5 text-[12px] leading-relaxed text-destructive">
+              {t('clientForm.identityFailed')}
+            </div>
+          )}
         </Card>
 
         <div className="flex gap-2.5">
@@ -114,6 +125,20 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
             <FormField label={<>{t('lastName')}{required}</>} htmlFor="cc-last">
               <TextInput id="cc-last" className={CONTROL} placeholder="Bienvenue" value={form.fields.lastName} onChange={(e) => form.setField('lastName', e.target.value)} autoComplete="family-name" />
             </FormField>
+            <GenderField
+              id="cc-gender"
+              label={<>{t('clientForm.gender')}{required}</>}
+              value={form.gender}
+              onChange={form.setGender}
+              controlClassName={CONTROL}
+            />
+            <BirthDateField
+              id="cc-birth"
+              label={<>{t('clientForm.birthDate')}{optional}</>}
+              value={form.fields.birthDate}
+              onChange={(v) => form.setField('birthDate', v)}
+              controlClassName={CONTROL}
+            />
             <div className="sm:col-span-2">
               <FormField label={<>{t('company')}{optional}</>} htmlFor="cc-company">
                 <TextInput id="cc-company" className={CONTROL} placeholder="Jako Cargo SARL" value={form.fields.company} onChange={(e) => form.setField('company', e.target.value)} autoComplete="organization" />
@@ -170,10 +195,12 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
                 </button>
               )}
             </div>
+            <ProspectPrefillNote prefill={form.prefill} stale={form.prefillStale} />
           </div>
 
           <FormField label={<>{t('email')}{optional}</>} htmlFor="cc-email" error={form.errors.email ? t('clientForm.emailInvalid') : undefined}>
             <TextInput id="cc-email" className={CONTROL} type="email" placeholder="fabrice@jakocargo.com" value={form.fields.email} onChange={(e) => form.setField('email', e.target.value)} autoComplete="email" />
+            <ProspectEmailSuggestion email={form.emailSuggestion} onUse={form.acceptEmailSuggestion} />
           </FormField>
         </Section>
 
@@ -189,9 +216,11 @@ export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}
         </Section>
 
         <Section title={t('clientForm.sourceTitle')} hint={t('clientForm.sourceHint')}>
-          <FormField label={<>{t('clientForm.sourceSummary')}{required}</>} htmlFor="cc-source">
+          {/* Facultative depuis le 06/10 : sans choix, elle reste « Non renseignée ». */}
+          <FormField label={<>{t('clientForm.sourceSummary')}{optional}</>} htmlFor="cc-source">
             <ClientSourcePicker id="cc-source" value={form.sourceId} onChange={form.setSourceId} controlClassName={CONTROL} />
             <ProspectSourceNote prospect={form.prospect} sourceId={form.sourceId} />
+            {!form.sourceId && <p className={cn('mt-1.5 text-[13px]', TEXT.muted)}>{t('clientForm.sourceOptionalHint')}</p>}
           </FormField>
         </Section>
       </div>

@@ -6,13 +6,14 @@
 // pas accès). Données : commercial_clients, limité à SA fiche.
 // ============================================================
 import { useMemo, useState } from 'react';
-import { Handshake, MessageCircle, Phone, Plane, Search, Ship, Users, Wallet } from 'lucide-react';
+import { Handshake, MessageCircle, Phone, Plane, Ship, Users, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { normalizeText } from '@/lib/clientSearch';
 import { useCommercialClients } from '@/hooks/useSales';
-import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, toE164, whatsappLink, type CommercialClient } from '@/lib/sales';
-import { TextInput } from '@/mobile/designKit';
-import { Figure, ListSkeleton, LoadError, MonthSwitcher, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
+import { clientPhoneE164, currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, whatsappLink, type CommercialClient } from '@/lib/sales';
+import { Figure, ListSkeleton, LoadError, MonthSwitcher, PhoneNumber, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
+import { SearchField } from './SalesUi';
+import { btn } from './uiClasses';
 import { fmtLongDay, initialsOf, isUnlinkedError, plural } from './salesHelpers';
 
 const isActive = (c: CommercialClient) => c.payments_count + c.air_parcels + c.sea_parcels > 0;
@@ -46,7 +47,7 @@ export function CommercialClients() {
     : rows.filter(
         (c) =>
           normalizeText(`${c.name} ${c.company ?? ''} ${c.customer_code ?? ''}`).includes(nq) ||
-          (digits.length >= 3 && (c.phone ?? '').replace(/\D/g, '').includes(digits)),
+          (digits.length >= 3 && [clientPhoneE164(c.phone), c.phone].some((n) => (n ?? '').replace(/\D/g, '').includes(digits))),
       );
 
   return (
@@ -66,7 +67,7 @@ export function CommercialClients() {
               <>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className={cn('h-24 animate-pulse rounded-2xl bg-muted', i < 2 && 'col-span-2 md:col-span-1')} />
+                    <div key={i} className={cn('s-skeleton h-24 animate-pulse rounded-[18px] bg-muted', i < 2 && 'col-span-2 md:col-span-1')} />
                   ))}
                 </div>
                 <div className={SALES_CARD}>
@@ -78,12 +79,12 @@ export function CommercialClients() {
                 <LoadError message="Vos clients n’ont pas pu être chargés." onRetry={() => void clients.refetch()} />
               </div>
             ) : rows.length === 0 ? (
-              <div className={cn(SALES_CARD, 'flex flex-col items-center px-6 py-12 text-center')}>
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <Handshake className="h-5 w-5 text-muted-foreground" />
+              <div className={cn(SALES_CARD, 's-enter flex flex-col items-center px-6 py-12 text-center')}>
+                <span className="s-inset flex h-11 w-11 items-center justify-center rounded-xl">
+                  <Handshake className="h-5 w-5 s-ink-3" />
                 </span>
-                <h2 className="mt-4 text-[17px] font-semibold">Pas encore de client</h2>
-                <p className="mt-1.5 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
+                <h2 className="mt-4 text-[18px] font-semibold tracking-[-0.01em] s-ink">Pas encore de client</h2>
+                <p className="mt-1.5 max-w-sm text-[15px] leading-relaxed s-ink-2">
                   Un client apparaît ici dès que la réception crée son compte en vous choisissant comme origine — ou tout seul, quand son numéro est
                   celui de l’un de vos prospects.
                 </p>
@@ -91,35 +92,22 @@ export function CommercialClients() {
             ) : (
               <>
                 {/* Téléphone : clients et paiements sur toute la largeur (un montant en XAF passait sur deux lignes dans une demi-tuile). */}
-                <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <section className="s-enter grid grid-cols-2 gap-3 md:grid-cols-4">
                   <Figure className="col-span-2 md:col-span-1" icon={Users} label="Clients" value={fmtCount(rows.length)} hint={`${sum.active} actif${sum.active > 1 ? 's' : ''} en ${monthName}`} />
                   <Figure className="col-span-2 md:col-span-1" icon={Wallet} label="Paiements" value={fmtXaf(sum.pay)} hint={plural(sum.payN, 'paiement', 'paiements')} />
                   <Figure icon={Plane} label="Fret avion" value={fmtKg(sum.airKg)} hint={plural(sum.airN, 'colis', 'colis')} />
                   <Figure icon={Ship} label="Fret bateau" value={fmtCbm(sum.seaCbm)} hint={plural(sum.seaN, 'colis', 'colis')} />
                 </section>
 
-                {rows.length > 6 && (
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                    <TextInput
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                      placeholder="Nom, entreprise, code client, téléphone"
-                      aria-label="Rechercher un client"
-                      inputMode="search"
-                      autoComplete="off"
-                      className="h-12 rounded-xl border-input bg-card pl-11 dark:bg-card"
-                    />
-                  </div>
-                )}
+                {rows.length > 6 && <SearchField value={q} onChange={setQ} placeholder="Nom, entreprise, code client, téléphone" ariaLabel="Rechercher un client" />}
 
                 <div className={cn('overflow-hidden', SALES_CARD)}>
                   {shown.length === 0 ? (
-                    <div className="p-10 text-center text-[14px] text-muted-foreground">Aucun client ne correspond à cette recherche.</div>
+                    <div className="p-10 text-center text-[15px] s-ink-2">Aucun client ne correspond à cette recherche.</div>
                   ) : (
-                    <ul className="divide-y divide-border/60">
-                      {shown.map((c) => (
-                        <li key={c.user_id}>
+                    <ul className="s-divide">
+                      {shown.map((c, i) => (
+                        <li key={c.user_id} className="s-enter" style={i < 12 ? { animationDelay: `${60 + i * 28}ms` } : undefined}>
                           <ClientRow c={c} />
                         </li>
                       ))}
@@ -127,7 +115,7 @@ export function CommercialClients() {
                   )}
                 </div>
 
-                <p className="pb-2 text-[12.5px] leading-relaxed text-muted-foreground">
+                <p className="px-1 pb-2 text-[13px] leading-relaxed s-ink-3">
                   Chiffres de {monthName} : paiements terminés, colis enregistrés (avion au bureau, bateau à l’entrepôt), dépôts annulés exclus.
                 </p>
               </>
@@ -140,49 +128,43 @@ export function CommercialClients() {
 }
 
 function ClientRow({ c }: { c: CommercialClient }) {
-  const e164 = c.phone ? toE164(c.phone) : null;
+  const e164 = clientPhoneE164(c.phone);
   const tel = e164 ?? c.phone?.replace(/[^\d+]/g, '') ?? null;
-  const sub = [c.company, c.customer_code].filter(Boolean).join(' · ');
+  const sub = [c.company, c.customer_code].filter(Boolean).join('\u00a0· ');
   return (
     <div className="px-4 py-4 sm:px-5">
       <div className="flex items-start gap-3">
-        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold', isActive(c) ? 'bg-primary/10 text-foreground' : 'bg-muted text-muted-foreground')} aria-hidden>
+        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold', isActive(c) ? 's-ink bg-[hsl(var(--s-accent-tint))] shadow-[inset_0_0_0_1px_hsl(var(--s-accent)/0.2)]' : 's-field-bg s-ink-2')} aria-hidden>
           {initialsOf(c.name)}
         </span>
-        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
+        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; le numéro (drapeau, format international), puis l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1 truncate text-[15px] font-semibold">{c.name || '—'}</div>
+            <div className="min-w-0 flex-1 truncate text-[16px] font-semibold s-ink">{c.name || '—'}</div>
             {tel && (
               <div className="flex shrink-0 items-center gap-1.5">
-                <a
-                  href={`tel:${tel}`}
-                  aria-label={`Appeler ${c.name}`}
-                  className="flex h-10 w-10 items-center justify-center rounded-full ring-1 ring-black/10 transition-colors hover:bg-accent dark:ring-white/15"
-                >
+                <a href={`tel:${tel}`} aria-label={`Appeler ${c.name}`} className={btn('quiet', 'icon')}>
                   <Phone className="h-4 w-4" />
                 </a>
                 {e164 && (
-                  <a
-                    href={whatsappLink(e164)}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Écrire à ${c.name} sur WhatsApp`}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366] text-white transition-colors hover:bg-[#1DA851]"
-                  >
+                  <a href={whatsappLink(e164)} target="_blank" rel="noreferrer" aria-label={`Écrire à ${c.name} sur WhatsApp`} className={btn('whatsapp', 'icon')}>
                     <MessageCircle className="h-4 w-4" />
                   </a>
                 )}
               </div>
             )}
           </div>
-          <div className="text-[13px] tabular-nums text-muted-foreground">
-            {sub && `${sub} · `}
-            <span className="whitespace-nowrap">client depuis le {fmtLongDay(c.created_at)}</span>
-          </div>
+          {c.phone && (
+            <div className="text-[13px] s-ink-2">
+              <PhoneNumber e164={e164 ?? c.phone} />
+            </div>
+          )}
+          {/* Entreprise et code sur une ligne, « client depuis » sur la sienne : aucun « · » ne pend en bout de ligne. */}
+          {sub && <div className="text-[13px] tabular-nums s-ink-2">{sub}</div>}
+          <div className="text-[13px] s-ink-2">Client depuis le {fmtLongDay(c.created_at)}</div>
         </div>
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-muted/50 px-3 py-2.5 text-[13px] tabular-nums sm:ml-[3.25rem] sm:grid-cols-3">
+      <dl className="s-inset mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-muted/50 px-3 py-2.5 text-[13px] tabular-nums sm:ml-[3.25rem] sm:grid-cols-3">
         <Cell className="col-span-2 sm:col-span-1" label="Paiements" value={c.payments_xaf ? fmtXaf(c.payments_xaf) : '—'} hint={c.payments_count ? plural(c.payments_count, 'paiement', 'paiements') : undefined} />
         <Cell label="Avion" value={c.air_parcels ? fmtKg(c.air_kg) : '—'} hint={c.air_parcels ? plural(c.air_parcels, 'colis', 'colis') : undefined} />
         <Cell label="Bateau" value={c.sea_parcels ? fmtCbm(c.sea_cbm) : '—'} hint={c.sea_parcels ? plural(c.sea_parcels, 'colis', 'colis') : undefined} />
@@ -194,9 +176,9 @@ function ClientRow({ c }: { c: CommercialClient }) {
 function Cell({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
   return (
     <div className={cn('min-w-0', className)}>
-      <dt className="text-[12px] text-muted-foreground">{label}</dt>
-      <dd className="truncate font-semibold">{value}</dd>
-      {hint && <dd className="truncate text-[12px] text-muted-foreground">{hint}</dd>}
+      <dt className="text-[12px] s-ink-2">{label}</dt>
+      <dd className="truncate text-[14px] font-semibold s-ink">{value}</dd>
+      {hint && <dd className="truncate text-[12px] s-ink-2">{hint}</dd>}
     </div>
   );
 }

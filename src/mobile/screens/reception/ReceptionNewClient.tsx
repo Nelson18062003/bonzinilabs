@@ -1,7 +1,8 @@
 // ============================================================
 // RÉCEPTION — Nouveau client. LE MÊME formulaire que l'admin (drapeaux,
-// indicatifs, plusieurs numéros, e-mail, pays, ville) : `ClientFormSections`
-// sur `useCreateClientForm`. Après la création, le mot de passe provisoire
+// indicatifs, plusieurs numéros, e-mail, pays, ville, sexe, date de
+// naissance) : `ClientFormSections` sur `useCreateClientForm`. Le sexe y
+// est facultatif : la réception ne voit souvent que l'étiquette du colis. Après la création, le mot de passe provisoire
 // et le bouton WhatsApp, puis on continue vers le dépôt avec ce client.
 // ============================================================
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { useCreateClientForm, whatsappShareUrl } from '@/components/clients/useCreateClientForm';
 import { ClientFormSections } from '@/components/clients/ClientFormSections';
 import { useAssignDeposit } from '@/hooks/useReception';
+import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionNewClient() {
   const { t: tc } = useTranslation('common');
@@ -24,7 +26,9 @@ export function ReceptionNewClient() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const assignId = params.get('assign');
-  const form = useCreateClientForm();
+  // Le lieu de réception décide de l'origine du client (« Colis reçu · Bureau / Entrepôt de Guangzhou ») : on ne la choisit pas ici.
+  const { location } = useReceptionLocation();
+  const form = useCreateClientForm({ reception: { location } });
   const assign = useAssignDeposit();
   const [copied, setCopied] = useState(false);
 
@@ -67,8 +71,17 @@ export function ReceptionNewClient() {
               <MessageCircle className="h-5 w-5" />
               {tc('clientForm.sendOnWhatsapp', { number: formatE164ForDisplay(c.primaryE164) })}
             </a>
+            {c.originLabel && (
+              <p className={cn(TYPE.small, TEXT.muted)}>{tc('clientForm.sourceSummary')} : <b className={TEXT.strong}>{c.originLabel}</b></p>
+            )}
+            {c.extraPhonesFailed && (
+              <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.extraPhonesFailed')}</p>
+            )}
             {c.sourceFailed && (
               <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.sourceFailed')}</p>
+            )}
+            {c.identityFailed && (
+              <p className={cn('mt-3 rounded-lg bg-destructive/10 px-3 py-2.5 text-destructive', TYPE.small)}>{tc('clientForm.identityFailedReception')}</p>
             )}
           </Card>
           <PrimaryPill onClick={() => void proceed()} loading={assign.isPending} className="h-14 w-full text-[17px]">{t('rc_continue')}</PrimaryPill>

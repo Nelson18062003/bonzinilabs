@@ -17,6 +17,7 @@ import {
   Clock,
   Bell,
   Ship,
+  UserSearch,
 } from 'lucide-react';
 import { SURFACE, TEXT, type Tone, Holder, SectionTitle } from '@/mobile/designKit';
 
@@ -28,6 +29,8 @@ const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone
   payment_processing: { icon: Clock, tone: 'info' },
   cargo_late: { icon: Ship, tone: 'danger' },
   cargo_arriving: { icon: Ship, tone: 'pending' },
+  // Un commercial a saisi le numéro d'un client Bonzini : la direction décide.
+  prospect_to_verify: { icon: UserSearch, tone: 'pending' },
 };
 
 function formatRelativeDate(dateStr: string) {

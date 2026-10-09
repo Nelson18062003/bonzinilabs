@@ -3,7 +3,7 @@
 // écrans natifs, lecture des codes scannés).
 import { describe, it, expect } from 'vitest';
 import { ROLE_PERMISSIONS, type AppRole } from '@/contexts/AdminAuthContext';
-import { staffHomeFor } from '@/lib/staffHome';
+import { staffHomeFor, staffLoginFor } from '@/lib/staffHome';
 import { normalizeCustomerCode } from '@/lib/customerCode';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { can, staffHome, ROLE_LABEL } from '../../../hq-app/src/roles';
@@ -13,7 +13,7 @@ import { ACTIONABLE_DEPOSIT_STATUSES, ACTIONABLE_PAYMENT_STATUSES } from '@/lib/
 import { CASH_TO_HAND_OVER_STATUSES } from '@/hooks/useAgentCashPayments';
 import { BADGE_TABS, CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from '../../../hq-app/src/statuses';
 import { tabsFor } from '../../../hq-app/src/tabs';
-import { sitePathFromUrl, staffPath } from '../../../hq-app/src/links';
+import { LOGIN_PATHS, sitePathFromUrl, staffPath } from '../../../hq-app/src/links';
 
 const ROLES = Object.keys(ROLE_PERMISSIONS) as AppRole[];
 
@@ -24,6 +24,10 @@ describe('BONZINI HQ ↔ site', () => {
 
   it('envoie chaque rôle au même espace que le site', () => {
     for (const r of ROLES) expect(staffHome(r)).toBe(staffHomeFor(r));
+  });
+
+  it('reconnaît la page de connexion de chaque rôle (commercial : « /v/login »)', () => {
+    for (const r of ROLES) expect(LOGIN_PATHS, r).toContain(staffLoginFor(r));
   });
 
   it('a les mêmes permissions que le site pour ses écrans natifs', () => {

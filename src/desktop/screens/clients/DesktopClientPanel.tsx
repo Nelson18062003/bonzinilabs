@@ -10,12 +10,14 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   useClient,
   useClientLedger,
   useClientLedgerCount,
   useResetClientPassword,
   useUpdateClient,
+  useSetClientIdentity,
   useCreateAdjustment,
   fetchLedgerEntriesInRange,
   fetchLastLedgerEntryBefore,
@@ -25,6 +27,11 @@ import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod'
 import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
+import { ClientRegistration } from '@/components/clients/ClientRegistration';
+import { ClientToProspectDialog } from '@/components/clients/ClientToProspectDialog';
+import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
+import { birthTextIssue, identityPatch, isoToBirthText } from '@/components/clients/clientIdentity';
+import { formatBirthDate, genderLabel, isGender, type Gender } from '@/lib/people';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { formatXAF, formatCurrency, formatDate } from '@/lib/formatters';
 import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
@@ -85,6 +92,7 @@ import {
   Plus,
   Tag,
   Trash2,
+  UserRoundSearch,
   Users,
   X,
 } from 'lucide-react';
@@ -214,7 +222,15 @@ function AdjustmentDialog({
   );
 }
 
+
+/** Une cellule de faits sur toute la largeur, dont la valeur va à la ligne au lieu d'être coupée. */
+const WRAP_KV = 'col-span-2 [&>div:last-child]:overflow-visible [&>div:last-child]:whitespace-normal';
+/** Une demi-cellule dont la valeur va à la ligne (« 12 septembre 1985 (41 ans) »). */
+const WRAP_HALF_KV = '[&>div:last-child]:overflow-visible [&>div:last-child]:whitespace-normal';
+/** « Non renseigné(e) » : discret, pour ne pas se lire comme une valeur. */
+const UNSET = 'font-normal text-muted-foreground';
 export function DesktopClientPanel({ clientId }: { clientId: string }) {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { data: client, isLoading, refetch } = useClient(clientId);
   const { data: ledgerEntries } = useClientLedger(clientId);
@@ -224,8 +240,12 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { data: clientDeposits } = useClientDeposits(clientId, hasPermission('canViewCargo'));
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
+  // « Repasser en prospect » (07/10) : le super admin seul — gérer les comptes ET piloter les ventes.
+  const canMakeProspect = canManageUsers && hasPermission('canManageSales');
+  const [toProspectOpen, setToProspectOpen] = useState(false);
 
   const updateClient = useUpdateClient();
+  const setIdentity = useSetClientIdentity();
   const resetPassword = useResetClientPassword();
   const deleteClient = useAdminDeleteClient();
 
@@ -254,6 +274,9 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const [editForm, setEditForm] = useState({
     firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
   });
+  // Sexe et date de naissance (« JJ/MM/AAAA ») : `admin_set_client_identity`, seulement s'ils changent.
+  const [editGender, setEditGender] = useState<Gender | null>(null);
+  const [editBirth, setEditBirth] = useState('');
   const [resetOpen, setResetOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [passwordCopied, setPasswordCopied] = useState(false);
@@ -297,13 +320,24 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
       country: client.country,
       city: client.city,
     });
+    setEditGender(isGender(client.gender) ? client.gender : null);
+    setEditBirth(isoToBirthText(client.dateOfBirth));
     setEditOpen(true);
   };
 
   const saveEdit = async () => {
     // Le garde isPending compte : ⌘⏎ (onConfirm du CenterDialog) peut
     // relancer la mutation pendant qu'elle est en vol.
-    if (!client || updateClient.isPending || setPhones.isPending) return;
+    if (!client || updateClient.isPending || setPhones.isPending || setIdentity.isPending) return;
+    // Avant toute écriture : une date de naissance TOUCHÉE doit être bonne. Celle
+    // déjà en base, même hors de 16 à 110 ans (l'inscription en libre-service
+    // ne la vérifie pas), ne bloque pas la modification du nom ou des numéros :
+    // `identityPatch` ne l'envoie pas tant qu'elle n'a pas changé.
+    if (editBirth !== isoToBirthText(client.dateOfBirth) && birthTextIssue(editBirth) !== null) {
+      toast.error(t('clientIdentity.birthInvalid'));
+      return;
+    }
+    const identity = identityPatch(client, { gender: editGender, birthText: editBirth });
     // Un numéro invalide met phone_e164 à NULL côté DB : le client cesse
     // silencieusement de recevoir ses SMS. On bloque ici.
     if (phonesEditor.primaryInvalid) {
@@ -330,12 +364,24 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         companyName: editForm.companyName.trim(),
         country: editForm.country.trim(),
         city: editForm.city.trim(),
+        // Le sexe ou la date change aussi : un seul message, dit plus bas.
+        silent: identity !== null,
       });
-      setEditOpen(false);
-      refetch();
     } catch {
       /* toast handled by the hook */
+      return;
     }
+    if (identity) {
+      try {
+        await setIdentity.mutateAsync({ userId: client.id, ...identity });
+        toast.success(t('clientIdentity.saved'));
+      } catch (e) {
+        // Le reste est enregistré : on le dit, et quoi refaire.
+        toast.error(t('clientIdentity.failed'), { description: `${(e as Error).message} — ${t('clientIdentity.failedHint')}` });
+      }
+    }
+    setEditOpen(false);
+    refetch();
   };
 
   const handleResetPassword = async () => {
@@ -508,6 +554,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               >
                 {menuItem(openEdit, <Pencil className="h-3.5 w-3.5" />, 'Modifier le profil')}
                 {menuItem(() => setResetOpen(true), <Key className="h-3.5 w-3.5" />, 'Réinitialiser mot de passe')}
+                {canMakeProspect && menuItem(() => setToProspectOpen(true), <UserRoundSearch className="h-3.5 w-3.5" />, t('clientToProspect.action'))}
                 {menuItem(handleDeleteCheck, deleteChecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />, 'Supprimer le client', true)}
               </div>
             )}
@@ -680,8 +727,17 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <KV k="E-mail" v={client.email || '—'} />
             <KV k="Entreprise" v={client.companyName || '—'} />
             <KV k="Ville / Pays" v={[client.city, client.country].filter(Boolean).join(' · ') || '—'} />
+            <KV k={t('clientIdentity.gender')} v={genderLabel(client.gender) ?? <span className={UNSET}>{t('clientIdentity.genderUnset')}</span>} />
+            <KV
+              k={t('clientIdentity.birthDate')}
+              className={WRAP_HALF_KV}
+              v={formatBirthDate(client.dateOfBirth) ?? <span className={UNSET}>{t('clientIdentity.birthUnset')}</span>}
+            />
             <KV k="Client depuis" v={formatDate(client.createdAt)} />
-            <KV k="Origine" v={<ClientOrigin userId={clientId} utmSource={client.utmSource} />} />
+            {/* Pleine largeur, sur plusieurs lignes : « Colis reçu · Bureau de Guangzhou (avion) »
+                et « Kevin Nkolo · Réceptionnaire · Guangzhou · bureau » ne se coupent pas. */}
+            <KV k="Origine" className={WRAP_KV} v={<ClientOrigin userId={clientId} utmSource={client.utmSource} />} />
+            <KV k="Enregistré par" className={WRAP_KV} v={<ClientRegistration userId={clientId} />} />
           </div>
         </div>
 
@@ -829,7 +885,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
         width={560}
         footer={
           <>
-            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending || setPhones.isPending} className="flex-1">
+            <PrimaryPill onClick={saveEdit} loading={updateClient.isPending || setPhones.isPending || setIdentity.isPending} className="flex-1">
               Enregistrer
             </PrimaryPill>
             <SoftPill onClick={() => setEditOpen(false)} className="flex-1">
@@ -845,6 +901,14 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           <FormField label="Nom" htmlFor="edit-lastName">
             <TextInput id="edit-lastName" value={editForm.lastName} onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))} />
           </FormField>
+          <GenderField
+            id="edit-gender"
+            label={t('clientIdentity.gender')}
+            value={editGender}
+            onChange={setEditGender}
+            hint={isGender(client.gender) ? undefined : t('clientIdentity.genderKeptHint')}
+          />
+          <BirthDateField id="edit-birth" label={t('clientIdentity.birthDate')} value={editBirth} onChange={setEditBirth} />
           <div className="col-span-2">
             <ClientPhonesEditor editor={phonesEditor} />
           </div>
@@ -936,6 +1000,17 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           transactions, relevés, etc.).
         </p>
       </CenterDialog>
+
+      {/* Repasser en prospect — super admin, client sans aucune opération. Monté à l'ouverture seulement : pas de lecture avant. */}
+      {canMakeProspect && toProspectOpen && (
+        <ClientToProspectDialog
+          variant="dialog"
+          open={toProspectOpen}
+          onClose={() => setToProspectOpen(false)}
+          userId={client.id}
+          clientName={name}
+        />
+      )}
 
       {/* Relevé de compte — choix de la période */}
       <StatementPeriodSheet

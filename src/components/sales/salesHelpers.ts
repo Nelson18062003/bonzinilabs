@@ -44,6 +44,13 @@ export function fmtLongDay(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ });
 }
 
+/** « jeudi 8 octobre » (l'année si ce n'est pas l'année en cours) — un jour de Douala, « AAAA-MM-JJ ». */
+export function fmtWeekday(day: string, now = new Date()): string {
+  const d = new Date(followUpIso(day));
+  const sameYear = day.slice(0, 4) === doualaDay(now).slice(0, 4);
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }), timeZone: TZ });
+}
+
 /** La relance dite simplement : « Aujourd'hui », « Demain », « Hier », sinon la date. */
 export function followUpLabel(iso: string, now = new Date()): string {
   const day = doualaDay(iso);

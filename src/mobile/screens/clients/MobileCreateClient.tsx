@@ -10,26 +10,31 @@
  * Ici le numéro est formaté et validé par libphonenumber pour le pays
  * choisi, tous les pays du monde sont proposés avec leur drapeau, plusieurs
  * numéros peuvent être saisis (le premier reçoit le mot de passe), et le
- * pays suit l'indicatif tant qu'on ne le choisit pas soi-même.
+ * pays suit l'indicatif tant qu'on ne le choisit pas soi-même. Le sexe est
+ * obligatoire, la date de naissance facultative (« JJ/MM/AAAA », clavier
+ * numérique) ; le numéro d'un prospect reprend d'office sa fiche.
  *
  * La logique vit dans `useCreateClientForm` — même code que le desktop.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Copy, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, SoftPill } from '@/mobile/designKit';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
+import { prefillPhoneFromQuery } from '@/components/clients/prospectPrefill';
 import { useCreateClientForm, whatsappShareUrl } from '@/components/clients/useCreateClientForm';
 import { ClientFormSections } from '@/components/clients/ClientFormSections';
 
 export function MobileCreateClient() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const form = useCreateClientForm();
+  // `?phone=+237…` : « Créer son compte client » depuis la fiche d'un prospect (07/10).
+  const [params] = useSearchParams();
+  const form = useCreateClientForm({ initialPhone: prefillPhoneFromQuery(params.get('phone')) });
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   // ── Succès ────────────────────────────────────────────────────────────
@@ -90,6 +95,11 @@ export function MobileCreateClient() {
             {c.sourceFailed && (
               <p className="mt-3 rounded-lg bg-[#FDD3D0] px-3 py-2.5 text-[14px] leading-relaxed text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
                 {t('clientForm.sourceFailed')}
+              </p>
+            )}
+            {c.identityFailed && (
+              <p className="mt-3 rounded-lg bg-[#FDD3D0] px-3 py-2.5 text-[14px] leading-relaxed text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
+                {t('clientForm.identityFailed')}
               </p>
             )}
           </Card>

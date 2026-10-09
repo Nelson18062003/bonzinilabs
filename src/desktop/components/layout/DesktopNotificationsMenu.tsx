@@ -9,7 +9,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2, Ship } from 'lucide-react';
+import { Bell, ArrowDownToLine, ArrowUpFromLine, AlertCircle, Clock, Loader2, Ship, UserSearch } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAdminNotifications, type AdminNotificationType } from '@/hooks/useAdminNotifications';
@@ -24,6 +24,8 @@ const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone
   payment_processing: { icon: Clock, tone: 'info' },
   cargo_late: { icon: Ship, tone: 'danger' },
   cargo_arriving: { icon: Ship, tone: 'pending' },
+  // Un commercial a saisi le numéro d'un client Bonzini : la direction décide.
+  prospect_to_verify: { icon: UserSearch, tone: 'pending' },
 };
 
 function relTime(dateStr: string) {

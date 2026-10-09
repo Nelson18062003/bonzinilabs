@@ -1,19 +1,34 @@
 // ============================================================
-// Mes équipes › Chiffres des commerciaux — tous les commerciaux côte à côte
-// pour un mois de Douala : clients apportés, paiements de leurs clients,
-// fret avion (kg) et bateau (m³), prospects, et l'avancement de leurs
-// objectifs. Lecture : sales_overview (canManageSales, garde serveur).
+// Mes équipes › Ventes — la vue d'ensemble de l'équipe commerciale
+// (canManageSales ; garde serveur dans sales_series et sales_overview).
+// Refaite le 08/10 à la demande du directeur : voir comment ÉVOLUENT les
+// clients, les prospects, les paiements, les dépôts, le fret avion, les
+// vols et le bateau — et plus seulement les chiffres d'un mois.
+//
+// De haut en bas :
+//   · l'en-tête : « À vérifier » (les fiches dont un numéro est déjà celui
+//     d'un client, avec leur nombre), « + Commercial » ; la plage ;
+//   · comment ça va : huit tuiles de l'équipe sur la plage (tendance par
+//     rapport à la plage précédente, mini-courbe) ;
+//   · comment ça évolue : le graphique d'un indicateur, par commercial ou
+//     pour l'équipe ; les prospects ; le fret ;
+//   · qui fait quoi : le classement (une ligne → sa page) et les objectifs
+//     du mois en cours de chacun (sales_overview).
 // ============================================================
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ChevronRight, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, UserPlus, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useSalesOverview } from '@/hooks/useSales';
-import { OBJECTIVES, currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, type CommercialCard } from '@/lib/sales';
-import { MonthSwitcher, ObjectiveBar } from '@/components/sales/SalesBits';
-import { BTN_PRIMARY, CARD, Initials, Skeleton } from './TeamBits';
+import { useProspectClaims, useSalesOverview, type SalesSeries } from '@/hooks/useSales';
+import { PROSPECT_CLAIMS_PATH, groupClaimsByProspect } from '@/hooks/useAdminNotifications';
+import { currentMonth, type CommercialCard } from '@/lib/sales';
+import { compareLabel, seriesColor, sourceSlots, type SalesRangePreset } from '@/lib/salesSeries';
+import { ChartPanel, EmptyState, Leaderboard, PANEL } from '@/components/salesdash';
+import { BTN_PRIMARY, BTN_SOFT } from './TeamBits';
 import { TEAM_BASE } from './TeamScreen';
+import { DashboardBoundary, DefinitionsNote, SalesDashboardBody, SectionLabel, presetQuery, useSalesPreset } from './SalesDashboard';
+import { ObjectivesSummary } from './SalesObjectives';
 
 export function SalesBoard() {
   const { hasPermission } = useAdminAuth();
@@ -23,136 +38,130 @@ export function SalesBoard() {
 
 function Board() {
   const navigate = useNavigate();
-  const [month, setMonth] = useState(currentMonth());
-  const overview = useSalesOverview(month);
-  const rows = overview.data ?? [];
-  const sum = rows.reduce(
-    (s, r) => ({
-      newClients: s.newClients + r.metrics.new_clients,
-      pay: s.pay + r.metrics.payments_xaf,
-      air: s.air + r.metrics.air_kg,
-      sea: s.sea + r.metrics.sea_cbm,
-      won: s.won + r.metrics.prospects_won,
-    }),
-    { newClients: 0, pay: 0, air: 0, sea: 0, won: 0 },
-  );
+  const [preset, setPreset] = useSalesPreset();
+  // Les objectifs du mois en cours (et la liste des fiches commercial, actives ou non).
+  const overview = useSalesOverview(currentMonth());
+  // Les fiches « À vérifier », une par prospect : au total et par commercial.
+  const claims = useProspectClaims();
+  const toVerify = useMemo(() => {
+    const groups = groupClaimsByProspect(claims.data ?? []);
+    const bySource = new Map<string, number>();
+    for (const g of groups) bySource.set(g[0].source_id, (bySource.get(g[0].source_id) ?? 0) + 1);
+    return { total: groups.length, bySource };
+  }, [claims.data]);
+  const active = (overview.data ?? []).filter((r) => r.source.is_active).length;
+  const open = (sourceId: string) => navigate(`${TEAM_BASE}/ventes/${sourceId}${presetQuery(preset)}`);
+  const newCommercial = () => navigate(`${TEAM_BASE}/nouveau?role=commercial`);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-0">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-0">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
           <button type="button" onClick={() => navigate(TEAM_BASE)} className="mb-1 inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-3.5 w-3.5" /> Mes équipes
           </button>
-          <h1 className="text-[26px] font-bold tracking-tight">Les commerciaux</h1>
-          <p className="mt-0.5 text-[14px] text-muted-foreground">Ce que chacun a apporté en {monthLabel(month)}</p>
+          <h1 className="text-[28px] font-bold leading-tight tracking-[-0.02em]">Ventes</h1>
+          <p className="mt-0.5 text-[14px] text-muted-foreground">
+            {overview.data ? `${active} commercia${active > 1 ? 'ux' : 'l'} actif${active > 1 ? 's' : ''} · ` : ''}ce que l’équipe apporte, et comment ça évolue
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <MonthSwitcher month={month} onChange={setMonth} />
-          <button type="button" onClick={() => navigate(`${TEAM_BASE}/nouveau?role=commercial`)} className={BTN_PRIMARY}>
+          <ToVerifyButton count={toVerify.total} onClick={() => navigate(PROSPECT_CLAIMS_PATH)} />
+          <button type="button" onClick={newCommercial} className={BTN_PRIMARY}>
             <Plus className="h-4 w-4" /> Commercial
           </button>
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
-        <Figure label="Nouveaux clients" value={overview.isLoading ? '…' : fmtCount(sum.newClients)} />
-        <Figure label="Paiements" value={overview.isLoading ? '…' : fmtXaf(sum.pay)} />
-        <Figure label="Fret avion" value={overview.isLoading ? '…' : fmtKg(sum.air)} />
-        <Figure label="Fret bateau" value={overview.isLoading ? '…' : fmtCbm(sum.sea)} />
-        <Figure className="col-span-2 sm:col-span-1" label="Prospects devenus clients" value={overview.isLoading ? '…' : fmtCount(sum.won)} />
-      </section>
+      <DashboardBoundary resetKey={preset}>
+        <SalesDashboardBody
+          preset={preset}
+          onPreset={setPreset}
+          idPrefix="ventes"
+          whenEmpty={
+            <div className={PANEL}>
+              <EmptyState title="Aucun commercial pour l’instant" height={280}>
+                Créez l’accès d’un commercial : sa fiche est créée avec, et la réception pourra lui attribuer ses clients.
+                <button type="button" onClick={newCommercial} className={cn(BTN_PRIMARY, 'mt-4')}>
+                  <UserPlus className="h-4 w-4" /> Créer un commercial
+                </button>
+              </EmptyState>
+            </div>
+          }
+          after={(series, fetching) => (
+            <WhoDoesWhat
+              series={series}
+              fetching={fetching}
+              preset={preset}
+              rows={overview.data ?? []}
+              loading={overview.isLoading}
+              error={overview.isError}
+              onRetry={() => void overview.refetch()}
+              toVerify={toVerify.bySource}
+              onOpen={open}
+            />
+          )}
+        />
+      </DashboardBoundary>
 
-      {overview.isLoading ? (
-        <div className={CARD}>
-          <Skeleton rows={3} />
-        </div>
-      ) : overview.isError ? (
-        <div className={cn(CARD, 'p-8 text-center text-[14px]')}>
-          Les chiffres n’ont pas pu être chargés.{' '}
-          <button type="button" onClick={() => void overview.refetch()} className="font-semibold underline">
-            Réessayer
-          </button>
-        </div>
-      ) : rows.length === 0 ? (
-        <div className={cn(CARD, 'p-10 text-center text-[14px] text-muted-foreground')}>
-          Aucun commercial pour l’instant. Créez l’accès d’un commercial : sa fiche est créée avec, et la réception pourra lui attribuer ses clients.
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {rows.map((r) => (
-            <CommercialTile key={r.source.id} card={r} onOpen={() => navigate(`${TEAM_BASE}/ventes/${r.source.id}`)} />
-          ))}
-        </div>
-      )}
-      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
-        Paiements : terminés dans le mois, pour les clients dont le commercial est l’origine. Colis : enregistrés dans le mois (avion = bureau de Guangzhou, bateau =
-        entrepôt), dépôts annulés exclus. Mois de Douala.
-      </p>
+      <DefinitionsNote />
     </div>
   );
 }
 
-function CommercialTile({ card, onOpen }: { card: CommercialCard; onOpen: () => void }) {
-  const m = card.metrics;
-  const name = card.staff?.name || card.source.label;
+/** Qui fait quoi : le classement sur la plage, puis les objectifs du mois en cours de chacun. */
+function WhoDoesWhat({
+  series,
+  fetching,
+  preset,
+  rows,
+  loading,
+  error,
+  onRetry,
+  toVerify,
+  onOpen,
+}: {
+  series: SalesSeries;
+  fetching: boolean;
+  preset: SalesRangePreset;
+  rows: CommercialCard[];
+  loading: boolean;
+  error: boolean;
+  onRetry: () => void;
+  toVerify: Map<string, number>;
+  onOpen: (sourceId: string) => void;
+}) {
+  // La couleur d'une fiche : celle des graphiques (stable, par identifiant) — la même pastille partout.
+  const slots = useMemo(() => sourceSlots(series.sources), [series.sources]);
+  const colorOf = (id: string) => (slots.has(id) ? seriesColor(slots.get(id) ?? null) : null);
   return (
-    // flex-col : un <button> centre son contenu verticalement ; dans la grille, la carte la plus courte gardait un vide en haut.
-    <button type="button" onClick={onOpen} className={cn(CARD, 'flex w-full flex-col justify-start space-y-4 p-5 text-left transition hover:ring-primary/40')}>
-      <div className="flex items-center gap-3">
-        <Initials name={name} disabled={!card.staff || card.staff.is_disabled} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[15.5px] font-semibold">{name}</div>
-          <div className="text-[12.5px] text-muted-foreground">
-            {card.staff ? (card.staff.is_disabled ? 'accès désactivé' : `fiche « ${card.source.label} »`) : 'fiche sans compte'}
-            {!card.source.is_active && ' · archivée'}
-          </div>
-        </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    <section aria-labelledby="ventes-qui" className="space-y-3">
+      <SectionLabel id="ventes-qui">Qui fait quoi</SectionLabel>
+      <div className="space-y-4">
+        <ChartPanel title="Les commerciaux" subtitle="Classés par paiements sur la plage ; touchez un commercial pour ouvrir sa page" padding="none" fetching={fetching}>
+          <Leaderboard series={series} onSelect={onOpen} compareLabel={compareLabel(preset)} />
+        </ChartPanel>
+        <ObjectivesSummary rows={rows} loading={loading} error={error} onRetry={onRetry} toVerify={toVerify} colorOf={colorOf} onOpen={onOpen} />
       </div>
+    </section>
+  );
+}
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px] tabular-nums">
-        <Line label="Clients" value={`${fmtCount(m.clients)}${m.new_clients ? ` (+${m.new_clients})` : ''}`} />
-        <Line label="Paiements" value={m.payments_xaf ? fmtXaf(m.payments_xaf) : '—'} />
-        <Line label="Avion" value={m.air_parcels ? `${fmtKg(m.air_kg)} · ${m.air_parcels} colis` : '—'} />
-        <Line label="Bateau" value={m.sea_parcels ? `${fmtCbm(m.sea_cbm)} · ${m.sea_parcels} colis` : '—'} />
-        <Line label="Prospects ouverts" value={fmtCount(m.prospects_open)} />
-        <Line label="Devenus clients" value={fmtCount(m.prospects_won)} />
-      </div>
-
-      {m.prospects_due > 0 && (
-        <div className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-amber-700 dark:text-amber-400">
-          <AlertCircle className="h-3.5 w-3.5" /> {m.prospects_due} prospect{m.prospects_due > 1 ? 's' : ''} à relancer
-        </div>
-      )}
-
-      {card.objectives.length > 0 ? (
-        <div className="space-y-2.5 border-t border-border/60 pt-3">
-          {OBJECTIVES.filter((o) => card.objectives.some((x) => x.metric === o.metric)).map((o) => (
-            <ObjectiveBar key={o.metric} objective={card.objectives.find((x) => x.metric === o.metric)!} />
-          ))}
-        </div>
-      ) : (
-        <div className="border-t border-border/60 pt-3 text-[12.5px] text-muted-foreground">Pas d’objectif ce mois-ci.</div>
+/** « À vérifier » et son nombre : ambré quand des fiches attendent, discret sinon. */
+function ToVerifyButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={count > 0 ? `À vérifier : ${count} fiche${count > 1 ? 's' : ''} en attente` : 'À vérifier'}
+      className={cn(BTN_SOFT, count > 0 && 'bg-amber-50 text-amber-950 ring-amber-300 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-400/40')}
+    >
+      <UserSearch className="h-4 w-4" /> À vérifier
+      {count > 0 && (
+        <span className="ml-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[12px] font-bold tabular-nums text-white">
+          {count}
+        </span>
       )}
     </button>
-  );
-}
-
-function Line({ label, value }: { label: string; value: string }) {
-  return (
-    <>
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </>
-  );
-}
-
-function Figure({ label, value, className }: { label: string; value: string; className?: string }) {
-  return (
-    <div className={cn(CARD, 'p-3.5 sm:p-4', className)}>
-      <div className="text-[12px] font-medium leading-tight text-muted-foreground">{label}</div>
-      <div className="mt-1 text-[18px] font-bold tracking-tight tabular-nums sm:text-[20px]">{value}</div>
-    </div>
   );
 }

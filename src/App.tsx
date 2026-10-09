@@ -107,6 +107,7 @@ const TeamNewMember = lazy(() => import("./components/team/TeamNewMember").then(
 const TeamMemberScreen = lazy(() => import("./components/team/TeamMemberScreen").then(m => ({ default: m.TeamMemberScreen })));
 const SalesBoard = lazy(() => import("./components/team/SalesBoard").then(m => ({ default: m.SalesBoard })));
 const SalesCommercial = lazy(() => import("./components/team/SalesCommercial").then(m => ({ default: m.SalesCommercial })));
+const ProspectClaims = lazy(() => import("./components/team/ProspectClaims").then(m => ({ default: m.ProspectClaims })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
 const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -215,6 +216,8 @@ const CommercialHome = lazy(() => import("./components/sales/CommercialHome").th
 const CommercialProspects = lazy(() => import("./components/sales/CommercialProspects").then(m => ({ default: m.CommercialProspects })));
 const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
 const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
+const CommercialLogin = lazy(() => import("./components/sales/CommercialLogin").then(m => ({ default: m.CommercialLogin })));
+const CommercialPassword = lazy(() => import("./components/sales/CommercialPassword").then(m => ({ default: m.CommercialPassword })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
 const FormShowcase = lazy(() =>
@@ -357,6 +360,8 @@ const App = () => (
                 <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamScreen /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewMember /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/ventes" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesBoard />}><SalesBoard /></AdminRouteWrapper>} />
+                {/* Les fiches « À vérifier » (07/10) : un numéro saisi par un commercial est déjà celui d'un client. */}
+                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ProspectClaims /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercial /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<Navigate to="/m/equipe" replace />} />
@@ -468,11 +473,13 @@ const App = () => (
                 <Route path="/w/remise/:code/signature" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseSign /></WarehouseRouteWrapper>} />
                 <Route path="/w/bon/:releaseId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseReleaseDone /></WarehouseRouteWrapper>} />
                 {/* ── Espace commercial (« /v ») : prospects, clients, chiffres du mois ── */}
+                <Route path="/v/login" element={<CommercialRouteWrapper requireAuth={false}><CommercialLogin /></CommercialRouteWrapper>} />
                 <Route path="/v" element={<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects" element={<CommercialRouteWrapper><CommercialProspects /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
+                <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false} bare><CommercialPassword /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}
                 {import.meta.env.DEV && (

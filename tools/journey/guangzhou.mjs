@@ -12,6 +12,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { respond as adminRespond } from '../adminFixtures.mjs';
 
 const OUT = process.env.OUT ?? 'tools/out/journey/guangzhou';
 const PHOTOS_DIR = process.env.PHOTOS_DIR ?? '/tmp/claude-0/-home-user-bonzinilabs/92f1802a-f3c0-56ac-9075-93a354e8c31d/scratchpad/photos';
@@ -159,7 +160,22 @@ const quotePaid = (amount, b) => {
   return { ...quote, payments: [...quote.payments, pm], amount_paid_xaf: paid, balance_xaf: Math.max(0, quote.total_xaf - paid), status: paid >= quote.total_xaf ? 'paid' : quote.status, paid_at: paid >= quote.total_xaf ? gz(16, 55) : null };
 };
 
+// Le 655 44 33 22 est l'AUTRE numéro (Orange) d'un prospect de Rodrigue Tchami :
+// sa fiche remplit d'office ce que Kevin n'a pas encore tapé (06/10).
+const PROSPECT_BEATRICE = {
+  success: true, found: true, prospect_id: 'pr-beatrice', prospect_name: 'Béatrice Ngo Mbock',
+  source_id: 'src-rodrigue', source_label: 'Rodrigue Tchami', source_active: true,
+  first_name: 'Béatrice', last_name: 'Ngo Mbock', company: 'Ngo Mbock Cosmétiques', city: 'Douala', email: 'beatrice@ngombock.cm',
+  gender: 'FEMALE', birth_date: '1987-11-03', phone_e164: '+237677445566',
+  phones: [{ phone_e164: '+237655443322', country_iso: 'CM', label: 'Orange' }, { phone_e164: '+8613822223333', country_iso: 'CN', label: 'Chine' }],
+};
+
 export const RPC = {
+  // Nouveau client créé à la réception (06/10) : l'origine « colis reçu » se pose d'office.
+  prospect_lookup_phone: (b) => (['+237655443322', '+237677445566'].includes(String(b?.p_phone ?? '').replace(/[\s.()-]/g, ''))
+    ? PROSPECT_BEATRICE : { success: true, found: false }),
+  admin_create_client: { success: true, clientId: 'u-new', walletId: 'w-new', authEmail: '237677998877@bonzini-client.local', tempPassword: 'k7d2m9q4', message: 'Client Joseph Etame créé avec succès' },
+  reception_set_client_origin: { success: true, kept: false, source_id: 'src-parcel-office', label: 'Bureau de Guangzhou (avion)', kind: 'parcel' },
   // Réception (/r)
   reception_my_day: {
     success: true, day: '2026-10-05',
@@ -222,6 +238,16 @@ export const RPC = {
 
 /** Les lectures directes : réglages d'expédition (étiquettes) et solde du client. */
 export function REST(url) {
+  // La fiche client : l'origine posée par la réception et « Enregistré par » (06/10).
+  if (/\/rest\/v1\/clients\?select=source_id/.test(url)) {
+    return [{ source_id: 'src-parcel-office', source_set_at: '2026-10-06T07:12:00Z', created_at: '2026-10-06T07:11:00Z',
+      registered_by: 'kevin', registered_by_name: 'Kevin Nkolo', registered_role: 'receptionist', registered_site: 'Guangzhou · bureau', registered_at: '2026-10-06T07:11:00Z',
+      source: { id: 'src-parcel-office', kind: 'parcel', label: 'Bureau de Guangzhou (avion)', phone: null } }];
+  }
+  // La fiche de Fatou Ndiaye (u5) : son sexe et sa date de naissance (06/10).
+  if (/\/rest\/v1\/clients\?select=\*/.test(url) && /user_id=eq\.u5/.test(url)) {
+    return (adminRespond(url) ?? []).map((c) => ({ ...c, gender: 'FEMALE', date_of_birth: '1988-04-21' }));
+  }
   if (/\/rest\/v1\/platform_settings/.test(url)) {
     return [{ key: 'shipping', value: {
       company: { email: 'contact@bonzinilabs.com', phone: '+8618667439286', nameEn: 'NORTON GAUSS BONZINI', nameZh: '诺顿·高斯·邦齐尼', wechat: '+8618667439286', whatsapp: '+8618667439286' },
@@ -317,6 +343,54 @@ async function openSeal(page) {
 }
 
 export const SCREENS = [
+  // 14. Au bureau, la fiche du client : « Origine » et « Enregistré par », son sexe et sa date de naissance.
+  { key: 'j.guangzhou.client-sheet', name: '14-fiche-client-enregistre-par', role: 'super_admin', desktop: true, viewport: '1440x1080', init: deskSetup, wait: 2500, before: fontsReady },
+  // 15. « Modifier » : le sexe et la date de naissance se changent avec le reste du profil.
+  { key: 'j.guangzhou.client-sheet', name: '15-fiche-client-modifier-identite', role: 'super_admin', desktop: true, viewport: '1440x1100', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /^Modifier$/ }).first().click();
+      await page.waitForTimeout(700);
+    } },
+  // 16. La même fiche sur le téléphone de l'équipe : « Sexe : Femme. », « Date de naissance : … ».
+  { key: 'j.guangzhou.client-mobile', name: '16-fiche-client-telephone', role: 'super_admin', init: setup, wait: 2000, viewport: '390x900', fullPage: false, before: fontsReady },
+  // 17. « Modifier ses informations » au téléphone : le sexe et la date de naissance, sous le nom.
+  { key: 'j.guangzhou.client-mobile', name: '17-fiche-client-telephone-modifier', role: 'super_admin', init: setup, wait: 2000, viewport: '390x1300', fullPage: false,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Modifier ses informations/ }).click();
+      await page.waitForTimeout(700);
+    } },
+  // 12. Le propriétaire d'un colis n'existe pas encore : Kevin crée le client — l'origine ne se choisit pas,
+  //     le sexe est facultatif (il ne voit souvent que l'étiquette), la date de naissance donne l'âge.
+  { key: 'j.guangzhou.new-client', name: '12-nouveau-client-origine-auto', role: 'receptionist', init: setup, wait: 1500, viewport: '390x2040',
+    before: async (page) => {
+      await fontsReady(page);
+      await page.locator('#cc-first').fill('Joseph');
+      await page.locator('#cc-last').fill('Etame');
+      await page.locator('#cc-birth').pressSequentially('14071983', { delay: 30 });
+      await page.locator('input[type=tel]').first().fill('677998877');
+      await page.waitForTimeout(900);
+    } },
+  // 12b. Le numéro est l'autre numéro d'un prospect de Rodrigue : sa fiche remplit les champs encore vides.
+  { key: 'j.guangzhou.new-client', name: '12b-nouveau-client-repris-du-prospect', role: 'receptionist', init: setup, wait: 1500, viewport: '390x2520',
+    before: async (page) => {
+      await fontsReady(page);
+      await page.locator('#cc-first').fill('Béa');
+      await page.locator('input[type=tel]').first().fill('655443322');
+      await page.waitForTimeout(1200);
+    } },
+  // 13. Créé : mot de passe à envoyer, et l'origine posée d'office (bureau de Guangzhou).
+  { key: 'j.guangzhou.new-client', name: '13-nouveau-client-cree', role: 'receptionist', init: setup, wait: 1500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.locator('#cc-first').fill('Joseph');
+      await page.locator('#cc-last').fill('Etame');
+      await page.locator('input[type=tel]').first().fill('677998877');
+      await page.waitForTimeout(700);
+      await page.getByRole('button', { name: /Créer|Create|创建/ }).last().click();
+      await page.waitForTimeout(1500);
+    } },
   // 1. L'accueil de Kevin, au bureau : « Nouveau dépôt », puis la carte « Paquets avion ».
   { key: 'j.guangzhou.home', name: '01-accueil-reception', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1370', fullPage: false, before: fontsReady },
   // 2. Le dépôt d'Aïcha en cours : 3 colis pesés, mesurés, photographiés.

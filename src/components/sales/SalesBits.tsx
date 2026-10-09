@@ -4,13 +4,18 @@
 // chiffres, les états vides / en erreur / pas encore relié.
 //
 // Purement présentationnelles (aucune requête) : les données arrivent en
-// props. Style « sources & commerciaux » : cartes rounded-2xl sur filet
-// léger, chiffres tabulaires, couleur réservée au sens (atteint, en retard).
+// props. Cartes sur filet léger, chiffres tabulaires, couleur réservée au
+// sens (atteint, en retard). Dans « /v », la portée `.sales-ui` les relit
+// dans le langage de l'espace commercial (les classes `s-*` n'agissent que
+// là) ; dans « Mes équipes », elles gardent le thème de l'administration.
 // ============================================================
 import type { ElementType, ReactNode } from 'react';
 import { ChevronLeft, ChevronRight, CircleCheck, Link2Off, Target } from 'lucide-react';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { cn } from '@/lib/utils';
 import { TONE_PILL } from '@/mobile/designKit';
+import { CountryFlag } from '@/components/form/CountryFlag';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import {
   OBJECTIVES,
   PROSPECT_STATUS,
@@ -24,8 +29,8 @@ import {
   type ProspectStatus,
 } from '@/lib/sales';
 
-/** La carte : blanche, rayon 16, filet à peine marqué. */
-export const SALES_CARD = 'rounded-2xl bg-card ring-1 ring-black/[0.06] dark:ring-white/10';
+/** La carte : blanche, rayon 18, filet à peine marqué (dans « /v » : filet et ombre en couches). */
+export const SALES_CARD = 'rounded-[18px] bg-card ring-1 ring-black/[0.06] dark:ring-white/10 s-card';
 
 /* ── En-tête d'écran ───────────────────────────────────────────────────── */
 
@@ -44,7 +49,7 @@ export function ScreenHeader({
   className?: string;
 }) {
   return (
-    <header className={cn('flex items-end justify-between gap-3 px-4 pb-1 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:px-6', className)}>
+    <header className={cn('s-enter flex items-end justify-between gap-3 px-4 pb-1 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:px-6', className)}>
       <div className="min-w-0">
         {back && (
           <button
@@ -55,8 +60,8 @@ export function ScreenHeader({
             <ChevronLeft className="h-4 w-4" /> {back.label}
           </button>
         )}
-        <h1 className="break-words text-[26px] font-bold leading-tight tracking-tight">{title}</h1>
-        {subtitle != null && <p className="mt-0.5 text-[14px] text-muted-foreground">{subtitle}</p>}
+        <h1 className="break-words text-[28px] font-semibold leading-[1.15] tracking-[-0.02em]">{title}</h1>
+        {subtitle != null && <p className="mt-1 text-[15px] text-muted-foreground">{subtitle}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </header>
@@ -130,10 +135,10 @@ export function ObjectiveBar({ objective, label, className }: { objective: Objec
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.min(100, pct)}
-        className="h-2.5 overflow-hidden rounded-full bg-muted"
+        className="h-2 overflow-hidden rounded-full bg-muted"
       >
         <div
-          className={cn('h-full rounded-full transition-[width] duration-500 ease-out', reached ? 'bg-emerald-500' : 'bg-foreground')}
+          className={cn('h-full rounded-full transition-[width] duration-700 ease-out', reached ? 'bg-emerald-500' : 'bg-foreground')}
           style={{ width: `${ratio * 100}%` }}
         />
       </div>
@@ -168,7 +173,7 @@ export function ObjectiveList({
 }) {
   if (objectives.length === 0) {
     return (
-      <div className={cn('flex items-start gap-3 rounded-xl bg-muted/60 px-4 py-4', className)}>
+      <div className={cn('s-note flex items-start gap-3 rounded-xl bg-muted/60 px-4 py-4', className)}>
         <Target className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
         <div>
           <div className="text-[14px] font-semibold">{emptyText}</div>
@@ -218,22 +223,23 @@ export function Figure({
       className={cn(
         'flex min-w-0 flex-col p-4 text-left sm:p-5',
         SALES_CARD,
-        onClick && 'transition-colors hover:bg-accent/60 active:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        onClick && 's-row transition-colors hover:bg-accent/60 active:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         tone === 'warn' && 'bg-amber-50 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-400/25',
         className,
       )}
+      data-tone={tone === 'warn' ? 'warn' : undefined}
     >
       <span className="flex items-center gap-1.5 text-[13px] font-medium leading-tight text-muted-foreground">
         {Icon && <Icon className="h-4 w-4 shrink-0" />}
         <span className="min-w-0">{label}</span>
-        {onClick && <ChevronRight className="ml-auto h-4 w-4 shrink-0" />}
+        {onClick && <ChevronRight className="ml-auto h-4 w-4 shrink-0 opacity-60" />}
       </span>
       <span
         className={cn(
-          'mt-1.5 font-bold tracking-tight tabular-nums',
-          size === 'lg' ? 'text-[28px] sm:text-[32px]' : 'text-[20px] sm:text-[24px]',
-          tone === 'warn' && 'text-amber-700 dark:text-amber-400',
-          tone === 'good' && 'text-emerald-700 dark:text-emerald-400',
+          'mt-2 font-semibold tracking-[-0.02em] tabular-nums',
+          size === 'lg' ? 'text-[30px] sm:text-[34px]' : 'text-[22px] sm:text-[24px]',
+          tone === 'warn' && 'text-amber-700 dark:text-amber-400 s-warn',
+          tone === 'good' && 'text-emerald-700 dark:text-emerald-400 s-good',
         )}
       >
         {value}
@@ -254,13 +260,36 @@ export function ProspectStatusPill({ status, className }: { status: ProspectStat
   );
 }
 
+/* ── Numéro de téléphone ───────────────────────────────────────────────── */
+
+/** Le pays d'un numéro E.164 (« CN » pour +86…), pour son drapeau. */
+function phoneCountry(e164: string): string | undefined {
+  try {
+    return parsePhoneNumberFromString(e164)?.country;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Un numéro tel qu'on le lit : le drapeau de son pays, puis « +237 6 99 12 34 56 ». Illisible : tel quel, sans drapeau. */
+export function PhoneNumber({ e164, className }: { e164: string; className?: string }) {
+  const iso = phoneCountry(e164);
+  return (
+    // align-middle : posé dans une ligne de texte, le drapeau ne fait pas monter les chiffres.
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap align-middle tabular-nums', className)}>
+      {iso && <CountryFlag iso={iso} size={16} />}
+      {formatE164ForDisplay(e164)}
+    </span>
+  );
+}
+
 /* ── États ─────────────────────────────────────────────────────────────── */
 
 export function ListSkeleton({ rows = 4, className }: { rows?: number; className?: string }) {
   return (
     <div className={cn('space-y-2 p-4', className)} aria-busy="true" aria-label="Chargement">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
+        <div key={i} className="s-skeleton h-14 animate-pulse rounded-xl bg-muted" />
       ))}
     </div>
   );
@@ -286,7 +315,7 @@ export function UnlinkedNotice({ message, onRetry, className }: { message?: stri
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Link2Off className="h-5 w-5 text-muted-foreground" />
       </span>
-      <h2 className="mt-4 text-[17px] font-semibold">Votre espace n’est pas encore prêt</h2>
+      <h2 className="mt-4 text-[18px] font-semibold tracking-[-0.01em]">Votre espace n’est pas encore prêt</h2>
       <p className="mt-1.5 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
         {message || 'Votre compte n’est pas encore relié à votre fiche commercial. Demandez-le au responsable.'}
       </p>

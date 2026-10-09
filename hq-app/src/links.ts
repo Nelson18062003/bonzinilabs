@@ -17,6 +17,13 @@ const SITE_HOSTS = ['www.bonzinilabs.com', 'bonzinilabs.com'];
 const STAFF_PATH = /^\/(m|a|r|w|v)(\/[A-Za-z0-9._~%\-/]*)?(\?[A-Za-z0-9._~%\-=&+]*)?$/;
 const LOGIN = /^\/(m|a|r|w|v)\/login\b/;
 
+/**
+ * Les pages de connexion du site (une par espace, plus celle des clients) :
+ * l'app y reconnaît « pas encore entré » et emmène la personne connectée vers
+ * son espace. Doit contenir chaque staffLoginFor(role) du site (test).
+ */
+export const LOGIN_PATHS = ['/m/login', '/a/login', '/r/login', '/w/login', '/v/login', '/auth'];
+
 /** Une page du personnel sûre, ou null. */
 export function staffPath(path: string): string | null {
   const p = path.replace(/#.*$/, '');

@@ -1,24 +1,33 @@
 // ============================================================
 // Mes équipes › un membre — qui il est, où il arrive, quand il s'est
-// connecté ; le modifier (nom, téléphone, rôle), le désactiver ou le
+// connecté ; le modifier (nom, numéros, site, rôle), le désactiver ou le
 // réactiver, lui redonner un mot de passe provisoire. Pour un commercial :
 // sa fiche (celle que la réception choisit comme origine d'un client) et
 // ses chiffres du mois. Pour un commissionnaire : son agrément.
-// Toutes les écritures sont des RPC super admin, journalisées.
+// Toutes les écritures sont des RPC super admin, journalisées : le nom et le
+// rôle par team_update_member, les numéros et le site par
+// team_set_member_profile (06/10).
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, KeyRound, MapPin, Pencil, Power, Repeat, TrendingUp } from 'lucide-react';
+import { toast } from 'sonner';
+import { ArrowLeft, Check, KeyRound, MapPin, MessageCircle, Pencil, Phone, Power, Repeat, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ADMIN_ROLE_LABELS, useAdminAuth, type AppRole } from '@/contexts/AdminAuthContext';
-import { useLinkCommercial, useTeamMembers, useUpdateTeamMember, type TeamMember } from '@/hooks/useTeam';
+import { useLinkCommercial, useSetMemberProfile, useTeamMembers, useUpdateTeamMember, type StaffPhone, type TeamMember } from '@/hooks/useTeam';
 import { useResetAdminPassword, useToggleAdminStatus } from '@/hooks/useAdminManagement';
 import { useClientSources } from '@/hooks/useClientSources';
 import { useCommercialDashboard } from '@/hooks/useSales';
-import { ROLE_DESCRIPTION, TEAMS, lastSeen, memberName, roleSpace, teamOf } from '@/lib/team';
-import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel } from '@/lib/sales';
+import { ROLE_DESCRIPTION, TEAMS, lastSeen, memberName, memberPhones, phoneCountry, roleSpace, teamOf } from '@/lib/team';
+import { currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, whatsappLink } from '@/lib/sales';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
+import { normalizePhone } from '@/lib/phone';
+import { CountryFlag } from '@/components/form/CountryFlag';
+import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
+import { useClientPhonesEditor, type ClientPhonesEditorApi } from '@/components/clients/useClientPhonesEditor';
 import { BrokerLicenseCard } from '@/mobile/screens/admins/BrokerLicenseCard';
-import { BTN_DANGER, BTN_PRIMARY, BTN_SOFT, CARD, Field, Initials, Modal, PasswordReveal, RolePill, Skeleton } from './TeamBits';
+import { BTN_DANGER, BTN_PRIMARY, BTN_SOFT, CARD, Field, Initials, Modal, PasswordReveal, RolePill, SiteTag, Skeleton } from './TeamBits';
+import { TeamSitePicker } from './TeamSitePicker';
 import { TEAM_BASE } from './TeamScreen';
 
 type Dialog = null | 'edit' | 'role' | 'status' | 'password' | 'fiche';
@@ -37,6 +46,15 @@ function MemberPage() {
   const m = members.data?.find((x) => x.user_id === userId);
   const [dialog, setDialog] = useState<Dialog>(null);
   const isSelf = !!m && m.user_id === currentUser?.id;
+  // Les numéros se rechargent à chaque ouverture de « Modifier » (comme la fiche client).
+  const phonesEditor = useClientPhonesEditor({ primaryOptional: true });
+  const openEdit = (member: TeamMember) => {
+    phonesEditor.reset(
+      (member.phones ?? []).map((p) => ({ phoneE164: p.phone_e164, label: p.label })),
+      member.phone,
+    );
+    setDialog('edit');
+  };
 
   const back = (
     <button type="button" onClick={() => navigate(TEAM_BASE)} className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground hover:text-foreground">
@@ -75,6 +93,7 @@ function MemberPage() {
   }
 
   const name = memberName(m);
+  const phones = memberPhones(m);
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-0">
       {back}
@@ -98,7 +117,19 @@ function MemberPage() {
 
       <section className={cn(CARD, 'divide-y divide-border/60')}>
         <InfoRow label="Email" value={m.email ?? '—'} />
-        <InfoRow label="Téléphone" value={m.phone ?? '—'} />
+        {phones.length === 0 ? (
+          <InfoRow label="Téléphone" value="—" />
+        ) : (
+          <div className="px-5 py-3.5">
+            <div className="mb-2 text-[14px] text-muted-foreground">{phones.length > 1 ? `Téléphones · ${phones.length}` : 'Téléphone'}</div>
+            <ul className="space-y-3">
+              {phones.map((p, i) => (
+                <PhoneLine key={`${p.phone_e164}-${i}`} p={p} primary={i === 0 && phones.length > 1} name={name} />
+              ))}
+            </ul>
+          </div>
+        )}
+        <InfoRow label="Site" value={m.site ? <SiteTag site={m.site} className="justify-end" /> : <span className="font-normal text-muted-foreground">Non renseigné</span>} />
         <InfoRow label="Arrive sur" value={<span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {roleSpace(m.role)}</span>} />
         <InfoRow label="Dernière connexion" value={lastSeen(m.last_sign_in_at)} />
         <InfoRow label="Accès créé le" value={m.created_at ? new Date(m.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'} />
@@ -106,7 +137,7 @@ function MemberPage() {
       </section>
 
       <section className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => setDialog('edit')} className={BTN_SOFT}>
+        <button type="button" onClick={() => openEdit(m)} className={BTN_SOFT}>
           <Pencil className="h-4 w-4" /> Modifier
         </button>
         {!isSelf && (
@@ -133,7 +164,7 @@ function MemberPage() {
       {m.role === 'commercial' && <CommercialSection m={m} onChangeFiche={() => setDialog('fiche')} />}
       {m.role === 'customs_broker' && <BrokerLicenseCard userId={m.user_id} canEdit />}
 
-      {dialog === 'edit' && <EditDialog m={m} onClose={() => setDialog(null)} />}
+      {dialog === 'edit' && <EditDialog m={m} phones={phonesEditor} onClose={() => setDialog(null)} />}
       {dialog === 'role' && <RoleDialog m={m} onClose={() => setDialog(null)} />}
       {dialog === 'status' && <StatusDialog m={m} onClose={() => setDialog(null)} />}
       {dialog === 'password' && <PasswordDialog m={m} onClose={() => setDialog(null)} />}
@@ -148,6 +179,45 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="min-w-0 truncate text-right font-medium">{value}</span>
     </div>
+  );
+}
+
+/** Un numéro : drapeau, numéro lisible, « Principal » ou son libellé ; appeler, écrire sur WhatsApp. */
+function PhoneLine({ p, primary, name }: { p: StaffPhone; primary: boolean; name: string }) {
+  const iso = phoneCountry(p);
+  const shown = formatE164ForDisplay(p.phone_e164);
+  // Un ancien numéro en texte libre (« +237 670 64 13 92 ») se relit ; s'il ne se relit pas, on l'appelle tel quel.
+  const e164 = normalizePhone(p.phone_e164)?.e164 ?? null;
+  const tel = e164 ?? p.phone_e164.replace(/[^\d+]/g, '');
+  const tags = [primary ? 'Principal' : null, p.label].filter(Boolean).join(' · ');
+  return (
+    <li className="flex items-center gap-3">
+      {iso ? <CountryFlag iso={iso} size={22} /> : <Phone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-medium tabular-nums">{shown}</span>
+        {tags && <span className="block truncate text-[12.5px] text-muted-foreground">{tags}</span>}
+      </span>
+      {tel && (
+        <a
+          href={`tel:${tel}`}
+          aria-label={`Appeler ${name} au ${shown}`}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ring-1 ring-black/10 transition-colors hover:bg-accent dark:ring-white/15"
+        >
+          <Phone className="h-4 w-4" />
+        </a>
+      )}
+      {e164 && (
+        <a
+          href={whatsappLink(e164)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Écrire à ${name} sur WhatsApp au ${shown}`}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white transition-colors hover:bg-[#1DA851]"
+        >
+          <MessageCircle className="h-4 w-4" />
+        </a>
+      )}
+    </li>
   );
 }
 
@@ -235,12 +305,43 @@ function Mini({ label, value, hint }: { label: string; value: string; hint?: str
 
 /* ── Fenêtres ──────────────────────────────────────────────────────────── */
 
-function EditDialog({ m, onClose }: { m: TeamMember; onClose: () => void }) {
+/**
+ * Nom (team_update_member, sans numéro : l'absence vaut « inchangé »),
+ * numéros et site (team_set_member_profile) — chacun n'est envoyé que s'il a
+ * changé. Les numéros : l'éditeur des clients, principal facultatif.
+ */
+function EditDialog({ m, phones, onClose }: { m: TeamMember; phones: ClientPhonesEditorApi; onClose: () => void }) {
   const update = useUpdateTeamMember();
+  const profile = useSetMemberProfile();
   const [firstName, setFirstName] = useState(m.first_name ?? '');
   const [lastName, setLastName] = useState(m.last_name ?? '');
-  const [phone, setPhone] = useState(m.phone ?? '');
-  const ok = firstName.trim() && lastName.trim();
+  const [siteId, setSiteId] = useState<string | null>(m.site?.id ?? null);
+  const [tried, setTried] = useState(false);
+  const phonesInvalid = phones.primaryInvalid || phones.extrasInvalid;
+  const ok = !!firstName.trim() && !!lastName.trim() && !phonesInvalid;
+  const busy = update.isPending || profile.isPending;
+
+  const save = async () => {
+    setTried(true);
+    if (!ok || busy) return;
+    const nameChanged = firstName.trim() !== (m.first_name ?? '').trim() || lastName.trim() !== (m.last_name ?? '').trim();
+    const siteChanged = siteId !== (m.site?.id ?? null);
+    try {
+      if (phones.changed || siteChanged) {
+        await profile.mutateAsync({
+          userId: m.user_id,
+          phones: phones.changed ? phones.toInputs() : undefined,
+          siteId: siteChanged ? siteId : undefined,
+        });
+      }
+      if (nameChanged) await update.mutateAsync({ userId: m.user_id, firstName: firstName.trim(), lastName: lastName.trim() });
+      else if (phones.changed || siteChanged) toast.success('Membre mis à jour');
+      onClose();
+    } catch {
+      /* l'erreur est déjà affichée par le hook ; la fenêtre reste ouverte */
+    }
+  };
+
   return (
     <Modal
       title="Modifier"
@@ -250,13 +351,8 @@ function EditDialog({ m, onClose }: { m: TeamMember; onClose: () => void }) {
           <button type="button" onClick={onClose} className={BTN_SOFT}>
             Annuler
           </button>
-          <button
-            type="button"
-            disabled={!ok || update.isPending}
-            onClick={() => update.mutate({ userId: m.user_id, firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() }, { onSuccess: onClose })}
-            className={BTN_PRIMARY}
-          >
-            {update.isPending ? '…' : 'Enregistrer'}
+          <button type="button" disabled={!firstName.trim() || !lastName.trim() || busy} onClick={() => void save()} className={BTN_PRIMARY}>
+            {busy ? '…' : 'Enregistrer'}
           </button>
         </>
       }
@@ -265,7 +361,13 @@ function EditDialog({ m, onClose }: { m: TeamMember; onClose: () => void }) {
         <Field label="Prénom" value={firstName} onChange={setFirstName} maxLength={80} autoFocus />
         <Field label="Nom" value={lastName} onChange={setLastName} maxLength={80} />
       </div>
-      <Field label="Téléphone" type="tel" inputMode="tel" value={phone} onChange={setPhone} placeholder="+237 6…" maxLength={32} hint="Laissez vide pour l’effacer." />
+      <div className="space-y-2">
+        <ClientPhonesEditor editor={phones} variant="staff" idPrefix="team-edit-phone" />
+        {tried && phonesInvalid && (
+          <p className="text-[12.5px] font-medium text-red-600 dark:text-red-400">Un numéro est incomplet : complétez-le ou effacez-le.</p>
+        )}
+      </div>
+      <TeamSitePicker value={siteId} onChange={setSiteId} />
     </Modal>
   );
 }
@@ -389,7 +491,7 @@ function PasswordDialog({ m, onClose }: { m: TeamMember; onClose: () => void }) 
       }
     >
       {password ? (
-        <PasswordReveal email={m.email ?? ''} password={password} name={memberName(m)} />
+        <PasswordReveal email={m.email ?? ''} password={password} name={memberName(m)} role={m.role} />
       ) : (
         <p className="text-[14px] leading-relaxed text-muted-foreground">Son mot de passe actuel cessera de fonctionner. Un mot de passe provisoire s’affichera une seule fois.</p>
       )}
