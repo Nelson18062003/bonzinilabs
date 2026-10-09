@@ -1,5 +1,6 @@
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
 import { ClientRegistration } from '@/components/clients/ClientRegistration';
+import { ClientToProspectDialog } from '@/components/clients/ClientToProspectDialog';
 import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
 import { birthTextIssue, identityPatch, isoToBirthText } from '@/components/clients/clientIdentity';
 import { formatBirthDate, genderLabel, isGender, type Gender } from '@/lib/people';
@@ -41,6 +42,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  UserRoundSearch,
   Users,
   Tag,
   Ship,
@@ -171,6 +173,9 @@ export function MobileClientDetail() {
   const canViewCargo = hasPermission('canViewCargo');
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
+  // « Repasser en prospect » (07/10) : le super admin seul — gérer les comptes ET piloter les ventes.
+  const canMakeProspect = canManageUsers && hasPermission('canManageSales');
+  const [toProspectOpen, setToProspectOpen] = useState(false);
   // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
   // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
   // toute la flotte pèsent jusqu'à 3 000 lignes).
@@ -618,6 +623,15 @@ export function MobileClientDetail() {
                 onClick={() => setResetDrawerOpen(true)}
               />
             )}
+            {canMakeProspect && (
+              <ActionRow
+                icon={UserRoundSearch}
+                tone="pending"
+                label={t('clientToProspect.action')}
+                description={t('clientToProspect.actionHint')}
+                onClick={() => setToProspectOpen(true)}
+              />
+            )}
             {canManageUsers && (
               <ActionRow
                 icon={Trash2}
@@ -739,6 +753,11 @@ export function MobileClientDetail() {
           </SoftPill>
         </div>
       </BottomSheet>
+
+      {/* Repasser en prospect — super admin, client sans aucune opération. Monté à l'ouverture seulement : pas de lecture avant. */}
+      {canMakeProspect && toProspectOpen && (
+        <ClientToProspectDialog open={toProspectOpen} onClose={() => setToProspectOpen(false)} userId={client.id} clientName={fullName} />
+      )}
 
       {/* Delete Client Confirmation Sheet */}
       <BottomSheet

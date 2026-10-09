@@ -107,6 +107,7 @@ const TeamNewMember = lazy(() => import("./components/team/TeamNewMember").then(
 const TeamMemberScreen = lazy(() => import("./components/team/TeamMemberScreen").then(m => ({ default: m.TeamMemberScreen })));
 const SalesBoard = lazy(() => import("./components/team/SalesBoard").then(m => ({ default: m.SalesBoard })));
 const SalesCommercial = lazy(() => import("./components/team/SalesCommercial").then(m => ({ default: m.SalesCommercial })));
+const ProspectClaims = lazy(() => import("./components/team/ProspectClaims").then(m => ({ default: m.ProspectClaims })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
 const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -359,6 +360,8 @@ const App = () => (
                 <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamScreen /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewMember /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/ventes" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesBoard />}><SalesBoard /></AdminRouteWrapper>} />
+                {/* Les fiches « À vérifier » (07/10) : un numéro saisi par un commercial est déjà celui d'un client. */}
+                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ProspectClaims /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercial /></AdminRouteWrapper>} />
                 <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<Navigate to="/m/equipe" replace />} />

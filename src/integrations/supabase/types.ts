@@ -3404,6 +3404,56 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_client_claims: {
+        Row: {
+          client_user_id: string
+          created_at: string
+          created_by: string | null
+          direction_rejected_at: string | null
+          id: string
+          matched_phone: string
+          note: string | null
+          prospect_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          client_user_id: string
+          created_at?: string
+          created_by?: string | null
+          direction_rejected_at?: string | null
+          id?: string
+          matched_phone: string
+          note?: string | null
+          prospect_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          client_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          direction_rejected_at?: string | null
+          id?: string
+          matched_phone?: string
+          note?: string | null
+          prospect_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_client_claims_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prospect_phones: {
         Row: {
           country_iso: string | null
@@ -4667,6 +4717,14 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_client_prospect_eligibility: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      admin_client_to_prospect: {
+        Args: { p_reason?: string; p_source_id: string; p_user_id: string }
+        Returns: Json
+      }
       admin_correct_payment: {
         Args: {
           p_amount_rmb?: number
@@ -5525,6 +5583,20 @@ export type Database = {
         Args: { p_action: string; p_comment?: string; p_payment_id: string }
         Returns: Json
       }
+      prospect_claims_pending: { Args: never; Returns: Json }
+      prospect_phone_check: {
+        Args: { p_exclude_prospect_id?: string; p_phone: string }
+        Returns: Json
+      }
+      prospect_resolve_claim: {
+        Args: {
+          p_client_user_id?: string
+          p_decision: string
+          p_note?: string
+          p_prospect_id: string
+        }
+        Returns: Json
+      }
       purge_webauthn_challenges: { Args: never; Returns: undefined }
       reception_add_parcel: {
         Args: {
@@ -5798,6 +5870,15 @@ export type Database = {
           p_permission: string
           p_roles?: string[]
           p_title: string
+        }
+        Returns: number
+      }
+      send_staff_push_user: {
+        Args: {
+          p_body: string
+          p_path: string
+          p_title: string
+          p_user_id: string
         }
         Returns: number
       }

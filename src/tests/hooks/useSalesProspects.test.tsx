@@ -78,7 +78,8 @@ describe('useCreateProspect', () => {
     await act(async () => {
       await result.current.mutateAsync(input);
     });
-    expect(onCreated).toHaveBeenCalledWith('p-new');
+    // Second argument (07/10) : la fiche part-elle « À vérifier » ? Ici non (réponse sans to_verify).
+    expect(onCreated).toHaveBeenCalledWith('p-new', false);
   });
 
   it('`quietErrors` : le refus ne part pas en toast (l’écran le dit sous le champ)', async () => {

@@ -41,11 +41,16 @@ export const descId = (htmlFor: string) => `${htmlFor}-desc`;
 /** Le titre d'une section de carte. */
 export const SECTION_TITLE = 'text-[13px] font-semibold uppercase tracking-[0.06em] s-ink-3';
 
-/** La couleur de l'étiquette d'un statut (« À contacter » bleu, « Contacté » ambre, « Intéressé » violet…). */
-export const STATUS_TONE: Record<ProspectStatus, 'info' | 'pending' | 'accent' | 'success' | 'neutral'> = {
+/**
+ * La couleur de l'étiquette d'un statut (« À contacter » bleu, « Contacté »
+ * ambre, « Intéressé » violet, « À vérifier » orange — la direction doit
+ * trancher —, « Devenu client » vert, « Perdu » gris).
+ */
+export const STATUS_TONE: Record<ProspectStatus, 'info' | 'pending' | 'accent' | 'warn' | 'success' | 'neutral'> = {
   new: 'info',
   contacted: 'pending',
   interested: 'accent',
+  to_verify: 'warn',
   won: 'success',
   lost: 'neutral',
 };

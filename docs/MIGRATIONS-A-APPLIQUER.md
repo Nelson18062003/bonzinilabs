@@ -15,12 +15,15 @@
 
 ## En attente
 
-> **Les deux migrations du 06/10 se collent en UN fichier : `migrations/20261006_consolidated.sql`** (à coller APRÈS
-> `migrations/20261005_consolidated.sql`). Il contient, dans l'ordre, un contrôle des prérequis (s'arrête net, sans
-> rien modifier, s'il en manque un), `20261006100000` (sites, numéros du personnel, « Enregistré par ») puis
-> `20261006120000` (fiche prospect complète, sexe et date de naissance des clients). Rejouable, y compris si
-> l'ancienne version de ce fichier (`20261006100000` seule) a déjà été collée. Ensuite :
-> 1. `npx supabase migration repair --status applied 20261006100000 20261006120000`
+> **Les deux migrations du 06/10 ET celle du 07/10 se collent en UN fichier : `migrations/20261006_consolidated.sql`**
+> (à coller APRÈS `migrations/20261005_consolidated.sql`). Il contient, dans l'ordre, un contrôle des prérequis
+> (s'arrête net, sans rien modifier, s'il en manque un), `20261006100000` (sites, numéros du personnel, « Enregistré
+> par »), `20261006120000` (fiche prospect complète, sexe et date de naissance des clients) puis `20261007100000`
+> (numéro déjà client « À vérifier », client ↔ prospect par le super admin). Rejouable, y compris si une ancienne
+> version de ce fichier (`20261006100000` seule, ou les deux du 06/10) a déjà été collée. Un seul fichier plutôt qu'un
+> `20261007_consolidated.sql` à part : rien du 06/10 n'est encore en production, et la partie du 07/10 redéfinit des
+> fonctions de celle du 06/10 — coller le 06/10 APRÈS le 07/10 remettrait le refus du numéro d'un client. Ensuite :
+> 1. `npx supabase migration repair --status applied 20261006100000 20261006120000 20261007100000`
 > 2. `/gen-types`
 >
 > **Ordre de déploiement — coller le SQL, PUIS fusionner et déployer le site IMMÉDIATEMENT.** Il n'existe pas d'ordre
@@ -29,7 +32,85 @@
 > déploiement) est refusé (« Indiquez le sexe : homme ou femme ») ; à l'inverse, le nouveau site avant le SQL appelle
 > des fonctions qui n'existent pas encore. Faire les deux à la suite, hors des heures de terrain des commerciaux.
 > Dans l'intervalle, la LISTE des prospects reste lisible dans les deux sens (si `prospect_phones` n'existe pas encore,
-> le nouveau site la relit sans les autres numéros) ; seules la création et la modification attendent.
+> le nouveau site la relit sans les autres numéros) ; seules la création et la modification attendent. Depuis le
+> 07/10, l'ancien site ne connaît pas non plus le statut « À vérifier » qu'une saisie peut désormais produire : autre
+> raison de ne pas laisser d'intervalle.
+
+### `20261007100000_prospect_client_control.sql` (à passer APRÈS `20261006120000` — même fichier consolidé)
+**PR :** Commerciaux : numéro déjà client « À vérifier » (le super admin est notifié et tranche) · Le super admin passe
+un prospect en client, et un client sans aucune opération en prospect
+**Contenu :**
+- **Cloisonnement** : rien n'est ouvert au commercial (ni `is_admin`, ni politique, ni droit sur les tables des
+  clients). Il ne lit que SES prospects et SES clients (`commercial_clients`) ; garanti par un test SQL connecté comme
+  commercial (aucune ligne de `clients`, `wallets`, `deposits`, `payments`, `client_phones`, `ledger_entries`,
+  `wallet_adjustments`, `prospect_client_claims`, `client_sources`, `admin_audit_logs`).
+- `prospects.status` accepte **`to_verify`** (« À vérifier » ; contrainte `prospects_status_check`, nommée). Ce n'est
+  pas un statut ouvert : ni l'index des numéros suivis, ni les compteurs « ouverts » / « à relancer » des tableaux de
+  bord, ni l'attribution automatique d'un nouveau client (`clients_match_prospect`, inchangé) ne le prennent. Ses
+  numéros restent en revanche « suivis » pour les autres saisies (pas de doublon chez un collègue).
+- `prospect_client_claims` : une vérification par (fiche prospect, client reconnu) — `pending` / `attributed` /
+  `rejected`, le numéro qui a reconnu le client, qui l'a saisi, qui a tranché, une note. RLS : lecture `canManageSales`
+  seulement ; aucune écriture directe (droits par défaut retirés à `anon` / `authenticated`).
+- `prospect_create` / `prospect_update` (**mêmes signatures** qu'au 06/10) : le numéro (principal ou autre) d'un de
+  SES clients est refusé (« Le numéro X est déjà celui d'un de vos clients ») ; celui d'un **autre** client Bonzini
+  n'est plus refusé — la fiche est enregistrée « À vérifier », une vérification est ouverte par client reconnu, le super
+  admin reçoit une notification (« Numéro déjà client » · « <commercial> a saisi <prénom nom> (<numéro>) : déjà client
+  Bonzini — à vérifier » → `/m/equipe/ventes/a-verifier`), et la réponse porte `to_verify: true` — **sans rien dire du
+  client**. Une fiche perdue qui reçoit le numéro d'un client passe aussi « À vérifier » ; « devenu client » reste figé.
+- `prospect_set_status` : une fiche « À vérifier » attend la direction (« Cette fiche attend la vérification de la
+  direction ») ; si son client a disparu entre-temps, elle se rouvre comme une fiche perdue. `prospect_link_client` :
+  pas sur une fiche « À vérifier ».
+- **Une fiche « À vérifier » ne reste jamais figée** (relecture) : si le commercial retire ou corrige le numéro d'un
+  client, la vérification de ce client est close (« Numéro retiré par le commercial ») ; s'il n'en reste aucune, la
+  fiche redevient « À contacter » — ou « Perdu » si un de ses numéros est (devenu) celui d'un client
+  (`_prospect_release_if_unclaimed`). `prospect_update` renvoie le statut FINAL (`to_verify`, `status`, `notified` =
+  la direction vient d'être prévenue, `released`). Même chose quand le client est supprimé (« Supprimer le client »,
+  ou compte de connexion effacé) : deux **déclencheurs différés** (`clients_release_prospect_claims` sur `clients`,
+  `prospect_claims_release` sur `prospect_client_claims`) jugent la fiche à la fin de la transaction et préviennent le
+  commercial.
+- `prospect_phone_check(p_phone, p_exclude_prospect_id)` : pendant la saisie, `free` / `client` / `own_client` /
+  `mine` (+ l'id de SA fiche) / `other` / `invalid` — ce que la création dirait déjà, aucune identité.
+- `prospect_claims_pending()` (canManageSales, `@mola` exposée) : chaque vérification en attente avec la fiche complète,
+  le commercial, le numéro, et le client (code, coordonnées, origine actuelle, nombre de dépôts et de paiements,
+  dernière activité). `prospect_resolve_claim(p_prospect_id, p_decision, p_client_user_id, p_note)` (canManageSales,
+  `@mola` exposée avec confirmation) : **attribuer** (origine du client → le commercial, prospect « devenu client » ;
+  un ancien prospect « devenu client » de ce client est détaché ; les autres commerciaux qui l'avaient saisi voient
+  leur fiche classée, un doublon du même commercial est classé « Doublon » sans seconde notification ; refusé si le
+  client n'a plus aucun des numéros de la fiche) ou **refuser** (prospect « perdu » avec le motif FIXE « Déjà client
+  de Bonzini » — c'est tout ce que lit le commercial ; la note libre de la direction reste interne : sur la
+  vérification et au journal ; la date du refus est gardée : `direction_rejected_at`, et la liste dit
+  `previously_rejected_at` quand ce commercial ressaisit un client déjà refusé, et `source_active` pour une fiche
+  commercial archivée). Journalisée (`prospect_resolve_claim`) ; chaque commercial concerné est notifié sur son
+  téléphone (`send_staff_push_user`, nouvelle aide interne sur le modèle de `send_staff_push`), y compris celui qui
+  perd le client (son origine d'avant).
+- **Client → prospect** : `admin_client_prospect_eligibility(p_user_id)` dit en clair ce qui bloque, et
+  `admin_client_to_prospect(p_user_id, p_source_id, p_reason)` le fait — super admin (`canManageUsers` ET
+  `canManageSales`), seulement pour un client **sans aucune opération** (dépôts et paiements de tout statut, grand
+  livre, ajustements, solde ≠ 0, découvert, lots de paiements, colis, bons de retrait, conteneurs, lots en conteneur,
+  dossiers de douane ; ni compte du personnel, ni fiche « À vérifier » en attente, ni numéro principal sans indicatif).
+  Client, portefeuille et **compte de connexion** verrouillés (FOR UPDATE sur `auth.users` : un dépôt, un paiement ou
+  un colis en cours d'enregistrement pour ce compte est attendu, puis bloque — sans cela il échappait au contrôle puis
+  disparaissait avec le compte), tout revérifié sous verrou ; **instantané COMPLET du client dans le journal**
+  (`client_to_prospect` : la fiche client entière — notes, KYC… —, ses numéros, ses bénéficiaires, ses échanges avec le
+  support — conversations et messages —, son compte de connexion — email, téléphone, dates, moyens de connexion,
+  jamais le mot de passe —, les décisions déjà prises sur ses fiches « À vérifier », le motif) ; l'éligibilité renvoie aussi `warnings` (bénéficiaires, conversation avec le
+  support, KYC, notes : effacés sans bloquer, pour décider en connaissance de cause) ; compte supprimé par
+  `admin_delete_client`, puis son ancien prospect « devenu client » rouvert (contacté, chez le commercial choisi) ou un
+  prospect créé avec ses coordonnées (jamais l'adresse technique `@bonzini-client.local`) ; le commercial est notifié.
+  `@mola` non exposée.
+- Prospect → client : rien de nouveau côté base — le formulaire « Nouveau client » pré-rempli depuis la fiche prospect
+  (`prospect_lookup_phone`) et l'attribution automatique existent depuis le 06/10.
+- Aucune donnée existante modifiée. Testée sur Postgres 16 : migration passée deux fois dans une transaction, 104
+  contrôles (création et modification « À vérifier », refus, notifications, décision, cloisonnement avec les politiques
+  RLS de production, éligibilité, client → prospect, droits, `@mola`) + 37 de la relecture (motif de refus fixe, fiche libérée par
+  correction du numéro ou suppression du client, doublon, commercial prévenu, refus antérieur, fiche archivée,
+  instantané complet) ; deux saisies simultanées réelles, et un dépôt en cours pendant « Repasser en prospect » (attendu
+  puis bloquant ; sans le verrou, le dépôt disparaissait ; dans l'ordre inverse, le dépôt attend puis est refusé) ; les 40 + 80
+  contrôles du 06/10 et les 105 de Mes équipes / commerciaux repassés (les trois attendus « numéro d'un client refusé »
+  deviennent « À vérifier ») ; le fichier consolidé de même (deux fois d'affilée, après l'ancienne version, refus net
+  sans Mes équipes ou sans les notifications du personnel).
+
+**Comment pousser :** voir l'encadré ci-dessus (un seul fichier pour les trois migrations).
 
 ### `20261006120000_prospect_details_client_identity.sql` (à passer APRÈS `20261006100000` — même fichier consolidé)
 **PR :** Espace commercial : la fiche prospect complète, en étapes · Clients : sexe et date de naissance
@@ -61,7 +142,7 @@
   commerciaux repassés ; le fichier consolidé de même (deux fois d'affilée, après l'ancienne version, et refus net
   sans Mes équipes).
 
-**Comment pousser :** voir l'encadré ci-dessus (un seul fichier pour les deux migrations du 06/10).
+**Comment pousser :** voir l'encadré ci-dessus (un seul fichier pour les trois migrations).
 
 ### `20261006100000_staff_sites_phones_registration.sql` (à passer APRÈS `migrations/20261005_consolidated.sql`)
 **PR :** Équipe : sites et numéros à drapeau · Clients : « Enregistré par », origine facultative, origine posée par la réception
@@ -84,8 +165,9 @@
   équipes / commerciaux repassés ; contrôle des prérequis éprouvé (refuse de passer sans Mes équipes, rien n'est créé).
 
 **Comment pousser :** coller `migrations/20261006_consolidated.sql` dans l'éditeur SQL (il contient aussi
-`20261006120000`), puis `npx supabase migration repair --status applied 20261006100000 20261006120000`, puis
-`/gen-types` (les types sont déjà ajoutés à la main ; l'app appelle les RPC sans attendre).
+`20261006120000` et `20261007100000`), puis `npx supabase migration repair --status applied 20261006100000
+20261006120000 20261007100000`, puis `/gen-types` (les types sont déjà ajoutés à la main ; l'app appelle les RPC sans
+attendre).
 
 
 > **Les trois migrations du 05/10 se collent en UN fichier : `migrations/20261005_consolidated.sql`.** Il contient,

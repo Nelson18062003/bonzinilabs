@@ -8,6 +8,10 @@
 // le téléphone, sous SON compte) se reprend d'ici. Une fiche OUVERTE à
 // laquelle il manque quelque chose (nom, sexe, ville, « ses plus gros
 // problèmes ») porte « À compléter ».
+// « À vérifier » (07/10) : une fiche dont un numéro est déjà celui d'un
+// client Bonzini, en attente de la direction. Ni ouverte ni close : sa puce
+// n'apparaît que s'il y en a, juste après « À relancer » ; dans « Tous »,
+// ces fiches viennent après les ouvertes.
 // Lignes à la RECORDS TABLE, filtres à la FILTER TABLE (beautifului.dev).
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
@@ -30,6 +34,7 @@ type Filter = 'open' | 'due' | ProspectStatus | 'all';
 const FILTERS: { value: Filter; label: string; param: string | null }[] = [
   { value: 'open', label: 'Ouverts', param: null },
   { value: 'due', label: 'À relancer', param: 'relancer' },
+  { value: 'to_verify', label: 'À vérifier', param: 'a-verifier' },
   { value: 'new', label: 'À contacter', param: 'a-contacter' },
   { value: 'contacted', label: 'Contacté', param: 'contacte' },
   { value: 'interested', label: 'Intéressé', param: 'interesse' },
@@ -47,10 +52,21 @@ function matches(p: Prospect, f: Filter, now: Date): boolean {
 
 const time = (iso: string | null) => (iso ? new Date(iso).getTime() : Number.POSITIVE_INFINITY);
 
-/** Ouverts : les relances échues d'abord, puis la prochaine relance, puis le plus récent. Clos : le plus récent. Tous : les ouverts, puis les clos. */
+/** Les puces qui ne se montrent que s'il y a quelque chose dedans (ou si elles sont choisies). */
+const ONLY_IF_ANY: Filter[] = ['to_verify'];
+
+/**
+ * Ouverts : les relances échues d'abord, puis la prochaine relance, puis le
+ * plus récent. À vérifier, clos : le plus récent (l'ordre de la liste lue).
+ * Tous : les ouverts, puis les « À vérifier », puis les clos.
+ */
 function sortFor(f: Filter, list: Prospect[], now: Date): Prospect[] {
-  if (f === 'won' || f === 'lost') return list;
-  if (f === 'all') return [...sortFor('open', list.filter(isOpenProspect), now), ...list.filter((p) => !isOpenProspect(p))];
+  if (f === 'won' || f === 'lost' || f === 'to_verify') return list;
+  if (f === 'all') {
+    const waiting = list.filter((p) => p.status === 'to_verify');
+    const closed = list.filter((p) => !isOpenProspect(p) && p.status !== 'to_verify');
+    return [...sortFor('open', list.filter(isOpenProspect), now), ...waiting, ...closed];
+  }
   return [...list].sort(
     (a, b) =>
       Number(isDue(b, now)) - Number(isDue(a, now)) ||
@@ -168,6 +184,7 @@ export function CommercialProspects() {
               {FILTERS.map((f) => {
                 const active = f.value === filter;
                 const n = counts[f.value] ?? 0;
+                if (ONLY_IF_ANY.includes(f.value) && !active && (!prospects.data || n === 0)) return null;
                 return (
                   <button
                     key={f.value}
@@ -176,13 +193,21 @@ export function CommercialProspects() {
                     onClick={() => setFilter(f.value)}
                     className="s-filter inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-medium"
                   >
-                    {f.value === 'due' && n > 0 && <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--s-orange))]" aria-hidden />}
+                    {(f.value === 'due' || f.value === 'to_verify') && n > 0 && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--s-orange))]" aria-hidden />
+                    )}
                     {f.label}
                     {prospects.data && n > 0 && <span className="s-count rounded-[5px] px-1 text-[12px] tabular-nums">{n}</span>}
                   </button>
                 );
               })}
             </div>
+
+            {filter === 'to_verify' && (
+              <p className="s-enter px-1 text-[14px] leading-snug s-ink-2">
+                Un de leurs numéros est déjà celui d’un client Bonzini&nbsp;: la direction décide. Leur statut ne change pas en attendant.
+              </p>
+            )}
 
             <div className={cn('overflow-hidden', SALES_CARD)}>
               {prospects.isLoading ? (

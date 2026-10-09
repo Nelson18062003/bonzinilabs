@@ -7,7 +7,12 @@
 import type { Tone } from '@/mobile/designKit/tokens';
 import { normalizePhone } from '@/lib/phone';
 
-export type ProspectStatus = 'new' | 'contacted' | 'interested' | 'won' | 'lost';
+/**
+ * `to_verify` (07/10) : un des numéros saisis est déjà celui d'un client
+ * Bonzini — la fiche attend la décision de la direction (attribuer ce client
+ * au commercial, ou non). Le commercial ne sait pas de quel client il s'agit.
+ */
+export type ProspectStatus = 'new' | 'contacted' | 'interested' | 'to_verify' | 'won' | 'lost';
 export type Interest = 'payments' | 'air' | 'sea';
 export type ObjectiveMetric = 'new_clients' | 'payments_xaf' | 'air_kg' | 'sea_cbm' | 'prospects_new' | 'prospects_won';
 
@@ -15,13 +20,27 @@ export const PROSPECT_STATUS: Record<ProspectStatus, { label: string; tone: Tone
   new: { label: 'À contacter', tone: 'info' },
   contacted: { label: 'Contacté', tone: 'pending' },
   interested: { label: 'Intéressé', tone: 'pending' },
+  to_verify: { label: 'À vérifier', tone: 'pending' },
   won: { label: 'Devenu client', tone: 'success' },
   lost: { label: 'Perdu', tone: 'neutral' },
 };
 
-/** Les statuts qu'un commercial pose lui-même (« devenu client » vient du compte créé). */
-export const SETTABLE_STATUSES: Exclude<ProspectStatus, 'won'>[] = ['new', 'contacted', 'interested', 'lost'];
+/** Les statuts qu'un commercial pose lui-même (« devenu client » vient du compte créé, « à vérifier » du serveur). */
+export const SETTABLE_STATUSES: Exclude<ProspectStatus, 'won' | 'to_verify'>[] = ['new', 'contacted', 'interested', 'lost'];
 export const OPEN_STATUSES: ProspectStatus[] = ['new', 'contacted', 'interested'];
+
+/**
+ * Ce que le commercial lit quand un numéro qu'il saisit est déjà celui d'un
+ * client Bonzini (07/10) : sans nom — il ne sait pas de quel client il
+ * s'agit —, et sans blocage : il continue, la direction décide.
+ */
+export const CLIENT_NUMBER_NOTE = {
+  title: 'Ce numéro est déjà celui d’un client Bonzini.',
+  next: 'Continuez\u00a0: la direction sera prévenue et décidera.',
+} as const;
+
+/** Une fiche « À vérifier » enregistrée : ce qui va se passer (toast, fiche). Espaces insécables avant « : » (pas de deux-points seul en tête de ligne). */
+export const TO_VERIFY_NOTE = 'La direction est prévenue\u00a0: elle vous attribuera ce client si c’est bien vous qui l’avez convaincu.';
 
 export const INTERESTS: { value: Interest; label: string }[] = [
   { value: 'payments', label: 'Payer ses fournisseurs' },

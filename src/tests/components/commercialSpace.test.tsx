@@ -17,7 +17,12 @@
  *     d'avant le 06/10 se dit incomplète (dans la liste aussi, « À
  *     compléter »), « Modifier » ouvre l'étape, « Compléter » enchaîne ce qui
  *     manque ; le brouillon d'un collègue ne s'affiche pas ;
- *   · les listes affichent les numéros au format international.
+ *   · les listes affichent les numéros au format international ;
+ *   · « À vérifier » (07/10, un numéro déjà celui d'un client Bonzini) :
+ *     la fiche l'explique, sans actions de statut, le reste modifiable ;
+ *     dans la liste, la pastille, et une puce « À vérifier » qui n'apparaît
+ *     que s'il y en a ; « Ouverts » ne les compte pas ; « Tous » les range
+ *     après les ouverts.
  * L'assistant « Nouveau prospect » a son propre fichier
  * (salesProspectWizard.test.tsx).
  */
@@ -55,6 +60,10 @@ const h = vi.hoisted(() => {
       phones: [{ phone_e164: '+8613812345678', country_iso: 'CN', label: 'WeChat', position: 0 }],
     },
     { ...base, id: 'p-lost', first_name: 'Chantal', phone: '+237690000003', phone_e164: '+237690000003', status: 'lost', next_action_at: past, lost_reason: 'Prix' },
+    {
+      ...base, id: 'p-verify', first_name: 'Didier', last_name: 'Fotso', city: 'Yaoundé', gender: 'MALE', phone: '+237690000004', phone_e164: '+237690000004',
+      status: 'to_verify', next_action_at: past, pain_points: 'Manque de capital : trois mois de stock',
+    },
   ];
   return {
     UNLINKED,
@@ -73,6 +82,8 @@ const h = vi.hoisted(() => {
     create: vi.fn(),
     update: vi.fn(),
     setStatus: vi.fn(),
+    // La vérification des numéros d'une fiche perdue (« Rouvrir » seulement si le serveur l'accepterait).
+    numbersCheck: vi.fn((_n: string[], _id: string, _enabled?: boolean) => ({ pending: false, blocking: null as string | null })),
   };
 });
 
@@ -84,6 +95,8 @@ vi.mock('@/hooks/useSales', () => ({
   useCreateProspect: () => ({ mutate: h.create, isPending: false }),
   useUpdateProspect: () => ({ mutate: h.update, isPending: false }),
   useSetProspectStatus: () => ({ mutate: h.setStatus, isPending: false }),
+  useProspectPhoneCheck: () => ({ data: undefined }),
+  useProspectNumbersCheck: (numbers: string[], id: string, enabled?: boolean) => h.numbersCheck(numbers, id, enabled),
 }));
 
 import { CommercialRouteWrapper } from '@/components/sales/CommercialRouteWrapper';
@@ -120,6 +133,7 @@ beforeEach(() => {
   h.update.mockReset();
   h.setStatus.mockReset();
   h.clients = { ...h.clients, data: [] };
+  h.list = { data: h.prospects, isLoading: false, isError: false, refetch: () => undefined };
   localStorage.clear();
 });
 
@@ -208,6 +222,37 @@ describe('Espace commercial — prospects', () => {
     expect(screen.getByText('Awa')).toBeTruthy();
     expect(screen.queryByText('Bruno Ekané')).toBeNull();
     expect(screen.queryByText('Chantal')).toBeNull();
+    // Une fiche « À vérifier » ne se relance pas (son statut attend la direction).
+    expect(screen.queryByText('Didier Fotso')).toBeNull();
+  });
+
+  it('« À vérifier » : ni dans « Ouverts » ni dans leur nombre ; sa puce (comptée) les montre, avec leur pastille', () => {
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    expect(screen.queryByText('Didier Fotso')).toBeNull();
+    expect(screen.getByText('2 prospects ouverts')).toBeTruthy();
+    const chip = screen.getByRole('button', { name: /^À vérifier/ });
+    expect(chip.textContent).toBe('À vérifier1');
+    fireEvent.click(chip);
+    expect(screen.getByRole('button', { name: /^À vérifier/ }).getAttribute('aria-pressed')).toBe('true');
+    const row = screen.getByText('Didier Fotso').closest('button') as HTMLElement;
+    expect(within(row).getByText('À vérifier')).toBeTruthy();
+    expect(screen.queryByText('Awa')).toBeNull();
+    // Une fiche en attente ne porte ni « À compléter » ni sa relance.
+    expect(within(row).queryByText(/Relance/)).toBeNull();
+  });
+
+  it('pas de fiche « À vérifier » : pas de puce', () => {
+    h.list = { ...h.list, data: h.prospects.filter((p) => p.status !== 'to_verify') };
+    mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
+    expect(screen.queryByRole('button', { name: /^À vérifier/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /^À relancer/ })).toBeTruthy();
+  });
+
+  it('« Tous » : les ouverts, puis les « À vérifier », puis les clos', () => {
+    mount(<CommercialProspects />, { route: '/v/prospects?filtre=tous', path: '/v/prospects' });
+    const all = ['Awa', 'Bruno Ekané', 'Chantal', 'Didier Fotso'];
+    const names = screen.getAllByRole('listitem').map((li) => all.find((n) => within(li).queryByText(n)));
+    expect(names).toEqual(['Awa', 'Bruno Ekané', 'Didier Fotso', 'Chantal']);
   });
 });
 
@@ -229,8 +274,39 @@ describe('Espace commercial — la fiche', () => {
 
   it('un perdu se rouvre (statut « À contacter »)', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
+    // Ses numéros sont vérifiés comme pour une réouverture (la fiche elle-même exclue).
+    expect(h.numbersCheck).toHaveBeenCalledWith([expect.any(String)], 'p-lost', true);
     fireEvent.click(screen.getByRole('button', { name: /Rouvrir/ }));
     expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-lost', status: 'new', reason: undefined }, expect.any(Object));
+  });
+
+  it('un perdu dont un numéro est celui d’un client (refusé par la direction) : pas de « Rouvrir », une phrase le dit — sans nom', () => {
+    h.numbersCheck.mockReturnValue({ pending: false, blocking: 'client' });
+    try {
+      mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
+      expect(screen.queryByRole('button', { name: /Rouvrir/ })).toBeNull();
+      expect(
+        // (Testing Library ramène l'espace insécable avant « : » à une espace.)
+        screen.getByText('Un de ses numéros est celui d’un client Bonzini : cette fiche ne peut pas être rouverte. Si le numéro est faux, corrigez-le.'),
+      ).toBeTruthy();
+    } finally {
+      h.numbersCheck.mockReturnValue({ pending: false, blocking: null });
+    }
+  });
+
+  it('un perdu, la vérification en cours : « Rouvrir » attend la réponse', () => {
+    h.numbersCheck.mockReturnValue({ pending: true, blocking: null });
+    try {
+      mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
+      expect((screen.getByRole('button', { name: /Rouvrir/ }) as HTMLButtonElement).disabled).toBe(true);
+    } finally {
+      h.numbersCheck.mockReturnValue({ pending: false, blocking: null });
+    }
+  });
+
+  it('une fiche ouverte ne lance pas la vérification de réouverture', () => {
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
+    expect(h.numbersCheck).toHaveBeenLastCalledWith(['+237690000002', '+8613812345678'], 'p-later', false);
   });
 
   it('le statut se change d’un toucher sur le segmenté', () => {
@@ -284,6 +360,33 @@ describe('Espace commercial — la fiche', () => {
     localStorage.setItem('bonzini.v.prospect-draft:u1', JSON.stringify({ ...draft, owner: 'u1' }));
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
     expect(screen.getByText('Saisie en cours : Gaëlle Nkoulou')).toBeTruthy();
+  });
+
+  it('« À vérifier » : le bandeau l’explique ; pas d’actions de statut ; le reste de la fiche se modifie', () => {
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-verify', path: '/v/prospects/:id' });
+    expect(screen.getAllByText('À vérifier').length).toBeGreaterThan(0);
+    const notice = screen.getByText('En attente de la direction').closest('[role="status"]') as HTMLElement;
+    expect(notice.textContent?.replace(/\u00a0/g, ' ')).toMatch(/Un de ses numéros est déjà celui d’un client Bonzini\. La direction est prévenue : elle vous attribuera ce client si c’est bien vous qui l’avez convaincu\./);
+    // Le commercial ne sait pas de quel client il s'agit : aucun nom de client, aucune action de statut.
+    expect(screen.queryByRole('radiogroup', { name: 'Statut du prospect' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Rouvrir/ })).toBeNull();
+    expect(screen.queryByText('Où en êtes-vous ?')).toBeNull();
+    // Appeler, WhatsApp et « Modifier » restent.
+    expect(screen.getByRole('link', { name: 'Appeler le +237 6 90 00 00 04' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier ses problèmes' }));
+    expect(screen.getByText(/Modifier · Ses problèmes/)).toBeTruthy();
+  });
+
+  it('juste enregistrée, pas encore dans la liste relue : on attend la relecture, pas de « Prospect introuvable »', () => {
+    h.list = { ...h.list, isFetching: true } as typeof h.list;
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-tout-neuf', path: '/v/prospects/:id' });
+    expect(screen.getByLabelText('Chargement')).toBeTruthy();
+    expect(screen.queryByText('Prospect introuvable')).toBeNull();
+    // Relue sans elle : introuvable, cette fois.
+    h.list = { ...h.list, isFetching: false } as typeof h.list;
+    mount(<CommercialProspectForm />, { route: '/v/prospects/p-tout-neuf', path: '/v/prospects/:id' });
+    expect(screen.getByText('Prospect introuvable')).toBeTruthy();
   });
 
   it('« Modifier » sur une section ouvre l’étape de l’assistant, pré-remplie', () => {

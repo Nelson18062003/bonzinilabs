@@ -6,7 +6,8 @@
 //
 // Formes des réponses : supabase/migrations/20261005160000_teams_commercials.sql
 // (commercial_dashboard → _commercial_card, commercial_clients,
-// prospect_lookup_phone, table prospects) et src/hooks/useSales.ts.
+// prospect_lookup_phone, table prospects) et src/hooks/useSales.ts
+// (prospect_phone_check et prospect_create → to_verify, contrat du 07/10).
 // Aujourd'hui : lundi 5 octobre 2026 (l'horloge de la machine), mois « 2026-10-01 ».
 // ============================================================
 
@@ -88,6 +89,19 @@ const PROSPECTS = [
     interests: ['sea'], status: 'lost', lost_reason: 'A déjà un transitaire à Yiwu', created_at: '2026-09-05T10:00:00Z', status_changed_at: '2026-09-26T17:05:00Z' }),
   prospect({ id: 'p-pauline', first_name: 'Pauline', last_name: 'Ewodo', company: 'Ewodo Déco', phone: '+237 696 71 82 93', phone_e164: '+237696718293', city: 'Kribi', gender: 'FEMALE',
     interests: ['sea'], status: 'lost', lost_reason: 'Trouve le délai du bateau trop long', created_at: '2026-08-28T10:00:00Z', status_changed_at: '2026-09-18T12:00:00Z' }),
+  // 07/10 (relecture) : « Nadège Fotso », saisie fin septembre — son numéro est celui d'une cliente Bonzini ; la
+  // direction a refusé (motif fixe : le commercial ne lit rien d'autre). « Rouvrir » n'est pas proposé : le serveur le refuserait.
+  prospect({ id: 'p-nadege', first_name: 'Nadège', last_name: 'Fotso', company: 'Fotso Cosmétiques', phone: '+237 699 88 77 66', phone_e164: '+237699887766', city: 'Yaoundé',
+    gender: 'FEMALE', pain_points: 'Ses paiements en Chine mettent une semaine à arriver.',
+    interests: ['payments'], status: 'lost', lost_reason: 'Déjà client de Bonzini', created_at: '2026-09-29T09:00:00Z', status_changed_at: '2026-10-03T10:30:00Z' }),
+  // 07/10 : rencontrée au marché Sandaga, son numéro est celui d'une cliente Bonzini (Linda Tchoupo, LT Cosmétiques,
+  // venue par le bouche-à-oreille) — le nom saisi n'est pas tout à fait le même. Fiche « À vérifier » : la direction décide.
+  prospect({ id: 'p-linda', first_name: 'Linda', last_name: 'Tchoupou', company: 'LT Cosmétiques', phone: '+237 690 72 63 54', phone_e164: '+237690726354', city: 'Douala',
+    gender: 'FEMALE', phones: phones(['+8613711224455', 'CN', 'WeChat']),
+    pain_points: 'Payer ses fournisseurs en Chine : passe par une collègue à Guangzhou, les règlements prennent dix jours.\nTransport avion : ses colis de cosmétiques arrivent sans suivi.',
+    help_needed: 'Régler ses fournisseurs de Guangzhou en 48 h et suivre ses colis avion.',
+    interests: ['payments', 'air'], notes: 'Dit avoir déjà « essayé Bonzini une fois ».',
+    status: 'to_verify', next_action_at: '2026-10-08T08:00:00Z', created_at: '2026-10-05T15:40:00Z' }),
 ].sort((a, b) => b.status_changed_at.localeCompare(a.status_changed_at));
 
 // ── Ses clients et leurs chiffres d'octobre (commercial_clients) ──
@@ -103,6 +117,9 @@ const CLIENT_ROWS = [
   { user_id: 'cl-eyenga', name: 'Brigitte Eyenga', company: null, customer_code: 'BZ-301245', phone: '+237 696 14 25 36', created_at: '2026-05-11T10:00:00Z', source_set_at: '2026-05-11T10:00:00Z',
     payments_xaf: 0, payments_count: 0, air_parcels: 0, air_kg: 0, sea_parcels: 0, sea_cbm: 0 },
 ];
+
+// Les prospects d'une collègue (Carine Ewane) : leurs numéros sont « suivis par un autre commercial ».
+const OTHER_COMMERCIAL_NUMBERS = ['+237655887766', '+237677990011'];
 
 const sum = (k) => Math.round(CLIENT_ROWS.reduce((t, c) => t + c[k], 0) * 100) / 100;
 const OPEN = ['new', 'contacted', 'interested'];
@@ -239,6 +256,20 @@ const W = {
     await page.getByRole('button', { name: 'WeChat', exact: true }).click();
     await page.locator('#pr-email').pressSequentially('gaelle.nkoulou', { delay: 15 });
   },
+  // Le numéro principal est celui d'une cliente Bonzini (Nadia Fotso) : Rodrigue ne le sait pas.
+  async reachClient(page) {
+    await page.locator('#pr-phone').pressSequentially('699887766', { delay: 25 });
+    await page.getByRole('button', { name: /Ajouter un numéro/ }).click();
+    await page.getByRole('button', { name: 'Indicatif' }).nth(1).click();
+    await page.getByRole('option', { name: /Chine/ }).click();
+    await page.locator('input[id^="pr-phone-"]').first().pressSequentially('13826014477', { delay: 20 });
+    await page.getByRole('button', { name: 'WeChat', exact: true }).click();
+    await page.locator('#pr-email').pressSequentially('gaelle.nkoulou', { delay: 15 });
+    await page.getByRole('button', { name: 'Compléter : gaelle.nkoulou@gmail.com' }).click();
+    await page.locator('#pr-email').blur();
+    // La vérification part 400 ms après la dernière frappe.
+    await page.getByText('Ce numéro est déjà celui d’un client Bonzini.').waitFor();
+  },
   async reachDone(page) {
     await page.getByRole('button', { name: 'Compléter : gaelle.nkoulou@gmail.com' }).click();
     await page.locator('#pr-email').blur();
@@ -270,15 +301,16 @@ const W = {
     await page.locator('#pr-notes').blur();
   },
 };
-/** Les étapes 1 à n remplies, l'assistant posé sur l'étape n (remplie si `fill`). */
-const wizardAt = (n, { fill = true, after, full = true, theme } = {}) => ({
+/** Les étapes 1 à n remplies, l'assistant posé sur l'étape n (remplie si `fill`). `client` : son numéro est celui d'une cliente. */
+const wizardAt = (n, { fill = true, after, full = true, theme, client = false } = {}) => ({
   role: 'commercial',
   init: freshDraft,
   before: async (page) => {
     await fonts(page);
     // Les étapes passées, remplies jusqu'au bout ; celle où l'on s'arrête, telle qu'en cours de saisie.
-    const done = [W.who, async (pg) => { await W.reach(pg); await W.reachDone(pg); }, W.business, W.needs, W.help, W.next];
-    const current = [W.who, W.reach, W.business, W.needs, W.help, W.next];
+    const reach = client ? W.reachClient : async (pg) => { await W.reach(pg); await W.reachDone(pg); };
+    const done = [W.who, reach, W.business, W.needs, W.help, W.next];
+    const current = [W.who, client ? W.reachClient : W.reach, W.business, W.needs, W.help, W.next];
     for (let i = 0; i < n - 1; i++) { await done[i](page); await cont(page); }
     if (fill && current[n - 1]) await current[n - 1](page);
     if (after) await after(page);
@@ -319,8 +351,10 @@ export const SCREENS = [
   { key: 'j.sales.home', name: '01d-accueil-sombre', ...phone(dark) },
   // 1 ter. Changer son mot de passe provisoire.
   { key: 'j.sales.password', name: '01c-changer-mot-de-passe', ...phone() },
-  // 2. Ses prospects ouverts (à contacter, contacté, intéressé), relances échues en tête.
+  // 2. Ses prospects ouverts (à contacter, contacté, intéressé), relances échues en tête ; « À vérifier » a sa puce.
   { key: 'j.sales.prospects', name: '02-prospects', ...phone() },
+  // 2 ter. « À vérifier » : la fiche dont le numéro est celui d'une cliente, en attente de la direction.
+  { key: 'j.sales.prospects-verify', name: '02b-prospects-a-verifier', ...phone() },
   // 2 bis. Les puces de statut jusqu'au bout : « Devenus clients » choisi, « Perdus » à côté.
   {
     key: 'j.sales.prospects-closed', name: '03-prospects-devenus-clients',
@@ -361,6 +395,18 @@ export const SCREENS = [
       await page.getByRole('option', { name: /Chine/ }).waitFor();
     } }),
   },
+  // 3 sexies bis. Son numéro est celui d'une cliente Bonzini : une note ambre, sans nom ni blocage.
+  { key: 'j.sales.prospect-new', name: '04k-nouveau-prospect-2-numero-deja-client', ...wizardAt(2, { client: true }) },
+  // 3 sexies ter. Un numéro déjà dans SES prospects : refusé, avec le lien vers la fiche.
+  {
+    key: 'j.sales.prospect-new', name: '04l-nouveau-prospect-2-deja-un-de-ses-prospects',
+    ...wizardAt(2, { fill: false, after: async (page) => {
+      await page.locator('#pr-phone').pressSequentially('655432109', { delay: 25 });
+      await page.getByText('Ce numéro est déjà celui d’un de vos prospects').waitFor();
+    } }),
+  },
+  // 3 sexies quater. Le récapitulatif le redit avant d'enregistrer : la fiche partira « À vérifier ».
+  { key: 'j.sales.prospect-new', name: '04m-nouveau-prospect-7-recapitulatif-a-verifier', ...wizardAt(7, { fill: false, client: true }) },
   // 3 sexies. L'application fermée en pleine saisie : le brouillon est repris à la réouverture.
   {
     key: 'j.sales.prospect-new', name: '04j-nouveau-prospect-brouillon-repris',
@@ -413,6 +459,10 @@ export const SCREENS = [
       await page.waitForTimeout(400);
     },
   },
+  // 4 sexies. Une fiche « À vérifier » : le bandeau, pas d'actions de statut, le reste modifiable.
+  { key: 'j.sales.prospect-verify', name: '05f-fiche-a-verifier', ...phone() },
+  // 4 septies. Une fiche refusée par la direction (son numéro est celui d'un client) : pas de « Rouvrir », une phrase le dit.
+  { key: 'j.sales.prospect-refused', name: '05g-fiche-refusee-sans-rouvrir', ...phone() },
   // 5. Ses clients et ce qu'ils ont fait en octobre.
   { key: 'j.sales.clients', name: '06-mes-clients', ...phone() },
   // 6. Au bureau : le numéro de Paul Etoga attribue le nouveau client à Rodrigue.
@@ -431,7 +481,25 @@ export const SCREENS = [
       await page.getByRole('status').filter({ hasText: 'Rodrigue Tchami' }).scrollIntoViewIfNeeded();
     },
   },
+  // 7. (en dernier : l'enregistrement ajoute Gaëlle à la liste lue) « Enregistrer » avec le numéro d'une cliente :
+  // la fiche s'ouvre « À vérifier », en le disant.
+  {
+    key: 'j.sales.prospect-flow', name: '04n-nouveau-prospect-enregistre-a-verifier', role: 'commercial',
+    init: async (page) => { created = null; await freshDraft(page); },
+    before: async (page) => {
+      await wizardAt(7, { fill: false, client: true, full: false }).before(page);
+      await page.getByRole('button', { name: 'Enregistrer le prospect' }).click();
+      await page.getByText('Prospect enregistré, à vérifier').waitFor();
+      await page.waitForTimeout(600);
+      await fitHeight(page);
+    },
+  },
 ];
+
+// Le prospect que l'assistant vient d'enregistrer (capture 04n) : relu ensuite par la liste.
+let created = null;
+const norm = (x) => String(x ?? '').replace(/[\s.()-]/g, '');
+const isClientNumber = (e164) => OFFICE_CLIENTS.some((c) => c.phone_e164 === e164);
 
 export const RPC = {
   commercial_dashboard: (b) => ({ success: true, month: b?.p_month ?? MONTH, ...CARD }),
@@ -450,14 +518,41 @@ export const RPC = {
       phones: hit.phones.map(({ phone_e164, country_iso, label }) => ({ phone_e164, country_iso, label })),
     };
   },
-  prospect_create: () => ({ success: true, id: 'p-gaelle' }),
+  // Ce que le commercial peut savoir d'un numéro (contrat du 07/10) : un de SES clients, un de SES prospects
+  // (hors la fiche modifiée), suivi par un autre commercial, celui d'un client Bonzini (sans dire lequel), libre.
+  prospect_phone_check: (b) => {
+    const want = norm(b?.p_phone);
+    if (!/^\+\d{8,15}$/.test(want)) return { success: true, status: 'invalid' };
+    if (CLIENT_ROWS.some((c) => norm(c.phone) === want)) return { success: true, status: 'own_client' };
+    const mine = PROSPECTS.filter((p) => p.id !== b?.p_exclude_prospect_id && [...OPEN, 'to_verify'].includes(p.status))
+      .find((p) => p.phone_e164 === want || p.phones.some((x) => x.phone_e164 === want));
+    if (mine) return { success: true, status: 'mine', prospect_id: mine.id };
+    if (OTHER_COMMERCIAL_NUMBERS.includes(want)) return { success: true, status: 'other' };
+    if (isClientNumber(want)) return { success: true, status: 'client' };
+    return { success: true, status: 'free' };
+  },
+  // Un des numéros est celui d'un client : la fiche part « À vérifier » (la direction est prévenue).
+  prospect_create: (b) => {
+    const numbers = [b?.p_phone, ...(b?.p_phones ?? []).map((x) => x.phone_e164)].map(norm);
+    const toVerify = numbers.some(isClientNumber);
+    const now = new Date().toISOString();
+    created = prospect({
+      id: 'p-gaelle', first_name: b?.p_first_name, last_name: b?.p_last_name, company: b?.p_company, phone: b?.p_phone, phone_e164: b?.p_phone,
+      city: b?.p_city, gender: b?.p_gender, birth_date: b?.p_birth_date, email: b?.p_email, pain_points: b?.p_pain_points, help_needed: b?.p_help_needed,
+      phones: (b?.p_phones ?? []).map((x, position) => ({ ...x, position })), interests: b?.p_interests ?? [], notes: b?.p_notes,
+      next_action_at: b?.p_next_action_at, status: toVerify ? 'to_verify' : 'new', created_at: now,
+    });
+    return { success: true, id: 'p-gaelle', to_verify: toVerify };
+  },
   prospect_update: { success: true },
+  // La cloche de la direction (bureau) lit les fiches « À vérifier » en attente : aucune dans la capture du bureau.
+  prospect_claims_pending: { success: true, rows: [] },
   prospect_set_status: { success: true },
 };
 
 export function REST(url, method) {
   if (method !== 'GET') return undefined;
-  if (url.includes('/rest/v1/prospects')) return PROSPECTS;
+  if (url.includes('/rest/v1/prospects')) return created ? [created, ...PROSPECTS] : PROSPECTS;
   if (url.includes('/rest/v1/client_sources')) return SOURCES;
   if (url.includes('/rest/v1/clients')) return OFFICE_CLIENTS;
   if (url.includes('/rest/v1/wallets')) return WALLETS;

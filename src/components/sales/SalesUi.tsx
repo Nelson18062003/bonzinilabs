@@ -136,6 +136,7 @@ export function StepProgress({ index, count, className }: { index: number; count
  * `descId(htmlFor)` (le contrôle le pose en `aria-describedby`, et
  * `aria-required` s'il est obligatoire : l'étoile, elle, n'est pas lue).
  * `group` : le libellé nomme un groupe (sexe, ville) et non un champ unique.
+ * `errorAction` : un lien à la suite de l'erreur (« Ouvrir sa fiche »).
  */
 export function Field({
   label,
@@ -145,6 +146,7 @@ export function Field({
   group,
   hint,
   error,
+  errorAction,
   aside,
   children,
   className,
@@ -157,6 +159,7 @@ export function Field({
   group?: boolean;
   hint?: ReactNode;
   error?: string | null;
+  errorAction?: ReactNode;
   aside?: ReactNode;
   children: ReactNode;
   className?: string;
@@ -187,7 +190,13 @@ export function Field({
       {error ? (
         <p key={error} id={descId(htmlFor)} role="alert" className="s-pop mt-2 flex items-start gap-1.5 text-[14px] font-medium s-bad">
           <AlertCircle className="mt-[2px] h-4 w-4 shrink-0" aria-hidden />
-          {error}
+          {errorAction ? (
+            <span className="min-w-0">
+              {error} {errorAction}
+            </span>
+          ) : (
+            error
+          )}
         </p>
       ) : hint ? (
         <div id={descId(htmlFor)} className="mt-2 text-[14px] leading-snug s-ink-2">

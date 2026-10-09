@@ -7,6 +7,10 @@
  *   · la fiche incomplète (d'avant le 06/10, ou sans « ses plus gros
  *     problèmes ») et les étapes qui la complètent ;
  *   · l'étape (et la ligne) où ramène un refus du serveur ;
+ *   · la vérification en direct des numéros (07/10) : ce qu'elle refuse,
+ *     pour les numéros tels qu'ils sont MAINTENANT ; le numéro d'un client
+ *     Bonzini n'est pas un refus ; en modification, seuls les numéros
+ *     nouveaux se vérifient ;
  *   · le brouillon gardé dans le téléphone, À SON AUTEUR (un autre compte ne
  *     le lit pas ; illisible → ignoré ; tout s'efface à la déconnexion) ;
  *   · la modification en cours, reprise sans écraser ce qui a changé ailleurs.
@@ -27,18 +31,22 @@ import {
   cleanFreeText,
   clearDraft,
   clearEditDraft,
+  draftNumbers,
   draftOf,
   editSession,
   emailCompletions,
   firstInvalidStep,
   formatBirthInput,
+  hasClientNumber,
   hasIdea,
   ideaLineEnd,
   isDraftEmpty,
+  isNewNumber,
   loadDraft,
   loadEditDraft,
   missingOf,
   otherPhonesOf,
+  phoneCheckErrors,
   removeIdea,
   saveDraft,
   saveEditDraft,
@@ -47,6 +55,7 @@ import {
   stepOfServerError,
   toCreateInput,
   toPatch,
+  type PhoneChecks,
   type ProspectDraft,
 } from '@/components/sales/prospectDraft';
 
@@ -283,6 +292,8 @@ describe('refus du serveur → l’étape concernée', () => {
     ['Ce numéro est déjà celui d’un client Bonzini', 'reach', 'pr-phone'],
     ['Ce numéro est déjà suivi par un autre commercial', 'reach', 'pr-phone'],
     ['Ce prospect est déjà dans votre liste', 'reach', 'pr-phone'],
+    ['C’est déjà un de vos clients', 'reach', 'pr-phone'],
+    ['Déjà suivi par un autre commercial', 'reach', 'pr-phone'],
     ['Adresse email invalide', 'reach', 'pr-email'],
     ['Le nom est requis', 'who', 'pr-last'],
     ['Le prénom est requis', 'who', 'pr-first'],
@@ -306,6 +317,66 @@ describe('refus du serveur → l’étape concernée', () => {
     expect(stepOfServerError('Libellé trop long (40 caractères au plus)', long)).toEqual({ step: 'reach', field: 'pr-phone-z' });
     // Toute la liste : l'étape, le message en tête.
     expect(stepOfServerError('Dix numéros au plus (le principal et neuf autres)', full)).toEqual({ step: 'reach' });
+  });
+});
+
+describe('la vérification en direct des numéros (07/10)', () => {
+  const main = '+237699123456';
+  const wechat = '+8613812345678';
+
+  it('les numéros complets du brouillon, chacun avec son champ (une ligne vide n’en est pas un)', () => {
+    expect(draftNumbers(full)).toEqual([
+      { id: 'pr-phone', e164: main },
+      { id: 'pr-phone-a', e164: wechat },
+    ]);
+    expect(draftNumbers(EMPTY_DRAFT)).toEqual([]);
+  });
+
+  it('un de ses clients, un de ses prospects, un autre commercial : refusés, champ par champ', () => {
+    const checks: PhoneChecks = {
+      'pr-phone': { e164: main, status: 'own_client', prospectId: null },
+      'pr-phone-a': { e164: wechat, status: 'other', prospectId: null },
+    };
+    expect(phoneCheckErrors(full, checks)).toEqual({ 'pr-phone': 'C’est déjà un de vos clients', 'pr-phone-a': 'Déjà suivi par un autre commercial' });
+    expect(phoneCheckErrors(full, { 'pr-phone': { e164: main, status: 'mine', prospectId: 'p-9' } })).toEqual({
+      'pr-phone': 'Ce numéro est déjà celui d’un de vos prospects',
+    });
+  });
+
+  it('le numéro d’un client Bonzini n’est pas un refus : la fiche partira « À vérifier »', () => {
+    const checks: PhoneChecks = { 'pr-phone-a': { e164: wechat, status: 'client', prospectId: null } };
+    expect(phoneCheckErrors(full, checks)).toEqual({});
+    expect(hasClientNumber(full, checks)).toBe(true);
+    expect(hasClientNumber(full, {})).toBe(false);
+  });
+
+  it('libre ou illisible : rien', () => {
+    const checks: PhoneChecks = {
+      'pr-phone': { e164: main, status: 'free', prospectId: null },
+      'pr-phone-a': { e164: wechat, status: 'invalid', prospectId: null },
+    };
+    expect(phoneCheckErrors(full, checks)).toEqual({});
+    expect(hasClientNumber(full, checks)).toBe(false);
+  });
+
+  it('une réponse ne vaut que pour le numéro vérifié : changé depuis, elle ne compte plus', () => {
+    const checks: PhoneChecks = {
+      'pr-phone': { e164: '+237677000000', status: 'other', prospectId: null },
+      'pr-phone-a': { e164: '+8613800000000', status: 'client', prospectId: null },
+      // Une ligne retirée depuis.
+      'pr-phone-gone': { e164: wechat, status: 'own_client', prospectId: null },
+    };
+    expect(phoneCheckErrors(full, checks)).toEqual({});
+    expect(hasClientNumber(full, checks)).toBe(false);
+  });
+
+  it('en modification : seuls les numéros qui n’étaient pas sur la fiche se vérifient', () => {
+    const original = draftOf(prospect());
+    expect(isNewNumber(main, original)).toBe(false);
+    expect(isNewNumber(wechat, original)).toBe(false);
+    expect(isNewNumber('+237655001122', original)).toBe(true);
+    // À la création, tout numéro.
+    expect(isNewNumber(main)).toBe(true);
   });
 });
 

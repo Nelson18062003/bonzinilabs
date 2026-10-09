@@ -54,7 +54,10 @@
       "unknownClient": "未知客户",
       "depositNeedsReview": "待审核存款",
       "paymentProcessing": "付款处理中",
-      "paymentReady": "待处理付款"
+      "paymentReady": "待处理付款",
+      "prospectToVerify": "号码已是客户 · {{commercial}}",
+      "prospectToVerifyOne": "{{prospect}} · 匹配的客户：{{client}}",
+      "prospectToVerifyMany": "{{prospect}} · 匹配到 {{count}} 位客户"
     },
     "addExchangeRate": {
       "success": "汇率已更新",
@@ -651,5 +654,28 @@
     "failedHint": "请重新打开“修改”再试一次。",
     "birthInvalid": "出生日期无效",
     "genderKeptHint": "性别一旦选定，就不能改回“未填写”。"
+  },
+  "clientToProspect": {
+    "action": "转回潜在客户",
+    "actionHint": "仅限从未有过任何交易的客户：其账户将变为潜在客户档案。",
+    "title": "将{{name}}转回潜在客户",
+    "checking": "正在检查其活动…",
+    "loadError": "检查未能完成。",
+    "blockedTitle": "{{name}}无法转回潜在客户",
+    "blockedBody": "该账户在 Bonzini 已有活动：只要有过任何交易，就仍是客户。",
+    "blockersTitle": "阻止原因",
+    "warningsTitle": "也将随账户一并删除（保留在审计日志中）",
+    "explain": "其账户将被删除：将无法再登录。其信息将变为潜在客户档案，交由所选的销售人员跟进。",
+    "reopen": "其原有的潜在客户档案将重新开启，状态为“已联系”。",
+    "create": "将使用其资料创建潜在客户档案：姓名、电话、公司、城市。",
+    "commercial": "负责跟进该潜在客户的销售人员",
+    "suggested": "建议",
+    "noCommercial": "没有在职的销售人员：请先在“我的团队”中为销售人员创建账号。",
+    "reason": "原因（选填）",
+    "reasonPlaceholder": "账户创建过早，从未开始使用…",
+    "confirm": "我确认：删除{{name}}的账户并将其变为潜在客户档案。",
+    "submit": "转回潜在客户",
+    "done": "{{name}}现在是{{commercial}}的潜在客户",
+    "openCommercial": "查看销售人员"
   }
 }

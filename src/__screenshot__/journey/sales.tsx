@@ -7,7 +7,10 @@
 // étapes, la fiche (complète ou d'avant le 06/10), la modification d'une
 // section (« ?modifier=… ») et « Compléter » (« ?completer »). Puis, côté bureau, la fenêtre
 // « Nouveau client » de l'administration desktop, ouverte par Nelson Ngango.
+// 07/10 : un numéro déjà celui d'un client Bonzini — la note pendant la saisie, la fiche
+// « À vérifier » (juste enregistrée, puis plus tard) et sa puce dans la liste.
 import { useContext, useMemo, type ReactNode } from 'react';
+import { Route, Routes } from 'react-router-dom';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext, type AdminUser } from '@/contexts/AdminAuthContext';
 import { CommercialRouteWrapper } from '@/components/sales/CommercialRouteWrapper';
@@ -57,6 +60,15 @@ const ProspectForm = () => (
     <CommercialProspectForm />
   </V>
 );
+/** L'assistant, puis la fiche qu'il ouvre à l'enregistrement (« /v/prospects/new » → « /v/prospects/:id »). */
+const ProspectFlow = () => (
+  <V tabs={false}>
+    <Routes>
+      <Route path="/v/prospects/new" element={<CommercialProspectForm />} />
+      <Route path="/v/prospects/:id" element={<CommercialProspectForm />} />
+    </Routes>
+  </V>
+);
 const Clients = () => (
   <V>
     <CommercialClients />
@@ -89,7 +101,11 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.sales.home': { Comp: Home, route: '/v' },
   'j.sales.prospects': { Comp: Prospects, route: '/v/prospects' },
   'j.sales.prospects-closed': { Comp: Prospects, route: '/v/prospects?filtre=clients' },
+  'j.sales.prospects-verify': { Comp: Prospects, route: '/v/prospects?filtre=a-verifier' },
   'j.sales.prospect-new': { Comp: ProspectForm, route: '/v/prospects/new' },
+  'j.sales.prospect-flow': { Comp: ProspectFlow, route: '/v/prospects/new' },
+  'j.sales.prospect-verify': { Comp: ProspectForm, route: '/v/prospects/p-linda', path: '/v/prospects/:id' },
+  'j.sales.prospect-refused': { Comp: ProspectForm, route: '/v/prospects/p-nadege', path: '/v/prospects/:id' },
   'j.sales.prospect-card': { Comp: ProspectForm, route: '/v/prospects/p-mireille', path: '/v/prospects/:id' },
   'j.sales.prospect-incomplete': { Comp: ProspectForm, route: '/v/prospects/p-sylvie', path: '/v/prospects/:id' },
   'j.sales.prospect-edit-needs': { Comp: ProspectForm, route: '/v/prospects/p-mireille?modifier=besoins', path: '/v/prospects/:id' },

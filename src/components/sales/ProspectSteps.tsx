@@ -12,14 +12,19 @@
 // qui s'affiche, idées de problèmes qu'un toucher ajoute au texte. Chaque
 // contrôle porte `aria-describedby` (son erreur ou son indice) et
 // `aria-required` s'il est obligatoire.
+// Chaque numéro complet est vérifié EN DIRECT (07/10, usePhoneCheck) : déjà
+// un de ses clients, un de ses prospects, suivi par un autre commercial —
+// refusé sous le champ ; celui d'un client Bonzini — une note ambre, sans
+// nom ni blocage : la fiche partira « À vérifier », la direction décidera.
 // Rendu seulement : le brouillon, les règles et les erreurs viennent de
 // l'assistant (ProspectWizard) et de prospectDraft.ts.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef, useState, type ElementType, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
-import { AlarmClock, Check, MapPin, Plane, Plus, Ship, Wallet, X } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState, type ElementType, type KeyboardEvent, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { Link } from 'react-router-dom';
+import { AlarmClock, Check, ChevronRight, Info, MapPin, Plane, Plus, Ship, Wallet, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CAMEROON_CITIES, GENDER_OPTIONS, ageOn, emailError, formatBirthDate, type Gender } from '@/lib/people';
-import { CHINESE_PHONE_LABELS, INTERESTS, PAIN_IDEAS, PHONE_LABEL_IDEAS, type Interest } from '@/lib/sales';
+import { CHINESE_PHONE_LABELS, CLIENT_NUMBER_NOTE, INTERESTS, PAIN_IDEAS, PHONE_LABEL_IDEAS, type Interest } from '@/lib/sales';
 import { PhoneNumberInput, formatE164ForDisplay, toE164 } from '@/components/form/PhoneNumberInput';
 import { Field } from './SalesUi';
 import { AREA, CHIP, FIELD, btn, descId } from './uiClasses';
@@ -37,16 +42,20 @@ import {
   formatBirthInput,
   hasIdea,
   ideaLineEnd,
+  isNewNumber,
   newRowKey,
   normalizeEmail,
   otherPhoneId,
+  PHONE_CHECK_REFUSAL,
   removeIdea,
   samePhone,
+  type PhoneCheckResult,
   type PhoneRow,
   type ProspectDraft,
   type StepErrors,
 } from './prospectDraft';
 import { addDays, doualaDay, fmtWeekday } from './salesHelpers';
+import { useLivePhoneCheck, type OnPhoneCheck } from './usePhoneCheck';
 
 export interface StepProps {
   d: ProspectDraft;
@@ -61,6 +70,12 @@ export interface StepProps {
   original?: ProspectDraft;
   /** Devenu client : ses numéros sont figés (seuls les libellés changent). */
   won?: boolean;
+  /**
+   * La vérification en direct des numéros (« Comment le joindre ? ») :
+   * `excludeId` = la fiche modifiée (null à la création) ; `onResult`
+   * remonte chaque réponse à l'assistant, qui arrête « Continuer » sur un refus.
+   */
+  phoneCheck?: { excludeId: string | null; onResult: OnPhoneCheck };
 }
 
 const NOTES_MAX = 1000;
@@ -241,10 +256,58 @@ function GenderCards({ value, onChange, invalid }: { value: Gender | ''; onChang
 
 /* ── 2. Comment le joindre ? ───────────────────────────────────────────── */
 
-export function ReachStep({ d, set, update, errors, onTouch, autoFocus, original, won }: StepProps) {
+const LINK = 'inline-flex items-center gap-0.5 whitespace-nowrap font-semibold underline underline-offset-2';
+
+/** Le refus d'une vérification en direct, avec le lien utile (sa fiche, ses clients). */
+function refusalOf(check: PhoneCheckResult | null): { message: string; action?: ReactNode } | null {
+  const message = check ? PHONE_CHECK_REFUSAL[check.status] : undefined;
+  if (!check || !message) return null;
+  if (check.status === 'mine' && check.prospectId)
+    return {
+      message,
+      action: (
+        <Link to={`/v/prospects/${check.prospectId}`} className={LINK}>
+          Ouvrir sa fiche
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      ),
+    };
+  if (check.status === 'own_client')
+    return {
+      message,
+      action: (
+        <Link to="/v/clients" className={LINK}>
+          Voir mes clients
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      ),
+    };
+  return { message };
+}
+
+/** Le numéro d'un client Bonzini : rien ne bloque, la direction décidera (aucun nom : le commercial ne sait pas lequel). */
+function ClientNumberNote({ id, className }: { id?: string; className?: string }) {
+  return (
+    <div id={id} role="status" data-tone="warn" className={cn('s-note s-pop flex items-start gap-2.5 rounded-[12px] px-3.5 py-2.5 text-[14px] leading-snug', className)}>
+      <Info className="mt-[2px] h-4 w-4 shrink-0 s-warn" aria-hidden />
+      <p className="min-w-0 s-ink-2">
+        <strong className="font-semibold s-ink">{CLIENT_NUMBER_NOTE.title}</strong> {CLIENT_NUMBER_NOTE.next}
+      </p>
+    </div>
+  );
+}
+
+export function ReachStep({ d, set, update, errors, onTouch, autoFocus, original, won, phoneCheck }: StepProps) {
   const e164 = toE164(d.phone);
   const changed = !original || !samePhone(d.phone, original.phone);
-  const mainErr = errors[FIELD_ID.phone];
+  // Vérifiés en direct : les numéros complets, nouveaux sur la fiche (un numéro devenu client ne change plus).
+  const checking = !!phoneCheck && !won;
+  const excludeId = phoneCheck?.excludeId ?? null;
+  const mainCheck = useLivePhoneCheck(FIELD_ID.phone, checking && e164 && isNewNumber(e164, original) ? e164 : null, excludeId, phoneCheck?.onResult);
+  // Une erreur du formulaire ou du serveur passe avant la réponse de la vérification.
+  const mainRefusal = errors[FIELD_ID.phone] ? null : refusalOf(mainCheck);
+  const mainErr = errors[FIELD_ID.phone] ?? mainRefusal?.message;
+  const mainIsClient = !mainErr && mainCheck?.status === 'client';
   const emailErr = errors[FIELD_ID.email];
   const completions = !emailError(d.email) && d.email.includes('@') && d.email.split('@')[1]?.includes('.') ? [] : emailCompletions(d.email);
 
@@ -262,6 +325,14 @@ export function ReachStep({ d, set, update, errors, onTouch, autoFocus, original
   // Le compteur ne se montre qu'à l'approche de la limite (« Encore 2 possibles »).
   const left = MAX_OTHER_PHONES - count;
   const removeRow = (key: string) => update((x) => ({ ...x, others: x.others.filter((r) => r.key !== key) }));
+  // Le numéro de chaque ligne à vérifier : complet, nouveau sur la fiche, pas déjà plus haut dans la liste.
+  const seen = new Set<string>(e164 ? [e164] : []);
+  const toCheck = d.others.map((r) => {
+    const x = toE164(r.value);
+    if (!x || seen.has(x)) return null;
+    seen.add(x);
+    return isNewNumber(x, original) ? x : null;
+  });
 
   return (
     <div className="space-y-6">
@@ -270,12 +341,17 @@ export function ReachStep({ d, set, update, errors, onTouch, autoFocus, original
         required={!won}
         htmlFor={FIELD_ID.phone}
         error={mainErr}
+        errorAction={mainRefusal?.action}
         hint={
-          won
-            ? 'Devenu client : ses numéros ne changent plus ici.'
-            : e164 && changed
-              ? `Sera enregistré : ${formatE164ForDisplay(e164)}`
-              : 'Le Cameroun d’abord ; pour un autre pays, touchez le drapeau.'
+          won ? (
+            'Devenu client : ses numéros ne changent plus ici.'
+          ) : mainIsClient ? (
+            <ClientNumberNote />
+          ) : e164 && changed ? (
+            `Sera enregistré : ${formatE164ForDisplay(e164)}`
+          ) : (
+            'Le Cameroun d’abord ; pour un autre pays, touchez le drapeau.'
+          )
         }
       >
         <div className="s-phone" data-invalid={!!mainErr}>
@@ -311,6 +387,9 @@ export function ReachStep({ d, set, update, errors, onTouch, autoFocus, original
               index={i}
               won={won}
               error={errors[otherPhoneId(r.key)]}
+              checkE164={checking ? toCheck[i] : null}
+              excludeId={excludeId}
+              onCheck={phoneCheck?.onResult}
               onChange={(patch) => setRow(r.key, patch)}
               onRemove={() => removeRow(r.key)}
               onBlur={() => onTouch(otherPhoneId(r.key))}
@@ -370,7 +449,10 @@ function OtherPhone({
   row,
   index,
   won,
-  error,
+  error: formError,
+  checkE164,
+  excludeId,
+  onCheck,
   onChange,
   onRemove,
   onBlur,
@@ -379,6 +461,10 @@ function OtherPhone({
   index: number;
   won?: boolean;
   error?: string;
+  /** Le numéro à vérifier en direct (null : rien à vérifier). */
+  checkE164: string | null;
+  excludeId: string | null;
+  onCheck?: OnPhoneCheck;
   onChange: (patch: Partial<PhoneRow>) => void;
   onRemove: () => void;
   onBlur: () => void;
@@ -389,6 +475,10 @@ function OtherPhone({
   const [otherOpen, setOtherOpen] = useState(custom);
   const title = label || `Numéro ${index + 2}`;
   const inputId = otherPhoneId(row.key);
+  const check = useLivePhoneCheck(inputId, checkE164, excludeId, onCheck);
+  const refusal = formError ? null : refusalOf(check);
+  const error = formError ?? refusal?.message;
+  const isClient = !error && check?.status === 'client';
   return (
     <div className="s-inset s-enter space-y-3 rounded-2xl p-3" onBlur={onBlur}>
       <div className="flex items-center justify-between gap-2">
@@ -405,7 +495,7 @@ function OtherPhone({
         <PhoneNumberInput
           id={inputId}
           aria-label={title}
-          aria-describedby={error ? descId(inputId) : undefined}
+          aria-describedby={error || isClient ? descId(inputId) : undefined}
           value={row.value}
           onChange={(v) => onChange({ value: v })}
           showValidity={false}
@@ -413,10 +503,13 @@ function OtherPhone({
           disabled={won}
         />
       </div>
-      {error && (
+      {error ? (
         <p key={error} id={descId(inputId)} role="alert" className="s-pop -mt-1 pl-1 text-[14px] font-medium s-bad">
           {error}
+          {refusal?.action && <> {refusal.action}</>}
         </p>
+      ) : (
+        isClient && <ClientNumberNote id={descId(inputId)} className="-mt-1" />
       )}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Libellé de ${title}`}>
         {PHONE_LABEL_IDEAS.map((q) => {

@@ -8,6 +8,10 @@
 // email, tempPassword) et 20261006100000_staff_sites_phones_registration.sql
 // (team_members.phones / .site, team_sites, team_create_site,
 // team_set_member_profile). Lectures REST : client_sources, prospects.
+// 07/10 (20261007100000_prospect_client_control.sql) : prospect_claims_pending,
+// prospect_resolve_claim, admin_client_prospect_eligibility,
+// admin_client_to_prospect — l'écran « À vérifier », la cloche, « Repasser
+// en prospect » et « Créer son compte client » (prospect_lookup_phone).
 // ============================================================
 
 // L'heure figée des captures : « il y a 2 h », « jamais connecté »… restent stables.
@@ -127,6 +131,66 @@ const CARINE_CLIENTS = [
   client('u-ngono', 'Rose Ngono', 'Ngono Pagnes', 'BZ-241907', '+237 677 03 58 22', '2026-07-28T09:00:00Z'),
 ];
 
+// ── « À vérifier » (07/10) : le numéro saisi par un commercial est déjà celui d'un client ──
+// Trois fiches : Rodrigue a saisi « Nadine Fotso » — c'est Nadia Fotso, la
+// cliente de Carine (le nom est imprécis, le numéro ne ment pas) ; Rodrigue
+// encore, « Serge Kamdem », dont les deux numéros sont ceux de DEUX clients
+// (la direction choisit) ; Carine, « Ibrahim Touré », reconnu par son
+// numéro WeChat (un numéro secondaire), client venu de Facebook.
+const tv = (id, source_id, first_name, last_name, company, phone_e164, city, created_at, o = {}) => ({
+  id, source_id, first_name, last_name, company, phone: phone_e164, phone_e164, city,
+  gender: o.gender ?? 'MALE', birth_date: null, email: null,
+  pain_points: o.pain_points ?? null, help_needed: o.help_needed ?? null,
+  phones: o.phones ?? [],
+  interests: o.interests ?? ['payments'], notes: null, status: 'to_verify',
+  lost_reason: null, next_action_at: null, converted_user_id: null, converted_at: null,
+  status_changed_at: created_at, created_at, updated_at: created_at,
+});
+const TO_VERIFY = [
+  tv('pr-fotso', 'src-rodrigue', 'Nadine', 'Fotso', 'Fotso Cosmétiques', '+237699887766', 'Douala', '2026-10-05T13:52:00Z', {
+    gender: 'FEMALE', interests: ['payments', 'air'],
+    pain_points: 'Ses paiements en Chine mettent une semaine à arriver : elle perd les remises de son fournisseur de Yiwu.',
+    help_needed: 'Payer son fournisseur en 24 h, au meilleur taux.',
+  }),
+  tv('pr-kamdem', 'src-rodrigue', 'Serge', 'Kamdem', 'Établissements Kamdem', '+237677304118', 'Bafoussam', '2026-10-05T10:05:00Z', {
+    interests: ['payments', 'sea'],
+    phones: [{ phone_e164: '+237691552007', country_iso: 'CM', label: 'Bureau', position: 1 }],
+    pain_points: 'Un conteneur de carrelage par trimestre ; la douane de Douala le bloque à chaque fois.',
+  }),
+  tv('pr-toure', 'src-carine', 'Ibrahim', 'Touré', null, '+237699317240', 'Douala', '2026-10-04T16:40:00Z', {
+    interests: ['air'],
+    phones: [{ phone_e164: '+8613922145530', country_iso: 'CN', label: 'WeChat', position: 1 }],
+    pain_points: 'Petits colis de téléphones par avion, chaque semaine.',
+  }),
+];
+const TV = Object.fromEntries(TO_VERIFY.map((p) => [p.id, p]));
+const claimClient = (user_id, name, company, customer_code, phone_e164, city, created_at, origin, deposits_count, payments_count, last_activity_at) => ({
+  user_id, name, company, customer_code, phone_e164, email: null, city, created_at,
+  source_id: origin?.id ?? null, source_label: origin?.label ?? null, source_kind: origin?.kind ?? null,
+  deposits_count, payments_count, last_activity_at,
+});
+// source_active : la fiche commercial est-elle encore active ; previously_rejected_at : la direction
+// avait déjà refusé ce client à ce commercial (relecture du 07/10).
+const claim = (claim_id, prospect, source_label, matched_phone, created_at, client, o = {}) => ({
+  claim_id, prospect, source_id: prospect.source_id, source_label, source_active: o.source_active ?? true, matched_phone, created_at,
+  previously_rejected_at: o.previously_rejected_at ?? null, client,
+});
+const CLAIMS = [
+  claim('cl-fotso', TV['pr-fotso'], 'Rodrigue Tchami', '+237699887766', '2026-10-05T13:52:00Z',
+    claimClient('u3', 'Nadia Fotso', null, 'BZ-207781', '+237699887766', 'Douala', '2026-10-01T13:40:00Z',
+      { id: 'src-carine', label: 'Carine Ewane', kind: 'commercial' }, 1, 2, '2026-10-04T09:15:00Z')),
+  claim('cl-kamdem-1', TV['pr-kamdem'], 'Rodrigue Tchami', '+237677304118', '2026-10-05T10:05:00Z',
+    claimClient('u-kamdem', 'Serge Kamdem', null, 'BZ-355120', '+237677304118', 'Bafoussam', '2026-09-30T08:00:00Z', null, 0, 0, null)),
+  claim('cl-kamdem-2', TV['pr-kamdem'], 'Rodrigue Tchami', '+237691552007', '2026-10-05T10:05:00Z',
+    claimClient('u-kamdem2', 'Arlette Kamdem', 'Kamdem & Fils', 'BZ-390044', '+237691552007', 'Douala', '2025-12-02T09:30:00Z',
+      { id: 'src-bao', label: 'Bouche-à-oreille', kind: 'referral' }, 2, 3, '2026-08-14T11:20:00Z')),
+  claim('cl-toure', TV['pr-toure'], 'Carine Ewane', '+8613922145530', '2026-10-04T16:40:00Z',
+    claimClient('u-toure', 'Ibrahim Touré', null, 'BZ-174320', '+237696550812', 'Douala', '2026-01-12T10:00:00Z',
+      { id: 'src-facebook', label: 'Facebook', kind: 'social' }, 4, 6, '2026-09-28T15:05:00Z'),
+    // Carine l'avait déjà saisi fin septembre ; la direction avait refusé.
+    { previously_rejected_at: '2026-09-29T10:00:00Z' }),
+];
+
 // ── Les prospects (lus en REST, filtrés par fiche) ──────────────────────
 const prospect = (id, source_id, first_name, last_name, company, phone, phone_e164, city, status, created_at, o = {}) => ({
   id, source_id, first_name, last_name, company, phone, phone_e164, city,
@@ -150,6 +214,8 @@ const PROSPECTS = [
   prospect('pr-bella', 'src-carine', 'Ornella', 'Bella', 'Bella Mode', '+237 696 14 52 80', '+237696145280', 'Yaoundé', 'new', '2026-10-05T14:20:00Z',
     { interests: ['payments', 'air'], next_action_at: '2026-10-05T14:20:00Z' }),
   prospect('pr-eto', 'src-carine', 'Martin', 'Eto', 'Eto Frères', '+237 677 61 09 33', '+237677610933', 'Douala', 'new', '2026-10-05T14:21:00Z', { interests: ['sea'] }),
+  // 07/10 — « À vérifier » : un des numéros saisis est déjà celui d'un client Bonzini.
+  ...TO_VERIFY,
 ];
 
 // ── Écrans, dans l'ordre de l'histoire ──────────────────────────────────
@@ -289,7 +355,125 @@ const LIST = [
     before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
   },
   { key: 'j.teams.commercial-phone', name: '07c-commercial-rodrigue-telephone' },
+  {
+    // Ses fiches « À vérifier » : « Décider » et, toujours, « Confier à… » (sous la ligne sur téléphone).
+    key: 'j.teams.commercial-phone', name: '07d-commercial-a-verifier-telephone', viewport: '390x844', fullPage: false,
+    before: async (page) => {
+      await page.getByRole('button', { name: /^À vérifier/ }).click();
+      await page.getByRole('heading', { name: 'Ses prospects' }).evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    },
+  },
+  // 07/10 — « À vérifier » : côte à côte ce que le commercial a saisi et le client reconnu.
+  { key: 'j.teams.claims-desk', name: '08a-a-verifier-ordinateur', desktop: true, viewport: '1440x1900' },
+  { key: 'j.teams.claims-phone', name: '08b-a-verifier-telephone' },
+  {
+    // Attribuer Nadia Fotso à Rodrigue : son origine (Carine Ewane) sera remplacée — l'avertissement.
+    key: 'j.teams.claims-desk', name: '08c-attribuer-origine-remplacee', desktop: true, fullPage: false,
+    before: async (page) => { await page.getByRole('button', { name: 'Attribuer à Rodrigue Tchami' }).first().click(); },
+  },
+  {
+    key: 'j.teams.claims-phone', name: '08d-refuser-telephone', viewport: '390x844', fullPage: false,
+    before: async (page) => { await page.getByRole('button', { name: 'Refuser' }).first().click(); },
+  },
+  {
+    // Deux clients reconnus pour la fiche de Serge Kamdem : la direction choisit.
+    key: 'j.teams.claims-desk', name: '08e-plusieurs-clients-choisir', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.locator('#fiche-pr-kamdem').scrollIntoViewIfNeeded();
+      await page.getByRole('radio', { name: /Serge Kamdem/ }).click();
+      await page.locator('#fiche-pr-kamdem').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    },
+  },
+  {
+    // La fiche d'une commerciale archivée : pas d'« Attribuer » ; la confier d'abord à un commercial actif.
+    key: 'j.teams.claims-desk', name: '08g-commercial-archive-confier', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.route(/\/rpc\/prospect_claims_pending/, (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ success: true, rows: CLAIMS.map((c) => (c.source_id === 'src-carine' ? { ...c, source_active: false } : c)) }),
+      }));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(500);
+      await page.locator('#fiche-pr-toure').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    },
+  },
+  {
+    key: 'j.teams.claims-desk', name: '08h-commercial-archive-choisir', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.route(/\/rpc\/prospect_claims_pending/, (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ success: true, rows: CLAIMS.map((c) => (c.source_id === 'src-carine' ? { ...c, source_active: false } : c)) }),
+      }));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(500);
+      await page.getByRole('button', { name: 'Confier à un commercial actif' }).click();
+      await page.getByRole('button', { name: /Rodrigue Tchami/ }).last().click();
+    },
+  },
+  {
+    key: 'j.teams.claims-desk', name: '08f-a-verifier-vide', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.route(/\/rpc\/prospect_claims_pending/, (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ success: true, rows: [] }),
+      }));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(500);
+    },
+  },
+  // La cloche : une entrée par fiche « À vérifier ».
+  {
+    key: 'j.teams.sales-desk', name: '09a-notifications-ordinateur', desktop: true, fullPage: false,
+    before: async (page) => {
+      await quietMoneyFeed(page);
+      await page.getByRole('button', { name: 'Notifications' }).click();
+    },
+  },
+  { key: 'j.teams.notifications-phone', name: '09b-notifications-telephone', before: quietMoneyFeed },
+  // Repasser en prospect : Mariam Koné (rien fait) et Fatou Ndiaye (bloquée).
+  {
+    key: 'j.teams.client-desk', name: '10a-repasser-en-prospect-ordinateur', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.getByRole('button', { name: 'Plus d\'actions' }).click();
+      await page.getByRole('button', { name: 'Repasser en prospect' }).click();
+      await page.getByRole('checkbox').check();
+    },
+  },
+  {
+    key: 'j.teams.client-blocked-desk', name: '10b-repasser-en-prospect-bloque-ordinateur', desktop: true, fullPage: false,
+    before: async (page) => {
+      await page.getByRole('button', { name: 'Plus d\'actions' }).click();
+      await page.getByRole('button', { name: 'Repasser en prospect' }).click();
+    },
+  },
+  {
+    key: 'j.teams.client-phone', name: '10c-repasser-en-prospect-telephone', viewport: '390x844', fullPage: false,
+    before: async (page) => { await page.getByRole('button', { name: /Repasser en prospect/ }).click(); },
+  },
+  {
+    key: 'j.teams.client-blocked-phone', name: '10d-repasser-en-prospect-bloque-telephone', viewport: '390x844', fullPage: false,
+    before: async (page) => { await page.getByRole('button', { name: /Repasser en prospect/ }).click(); },
+  },
+  // Prospect → client : « Créer son compte client » depuis la fiche de Rodrigue, puis le formulaire pré-saisi.
+  {
+    key: 'j.teams.commercial-desk', name: '11a-creer-son-compte-client', desktop: true, fullPage: false,
+    before: async (page) => { await page.getByRole('heading', { name: 'Ses prospects' }).evaluate((el) => el.scrollIntoView({ block: 'start' })); },
+  },
+  { key: 'j.teams.prospect-client-desk', name: '11b-nouveau-client-pre-saisi-ordinateur', desktop: true, fullPage: false, wait: 1400 },
+  {
+    // Le numéro pré-saisi et la note « Repris de la fiche de Paul Etoga » : le formulaire défile jusqu'au contact.
+    key: 'j.teams.prospect-client-phone', name: '11c-nouveau-client-pre-saisi-telephone', wait: 1400,
+    before: async (page) => { await page.locator('#cc-phone-0').evaluate((el) => el.scrollIntoView({ block: 'start' })); },
+  },
 ];
+
+/** Les dépôts et paiements à traiter retirés de la cloche : la capture montre les fiches « À vérifier ». */
+async function quietMoneyFeed(page) {
+  await page.route(/\/rest\/v1\/(deposits|payments|cargo_shipments)\b/, (r) => r.fulfill({
+    status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': '0-0/0' }, body: '[]',
+  }));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+}
 
 export const SCREENS = LIST.map((s) => ({
   fullPage: true,
@@ -327,11 +511,45 @@ export const RPC = {
   sales_overview: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: [CARINE_CARD, RODRIGUE_CARD] }),
   set_commercial_objective: { success: true },
   prospect_reassign: { success: true },
+  // 07/10 — « À vérifier », prospect ↔ client.
+  prospect_claims_pending: { success: true, rows: CLAIMS },
+  prospect_resolve_claim: (b) => ({ success: true, decision: b?.p_decision ?? 'reject', prospect_id: b?.p_prospect_id ?? null }),
+  // Mariam Koné (u7) : inscrite il y a trois jours, rien fait — elle peut redevenir prospect.
+  // Fatou Ndiaye (u5) : des dépôts, des paiements, un solde — non.
+  admin_client_prospect_eligibility: (b) =>
+    b?.p_user_id === 'u7'
+      ? {
+          success: true, eligible: true, blockers: [], suggested_source_id: 'src-rodrigue', reopen_prospect_id: null,
+          // Rien qui bloque, mais ce qui partira aussi avec le compte (gardé au journal).
+          warnings: ['1 bénéficiaire enregistré (comptes de ses fournisseurs)', 'Sa conversation avec le support (3 messages)'],
+        }
+      : {
+          success: true, eligible: false, suggested_source_id: null, reopen_prospect_id: null,
+          blockers: ['3 dépôts', '5 paiements', '9 écritures au grand livre', '1 ajustement de solde', 'Solde de 1 213 450 XAF'],
+        },
+  admin_client_to_prospect: { success: true, prospect_id: 'pr-new', reopened: false },
+  // La fiche client lit ses colis : aucun (Mariam n'a rien envoyé ; Fatou, pas de colis dans ce jeu).
+  reception_client_deposits: { success: true, deposits: [] },
+  // « Créer son compte client » depuis la fiche de Paul Etoga : sa fiche se reprend.
+  prospect_lookup_phone: (b) => {
+    const want = String(b?.p_phone ?? '');
+    const hit = PROSPECTS.find((p) => ['new', 'contacted', 'interested'].includes(p.status) && p.phone_e164 === want);
+    if (!hit) return { success: true, found: false };
+    const src = SOURCES.find((x) => x.id === hit.source_id);
+    return {
+      success: true, found: true, prospect_id: hit.id, prospect_name: `${hit.first_name} ${hit.last_name ?? ''}`.trim(),
+      source_id: hit.source_id, source_label: src?.label ?? '', source_active: true,
+      first_name: hit.first_name, last_name: hit.last_name, company: hit.company, city: hit.city, email: null,
+      gender: 'MALE', birth_date: null, phone_e164: hit.phone_e164, phones: [],
+    };
+  },
 };
 
 // ── Lectures directes des tables ────────────────────────────────────────
 export function REST(url) {
   const u = decodeURIComponent(url);
+  // Mariam Koné (u7) n'a rien fait : solde nul, aucun mouvement (le reste vient de adminFixtures).
+  if (/\/rest\/v1\/wallets\b/.test(u) && u.includes('user_id=eq.u7')) return [{ user_id: 'u7', balance_xaf: 0, overdraft_limit_xaf: 0 }];
   if (/\/rest\/v1\/client_sources\b/.test(u)) {
     return u.includes('is_active=eq.true') ? SOURCES.filter((s) => s.is_active) : SOURCES;
   }

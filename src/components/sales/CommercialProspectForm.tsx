@@ -15,12 +15,16 @@
 // (client existant, prospect déjà suivi) vérifiés au serveur ; relance à
 // 9 h, heure de Douala. Les erreurs du serveur s'affichent aussi en toast
 // (les hooks s'en chargent).
+// Juste enregistrée, la fiche peut ne pas être encore dans la liste relue :
+// on attend la relecture plutôt que d'annoncer « Prospect introuvable ».
+// Enregistrée « À vérifier » (un numéro déjà client, 07/10), elle s'ouvre
+// en le disant (`state.saved`).
 // ============================================================
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useProspects } from '@/hooks/useSales';
 import { ListSkeleton, LoadError, SALES_CARD, ScreenHeader } from './SalesBits';
 import { ProspectDetail } from './ProspectDetail';
-import { EditProspectWizard, NewProspectWizard } from './ProspectWizard';
+import { EditProspectWizard, NewProspectWizard, type SavedState } from './ProspectWizard';
 import { COMPLETE, stepBySlug, stepMeta, type StepId } from './prospectDraft';
 
 export function CommercialProspectForm() {
@@ -33,7 +37,8 @@ export function CommercialProspectForm() {
 
   if (!id) return <NewProspectWizard />;
 
-  if (prospects.isLoading) {
+  const prospect = prospects.data?.find((p) => p.id === id);
+  if (prospects.isLoading || (!prospect && prospects.isFetching)) {
     return (
       <div>
         <ScreenHeader title="Prospect" back={back} />
@@ -57,7 +62,6 @@ export function CommercialProspectForm() {
       </div>
     );
   }
-  const prospect = prospects.data?.find((p) => p.id === id);
   if (!prospect) {
     return (
       <div>
@@ -77,5 +81,6 @@ export function CommercialProspectForm() {
 
   const openEdit = (step: StepId) => navigate(`${location.pathname}?modifier=${stepMeta(step).slug}`, { state: { fromCard: true } });
   const openComplete = () => navigate(`${location.pathname}?completer`, { state: { fromCard: true } });
-  return <ProspectDetail key={prospect.id} prospect={prospect} onEdit={openEdit} onComplete={openComplete} />;
+  const justSaved = (location.state as SavedState | null)?.saved === 'to_verify';
+  return <ProspectDetail key={prospect.id} prospect={prospect} onEdit={openEdit} onComplete={openComplete} justSaved={justSaved} />;
 }

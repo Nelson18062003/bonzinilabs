@@ -17,9 +17,17 @@
  *   · la modification d'une section n'envoie que ce qui a changé, garde ce
  *     qui est tapé, demande avant d'abandonner ; « Compléter » enchaîne les
  *     étapes où il manque quelque chose ; devenu client, les numéros sont
- *     figés (seuls les libellés changent).
+ *     figés (seuls les libellés changent) ;
+ *   · chaque numéro complet vérifié EN DIRECT (07/10), après la pause de
+ *     frappe : celui d'un client Bonzini → une note ambre, sans nom ni
+ *     blocage, redite au récapitulatif ; un de ses clients, un de ses
+ *     prospects (lien vers sa fiche), suivi par un autre commercial →
+ *     refusé, « Continuer » s'arrête ; illisible ou erreur réseau → rien ;
+ *     en modification, la fiche elle-même est exclue et ses numéros déjà
+ *     enregistrés ne sont pas revérifiés ;
+ *   · enregistré « À vérifier » : la fiche s'ouvre en le disant.
  */
-import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -47,13 +55,21 @@ const h = vi.hoisted(() => {
       phone: '+237690000003', phone_e164: '+237690000003', pain_points: 'Payer ses fournisseurs en Chine',
       phones: [{ phone_e164: '+237655443322', country_iso: 'CM', label: 'Orange', position: 0 }],
     },
+    {
+      ...base, id: 'p-verify', first_name: 'Paul', last_name: 'Etoga', city: 'Douala', gender: 'MALE', status: 'to_verify',
+      phone: '+237699123456', phone_e164: '+237699123456', pain_points: 'Payer ses fournisseurs en Chine : deux semaines',
+    },
   ];
+  /** Les réponses de `prospect_phone_check`, par numéro (absent : pas de réponse — erreur réseau, ou pas encore là). */
+  const checks: Record<string, { status: string; prospect_id?: string }> = {};
   return {
     prospects,
     list: { data: prospects, isLoading: false, isError: false, refetch: () => undefined },
     create: vi.fn(),
     update: vi.fn(),
     setStatus: vi.fn(),
+    checks,
+    phoneCheck: vi.fn((e164: string | null, _exclude: string | null) => ({ data: e164 && checks[e164] ? { success: true, ...checks[e164] } : undefined })),
     pending: false,
     auth: { currentUser: { id: 'u-jean', role: 'commercial' } as { id: string; role: string } | null },
   };
@@ -65,6 +81,8 @@ vi.mock('@/hooks/useSales', () => ({
   useCreateProspect: () => ({ mutate: h.create, isPending: h.pending }),
   useUpdateProspect: () => ({ mutate: h.update, isPending: h.pending }),
   useSetProspectStatus: () => ({ mutate: h.setStatus, isPending: false }),
+  useProspectPhoneCheck: (e164: string | null, exclude?: string | null) => h.phoneCheck(e164, exclude ?? null),
+  useProspectNumbersCheck: () => ({ pending: false, blocking: null }),
 }));
 
 import { CommercialProspectForm } from '@/components/sales/CommercialProspectForm';
@@ -72,6 +90,22 @@ import { CommercialProspectForm } from '@/components/sales/CommercialProspectFor
 function Where() {
   const loc = useLocation();
   return <div data-testid="where">{loc.pathname}</div>;
+}
+
+/** L'assistant ET la fiche, comme dans App.tsx (« /v/prospects/new », « /v/prospects/:id »). */
+function mountBoth(route = '/v/prospects/new') {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[route]}>
+        <Routes>
+          <Route path="/v/prospects/new" element={<CommercialProspectForm />} />
+          <Route path="/v/prospects/:id" element={<CommercialProspectForm />} />
+          <Route path="*" element={<Where />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 function mount(route = '/v/prospects/new', path = '/v/prospects/new') {
@@ -115,6 +149,8 @@ beforeEach(() => {
   h.create.mockReset();
   h.update.mockReset();
   h.setStatus.mockReset();
+  h.phoneCheck.mockClear();
+  for (const k of Object.keys(h.checks)) delete h.checks[k];
   h.pending = false;
   h.auth.currentUser = { id: 'u-jean', role: 'commercial' };
 });
@@ -306,37 +342,37 @@ describe('Assistant — ce que chaque étape exige', () => {
   });
 });
 
-describe('Assistant — enregistrement', () => {
-  /** Tout l'assistant rempli, jusqu'au récapitulatif. */
-  function fillAll() {
-    fillWho();
-    type(/Date de naissance/, '12031985');
-    cont();
-    type('Numéro principal', '699 12 34 56');
-    fireEvent.click(screen.getByRole('button', { name: /Ajouter un numéro/ }));
-    const row = screen.getByRole('group', { name: 'Libellé de Numéro 2' }).parentElement as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Indicatif' }));
-    fireEvent.change(screen.getByPlaceholderText(/Rechercher un pays/), { target: { value: 'Chine' } });
-    fireEvent.click(screen.getByRole('option', { name: /Chine/ }));
-    fireEvent.change(within(row).getByLabelText('Numéro 2'), { target: { value: '138 1234 5678' } });
-    fireEvent.click(within(row).getByRole('button', { name: 'WeChat' }));
-    type(/^Email/, 'paul.etoga@gmail.com');
-    cont();
-    fireEvent.click(screen.getByRole('button', { name: 'Douala' }));
-    type(/^Entreprise/, 'etoga quincaillerie');
-    cont();
-    fireEvent.click(screen.getByRole('button', { name: 'Payer ses fournisseurs en Chine' }));
-    const area = screen.getByLabelText(/Ses plus gros problèmes/) as HTMLTextAreaElement;
-    fireEvent.change(area, { target: { value: `${area.value}deux semaines par règlement\nFixer ses prix de vente : ` } });
-    cont();
-    type(/Ses attentes/, 'Régler ses fournisseurs de Yiwu');
-    fireEvent.click(screen.getByRole('button', { name: 'Fret bateau' }));
-    cont();
-    fireEvent.click(screen.getByRole('button', { name: 'Demain' }));
-    type(/^Notes/, 'Quincaillerie à Akwa');
-    cont();
-  }
+/** Tout l'assistant rempli, jusqu'au récapitulatif (Paul Etoga, +237 699 12 34 56 et un WeChat). */
+function fillAll() {
+  fillWho();
+  type(/Date de naissance/, '12031985');
+  cont();
+  type('Numéro principal', '699 12 34 56');
+  fireEvent.click(screen.getByRole('button', { name: /Ajouter un numéro/ }));
+  const row = screen.getByRole('group', { name: 'Libellé de Numéro 2' }).parentElement as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: 'Indicatif' }));
+  fireEvent.change(screen.getByPlaceholderText(/Rechercher un pays/), { target: { value: 'Chine' } });
+  fireEvent.click(screen.getByRole('option', { name: /Chine/ }));
+  fireEvent.change(within(row).getByLabelText('Numéro 2'), { target: { value: '138 1234 5678' } });
+  fireEvent.click(within(row).getByRole('button', { name: 'WeChat' }));
+  type(/^Email/, 'paul.etoga@gmail.com');
+  cont();
+  fireEvent.click(screen.getByRole('button', { name: 'Douala' }));
+  type(/^Entreprise/, 'etoga quincaillerie');
+  cont();
+  fireEvent.click(screen.getByRole('button', { name: 'Payer ses fournisseurs en Chine' }));
+  const area = screen.getByLabelText(/Ses plus gros problèmes/) as HTMLTextAreaElement;
+  fireEvent.change(area, { target: { value: `${area.value}deux semaines par règlement\nFixer ses prix de vente : ` } });
+  cont();
+  type(/Ses attentes/, 'Régler ses fournisseurs de Yiwu');
+  fireEvent.click(screen.getByRole('button', { name: 'Fret bateau' }));
+  cont();
+  fireEvent.click(screen.getByRole('button', { name: 'Demain' }));
+  type(/^Notes/, 'Quincaillerie à Akwa');
+  cont();
+}
 
+describe('Assistant — enregistrement', () => {
   it('le récapitulatif montre tout ; « Enregistrer » envoie tous les champs, numéros en E.164', () => {
     mount();
     fillAll();
@@ -402,16 +438,17 @@ describe('Assistant — enregistrement', () => {
     expect((screen.getByRole('button', { name: 'Fermer' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('un refus du serveur (numéro d’un client) ramène à « Comment le joindre ? », le message sous le numéro', () => {
-    h.create.mockImplementation((_input, opts) => opts?.onError?.(new Error('Ce numéro est déjà celui d’un client Bonzini')));
+  it('un refus du serveur (un de SES clients) ramène à « Comment le joindre ? », le message sous le numéro', () => {
+    h.create.mockImplementation((_input, opts) => opts?.onError?.(new Error('C’est déjà un de vos clients')));
     mount();
     fillAll();
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
     expect(heading()).toBe('Comment joindre Paul ?');
-    expect(alerts()).toContain('Ce numéro est déjà celui d’un client Bonzini');
+    const main = screen.getByLabelText('Numéro principal');
+    expect(document.getElementById(main.getAttribute('aria-describedby') as string)?.textContent).toBe('C’est déjà un de vos clients');
     // Corrigé, le message s'en va.
     type('Numéro principal', '677123456');
-    expect(alerts()).not.toContain('Ce numéro est déjà celui d’un client Bonzini');
+    expect(alerts()).not.toContain('C’est déjà un de vos clients');
   });
 
   it('enregistré : le brouillon s’efface et la fiche s’ouvre', () => {
@@ -422,6 +459,181 @@ describe('Assistant — enregistrement', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
     expect(screen.getByTestId('where').textContent).toBe('/v/prospects/p-new');
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it('enregistré « À vérifier » (un numéro déjà client) : la fiche s’ouvre en le disant, sans actions de statut', () => {
+    h.create.mockImplementation((_input, opts) => opts?.onSuccess?.({ id: 'p-verify', to_verify: true }));
+    mountBoth();
+    fillAll();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Paul Etoga');
+    const notice = screen.getByText('Prospect enregistré, à vérifier').closest('[role="status"]') as HTMLElement;
+    expect(notice.textContent).toMatch(/Un de ses numéros est déjà celui d’un client Bonzini/);
+    expect(notice.textContent).toMatch(/elle vous attribuera ce client si c’est bien vous qui l’avez convaincu/);
+    expect(screen.queryByRole('radiogroup', { name: 'Statut du prospect' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it('enregistré normalement : pas de bandeau « À vérifier »', () => {
+    h.create.mockImplementation((_input, opts) => opts?.onSuccess?.({ id: 'p-full' }));
+    mountBoth();
+    fillAll();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Bruno Ekané');
+    expect(screen.queryByText(/à vérifier/i)).toBeNull();
+  });
+});
+
+describe('Assistant — numéros vérifiés en direct', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** La pause de frappe passée : la vérification part. */
+  const pause = () =>
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+  /** L'étape « Comment le joindre ? », le numéro principal tapé, la pause passée. */
+  function reachWith(national: string) {
+    mount();
+    fillWho();
+    cont();
+    type('Numéro principal', national);
+    pause();
+  }
+  const describedBy = (el: HTMLElement) => document.getElementById(el.getAttribute('aria-describedby') as string);
+
+  it('attend la fin de la frappe (400 ms) avant de vérifier, et seulement un numéro complet', () => {
+    mount();
+    fillWho();
+    cont();
+    type('Numéro principal', '699 12');
+    pause();
+    expect(h.phoneCheck).not.toHaveBeenCalledWith(expect.any(String), null);
+    type('Numéro principal', '699 12 34 56');
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(h.phoneCheck).not.toHaveBeenCalledWith('+237699123456', null);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(h.phoneCheck).toHaveBeenCalledWith('+237699123456', null);
+  });
+
+  it('le numéro d’un client Bonzini : une note ambre, sans nom et sans erreur ; « Continuer » passe ; le récapitulatif le redit', () => {
+    h.checks['+237699123456'] = { status: 'client' };
+    reachWith('699 12 34 56');
+    const note = describedBy(screen.getByLabelText('Numéro principal')) as HTMLElement;
+    expect(note.textContent?.replace(/\u00a0/g, ' ')).toBe('Ce numéro est déjà celui d’un client Bonzini. Continuez : la direction sera prévenue et décidera.');
+    expect(within(note).getByRole('status')).toBeTruthy();
+    expect(alerts()).toEqual([]);
+    cont();
+    expect(heading()).toBe('Où est installée son activité ?');
+    // Jusqu'au récapitulatif : l'avertissement, avant d'enregistrer.
+    fireEvent.click(screen.getByRole('button', { name: 'Douala' }));
+    cont();
+    type(/Ses plus gros problèmes/, 'Manque de capital');
+    cont();
+    cont();
+    cont();
+    expect(heading()).toBe('Tout est juste ?');
+    expect(screen.getByText('Un numéro est déjà celui d’un client Bonzini')).toBeTruthy();
+    expect(screen.getByText(/La fiche sera enregistrée « À vérifier »/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
+    expect(h.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('un de SES clients : refusé sous le numéro (« Voir mes clients ») ; « Continuer » s’arrête', () => {
+    h.checks['+237699123456'] = { status: 'own_client' };
+    reachWith('699 12 34 56');
+    expect(alerts()).toEqual(['C’est déjà un de vos clients Voir mes clients']);
+    expect(screen.getByRole('link', { name: 'Voir mes clients' }).getAttribute('href')).toBe('/v/clients');
+    expect(screen.getByLabelText('Numéro principal').getAttribute('aria-invalid')).toBe('true');
+    cont();
+    expect(heading()).toBe('Comment joindre Paul ?');
+  });
+
+  it('un de SES prospects : refusé, avec un lien vers sa fiche', () => {
+    h.checks['+237699123456'] = { status: 'mine', prospect_id: 'p-full' };
+    reachWith('699 12 34 56');
+    expect(alerts()).toEqual(['Ce numéro est déjà celui d’un de vos prospects Ouvrir sa fiche']);
+    cont();
+    expect(heading()).toBe('Comment joindre Paul ?');
+    fireEvent.click(screen.getByRole('link', { name: 'Ouvrir sa fiche' }));
+    expect(screen.getByTestId('where').textContent).toBe('/v/prospects/p-full');
+  });
+
+  it('suivi par un autre commercial, sur un AUTRE numéro : refusé sous sa ligne ; corrigé, « Continuer » repasse', () => {
+    h.checks['+8613812345678'] = { status: 'other' };
+    reachWith('699 12 34 56');
+    fireEvent.click(screen.getByRole('button', { name: /Ajouter un numéro/ }));
+    const row = screen.getByRole('group', { name: 'Libellé de Numéro 2' }).parentElement as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'WeChat' }));
+    fireEvent.change(within(row).getByLabelText('WeChat'), { target: { value: '138 1234 5678' } });
+    pause();
+    expect(within(row).getByRole('alert').textContent).toBe('Déjà suivi par un autre commercial');
+    expect(screen.getByLabelText('Numéro principal').getAttribute('aria-invalid')).toBe('false');
+    cont();
+    expect(heading()).toBe('Comment joindre Paul ?');
+    fireEvent.change(within(row).getByLabelText('WeChat'), { target: { value: '138 1234 5679' } });
+    pause();
+    expect(within(row).queryByRole('alert')).toBeNull();
+    cont();
+    expect(heading()).toBe('Où est installée son activité ?');
+  });
+
+  it('illisible, ou pas de réponse (erreur réseau) : rien ne bloque, le serveur tranchera', () => {
+    h.checks['+237699123456'] = { status: 'invalid' };
+    reachWith('699 12 34 56');
+    expect(alerts()).toEqual([]);
+    expect(screen.queryByRole('status')).toBeNull();
+    cont();
+    expect(heading()).toBe('Où est installée son activité ?');
+    fireEvent.click(screen.getByRole('button', { name: 'Étape précédente' }));
+    type('Numéro principal', '677 00 00 00');
+    pause();
+    expect(alerts()).toEqual([]);
+    cont();
+    expect(heading()).toBe('Où est installée son activité ?');
+  });
+
+  it('rouverte depuis le récapitulatif, l’étape revérifie : un refus arrivé entre-temps empêche d’y revenir', () => {
+    mount();
+    fillAll();
+    // La réponse a changé entre-temps (un collègue a saisi ce numéro) : au retour sur l'étape, elle arrive et bloque.
+    h.checks['+237699123456'] = { status: 'other' };
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier les numéros et l’email' }));
+    pause();
+    expect(alerts()).toContain('Déjà suivi par un autre commercial');
+    fireEvent.click(screen.getByRole('button', { name: 'Revenir au récapitulatif' }));
+    expect(heading()).toBe('Comment joindre Paul ?');
+  });
+
+  it('en modification : la fiche elle-même est exclue ; ses numéros déjà enregistrés ne sont pas revérifiés', () => {
+    mount('/v/prospects/p-full?modifier=joindre', '/v/prospects/:id');
+    pause();
+    expect(h.phoneCheck.mock.calls.every(([e164]) => e164 === null)).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter un autre numéro' }));
+    const row = screen.getByRole('group', { name: 'Libellé de Numéro 3' }).parentElement as HTMLElement;
+    h.checks['+237655001122'] = { status: 'client' };
+    fireEvent.change(within(row).getByLabelText('Numéro 3'), { target: { value: '655 00 11 22' } });
+    pause();
+    expect(h.phoneCheck).toHaveBeenCalledWith('+237655001122', 'p-full');
+    expect(within(row).getByRole('status').textContent).toMatch(/déjà celui d’un client Bonzini/);
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    expect(h.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('devenu client : ses numéros figés ne sont jamais vérifiés', () => {
+    mount('/v/prospects/p-won?modifier=joindre', '/v/prospects/:id');
+    pause();
+    expect(h.phoneCheck.mock.calls.every(([e164]) => e164 === null)).toBe(true);
   });
 });
 

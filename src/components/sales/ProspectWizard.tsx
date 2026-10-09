@@ -9,9 +9,14 @@
 //     est gardé dans le téléphone à chaque frappe, SOUS LE COMPTE du
 //     commercial (prospectDraft.ts), et repris à sa prochaine ouverture ; il
 //     s'efface à l'enregistrement — même si l'écran a été quitté pendant
-//     l'envoi. Un refus du serveur (numéro d'un client, prospect déjà
+//     l'envoi. Un refus du serveur (un de ses clients, prospect déjà
 //     suivi, un AUTRE numéro déjà pris) ramène à l'étape et à la ligne
 //     concernées, le message sous le champ.
+//     Les numéros sont vérifiés EN DIRECT (07/10) : un refus (un de ses
+//     clients, un de ses prospects, suivi par un autre commercial) arrête
+//     « Continuer » comme un champ en défaut ; le numéro d'un client Bonzini
+//     n'arrête rien — le récapitulatif le redit, la fiche s'enregistre
+//     « À vérifier » et s'ouvre sur l'explication (la direction décidera).
 //   · EditProspectWizard (« /v/prospects/:id?modifier=besoins ») : la même
 //     étape, pour une section de la fiche ; n'envoie que ce qui a changé.
 //     « ?completer » enchaîne les étapes où il manque quelque chose. Ce qui
@@ -24,9 +29,9 @@
 // La touche Entrée (« Suivant » du clavier) va au champ suivant de l'étape,
 // et ne passe à l'étape suivante que depuis le dernier.
 // ============================================================
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CornerDownLeft, RotateCcw, X } from 'lucide-react';
+import { ChevronLeft, CornerDownLeft, Info, RotateCcw, X } from 'lucide-react';
 import { ViewportShell } from '@/components/layout/ViewportShell';
 import { toE164 } from '@/components/form/PhoneNumberInput';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -45,12 +50,14 @@ import {
   draftOf,
   editSession,
   firstInvalidStep,
+  hasClientNumber,
   isDraftEmpty,
   joinFr,
   loadDraft,
   loadEditDraft,
   missingOf,
   otherPhonesOf,
+  phoneCheckErrors,
   saveDraft,
   saveEditDraft,
   stepCopy,
@@ -60,6 +67,8 @@ import {
   stepOfServerError,
   toCreateInput,
   toPatch,
+  type PhoneCheckResult,
+  type PhoneChecks,
   type ProspectDraft,
   type StepErrors,
   type StepId,
@@ -67,6 +76,11 @@ import {
 } from './prospectDraft';
 
 const FORM_ID = 'prospect-wizard';
+
+/** L'état de navigation de la fiche juste enregistrée « À vérifier » (elle le dit en tête). */
+export interface SavedState {
+  saved?: 'to_verify';
+}
 
 /* ── L'état commun : brouillon, erreurs montrées, focus ────────────────── */
 
@@ -92,6 +106,29 @@ function useDraftState(initial: () => ProspectDraft) {
   const touch = (id: string) => setTouched((s) => (s.has(id) ? s : new Set(s).add(id)));
   const markTried = (step: StepId) => setTried((s) => (s.has(step) ? s : new Set(s).add(step)));
 
+  // Les réponses de la vérification en direct, gardées d'une étape à l'autre
+  // (chacune ne vaut que pour le numéro qu'elle a vérifié).
+  const [checks, setChecks] = useState<PhoneChecks>({});
+  const onCheck = useCallback(
+    (id: string, r: PhoneCheckResult) =>
+      setChecks((c) => (c[id] && c[id].e164 === r.e164 && c[id].status === r.status && c[id].prospectId === r.prospectId ? c : { ...c, [id]: r })),
+    [],
+  );
+
+  /**
+   * Ce qui arrête une étape : ses champs en défaut, et — pour « Comment le
+   * joindre ? » — les refus de la vérification en direct (l'étape les
+   * affiche elle-même, avec leur lien ; une erreur du champ passe avant).
+   */
+  const blocking = (step: StepId, o: ValidateOptions): StepErrors => {
+    const local = stepErrors(draft, step, o);
+    if (step !== 'reach') return local;
+    return { ...phoneCheckErrors(draft, checks), ...local };
+  };
+  /** La première étape (avant le récapitulatif) qui arrête l'enregistrement, parmi `steps`. */
+  const firstBlocked = (steps: StepId[], o: ValidateOptions): StepId | null =>
+    steps.find((st) => st !== 'review' && Object.keys(blocking(st, o)).length > 0) ?? null;
+
   /** Les erreurs à montrer sur une étape : toutes après « Continuer », sinon celles des champs quittés ; plus le refus du serveur. */
   const shownErrors = (step: StepId, o: ValidateOptions): StepErrors => {
     const all = stepErrors(draft, step, o);
@@ -104,7 +141,24 @@ function useDraftState(initial: () => ProspectDraft) {
   /** Un refus du serveur sans champ précis (« Dix numéros au plus »…), sur l'étape affichée : en tête. */
   const unplaced = (step: StepId): string | null => (server && server.step === step && !server.field ? server.message : null);
 
-  return { draft, setDraft, update, set, touch, markTried, shownErrors, unplaced, server, setServer, setTried, setTouched };
+  return {
+    draft,
+    setDraft,
+    update,
+    set,
+    touch,
+    markTried,
+    shownErrors,
+    unplaced,
+    server,
+    setServer,
+    setTried,
+    setTouched,
+    blocking,
+    firstBlocked,
+    clientNumber: hasClientNumber(draft, checks),
+    onCheck,
+  };
 }
 
 /** Le focus (et l'écran) sur un champ, une fois rendu. Un groupe radio : son choix courant (ou le premier). */
@@ -309,6 +363,8 @@ export function NewProspectWizard() {
     const bad = firstInvalidStep(restored.draft);
     return bad && stepIndex(bad) < stepIndex(restored.step) ? bad : restored.step;
   });
+  const allSteps = STEPS.map((x) => x.id);
+  const phoneCheck = useMemo(() => ({ excludeId: null, onResult: s.onCheck }), [s.onCheck]);
   const [dir, setDir] = useState<'fwd' | 'back'>('fwd');
   const [backToReview, setBackToReview] = useState(false);
   const [showRestored, setShowRestored] = useState(() => !!restored && !isDraftEmpty(restored.draft));
@@ -332,12 +388,12 @@ export function NewProspectWizard() {
 
   const submit = () => {
     if (create.isPending) return;
-    const bad = firstInvalidStep(draft);
+    const bad = s.firstBlocked(allSteps, {});
     if (bad) {
       s.markTried(bad);
       setBackToReview(true);
       goTo(bad, 'back');
-      const first = Object.keys(stepErrors(draft, bad))[0];
+      const first = Object.keys(s.blocking(bad, {}))[0];
       if (first) focusField(first);
       return;
     }
@@ -345,7 +401,9 @@ export function NewProspectWizard() {
       onSuccess: (r) => {
         saved.current = true;
         clearDraft(owner);
-        navigate(`/v/prospects/${r.id}`, { replace: true });
+        // « À vérifier » : la fiche s'ouvre en le disant (la direction est prévenue).
+        const state: SavedState | undefined = r.to_verify ? { saved: 'to_verify' } : undefined;
+        navigate(`/v/prospects/${r.id}`, { replace: true, state });
       },
       onError: (e: Error) => {
         const t = stepOfServerError(e.message, draft);
@@ -361,8 +419,7 @@ export function NewProspectWizard() {
 
   const next = () => {
     if (step === 'review') return submit();
-    const errs = stepErrors(draft, step);
-    const ids = Object.keys(errs);
+    const ids = Object.keys(s.blocking(step, {}));
     if (ids.length) {
       s.markTried(step);
       focusField(ids[0]);
@@ -427,12 +484,40 @@ export function NewProspectWizard() {
         <StepHeading step={step} d={draft} />
         <Refusal message={s.unplaced(step)} />
         {step === 'review' ? (
-          <Review d={draft} onEdit={edit} />
+          <>
+            {s.clientNumber && <ClientNumberReview />}
+            <Review d={draft} onEdit={edit} />
+          </>
         ) : (
-          <StepFields step={step} d={draft} set={s.set} update={s.update} errors={errors} onTouch={s.touch} autoFocus={!showRestored} />
+          <StepFields
+            step={step}
+            d={draft}
+            set={s.set}
+            update={s.update}
+            errors={errors}
+            onTouch={s.touch}
+            autoFocus={!showRestored}
+            phoneCheck={phoneCheck}
+          />
         )}
       </div>
     </WizardFrame>
+  );
+}
+
+/** Au récapitulatif, un des numéros est celui d'un client Bonzini : ce qui va se passer, avant d'enregistrer. */
+function ClientNumberReview() {
+  return (
+    <div role="status" data-tone="warn" className="s-note s-pop mb-4 flex items-start gap-3 rounded-[14px] px-4 py-3">
+      <Info className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
+      <div className="min-w-0">
+        <div className="text-[15px] font-semibold s-ink">Un numéro est déjà celui d’un client Bonzini</div>
+        <div className="mt-0.5 text-[14px] leading-snug s-ink-2">
+          La fiche sera enregistrée «&nbsp;À&nbsp;vérifier&nbsp;» et la direction prévenue&nbsp;: elle vous attribuera ce client si c’est bien vous qui
+          l’avez convaincu.
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -480,6 +565,8 @@ export function EditProspectWizard({ prospect, requested, onDone }: { prospect: 
   const last = pos >= session.length - 1;
   const missing = missingOf(prospect);
   const opts: ValidateOptions = { original, won };
+  // Ses propres numéros ne sont pas un doublon : la fiche est exclue de la vérification.
+  const phoneCheck = useMemo(() => ({ excludeId: prospect.id, onResult: s.onCheck }), [prospect.id, s.onCheck]);
   const patch = toPatch(draft, original, prospect.id, { won });
   const dirty = patch !== null;
 
@@ -517,11 +604,11 @@ export function EditProspectWizard({ prospect, requested, onDone }: { prospect: 
   const save = () => {
     if (update.isPending || !patch) return;
     // Toutes les étapes de la séance, en règle.
-    const bad = session.find((st) => Object.keys(stepErrors(draft, st, opts)).length > 0);
+    const bad = s.firstBlocked(session, opts);
     if (bad) {
       s.markTried(bad);
       goTo(session.indexOf(bad), 'back');
-      focusField(Object.keys(stepErrors(draft, bad, opts))[0]);
+      focusField(Object.keys(s.blocking(bad, opts))[0]);
       return;
     }
     update.mutate(patch, {
@@ -543,7 +630,7 @@ export function EditProspectWizard({ prospect, requested, onDone }: { prospect: 
   };
 
   const next = () => {
-    const ids = Object.keys(stepErrors(draft, step, opts));
+    const ids = Object.keys(s.blocking(step, opts));
     if (ids.length) {
       s.markTried(step);
       focusField(ids[0]);
@@ -593,7 +680,18 @@ export function EditProspectWizard({ prospect, requested, onDone }: { prospect: 
         )}
         <Refusal message={s.unplaced(step)} />
         <StepHeading step={step} d={draft} />
-        <StepFields step={step} d={draft} set={s.set} update={s.update} errors={errors} onTouch={s.touch} autoFocus={!showResumed} original={original} won={won} />
+        <StepFields
+          step={step}
+          d={draft}
+          set={s.set}
+          update={s.update}
+          errors={errors}
+          onTouch={s.touch}
+          autoFocus={!showResumed}
+          original={original}
+          won={won}
+          phoneCheck={phoneCheck}
+        />
       </div>
     </WizardFrame>
   );

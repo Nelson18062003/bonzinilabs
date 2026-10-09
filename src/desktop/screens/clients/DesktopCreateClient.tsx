@@ -12,12 +12,13 @@
  */
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Check, Copy, UserPlus, Plus, X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, Holder, FormField, TextInput, PrimaryPill, SoftPill } from '@/desktop/designKit';
 import { PhoneNumberInput, formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { CountryCombobox } from '@/components/form/CountryCombobox';
+import { prefillPhoneFromQuery } from '@/components/clients/prospectPrefill';
 import { useCreateClientForm, whatsappShareUrl, MAX_PHONES } from '@/components/clients/useCreateClientForm';
 import { ClientSourcePicker } from '@/components/clients/ClientSourcePicker';
 import { ProspectEmailSuggestion, ProspectPrefillNote, ProspectSourceNote } from '@/components/clients/ProspectSourceNote';
@@ -36,7 +37,9 @@ const CONTROL = 'h-12 rounded-2xl';
 export function DesktopCreateClient({ embedded = false }: CreateClientProps = {}) {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const form = useCreateClientForm();
+  // `?phone=+237…` : « Créer son compte client » depuis la fiche d'un prospect (07/10).
+  const [params] = useSearchParams();
+  const form = useCreateClientForm({ initialPhone: prefillPhoneFromQuery(params.get('phone')) });
   const [passwordCopied, setPasswordCopied] = useState(false);
 
   const optional = <span className={cn('ml-1 text-[13px] font-normal', TEXT.muted)}>{t('clientForm.optional')}</span>;

@@ -152,7 +152,10 @@
       "depositNeedsReview": "Dépôt à examiner",
       "paymentProcessing": "Paiement en cours",
       "paymentReady": "Paiement à traiter",
-      "unknownClient": "Client inconnu"
+      "unknownClient": "Client inconnu",
+      "prospectToVerify": "Numéro déjà client · {{commercial}}",
+      "prospectToVerifyOne": "{{prospect}} · client reconnu : {{client}}",
+      "prospectToVerifyMany": "{{prospect}} · {{count}} clients reconnus"
     },
     "adminProofMultiUpload": {
       "allFailed": "Échec du téléchargement",
@@ -651,5 +654,28 @@
     "failedHint": "Rouvrez « Modifier » pour réessayer.",
     "birthInvalid": "Date de naissance invalide",
     "genderKeptHint": "Une fois choisi, le sexe ne revient pas à « non renseigné »."
+  },
+  "clientToProspect": {
+    "action": "Repasser en prospect",
+    "actionHint": "Seulement s’il n’a fait aucune opération : son compte devient une fiche prospect.",
+    "title": "Repasser {{name}} en prospect",
+    "checking": "Vérification de son activité…",
+    "loadError": "La vérification n’a pas pu se faire.",
+    "blockedTitle": "{{name}} ne peut pas redevenir prospect",
+    "blockedBody": "Ce compte a déjà une activité chez Bonzini : un client qui a fait la moindre opération reste client.",
+    "blockersTitle": "Ce qui bloque",
+    "warningsTitle": "Effacé aussi avec le compte (gardé au journal)",
+    "explain": "Son compte sera supprimé : il ne pourra plus se connecter. Ses informations deviennent une fiche prospect confiée au commercial choisi.",
+    "reopen": "Son ancienne fiche prospect est rouverte, au statut « Contacté ».",
+    "create": "Une fiche prospect est créée avec ses coordonnées : nom, numéros, entreprise, ville.",
+    "commercial": "Le commercial qui suivra ce prospect",
+    "suggested": "proposé",
+    "noCommercial": "Aucun commercial actif : créez d’abord l’accès d’un commercial dans « Mes équipes ».",
+    "reason": "Motif (facultatif)",
+    "reasonPlaceholder": "Compte créé trop tôt, n’a jamais commencé…",
+    "confirm": "Je confirme : le compte de {{name}} est supprimé et devient une fiche prospect.",
+    "submit": "Repasser en prospect",
+    "done": "{{name}} est maintenant un prospect de {{commercial}}",
+    "openCommercial": "Voir le commercial"
   }
 }

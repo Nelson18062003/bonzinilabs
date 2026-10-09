@@ -54,7 +54,10 @@
       "unknownClient": "Unknown client",
       "depositNeedsReview": "Deposit to review",
       "paymentProcessing": "Payment processing",
-      "paymentReady": "Payment to process"
+      "paymentReady": "Payment to process",
+      "prospectToVerify": "Number already a client · {{commercial}}",
+      "prospectToVerifyOne": "{{prospect}} · matched client: {{client}}",
+      "prospectToVerifyMany": "{{prospect}} · {{count}} matched clients"
     },
     "addExchangeRate": {
       "success": "Exchange rate updated",
@@ -651,5 +654,28 @@
     "failedHint": "Open “Edit” again to retry.",
     "birthInvalid": "Invalid date of birth",
     "genderKeptHint": "Once chosen, the sex cannot go back to “not provided”."
+  },
+  "clientToProspect": {
+    "action": "Turn back into a prospect",
+    "actionHint": "Only if they have made no transaction: their account becomes a prospect record.",
+    "title": "Turn {{name}} back into a prospect",
+    "checking": "Checking their activity…",
+    "loadError": "The check could not be completed.",
+    "blockedTitle": "{{name}} cannot become a prospect again",
+    "blockedBody": "This account already has activity at Bonzini: a client who has made any transaction stays a client.",
+    "blockersTitle": "What blocks it",
+    "warningsTitle": "Also erased with the account (kept in the audit log)",
+    "explain": "Their account will be deleted: they will no longer be able to sign in. Their details become a prospect record assigned to the chosen sales rep.",
+    "reopen": "Their former prospect record is reopened, with the status “Contacted”.",
+    "create": "A prospect record is created with their details: name, numbers, company, city.",
+    "commercial": "The sales rep who will follow this prospect",
+    "suggested": "suggested",
+    "noCommercial": "No active sales rep: first create a sales rep’s access in “My teams”.",
+    "reason": "Reason (optional)",
+    "reasonPlaceholder": "Account created too early, never started…",
+    "confirm": "I confirm: {{name}}’s account is deleted and becomes a prospect record.",
+    "submit": "Turn into a prospect",
+    "done": "{{name}} is now a prospect of {{commercial}}",
+    "openCommercial": "View sales rep"
   }
 }

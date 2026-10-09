@@ -28,6 +28,7 @@ import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { ClientOrigin } from '@/components/clients/ClientOrigin';
 import { ClientRegistration } from '@/components/clients/ClientRegistration';
+import { ClientToProspectDialog } from '@/components/clients/ClientToProspectDialog';
 import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
 import { birthTextIssue, identityPatch, isoToBirthText } from '@/components/clients/clientIdentity';
 import { formatBirthDate, genderLabel, isGender, type Gender } from '@/lib/people';
@@ -91,6 +92,7 @@ import {
   Plus,
   Tag,
   Trash2,
+  UserRoundSearch,
   Users,
   X,
 } from 'lucide-react';
@@ -238,6 +240,9 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { data: clientDeposits } = useClientDeposits(clientId, hasPermission('canViewCargo'));
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
+  // « Repasser en prospect » (07/10) : le super admin seul — gérer les comptes ET piloter les ventes.
+  const canMakeProspect = canManageUsers && hasPermission('canManageSales');
+  const [toProspectOpen, setToProspectOpen] = useState(false);
 
   const updateClient = useUpdateClient();
   const setIdentity = useSetClientIdentity();
@@ -549,6 +554,7 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
               >
                 {menuItem(openEdit, <Pencil className="h-3.5 w-3.5" />, 'Modifier le profil')}
                 {menuItem(() => setResetOpen(true), <Key className="h-3.5 w-3.5" />, 'Réinitialiser mot de passe')}
+                {canMakeProspect && menuItem(() => setToProspectOpen(true), <UserRoundSearch className="h-3.5 w-3.5" />, t('clientToProspect.action'))}
                 {menuItem(handleDeleteCheck, deleteChecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />, 'Supprimer le client', true)}
               </div>
             )}
@@ -994,6 +1000,17 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
           transactions, relevés, etc.).
         </p>
       </CenterDialog>
+
+      {/* Repasser en prospect — super admin, client sans aucune opération. Monté à l'ouverture seulement : pas de lecture avant. */}
+      {canMakeProspect && toProspectOpen && (
+        <ClientToProspectDialog
+          variant="dialog"
+          open={toProspectOpen}
+          onClose={() => setToProspectOpen(false)}
+          userId={client.id}
+          clientName={name}
+        />
+      )}
 
       {/* Relevé de compte — choix de la période */}
       <StatementPeriodSheet

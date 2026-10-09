@@ -23,13 +23,17 @@
 //     collègue ne voit ni ne s'attribue le prospect d'un autre. De même
 //     pour une modification de la fiche en cours ;
 //   · l'étape (et la ligne) à rouvrir quand le serveur refuse (doublon,
-//     client existant, un AUTRE numéro déjà suivi).
+//     un de SES clients, un AUTRE numéro déjà suivi) ;
+//   · ce que la vérification EN DIRECT des numéros (`prospect_phone_check`,
+//     07/10) refuse : un de ses clients, un de ses prospects, un prospect
+//     d'un autre commercial. Le numéro d'un client Bonzini, lui, passe : la
+//     fiche partira « À vérifier » et la direction tranchera.
 // ============================================================
 import { EMPTY_PHONE, fromE164, toE164, type PhoneValue } from '@/components/form/PhoneNumberInput';
 import { normalizeText } from '@/lib/clientSearch';
 import { CAMEROON_CITIES, birthDateError, emailError, formatBirthInput, isGender, isoToBirthText, type Gender } from '@/lib/people';
 import { SALES_DRAFT_PREFIX, type Interest } from '@/lib/sales';
-import type { Prospect, ProspectInput, ProspectPatch, ProspectPhone } from '@/hooks/useSales';
+import type { PhoneCheckStatus, Prospect, ProspectInput, ProspectPatch, ProspectPhone } from '@/hooks/useSales';
 import { doualaDay, followUpIso } from './salesHelpers';
 
 /* ── Les étapes ────────────────────────────────────────────────────────── */
@@ -414,6 +418,72 @@ export function firstInvalidStep(d: ProspectDraft, o: ValidateOptions = {}): Ste
   return STEPS.find((s) => s.id !== 'review' && Object.keys(stepErrors(d, s.id, o)).length > 0)?.id ?? null;
 }
 
+/* ── Les numéros vérifiés en direct (07/10) ────────────────────────────── */
+
+/** La réponse de `prospect_phone_check` pour un numéro complet, et le numéro qu'elle concerne. */
+export interface PhoneCheckResult {
+  e164: string;
+  status: PhoneCheckStatus;
+  /** `mine` : la fiche (à lui) qui a déjà ce numéro. */
+  prospectId: string | null;
+}
+
+/** Identifiant du champ (le principal, ou une ligne) → la dernière réponse reçue pour lui. */
+export type PhoneChecks = Record<string, PhoneCheckResult>;
+
+/**
+ * Les réponses qui arrêtent « Continuer ». `client` n'en est pas : le
+ * commercial ne sait pas de quel client il s'agit, il continue et la
+ * direction décide. `invalid` non plus (le serveur tranchera).
+ */
+export const PHONE_CHECK_REFUSAL: Partial<Record<PhoneCheckStatus, string>> = {
+  own_client: 'C’est déjà un de vos clients',
+  mine: 'Ce numéro est déjà celui d’un de vos prospects',
+  other: 'Déjà suivi par un autre commercial',
+};
+
+/** Les numéros complets du brouillon, chacun avec son champ : le principal, puis les autres dans l'ordre. */
+export function draftNumbers(d: ProspectDraft): { id: string; e164: string }[] {
+  const out: { id: string; e164: string }[] = [];
+  const main = toE164(d.phone);
+  if (main) out.push({ id: FIELD_ID.phone, e164: main });
+  for (const r of d.others) {
+    const x = toE164(r.value);
+    if (x) out.push({ id: otherPhoneId(r.key), e164: x });
+  }
+  return out;
+}
+
+/** Les réponses qui valent pour les numéros tels qu'ils sont MAINTENANT (celle d'un numéro changé depuis ne compte plus). */
+function currentChecks(d: ProspectDraft, checks: PhoneChecks): { id: string; check: PhoneCheckResult }[] {
+  return draftNumbers(d).flatMap(({ id, e164 }) => (checks[id]?.e164 === e164 ? [{ id, check: checks[id] }] : []));
+}
+
+/** Ce que la vérification en direct refuse, champ par champ (étape « Comment le joindre ? »). */
+export function phoneCheckErrors(d: ProspectDraft, checks: PhoneChecks): StepErrors {
+  const e: StepErrors = {};
+  for (const { id, check } of currentChecks(d, checks)) {
+    const refusal = PHONE_CHECK_REFUSAL[check.status];
+    if (refusal) e[id] = refusal;
+  }
+  return e;
+}
+
+/** Un des numéros est celui d'un client Bonzini : la fiche partira « À vérifier ». */
+export function hasClientNumber(d: ProspectDraft, checks: PhoneChecks): boolean {
+  return currentChecks(d, checks).some(({ check }) => check.status === 'client');
+}
+
+/**
+ * À vérifier en direct : tout numéro à la création ; en modification,
+ * seulement ceux qui n'étaient pas déjà sur la fiche (enregistrés, le
+ * serveur les a déjà vus).
+ */
+export function isNewNumber(e164: string, original?: ProspectDraft): boolean {
+  if (!original) return true;
+  return !draftNumbers(original).some((n) => n.e164 === e164);
+}
+
 /* ── Ce qui part au serveur ────────────────────────────────────────────── */
 
 /** Les autres numéros complets, au format international, sans doublon (ni le principal). */
@@ -542,7 +612,8 @@ const E164_IN_TEXT = /\+\d{6,15}/;
 export function stepOfServerError(message: string, d?: ProspectDraft): { step: StepId; field?: string } {
   const m = normalizeText(message);
   if (/e-?mail|adresse/.test(m)) return { step: 'reach', field: FIELD_ID.email };
-  if (/numero|telephone|indicatif|libelle|deja dans votre liste/.test(m)) {
+  // « C'est déjà un de vos clients », « Déjà suivi par un autre commercial » : un numéro, même s'il n'est pas nommé.
+  if (/numero|telephone|indicatif|libelle|deja dans votre liste|vos clients|deja suivi/.test(m)) {
     const named = E164_IN_TEXT.exec(message)?.[0];
     if (named && d) {
       if (toE164(d.phone) === named) return { step: 'reach', field: FIELD_ID.phone };

@@ -3,16 +3,19 @@
 // pour un mois de Douala : clients apportés, paiements de leurs clients,
 // fret avion (kg) et bateau (m³), prospects, et l'avancement de leurs
 // objectifs. Lecture : sales_overview (canManageSales, garde serveur).
+// « À vérifier » (07/10) : les fiches dont un numéro est déjà celui d'un
+// client — le bouton de l'en-tête porte leur nombre, chaque commercial le sien.
 // ============================================================
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, ChevronRight, Plus } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ChevronRight, Plus, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useSalesOverview } from '@/hooks/useSales';
+import { useProspectClaims, useSalesOverview } from '@/hooks/useSales';
+import { PROSPECT_CLAIMS_PATH, groupClaimsByProspect } from '@/hooks/useAdminNotifications';
 import { OBJECTIVES, currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, type CommercialCard } from '@/lib/sales';
 import { MonthSwitcher, ObjectiveBar } from '@/components/sales/SalesBits';
-import { BTN_PRIMARY, CARD, Initials, Skeleton } from './TeamBits';
+import { BTN_PRIMARY, BTN_SOFT, CARD, Initials, Skeleton } from './TeamBits';
 import { TEAM_BASE } from './TeamScreen';
 
 export function SalesBoard() {
@@ -26,6 +29,14 @@ function Board() {
   const [month, setMonth] = useState(currentMonth());
   const overview = useSalesOverview(month);
   const rows = overview.data ?? [];
+  // Les fiches « À vérifier », une par prospect : au total et par commercial.
+  const claims = useProspectClaims();
+  const toVerify = useMemo(() => {
+    const groups = groupClaimsByProspect(claims.data ?? []);
+    const bySource = new Map<string, number>();
+    for (const g of groups) bySource.set(g[0].source_id, (bySource.get(g[0].source_id) ?? 0) + 1);
+    return { total: groups.length, bySource };
+  }, [claims.data]);
   const sum = rows.reduce(
     (s, r) => ({
       newClients: s.newClients + r.metrics.new_clients,
@@ -49,6 +60,7 @@ function Board() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <MonthSwitcher month={month} onChange={setMonth} />
+          <ToVerifyButton count={toVerify.total} onClick={() => navigate(PROSPECT_CLAIMS_PATH)} />
           <button type="button" onClick={() => navigate(`${TEAM_BASE}/nouveau?role=commercial`)} className={BTN_PRIMARY}>
             <Plus className="h-4 w-4" /> Commercial
           </button>
@@ -81,7 +93,7 @@ function Board() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {rows.map((r) => (
-            <CommercialTile key={r.source.id} card={r} onOpen={() => navigate(`${TEAM_BASE}/ventes/${r.source.id}`)} />
+            <CommercialTile key={r.source.id} card={r} toVerify={toVerify.bySource.get(r.source.id) ?? 0} onOpen={() => navigate(`${TEAM_BASE}/ventes/${r.source.id}`)} />
           ))}
         </div>
       )}
@@ -93,7 +105,26 @@ function Board() {
   );
 }
 
-function CommercialTile({ card, onOpen }: { card: CommercialCard; onOpen: () => void }) {
+/** « À vérifier » et son nombre : ambré quand des fiches attendent, discret sinon. */
+function ToVerifyButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={count > 0 ? `À vérifier : ${count} fiche${count > 1 ? 's' : ''} en attente` : 'À vérifier'}
+      className={cn(BTN_SOFT, count > 0 && 'bg-amber-50 text-amber-950 ring-amber-300 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-400/40')}
+    >
+      <UserSearch className="h-4 w-4" /> À vérifier
+      {count > 0 && (
+        <span className="ml-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[12px] font-bold tabular-nums text-white">
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function CommercialTile({ card, toVerify, onOpen }: { card: CommercialCard; toVerify: number; onOpen: () => void }) {
   const m = card.metrics;
   const name = card.staff?.name || card.source.label;
   return (
@@ -120,9 +151,18 @@ function CommercialTile({ card, onOpen }: { card: CommercialCard; onOpen: () => 
         <Line label="Devenus clients" value={fmtCount(m.prospects_won)} />
       </div>
 
-      {m.prospects_due > 0 && (
-        <div className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-amber-700 dark:text-amber-400">
-          <AlertCircle className="h-3.5 w-3.5" /> {m.prospects_due} prospect{m.prospects_due > 1 ? 's' : ''} à relancer
+      {(m.prospects_due > 0 || toVerify > 0) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {m.prospects_due > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-amber-700 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5" /> {m.prospects_due} prospect{m.prospects_due > 1 ? 's' : ''} à relancer
+            </span>
+          )}
+          {toVerify > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-amber-700 dark:text-amber-400">
+              <UserSearch className="h-3.5 w-3.5" /> {toVerify} fiche{toVerify > 1 ? 's' : ''} à vérifier
+            </span>
+          )}
         </div>
       )}
 

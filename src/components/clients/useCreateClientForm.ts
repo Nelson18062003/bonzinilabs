@@ -64,6 +64,7 @@ import { birthTextIssue, validBirthIso, type BirthIssue } from './clientIdentity
 import { mergeProspectPhones, planProspectPrefill, type ProspectPrefill } from './prospectPrefill';
 import {
   EMPTY_PHONE,
+  fromE164,
   isPhoneComplete,
   toE164,
   type PhoneValue,
@@ -84,6 +85,12 @@ const newPhoneRow = (country: CountryIso = EMPTY_PHONE.country): PhoneRow => ({
   value: { country, national: '' },
   label: '',
 });
+
+/** La ligne du numéro principal à l'ouverture : vide, ou le numéro pré-saisi s'il est lisible. */
+function initialPhoneRow(e164: string | null | undefined): PhoneRow {
+  const value = e164 ? fromE164(e164) : null;
+  return value && toE164(value) ? { key: rowKey(), value, label: '' } : newPhoneRow();
+}
 
 export interface CreateClientFields {
   firstName: string;
@@ -117,6 +124,12 @@ export interface CreatedClient {
  */
 export interface CreateClientFormOptions {
   reception?: { location: ReceptionLocation | null };
+  /**
+   * Le numéro principal déjà saisi, au format international — « Créer son
+   * compte client » depuis la fiche d'un prospect (07/10, `?phone=`). Lu à
+   * l'ouverture seulement ; la reprise de la fiche prospect fait le reste.
+   */
+  initialPhone?: string | null;
 }
 
 /** « Bureau de Guangzhou (avion) » / « Entrepôt de Guangzhou (bateau) » — les libellés des origines système. */
@@ -156,8 +169,9 @@ export function useCreateClientForm(options: CreateClientFormOptions = {}) {
   });
   // Le sexe : aucun choix au départ (obligatoire au bureau, facultatif à la réception).
   const [gender, setGender] = useState<Gender | null>(null);
-  const [phones, setPhonesState] = useState<PhoneRow[]>(() => [newPhoneRow()]);
-  const [countryIso, setCountryIso] = useState<CountryIso>(EMPTY_PHONE.country);
+  const [phones, setPhonesState] = useState<PhoneRow[]>(() => [initialPhoneRow(options.initialPhone)]);
+  // Le pays suit l'indicatif du numéro pré-saisi, comme à la frappe.
+  const [countryIso, setCountryIso] = useState<CountryIso>(() => initialPhoneRow(options.initialPhone).value.country);
   const [countryTouched, setCountryTouched] = useState(false);
   const [created, setCreated] = useState<CreatedClient | null>(null);
   // Origine du client (commercial, recommandation, réseau social…) :

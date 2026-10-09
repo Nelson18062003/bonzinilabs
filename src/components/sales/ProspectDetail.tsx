@@ -11,14 +11,21 @@
 // ville ou « ses plus gros problèmes » (tout le pipeline d'avant le 06/10)
 // le dit dans un bandeau « Fiche incomplète » ; « Compléter » enchaîne les
 // étapes qui manquent.
+// « À vérifier » (07/10) : un de ses numéros est déjà celui d'un client
+// Bonzini ; un bandeau l'explique (la direction est prévenue et décidera),
+// le statut ne se change pas en attendant — le reste de la fiche, si.
+// « Perdu » : « Rouvrir » n'est proposé que si le serveur l'accepterait —
+// ses numéros sont vérifiés comme pour une réouverture ; l'un d'eux est
+// celui d'un client (fiche refusée par la direction, par exemple) ou suivi
+// ailleurs : une phrase le dit à la place du bouton.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronLeft, CircleCheck, RotateCcw, TriangleAlert, UserX } from 'lucide-react';
+import { ChevronLeft, CircleCheck, Hourglass, RotateCcw, TriangleAlert, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSetProspectStatus, type Prospect } from '@/hooks/useSales';
-import { PROSPECT_STATUS, type ProspectStatus } from '@/lib/sales';
+import { useProspectNumbersCheck, useSetProspectStatus, type Prospect, type ReopenBlock } from '@/hooks/useSales';
+import { PROSPECT_STATUS, TO_VERIFY_NOTE, type ProspectStatus } from '@/lib/sales';
 import { BottomSheet } from '@/mobile/designKit';
 import { Field, Segmented, StatusTag } from './SalesUi';
 import { AREA, CARD, CHIP, SECTION_TITLE, btn } from './uiClasses';
@@ -31,7 +38,26 @@ const QUICK_REASONS = ['Trouve nos prix trop chers', 'A déjà un transitaire', 
 const OPEN_STEPS = ['new', 'contacted', 'interested'] as const;
 type OpenStatus = (typeof OPEN_STEPS)[number];
 
-export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Prospect; onEdit: (step: StepId) => void; onComplete: () => void }) {
+/** Pourquoi une fiche perdue ne se rouvre pas (ce que le serveur répondrait), sans rien dire du client. Espaces insécables avant « : ». */
+const REOPEN_BLOCKED: Record<ReopenBlock, string> = {
+  client: 'Un de ses numéros est celui d’un client Bonzini\u00a0: cette fiche ne peut pas être rouverte. Si le numéro est faux, corrigez-le.',
+  own_client: 'Un de ses numéros est celui d’un de vos clients\u00a0: retrouvez-le dans «\u00a0Mes clients\u00a0».',
+  mine: 'Un de ses numéros est déjà celui d’un autre de vos prospects\u00a0: suivez plutôt celui-là.',
+  other: 'Un de ses numéros est suivi par un autre commercial\u00a0: cette fiche ne peut pas être rouverte.',
+};
+
+export function ProspectDetail({
+  prospect,
+  onEdit,
+  onComplete,
+  justSaved = false,
+}: {
+  prospect: Prospect;
+  onEdit: (step: StepId) => void;
+  onComplete: () => void;
+  /** Ouverte par l'assistant qui vient de l'enregistrer « À vérifier » : le bandeau le dit en premier. */
+  justSaved?: boolean;
+}) {
   const navigate = useNavigate();
   const setStatus = useSetProspectStatus();
   const [losing, setLosing] = useState(false);
@@ -39,6 +65,7 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
 
   const d = useMemo(() => draftOf(prospect), [prospect]);
   const won = prospect.status === 'won';
+  const toVerify = prospect.status === 'to_verify';
   const busy = setStatus.isPending;
   const name = prospectName(prospect);
   const where = [prospect.company, prospect.city].filter(Boolean).join(' · ');
@@ -47,8 +74,11 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
     { e164: prospect.phone_e164, label: null, main: true },
     ...(prospect.phones ?? []).map((p) => ({ e164: p.phone_e164, label: p.label, main: false })),
   ];
+  const lost = prospect.status === 'lost';
+  // « Rouvrir » seulement si le serveur l'accepterait (ses numéros revérifiés comme pour une réouverture).
+  const reopen = useProspectNumbersCheck(numbers.map((n) => n.e164), prospect.id, lost);
 
-  const changeStatus = (status: Exclude<ProspectStatus, 'won'>, why?: string) => {
+  const changeStatus = (status: Exclude<ProspectStatus, 'won' | 'to_verify'>, why?: string) => {
     if (busy) return;
     setStatus.mutate(
       { id: prospect.id, status, reason: why },
@@ -89,6 +119,8 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
       </header>
 
       <div className="space-y-4 px-4 pt-6 sm:px-6">
+        {toVerify && <ToVerifyNotice justSaved={justSaved} />}
+
         {missing.length > 0 && (
           <div data-tone="warn" className="s-note s-enter flex items-start gap-3 rounded-[16px] py-3 pl-4 pr-2">
             <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
@@ -112,15 +144,18 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
               <div className="mt-0.5 text-[14px] s-ink-2">Il compte désormais dans «&nbsp;Mes clients&nbsp;». Ses numéros ne changent plus ici.</div>
             </div>
           </div>
-        ) : prospect.status === 'lost' ? (
+        ) : toVerify ? null : lost ? (
           <section className={cn(CARD, 's-enter flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5')} style={{ animationDelay: '40ms' }}>
             <div className="min-w-0">
               <div className={SECTION_TITLE}>Perdu</div>
               {prospect.lost_reason ? <div className="mt-1 text-[15px] s-ink">« {prospect.lost_reason} »</div> : <div className="mt-1 text-[15px] s-ink-3">Sans motif</div>}
+              {reopen.blocking && <p className="mt-2 text-[14px] leading-snug s-ink-2">{REOPEN_BLOCKED[reopen.blocking]}</p>}
             </div>
-            <button type="button" onClick={() => changeStatus('new')} disabled={busy} className={btn('quiet', 'md', 'gap-1.5')}>
-              <RotateCcw className="h-4 w-4" /> Rouvrir
-            </button>
+            {!reopen.blocking && (
+              <button type="button" onClick={() => changeStatus('new')} disabled={busy || reopen.pending} className={btn('quiet', 'md', 'gap-1.5')}>
+                <RotateCcw className="h-4 w-4" /> Rouvrir
+              </button>
+            )}
           </section>
         ) : (
           <section className={cn(CARD, 's-enter space-y-3 p-4 sm:p-5')} style={{ animationDelay: '40ms' }}>
@@ -145,7 +180,7 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
         <ActivitySection d={d} onEdit={onEdit} delay={200} />
       </div>
 
-      <BottomSheet open={losing} onClose={() => !busy && setLosing(false)} title="Prospect perdu" className="s-sheet">
+      <BottomSheet open={losing && !toVerify} onClose={() => !busy && setLosing(false)} title="Prospect perdu" className="s-sheet">
         <form
           noValidate
           onSubmit={(e) => {
@@ -175,6 +210,23 @@ export function ProspectDetail({ prospect, onEdit, onComplete }: { prospect: Pro
           </div>
         </form>
       </BottomSheet>
+    </div>
+  );
+}
+
+/**
+ * « À vérifier » : un de ses numéros est déjà celui d'un client Bonzini. Le
+ * commercial ne sait pas lequel ; la direction est prévenue et décide.
+ */
+function ToVerifyNotice({ justSaved }: { justSaved: boolean }) {
+  return (
+    <div role="status" data-tone="warn" className="s-note s-enter flex items-start gap-3 rounded-[16px] px-4 py-3.5">
+      <Hourglass className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
+      <div className="min-w-0">
+        <div className="text-[15px] font-semibold s-ink">{justSaved ? 'Prospect enregistré, à vérifier' : 'En attente de la direction'}</div>
+        <p className="mt-0.5 text-[14px] leading-snug s-ink-2">Un de ses numéros est déjà celui d’un client Bonzini. {TO_VERIFY_NOTE}</p>
+        <p className="mt-1.5 text-[13px] leading-snug s-ink-3">En attendant, son statut ne change pas ; le reste de la fiche se complète comme d’habitude.</p>
+      </div>
     </div>
   );
 }

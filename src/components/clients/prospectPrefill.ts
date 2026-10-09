@@ -22,6 +22,12 @@
 //
 // Fonctions pures : le hook décide QUAND (une seule reprise par prospect
 // trouvé), ici seulement QUOI.
+//
+// « Créer son compte client » (07/10) : depuis la fiche d'un prospect, la
+// direction ouvre ce formulaire avec son numéro principal déjà saisi
+// (`/m/clients/new?phone=+237…`, `newClientPathForPhone`) ; la reprise
+// ci-dessus fait le reste, et le déclencheur clients_match_prospect le rend
+// « devenu client » à la création.
 // ============================================================
 import { fromE164, toE164, type PhoneValue } from '@/components/form/PhoneNumberInput';
 import { EMAIL_SHAPE, isGender, type Gender } from '@/lib/people';
@@ -147,4 +153,21 @@ export function planProspectPrefill(
   // Dans l'ordre de la note.
   filled.sort((a, b) => PREFILL_KEYS.indexOf(a) - PREFILL_KEYS.indexOf(b));
   return { fields, gender, filled, suggestedEmail };
+}
+
+/** « Nouveau client » avec ce numéro principal déjà saisi (le « + » encodé : il se lirait comme une espace). */
+export function newClientPathForPhone(e164: string): string {
+  return `/m/clients/new?phone=${encodeURIComponent(e164)}`;
+}
+
+/**
+ * Le numéro de `?phone=`, au format international, ou null s'il est absent
+ * ou illisible. Un « + » laissé tel quel dans l'adresse arrive comme une
+ * espace (`URLSearchParams`) : il est remis.
+ */
+export function prefillPhoneFromQuery(raw: string | null | undefined): string | null {
+  const v = (raw ?? '').trim();
+  if (!v) return null;
+  const candidate = v.startsWith('+') ? v : `+${v.replace(/^0+/, '')}`;
+  return toE164(fromE164(candidate.replace(/[^\d+]/g, '')));
 }

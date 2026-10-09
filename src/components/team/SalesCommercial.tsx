@@ -3,15 +3,23 @@
 // objectifs à fixer, ses prospects (à confier à un autre au besoin) et les
 // clients qu'il a apportés. Le responsable seulement (canManageSales) ;
 // le commercial voit les mêmes chiffres dans son espace « /v ».
+// 07/10 : ses fiches « À vérifier » (un numéro déjà client) renvoient à
+// l'écran de décision — et se confient encore à un autre commercial (une
+// fiche d'un commercial archivé ne s'attribue pas avant) ; un prospect en
+// cours peut devenir client d'un geste (« Créer son compte client » : le
+// formulaire « Nouveau client », son numéro déjà saisi, sa fiche reprise).
+// Sur téléphone, les gestes passent SOUS la ligne (les coordonnées gardent
+// toute la largeur).
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Phone, UserSearch, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCommercialClients, useCommercialDashboard, useProspects, useReassignProspect, useSalesOverview, useSetObjective, type Prospect } from '@/hooks/useSales';
+import { useCommercialClients, useCommercialDashboard, useProspects, useSetObjective, type Prospect } from '@/hooks/useSales';
 import {
   OBJECTIVES,
+  OPEN_STATUSES,
   PROSPECT_STATUS,
   clientPhoneE164,
   currentMonth,
@@ -29,8 +37,11 @@ import {
 import { MonthSwitcher, ObjectiveBar, PhoneNumber, ProspectStatusPill } from '@/components/sales/SalesBits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { TextField } from '@/components/form';
+import { PROSPECT_CLAIMS_PATH } from '@/hooks/useAdminNotifications';
+import { newClientPathForPhone } from '@/components/clients/prospectPrefill';
 import { BTN_PRIMARY, BTN_SOFT, CARD, Modal, Skeleton } from './TeamBits';
 import { TEAM_BASE } from './TeamScreen';
+import { ReassignProspectDialog } from './ReassignProspectDialog';
 
 export function SalesCommercial() {
   const { hasPermission } = useAdminAuth();
@@ -258,18 +269,44 @@ function actualOf(card: CommercialCard, metric: ObjectiveMetric): number {
 /* ── Prospects ─────────────────────────────────────────────────────────── */
 
 function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
+  const navigate = useNavigate();
+  const { hasPermission } = useAdminAuth();
+  // Comme « Nouveau client » : qui peut créer un client peut créer le compte d'un prospect.
+  const canCreateClient = hasPermission('canRegisterClients') || hasPermission('canEditClients');
   const prospects = useProspects(sourceId);
   const [filter, setFilter] = useState<ProspectFilter>('open');
   const [moving, setMoving] = useState<Prospect | null>(null);
-  const list = (prospects.data ?? []).filter((p) => (filter === 'open' ? ['new', 'contacted', 'interested'].includes(p.status) : p.status === filter));
-  const counts = (s: ProspectFilter) => (prospects.data ?? []).filter((p) => (s === 'open' ? ['new', 'contacted', 'interested'].includes(p.status) : p.status === s)).length;
+  const isIn = (p: Prospect, f: ProspectFilter) => (f === 'open' ? OPEN_STATUSES.includes(p.status) : p.status === f);
+  const list = (prospects.data ?? []).filter((p) => isIn(p, filter));
+  const counts = (f: ProspectFilter) => (prospects.data ?? []).filter((p) => isIn(p, f)).length;
+  const toVerify = counts('to_verify');
+  // « À vérifier » n'apparaît que s'il y en a (ou si l'onglet est ouvert : la dernière décision ne le fait pas disparaître sous les yeux).
+  const filters: ProspectFilter[] = toVerify > 0 || filter === 'to_verify' ? ['open', 'to_verify', 'won', 'lost'] : ['open', 'won', 'lost'];
 
   return (
     <section className={cn(CARD, 'overflow-hidden')}>
       <div className="space-y-3 px-5 pb-2 pt-5">
         <h2 className="text-[16px] font-semibold">Ses prospects</h2>
+        {toVerify > 0 && (
+          <div className="flex flex-col gap-2 rounded-xl bg-amber-50 px-3.5 py-3 text-[13.5px] text-amber-950 sm:flex-row sm:items-center dark:bg-amber-500/10 dark:text-amber-100">
+            <UserSearch className="hidden h-4 w-4 shrink-0 text-amber-600 sm:block dark:text-amber-300" />
+            <span className="min-w-0 flex-1 leading-snug">
+              <strong>
+                {toVerify} fiche{toVerify > 1 ? 's' : ''} à vérifier
+              </strong>{' '}
+              : un numéro saisi est déjà celui d’un client Bonzini.
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate(`${PROSPECT_CLAIMS_PATH}?commercial=${encodeURIComponent(sourceId)}`)}
+              className="self-start text-[13.5px] font-semibold text-amber-900 underline underline-offset-2 sm:self-auto dark:text-amber-200"
+            >
+              Décider
+            </button>
+          </div>
+        )}
         <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5">
-          {(['open', 'won', 'lost'] as ProspectFilter[]).map((f) => (
+          {filters.map((f) => (
             <button
               key={f}
               type="button"
@@ -295,12 +332,13 @@ function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
       ) : (
         <ul className="divide-y divide-border/60 px-2 pb-2">
           {list.map((p) => (
-            // Le statut et « Confier à… » toujours au même endroit, à droite ; la relance sous les coordonnées.
-            <li key={p.id} className="flex items-start gap-3 px-3 py-3">
+            // Le statut toujours à droite ; les gestes à côté sur ordinateur, SOUS la ligne sur téléphone ; la relance sous les coordonnées.
+            <li key={p.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 px-3 py-3 sm:flex-nowrap sm:items-center sm:gap-x-4">
               <span className="min-w-0 flex-1">
                 <span className="block text-[14.5px] font-semibold">{[p.first_name, p.last_name].filter(Boolean).join(' ')}</span>
+                {(p.company || p.city) && <span className="block text-[12.5px] text-muted-foreground">{[p.company, p.city].filter(Boolean).join(' · ')}</span>}
+                {/* Le numéro sur sa propre ligne : jamais un « · » orphelin en fin de ligne. */}
                 <span className="block text-[12.5px] text-muted-foreground">
-                  {(p.company || p.city) && `${[p.company, p.city].filter(Boolean).join(' · ')} · `}
                   <PhoneNumber e164={p.phone_e164} />
                   {(p.phones ?? []).length > 0 && ` +${(p.phones ?? []).length}`}
                   {p.status === 'lost' && p.lost_reason && ` · ${p.lost_reason}`}
@@ -312,71 +350,49 @@ function Prospects({ sourceId, month }: { sourceId: string; month: string }) {
                     {p.pain_points}
                   </span>
                 )}
-                {p.next_action_at && p.status !== 'won' && p.status !== 'lost' && (
+                {p.next_action_at && OPEN_STATUSES.includes(p.status) && (
                   <span className={cn('block text-[12.5px]', new Date(p.next_action_at) <= new Date() ? 'font-semibold text-amber-700 dark:text-amber-400' : 'text-muted-foreground')}>
                     relance le {new Date(p.next_action_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                   </span>
                 )}
               </span>
-              <span className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-4">
+              <span className="shrink-0 sm:order-last">
                 <ProspectStatusPill status={p.status} />
-                {p.status !== 'won' && (
-                  <button type="button" onClick={() => setMoving(p)} className="text-[13px] font-semibold text-primary hover:underline">
+              </span>
+              {p.status !== 'won' && (
+                <span className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 sm:w-auto sm:shrink-0 sm:justify-end">
+                  {p.status === 'to_verify' && (
+                    // Le numéro est déjà celui d'un client : la décision se prend sur l'écran « À vérifier ».
+                    <button type="button" onClick={() => navigate(`${PROSPECT_CLAIMS_PATH}?fiche=${encodeURIComponent(p.id)}`)} className={LINK}>
+                      Décider
+                    </button>
+                  )}
+                  {canCreateClient && OPEN_STATUSES.includes(p.status) && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(newClientPathForPhone(p.phone_e164))}
+                      className={LINK}
+                      aria-label={`Créer le compte client de ${[p.first_name, p.last_name].filter(Boolean).join(' ')}`}
+                    >
+                      Créer son compte client
+                    </button>
+                  )}
+                  {/* « À vérifier » compris : une fiche d'un commercial archivé se confie avant d'être attribuée. */}
+                  <button type="button" onClick={() => setMoving(p)} className={LINK}>
                     Confier à…
                   </button>
-                )}
-              </span>
+                </span>
+              )}
             </li>
           ))}
         </ul>
       )}
-      {moving && <ReassignDialog prospect={moving} month={month} onClose={() => setMoving(null)} />}
+      {moving && <ReassignProspectDialog prospect={moving} month={month} onClose={() => setMoving(null)} />}
     </section>
   );
 }
 
-function ReassignDialog({ prospect, month, onClose }: { prospect: Prospect; month: string; onClose: () => void }) {
-  const overview = useSalesOverview(month);
-  const reassign = useReassignProspect();
-  const others = (overview.data ?? []).filter((c) => c.source.id !== prospect.source_id && c.source.is_active);
-  const [picked, setPicked] = useState<string | null>(null);
-  return (
-    <Modal
-      title={`Confier ${prospect.first_name} à un autre commercial`}
-      onClose={onClose}
-      footer={
-        <>
-          <button type="button" onClick={onClose} className={BTN_SOFT}>
-            Annuler
-          </button>
-          <button type="button" disabled={!picked || reassign.isPending} onClick={() => picked && reassign.mutate({ id: prospect.id, sourceId: picked }, { onSuccess: onClose })} className={BTN_PRIMARY}>
-            {reassign.isPending ? '…' : 'Confier'}
-          </button>
-        </>
-      }
-    >
-      {overview.isLoading ? (
-        <div className="h-20 animate-pulse rounded-xl bg-muted" />
-      ) : others.length === 0 ? (
-        <p className="text-[13.5px] text-muted-foreground">Aucun autre commercial actif.</p>
-      ) : (
-        <div className="space-y-1.5">
-          {others.map((c) => (
-            <button
-              key={c.source.id}
-              type="button"
-              onClick={() => setPicked(c.source.id)}
-              className={cn('flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left ring-1', picked === c.source.id ? 'ring-2 ring-primary' : 'ring-black/10 hover:bg-accent dark:ring-white/15')}
-            >
-              <span className="text-[14px] font-semibold">{c.staff?.name || c.source.label}</span>
-              <span className="text-[12.5px] text-muted-foreground">{c.metrics.prospects_open} prospects en cours</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </Modal>
-  );
-}
+const LINK = 'text-[13px] font-semibold text-primary hover:underline';
 
 /* ── Ses clients ───────────────────────────────────────────────────────── */
 

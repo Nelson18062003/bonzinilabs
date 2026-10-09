@@ -5,10 +5,10 @@
 // la fiche voulue en `sourceId`. Toujours supabaseAdmin : ce sont des
 // sessions du personnel.
 // ============================================================
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import type { CommercialCard, CommercialClient, Interest, ObjectiveMetric, ProspectStatus } from '@/lib/sales';
+import { TO_VERIFY_NOTE, type CommercialCard, type CommercialClient, type Interest, type ObjectiveMetric, type ProspectStatus } from '@/lib/sales';
 import type { Gender } from '@/lib/people';
 
 /** Un numéro de plus d'un prospect (le principal reste `phone_e164`). */
@@ -127,7 +127,8 @@ export interface ProspectInput {
  * dit lui-même le refus, sous le champ en cause — pas de toast en double.
  */
 export interface ProspectMutationOptions {
-  onCreated?: (id: string) => void;
+  /** `toVerify` : un des numéros est déjà celui d'un client — la fiche attend la direction (07/10). */
+  onCreated?: (id: string, toVerify: boolean) => void;
   onUpdated?: () => void;
   quietErrors?: boolean;
 }
@@ -136,7 +137,7 @@ export function useCreateProspect({ onCreated, quietErrors = false }: ProspectMu
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: ProspectInput) =>
-      rpcJson<{ id: string }>('prospect_create', {
+      rpcJson<{ id: string; to_verify?: boolean }>('prospect_create', {
         p_first_name: p.firstName.trim(),
         p_phone: p.phone.trim(),
         p_last_name: p.lastName?.trim() || null,
@@ -155,8 +156,9 @@ export function useCreateProspect({ onCreated, quietErrors = false }: ProspectMu
       }),
     onSuccess: (r) => {
       invalidateSales(qc);
-      toast.success('Prospect ajouté');
-      onCreated?.(r.id);
+      if (r.to_verify) toast.success('Prospect enregistré : la direction va vérifier ce numéro', { description: TO_VERIFY_NOTE });
+      else toast.success('Prospect ajouté');
+      onCreated?.(r.id, !!r.to_verify);
     },
     onError: (e: Error) => {
       if (!quietErrors) toast.error(e.message);
@@ -188,11 +190,38 @@ export interface ProspectPatch {
   interests?: Interest[];
 }
 
+/**
+ * La réponse de `prospect_update` (07/10, relecture) : le statut FINAL de la
+ * fiche. `to_verify` : elle attend la direction ; `notified` : cette
+ * modification vient d'ouvrir une vérification (la direction est prévenue) ;
+ * `released` : elle vient de sortir de « À vérifier » (le numéro du client a
+ * été retiré ou corrigé) — redevenue « À contacter », ou « Perdu » si un de
+ * ses numéros reste celui d'un client.
+ */
+export interface ProspectUpdateResult {
+  to_verify?: boolean;
+  status?: ProspectStatus;
+  notified?: boolean;
+  released?: boolean;
+}
+
+/** Ce que dit le toast après une modification (un serveur d'avant le 07/10 ne renvoie que `to_verify`, au sens « vient d'être prévenue »). */
+export function updateToast(r: ProspectUpdateResult): { title: string; description?: string } {
+  if (r.notified ?? r.to_verify) return { title: 'Prospect enregistré : la direction va vérifier ce numéro', description: TO_VERIFY_NOTE };
+  if (r.released) {
+    return r.status === 'lost'
+      ? { title: 'Prospect enregistré', description: 'Un de ses numéros est déjà celui d’un client Bonzini\u00a0: la fiche est classée «\u00a0Perdu\u00a0».' }
+      : { title: 'Prospect enregistré', description: 'La fiche n’attend plus la direction\u00a0: elle est de nouveau «\u00a0À contacter\u00a0».' };
+  }
+  if (r.to_verify) return { title: 'Prospect enregistré', description: 'La fiche attend toujours la décision de la direction.' };
+  return { title: 'Prospect enregistré' };
+}
+
 export function useUpdateProspect({ onUpdated, quietErrors = false }: Pick<ProspectMutationOptions, 'onUpdated' | 'quietErrors'> = {}) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: ProspectPatch) =>
-      rpcJson<object>('prospect_update', {
+      rpcJson<ProspectUpdateResult>('prospect_update', {
         p_id: p.id,
         p_first_name: p.firstName ?? null,
         p_last_name: p.lastName ?? null,
@@ -211,9 +240,11 @@ export function useUpdateProspect({ onUpdated, quietErrors = false }: Pick<Prosp
         p_pain_points: p.painPoints ?? null,
         p_help_needed: p.helpNeeded ?? null,
       }),
-    onSuccess: () => {
+    onSuccess: (r) => {
       invalidateSales(qc);
-      toast.success('Prospect enregistré');
+      const t = updateToast(r);
+      if (t.description) toast.success(t.title, { description: t.description });
+      else toast.success(t.title);
       onUpdated?.();
     },
     onError: (e: Error) => {
@@ -225,7 +256,7 @@ export function useUpdateProspect({ onUpdated, quietErrors = false }: Pick<Prosp
 export function useSetProspectStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, reason }: { id: string; status: Exclude<ProspectStatus, 'won'>; reason?: string }) =>
+    mutationFn: ({ id, status, reason }: { id: string; status: Exclude<ProspectStatus, 'won' | 'to_verify'>; reason?: string }) =>
       rpcJson<object>('prospect_set_status', { p_id: id, p_status: status, p_reason: reason?.trim() || null }),
     onSuccess: () => invalidateSales(qc),
     onError: (e: Error) => toast.error(e.message),
@@ -311,5 +342,180 @@ export function useProspectLookup(phoneE164: string | null) {
     enabled: !!phoneE164,
     staleTime: 60_000,
     retry: false,
+  });
+}
+
+/* ── Numéro déjà client, prospect ↔ client (07/10) ─────────────────────── */
+
+/**
+ * Ce que le commercial peut savoir d'un numéro pendant la saisie, et rien de
+ * plus (il n'a pas accès à la base des clients) :
+ *   free        libre ;
+ *   client      déjà celui d'un client Bonzini (lequel : il ne le sait pas) —
+ *               la fiche partira « À vérifier » et la direction sera prévenue ;
+ *   own_client  déjà celui d'un de SES clients (refusé) ;
+ *   mine        déjà un de ses prospects ouverts (refusé) ;
+ *   other       déjà suivi par un autre commercial (refusé) ;
+ *   invalid     illisible.
+ */
+export type PhoneCheckStatus = 'free' | 'client' | 'own_client' | 'mine' | 'other' | 'invalid';
+
+export function useProspectPhoneCheck(phoneE164: string | null, excludeProspectId?: string | null) {
+  return useQuery({
+    queryKey: [...SALES_KEY, 'phone-check', phoneE164, excludeProspectId ?? null],
+    queryFn: () =>
+      rpcJson<{ status: PhoneCheckStatus; prospect_id?: string }>('prospect_phone_check', {
+        p_phone: phoneE164,
+        p_exclude_prospect_id: excludeProspectId ?? null,
+      }),
+    enabled: !!phoneE164,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Ce qui empêcherait de rouvrir une fiche (le numéro d'un client, d'un de SES clients, d'un autre de ses prospects, suivi ailleurs). */
+export type ReopenBlock = Exclude<PhoneCheckStatus, 'free' | 'invalid'>;
+
+/**
+ * Tous les numéros d'une fiche, vérifiés d'un coup (la fiche elle-même
+ * exclue ; même cache que `useProspectPhoneCheck`) : ce que dirait sa
+ * réouverture. `blocking` : le premier statut qui l'empêcherait, null sinon ;
+ * `pending` tant qu'une réponse manque. Une erreur ne bloque rien (le
+ * serveur tranche).
+ */
+export function useProspectNumbersCheck(numbers: string[], excludeProspectId: string, enabled = true) {
+  const results = useQueries({
+    queries: numbers.map((n) => ({
+      queryKey: [...SALES_KEY, 'phone-check', n, excludeProspectId],
+      queryFn: () =>
+        rpcJson<{ status: PhoneCheckStatus; prospect_id?: string }>('prospect_phone_check', { p_phone: n, p_exclude_prospect_id: excludeProspectId }),
+      enabled: enabled && !!n,
+      staleTime: 30_000,
+      retry: false,
+    })),
+  });
+  const statuses = results.map((r) => r.data?.status);
+  const blocking = (statuses.find((st) => st === 'client' || st === 'own_client' || st === 'mine' || st === 'other') as ReopenBlock | undefined) ?? null;
+  return { pending: enabled && results.some((r) => r.isLoading), blocking: enabled ? blocking : null };
+}
+
+/** Le client existant qu'un numéro saisi par un commercial a reconnu (direction seulement). */
+export interface ClaimClient {
+  user_id: string;
+  name: string;
+  company: string | null;
+  customer_code: string | null;
+  phone_e164: string | null;
+  email: string | null;
+  city: string | null;
+  created_at: string;
+  /** Son origine actuelle (ex. « Commercial · Rodrigue Tchami »), null si aucune. */
+  source_id: string | null;
+  source_label: string | null;
+  source_kind: string | null;
+  deposits_count: number;
+  payments_count: number;
+  last_activity_at: string | null;
+}
+
+export interface ProspectClaim {
+  claim_id: string;
+  prospect: Prospect;
+  /** La fiche commercial qui a saisi le numéro. */
+  source_id: string;
+  source_label: string;
+  /** Fiche commercial archivée (false) : on ne lui attribue pas de client — la confier d'abord à un commercial actif. */
+  source_active?: boolean;
+  matched_phone: string;
+  created_at: string;
+  /** La dernière fois que la direction a déjà REFUSÉ ce client à ce commercial (sur cette fiche ou une autre), sinon null. */
+  previously_rejected_at?: string | null;
+  client: ClaimClient;
+}
+
+/** Les fiches « À vérifier » en attente de décision (canManageSales). */
+export function useProspectClaims(enabled = true) {
+  return useQuery({
+    queryKey: [...SALES_KEY, 'claims'],
+    queryFn: () => rpcJson<{ rows: ProspectClaim[] }>('prospect_claims_pending').then((r) => r.rows),
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * La décision de la direction : `attribute` = ce client est bien celui du
+ * commercial (son origine passe au commercial, le prospect « devenu client ») ;
+ * `reject` = non (le prospect passe « perdu » avec le motif fixe « Déjà client
+ * de Bonzini » ; la note reste interne à la direction).
+ */
+export function useResolveProspectClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: { prospectId: string; decision: 'attribute' | 'reject'; clientUserId?: string | null; note?: string }) =>
+      rpcJson<{ decision: string }>('prospect_resolve_claim', {
+        p_prospect_id: p.prospectId,
+        p_decision: p.decision,
+        p_client_user_id: p.clientUserId ?? null,
+        p_note: p.note?.trim() || null,
+      }),
+    onSuccess: (_, v) => {
+      invalidateSales(qc);
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+      toast.success(v.decision === 'attribute' ? 'Client attribué au commercial' : 'Fiche refusée');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Ce qui empêche (ou non) de repasser un client en prospect — super admin. */
+export interface ClientProspectEligibility {
+  eligible: boolean;
+  /** En clair, ce qui bloque (« 3 dépôts », « solde de 25 000 XAF »…) ; vide si possible. */
+  blockers: string[];
+  /**
+   * Ce qui sera effacé AUSSI sans bloquer (« 1 bénéficiaire enregistré… »,
+   * « Sa conversation avec le support… », KYC, notes) — gardé au journal.
+   * Absent d'un serveur plus ancien.
+   */
+  warnings?: string[];
+  /** La fiche commercial proposée (l'origine du client si c'est un commercial). */
+  suggested_source_id: string | null;
+  /** Un prospect « devenu client » qui serait rouvert plutôt que recréé. */
+  reopen_prospect_id: string | null;
+}
+
+export function useClientProspectEligibility(userId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: [...SALES_KEY, 'client-to-prospect', userId],
+    queryFn: () => rpcJson<ClientProspectEligibility>('admin_client_prospect_eligibility', { p_user_id: userId }),
+    enabled: enabled && !!userId,
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+/**
+ * Repasser un client SANS aucune opération en prospect : son compte est
+ * supprimé. Pas de toast de succès ici : la fenêtre dit elle-même « … est
+ * maintenant un prospect de X », avec le lien vers le commercial.
+ */
+export function useClientToProspect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (p: { userId: string; sourceId: string; reason?: string }) =>
+      rpcJson<{ prospect_id: string; reopened: boolean }>('admin_client_to_prospect', {
+        p_user_id: p.userId,
+        p_source_id: p.sourceId,
+        p_reason: p.reason?.trim() || null,
+      }),
+    onSuccess: () => {
+      invalidateSales(qc);
+      void qc.invalidateQueries({ queryKey: ['clients'] });
+      void qc.invalidateQueries({ queryKey: ['admin-clients'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }

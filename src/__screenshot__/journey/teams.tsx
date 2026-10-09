@@ -2,7 +2,9 @@
 // « Mes équipes » vue par le propriétaire (super admin, Nelson Ngango) : la liste
 // des accès (sites, numéros), la création d'un accès (commercial, réceptionnaire
 // avec deux numéros et son site), la fiche d'un membre, et le pilotage des
-// commerciaux (chiffres du mois, objectifs).
+// commerciaux (chiffres du mois, objectifs). 07/10 : l'écran « À vérifier »
+// (numéro déjà client), la cloche, « Repasser en prospect » sur la fiche d'un
+// client et « Créer son compte client » depuis la fiche d'un prospect.
 // Ordinateur : la coquille DesktopAppShell, comme AdminRouteWrapper au-dessus de `lg`.
 // Téléphone : la coquille MobileAppShell, avec ou sans barre d'onglets comme dans App.tsx.
 import React, { useContext } from 'react';
@@ -15,6 +17,12 @@ import { TeamNewMember } from '@/components/team/TeamNewMember';
 import { TeamMemberScreen } from '@/components/team/TeamMemberScreen';
 import { SalesBoard } from '@/components/team/SalesBoard';
 import { SalesCommercial } from '@/components/team/SalesCommercial';
+import { ProspectClaims } from '@/components/team/ProspectClaims';
+import { DesktopClientsScreen } from '@/desktop/screens/clients/DesktopClientsScreen';
+import { DesktopCreateClientDialog } from '@/desktop/screens/clients/DesktopCreateClientDialog';
+import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileCreateClient } from '@/mobile/screens/clients/MobileCreateClient';
+import { MobileNotificationsScreen } from '@/mobile/screens/more/MobileNotificationsScreen';
 
 /** La session simulée devient celle du propriétaire : Nelson Ngango, super admin (barre latérale, « c'est vous »). */
 function AsNelson({ children }: { children: React.ReactNode }) {
@@ -73,4 +81,17 @@ export const SCREENS: Record<string, JourneyEntry> = {
   // 7. Un commercial en détail.
   'j.teams.commercial-desk': { Comp: desk(SalesCommercial), route: '/m/equipe/ventes/src-rodrigue', path: '/m/equipe/ventes/:sourceId' },
   'j.teams.commercial-phone': { Comp: phone(SalesCommercial), route: '/m/equipe/ventes/src-rodrigue', path: '/m/equipe/ventes/:sourceId' },
+  // 8. « À vérifier » (07/10).
+  'j.teams.claims-desk': { Comp: desk(ProspectClaims), route: '/m/equipe/ventes/a-verifier', path: '/m/equipe/ventes/a-verifier' },
+  'j.teams.claims-phone': { Comp: phone(ProspectClaims), route: '/m/equipe/ventes/a-verifier', path: '/m/equipe/ventes/a-verifier' },
+  // 9. La cloche sur téléphone (sur ordinateur : le menu de la barre du haut).
+  'j.teams.notifications-phone': { Comp: phone(MobileNotificationsScreen), route: '/m/more/notifications', path: '/m/more/notifications' },
+  // 10. Repasser en prospect, depuis la fiche d'un client.
+  'j.teams.client-desk': { Comp: desk(DesktopClientsScreen), route: '/m/clients/u7', path: '/m/clients/:clientId' },
+  'j.teams.client-blocked-desk': { Comp: desk(DesktopClientsScreen), route: '/m/clients/u5', path: '/m/clients/:clientId' },
+  'j.teams.client-phone': { Comp: phone(MobileClientDetail), route: '/m/clients/u7', path: '/m/clients/:clientId' },
+  'j.teams.client-blocked-phone': { Comp: phone(MobileClientDetail), route: '/m/clients/u5', path: '/m/clients/:clientId' },
+  // 11. Prospect → client : le formulaire « Nouveau client », le numéro de Paul Etoga déjà saisi.
+  'j.teams.prospect-client-desk': { Comp: desk(DesktopCreateClientDialog), route: '/m/clients/new?phone=%2B237699123456', path: '/m/clients/new' },
+  'j.teams.prospect-client-phone': { Comp: phone(MobileCreateClient), route: '/m/clients/new?phone=%2B237699123456', path: '/m/clients/new' },
 };
