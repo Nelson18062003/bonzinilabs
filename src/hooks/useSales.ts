@@ -519,3 +519,100 @@ export function useClientToProspect() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+/* ── Tableau de bord des ventes : l'évolution (08/10) ──────────────────── */
+
+/** Mois ou semaine, à l'heure de Douala. */
+export type SalesGrain = 'month' | 'week';
+
+/**
+ * Les chiffres d'UNE période (un mois ou une semaine). Mêmes définitions que
+ * le tableau du mois (_commercial_metrics) :
+ *   clients_total  clients dont le commercial est l'origine, à la FIN de la période (cumul)
+ *   new_clients    clients arrivés dans la période ; active_clients : ceux qui ont payé,
+ *                  déposé ou envoyé un colis dans la période
+ *   prospects_*    ajoutés (created_at), devenus clients (converted_at), perdus (status_changed_at)
+ *   payments_*     paiements TERMINÉS de ses clients ; deposits_* : dépôts VALIDÉS
+ *   air_*          colis avion (bureau de Guangzhou) : nombre et kg ; flights : vols
+ *                  distincts ayant emporté au moins un colis de ses clients
+ *   sea_*          colis bateau (entrepôt) : nombre et m³
+ */
+export interface SalesPoint {
+  /** Début de la période, « AAAA-MM-JJ » (1er du mois ou lundi). */
+  period: string;
+  clients_total: number;
+  new_clients: number;
+  active_clients: number;
+  prospects_new: number;
+  prospects_won: number;
+  prospects_lost: number;
+  payments_xaf: number;
+  payments_count: number;
+  deposits_xaf: number;
+  deposits_count: number;
+  air_parcels: number;
+  air_kg: number;
+  flights: number;
+  sea_parcels: number;
+  sea_cbm: number;
+}
+
+/** Les sommes sur une plage (clients_total = valeur à la fin ; active_clients = clients actifs au moins une fois). */
+export type SalesTotals = Omit<SalesPoint, 'period'>;
+
+/** Les prospects ajoutés dans la plage, par statut ACTUEL (pas d'historique des statuts). */
+export interface SalesFunnel {
+  total: number;
+  new: number;
+  contacted: number;
+  interested: number;
+  to_verify: number;
+  won: number;
+  lost: number;
+}
+
+export interface SalesSeriesSource {
+  source_id: string;
+  label: string;
+  is_active: boolean;
+  /** Compte relié (null : fiche sans accès). */
+  staff_user_id: string | null;
+  points: SalesPoint[];
+  totals: SalesTotals;
+  previous_totals: SalesTotals;
+  funnel: SalesFunnel;
+}
+
+export interface SalesSeries {
+  grain: SalesGrain;
+  /** Plage [from, to[ en jours de Douala, « AAAA-MM-JJ ». */
+  from: string;
+  to: string;
+  /** Les débuts de période, dans l'ordre (les points de chaque fiche suivent cet ordre, sans trou). */
+  periods: string[];
+  /** Une entrée par fiche commercial (une seule pour le commercial ; toutes pour la direction, ou celle demandée). */
+  sources: SalesSeriesSource[];
+  /** L'équipe entière (somme des fiches renvoyées). */
+  team: { points: SalesPoint[]; totals: SalesTotals; previous_totals: SalesTotals; funnel: SalesFunnel };
+}
+
+/**
+ * L'évolution des ventes — RPC sales_series(p_from, p_to, p_grain, p_source_id).
+ * Le commercial ne reçoit que SA fiche (p_source_id ignoré) ; la direction
+ * (canManageSales) toutes les fiches commercial, ou celle demandée.
+ * `previous_totals` = la plage de même longueur juste avant (pour les tendances).
+ */
+export function useSalesSeries(p: { from: string; to: string; grain: SalesGrain; sourceId?: string | null }, enabled = true) {
+  return useQuery({
+    queryKey: [...SALES_KEY, 'series', p.from, p.to, p.grain, p.sourceId ?? 'all'],
+    queryFn: () =>
+      rpcJson<SalesSeries>('sales_series', {
+        p_from: p.from,
+        p_to: p.to,
+        p_grain: p.grain,
+        p_source_id: p.sourceId ?? null,
+      }),
+    enabled,
+    staleTime: 60_000,
+  });
+}

@@ -75,12 +75,16 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.teams.member-kevin-desk': { Comp: desk(TeamMemberScreen), route: '/m/equipe/u-kevin', path: '/m/equipe/:userId' },
   // Une réponse d'avant le 06/10 (ni `phones` ni `site`) : la fiche tient.
   'j.teams.member-paul': { Comp: phone(TeamMemberScreen), route: '/m/equipe/u-paul', path: '/m/equipe/:userId' },
-  // 6. Les chiffres des commerciaux.
+  // 6. Ventes : l'équipe commerciale, sur 6 mois (par défaut) puis 12 semaines.
   'j.teams.sales-desk': { Comp: desk(SalesBoard), route: '/m/equipe/ventes', path: '/m/equipe/ventes' },
   'j.teams.sales-phone': { Comp: phone(SalesBoard), route: '/m/equipe/ventes', path: '/m/equipe/ventes' },
-  // 7. Un commercial en détail.
+  'j.teams.sales-weeks-desk': { Comp: desk(SalesBoard), route: '/m/equipe/ventes?periode=12w', path: '/m/equipe/ventes' },
+  'j.teams.sales-weeks-phone': { Comp: phone(SalesBoard), route: '/m/equipe/ventes?periode=12w', path: '/m/equipe/ventes' },
+  // 7. Un commercial en détail ; Hervé Nkoulou, fiche archivée (12 mois : son histoire ; 3 mois : rien).
   'j.teams.commercial-desk': { Comp: desk(SalesCommercial), route: '/m/equipe/ventes/src-rodrigue', path: '/m/equipe/ventes/:sourceId' },
   'j.teams.commercial-phone': { Comp: phone(SalesCommercial), route: '/m/equipe/ventes/src-rodrigue', path: '/m/equipe/ventes/:sourceId' },
+  'j.teams.commercial-herve-desk': { Comp: desk(SalesCommercial), route: '/m/equipe/ventes/src-herve?periode=12m', path: '/m/equipe/ventes/:sourceId' },
+  'j.teams.commercial-herve-phone': { Comp: phone(SalesCommercial), route: '/m/equipe/ventes/src-herve?periode=3m', path: '/m/equipe/ventes/:sourceId' },
   // 8. « À vérifier » (07/10).
   'j.teams.claims-desk': { Comp: desk(ProspectClaims), route: '/m/equipe/ventes/a-verifier', path: '/m/equipe/ventes/a-verifier' },
   'j.teams.claims-phone': { Comp: phone(ProspectClaims), route: '/m/equipe/ventes/a-verifier', path: '/m/equipe/ventes/a-verifier' },

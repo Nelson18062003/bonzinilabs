@@ -1,0 +1,149 @@
+/* ============================================================================
+   TABLEAU DE BORD DES VENTES (08/10) — les couleurs des graphiques.
+
+   Portée : `.sd`, posée par chaque brique de src/components/salesdash/. Tout
+   le reste suit le thème où la brique est posée : les jetons partagés
+   (--card, --foreground, --muted-foreground, --border, --muted) sont ceux de
+   l'administration (`.admin-theme`) ou relus par l'espace commercial
+   (`.sales-ui`, src/index.css) — une brique s'habille seule, des deux côtés,
+   en clair comme en sombre.
+
+   Catégorielle (une teinte par fiche commercial) : la palette de référence
+   de la méthode « dataviz », dans son ordre validé (bleu, orange, aqua,
+   jaune, magenta, vert, violet, rouge). Vérifiée au script
+   validate_palette.js contre nos surfaces (blanc ; #1C1C1C administration
+   sombre ; #222326 /v sombre) : voisins distincts pour les daltoniens
+   (ΔE 9,1 clair / 8,4 sombre), vision normale ≥ 19 ; les trois premières
+   teintes passent aussi deux à deux. En clair, aqua, jaune et magenta
+   sont sous 3:1 sur blanc : la légende, l'info-bulle et la vue tableau
+   portent toujours les valeurs.
+
+   Ordinale (les étapes d'un prospect) : un seul bleu, du clair au foncé en
+   clair, inversé en sombre (validate_palette.js --ordinal).
+   ========================================================================= */
+.sd {
+  --sd-cat-1: #2a78d6;
+  --sd-cat-2: #eb6834;
+  --sd-cat-3: #1baf7a;
+  --sd-cat-4: #eda100;
+  --sd-cat-5: #e87ba4;
+  --sd-cat-6: #008300;
+  --sd-cat-7: #4a3aa7;
+  --sd-cat-8: #e34948;
+  /* « Autres » (au-delà de huit fiches) et le gris qui s'efface. */
+  --sd-other: #a3a29b;
+  --sd-spark: #b4b3ac;
+  --sd-accent: var(--sd-cat-1);
+
+  /* En cours → à vérifier → devenus clients ; perdus en gris. */
+  --sd-ord-1: #86b6ef;
+  --sd-ord-2: #3987e5;
+  --sd-ord-3: #184f95;
+  --sd-lost: #b9b8b0;
+
+  /* Tendances : texte ≥ 4,5:1 sur la carte, toujours avec une flèche. */
+  --sd-good: #007a3d;
+  --sd-bad: #c00f0c;
+  --sd-good-bg: rgb(0 122 61 / 0.09);
+  --sd-bad-bg: rgb(192 15 12 / 0.08);
+
+  --sd-surface: hsl(var(--card));
+  --sd-ink: hsl(var(--foreground));
+  --sd-ink-2: hsl(var(--muted-foreground));
+  --sd-grid: hsl(var(--border) / 0.7);
+  --sd-baseline: hsl(var(--border));
+  --sd-track: hsl(var(--muted));
+  --sd-thumb: hsl(var(--card));
+  --sd-hover: hsl(var(--muted) / 0.65);
+  --sd-cursor: hsl(var(--foreground) / 0.05);
+}
+
+.dark .sd {
+  --sd-cat-1: #3987e5;
+  --sd-cat-2: #d95926;
+  --sd-cat-3: #199e70;
+  --sd-cat-4: #c98500;
+  --sd-cat-5: #d55181;
+  --sd-cat-6: #008300;
+  --sd-cat-7: #9085e9;
+  --sd-cat-8: #e66767;
+  --sd-other: #6f6e69;
+  --sd-spark: #5f5e5a;
+
+  --sd-ord-1: #184f95;
+  --sd-ord-2: #2a78d6;
+  --sd-ord-3: #86b6ef;
+  --sd-lost: #55544f;
+
+  --sd-good: #14ae5c;
+  --sd-bad: #fcb3ad;
+  --sd-good-bg: rgb(20 174 92 / 0.14);
+  --sd-bad-bg: rgb(252 179 173 / 0.12);
+
+  --sd-thumb: #383838;
+  --sd-cursor: hsl(var(--foreground) / 0.07);
+}
+
+/* Dans « /v » : les encres, filets et tendances de l'espace commercial. */
+.sales-ui .sd {
+  --sd-good: hsl(var(--s-green));
+  --sd-bad: hsl(var(--s-red));
+  --sd-good-bg: hsl(var(--s-green-tint));
+  --sd-bad-bg: hsl(var(--s-red-tint));
+  --sd-grid: hsl(var(--s-line));
+  --sd-baseline: hsl(var(--s-line-strong));
+  --sd-track: hsl(var(--s-field));
+  --sd-thumb: hsl(var(--s-surface));
+  --sd-hover: hsl(var(--s-hover));
+}
+
+/* ── Le segmenté (période, mode) : pastille qui glisse ─────────────────── */
+.sd-seg { background-color: var(--sd-track); border-radius: 10px; padding: 3px; }
+.sd-seg-thumb {
+  background-color: var(--sd-thumb); border-radius: 8px;
+  box-shadow: 0 0 0 1px hsl(var(--border) / 0.9), 0 1px 2px rgb(0 0 0 / 0.06);
+  transition: transform 0.32s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.dark .sd-seg-thumb { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.3); }
+.sd-seg-opt { color: var(--sd-ink-2); transition: color 0.2s; -webkit-tap-highlight-color: transparent; }
+.sd-seg-opt[aria-checked="true"] { color: var(--sd-ink); }
+.sd-seg-opt:focus-visible { outline: 2px solid var(--sd-ink); outline-offset: -2px; }
+.sales-ui .sd-seg { border-radius: 14px; padding: 4px; }
+.sales-ui .sd-seg-thumb { border-radius: 11px; box-shadow: var(--s-shadow-btn); }
+.sales-ui .sd-seg-opt:focus-visible { outline-color: hsl(var(--s-accent)); }
+
+/* ── Onglets d'indicateur : soulignés, défilent en largeur ─────────────── */
+.sd-tabs { scrollbar-width: none; }
+.sd-tabs::-webkit-scrollbar { display: none; }
+.sd-fade-x {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 20px), transparent);
+}
+.sd-tab { color: var(--sd-ink-2); -webkit-tap-highlight-color: transparent; transition: color 0.15s; }
+.sd-tab[aria-selected="true"] { color: var(--sd-ink); }
+.sd-tab::after {
+  content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 2px;
+  background-color: var(--sd-ink); transform: scaleX(0); transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.sd-tab[aria-selected="true"]::after { transform: scaleX(1); }
+.sd-tab:focus-visible { outline: 2px solid var(--sd-ink); outline-offset: -4px; border-radius: 8px; }
+@media (hover: hover) { .sd-tab:hover { color: var(--sd-ink); } }
+
+/* ── Lignes et tuiles cliquables ───────────────────────────────────────── */
+.sd-press { -webkit-tap-highlight-color: transparent; transition: background-color 0.12s ease-out, box-shadow 0.15s; }
+@media (hover: hover) { .sd-press:hover { background-color: var(--sd-hover); } }
+.sd-press:focus-visible { outline: 2px solid var(--sd-ink); outline-offset: -2px; }
+.sales-ui .sd-press:focus-visible { outline-color: hsl(var(--s-accent)); }
+.sd-tile[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--sd-ink); }
+
+/* Le chargement : un aplat qui respire (et le reflet de « /v » là-bas). */
+.sd-skel { background-color: var(--sd-track); }
+
+/* Les graduations recharts : chiffres alignés. */
+.sd .recharts-cartesian-axis-tick-value { font-variant-numeric: tabular-nums; }
+.sd .recharts-tooltip-wrapper { outline: none; z-index: 20; }
+.sd .recharts-surface:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-seg-thumb, .sd-tab::after, .sd-press { transition: none; }
+}

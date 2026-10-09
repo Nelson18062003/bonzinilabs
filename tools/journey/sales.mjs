@@ -17,6 +17,11 @@
 process.env.LANG = 'fr_FR.UTF-8';
 process.env.LANGUAGE = 'fr_FR:fr';
 
+// 08/10 : « Mon mois » lit aussi sales_series (6 mois, par mois) — servie par le générateur
+// déterministe du tableau de bord des ventes, réduit à UNE fiche : celle de Rodrigue (le
+// commercial ne reçoit que la sienne, p_source_id est ignoré, comme côté serveur).
+import { SALES_SOURCES, addPeriods, emptySalesSeries, salesSeriesResponse } from './salesSeriesFixture.mjs';
+
 const MONTH = '2026-10-01';
 const RODRIGUE_SRC = 'src-rodrigue';
 
@@ -121,39 +126,47 @@ const CLIENT_ROWS = [
 // Les prospects d'une collègue (Carine Ewane) : leurs numéros sont « suivis par un autre commercial ».
 const OTHER_COMMERCIAL_NUMBERS = ['+237655887766', '+237677990011'];
 
-const sum = (k) => Math.round(CLIENT_ROWS.reduce((t, c) => t + c[k], 0) * 100) / 100;
 const OPEN = ['new', 'contacted', 'interested'];
 const NOW = Date.now();
-const METRICS = {
-  clients: CLIENT_ROWS.length,
-  new_clients: CLIENT_ROWS.filter((c) => c.created_at >= MONTH).length,
-  active_clients: CLIENT_ROWS.filter((c) => c.payments_count + c.air_parcels + c.sea_parcels > 0).length,
-  payments_xaf: sum('payments_xaf'),
-  payments_count: sum('payments_count'),
-  deposits_xaf: 21500000,
-  deposits_count: 5,
-  air_parcels: sum('air_parcels'),
-  air_kg: sum('air_kg'),
-  sea_parcels: sum('sea_parcels'),
-  sea_cbm: sum('sea_cbm'),
-  prospects_open: PROSPECTS.filter((p) => OPEN.includes(p.status)).length,
-  prospects_new: PROSPECTS.filter((p) => p.created_at >= MONTH).length,
-  prospects_won: PROSPECTS.filter((p) => p.status === 'won' && p.converted_at >= MONTH).length,
-  prospects_due: PROSPECTS.filter((p) => OPEN.includes(p.status) && p.next_action_at && Date.parse(p.next_action_at) <= NOW).length,
-};
-// Fixés par Nelson pour octobre ; `actual` suit les chiffres ci-dessus (ORDER BY o.metric côté SQL).
-const OBJECTIVES = [
-  { metric: 'air_kg', target: 250, actual: METRICS.air_kg },
-  { metric: 'new_clients', target: 4, actual: METRICS.new_clients },
-  { metric: 'payments_xaf', target: 60000000, actual: METRICS.payments_xaf },
-  { metric: 'prospects_new', target: 12, actual: METRICS.prospects_new },
-  { metric: 'sea_cbm', target: 5, actual: METRICS.sea_cbm },
-];
-const CARD = {
+const RODRIGUE_FX = SALES_SOURCES.find((x) => x.source_id === RODRIGUE_SRC);
+const seriesOf = (body) => salesSeriesResponse({ ...body, p_source_id: null }, { sources: [RODRIGUE_FX] });
+
+/**
+ * Les chiffres d'un mois (commercial_dashboard) : ceux du générateur pour ce mois — les
+ * mêmes que la courbe et les objectifs de « Mon mois » —, plus l'état d'AUJOURD'HUI des
+ * prospects (ouverts, à relancer), lu dans la liste ci-dessus.
+ */
+function metricsFor(month) {
+  const p = seriesOf({ p_from: month, p_to: addPeriods(month, 'month', 1), p_grain: 'month' }).sources[0]?.points.find((x) => x.period === month) ?? {};
+  return {
+    clients: p.clients_total ?? 0,
+    new_clients: p.new_clients ?? 0,
+    active_clients: p.active_clients ?? 0,
+    payments_xaf: p.payments_xaf ?? 0,
+    payments_count: p.payments_count ?? 0,
+    deposits_xaf: p.deposits_xaf ?? 0,
+    deposits_count: p.deposits_count ?? 0,
+    air_parcels: p.air_parcels ?? 0,
+    air_kg: p.air_kg ?? 0,
+    sea_parcels: p.sea_parcels ?? 0,
+    sea_cbm: p.sea_cbm ?? 0,
+    prospects_open: PROSPECTS.filter((x) => OPEN.includes(x.status)).length,
+    prospects_new: p.prospects_new ?? 0,
+    prospects_won: p.prospects_won ?? 0,
+    prospects_due: PROSPECTS.filter((x) => OPEN.includes(x.status) && x.next_action_at && Date.parse(x.next_action_at) <= NOW).length,
+  };
+}
+// Fixés par Nelson chaque mois ; `actual` suit les chiffres du mois (ORDER BY o.metric côté SQL).
+// Le 9 octobre (jour 9 sur 31) : nouveaux clients atteints, paiements et fret avion dans le
+// rythme, prospects et bateau en dessous.
+const TARGETS = [['air_kg', 250], ['new_clients', 3], ['payments_xaf', 60000000], ['prospects_new', 40], ['sea_cbm', 5]];
+function cardFor(month) {
+  const metrics = metricsFor(month);
+  return { ...CARD_BASE, metrics, objectives: TARGETS.map(([metric, target]) => ({ metric, target, actual: metrics[metric] })) };
+}
+const CARD_BASE = {
   source: { id: RODRIGUE_SRC, label: 'Rodrigue Tchami', phone: '+237690112233', is_active: true },
   staff: { user_id: 'staff-rodrigue', name: 'Rodrigue Tchami', is_disabled: false },
-  metrics: METRICS,
-  objectives: OBJECTIVES,
 };
 
 // ── Le bureau : la liste des clients derrière la fenêtre « Nouveau client » ──
@@ -324,6 +337,46 @@ const wizardAt = (n, { fill = true, after, full = true, theme, client = false } 
   },
 });
 
+
+// ── « Mon mois » : d'autres états, servis par des routes de la PAGE (prioritaires sur celles du
+// contexte, qui reste partagé) : une fiche toute neuve, un compte pas encore relié, sales_series
+// pas encore déployée (les chiffres du mois viennent alors de commercial_dashboard seul).
+const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' };
+const withRpc = (handlers, rest) => async (page) => {
+  await page.route(/\/rest\/v1\/rpc\/(\w+)/, async (route) => {
+    const name = /\/rpc\/(\w+)/.exec(route.request().url())?.[1];
+    if (!(name in handlers)) return route.fallback();
+    let body = {};
+    try { body = route.request().postDataJSON?.() ?? {}; } catch { body = {}; }
+    const json = typeof handlers[name] === 'function' ? handlers[name](body) : handlers[name];
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(json) });
+  });
+  if (rest) {
+    await page.route(/\/rest\/v1\/(?!rpc\/)(\w+)/, async (route) => {
+      const req = route.request();
+      const rows = req.method() === 'GET' ? rest(req.url()) : undefined;
+      if (rows === undefined) return route.fallback();
+      await route.fulfill({ status: 200, contentType: 'application/json', headers: { ...CORS, 'content-range': `0-9/${rows.length}` }, body: JSON.stringify(rows) });
+    });
+  }
+};
+const UNLINKED = 'Votre compte n’est pas encore relié à votre fiche commercial. Demandez-le au responsable.';
+const NEW_CARD = {
+  source: { id: 'src-bertrand', label: 'Bertrand Fouda', phone: '+237677001122', is_active: true },
+  staff: { user_id: 'staff-rodrigue', name: 'Bertrand Fouda', is_disabled: false },
+  metrics: { clients: 0, new_clients: 0, active_clients: 0, payments_xaf: 0, payments_count: 0, deposits_xaf: 0, deposits_count: 0, air_parcels: 0, air_kg: 0,
+    sea_parcels: 0, sea_cbm: 0, prospects_open: 0, prospects_new: 0, prospects_won: 0, prospects_due: 0 },
+  objectives: [],
+};
+const HOME_FRESH = withRpc(
+  { commercial_dashboard: (b) => ({ success: true, month: b?.p_month ?? MONTH, ...NEW_CARD }), sales_series: (b) => emptySalesSeries(b) },
+  (url) => (url.includes('/rest/v1/prospects') ? [] : undefined),
+);
+const HOME_UNLINKED = withRpc({ commercial_dashboard: { success: false, error: UNLINKED }, sales_series: { success: false, error: UNLINKED } });
+const HOME_NO_SERIES = withRpc({ sales_series: { success: false, error: 'Could not find the function public.sales_series(p_from, p_grain, p_source_id, p_to) in the schema cache' } });
+/** Laisse finir l'entrée des cartes (500 ms, décalées) et la pousse des barres (450 à 600 ms). */
+const grown = (page) => page.waitForTimeout(1100);
+
 export const SCREENS = [
   // 0. Sa connexion, « /v/login » : son email (souvent inventé) puis son mot de passe — aucun code email.
   { key: 'j.sales.login', name: '00a-connexion-commercial', ...phone() },
@@ -336,8 +389,21 @@ export const SCREENS = [
       await page.fill('#v-password', '7c4e19ab52f0');
     }),
   },
-  // 1. Lundi : son mois, ses objectifs, les chiffres de ses clients.
-  { key: 'j.sales.home', name: '01-accueil-commercial', ...phone() },
+  // 1. « Mon mois » (08/10) : paiements et dépôts de ses clients avec leur courbe sur 6 mois, ses objectifs
+  // et le rythme à tenir (jour 9 sur 31), ses clients, ses prospects, le fret ; ce qui demande d'agir en tête.
+  { key: 'j.sales.home', name: '01-accueil-commercial', ...phone(grown) },
+  // 1 bis a. Le même mois, la courbe des DÉPÔTS (on touche le chiffre).
+  { key: 'j.sales.home', name: '01e-accueil-depots', ...phone(async (page) => { await page.getByRole('radio', { name: /^Dépôts/ }).click(); await grown(page); }) },
+  // 1 bis b. Septembre, un mois fini : la tendance en pourcentage, les objectifs atteints ou non.
+  { key: 'j.sales.home', name: '01f-accueil-mois-precedent', ...phone(async (page) => { await page.getByRole('button', { name: 'Mois précédent' }).click(); await page.getByText('Objectifs de septembre').waitFor(); await grown(page); }) },
+  // 1 bis c. Une fiche toute neuve : rien sur 6 mois, une seule carte (clair et sombre).
+  { key: 'j.sales.home', name: '01g-accueil-fiche-neuve', init: HOME_FRESH, ...phone(grown) },
+  { key: 'j.sales.home', name: '01h-accueil-fiche-neuve-sombre', init: HOME_FRESH, ...phone(async (page) => { await dark(page); await grown(page); }) },
+  // 1 bis d. Un compte pas encore relié à sa fiche (clair et sombre).
+  { key: 'j.sales.home', name: '01i-accueil-fiche-non-reliee', init: HOME_UNLINKED, ...phone(grown) },
+  { key: 'j.sales.home', name: '01j-accueil-fiche-non-reliee-sombre', init: HOME_UNLINKED, ...phone(async (page) => { await dark(page); await grown(page); }) },
+  // 1 bis e. sales_series pas encore déployée : les chiffres du mois sans tendance ni courbe, un « Réessayer ».
+  { key: 'j.sales.home', name: '01k-accueil-sans-evolution', init: HOME_NO_SERIES, ...phone(grown) },
   // 1 bis. Le menu de son compte : changer son mot de passe, se déconnecter.
   {
     key: 'j.sales.home', name: '01b-menu-du-compte', role: 'commercial', fullPage: false,
@@ -348,7 +414,7 @@ export const SCREENS = [
     },
   },
   // 1 bis bis. Le même mois, le téléphone en thème sombre.
-  { key: 'j.sales.home', name: '01d-accueil-sombre', ...phone(dark) },
+  { key: 'j.sales.home', name: '01d-accueil-sombre', ...phone(async (page) => { await dark(page); await grown(page); }) },
   // 1 ter. Changer son mot de passe provisoire.
   { key: 'j.sales.password', name: '01c-changer-mot-de-passe', ...phone() },
   // 2. Ses prospects ouverts (à contacter, contacté, intéressé), relances échues en tête ; « À vérifier » a sa puce.
@@ -502,7 +568,8 @@ const norm = (x) => String(x ?? '').replace(/[\s.()-]/g, '');
 const isClientNumber = (e164) => OFFICE_CLIENTS.some((c) => c.phone_e164 === e164);
 
 export const RPC = {
-  commercial_dashboard: (b) => ({ success: true, month: b?.p_month ?? MONTH, ...CARD }),
+  commercial_dashboard: (b) => ({ success: true, month: b?.p_month ?? MONTH, ...cardFor(b?.p_month ?? MONTH) }),
+  sales_series: (b) => seriesOf(b),
   commercial_clients: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: CLIENT_ROWS }),
   // Par le numéro principal OU l'un des autres (le principal d'abord), parmi les prospects ouverts.
   prospect_lookup_phone: (b) => {

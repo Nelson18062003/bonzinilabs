@@ -15,15 +15,17 @@
 
 ## En attente
 
-> **Les deux migrations du 06/10 ET celle du 07/10 se collent en UN fichier : `migrations/20261006_consolidated.sql`**
-> (à coller APRÈS `migrations/20261005_consolidated.sql`). Il contient, dans l'ordre, un contrôle des prérequis
-> (s'arrête net, sans rien modifier, s'il en manque un), `20261006100000` (sites, numéros du personnel, « Enregistré
-> par »), `20261006120000` (fiche prospect complète, sexe et date de naissance des clients) puis `20261007100000`
-> (numéro déjà client « À vérifier », client ↔ prospect par le super admin). Rejouable, y compris si une ancienne
-> version de ce fichier (`20261006100000` seule, ou les deux du 06/10) a déjà été collée. Un seul fichier plutôt qu'un
-> `20261007_consolidated.sql` à part : rien du 06/10 n'est encore en production, et la partie du 07/10 redéfinit des
-> fonctions de celle du 06/10 — coller le 06/10 APRÈS le 07/10 remettrait le refus du numéro d'un client. Ensuite :
-> 1. `npx supabase migration repair --status applied 20261006100000 20261006120000 20261007100000`
+> **Les deux migrations du 06/10, celle du 07/10 ET celle du 08/10 se collent en UN fichier :
+> `migrations/20261006_consolidated.sql`** (à coller APRÈS `migrations/20261005_consolidated.sql`). Il contient, dans
+> l'ordre, un contrôle des prérequis (s'arrête net, sans rien modifier, s'il en manque un), `20261006100000` (sites,
+> numéros du personnel, « Enregistré par »), `20261006120000` (fiche prospect complète, sexe et date de naissance des
+> clients), `20261007100000` (numéro déjà client « À vérifier », client ↔ prospect par le super admin) puis
+> `20261008100000` (évolution des ventes, `sales_series`, lecture seule). Rejouable, y compris si une ancienne version de
+> ce fichier (`20261006100000` seule, les deux du 06/10, ou les trois jusqu'au 07/10) a déjà été collée. Un seul fichier
+> plutôt qu'un `20261007_consolidated.sql` à part : rien du 06/10 n'est encore en production, et la partie du 07/10
+> redéfinit des fonctions de celle du 06/10 — coller le 06/10 APRÈS le 07/10 remettrait le refus du numéro d'un client.
+> Ensuite :
+> 1. `npx supabase migration repair --status applied 20261006100000 20261006120000 20261007100000 20261008100000`
 > 2. `/gen-types`
 >
 > **Ordre de déploiement — coller le SQL, PUIS fusionner et déployer le site IMMÉDIATEMENT.** Il n'existe pas d'ordre
@@ -35,6 +37,33 @@
 > le nouveau site la relit sans les autres numéros) ; seules la création et la modification attendent. Depuis le
 > 07/10, l'ancien site ne connaît pas non plus le statut « À vérifier » qu'une saisie peut désormais produire : autre
 > raison de ne pas laisser d'intervalle.
+
+### `20261008100000_sales_series.sql` (à passer APRÈS `20261007100000` — même fichier consolidé)
+**PR :** Tableau de bord des ventes : l'évolution mois par mois (ou semaine par semaine), par commercial et pour l'équipe
+**Contenu :**
+- Une seule fonction, en lecture : `sales_series(p_from date, p_to date, p_grain text default 'month', p_source_id uuid
+  default null)` → `{success, grain, from, to, periods, sources[], team}`. Chaque fiche (et l'équipe) a ses `points`
+  (une valeur par période, SANS trou), ses `totals` sur la plage, ses `previous_totals` (la plage de même longueur juste
+  avant, pour les tendances) et son `funnel` (prospects ajoutés dans la plage, par statut actuel). Contrat côté front :
+  `SalesSeries` dans `src/hooks/useSales.ts`.
+- **Chiffres** (mêmes définitions que le tableau du mois `_commercial_metrics`) : clients (cumul à la fin de chaque
+  période selon l'origine ACTUELLE `clients.source_id`, nouveaux, actifs), prospects (ajoutés, devenus clients, perdus),
+  paiements terminés, dépôts validés, colis avion (bureau, kg) et **vols distincts** qui emportent au moins un colis de
+  ses clients (datés par le départ réel, à défaut la création de l'expédition), colis bateau (entrepôt, m³).
+- **Périodes à l'heure de Douala** : mois du 1er au 1er, semaines du lundi au lundi ; `p_from` ramené au début de sa
+  période, `p_to` exclusif ramené au début de la période suivante ; au plus 24 mois ou 26 semaines.
+- **Portée** : le commercial ne reçoit QUE sa fiche (`p_source_id` ignoré) ; la direction (`canManageSales`) toutes les
+  fiches commercial (actives + archivées qui ont une activité dans la plage) ou celle demandée ; les autres rôles sont
+  refusés (message de `_sales_scope_error`) ; `anon` n'a pas l'EXECUTE. `@mola` exposée en lecture (`canManageSales`).
+- Aucun index ajouté (ceux de `clients.source_id`, des paiements / dépôts par client, des colis par dépôt et des
+  prospects par fiche suffisent : ~0,1 s sur un volume double de la production, ~1,2 s sur 120 000 paiements).
+- Testée sur Postgres 16 : migration passée deux fois dans une transaction, 87 contrôles (portée, bornes de Douala,
+  semaines du lundi, zéros, chaque chiffre, plage précédente, entonnoir, équipe, archivées, garde-fous, fuseau de la
+  session), tous les contrôles des lots précédents repassés ; le fichier consolidé de même (deux fois d'affilée, après
+  l'ancienne version A + B + C, et refus net sans les expéditions aériennes).
+
+**Comment pousser :** voir l'encadré ci-dessus (un seul fichier pour les quatre migrations), puis `/gen-types` (le type
+est déjà ajouté à la main dans `types.ts`).
 
 ### `20261007100000_prospect_client_control.sql` (à passer APRÈS `20261006120000` — même fichier consolidé)
 **PR :** Commerciaux : numéro déjà client « À vérifier » (le super admin est notifié et tranche) · Le super admin passe
@@ -165,8 +194,8 @@ un prospect en client, et un client sans aucune opération en prospect
   équipes / commerciaux repassés ; contrôle des prérequis éprouvé (refuse de passer sans Mes équipes, rien n'est créé).
 
 **Comment pousser :** coller `migrations/20261006_consolidated.sql` dans l'éditeur SQL (il contient aussi
-`20261006120000` et `20261007100000`), puis `npx supabase migration repair --status applied 20261006100000
-20261006120000 20261007100000`, puis `/gen-types` (les types sont déjà ajoutés à la main ; l'app appelle les RPC sans
+`20261006120000`, `20261007100000` et `20261008100000`), puis `npx supabase migration repair --status applied
+20261006100000 20261006120000 20261007100000 20261008100000`, puis `/gen-types` (les types sont déjà ajoutés à la main ; l'app appelle les RPC sans
 attendre).
 
 

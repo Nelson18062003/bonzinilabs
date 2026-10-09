@@ -9,7 +9,14 @@
 // « Nouveau client » de l'administration desktop, ouverte par Nelson Ngango.
 // 07/10 : un numéro déjà celui d'un client Bonzini — la note pendant la saisie, la fiche
 // « À vérifier » (juste enregistrée, puis plus tard) et sa puce dans la liste.
+// 08/10 : « Mon mois » refait (paiements et dépôts sur 6 mois, objectifs et rythme, clients, prospects,
+// fret) — sales_series servie par tools/journey/salesSeriesFixture.mjs, une seule fiche (Rodrigue).
 import { useContext, useMemo, type ReactNode } from 'react';
+// DM Sans servie en local : Google Fonts passe mal par le mandataire des captures.
+import '@fontsource/dm-sans/latin-400.css';
+import '@fontsource/dm-sans/latin-500.css';
+import '@fontsource/dm-sans/latin-600.css';
+import '@fontsource/dm-sans/latin-700.css';
 import { Route, Routes } from 'react-router-dom';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext, type AdminUser } from '@/contexts/AdminAuthContext';

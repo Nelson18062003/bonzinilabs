@@ -4,7 +4,7 @@
  *   · aucun écran de « /v » ne parle à Supabase lui-même : tout passe par
  *     les hooks de `@/hooks/useSales` ;
  *   · il n'en emploie que ceux du commercial (sa fiche, ses prospects, la
- *     vérification d'un numéro) — jamais ceux de la direction (fiches « À
+ *     vérification d'un numéro, l'évolution de ses chiffres) — jamais ceux de la direction (fiches « À
  *     vérifier » avec le client reconnu, client → prospect, vue des ventes,
  *     objectifs, réattribution, recherche d'un prospect au bureau) ;
  *   · ces hooks-là n'appellent que des RPC limitées à SA fiche
@@ -37,10 +37,12 @@ const COMMERCIAL_HOOKS = [
   'useSetProspectStatus',
   'useProspectPhoneCheck',
   'useProspectNumbersCheck',
+  // L'évolution de SES chiffres (08/10) : sales_series ne renvoie au commercial que sa fiche.
+  'useSalesSeries',
 ];
 
 /** Ce que ces hooks ont le droit de lire ou d'écrire : des RPC limitées à SA fiche, et `prospects` sous RLS. */
-const COMMERCIAL_RPCS = ['commercial_dashboard', 'commercial_clients', 'prospect_create', 'prospect_update', 'prospect_set_status', 'prospect_phone_check'];
+const COMMERCIAL_RPCS = ['commercial_dashboard', 'commercial_clients', 'prospect_create', 'prospect_update', 'prospect_set_status', 'prospect_phone_check', 'sales_series'];
 const COMMERCIAL_TABLES = ['prospects'];
 
 /** Le corps d'une fonction exportée de useSales.ts. */

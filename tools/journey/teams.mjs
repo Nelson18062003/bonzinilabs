@@ -12,7 +12,14 @@
 // prospect_resolve_claim, admin_client_prospect_eligibility,
 // admin_client_to_prospect — l'écran « À vérifier », la cloche, « Repasser
 // en prospect » et « Créer son compte client » (prospect_lookup_phone).
+// 08/10 (20261008100000_sales_series.sql) : sales_series — l'évolution des
+// ventes (« Ventes » et la page d'un commercial), servie par le générateur
+// déterministe ./salesSeriesFixture.mjs, ramené au lundi 5 octobre et à la
+// portée du serveur (une fiche archivée n'y figure que si elle a de
+// l'activité dans la plage) ; Hervé Nkoulou, commercial parti fin juin,
+// a sa fiche ARCHIVÉE.
 // ============================================================
+import { salesSeriesResponse } from './salesSeriesFixture.mjs';
 
 // L'heure figée des captures : « il y a 2 h », « jamais connecté »… restent stables.
 const NOW = '2026-10-05T14:30:00Z';
@@ -71,6 +78,8 @@ const source = (id, kind, label, phone, staff_user_id, o = {}) => ({
 const SOURCES = [
   source('src-rodrigue', 'commercial', 'Rodrigue Tchami', '+237 690 11 22 33', 'u-rodrigue'),
   source('src-carine', 'commercial', 'Carine Ewane', '+237 677 45 67 89', null),
+  // Hervé Nkoulou est parti fin juin : sa fiche est archivée (ses clients et ses chiffres restent).
+  { ...source('src-herve', 'commercial', 'Hervé Nkoulou', '+237 699 54 18 70', null, { created_at: '2025-03-03T08:00:00Z' }), is_active: false },
   source('src-bao', 'referral', 'Bouche-à-oreille', null, null),
   source('src-facebook', 'social', 'Facebook', null, null),
   source('src-unknown', 'unknown', 'Je ne sais pas', null, null, { is_system: true }),
@@ -111,7 +120,14 @@ const CARINE_CARD = {
     { metric: 'payments_xaf', target: 20000000, actual: 4200000 },
   ],
 };
-const CARDS = { 'src-rodrigue': RODRIGUE_CARD, 'src-carine': CARINE_CARD };
+// Hervé : fiche archivée, plus de compte, aucun objectif — ses clients restent à son nom.
+const HERVE_CARD = {
+  source: { id: 'src-herve', label: 'Hervé Nkoulou', phone: '+237 699 54 18 70', is_active: false },
+  staff: null,
+  metrics: metrics({ clients: 34, prospects_open: 2 }),
+  objectives: [],
+};
+const CARDS = { 'src-rodrigue': RODRIGUE_CARD, 'src-carine': CARINE_CARD, 'src-herve': HERVE_CARD };
 
 // Les clients que Rodrigue a apportés, triés par paiements du mois (commercial_clients).
 const client = (user_id, name, company, customer_code, phone, created_at, o = {}) => ({
@@ -130,6 +146,11 @@ const CARINE_CLIENTS = [
     { payments_xaf: 4200000, payments_count: 2, air_parcels: 3, air_kg: 18.6 }),
   client('u-ngono', 'Rose Ngono', 'Ngono Pagnes', 'BZ-241907', '+237 677 03 58 22', '2026-07-28T09:00:00Z'),
 ];
+const HERVE_CLIENTS = [
+  client('u-essomba', 'Luc Essomba', 'Essomba & Fils', 'BZ-114562', '+237 699 20 41 88', '2025-04-11T10:00:00Z'),
+  client('u-manga', 'Odile Manga', 'Manga Distribution', 'BZ-130977', '+237 677 31 08 54', '2025-06-02T09:30:00Z'),
+];
+const CLIENTS_OF = { 'src-carine': CARINE_CLIENTS, 'src-herve': HERVE_CLIENTS };
 
 // ── « À vérifier » (07/10) : le numéro saisi par un commercial est déjà celui d'un client ──
 // Trois fiches : Rodrigue a saisi « Nadine Fotso » — c'est Nadia Fotso, la
@@ -214,6 +235,10 @@ const PROSPECTS = [
   prospect('pr-bella', 'src-carine', 'Ornella', 'Bella', 'Bella Mode', '+237 696 14 52 80', '+237696145280', 'Yaoundé', 'new', '2026-10-05T14:20:00Z',
     { interests: ['payments', 'air'], next_action_at: '2026-10-05T14:20:00Z' }),
   prospect('pr-eto', 'src-carine', 'Martin', 'Eto', 'Eto Frères', '+237 677 61 09 33', '+237677610933', 'Douala', 'new', '2026-10-05T14:21:00Z', { interests: ['sea'] }),
+  // Les prospects d'Hervé restés en cours : à confier à un autre commercial.
+  prospect('pr-ngo', 'src-herve', 'Sylvie', 'Ngo Bassa', 'Ngo Bassa Textiles', '+237 655 72 40 19', '+237655724019', 'Douala', 'interested', '2026-06-08T10:00:00Z',
+    { interests: ['payments', 'sea'], status_changed_at: '2026-06-19T15:00:00Z' }),
+  prospect('pr-fouda', 'src-herve', 'Armand', 'Fouda', null, '+237 690 81 22 47', '+237690812247', 'Edéa', 'contacted', '2026-06-15T09:00:00Z', { interests: ['air'] }),
   // 07/10 — « À vérifier » : un des numéros saisis est déjà celui d'un client Bonzini.
   ...TO_VERIFY,
 ];
@@ -347,14 +372,41 @@ const LIST = [
     before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
   },
   { key: 'j.teams.member-paul', name: '05e-fiche-paul-ancienne-reponse', viewport: '390x844' },
-  { key: 'j.teams.sales-desk', name: '06a-chiffres-commerciaux-ordinateur', desktop: true, viewport: '1440x1140' },
-  { key: 'j.teams.sales-phone', name: '06b-chiffres-commerciaux-telephone' },
-  { key: 'j.teams.commercial-desk', name: '07a-commercial-rodrigue', desktop: true, viewport: '1440x1467' },
+  // 08/10 — « Ventes » : l'évolution. Les graphiques s'animent à l'entrée (0,6 s) : on attend la fin.
+  { key: 'j.teams.sales-desk', name: '06a-ventes-6-mois-ordinateur', desktop: true, viewport: '1440x900', before: settleCharts },
+  { key: 'j.teams.sales-phone', name: '06b-ventes-6-mois-telephone', before: settleCharts },
+  { key: 'j.teams.sales-weeks-desk', name: '06c-ventes-12-semaines-ordinateur', desktop: true, viewport: '1440x900', before: settleCharts },
+  { key: 'j.teams.sales-weeks-phone', name: '06d-ventes-12-semaines-telephone', before: settleCharts },
+  {
+    // Une tuile choisit l'indicateur du graphique : « Clients », une courbe par commercial.
+    key: 'j.teams.sales-desk', name: '06e-ventes-clients-par-commercial', desktop: true, viewport: '1440x900', fullPage: false,
+    before: async (page) => {
+      await page.getByRole('button', { name: /^Clients\b/ }).first().click();
+      await settleCharts(page);
+      // Le titre du panneau sous la barre du haut (fixe) : 96 px de marge.
+      await page.getByRole('heading', { name: 'Évolution' }).evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 96));
+      await page.waitForTimeout(300);
+    },
+  },
+  {
+    // Le serveur refuse : le message, Réessayer — le reste de l'écran tient.
+    key: 'j.teams.sales-phone', name: '06f-ventes-erreur-telephone', viewport: '390x844', fullPage: false,
+    before: async (page) => {
+      await page.route(/\/rest\/v1\/rpc\/sales_series/, (r) => r.fulfill({
+        status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ success: false, error: 'Accès non autorisé' }),
+      }));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(1500);
+    },
+  },
+  { key: 'j.teams.commercial-desk', name: '07a-commercial-rodrigue', desktop: true, viewport: '1440x900', before: settleCharts },
   {
     key: 'j.teams.commercial-desk', name: '07b-objectifs-rodrigue', desktop: true, fullPage: false,
     before: async (page) => { await page.getByRole('button', { name: 'Modifier', exact: true }).click(); },
   },
-  { key: 'j.teams.commercial-phone', name: '07c-commercial-rodrigue-telephone' },
+  { key: 'j.teams.commercial-phone', name: '07c-commercial-rodrigue-telephone', before: settleCharts },
+  { key: 'j.teams.commercial-herve-desk', name: '07e-commercial-archive-12-mois-ordinateur', desktop: true, viewport: '1440x900', before: settleCharts },
+  { key: 'j.teams.commercial-herve-phone', name: '07f-commercial-archive-sans-activite-telephone', before: settleCharts },
   {
     // Ses fiches « À vérifier » : « Décider » et, toujours, « Confier à… » (sous la ligne sur téléphone).
     key: 'j.teams.commercial-phone', name: '07d-commercial-a-verifier-telephone', viewport: '390x844', fullPage: false,
@@ -467,6 +519,11 @@ const LIST = [
 ];
 
 /** Les dépôts et paiements à traiter retirés de la cloche : la capture montre les fiches « À vérifier ». */
+/** Laisse finir l'entrée des graphiques (barres et courbes : 0,45 à 0,6 s). */
+async function settleCharts(page) {
+  await page.waitForTimeout(1200);
+}
+
 async function quietMoneyFeed(page) {
   await page.route(/\/rest\/v1\/(deposits|payments|cargo_shipments)\b/, (r) => r.fulfill({
     status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'content-range': '0-0/0' }, body: '[]',
@@ -484,6 +541,47 @@ export const SCREENS = LIST.map((s) => ({
     if (s.before) await s.before(page);
   },
 }));
+
+// ── L'évolution des ventes (sales_series, 08/10) ───────────────────────
+// Le générateur, au lundi 5 octobre (l'heure des captures), puis la portée du
+// serveur : sans fiche demandée, une fiche ARCHIVÉE n'est renvoyée que si
+// elle a une activité dans la plage (Hervé, parti fin juin : sur 6 et 12 mois
+// oui, sur 3 mois et 12 semaines non) ; une fiche demandée l'est toujours.
+// Les vols de l'équipe : le serveur compte les vols DISTINCTS, le générateur
+// additionne les fiches (un avion partagé compterait deux fois) — on borne
+// au nombre de mardis et vendredis écoulés de la période, ses jours de vol.
+const SALES_NOW = '2026-10-05';
+const SERIES_KEYS = ['clients_total', 'new_clients', 'active_clients', 'prospects_new', 'prospects_won', 'prospects_lost', 'payments_xaf', 'payments_count',
+  'deposits_xaf', 'deposits_count', 'air_parcels', 'air_kg', 'flights', 'sea_parcels', 'sea_cbm'];
+const FUNNEL_KEYS = ['total', 'new', 'contacted', 'interested', 'to_verify', 'won', 'lost'];
+const addSalesDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+function flightDays(from, to) {
+  let n = 0;
+  for (let d = from; d < to && d <= SALES_NOW; d = addSalesDays(d, 1)) if ([2, 5].includes(new Date(`${d}T00:00:00Z`).getUTCDay())) n += 1;
+  return n;
+}
+const sumOf = (list, keys) => Object.fromEntries(keys.map((k) => [k, Math.round(list.reduce((a, x) => a + (x?.[k] ?? 0), 0) * 100) / 100]));
+const busy = (t) => SERIES_KEYS.some((k) => k !== 'clients_total' && (t?.[k] ?? 0) !== 0);
+function salesSeries(body) {
+  const res = salesSeriesResponse(body, { now: SALES_NOW });
+  if (!res.success || body?.p_source_id) return res;
+  const sources = res.sources.filter((s) => s.is_active || busy(s.totals) || s.funnel.total > 0);
+  const next = (p) => (res.grain === 'month' ? `${p.slice(0, 7) === '2026-12' ? '2027-01' : `${p.slice(0, 5)}${String(Number(p.slice(5, 7)) + 1).padStart(2, '0')}`}-01` : addSalesDays(p, 7));
+  const span = res.periods.length;
+  const prevFrom = res.grain === 'month'
+    ? (() => { const d = new Date(`${res.from}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - span); return d.toISOString().slice(0, 10); })()
+    : addSalesDays(res.from, -7 * span);
+  const points = res.periods.map((period, i) => {
+    const p = { period, ...sumOf(sources.map((s) => s.points[i]), SERIES_KEYS) };
+    p.flights = Math.min(p.flights, flightDays(period, next(period)));
+    return p;
+  });
+  const totals = sumOf(sources.map((s) => s.totals), SERIES_KEYS);
+  totals.flights = points.reduce((a, p) => a + p.flights, 0);
+  const previous = sumOf(sources.map((s) => s.previous_totals), SERIES_KEYS);
+  previous.flights = Math.min(previous.flights, flightDays(prevFrom, res.from));
+  return { ...res, sources, team: { points, totals, previous_totals: previous, funnel: sumOf(sources.map((s) => s.funnel), FUNNEL_KEYS) } };
+}
 
 // ── Réponses des RPC ────────────────────────────────────────────────────
 const MONTH = '2026-10-01';
@@ -506,9 +604,10 @@ export const RPC = {
     const card = CARDS[b?.p_source_id ?? 'src-rodrigue'];
     return card ? { success: true, month: b?.p_month ?? MONTH, ...card } : { success: false, error: 'Commercial introuvable' };
   },
-  commercial_clients: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: b?.p_source_id === 'src-carine' ? CARINE_CLIENTS : RODRIGUE_CLIENTS }),
+  commercial_clients: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: CLIENTS_OF[b?.p_source_id] ?? RODRIGUE_CLIENTS }),
   // Ordre de la RPC : fiches reliées d'abord, actives, puis par libellé.
-  sales_overview: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: [CARINE_CARD, RODRIGUE_CARD] }),
+  sales_overview: (b) => ({ success: true, month: b?.p_month ?? MONTH, rows: [CARINE_CARD, RODRIGUE_CARD, HERVE_CARD] }),
+  sales_series: (b) => salesSeries(b),
   set_commercial_objective: { success: true },
   prospect_reassign: { success: true },
   // 07/10 — « À vérifier », prospect ↔ client.

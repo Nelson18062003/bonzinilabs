@@ -97,6 +97,8 @@ vi.mock('@/hooks/useSales', () => ({
   useSetProspectStatus: () => ({ mutate: h.setStatus, isPending: false }),
   useProspectPhoneCheck: () => ({ data: undefined }),
   useProspectNumbersCheck: (numbers: string[], id: string, enabled?: boolean) => h.numbersCheck(numbers, id, enabled),
+  // L'évolution (sales_series) encore en route : l'accueil montre les chiffres du mois de commercial_dashboard.
+  useSalesSeries: () => ({ data: undefined, isError: false, isLoading: true, refetch: () => undefined }),
 }));
 
 import { CommercialRouteWrapper } from '@/components/sales/CommercialRouteWrapper';

@@ -5849,6 +5849,15 @@ export type Database = {
       run_profile_reminders: { Args: never; Returns: undefined }
       run_sms_deposit_reminders: { Args: never; Returns: undefined }
       run_sms_drainer: { Args: never; Returns: undefined }
+      sales_series: {
+        Args: {
+          p_from: string
+          p_grain?: string
+          p_source_id?: string
+          p_to: string
+        }
+        Returns: Json
+      }
       scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
       search_chat_conversations: {
         Args: { p_query: string }
