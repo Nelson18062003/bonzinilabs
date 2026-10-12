@@ -48,3 +48,21 @@
 >
 > Nelson Soh
 > Norton Gauss Bonzini SARL
+
+## Calcul : l'abattement de MRSU9909331 obtenu par les intermédiaires de CITRA
+
+Base réelle : lettre n° 0010623/MINFI/DGD, économie mesurée sur le DAU définitif
+**4 589 827 XAF** (Fortuner 3 529 992 + Yaris 1 059 835), obtenue par lettre directe du DG,
+sans frais connus (`dossiers/2026-08_CTR-MRSU9909331_BL-271875389/abattement-minfi-0010623.md`).
+
+| | Directement (réel) | Par CITRA, « un tiers » de l'économie | Par CITRA, « un tiers » de la valeur abattue |
+|---|---|---|---|
+| Dépôt de la demande | 0 | 150 000 | 150 000 |
+| Part des intermédiaires | 0 | 1 529 942 (4 589 827 ÷ 3) | 1 662 990 (30 % × 16 629 900 = 4 988 970, ÷ 3) |
+| **Coût de l'abattement** | **0** | **1 679 942** | **1 812 990** |
+| Économie nette | 4 589 827 | 2 909 885 | 2 776 837 |
+| Total douane + abattement | 12 749 062 | 14 429 004 | 14 562 052 |
+
+« Le tiers du montant abattu » peut viser l'économie de droits ou la baisse de valeur :
+à faire préciser si la question se repose. Le montant de 12 749 062 est celui du DAU
+définitif ; le paiement n'est pas encore confirmé dans nos fichiers.
