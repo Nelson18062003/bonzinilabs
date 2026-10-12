@@ -13,7 +13,7 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Check, PackageOpen, PackagePlus } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, PackageOpen, PackagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -66,9 +66,12 @@ export function PackSheet({ open, onClose, items, onDone }: {
   const moving = filled.reduce((n, b) => n + b.items.length, 0);
   const tooMany = moving > MAX_PACK_PARCELS;
   const running = progress !== null && result === null;
+  // La proposition d'office attend la liste des paquets à jour : sinon un toucher rapide ouvrirait un
+  // nouveau carton alors qu'un autre est entamé, ou viserait un paquet fermé entre-temps.
+  const settling = bureau.isPending || (dest === 'auto' && bureau.isFetching);
 
   const run = async () => {
-    if (running || moving === 0 || tooMany) return;
+    if (running || (settling && !bureau.isError) || moving === 0 || tooMany) return;
     setProgress({ done: 0, total: moving });
     try {
       const r = await pack.mutateAsync({
@@ -160,6 +163,12 @@ export function PackSheet({ open, onClose, items, onDone }: {
         {ready.length > 0 && (
           <section>
             <h3 className={cn('mb-3', TYPE.lead, TEXT.strong)}>{t('rc_pk_pack_where')}</h3>
+            {bureau.isError && (
+              <p role="alert" className={cn('mb-3 rounded-lg px-4 py-3', TYPE.small, TONE_PILL.danger)}>{t('rc_pk_pack_list_error')}</p>
+            )}
+            {bureau.isPending && !bureau.isError ? (
+              <p role="status" className={cn('flex items-center gap-2', TYPE.small, TEXT.muted)}><Loader2 className="h-4 w-4 animate-spin" /> {t('rc_pk_pack_loading')}</p>
+            ) : (
             <div role="radiogroup" aria-label={t('rc_pk_pack_where')} className="space-y-2">
               {openPackages.map((k) => (
                 <OpenChoice key={k.id} pkg={k} on={target?.id === k.id} proposed={proposed?.id === k.id} onClick={() => setDest(k.id)} />
@@ -173,6 +182,7 @@ export function PackSheet({ open, onClose, items, onDone }: {
                   : t('rc_pk_pack_new_meta')}
               />
             </div>
+            )}
           </section>
         )}
 
@@ -207,7 +217,7 @@ export function PackSheet({ open, onClose, items, onDone }: {
               {running ? ti('rc_pk_pack_progress', { done: progress!.done, total: progress!.total }) : ti('rc_pk_pack_too_many', { max: MAX_PACK_PARCELS })}
             </p>
           )}
-          <PrimaryPill onClick={() => void run()} loading={running} disabled={moving === 0 || tooMany || running} className="h-14 w-full text-[17px]">
+          <PrimaryPill onClick={() => void run()} loading={running} disabled={moving === 0 || tooMany || running || (settling && !bureau.isError)} className="h-14 w-full text-[17px]">
             <PackagePlus /> {moving === 0 ? t('rc_pk_pack') : goLabel}
           </PrimaryPill>
           <SoftPill onClick={onClose} disabled={running} className="h-12 w-full">{t('rc_cancel')}</SoftPill>

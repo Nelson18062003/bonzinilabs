@@ -276,10 +276,14 @@ export const RPC = {
   // Bureau : la console cargo et le devis
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 1, air_open: 1, air_in_flight: 0, parcels_waiting: 19, deposits_pending: 1, deposits_today: 4 },
   // Ce qui attend un paquet (air_package_packable) : les dépôts du bureau qui ont encore un colis libre.
-  air_package_packable: () => {
+  air_package_packable: (b) => {
     const free = (p) => !packedIn(p).air_package_id;
     const rows = [dep1c, dep2, dep3, dep4, pend1].filter((d) => d.location === 'office' && d.parcels.some(free)).map(withPackages);
-    return { success: true, total: rows.length, truncated: false, deposits: rows };
+    // Les compteurs, comme la RPC : prêts (dépôt terminé, attribué, 0 < poids ≤ 32) ; à compléter (le reste, hors plus de 32 kg).
+    const all = rows.flatMap((d) => d.parcels.filter(free).map((p) => ({ p, d })));
+    const ready = all.filter(({ p, d }) => d.status !== 'open' && d.client && p.weight_kg > 0 && p.weight_kg <= 32).length;
+    const toFix = all.filter(({ p, d }) => d.status === 'open' || !d.client || !(p.weight_kg > 0)).length;
+    return { success: true, total: rows.length, truncated: false, deposits: b?.p_limit === 0 ? [] : rows, ready_count: ready, to_fix_count: toFix };
   },
   reception_board: (b) => {
     const list = b?.p_scope === 'cancelled' ? [] : [dep1c, dep2, dep3, dep4, pend1];

@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { packageQueue, parsePackageCode, sumParcelKg, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
+import { packageQueue, parsePackageCode, sumParcelKg, waitingCount, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
 import { useAirPackages, useCreateAirPackage, useFindAirPackage, usePackableParcels } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
@@ -40,7 +40,8 @@ export function ReceptionPackages() {
   const create = useCreateAirPackage();
   const find = useFindAirPackage();
   const todo = usePackableParcels();
-  const waiting = (todo.data?.ready.length ?? 0) + (todo.data?.blocked.length ?? 0);
+  // Ce qui attend un paquet : prêts et à compléter — un colis de plus de 32 kg part seul, il ne compte pas.
+  const count = todo.data ? waitingCount(todo.data) : null;
   const scanTexts = useScanTexts(t('rc_pk_find_hint'));
   const [codeError, setCodeError] = useState<string | null>(null);
 
@@ -95,9 +96,9 @@ export function ReceptionPackages() {
     <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
       <MobileHeader title={t('rc_pk_title')} subtitle={t('rc_pk_subtitle')} showBack backTo="/r" />
       <div className="space-y-6 px-5 pb-8 pt-5">
-        {todo.data && waiting > 0 ? (
+        {todo.data && count && count.total > 0 ? (
           <div className="space-y-3">
-            <TodoCard ready={todo.data.ready} blocked={todo.data.blocked.length} onOpen={() => navigate('/r/paquets/emballer')} />
+            <TodoCard ready={todo.data.ready} blocked={count.toFix} onOpen={() => navigate('/r/paquets/emballer')} />
             <SoftPill onClick={onCreate} disabled={create.isPending} className="h-14 w-full text-[17px]"><PackagePlus /> {t('rc_pk_new')}</SoftPill>
             <p className={cn('-mt-1 text-center', TYPE.small, TEXT.muted)}>{t('rc_pk_new_scan_hint')}</p>
           </div>

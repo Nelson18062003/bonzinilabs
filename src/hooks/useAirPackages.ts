@@ -97,6 +97,22 @@ export function usePackableParcels(enabled = true) {
   });
 }
 
+/**
+ * La pastille de l'onglet Paquets : les colis qui attendent un paquet (prêts +
+ * à compléter ; un colis de plus de 32 kg part seul et ne compte pas), sans
+ * relire les dépôts — air_package_packable avec p_limit = 0.
+ */
+export function usePackableCount(enabled = true) {
+  return useQuery({
+    queryKey: ['reception', 'packable', 'count'] as const,
+    queryFn: () => rpcJson<{ ready_count?: number; to_fix_count?: number }>('air_package_packable', { p_limit: 0 })
+      .then((r) => (Number(r.ready_count) || 0) + (Number(r.to_fix_count) || 0)),
+    enabled,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
 /** Un paquet par son code scanné (PQ-…), à la demande. */
 export function useFindAirPackage() {
   return useMutation({

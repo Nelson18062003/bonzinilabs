@@ -9,8 +9,10 @@
 --   1. air_package_packable() : les dépôts du BUREAU qui ont encore au moins un
 --      colis à emballer (ni dans un paquet, ni chargé, ni parti), au même
 --      format que la console (reception_deposit_json). L'écran en tire les
---      colis prêts et ceux à compléter (sans client, pas pesé) avec les mêmes
---      règles que air_package_add_parcel, qui revérifie chaque colis.
+--      colis prêts et ceux à compléter (sans client, pas pesé, dépôt en cours
+--      de saisie) avec les mêmes règles que air_package_add_parcel, qui
+--      revérifie chaque colis. Et deux compteurs légers pour la pastille de
+--      l'onglet Paquets (p_limit = 0 : les compteurs seuls, sans les dépôts).
 --      Lecture : canReceiveParcels (la réception) ou canViewCargo (le cargo).
 --   2. air_package_json dit QUI a ouvert le paquet (created_by,
 --      created_by_name) : un paquet préparé depuis l'ordinateur se reconnaît
@@ -83,9 +85,11 @@ SET search_path = public
 AS $fn$
 DECLARE
   v_uid   UUID := auth.uid();
-  v_limit INTEGER := GREATEST(1, LEAST(COALESCE(p_limit, 300), 1000));
+  v_limit INTEGER := GREATEST(0, LEAST(COALESCE(p_limit, 300), 1000));
   v_total INTEGER;
   v_rows  JSONB;
+  v_ready INTEGER;
+  v_fix   INTEGER;
 BEGIN
   IF NOT (public.admin_has_permission(v_uid, 'canReceiveParcels') OR public.admin_has_permission(v_uid, 'canViewCargo')) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
@@ -107,8 +111,20 @@ BEGIN
          COALESCE((SELECT jsonb_agg(public.reception_deposit_json(pg.id) ORDER BY pg.at DESC) FROM page pg), '[]'::jsonb)
     INTO v_total, v_rows;
 
+  -- Les compteurs, colis par colis, mêmes règles que l'écran (packRefusal) : prêts = dépôt terminé,
+  -- attribué, colis pesé de 32 kg au plus ; à compléter = dépôt en cours, sans client ou colis pas
+  -- pesé. Un colis de plus de 32 kg part seul : il n'est ni l'un ni l'autre.
+  SELECT count(*) FILTER (WHERE d.status <> 'open' AND d.client_user_id IS NOT NULL AND p.weight_kg > 0 AND p.weight_kg <= 32),
+         count(*) FILTER (WHERE d.status = 'open' OR d.client_user_id IS NULL OR p.weight_kg IS NULL OR p.weight_kg <= 0)
+    INTO v_ready, v_fix
+    FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+   WHERE d.location = 'office' AND d.status <> 'cancelled' AND p.air_package_id IS NULL
+     AND p.shipment_id IS NULL AND p.air_shipment_id IS NULL AND p.status IN ('received','stored')
+     AND p.checked_in_at IS NULL AND p.delivered_at IS NULL;
+
   RETURN jsonb_build_object('success', true, 'total', COALESCE(v_total, 0),
-                            'truncated', COALESCE(v_total, 0) > v_limit, 'deposits', v_rows);
+                            'truncated', COALESCE(v_total, 0) > v_limit, 'deposits', v_rows,
+                            'ready_count', COALESCE(v_ready, 0), 'to_fix_count', COALESCE(v_fix, 0));
 END;
 $fn$;
 REVOKE ALL ON FUNCTION public.air_package_packable(INTEGER) FROM PUBLIC, anon;

@@ -89,22 +89,25 @@ Expliqué par Nelson lors de la réunion du 05/10. Pour l'avion, le colis n'est 
 
 **Qui fait les paquets (12/10/2026).** Les deux, au choix, sur les mêmes paquets :
 le bureau (ordinateur, Cargo › Réception › Paquets avion) **et** le réceptionnaire
-sur son téléphone (`/r`). Un paquet ouvert sur l'ordinateur apparaît « en cours »
-sur le téléphone avec « ouvert par … », et inversement. Le parcours du
-réceptionnaire, sans rien retenir de tête :
+sur son téléphone (`/r`, onglet **Paquets**). Un paquet ouvert sur l'ordinateur
+apparaît « en cours » sur le téléphone avec « ouvert par … », et inversement.
+On n'emballe **pas** à la fin d'un dépôt : on reçoit d'abord, on emballe plus tard,
+avec les colis disponibles. Le parcours du réceptionnaire :
 
-1. **Dépôt terminé** (au bureau) → carte « Colis avion : mettez-les en paquet » →
-   *Mettre en paquet* : le paquet en cours est proposé d'office si un colis y tient
-   (on finit le carton entamé), sinon un nouveau ; au-delà de 32 kg, l'app crée
-   elle-même les paquets suivants.
-2. **Paquets avion** → « N colis attendent un paquet » → *Choisir les colis* : la
-   liste par client (une case coche tout le client), ce qui n'est pas prêt dit quoi
-   faire (« pas pesé : pesez-le », « sans client : attribuez le dépôt »).
-3. **Dans un paquet ouvert** : la douchette, ou la liste « Colis prêts à mettre
-   dedans » (seulement ceux qui tiennent, les clients déjà dedans en tête) → *Ajouter*.
-4. Carton plein → *Fermer le paquet* (pesée) → étiquette.
+1. Onglet **Paquets** (pastille = colis qui attendent un paquet) → « N colis
+   attendent un paquet » → *Choisir les colis* : la liste par client (une case
+   coche tout le client) → *Mettre en paquet* : le paquet en cours est proposé
+   d'office si un colis y tient ; au-delà de 32 kg, l'app crée elle-même les
+   paquets suivants. Ce qui n'est pas prêt dit quoi faire et y mène (« pas pesé :
+   pesez-le », « sans client : attribuez le dépôt », « dépôt en cours de saisie ») ;
+   le dépôt d'un collègue dit qui l'a reçu (lui seul peut le corriger). Plus de
+   32 kg : à part, il part sans paquet.
+2. **Dans un paquet ouvert** : la douchette, ou « Colis prêts à mettre dedans »
+   (seulement ceux qui tiennent, les clients déjà dedans en tête) → *Ajouter*.
+3. Carton plein → *Fermer le paquet* (pesée) → étiquette.
 
 Lecture des colis à emballer : `air_package_packable` (canReceiveParcels ou
-canViewCargo) ; chaque ajout repasse par `air_package_add_parcel`, qui revérifie.
+canViewCargo ; `p_limit = 0` : les compteurs seuls, pour la pastille) ; chaque
+ajout repasse par `air_package_add_parcel`, qui revérifie.
 
 Le maritime suivra le même modèle plus tard (colis → unités de chargement → conteneur).

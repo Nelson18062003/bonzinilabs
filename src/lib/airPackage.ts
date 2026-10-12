@@ -173,10 +173,24 @@ export function packageClientCodes(parcels: readonly Pick<AirPackageParcel, 'cli
 /**
  * Pourquoi un colis du bureau n'entre pas encore dans un paquet. Le miroir des
  * refus « à corriger » de air_package_add_parcel ; les autres (bateau, déjà
- * parti, dépôt supprimé) écartent le colis de la liste.
+ * parti, dépôt supprimé) écartent le colis de la liste. `deposit_open` : le
+ * serveur l'accepterait, mais un colis emballé ne se corrige plus — on attend
+ * que son dépôt soit terminé (sinon un collègue emballe un colis en pleine
+ * saisie, et sa correction de poids ou de photo est refusée).
  */
-export type PackBlock = 'no_client' | 'no_weight' | 'too_heavy';
-export const PACK_BLOCK_LABEL: Record<PackBlock, string> = { no_client: 'sans client', no_weight: 'pas pesé', too_heavy: 'plus de 32 kg' };
+export type PackBlock = 'deposit_open' | 'no_client' | 'no_weight' | 'too_heavy';
+export const PACK_BLOCK_LABEL: Record<PackBlock, string> = { deposit_open: 'dépôt en cours de saisie', no_client: 'sans client', no_weight: 'pas pesé', too_heavy: 'plus de 32 kg' };
+const PACK_BLOCKS: readonly PackRefusal[] = ['deposit_open', 'no_client', 'no_weight', 'too_heavy'];
+
+/**
+ * Ce qui attend un paquet, pour les compteurs (« 9 colis attendent un
+ * paquet ») : les prêts et ceux à compléter — pas un colis de plus de 32 kg,
+ * qui part sans paquet et ne doit pas laisser le compteur bloqué.
+ */
+export function waitingCount(board: Pick<PackableBoard, 'ready' | 'blocked'>): { ready: number; toFix: number; total: number } {
+  const toFix = board.blocked.filter((b) => b.reason !== 'too_heavy').length;
+  return { ready: board.ready.length, toFix, total: board.ready.length + toFix };
+}
 
 /** Le plafond d'un paquet (air_packages.max_weight_kg, 32 par défaut) : un colis plus lourd ne tiendra dans aucun. */
 export const PACKAGE_MAX_KG = 32;
@@ -205,7 +219,7 @@ export function packableParcels(deposits: readonly Deposit[]): PackableBoard {
     for (const parcel of deposit.parcels) {
       const reason = packRefusal(parcel, deposit);
       if (reason === null) out.ready.push({ parcel, deposit });
-      else if (reason === 'no_client' || reason === 'no_weight' || reason === 'too_heavy') out.blocked.push({ parcel, deposit, reason });
+      else if (PACK_BLOCKS.includes(reason)) out.blocked.push({ parcel, deposit, reason: reason as PackBlock });
     }
   }
   // Des numéros RC-000123-01 : l'ordre des caractères suffit.
@@ -229,6 +243,7 @@ export function packRefusal(parcel: Parcel, deposit: Pick<Deposit, 'status' | 'l
   if (deposit.location !== 'office') return 'sea';
   if (parcel.air_package_id) return 'packed';
   if (!isParcelWaiting(parcel) || parcel.checked_in_at || parcel.delivered_at) return 'gone';
+  if (deposit.status === 'open') return 'deposit_open';
   if (!deposit.client) return 'no_client';
   if (!(Number(parcel.weight_kg) > 0)) return 'no_weight';
   if (!fitsInPackage({ net_weight_kg: 0, max_weight_kg: PACKAGE_MAX_KG }, parcel.weight_kg)) return 'too_heavy';

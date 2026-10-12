@@ -44,18 +44,23 @@
 - `air_package_packable(p_limit int default 300)` (lecture, `@mola` exposée, `canReceiveParcels` ou `canViewCargo`) :
   les dépôts du **bureau** qui ont encore au moins un colis à emballer (ni dans un paquet, ni chargé, ni pointé, ni
   remis ; dépôt supprimé exclu, dépôt en cours compris), au format de `reception_deposit_json`, du plus récent au plus
-  ancien ; `total` et `truncated`. Le réceptionnaire n'a pas `canViewCargo` : `reception_board` lui reste fermée.
+  ancien ; `total` et `truncated` ; et deux compteurs légers, `ready_count` (dépôt terminé, attribué, colis pesé de
+  32 kg au plus) et `to_fix_count` (dépôt en cours, sans client ou colis pas pesé) — `p_limit = 0` ne renvoie que
+  les compteurs (la pastille de l'onglet Paquets, site et app HQ). Le réceptionnaire n'a pas `canViewCargo` :
+  `reception_board` lui reste fermée.
 - `air_package_json` : même corps, plus `created_by` et `created_by_name` (« ouvert par … » : un paquet préparé sur
   l'ordinateur se reconnaît sur le téléphone, et inversement).
 - Aucune table, aucune donnée modifiée ; `anon` sans EXECUTE.
 - Testée sur Postgres 16 (schéma cargo réel des migrations, matrice des droits réelle) : passée deux fois dans une
-  transaction, 27 contrôles, et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net
-  sans les paquets avion.
+  transaction, 31 contrôles (dont les compteurs : plus de 32 kg ni prêt ni à compléter, dépôt sans client, colis
+  emballés), et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net sans les paquets
+  avion.
 
 **Comment pousser :** coller `migrations/20261012b_consolidated.sql` (après les paquets avion du 05/10 ; indépendant
 de `migrations/20261012_consolidated.sql`), puis `npx supabase migration repair --status applied 20261012140000`,
 puis `/gen-types`. **Ordre :** sans le SQL, le nouveau site reste utilisable — la liste « Colis à emballer » dit
-qu'elle n'est pas encore disponible, la carte « Mettre en paquet » d'un dépôt terminé et la douchette marchent déjà.
+qu'elle n'est pas encore disponible, l'onglet Paquets s'ouvre sans pastille, la douchette marche déjà. **L'app BONZINI
+HQ** (onglet Paquets natif) : `cd hq-app && npm run update:production`.
 
 ### `20261012100000_cargo_documents.sql` → `migrations/20261012_consolidated.sql`
 **PR :** Cargo : les documents du client (bon de réception et devis, facture à l'arrivée, relevé des colis)

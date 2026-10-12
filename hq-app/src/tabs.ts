@@ -39,8 +39,10 @@ export function tabsFor(role: StaffRole): Tab[] {
     case 'receptionist':
       return [
         { key: 'today', label: "Aujourd'hui", icon: 'today', path: '/r', exact: true, match: ['/r', '/r/deposit'] },
-        { key: 'clients', label: 'Clients', icon: 'people', path: '/r/clients', match: ['/r/clients'] },
+        // Les paquets avion de 32 kg (le bureau) : les colis à emballer, les paquets en cours.
+        { key: 'packages', label: 'Paquets', icon: 'cube', path: '/r/paquets', match: ['/r/paquets'] },
         SCAN,
+        { key: 'clients', label: 'Clients', icon: 'people', path: '/r/clients', match: ['/r/clients'] },
         { key: 'pending', label: 'En attente', icon: 'file-tray-full', path: '/r/pending', match: ['/r/pending'] },
         ME,
       ];

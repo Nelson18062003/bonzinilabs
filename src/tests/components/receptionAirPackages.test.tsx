@@ -36,7 +36,7 @@ const m = vi.hoisted(() => ({
 
 vi.mock('@/contexts/AdminAuthContext', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/contexts/AdminAuthContext')>()),
-  useAdminAuth: () => ({ currentUser: { id: 'me' } }),
+  useAdminAuth: () => ({ currentUser: { id: 'me' }, hasPermission: () => false }),
 }));
 
 vi.mock('@/integrations/supabase/client', () => {
@@ -127,6 +127,7 @@ function mount(path: string) {
           <Route path="/r/paquets" element={<><ReceptionPackages /><Where /></>} />
           <Route path="/r/paquets/emballer" element={<><ReceptionPackTodo /><Where /></>} />
           <Route path="/r/paquets/:id" element={<><ReceptionPackage /><Where /></>} />
+          <Route path="*" element={<Where />} />
         </Routes>
       </MemoryRouter>
     </LanguageProvider>,
@@ -308,6 +309,30 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     expect(m.pack.mock.calls[0][0].bins).toEqual([{ packageId: null, packageNo: null, parcelNos: ['RC-000301-01', 'RC-000301-02'] }]);
     // Un seul paquet : on l'ouvre d'un geste.
     expect(await screen.findByRole('button', { name: /Ouvrir PQ-000010/ })).toBeInTheDocument();
+  });
+
+  it('à compléter : chaque colis mène où le compléter ; un dépôt de collègue dit qui l’a reçu ; plus de 32 kg à part', () => {
+    const mine = { ...office('RC-000303', client as Deposit['client'], [rcParcel('RC-000303-01', null), rcParcel('RC-000303-02', 40)]), received_by: 'me' };
+    const theirs = { ...office('RC-000304', client as Deposit['client'], [rcParcel('RC-000304-01', null)]), received_by: 'li', received_by_name: 'Li Wei' };
+    const unassigned = office('RC-000305', null, [rcParcel('RC-000305-01', 3)]);
+    m.packable = { ...packableParcels([mine, theirs, unassigned]), truncated: false };
+    mount('/r/paquets/emballer');
+    fireEvent.click(screen.getByRole('button', { name: /RC-000303-01/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/RC-000303/parcel/id-RC-000303-01');
+  });
+
+  it('à compléter : le dépôt d’un collègue ne s’ouvre pas, il dit qui l’a reçu ; sans client, on l’attribue', () => {
+    const theirs = { ...office('RC-000304', client as Deposit['client'], [rcParcel('RC-000304-01', null)]), received_by: 'li', received_by_name: 'Li Wei' };
+    const unassigned = office('RC-000305', null, [rcParcel('RC-000305-01', 3)]);
+    const heavy = { ...office('RC-000306', client as Deposit['client'], [rcParcel('RC-000306-01', 40)]), received_by: 'me' };
+    m.packable = { ...packableParcels([theirs, unassigned, heavy]), truncated: false };
+    mount('/r/paquets/emballer');
+    expect(screen.queryByRole('button', { name: /RC-000304-01/ })).toBeNull();
+    expect(screen.getByText('reçu par Li Wei, qui peut le compléter')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sans paquet (plus de 32 kg)' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /RC-000306-01/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /RC-000305-01/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/new?assign=RC-000305');
   });
 
   it('dans un paquet ouvert : « Ajouter » les colis prêts qui y tiennent, les autres sont comptés', async () => {

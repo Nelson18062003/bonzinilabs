@@ -2,7 +2,7 @@
 // Les pastilles des onglets natifs : ce qui attend la personne, par rôle.
 // Mêmes sources que les barres du site :
 //   · admin    → « Opérations » : lib/actionable.ts (dépôts + paiements à traiter)
-//   · réception → « En attente » : reception_my_day.pending (ReceptionTabBar)
+//   · réception → « En attente » : reception_my_day.pending ; « Paquets » : air_package_packable (ReceptionTabBar)
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)
 //   · agent cash → « Paiements » : paiements cash en attente (useAgentCashPayments)
 // Le total s'affiche aussi sur l'icône de l'app. Rafraîchies toutes les
@@ -38,8 +38,11 @@ async function count(table: 'deposits' | 'payments', statuses: string[], cashOnl
 export async function fetchBadges(role: StaffRole): Promise<Badges> {
   switch (role) {
     case 'receptionist': {
-      const day = await rpc('reception_my_day');
-      return { pending: Number(day?.pending ?? 0) };
+      // Les colis qui attendent un paquet : les compteurs seuls (p_limit = 0), pas la liste.
+      const [day, pack] = await Promise.all([rpc('reception_my_day'), db.rpc('air_package_packable', { p_limit: 0 })]);
+      const p = (pack.error ? null : pack.data) as { success?: boolean; ready_count?: number; to_fix_count?: number } | null;
+      const packages = p?.success ? Number(p.ready_count ?? 0) + Number(p.to_fix_count ?? 0) : 0;
+      return { pending: Number(day?.pending ?? 0), packages };
     }
     case 'warehouse_agent': {
       const day = await rpc('warehouse_day');

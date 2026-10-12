@@ -66,9 +66,11 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
   const moving = filled.reduce((t, b) => t + b.items.length, 0);
   const tooMany = moving > MAX_PACK_PARCELS;
   const running = progress !== null && result === null;
+  // La proposition d'office attend la liste des paquets à jour (un paquet fermé entre-temps ne se propose pas).
+  const settling = (bureau.isPending || (dest === 'auto' && bureau.isFetching)) && !bureau.isError;
 
   const run = async () => {
-    if (running || moving === 0 || tooMany) return;
+    if (running || settling || moving === 0 || tooMany) return;
     setProgress({ done: 0, total: moving });
     try {
       const r = await pack.mutateAsync({
@@ -160,7 +162,7 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
           </span>
           <span className="flex gap-2">
             <Btn onClick={onClose} disabled={running}>Annuler</Btn>
-            <Btn kind="primary" onClick={() => void run()} disabled={moving === 0 || tooMany} loading={running}>
+            <Btn kind="primary" onClick={() => void run()} disabled={moving === 0 || tooMany || settling} loading={running}>
               <PackagePlus /> {moving === 0 ? 'Mettre en paquet' : filled.length > 1 ? `Répartir en ${filled.length} paquets` : `Mettre ${plural(moving, 'colis', 'colis')} en paquet`}
             </Btn>
           </span>
@@ -173,6 +175,14 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
         {ready.length > 0 && (
           <section>
             <h3 className={cn('mb-2 text-[13px] font-bold', TEXT.strong)}>Dans quel paquet ?</h3>
+            {bureau.isError && (
+              <p role="alert" className="mb-2 rounded-lg border border-destructive/40 px-4 py-2.5 text-[12.5px] text-destructive">
+                Les paquets en cours n’ont pas pu être lus : seul un nouveau paquet est proposé. Fermez et rouvrez pour réessayer.
+              </p>
+            )}
+            {bureau.isPending && !bureau.isError ? (
+              <p role="status" className={cn('text-[12.5px]', TEXT.muted)}>Lecture des paquets en cours…</p>
+            ) : (
             <div role="radiogroup" aria-label="Paquet de destination" className="space-y-2">
               {openPackages.map((k) => {
                 const g = weightGauge(k);
@@ -195,6 +205,7 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
                   : 'Un paquet tout neuf, créé maintenant'}
               />
             </div>
+            )}
           </section>
         )}
 

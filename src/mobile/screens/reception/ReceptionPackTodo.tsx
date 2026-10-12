@@ -9,17 +9,18 @@
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PackagePlus } from 'lucide-react';
+import { ChevronRight, PackagePlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatKg, type ParcelKind } from '@/lib/reception';
-import { packableGroups, sumParcelKg, type PackableParcel } from '@/lib/airPackage';
+import { packableGroups, sumParcelKg } from '@/lib/airPackage';
 import { usePackableParcels } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TONE_TEXT, TYPE, Button, Card, PrimaryPill, ScreenError, ScreenLoader } from '@/mobile/designKit';
 import { useReceptionLabels } from '@/mobile/components/reception/bits';
 import { TickBox } from '@/mobile/components/reception/packageBits';
-import { usePackageText } from '@/mobile/components/reception/packageText';
+import { usePackFix, usePackageText } from '@/mobile/components/reception/packageText';
 import { PackSheet } from '@/mobile/components/reception/PackSheet';
 
 const ROW = cn('flex w-full items-center gap-3 border-b px-4 py-3 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider);
@@ -27,6 +28,7 @@ const ROW = cn('flex w-full items-center gap-3 border-b px-4 py-3 text-left last
 export function ReceptionPackTodo() {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
   const labels = useReceptionLabels();
   const { data, isLoading, error, refetch } = usePackableParcels();
@@ -46,11 +48,10 @@ export function ReceptionPackTodo() {
     return s;
   });
 
-  /** Un colis à compléter → l'écran où on le complète : attribuer le dépôt, ou le dépôt lui-même. */
-  const fix = (it: PackableParcel & { reason: string }) => {
-    if (it.reason === 'no_client') navigate(`/r/new?assign=${it.deposit.id}`);
-    else navigate(it.deposit.status === 'open' ? `/r/deposit/${it.deposit.id}` : `/r/deposit/${it.deposit.id}/done`);
-  };
+  const fixPath = usePackFix();
+  // À compléter (attribuer, peser, terminer le dépôt) ; à part, les plus de 32 kg, qui partent seuls.
+  const toFix = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason !== 'too_heavy'), [data]);
+  const alone = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason === 'too_heavy'), [data]);
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
@@ -61,7 +62,7 @@ export function ReceptionPackTodo() {
           <ScreenLoader />
         ) : error || !data ? (
           <ScreenError title={t('error')} description={t('rc_pk_todo_unavailable')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />
-        ) : ready.length === 0 && data.blocked.length === 0 ? (
+        ) : ready.length === 0 && toFix.length === 0 && alone.length === 0 ? (
           <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
             <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pk_todo_empty')}</p>
           </Card>
@@ -107,22 +108,50 @@ export function ReceptionPackTodo() {
               </section>
             )}
 
-            {data.blocked.length > 0 && (
+            {toFix.length > 0 && (
               <section className="space-y-3">
                 <span className="block">
                   <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_todo_blocked')}</h2>
                   <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_pk_todo_blocked_hint')}</span>
                 </span>
                 <Card className="overflow-hidden p-0">
-                  {data.blocked.map((it) => (
-                    <button key={it.parcel.id} type="button" onClick={() => fix(it)} className={ROW}>
+                  {toFix.map((it) => {
+                    const path = fixPath(it);
+                    const body = (
+                      <>
+                        <span className="min-w-0 flex-1">
+                          <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{it.parcel.parcel_no}</span>
+                          <span className={cn('block break-words', TYPE.smallStrong, TONE_TEXT.pending)}>{tx.why(it.reason)}</span>
+                          <span className={cn('block break-words tabular-nums', TYPE.small, TEXT.muted)}>{it.deposit.client?.customer_code ?? t('rc_unknown_client')} · {it.deposit.deposit_no}</span>
+                          {!path && it.deposit.received_by_name && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{ti('rc_pk_todo_by', { name: it.deposit.received_by_name })}</span>}
+                        </span>
+                        <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(it.parcel.weight_kg)}</span>
+                        {path && <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} aria-hidden="true" />}
+                      </>
+                    );
+                    return path
+                      ? <button key={it.parcel.id} type="button" onClick={() => navigate(path)} className={ROW}>{body}</button>
+                      : <div key={it.parcel.id} className={cn(ROW, 'active:bg-transparent dark:active:bg-transparent')}>{body}</div>;
+                  })}
+                </Card>
+              </section>
+            )}
+
+            {alone.length > 0 && (
+              <section className="space-y-3">
+                <span className="block">
+                  <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_todo_alone')}</h2>
+                  <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_pk_todo_alone_hint')}</span>
+                </span>
+                <Card className="overflow-hidden p-0">
+                  {alone.map((it) => (
+                    <div key={it.parcel.id} className={cn(ROW, 'active:bg-transparent dark:active:bg-transparent')}>
                       <span className="min-w-0 flex-1">
                         <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{it.parcel.parcel_no}</span>
-                        <span className={cn('block break-words', TYPE.smallStrong, TONE_TEXT.pending)}>{tx.why(it.reason)}</span>
                         <span className={cn('block break-words tabular-nums', TYPE.small, TEXT.muted)}>{it.deposit.client?.customer_code ?? t('rc_unknown_client')} · {it.deposit.deposit_no}</span>
                       </span>
                       <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(it.parcel.weight_kg)}</span>
-                    </button>
+                    </div>
                   ))}
                 </Card>
               </section>

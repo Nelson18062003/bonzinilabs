@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultPackTarget, fitsInPackage, openPackagesByRoom, packRefusal, packRefusalLabel, packableGroups, packableParcels, packageClientGroups, planPacking, sealCheck, type AirPackageParcel, type PackableParcel } from '@/lib/airPackage';
+import { defaultPackTarget, fitsInPackage, openPackagesByRoom, waitingCount, packRefusal, packRefusalLabel, packableGroups, packableParcels, packageClientGroups, planPacking, sealCheck, type AirPackageParcel, type PackableParcel } from '@/lib/airPackage';
 import type { Deposit, Parcel, ReceptionClient } from '@/lib/reception';
 
 const client = (id: string, code: string): ReceptionClient => ({ user_id: id, customer_code: code, first_name: 'A', last_name: code, phone: null, email: null, company_name: null, city: null, country: null } as ReceptionClient);
@@ -190,5 +190,23 @@ describe('Paquets avion — le paquet proposé d’office', () => {
   it('au gramme près, comme le serveur : 31,9 + 0,1 tient', () => {
     expect(defaultPackTarget([pkg('a', 31.9)], items(0.1))?.id).toBe('a');
     expect(defaultPackTarget([pkg('a', 31.9)], items(0.101))).toBeNull();
+  });
+});
+
+describe('Paquets avion — ce qui attend, pour les compteurs', () => {
+  it('un dépôt en cours de saisie : ses colis attendent qu’il soit terminé (un colis emballé ne se corrige plus)', () => {
+    const p = parcel({ weight_kg: 4 });
+    expect(packRefusal(p, { status: 'open', location: 'office', client: A })).toBe('deposit_open');
+    const out = packableParcels([deposit({ status: 'open', parcels: [p] })]);
+    expect(out.ready).toEqual([]);
+    expect(out.blocked.map((b) => b.reason)).toEqual(['deposit_open']);
+  });
+
+  it('les compteurs : prêts + à compléter ; un colis de plus de 32 kg part seul et ne compte pas', () => {
+    const out = packableParcels([
+      deposit({ parcels: [parcel({ weight_kg: 5 }), parcel({ weight_kg: 40 }), parcel({ weight_kg: null })] }),
+      deposit({ client: null, parcels: [parcel({ weight_kg: 3 })] }),
+    ]);
+    expect(waitingCount(out)).toEqual({ ready: 1, toFix: 2, total: 3 });
   });
 });
