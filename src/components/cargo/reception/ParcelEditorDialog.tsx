@@ -1,6 +1,7 @@
 // ============================================================
 // Desktop admin — un colis, en entier : ce que c'est, son poids, ses
-// dimensions (le m³ se calcule sous les yeux), son bordereau, et SES PHOTOS.
+// dimensions (le m³ se calcule sous les yeux), son bordereau, son ÉTAT à la
+// réception (imprimé sur le bon de réception), et SES PHOTOS.
 // Le même dialogue ajoute un colis à un dépôt (ouvert ou fermé) et corrige
 // un colis existant. Les photos se gèrent ici : en ajouter (glisser-déposer
 // ou parcourir, plusieurs à la fois), choisir la couverture, en retirer.
@@ -12,7 +13,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddParcel, useAddParcelPhotos, useParcelPhotoUrl, useRemoveParcelPhoto, useSetParcelCover, useUpdateParcel, uploadParcelPhotos } from '@/hooks/useReception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
 import { useFilePreviews } from '@/hooks/useFilePreviews';
-import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, cbmOf, formatCbm, parcelLockReason, parcelSavedPhotos, pickParcelPhotos, type Deposit, type Parcel, type ParcelKind } from '@/lib/reception';
+import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, RECEPTION_CONDITIONS, RECEPTION_CONDITION_LABEL, cbmOf, formatCbm, parcelLockReason, parcelSavedPhotos, pickParcelPhotos, type Deposit, type Parcel, type ParcelKind, type ReceptionCondition } from '@/lib/reception';
 import { parseDecimal } from '@/lib/decimalInput';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { useReceptionLabels } from '@/mobile/components/reception/bits';
@@ -88,6 +89,9 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
   const [copies, setCopies] = useState('1');
+  // L'état à la réception : « bon état apparent » (null en base) tant qu'aucune réserve n'est notée.
+  const [condition, setCondition] = useState<ReceptionCondition>('good');
+  const [conditionNote, setConditionNote] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -102,6 +106,8 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
     setWidth(str(live?.width_cm));
     setHeight(str(live?.height_cm));
     setCopies('1');
+    setCondition(live?.reception_condition ?? 'good');
+    setConditionNote(live?.reception_condition_note ?? '');
     setFiles([]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, parcel?.id]);
@@ -143,7 +149,14 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
       return;
     }
     try {
-      const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths };
+      // L'état : envoyé seulement s'il change (ou, pour un nouveau colis, s'il y a une réserve ou une note).
+      const condValue = condition === 'good' ? null : condition;
+      const condNote = conditionNote.trim() || null;
+      const condChanged = live
+        ? condValue !== (live.reception_condition === 'good' ? null : live.reception_condition ?? null) || condNote !== (live.reception_condition_note?.trim() || null)
+        : condValue != null || condNote != null;
+      const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths,
+        condition: condChanged ? { value: condValue, note: condNote } : undefined };
       if (live) {
         await update.mutateAsync({ ...fields, parcelId: live.id, depositId: deposit.id });
         toast.success(`Colis ${live.parcel_no} enregistré`);
@@ -222,6 +235,21 @@ export function ParcelEditorDialog({ deposit, parcel, open, onClose }: { deposit
                 </button>
               ))}
             </div>
+          </div>
+          <div>
+            <span className={cn('mb-1.5 block text-[11px] font-bold uppercase tracking-wider', TEXT.muted)}>État à la réception</span>
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="État à la réception">
+              {RECEPTION_CONDITIONS.map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={condition === c} disabled={!!lock} onClick={() => setCondition(c)}
+                  className={cn('h-8 px-3 text-[12.5px] font-semibold disabled:opacity-50', condition === c ? (c === 'good' ? PRIMARY_PILL : 'rounded-md bg-orange-600 text-white') : SOFT_PILL)}>
+                  {RECEPTION_CONDITION_LABEL[c]}
+                </button>
+              ))}
+            </div>
+            {(condition !== 'good' || conditionNote) && (
+              <div className="mt-2">{field('pe-cond-note', 'Ce que vous avez constaté', conditionNote, setConditionNote, { placeholder: 'Coin écrasé, scotch refait, carton humide…' })}</div>
+            )}
+            <p className={cn('mt-1 text-[11.5px]', TEXT.muted)}>Imprimé sur le bon de réception du client. Une réserve se note avant le départ du colis.</p>
           </div>
           {field('pe-desc', 'Ce qu’il y a dedans', description, setDescription, { placeholder: 'Chaussures, pièces auto, tissu…' })}
           {field('pe-waybill', 'Bordereau du transporteur', waybill, setWaybill, { placeholder: 'SF, YTO, ZTO…', mono: true })}

@@ -4,7 +4,7 @@
 // (toujours confirmé ; le départ exige tous les paquets scannés), les
 // paquets de 32 kg (AirPackagesPanel, le même que sur mobile), les colis
 // client par client avec « payé / reste » et leur paquet, le chargement de
-// colis seuls (table à cocher, en place), le manifeste PDF.
+// colis seuls (table à cocher, en place), l'avis d'expédition PDF (ses paquets et leurs colis).
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAirLoadParcels, useAirLoadableParcels, useAirShipment, useAirUnloadParcel } from '@/hooks/useAirShipments';
 import { airStatusMeta, awbLabel, departureBlocker, flightSentence, fmtDay, groupByClient, nextAirStep, packageProgress, parcelUnpaid, type AirParcel } from '@/lib/airShipment';
-import { deliverAirManifestPdf } from '@/lib/airManifestPdf';
+import { deliverAirNoticePdf } from '@/lib/shippingNoticePdf';
 import { xaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatDims, formatKg, initials } from '@/lib/reception';
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
@@ -93,7 +93,7 @@ export function AirQuickView({ airId, onClose }: { airId: string | null; onClose
       bodyClassName="-mx-5 -mb-1 mt-1"
       footer={a ? (
         <>
-          <button type="button" onClick={() => void deliverAirManifestPdf(a).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}><FileText className="h-4 w-4" /> Manifeste (PDF)</button>
+          <button type="button" onClick={() => void deliverAirNoticePdf(a).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}><FileText className="h-4 w-4" /> Avis d’expédition (PDF)</button>
           {canManage && <button type="button" onClick={() => { onClose(); navigate(`/m/cargo/avion/${a.id}/modifier`); }} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}><Pencil className="h-4 w-4" /> Fiche</button>}
           {canManage && a.status === 'DEPARTED' && <button type="button" onClick={() => openConfirm('back')} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}><Undo2 className="h-4 w-4" /> Pas parti</button>}
           {canManage && a.status === 'PLANNED' && pkg && pkg.total > 0 && (

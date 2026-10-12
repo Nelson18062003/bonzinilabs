@@ -2,7 +2,9 @@
 // Desktop admin — les encaissements d'un devis, en section du dialogue de
 // dépôt, sous « Prix et devis » : le reste à payer, la table des paiements
 // (reçu, date, mode, lieu, référence, preuve, montant), la saisie en ligne
-// d'un nouvel encaissement, et la facture acquittée quand tout est là.
+// d'un nouvel encaissement, et la facture : établie dès que les colis sont
+// arrivés à Douala (ou que tout est payé), encaissable tant qu'elle reste
+// due, acquittée quand tout est là (20261012100000).
 // Réservé à canCollectParcelPayments pour agir.
 //
 // Les PDF (reçus, facture) : « Reçu PDF » / « Télécharger la facture »
@@ -16,9 +18,10 @@ import { Banknote, Download, FileCheck2, Loader2, Paperclip, Receipt, Share2, Un
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddQuotePayment, useCancelQuotePayment, useCargoQuote, useInvoiceQuote, uploadPaymentProof, usePaymentProofUrl } from '@/hooks/useCargoQuote';
+import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { METHOD_LABEL, PLACE_SHORT, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type QuotePayment } from '@/lib/cargoQuote';
+import { METHOD_LABEL, PLACE_SHORT, invoiceAcquitted, invoiceReadiness, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type QuotePayment } from '@/lib/cargoQuote';
 import { deliverInvoicePdf, deliverReceiptPdf, downloadInvoicePdf, downloadReceiptPdf, readCargoDocLang, shareInvoicePdf, shareReceiptPdf } from '@/lib/cargoQuotePdf';
 import { canShareFiles, prefersDownload, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import { Band } from '@/components/cargo/dossier/kit';
@@ -67,6 +70,8 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
   const { hasPermission } = useAdminAuth();
   const canCollect = hasPermission('canCollectParcelPayments');
   const { data: quote } = useCargoQuote(depositId);
+  // Les colis du dépôt (déjà chargés par la fiche) : sont-ils arrivés à Douala ? La facture s'établit alors.
+  const { data: deposit } = useReceptionDeposit(depositId);
   const { data: settingsData } = useAdminShippingSettings();
   const settings = settingsData ?? DEFAULT_SHIPPING_SETTINGS;
   const add = useAddQuotePayment();
@@ -92,6 +97,9 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
   const paid = quotePaid(quote);
   const balance = quoteBalance(quote);
   const invoiced = !!quote.invoice_no;
+  // Acquittée : établie et soldée — les encaissements se figent. Due : elle s'encaisse encore.
+  const acquitted = invoiceAcquitted(quote);
+  const readiness = invoiceReadiness(quote, deposit?.parcels);
   const payments = quote.payments ?? [];
   // « Partager » : seulement là où une feuille de partage a du sens (téléphone, tablette).
   const canShare = canShareFiles() && !prefersDownload();
@@ -129,7 +137,7 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
 
   return (
     <Band
-      title={<span className="inline-flex items-center gap-2">Paiement {invoiced ? <StatusPill tone="success" label={`Facture ${quote.invoice_no}`} /> : balance === 0 ? <StatusPill tone="success" label="Payé" /> : paid > 0 ? <StatusPill tone="pending" label="Partiel" /> : <StatusPill tone="neutral" label="À payer" />}</span>}
+      title={<span className="inline-flex items-center gap-2">Paiement {invoiced ? <StatusPill tone={acquitted ? 'success' : 'pending'} label={acquitted ? `Facture ${quote.invoice_no} acquittée` : `Facture ${quote.invoice_no} · à régler`} /> : balance === 0 ? <StatusPill tone="success" label="Payé" /> : paid > 0 ? <StatusPill tone="pending" label="Partiel" /> : <StatusPill tone="neutral" label="À payer" />}</span>}
       meta={
         <span className="inline-flex items-center gap-3 tabular-nums">
           <span>Encaissé <b className={TEXT.strong}>{xaf(paid)}</b> sur {xaf(total)}</span>
@@ -148,7 +156,7 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
                   p={p}
                   busy={busy === `download:${p.id}` ? 'download' : busy === `share:${p.id}` ? 'share' : null}
                   pdfBusy={!!busy}
-                  canCancel={canCollect && !invoiced}
+                  canCancel={canCollect && !acquitted}
                   onCancel={() => { setCancelId(p.id); setReason(''); }}
                   onDownload={() => void makePdf(`download:${p.id}`, () => downloadReceiptPdf(quote, p, settings, readCargoDocLang()), 'PDF téléchargé')}
                   onShare={canShare ? () => void makePdf(`share:${p.id}`, () => shareReceiptPdf(quote, p, settings, readCargoDocLang()), 'PDF téléchargé') : undefined}
@@ -169,7 +177,7 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {canCollect && !invoiced && balance > 0 && !adding && (
+        {canCollect && !acquitted && balance > 0 && !adding && (
           <button type="button" onClick={() => { setAdding(true); setAmount(String(balance)); }} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold', PRIMARY_PILL)}><Banknote className="h-4 w-4" /> Encaisser</button>
         )}
         {adding && (
@@ -190,13 +198,16 @@ export function QuotePaymentsSection({ depositId }: { depositId: string }) {
           </span>
         )}
         <span className="ml-auto flex items-center gap-2">
-          {canCollect && !invoiced && balance === 0 && (
-            <button type="button" onClick={() => void issue()} disabled={invoice.isPending || !!busy} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold disabled:opacity-50', PRIMARY_PILL)}>{invoice.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />} Établir la facture acquittée</button>
+          {canCollect && !invoiced && !readiness.ready && readiness.reason && balance > 0 && (
+            <span className={cn('text-[12px]', TEXT.muted)}>{readiness.reason}</span>
+          )}
+          {canCollect && readiness.ready && (
+            <button type="button" onClick={() => void issue()} disabled={invoice.isPending || !!busy} title={readiness.acquitted ? 'Tout est payé : la facture sort acquittée' : 'Les colis sont arrivés à Douala : la facture dit ce qui reste à payer avant le retrait'} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold disabled:opacity-50', PRIMARY_PILL)}>{invoice.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />} {readiness.acquitted ? 'Établir la facture acquittée' : 'Établir la facture'}</button>
           )}
           {invoiced && (
             <>
-              <button type="button" onClick={() => void makePdf('download:invoice', () => downloadInvoicePdf(quote, settings, readCargoDocLang()), 'PDF téléchargé')} disabled={!!busy} title={`Télécharger la facture acquittée ${quote.invoice_no} (PDF)`} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>
-                {busy === 'download:invoice' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Télécharger la facture (PDF)
+              <button type="button" onClick={() => void makePdf('download:invoice', () => downloadInvoicePdf(quote, settings, readCargoDocLang()), 'PDF téléchargé')} disabled={!!busy} title={`Télécharger la facture ${quote.invoice_no}${acquitted ? ' acquittée' : ''} (PDF)`} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>
+                {busy === 'download:invoice' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} {acquitted ? 'Facture acquittée (PDF)' : 'Facture à régler (PDF)'}
               </button>
               {canShare && (
                 <button type="button" onClick={() => void makePdf('share:invoice', () => shareInvoicePdf(quote, settings, readCargoDocLang()), 'PDF téléchargé')} disabled={!!busy} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>

@@ -3,7 +3,7 @@
 // mélange ; la langue choisie est retenue sur l'appareil.
 import { afterEach, describe, expect, it } from 'vitest';
 import { formatDateIn, formatXafIn } from '@/lib/pdf/helpers';
-import { invoiceFileName, quoteFileName, readCargoDocLang, receiptFileName, storeCargoDocLang } from '@/lib/cargoQuotePdf';
+import { invoiceFileName, readCargoDocLang, receiptFileName, receptionFileName, storeCargoDocLang } from '@/lib/cargoQuotePdf';
 import type { Quote, QuotePayment } from '@/lib/cargoQuote';
 
 const LANG_KEY = 'bonzini-cargo-doc-lang';
@@ -107,12 +107,12 @@ describe('formatDateIn — une date dans la langue du document', () => {
 });
 
 describe('noms de fichier — dans la langue du document', () => {
-  it('devis / quote', () => {
-    expect(quoteFileName(quote(), 'fr')).toBe('bonzini-devis-BZ-DV-0042-BZ123.pdf');
-    expect(quoteFileName(quote(), 'en')).toBe('bonzini-quote-BZ-DV-0042-BZ123.pdf');
+  it('bon de réception et devis / goods receipt and quote : le dépôt, puis le client', () => {
+    expect(receptionFileName({ deposit: null, quote: quote() }, 'fr')).toBe('bonzini-bon-reception-BZ-RC-0007-BZ123.pdf');
+    expect(receptionFileName({ deposit: null, quote: quote() }, 'en')).toBe('bonzini-goods-receipt-BZ-RC-0007-BZ123.pdf');
   });
   it('français par défaut', () => {
-    expect(quoteFileName(quote())).toBe('bonzini-devis-BZ-DV-0042-BZ123.pdf');
+    expect(receptionFileName({ deposit: null, quote: quote() })).toBe('bonzini-bon-reception-BZ-RC-0007-BZ123.pdf');
     expect(receiptFileName(quote(), payment)).toBe('bonzini-recu-BZ-RE-0009-BZ123.pdf');
     expect(invoiceFileName(quote({ invoice_no: 'BZ-FA-0003' }))).toBe('bonzini-facture-BZ-FA-0003-BZ123.pdf');
   });
@@ -127,8 +127,8 @@ describe('noms de fichier — dans la langue du document', () => {
     expect(invoiceFileName(quote({ invoice_no: null }), 'en')).toBe('bonzini-invoice-BZ-DV-0042-BZ123.pdf');
   });
   it('sans client : le numéro du dépôt', () => {
-    expect(quoteFileName(quote({ client: null }), 'fr')).toBe('bonzini-devis-BZ-DV-0042-BZ-RC-0007.pdf');
-    expect(quoteFileName(quote({ client: null }), 'en')).toBe('bonzini-quote-BZ-DV-0042-BZ-RC-0007.pdf');
+    expect(receptionFileName({ deposit: null, quote: quote({ client: null }) }, 'fr')).toBe('bonzini-bon-reception-BZ-RC-0007.pdf');
+    expect(receptionFileName({ deposit: null, quote: quote({ client: null }) }, 'en')).toBe('bonzini-goods-receipt-BZ-RC-0007.pdf');
   });
 });
 

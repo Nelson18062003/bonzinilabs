@@ -11,7 +11,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Download, Images, Pencil, Plus, RotateCcw, Search, Tag, Trash2, UserSearch } from 'lucide-react';
+import { ArrowRight, Download, FileText, Images, Loader2, Pencil, Plus, RotateCcw, Search, Tag, Trash2, UserSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAssignDeposit, useCancelDeposit, useParcelPhotoUrl, useReceptionDeposit, useReceptionSearch, useRemoveParcel, useRestoreDeposit } from '@/hooks/useReception';
@@ -19,7 +19,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import {
-  clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine, waitingWhere,
+  RECEPTION_CONDITION_LABEL, clientFullName, depositDate, depositSupplier, formatCbm, formatDims, formatKg, hasReceptionReserve, initials, isParcelWaiting, parcelLockReason, parcelPhotoPaths, parcelStage, sortedParcels, supplierLine, waitingWhere,
   type Parcel,
 } from '@/lib/reception';
 import { useCargoQuote } from '@/hooks/useCargoQuote';
@@ -30,7 +30,7 @@ import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/receptio
 import { Band, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { downloadFile } from '@/components/customer-code/exportShippingLabel';
-import { downloadQuotePdf } from '@/lib/cargoQuotePdf';
+import { downloadReceptionPdf, readCargoDocLang } from '@/lib/cargoQuotePdf';
 import { QuoteSection } from './QuoteSection';
 import { QuotePaymentsSection } from './QuotePaymentsSection';
 import { ParcelEditorDialog } from './ParcelEditorDialog';
@@ -148,6 +148,18 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
   const events = d ? depositTimeline(d, quote) : [];
   const kgMissing = parcels.filter((p) => p.weight_kg == null).length;
 
+  // Le bon de réception (et devis, si les prix sont posés) : photos, mesures, état — le document du client.
+  const [receiptBusy, setReceiptBusy] = useState(false);
+  const downloadReceipt = async () => {
+    if (!d || receiptBusy) return;
+    setReceiptBusy(true);
+    try {
+      await downloadReceptionPdf({ deposit: d, quote: quote ?? null }, settings, readCargoDocLang());
+      toast.success(`Bon de réception ${d.deposit_no} téléchargé`, { description: quote && quote.total_xaf > 0 ? `Avec le devis ${quote.quote_no}` : 'Sans prix : le devis n’est pas encore posé' });
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setReceiptBusy(false); }
+  };
+
   const downloadOne = async (p: Parcel) => {
     setLabelBusy(p.id);
     try { downloadFile(await labelMaker.pdfFile([p.id], `bonzini-etiquette-${p.parcel_no}.pdf`)); toast.success(`Étiquette ${p.parcel_no} téléchargée`); }
@@ -155,10 +167,10 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
     finally { setLabelBusy(null); }
   };
 
-  const action = (Icon: typeof Tag, label: string, onClick: () => void, opts: { primary?: boolean; danger?: boolean; disabled?: boolean; title?: string } = {}) => (
-    <button type="button" onClick={onClick} disabled={opts.disabled} title={opts.title}
+  const action = (Icon: typeof Tag, label: string, onClick: () => void, opts: { primary?: boolean; danger?: boolean; disabled?: boolean; title?: string; busy?: boolean } = {}) => (
+    <button type="button" onClick={onClick} disabled={opts.disabled || opts.busy} title={opts.title}
       className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-45', opts.primary ? PRIMARY_PILL : opts.danger ? DANGER_SOFT_PILL : SOFT_PILL)}>
-      <Icon className="h-4 w-4" /> {label}
+      {opts.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />} {label}
     </button>
   );
   const iconBtn = (Icon: typeof Tag, label: string, onClick: () => void, opts: { danger?: boolean; disabled?: boolean; title?: string; busy?: boolean } = {}) => (
@@ -202,7 +214,8 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
 
           {/* ── Les gestes du dépôt ─────────────────────────────────────── */}
           <div className="flex flex-wrap items-center gap-2 px-5 pb-4">
-            {action(Tag, 'Étiquettes', () => setLabelsFor({ tab: 'parcels' }), { primary: true, disabled: !d.client || parcels.length === 0, title: !d.client ? 'Attribuez d’abord le dépôt à un client' : undefined })}
+            {action(FileText, 'Bon de réception', () => void downloadReceipt(), { primary: true, busy: receiptBusy, disabled: parcels.length === 0, title: parcels.length === 0 ? 'Aucun colis dans ce dépôt' : 'Le bon de réception et devis en PDF : photos, poids, dimensions et état de chaque colis — avec les prix s’ils sont posés' })}
+            {action(Tag, 'Étiquettes', () => setLabelsFor({ tab: 'parcels' }), { disabled: !d.client || parcels.length === 0, title: !d.client ? 'Attribuez d’abord le dépôt à un client' : undefined })}
             {d.client && action(Download, 'Étiquette client', () => setLabelsFor({ tab: 'client' }))}
             {canAddParcel && action(Plus, 'Ajouter un colis', () => setEditor({ parcel: null }))}
             {canEditDeposit && action(Pencil, 'Modifier le dépôt', () => setEditingDeposit(true))}
@@ -319,6 +332,9 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
                           <Td className="max-w-[240px] whitespace-normal">
                             <div className={cn('text-[13px] font-semibold', TEXT.strong)}>{p.description || labels.kind(p.kind)}</div>
                             <div className={cn('text-[11.5px]', TEXT.muted)}>{p.description ? labels.kind(p.kind) : ''}{p.courier_waybill && <span className="font-mono">{p.description ? ' · ' : ''}{p.courier_waybill}</span>}</div>
+                            {hasReceptionReserve(p) && (
+                              <div className="text-[11.5px] font-semibold text-orange-700 dark:text-orange-400">Réserve : {RECEPTION_CONDITION_LABEL[p.reception_condition!]}{p.reception_condition_note ? ` · ${p.reception_condition_note}` : ''}</div>
+                            )}
                           </Td>
                           <Td align="right"><span className={cn('text-[13px] tabular-nums', p.weight_kg == null && 'font-semibold text-amber-700 dark:text-amber-400')}>{formatKg(p.weight_kg)}</span></Td>
                           <Td align="right"><span className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>{formatDims(p)}</span></Td>
@@ -358,13 +374,13 @@ export function DepositQuickView({ depositId, onClose, focusParcelId }: { deposi
                     disabled={quoteBusy}
                     onClick={async () => {
                       setQuoteBusy(true);
-                      try { await downloadQuotePdf(quote, settings); toast.success(`Devis ${quote.quote_no} téléchargé`); }
+                      try { await downloadReceptionPdf({ deposit: d, quote }, settings); toast.success(`Bon de réception et devis ${quote.quote_no} téléchargé`); }
                       catch (e) { toast.error((e as Error).message); }
                       finally { setQuoteBusy(false); }
                     }}
                     className={cn('inline-flex h-9 shrink-0 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}
                   >
-                    <Download className="h-4 w-4" /> Télécharger le devis
+                    <Download className="h-4 w-4" /> Bon de réception et devis
                   </button>
                 </div>
               </Band>

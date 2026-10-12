@@ -129,7 +129,7 @@ export function MobileCargoDepositDetail() {
         </section>
 
         {/* L'argent du dépôt : le reste à payer, encaisser (avec preuve et reçu), la liste des encaissements, la facture. */}
-        {quote && quote.total_xaf > 0 && <QuotePayments quote={quote} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
+        {quote && quote.total_xaf > 0 && <QuotePayments quote={quote} parcels={deposit.parcels} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
 
         {/* Les bons de retrait, signés à Douala. */}
         <DepositReleases parcels={deposit.parcels} />

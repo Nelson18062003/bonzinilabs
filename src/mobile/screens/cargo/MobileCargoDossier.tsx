@@ -20,7 +20,7 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
 import { useShipmentParcels } from '@/hooks/useReception';
-import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
+import { deliverSeaNoticePdf } from '@/lib/shippingNoticePdf';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { DossierActions, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabIntervenants } from '@/components/cargo/dossier';
 import { MobileNotes } from './MobileNotes';
@@ -244,7 +244,7 @@ function Inside({ s, onOpen3D, canManage }: { s: CargoShipment; onOpen3D: () => 
       )}
       <div className="flex flex-wrap gap-2">
         {canManage && <Button variant="primary" onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</Button>}
-        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaManifestPdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))}>Manifeste (PDF)</Button>}
+        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaNoticePdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message))}>Avis d’expédition (PDF)</Button>}
         <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
       </div>
     </div>

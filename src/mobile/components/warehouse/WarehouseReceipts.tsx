@@ -97,7 +97,7 @@ function QuoteReceipts({ summary }: { summary: ClientQuoteSummary }) {
           busy={state('invoice')}
           onDownload={() => void makePdf('download:invoice', () => downloadInvoicePdf(quote, s, readCargoDocLang()))}
           onShare={canShare ? () => void makePdf('share:invoice', () => shareInvoicePdf(quote, s, readCargoDocLang())) : undefined}
-          shareLabel={`Partager la facture acquittée ${quote.invoice_no}`}
+          shareLabel={`Partager la facture ${quote.invoice_no}`}
         />
       )}
     </Card>

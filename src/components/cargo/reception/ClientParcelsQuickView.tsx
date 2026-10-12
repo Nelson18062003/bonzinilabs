@@ -2,8 +2,13 @@
 // Desktop admin — les colis d'un client, en dialogue centré : ses dépôts,
 // dépôt par dépôt, avec l'état des colis et le devis ; un clic sur un dépôt
 // ouvre sa fiche (DepositQuickView), sans jamais quitter la page Réception.
+// « Relevé des colis (PDF) » : la réponse écrite à « quels sont tous mes colis
+// chez vous ? » — à Guangzhou, en route, à Douala, et ce qui reste à payer.
 // ============================================================
-import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowRight, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { downloadClientStatementPdf } from '@/lib/clientStatementPdf';
 import { useNavigate } from 'react-router-dom';
 import { useClientDeposits } from '@/hooks/useReception';
 import { clientFullName, depositStage, formatCbm, formatKg, initials, waitingWhere } from '@/lib/reception';
@@ -11,7 +16,7 @@ import { quoteStatusMeta, xaf } from '@/lib/cargoQuote';
 import { Band, Empty, Fact, Facts } from '@/components/cargo/dossier/kit';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { cn } from '@/lib/utils';
-import { TEXT, SOFT_PILL, CenterDialog, Holder, ScreenLoader, StatusPill, Th, Td } from '@/desktop/designKit';
+import { TEXT, SOFT_PILL, PRIMARY_PILL, CenterDialog, Holder, ScreenLoader, StatusPill, Th, Td } from '@/desktop/designKit';
 
 export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { clientId: string | null; onClose: () => void; onOpenDeposit: (depositId: string) => void }) {
   const navigate = useNavigate();
@@ -24,6 +29,14 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
   const waitingAt = waitingWhere((deposits ?? []).filter((d) => d.parcels.some((p) => !p.shipment_id && !p.air_shipment_id)).map((d) => d.location));
   const kg = parcels.reduce((s, p) => s + Number(p.weight_kg ?? 0), 0);
   const cbm = parcels.reduce((s, p) => s + Number(p.cbm ?? 0), 0);
+  const [statementBusy, setStatementBusy] = useState(false);
+  const downloadStatement = async () => {
+    if (!deposits || statementBusy) return;
+    setStatementBusy(true);
+    try { await downloadClientStatementPdf(deposits); toast.success('Relevé des colis téléchargé', { description: name }); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setStatementBusy(false); }
+  };
 
   return (
     <CenterDialog
@@ -41,9 +54,15 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
       }
       bodyClassName="-mx-5 -mb-1 mt-1"
       footer={client ? (
-        <button type="button" onClick={() => { onClose(); navigate(`/m/clients/${client.user_id}`); }} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}>
-          Fiche client <ArrowRight className="h-4 w-4" />
-        </button>
+        <>
+          <button type="button" onClick={() => void downloadStatement()} disabled={statementBusy || parcels.length === 0} title="Tous ses colis encore chez nous — à Guangzhou, en route, à Douala — avec photos, et ce qui reste à payer"
+            className={cn('mr-auto inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-bold disabled:opacity-50', PRIMARY_PILL)}>
+            {statementBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />} Relevé des colis (PDF)
+          </button>
+          <button type="button" onClick={() => { onClose(); navigate(`/m/clients/${client.user_id}`); }} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold', SOFT_PILL)}>
+            Fiche client <ArrowRight className="h-4 w-4" />
+          </button>
+        </>
       ) : undefined}
     >
       {isLoading || !deposits ? (
@@ -77,7 +96,9 @@ export function ClientParcelsQuickView({ clientId, onClose, onOpenDeposit }: { c
                   <tbody>
                     {deposits.map((d) => {
                       const st = depositStage(d.parcels, d.location);
-                      const q = quoteStatusMeta(d.quote_status);
+                      // Une facture établie à l'arrivée, pas encore réglée, se dit « Facture », pas « Envoyé ».
+                      const due = !!d.invoice_no && Number(d.quote_paid_xaf ?? 0) < Number(d.quote_total_xaf ?? 0);
+                      const q = due ? { tone: 'pending' as const, short: 'Facture' } : quoteStatusMeta(d.quote_status);
                       return (
                         <tr key={d.id} onClick={() => onOpenDeposit(d.id)} className="cursor-pointer transition-colors hover:bg-muted/40">
                           <Td first><span className="inline-flex items-center gap-2"><LocationMark location={d.location} size={18} /><span className={cn('font-mono text-[12px] font-bold', TEXT.strong)}>{d.deposit_no}</span></span></Td>

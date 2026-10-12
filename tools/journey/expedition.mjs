@@ -280,7 +280,7 @@ const settle = (page, ms = 500) => page.waitForTimeout(ms);
 /** Le bloc d'un paquet dans la liste mobile du panneau « Les paquets ». */
 const packageRow = (page, no) => page.locator('section div.py-3').filter({ has: page.getByText(no, { exact: true }) }).first();
 
-/** Le manifeste : le PDF fabriqué dans la page, sa 1re page rastérisée par pdftoppm, affichée comme une feuille. */
+/** L'avis d'expédition (ex-manifeste) : le PDF fabriqué dans la page, sa 1re page rastérisée par pdftoppm, affichée comme une feuille. */
 async function showManifest(page) {
   await page.waitForFunction(() => !!window.__manifest, null, { timeout: 15000 });
   const { name, b64 } = await page.evaluate(() => window.__manifest);
@@ -368,7 +368,7 @@ export const SCREENS = [
       await settle(page, 1200);
     },
   },
-  // 9. Au bureau, sur ordinateur : le vol du 06/10, ses paquets, ses colis, le manifeste.
+  // 9. Au bureau, sur ordinateur : le vol du 06/10, ses paquets, ses colis, l'avis d'expédition.
   {
     key: 'j.expedition.desk-detail', name: '09-bureau-vol-et-paquets', desktop: true, role: 'ops', init: reset, viewport: '1440x1300',
     // Le tableau des paquets défile dans 320 px : on le descend pour voir les deux paquets pas encore scannés.
@@ -377,8 +377,8 @@ export const SCREENS = [
       await settle(page, 400);
     },
   },
-  // 10. Le manifeste PDF du vol (colonne PAQUET), 1re page.
-  { key: 'j.expedition.manifest', name: '10-manifeste-pdf', desktop: true, role: 'ops', init: reset, viewport: '900x1290', before: showManifest },
+  // 10. L'avis d'expédition du vol (ses paquets et leurs colis), 1re page.
+  { key: 'j.expedition.manifest', name: '10-avis-expedition-pdf', desktop: true, role: 'ops', init: reset, viewport: '900x1290', before: showManifest },
   // 11. La liste des vols sur ordinateur : « LTA à venir » en italique.
   { key: 'j.expedition.desk-list', name: '11-bureau-liste-vols', desktop: true, role: 'ops', init: reset },
   // 12. Maritime : MIEU3611115, déchargé à Kribi, que Maersk ne signale pas — « Marquer arrivé ».

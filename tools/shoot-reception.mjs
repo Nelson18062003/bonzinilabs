@@ -37,6 +37,8 @@ const dep2 = {
 };
 // Plusieurs photos par colis (migration 20261002100000) : la couverture, puis d'autres vues du carton.
 dep2.parcels = dep2.parcels.map((p, i) => (p.photo_path ? { ...p, photos: [p.photo_path, ...(i % 3 === 0 ? [`dep2/carton-${(i % 3) + 4}.jpg`, `dep2/carton-${((i + 1) % 3) + 1}.jpg`] : i % 3 === 1 ? [`dep2/carton-${(i % 3) + 4}.jpg`] : [])].map((path, k) => ({ id: `ph-${p.id}-${k}`, path, position: k, created_at: p.created_at })) } : { ...p, photos: [] }));
+// L'état à la réception (20261012100000) : deux réserves, le reste en bon état apparent.
+dep2.parcels = dep2.parcels.map((p, i) => (i === 1 ? { ...p, reception_condition: 'damaged', reception_condition_note: 'coin écrasé, scotch d’origine intact' } : i === 4 ? { ...p, reception_condition: 'wet' } : i === 0 ? { ...p, reception_condition: 'good' } : p));
 const dep3 = { ...dep2, id: 'dep3', deposit_no: 'RC-000121', client: client2, brought_by: 'courier', parcel_count: 3, total_weight_kg: 21, total_cbm: 0.18, opened_at: today(13, 10), closed_at: today(13, 18), parcels: dep2.parcels.slice(0, 3).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000121') })) };
 const dep4 = { ...dep2, id: 'dep4', deposit_no: 'RC-000120', client: client3, brought_by: 'representative', representative_name: 'Paul Fotso', parcel_count: 2, total_weight_kg: 9, total_cbm: 0.05, opened_at: today(11, 47), closed_at: today(11, 52), parcels: dep2.parcels.slice(0, 2).map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000122', 'RC-000120') })) };
 const pend1 = { ...dep0, id: 'pend1', deposit_no: 'RC-000119', status: 'closed', closed_at: today(10, 24), opened_at: today(10, 20), parcel_count: 1, total_weight_kg: 12, total_cbm: 0.08, parcels: [parcel(1, 'RC-000119', { weight_kg: 12, length_cm: 50, width_cm: 40, height_cm: 40, cbm: 0.08, courier_waybill: 'SF2884193055221', description: 'Fournisseur Yiwu Hengda (sur le bordereau)' })] };
@@ -84,6 +86,16 @@ quoteDep3.payments = [payment('pm2', 'RE-000038', 30000, { method: 'cash', refer
 quoteDep3.amount_paid_xaf = quoteDep3.total_xaf; quoteDep3.balance_xaf = 0; quoteDep3.paid_at = today(13, 52); quoteDep3.invoice_no = 'FA-000012'; quoteDep3.invoiced_at = today(13, 55);
 const QUOTES = { dep2: quoteDep2, dep3: quoteDep3 };
 const withQuote = (d) => { const q = QUOTES[d.id]; return q ? { ...d, quote_status: q.status, quote_no: q.quote_no, quote_total_xaf: q.total_xaf, quote_paid_xaf: q.amount_paid_xaf, invoice_no: q.invoice_no ?? null } : { ...d, quote_status: null, quote_no: null, quote_total_xaf: null, quote_paid_xaf: null, invoice_no: null }; };
+// Les dépôts d'un client (reception_client_deposits, 20261012100000) : avec le devis et les transports — pour le relevé.
+const clientDeposits = [
+  { ...withQuote(dep2Loaded), containers: [{ ref: shipment.container_number, status: 'SAILING', vessel_name: 'MSC Aurora', etd: '2026-09-28', eta: '2026-11-04' }], flights: [] },
+  { ...dep1, status: 'closed', closed_at: today(14, 10), quote_status: null, quote_no: null, quote_total_xaf: null, quote_paid_xaf: null, invoice_no: null, containers: [], flights: [] },
+  { ...dep3, client, deposit_no: 'RC-000098', opened_at: '2026-09-02T03:10:00Z', closed_at: '2026-09-02T03:18:00Z', quote_status: 'sent', quote_no: 'DV-000027', quote_total_xaf: 63000, quote_paid_xaf: 20000, invoice_no: 'FA-000042',
+    containers: [], flights: [{ ref: '07112340011', status: 'ARRIVED', airline: 'Ethiopian Airlines', flight_no: 'ET 607', etd: '2026-10-05', eta: '2026-10-07' }],
+    parcels: dep3.parcels.map((p, i) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000121', 'RC-000098'), status: 'arrived', air_shipment_id: 'air3', awb_number: '07112340011', checked_in_at: '2026-10-08T09:40:00Z', condition: i === 1 ? 'damaged' : 'ok' })) },
+  { ...dep4, client, deposit_no: 'RC-000090', opened_at: '2026-08-20T03:10:00Z', closed_at: '2026-08-20T03:18:00Z', quote_status: 'invoiced', quote_no: 'DV-000020', quote_total_xaf: 30000, quote_paid_xaf: 30000, invoice_no: 'FA-000038', containers: [], flights: [],
+    parcels: dep4.parcels.map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000120', 'RC-000090'), status: 'delivered', delivered_at: '2026-09-30T10:00:00Z', release_id: 'rel0', release_no: 'BR-000003' })) },
+];
 
 // ── Phase 3 : les expéditions aériennes ──
 const airParcel = (p, d, q) => ({ ...withDep(p, d), status: 'loaded', air_shipment_id: 'air1', awb_number: '07112345675', quote_status: q?.status ?? null, quote_no: q?.quote_no ?? null, quote_total_xaf: q?.total_xaf ?? null, quote_paid_xaf: q?.amount_paid_xaf ?? null, invoice_no: q?.invoice_no ?? null });
@@ -140,7 +152,7 @@ const RPC = {
     { client: client3, location: 'office', parcels: 2, weight_kg: 9, cbm: 0.05, deposits: 1, last_at: today(11, 52) },
     { client: null, location: 'warehouse', parcels: 2, weight_kg: 16, cbm: 0.104, deposits: 2, last_at: today(10, 24) },
   ] },
-  reception_client_deposits: { success: true, deposits: [dep2Loaded, { ...dep1, status: 'closed', closed_at: today(14, 10) }, { ...dep3, client, deposit_no: 'RC-000098', opened_at: '2026-09-02T03:10:00Z', closed_at: '2026-09-02T03:18:00Z', parcels: loadedParcels.map((p) => ({ ...p, parcel_no: p.parcel_no.replace('RC-000121', 'RC-000098') })) }] },
+  reception_client_deposits: { success: true, deposits: clientDeposits },
   cargo_shipment_parcels: { success: true, parcels: loadedParcels },
   reception_loadable_parcels: { success: true, client_user_id: 'u1', parcels: [...dep2.parcels.slice(4).map((p) => withDep(p, dep2)), ...dep1.parcels.map((p) => withDep(p, dep1))] },
   reception_my_day: { success: true, day: '2026-09-20', stats: { deposits: 6, parcels: 31, weight_kg: 248, cbm: 1.84, open: 1 }, pending: 2, deposits: [dep0, dep1, dep2, dep3, dep4] },
@@ -292,7 +304,7 @@ for (const screen of ONLY.length ? ONLY : SCREENS) {
   if (screen === 'cargo-desk-expanded') { await page.click('button[aria-label="Déplier les colis"] >> nth=1'); await page.waitForTimeout(700); }
   if (screen === 'cargo-desk-parcels-selected') { await page.click('input[aria-label="Sélectionner RC-000122-05"]'); await page.click('input[aria-label="Sélectionner RC-000122-06"]'); await page.waitForTimeout(900); }
   if (screen === 'cargo-desk-viewer') { await page.click('role=dialog >> button[aria-label="Voir les photos"] >> nth=0'); await page.waitForTimeout(900); }
-  if (screen === 'cargo-desk-parcel-edit') { await page.click('role=dialog >> button[aria-label="Modifier"] >> nth=4'); await page.waitForTimeout(900); }
+  if (screen === 'cargo-desk-parcel-edit') { await page.locator('role=dialog >> button[aria-label="Modifier"]').nth(1).click({ timeout: 10_000 }); await page.waitForTimeout(900); }
   if (screen === 'cargo-desk-deposit-edit') { await page.click('text=Modifier le dépôt'); await page.waitForTimeout(700); }
   if (screen === 'cargo-desk-labels') { await page.click('role=dialog >> text=Étiquettes'); await page.waitForTimeout(2500); }
   if (screen === 'cargo-desk-labels-client') { await page.click('text=Étiquette client'); await page.waitForTimeout(2500); }

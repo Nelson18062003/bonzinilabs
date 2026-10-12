@@ -21,7 +21,8 @@ import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAddQuotePayment, useCancelQuotePayment, useInvoiceQuote, usePayQuoteFromWallet, uploadPaymentProof, usePaymentProofUrl } from '@/hooks/useCargoQuote';
 import { WalletBalanceCard } from '@/mobile/components/cargo/WalletBalanceCard';
-import { METHOD_LABEL, PLACE_SHORT, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type Quote, type QuotePayment } from '@/lib/cargoQuote';
+import { METHOD_LABEL, PLACE_SHORT, invoiceAcquitted, invoiceReadiness, quoteBalance, quotePaid, xaf, type PaymentMethod, type PaymentPlace, type Quote, type QuotePayment } from '@/lib/cargoQuote';
+import type { Parcel } from '@/lib/reception';
 import { CARGO_DOC_LANG_LABEL, deliverInvoicePdf, deliverReceiptPdf, downloadInvoicePdf, downloadReceiptPdf, readCargoDocLang, shareInvoicePdf, shareReceiptPdf, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { canShareFiles, prefersDownload, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import type { ShippingSettings } from '@/lib/customerCode';
@@ -103,7 +104,8 @@ function PaymentRow({ p, busy, canCancel, onCancel, onDownload, onShare }: { p: 
 /** Ce que la barre du bas de l'écran peut demander à cette section : ouvrir la feuille « Encaisser », ou établir la facture. */
 export type PaymentRequest = { kind: 'pay' | 'invoice'; n: number } | null;
 
-export function QuotePayments({ quote, settings, request, lang }: { quote: Quote; settings: ShippingSettings; request?: PaymentRequest; lang?: CargoDocLang }) {
+/** `parcels` : les colis du dépôt — arrivés à Douala, la facture s'établit avant le paiement (20261012100000). */
+export function QuotePayments({ quote, parcels, settings, request, lang }: { quote: Quote; parcels?: Parcel[] | null; settings: ShippingSettings; request?: PaymentRequest; lang?: CargoDocLang }) {
   const { hasPermission } = useAdminAuth();
   const canCollect = hasPermission('canCollectParcelPayments');
   const add = useAddQuotePayment();
@@ -116,6 +118,9 @@ export function QuotePayments({ quote, settings, request, lang }: { quote: Quote
   const paid = quotePaid(quote);
   const balance = quoteBalance(quote);
   const invoiced = !!quote.invoice_no;
+  // Acquittée : établie et soldée — les encaissements se figent. Due : elle s'encaisse encore.
+  const acquitted = invoiceAcquitted(quote);
+  const readiness = invoiceReadiness(quote, parcels);
   const payments = quote.payments ?? [];
 
   const [open, setOpen] = useState(false);
@@ -192,8 +197,8 @@ export function QuotePayments({ quote, settings, request, lang }: { quote: Quote
   useEffect(() => {
     if (!request || request.n === lastRequest.current) return;
     lastRequest.current = request.n;
-    if (request.kind === 'pay' && canCollect && !invoiced && balance > 0) openSheet();
-    if (request.kind === 'invoice' && canCollect && !invoiced && balance === 0 && total > 0) void issueInvoice();
+    if (request.kind === 'pay' && canCollect && !acquitted && balance > 0) openSheet();
+    if (request.kind === 'invoice' && canCollect && readiness.ready) void issueInvoice();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request]);
 
@@ -205,27 +210,29 @@ export function QuotePayments({ quote, settings, request, lang }: { quote: Quote
       <Card className="space-y-3">
         <div className="flex items-end justify-between gap-3">
           <span>
-            <span className={cn('block', TYPE.small, TEXT.muted)}>{invoiced ? `Facture acquittée ${quote.invoice_no}` : balance > 0 ? 'Reste à payer' : 'Entièrement payé'}</span>
-            <span className={cn('block text-[28px] font-semibold leading-tight tabular-nums', balance > 0 && !invoiced ? 'text-[#975102] dark:text-[#E8B931]' : 'text-[#02542D] dark:text-[#CFF7D3]')}>{xaf(balance > 0 ? balance : total)}</span>
+            <span className={cn('block', TYPE.small, TEXT.muted)}>{acquitted ? `Facture acquittée ${quote.invoice_no}` : invoiced ? `Facture ${quote.invoice_no} · reste à payer` : balance > 0 ? 'Reste à payer' : 'Entièrement payé'}</span>
+            <span className={cn('block text-[28px] font-semibold leading-tight tabular-nums', balance > 0 ? 'text-[#975102] dark:text-[#E8B931]' : 'text-[#02542D] dark:text-[#CFF7D3]')}>{xaf(balance > 0 ? balance : total)}</span>
           </span>
           <span className={cn('shrink-0 whitespace-nowrap text-right tabular-nums', TYPE.small, TEXT.muted)}>
             <span className="block">Devis {xaf(total)}</span>
             <span className="block">Encaissé {xaf(paid)}</span>
           </span>
         </div>
-        {canCollect && !invoiced && balance > 0 && total > 0 && (
+        {canCollect && !acquitted && balance > 0 && total > 0 && (
           <PrimaryPill onClick={openSheet} className="h-14 w-full text-[17px]"><Banknote /> Encaisser</PrimaryPill>
         )}
-        {canCollect && !invoiced && balance === 0 && total > 0 && (
-          <PrimaryPill onClick={() => void issueInvoice()} loading={invoicing} className="h-14 w-full text-[17px]"><FileCheck2 /> Établir la facture acquittée</PrimaryPill>
-        )}
+        {/* Tout payé : la facture acquittée est LE geste. Colis arrivés, reste dû : encaisser d'abord, la facture à côté. */}
+        {canCollect && readiness.ready && (readiness.acquitted
+          ? <PrimaryPill onClick={() => void issueInvoice()} loading={invoicing} className="h-14 w-full text-[17px]"><FileCheck2 /> Établir la facture acquittée</PrimaryPill>
+          : <Button variant="neutral" onClick={() => void issueInvoice()} loading={invoicing} className="min-h-12 w-full text-[16px]"><FileCheck2 /> Établir la facture (colis arrivés)</Button>)}
+        {canCollect && !invoiced && !readiness.ready && readiness.reason && balance > 0 && total > 0 && <p className={cn(TYPE.small, TEXT.muted)}>{readiness.reason}.</p>}
         {invoiced && (
           <div className="flex gap-2">
             <Button variant="neutral" onClick={() => void makePdf('invoice', () => downloadInvoicePdf(quote, settings, docLang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice'} disabled={pdfBusy != null} className="min-h-12 flex-1 text-[16px]">
-              <Download /> Télécharger la facture
+              <Download /> {acquitted ? 'Télécharger la facture' : 'Facture à régler'}
             </Button>
             {canShare && (
-              <Button variant="neutral" onClick={() => void makePdf('invoice-share', () => shareInvoicePdf(quote, settings, docLang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice-share'} disabled={pdfBusy != null} ariaLabel="Partager la facture acquittée" className="min-h-12 w-12 shrink-0 px-0">
+              <Button variant="neutral" onClick={() => void makePdf('invoice-share', () => shareInvoicePdf(quote, settings, docLang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice-share'} disabled={pdfBusy != null} ariaLabel={acquitted ? 'Partager la facture acquittée' : 'Partager la facture'} className="min-h-12 w-12 shrink-0 px-0">
                 <Share2 />
               </Button>
             )}
@@ -241,7 +248,7 @@ export function QuotePayments({ quote, settings, request, lang }: { quote: Quote
               key={p.id}
               p={p}
               busy={pdfBusy == null ? null : pdfBusy === `${p.id}:dl` ? 'dl' : pdfBusy === `${p.id}:share` ? 'share' : 'other'}
-              canCancel={canCollect && !invoiced}
+              canCancel={canCollect && !acquitted}
               onCancel={() => { setCancelId(p.id); setReason(''); }}
               onDownload={() => void makePdf(`${p.id}:dl`, () => downloadReceiptPdf(quote, p, settings, docLang), `Reçu ${p.receipt_no}`)}
               onShare={canShare ? () => void makePdf(`${p.id}:share`, () => shareReceiptPdf(quote, p, settings, docLang), `Reçu ${p.receipt_no}`) : undefined}

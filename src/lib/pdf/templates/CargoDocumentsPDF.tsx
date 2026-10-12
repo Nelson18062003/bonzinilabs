@@ -35,7 +35,7 @@
 //     sur Helvetica et désaligne toute la page.
 // ============================================================
 import type { ComponentProps, ReactNode } from 'react';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import type { Style } from '@react-pdf/types';
 import { PdfLogo } from '../components/PDFHeader';
 import '../fonts';
@@ -44,7 +44,8 @@ import {
 } from '../cargoDocFormat';
 import type { PaymentMethod, PaymentPlace, Quote, QuoteLine, QuotePayment } from '@/lib/cargoQuote';
 import { activePayments, lineNeedsMeasure, quoteBalance, quotePaid } from '@/lib/cargoQuote';
-import { clientFullName } from '@/lib/reception';
+import { clientFullName, type BroughtBy, type ReceptionCondition } from '@/lib/reception';
+import { receptionDocData, type ReceptionDocData, type ReceptionParcelExtra } from '@/lib/receptionDoc';
 import type { ShippingSettings } from '@/lib/customerCode';
 import { CARGO_COMPANY, companyBankAccounts } from '@/lib/companyIdentity';
 import { xafInWords } from '@/lib/amountInWords';
@@ -54,24 +55,24 @@ import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
 export type CargoDocLang = 'fr' | 'en';
 
 // ── La palette de la packing list (build5.py) ──
-const C = {
+export const C = {
   violet: '#7A33FF', violetTint: '#F1EAFF',
   amber: '#F3A745', amberText: '#B26A00',
   orange: '#FE560D', orangeTint: '#FFE9DE',
   black: '#111111', grey: '#4B5563', rule: '#D1D5DB', headBg: '#F3F4F6', white: '#FFFFFF',
 };
-const MM = 2.8346;
+export const MM = 2.8346;
 const MARGIN = 15 * MM;
-const PAD = 8;
-const GAP = 14;
+export const PAD = 8;
+export const GAP = 14;
 
 // Pas de césure : la coupure par défaut (anglaise) écrivait « Nko-lo », « mar-chandise ». Un mot passe entier à la ligne.
 const keepWords = (word: string) => [word];
-function T(props: ComponentProps<typeof Text>) {
+export function T(props: ComponentProps<typeof Text>) {
   return <Text hyphenationCallback={keepWords} {...props} />;
 }
 
-const st = StyleSheet.create({
+export const st = StyleSheet.create({
   page: { fontFamily: 'DM Sans', fontSize: 10, color: C.black, backgroundColor: C.white, paddingTop: 48 * MM, paddingBottom: 20 * MM, paddingHorizontal: MARGIN },
   // en-tête (chaque page)
   header: { position: 'absolute', top: 10 * MM, left: MARGIN, right: MARGIN },
@@ -129,21 +130,50 @@ const st = StyleSheet.create({
   stampLine: { fontSize: 6.6, color: C.violet, marginTop: 0.5, textAlign: 'center' },
   stampDate: { fontSize: 8.6, fontWeight: 700, color: C.violet, marginTop: 3, textAlign: 'center' },
   // verso
-  condRow: { flexDirection: 'row', paddingVertical: 3, borderBottomWidth: 0.4, borderBottomColor: C.rule },
-  condNo: { width: 7 * MM, fontSize: 8.8, fontWeight: 700 },
-  condText: { flex: 1, fontSize: 8.8, lineHeight: 1.3 },
+  // Dix conditions (guide du 04/10/2026), les banques et les adresses tiennent une page : corps 8,3.
+  condRow: { flexDirection: 'row', paddingVertical: 1.8, borderBottomWidth: 0.4, borderBottomColor: C.rule },
+  condNo: { width: 6 * MM, fontSize: 8.3, fontWeight: 700 },
+  condText: { flex: 1, fontSize: 8.3, lineHeight: 1.25 },
   addrCol: { paddingHorizontal: 9 },
-  addrTitle: { fontSize: 9.5, fontWeight: 700, marginBottom: 3 },
-  addrLine: { fontSize: 9, lineHeight: 1.35 },
-  addrZh: { fontSize: 8.5, color: C.grey, lineHeight: 1.4, fontFamily: 'Noto Sans SC', marginTop: 2 },
+  addrTitle: { fontSize: 9.3, fontWeight: 700, marginBottom: 2.5 },
+  addrLine: { fontSize: 8.7, lineHeight: 1.3 },
+  addrZh: { fontSize: 8.3, color: C.grey, lineHeight: 1.35, fontFamily: 'Noto Sans SC', marginTop: 2 },
 });
 
 // ── Tout ce que les documents écrivent, dans les deux langues ──
 type Kinds = Record<string, readonly [string, string]>;
-const TXT = {
+export const TXT = {
   fr: {
     hTitleQuote: 'DEVIS DE FRET', hTitleReceipt: 'REÇU DE PAIEMENT', hTitleInvoice: 'FACTURE ACQUITTÉE',
+    hTitleReception: 'BON DE RÉCEPTION\nET DEVIS', hTitleInvoiceDue: 'FACTURE',
     ref: 'Réf.', issued: 'Émis le', issuedInvoice: 'Émise le',
+    titleReception: 'Bon de réception et devis', titleInvoiceDue: 'Facture',
+    modeLine: { warehouse: 'Fret maritime', office: 'Fret aérien' },
+    secReception: 'Réception', secAgreement: 'Votre déclaration et votre accord', secPhotos: 'Photos de vos colis',
+    broughtBy: 'Apporté par',
+    broughtByKind: { courier: 'Un transporteur', client: 'Le client en personne', representative: 'Un représentant du client', pickup: 'Enlevé par Bonzini' } as Record<BroughtBy, string>,
+    colPhoto: 'Photo', noPhoto: 'sans photo', morePhotos: (n: number) => `+${n}${NBSP}photo${n > 1 ? 's' : ''}`,
+    condition: { good: 'Bon état apparent', damaged: 'Carton abîmé', opened: 'Colis ouvert', wet: 'Colis mouillé' } as Record<ReceptionCondition, string>,
+    conditionPrefix: 'État à la réception : ', reservePrefix: 'Réserve : ',
+    toPrice: 'À chiffrer',
+    pendingPrice: (n: number) => `${n} colis à chiffrer : le montant sera complété.`,
+    quotePending: 'Devis en préparation : le prix de vos colis vous sera communiqué dès qu’ils seront chiffrés. Ce bon atteste ce que nous avons reçu.',
+    receivedAsIs: 'Sauf réserve écrite ci-dessus, les colis ont été reçus en bon état apparent. Leur contenu n’a pas été ouvert ni vérifié.',
+    delayNote: 'Délais d’acheminement estimés, non garantis : la date d’arrivée vous est confirmée au départ des colis.',
+    priceIncludes: 'Le prix comprend', priceExcludes: 'Le prix ne comprend pas',
+    includes: ['le transport de Guangzhou à Douala', 'la manutention dans nos entrepôts', 'la remise des colis à notre bureau de Douala'],
+    excludes: ['l’assurance des marchandises (sur demande, en supplément)', 'le transport au-delà de Douala', 'le magasinage au-delà de 3 jours ouvrés après l’arrivée'],
+    declareTitle: 'Déclaration du client',
+    declareContent: 'Contenu des colis', declareValue: 'Valeur des marchandises',
+    declareText: 'Je déclare exacts le contenu et la valeur ci-dessus. Je m’engage à fournir la facture d’achat de ces marchandises et je mandate N.G.B SARL pour les déclarer en douane pour mon compte. J’assume les conséquences d’une fausse déclaration ou d’une marchandise interdite.',
+    agreeTitle: 'Bon pour accord', certifyTitle: 'Déclaration certifiée exacte',
+    agreeText: 'J’accepte le présent devis et les conditions générales de service.',
+    agreeAlt: 'Ou répondez « Bon pour accord » par écrit (WhatsApp, e-mail), en rappelant la référence.',
+    signName: 'Nom', signDate: 'Date', signHere: 'Signature',
+    photoOf: (no: string, i: number, n: number) => `${no}${NBSP}· ${i}/${n}`,
+    invoiceDueFootnote: (ref: string) => `Facture à régler avant le retrait des colis, sur les comptes de la société, en rappelant la référence ${ref}. Elle sera marquée « acquittée » au paiement.`,
+    invoiceOf: (quote: string) => `Devis ${quote}`,
+    invoiceTotalAndPaid: (total: string, paid: string) => `Total de la facture ${total} · déjà réglé ${paid}`,
     titleQuote: { warehouse: 'Devis de fret maritime', office: 'Devis de fret aérien' },
     titleReceipt: 'Reçu de paiement', titleInvoice: 'Facture acquittée', quoteWord: 'Devis',
     capital: 'SARL au capital de', tel: 'Tél.',
@@ -185,17 +215,20 @@ const TXT = {
     colReceipt: 'Reçu', colDate: 'Date', colMethod: 'Mode', colPlace: 'Lieu', thisReceipt: 'ce reçu',
     bankName: 'Banque', iban: 'IBAN', swift: 'SWIFT',
     bankHolder: (name: string) => `Titulaire : ${name}. `,
-    otherWays: (ref: string) => `Également : Mobile Money, espèces à nos bureaux de Guangzhou ou de Douala, ou débit de votre solde Bonzini (sur demande). Rappelez la référence ${ref} sur tout paiement.`,
+    otherWays: (ref: string) => `Paiement sur les comptes de la société, avant le retrait. Également : Mobile Money, ou débit de votre solde Bonzini (sur demande). Aucun paiement en espèces au-delà de 500${NBSP}000 FCFA (Règlement CEMAC n°${NBSP}03/16). Rappelez la référence ${ref} sur tout paiement.`,
     addrDouala: 'Douala — siège et retrait', addrOffice: `Guangzhou — bureau (Air${NBSP}Cargo)`, addrWarehouse: `Guangzhou — entrepôt (Sea${NBSP}Cargo)`,
     pickupOffice: 'Bureau de Douala',
     conditions: (where: string) => [
       'Le client dispose de 3 jours ouvrés après l’arrivée de la marchandise à Douala pour en prendre possession. Passé ce délai, des frais de magasinage sont appliqués au moment du retrait.',
-      'N.G.B SARL n’est en aucun cas responsable des marchandises contrefaites : le propriétaire en porte l’entière responsabilité.',
-      'Les marchandises abandonnées dans nos entrepôts au-delà de 2 mois sont vendues aux enchères afin de couvrir les frais engagés par l’entreprise.',
+      `Les colis ne sont remis qu’après paiement complet des sommes dues (droit de rétention, Acte uniforme OHADA portant organisation des sûretés, art.${NBSP}67).`,
+      'Marchandises non retirées : au-delà de 2 mois après l’arrivée et après une mise en demeure restée sans effet, N.G.B SARL peut demander au juge l’autorisation de les vendre pour couvrir les sommes dues. Les frais de magasinage continuent de courir.',
+      'Le client déclare honnêtement le contenu et la valeur de ses colis. Il assume les conséquences d’une fausse déclaration et l’entière responsabilité des marchandises contrefaites.',
       'Nous ne transportons ni matériel militaire ni produits assimilés. Toute violation de la présente clause fait l’objet d’une dénonciation aux autorités.',
-      'Les colis fragiles non protégés voyagent aux risques du client : aucune responsabilité n’est assumée en cas de dommage.',
-      'Les montants s’entendent pour une livraison à Douala. Pour les autres villes (Yaoundé, Buea, Bamenda, Bafoussam…), le transport intérieur se négocie au Cameroun.',
-      `Les poids et volumes sont ceux mesurés à notre ${where}. Le règlement intégral conditionne la remise de la marchandise.`,
+      'Les marchandises ne sont pas assurées par N.G.B SARL, sauf assurance demandée et payée en supplément. Les colis fragiles non protégés voyagent aux risques du client.',
+      `Prix au m³ (maritime) ou au kilo (aérien), sur les poids et volumes mesurés à notre ${where}, pour une livraison à Douala. Pour les autres villes (Yaoundé, Buea, Bamenda, Bafoussam…), le transport intérieur se négocie au Cameroun.`,
+      'Les délais annoncés sont estimés et non garantis : ce qui dépend de l’armateur, de la compagnie aérienne ou de la douane n’est pas de notre fait.',
+      'Vérifiez vos colis au retrait et écrivez vos réserves sur le bon de retrait. Un dommage non apparent se signale par écrit dans les 15 jours.',
+      'Paiement sur les comptes de la société uniquement, avant le retrait.',
     ],
     whereWarehouse: 'entrepôt de Guangzhou', whereOffice: 'bureau de Guangzhou',
     footer: (dep: string) => `Dépôt ${dep}`,
@@ -203,7 +236,35 @@ const TXT = {
   },
   en: {
     hTitleQuote: 'FREIGHT QUOTE', hTitleReceipt: 'PAYMENT RECEIPT', hTitleInvoice: 'PAID INVOICE',
+    hTitleReception: 'GOODS RECEIPT\nAND QUOTE', hTitleInvoiceDue: 'INVOICE',
     ref: 'Ref.', issued: 'Issued', issuedInvoice: 'Issued',
+    titleReception: 'Goods receipt and quote', titleInvoiceDue: 'Invoice',
+    modeLine: { warehouse: 'Sea freight', office: 'Air freight' },
+    secReception: 'Receipt', secAgreement: 'Your declaration and approval', secPhotos: 'Photos of your parcels',
+    broughtBy: 'Brought by',
+    broughtByKind: { courier: 'A courier', client: 'The customer in person', representative: 'Someone for the customer', pickup: 'Collected by Bonzini' } as Record<BroughtBy, string>,
+    colPhoto: 'Photo', noPhoto: 'no photo', morePhotos: (n: number) => `+${n}${NBSP}photo${n > 1 ? 's' : ''}`,
+    condition: { good: 'Good apparent condition', damaged: 'Damaged carton', opened: 'Opened parcel', wet: 'Wet parcel' } as Record<ReceptionCondition, string>,
+    conditionPrefix: 'Condition on receipt: ', reservePrefix: 'Reserve: ',
+    toPrice: 'To be priced',
+    pendingPrice: (n: number) => `${n} parcel${n === 1 ? '' : 's'} still to be priced: the amount will be updated.`,
+    quotePending: 'Quote in preparation: the price of your parcels will be sent to you as soon as they are priced. This note confirms what we received.',
+    receivedAsIs: 'Unless a reserve is written above, the parcels were received in good apparent condition. Their contents were not opened or checked.',
+    delayNote: 'Transit times are estimates, not guaranteed: the arrival date is confirmed when the parcels leave.',
+    priceIncludes: 'The price includes', priceExcludes: 'The price does not include',
+    includes: ['transport from Guangzhou to Douala', 'handling in our warehouses', 'collection at our Douala office'],
+    excludes: ['insurance of the goods (on request, at extra cost)', 'transport beyond Douala', 'storage beyond 3 working days after arrival'],
+    declareTitle: 'Customer declaration',
+    declareContent: 'Contents of the parcels', declareValue: 'Value of the goods',
+    declareText: 'I declare the contents and value above to be accurate. I undertake to provide the purchase invoice for these goods and I authorise N.G.B SARL to declare them to customs on my behalf. I bear the consequences of any false declaration or prohibited goods.',
+    agreeTitle: 'Approved', certifyTitle: 'Certified accurate',
+    agreeText: 'I accept this quote and the general terms of service.',
+    agreeAlt: 'Or reply “Approved” in writing (WhatsApp, e-mail), quoting the reference.',
+    signName: 'Name', signDate: 'Date', signHere: 'Signature',
+    photoOf: (no: string, i: number, n: number) => `${no}${NBSP}· ${i}/${n}`,
+    invoiceDueFootnote: (ref: string) => `Invoice payable before the parcels are collected, to the company’s accounts, quoting reference ${ref}. It will be marked “paid” on payment.`,
+    invoiceOf: (quote: string) => `Quote ${quote}`,
+    invoiceTotalAndPaid: (total: string, paid: string) => `Invoice total ${total} · already paid ${paid}`,
     titleQuote: { warehouse: 'Sea freight quote', office: 'Air freight quote' },
     titleReceipt: 'Payment receipt', titleInvoice: 'Paid invoice', quoteWord: 'Quote',
     capital: 'SARL with a share capital of', tel: 'Tel.',
@@ -245,52 +306,55 @@ const TXT = {
     colReceipt: 'Receipt', colDate: 'Date', colMethod: 'Method', colPlace: 'Place', thisReceipt: 'this receipt',
     bankName: 'Bank', iban: 'IBAN', swift: 'SWIFT',
     bankHolder: (name: string) => `Account holder: ${name}. `,
-    otherWays: (ref: string) => `Also: Mobile Money, cash at our Guangzhou or Douala offices, or a debit from your Bonzini balance (on request). Include reference ${ref} with every payment.`,
+    otherWays: (ref: string) => `Payment to the company’s accounts, before collection. Also: Mobile Money, or a debit from your Bonzini balance (on request). No cash payment above 500,000 FCFA (CEMAC Regulation No.${NBSP}03/16). Include reference ${ref} with every payment.`,
     addrDouala: 'Douala — head office and collection', addrOffice: `Guangzhou — office (Air${NBSP}Cargo)`, addrWarehouse: `Guangzhou — warehouse (Sea${NBSP}Cargo)`,
     pickupOffice: 'Douala office',
     conditions: (where: string) => [
       'The customer has 3 working days after the goods arrive in Douala to collect them. After that, storage fees are charged on collection.',
-      'N.G.B SARL is in no way liable for counterfeit goods: their owner bears full responsibility.',
-      'Goods left in our warehouses for more than 2 months are auctioned to cover the costs incurred by the company.',
+      `Parcels are released only once everything due has been paid in full (right of retention, OHADA Uniform Act on Securities, art.${NBSP}67).`,
+      'Uncollected goods: more than 2 months after arrival and after a formal notice has gone unanswered, N.G.B SARL may ask the court for permission to sell them to cover the sums due. Storage fees keep running.',
+      'The customer declares the contents and value of their parcels honestly. They bear the consequences of any false declaration and full responsibility for counterfeit goods.',
       'We do not carry military equipment or similar goods. Any breach of this clause is reported to the authorities.',
-      'Unprotected fragile parcels travel at the customer’s risk: no liability is accepted for damage.',
-      'Amounts are for delivery in Douala. For other cities (Yaoundé, Buea, Bamenda, Bafoussam…), inland transport is negotiated in Cameroon.',
-      `Weights and volumes are those measured at our ${where}. Goods are released upon full payment.`,
+      'Goods are not insured by N.G.B SARL unless insurance is requested and paid for as an extra. Unprotected fragile parcels travel at the customer’s risk.',
+      `Price per m³ (sea) or per kilo (air), on the weights and volumes measured at our ${where}, for delivery in Douala. For other cities (Yaoundé, Buea, Bamenda, Bafoussam…), inland transport is negotiated in Cameroon.`,
+      'Announced transit times are estimates, not guaranteed: delays caused by the shipping line, the airline or customs are beyond our control.',
+      'Check your parcels on collection and write any reserves on the release note. Hidden damage must be reported in writing within 15 days.',
+      'Payment to the company’s accounts only, before collection.',
     ],
     whereWarehouse: 'Guangzhou warehouse', whereOffice: 'Guangzhou office',
     footer: (dep: string) => `Deposit ${dep}`,
     page: (n: number, total: number) => `Page ${n} / ${total}`,
   },
 };
-type Txt = (typeof TXT)['fr'];
+export type Txt = (typeof TXT)['fr'];
 
 /** Un colis sans description prend son TYPE, traduit — jamais la valeur brute de la base (« bag »). */
 const lineLabel = (l: QuoteLine, t: Txt) =>
   l.kind === 'parcel' ? (l.description || l.label || (l.kind_of_parcel ? t.kindLabel[l.kind_of_parcel] ?? t.parcel : t.parcel)) : l.label;
 
 /** Le pays du client, enregistré en français (« Cameroun », « RD Congo ») ; en anglais pour un document anglais. */
-const countryIn = (c: string | null | undefined, lang: CargoDocLang) => {
+export const countryIn = (c: string | null | undefined, lang: CargoDocLang) => {
   if (!c || lang !== 'en') return c;
   const iso = isoFromCountryLabel(c);
   return iso ? countryName(iso, 'en') : c;
 };
 
 /** Le texte TAPÉ et sa police : ramené aux glyphes des polices (pdfSafe), coupé pour sa colonne, au plus `maxLines` lignes. */
-const fitted = (s: string | null | undefined, width: number, size: number, maxLines = 6) => {
+export const fitted = (s: string | null | undefined, width: number, size: number, maxLines = 6) => {
   const safe = pdfSafe(s);
   return { text: clampLines(safe, width, size, maxLines), font: fontFor(safe) };
 };
 /** Un numéro et son libellé ne se séparent pas : « B/L MAEU 2261 8834 ». */
-const nb = (s: string) => s.replace(/ /g, NBSP);
+export const nb = (s: string) => s.replace(/ /g, NBSP);
 /** « LTA 071-12345675 », ou « LTA à venir » tant qu'elle est provisoire (PROV-… ne s'imprime jamais). */
-const awbText = (n: string, t: Txt) => nb(isProvisionalAwb(n) ? t.awbPending : `${t.awb} ${formatAwb(n)}`);
+export const awbText = (n: string, t: Txt) => nb(isProvisionalAwb(n) ? t.awbPending : `${t.awb} ${formatAwb(n)}`);
 /** « A · B · C » : le point reste collé au mot qui le précède. */
-const dots = (parts: Array<string | null | undefined | false>) => parts.filter(Boolean).join(`${NBSP}· `);
+export const dots = (parts: Array<string | null | undefined | false>) => parts.filter(Boolean).join(`${NBSP}· `);
 
 // ============================================================
 // Le cadre de chaque page : en-tête, barre tricolore, pied
 // ============================================================
-function Header({ title, reference, issuedLabel, issuedOn, lang }: { title: string; reference: string; issuedLabel: string; issuedOn: string; lang: CargoDocLang }) {
+function Header({ title, reference, issuedLabel, issuedOn, extraMeta, lang }: { title: string; reference: string; issuedLabel: string; issuedOn: string; extraMeta?: string | null; lang: CargoDocLang }) {
   const t = TXT[lang];
   const co = CARGO_COMPANY;
   return (
@@ -307,6 +371,7 @@ function Header({ title, reference, issuedLabel, issuedOn, lang }: { title: stri
         <View style={st.headRight}>
           <T style={st.docTitle}>{title}</T>
           <T style={[st.docMeta, { marginTop: 5 }]}>{t.ref} {reference}</T>
+          {extraMeta ? <T style={st.docMeta}>{extraMeta}</T> : null}
           <T style={st.docMeta}>{issuedLabel} {issuedOn}</T>
         </View>
       </View>
@@ -319,23 +384,24 @@ function Header({ title, reference, issuedLabel, issuedOn, lang }: { title: stri
   );
 }
 
-function Footer({ q, lang }: { q: Quote; lang: CargoDocLang }) {
+/** `footRef` : ce que le pied rappelle à droite de la société (« Dépôt RC-000122 », « Conteneur MIEU… »). */
+export function Footer({ footRef, lang }: { footRef: string; lang: CargoDocLang }) {
   const t = TXT[lang];
   return (
     <View style={st.footer} fixed>
-      <T style={st.footText}>{CARGO_COMPANY.tradeName}  —  {CARGO_COMPANY.legalName}  ·  {CARGO_COMPANY.email}  ·  {t.footer(q.deposit_no)}</T>
+      <T style={st.footText}>{CARGO_COMPANY.tradeName}  —  {CARGO_COMPANY.legalName}  ·  {CARGO_COMPANY.email}  ·  {footRef}</T>
       <T style={st.footPage} render={({ pageNumber, totalPages }) => t.page(pageNumber, totalPages)} />
     </View>
   );
 }
 
-function Shell({ q, lang, headTitle, reference, issuedLabel, issuedOn, children }: { q: Quote; lang: CargoDocLang; headTitle: string; reference: string; issuedLabel: string; issuedOn: string; children: ReactNode }) {
+export function Shell({ footRef, lang, headTitle, reference, issuedLabel, issuedOn, extraMeta, children }: { footRef: string; lang: CargoDocLang; headTitle: string; reference: string; issuedLabel: string; issuedOn: string; extraMeta?: string | null; children: ReactNode }) {
   return (
-    <Document language={lang} title={`${headTitle} ${reference}`} author={CARGO_COMPANY.legalName} subject={TXT[lang].footer(q.deposit_no)}>
+    <Document language={lang} title={`${headTitle.replace(/\n/g, ' ')} ${reference}`} author={CARGO_COMPANY.legalName} subject={footRef}>
       <Page size="A4" style={st.page}>
-        <Header title={headTitle} reference={reference} issuedLabel={issuedLabel} issuedOn={issuedOn} lang={lang} />
+        <Header title={headTitle} reference={reference} issuedLabel={issuedLabel} issuedOn={issuedOn} extraMeta={extraMeta} lang={lang} />
         {children}
-        <Footer q={q} lang={lang} />
+        <Footer footRef={footRef} lang={lang} />
       </Page>
     </Document>
   );
@@ -344,7 +410,7 @@ function Shell({ q, lang, headTitle, reference, issuedLabel, issuedOn, children 
 // ============================================================
 // Les briques
 // ============================================================
-function DocHead({ title, subtitle }: { title: string; subtitle: string }) {
+export function DocHead({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View style={{ marginBottom: GAP }}>
       <T style={st.title}>{title}</T>
@@ -353,7 +419,7 @@ function DocHead({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function Section({ n, title, children, flush = false, style, wrap }: { n: number; title: string; children: ReactNode; flush?: boolean; style?: Style; wrap?: boolean }) {
+export function Section({ n, title, children, flush = false, style, wrap }: { n: number; title: string; children: ReactNode; flush?: boolean; style?: Style; wrap?: boolean }) {
   return (
     // `wrap` seulement s'il est donné : react-pdf lit `'wrap' in props`, et wrap={undefined} rendait la section insécable.
     <View style={[st.section, ...(style ? [style] : [])]} {...(wrap === undefined ? {} : { wrap })}>
@@ -363,10 +429,10 @@ function Section({ n, title, children, flush = false, style, wrap }: { n: number
   );
 }
 
-type Tone = 'violet' | 'orange' | 'amber' | 'muted';
+export type Tone = 'violet' | 'orange' | 'amber' | 'muted';
 /** Une valeur simple, ou une liste [repère, valeur] quand il y a plusieurs conteneurs ou vols (le repère en gris au-dessus). */
 type KvVal = string | Array<[id: string, value: string, tone?: Tone]>;
-type Kv = [label: string, value: KvVal, tone?: Tone];
+export type Kv = [label: string, value: KvVal, tone?: Tone];
 const TONE: Record<Tone, Style> = { violet: { color: C.violet }, orange: { color: C.orange }, amber: { color: C.amberText }, muted: { color: C.grey, fontWeight: 500 } };
 
 /** Une valeur : le latin en gras (DM Sans), le chinois en ligne grise dessous — comme les noms de produits de la packing list. */
@@ -394,7 +460,7 @@ function KvValue({ value, tone }: { value: KvVal; tone?: Tone }) {
   );
 }
 
-function KvList({ rows }: { rows: Kv[] }) {
+export function KvList({ rows }: { rows: Kv[] }) {
   return (
     <View>
       {rows.map(([label, value, tone], i) => (
@@ -407,9 +473,8 @@ function KvList({ rows }: { rows: Kv[] }) {
   );
 }
 
-function ClientBlock({ q, lang }: { q: Quote; lang: CargoDocLang }) {
+export function ClientBlock({ client: c, lang }: { client: Quote['client']; lang: CargoDocLang }) {
   const t = TXT[lang];
-  const c = q.client;
   if (!c) return <KvList rows={[[t.name, t.toAssign, 'orange'], [t.company, '—'], [t.bonziniId, t.toCreate, 'orange'], [t.phone, t.toFill, 'orange']]} />;
   const rows: Kv[] = [
     [t.name, clientFullName(c) || '—'],
@@ -424,7 +489,7 @@ function ClientBlock({ q, lang }: { q: Quote; lang: CargoDocLang }) {
 }
 
 /** `asOf` : la date du document. Une arrivée passée à cette date n'est plus « estimée ». */
-function ShipmentBlock({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?: string | null }) {
+function ShipmentBlock({ q, lang, asOf, extra = [] }: { q: Quote; lang: CargoDocLang; asOf?: string | null; extra?: Kv[] }) {
   const t = TXT[lang];
   const sea = q.location !== 'office';
   const parcels = q.lines.filter((l) => l.kind === 'parcel');
@@ -435,6 +500,7 @@ function ShipmentBlock({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?:
     [t.reception, `${sea ? t.atWarehouse : t.atOffice}\n${docDay(q.opened_at, lang, PLACE_TZ.guangzhou)}`],
   ];
   if (q.received_by_name) rows.push([t.receivedBy, q.received_by_name]);
+  rows.push(...extra);
   if (q.supplier_name) rows.push([q.supplier_kind === 'buying_agent' ? t.buyingAgent : t.supplier, q.supplier_name]);
   const containers = q.containers ?? [];
   const flights = q.flights ?? [];
@@ -467,28 +533,70 @@ function ShipmentBlock({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?:
 
 // Sécable entre deux lignes (chaque ligne clé / valeur, elle, est insécable) : un dépôt réparti sur beaucoup de
 // conteneurs ou de vols ne peut pas dépasser une page et se faire écraser.
-function PartiesRow({ q, lang, asOf }: { q: Quote; lang: CargoDocLang; asOf?: string | null }) {
+function PartiesRow({ q, lang, asOf, shipTitle, extra }: { q: Quote; lang: CargoDocLang; asOf?: string | null; shipTitle?: string; extra?: Kv[] }) {
   const t = TXT[lang];
   return (
     <View style={{ flexDirection: 'row' }}>
-      <Section n={1} title={t.secClient} style={{ flex: 1, marginRight: 6 * MM }}><ClientBlock q={q} lang={lang} /></Section>
-      <Section n={2} title={t.secShipment} style={{ flex: 1 }}><ShipmentBlock q={q} lang={lang} asOf={asOf} /></Section>
+      <Section n={1} title={t.secClient} style={{ flex: 1, marginRight: 6 * MM }}><ClientBlock client={q.client} lang={lang} /></Section>
+      <Section n={2} title={shipTitle ?? t.secShipment} style={{ flex: 1 }}><ShipmentBlock q={q} lang={lang} asOf={asOf} extra={extra} /></Section>
     </View>
   );
 }
 
-// Colonnes du tableau des marchandises (largeur de la section : 180 mm)
-const COL = { no: 26, dims: 86, weight: 54, vol: 54, rate: 60, amount: 72 };
-const DESIGNATION_W = 180 * MM - (COL.no + COL.dims + COL.weight + COL.vol + COL.rate + COL.amount) - 10;
+// Colonnes du tableau des marchandises (largeur de la section : 180 mm). Avec les photos (bon de réception),
+// une colonne de vignettes prend sa place et les chiffres se serrent ; sans prix, tarif et montant disparaissent.
+type Cols = { no: number; photo: number; dims: number; weight: number; vol: number; rate: number; amount: number };
+const COLS: Record<'priced' | 'pricedPhoto' | 'plain' | 'plainPhoto', Cols> = {
+  priced: { no: 26, photo: 0, dims: 86, weight: 54, vol: 54, rate: 60, amount: 72 },
+  pricedPhoto: { no: 22, photo: 48, dims: 78, weight: 46, vol: 48, rate: 54, amount: 66 },
+  plain: { no: 26, photo: 0, dims: 92, weight: 60, vol: 60, rate: 0, amount: 0 },
+  plainPhoto: { no: 24, photo: 52, dims: 92, weight: 58, vol: 58, rate: 0, amount: 0 },
+};
+const designationW = (c: Cols) => 180 * MM - (c.no + c.photo + c.dims + c.weight + c.vol + c.rate + c.amount) - 10;
+const THUMB = 42;
 
 /** Où voyage le colis, quand le dépôt est réparti entre plusieurs conteneurs ou vols. */
 const whereIs = (l: QuoteLine, t: Txt) => (l.container_number ? nb(l.container_number) : l.awb_number ? awbText(l.awb_number, t) : null);
 
-/** `footer` : ce qui suit la ligne de total (le montant, la signature) — total et montant changent de page ensemble. */
-function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?: ReactNode }) {
+/** La vignette d'un colis : sa couverture, ou une case grise « sans photo » ; « +2 photos » dessous. */
+function Thumb({ extra, t }: { extra: ReceptionParcelExtra | undefined; t: Txt }) {
+  const more = (extra?.photoCount ?? 0) - 1;
+  return (
+    <View style={{ alignItems: 'center' }}>
+      {extra?.cover
+        ? <Image src={extra.cover.src} style={{ width: THUMB, height: THUMB, objectFit: 'cover', borderRadius: 2 }} />
+        : (
+          <View style={{ width: THUMB, height: THUMB, borderRadius: 2, backgroundColor: C.headBg, alignItems: 'center', justifyContent: 'center' }}>
+            <T style={{ fontSize: 6.5, color: C.grey, textAlign: 'center' }}>{t.noPhoto}</T>
+          </View>
+        )}
+      {more > 0 ? <T style={{ fontSize: 6.5, color: C.grey, marginTop: 1.5 }}>{t.morePhotos(more)}</T> : null}
+    </View>
+  );
+}
+
+/** L'état à la réception, sous la désignation : gris sans réserve, orange avec. */
+function ConditionLine({ extra, width, t }: { extra: ReceptionParcelExtra; width: number; t: Txt }) {
+  const reserve = !!extra.condition && extra.condition !== 'good';
+  const text = reserve
+    ? `${t.reservePrefix}${t.condition[extra.condition as ReceptionCondition]}${extra.conditionNote ? ` · ${extra.conditionNote}` : ''}`
+    : `${t.conditionPrefix}${t.condition.good}${extra.conditionNote ? ` · ${extra.conditionNote}` : ''}`;
+  const f = fitted(text, width, 8, 3);
+  return <T style={{ fontSize: 8, marginTop: 2, fontFamily: f.font, ...(reserve ? { color: C.orange, fontWeight: 700 } : { color: C.grey }) }}>{f.text}</T>;
+}
+
+/**
+ * Le tableau « Vos marchandises ». `footer` : ce qui suit la ligne de total (le montant, la signature) — total
+ * et montant changent de page ensemble. `priced` : tarif et montant (sinon, mesures seules). `extras` : la
+ * vignette et l'état à la réception de chaque colis (bon de réception).
+ */
+function GoodsTable({ q, lang, footer, priced = true, extras }: { q: Quote; lang: CargoDocLang; footer?: ReactNode; priced?: boolean; extras?: ReadonlyMap<string, ReceptionParcelExtra> | null }) {
   const t = TXT[lang];
+  const photo = !!extras;
+  const COL = COLS[priced ? (photo ? 'pricedPhoto' : 'priced') : (photo ? 'plainPhoto' : 'plain')];
+  const DESIGNATION_W = designationW(COL);
   const parcels = q.lines.filter((l) => l.kind === 'parcel');
-  const others = q.lines.filter((l) => l.kind !== 'parcel');
+  const others = priced ? q.lines.filter((l) => l.kind !== 'parcel') : [];
   const unit = rateUnit(parcels);
   const split = new Set(parcels.map((l) => whereIs(l, t))).size > 1;
   const sum = (f: (l: QuoteLine) => number | null | undefined) => parcels.reduce((s, l) => s + Number(f(l) ?? 0), 0);
@@ -501,15 +609,17 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
       <T style={[st.thUnit, { textAlign: align }]}>{u ?? ' '}</T>
     </View>
   );
+  const extraOf = (l: QuoteLine) => (l.parcel_id ? extras?.get(l.parcel_id) : undefined);
   // Le tarif : le nombre ; l'unité dans l'en-tête si tous les colis ont la même base, sinon sous le nombre.
   const rateCell = (l: QuoteLine) => (
     <View style={[st.td, { width: COL.rate }]}>
-      <T style={right}>{l.basis === 'fixed' || l.unit_price_xaf == null ? t.flat : money(l.unit_price_xaf, lang)}</T>
+      <T style={right}>{extraOf(l)?.unpriced ? '—' : l.basis === 'fixed' || l.unit_price_xaf == null ? t.flat : money(l.unit_price_xaf, lang)}</T>
       {!unit && l.basis !== 'fixed' && l.unit_price_xaf != null ? <T style={[st.tdSub, right]}>{t.perUnit(l.basis === 'per_kg' ? 'kg' : 'm³')}</T> : null}
     </View>
   );
   // La quantité facturée, quand elle n'est plus la mesure du colis (colis repesé après l'envoi du devis).
   const billed = (l: QuoteLine) => {
+    if (!priced) return null;
     const measured = l.basis === 'per_kg' ? l.weight_kg : l.basis === 'per_cbm' ? l.cbm : null;
     if (l.quantity == null || measured == null || Math.abs(Number(l.quantity) - Number(measured)) < 0.0005) return null;
     return t.billedOn(l.basis === 'per_kg' ? `${kg(l.quantity, lang)}${NBSP}kg` : `${m3(l.quantity, lang)}${NBSP}m³`);
@@ -518,20 +628,23 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
     const label = fitted(lineLabel(l, t), DESIGNATION_W, 9.5, 3);
     const sub = dots([nb(l.parcel_no ?? ''), l.description && l.kind_of_parcel ? t.kindLabel[l.kind_of_parcel] : null, l.courier_waybill ? `${t.waybill} ${l.courier_waybill}` : null, split ? whereIs(l, t) : null, billed(l)]);
     const subFit = fitted(sub, DESIGNATION_W, 8.5, 2);
-    const needs = lineNeedsMeasure(l);
+    const extra = extraOf(l);
+    const pending = extra?.unpriced ? t.toPrice : lineNeedsMeasure(l) ? t.toMeasure : null;
     return (
       <View key={l.id} style={st.tr} wrap={false}>
         <T style={[st.td, { width: COL.no }]}>{String(l.parcel_seq ?? l.seq).padStart(2, '0')}</T>
+        {photo ? <View style={{ width: COL.photo, paddingVertical: 4, paddingLeft: 2 }}><Thumb extra={extra} t={t} /></View> : null}
         <View style={[st.td, { flex: 1 }]}>
           <T style={{ fontFamily: label.font }}>{label.text}</T>
           {sub ? <T style={[st.tdSub, { fontFamily: subFit.font }]}>{subFit.text}</T> : null}
+          {extra ? <ConditionLine extra={extra} width={DESIGNATION_W} t={t} /> : null}
         </View>
         <T style={[st.td, { width: COL.dims, textAlign: 'center' }]}>{l.length_cm && l.width_cm && l.height_cm ? [l.length_cm, l.width_cm, l.height_cm].map((x) => kg(x, lang)).join(`${NBSP}× `) : '—'}</T>
         <T style={[st.td, { width: COL.weight }, right]}>{l.weight_kg == null ? '—' : kg(l.weight_kg, lang)}</T>
         <T style={[st.td, { width: COL.vol }, right]}>{m3(l.cbm, lang)}</T>
-        {rateCell(l)}
-        {needs
-          ? <T style={[st.td, { width: COL.amount, fontSize: 8.5, fontWeight: 700, color: C.orange }, right]}>{t.toMeasure}</T>
+        {priced ? rateCell(l) : null}
+        {!priced ? null : pending
+          ? <T style={[st.td, { width: COL.amount, fontSize: 8.5, fontWeight: 700, color: C.orange }, right]}>{pending}</T>
           : <T style={[st.td, { width: COL.amount, fontWeight: 700 }, right]}>{money(l.amount_xaf, lang)}</T>}
       </View>
     );
@@ -541,12 +654,13 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
       {/* `fixed` : l'en-tête des colonnes se répète sur chaque page que le tableau occupe. */}
       <View style={st.th} wrap={false} fixed>
         {th(t.colNo, undefined, COL.no)}
+        {photo ? th(t.colPhoto, undefined, COL.photo, 'center') : null}
         {th(t.colLabel)}
         {th(t.colDims, 'cm', COL.dims, 'center')}
         {th(t.colWeight, 'kg', COL.weight, 'right')}
         {th(t.colVolume, 'm³', COL.vol, 'right')}
-        {th(t.colRate, unit ? `XAF / ${unit}` : 'XAF', COL.rate, 'right')}
-        {th(t.colAmount, 'XAF', COL.amount, 'right')}
+        {priced ? th(t.colRate, unit ? `XAF / ${unit}` : 'XAF', COL.rate, 'right') : null}
+        {priced ? th(t.colAmount, 'XAF', COL.amount, 'right') : null}
       </View>
       {parcels.slice(0, -1).map(parcelRow)}
       {/* La dernière ligne de colis, les frais, le total et le montant changent de page ENSEMBLE : la page
@@ -557,7 +671,7 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
         const label = fitted(l.label, DESIGNATION_W, 9.5, 2);
         return (
           <View key={l.id} style={st.tr} wrap={false}>
-            <T style={[st.td, { width: COL.no }]}> </T>
+            <T style={[st.td, { width: COL.no + COL.photo }]}> </T>
             <View style={[st.td, { flex: 1 }]}>
               <T style={{ fontFamily: label.font }}>{label.text}</T>
               <T style={st.tdSub}>{l.kind === 'discount' ? t.discount : t.fee}</T>
@@ -568,13 +682,13 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
         );
       })}
       <View style={st.total}>
-        <T style={[st.td, { width: COL.no }]}> </T>
+        <T style={[st.td, { width: COL.no + COL.photo }]}> </T>
         <T style={[st.td, { flex: 1, fontWeight: 700 }]}>{t.total}{`${NBSP}· `}{countLabel(parcels.map((p) => p.kind_of_parcel), t.kind)}</T>
         <T style={[st.td, { width: COL.dims }]}> </T>
         <T style={[st.td, { width: COL.weight, fontWeight: 700 }, right]}>{hasWeight ? kg(sum((l) => l.weight_kg), lang) : '—'}</T>
         <T style={[st.td, { width: COL.vol, fontWeight: 700 }, right]}>{hasVol ? m3(sum((l) => l.cbm), lang) : '—'}</T>
-        <T style={[st.td, { width: COL.rate, fontWeight: 700 }, right]}>{commonRate(parcels, lang, t.flat) || ' '}</T>
-        <T style={[st.td, { width: COL.amount, fontWeight: 700 }, right]}>{money(q.total_xaf, lang)}</T>
+        {priced ? <T style={[st.td, { width: COL.rate, fontWeight: 700 }, right]}>{commonRate(parcels, lang, t.flat) || ' '}</T> : null}
+        {priced ? <T style={[st.td, { width: COL.amount, fontWeight: 700 }, right]}>{money(q.total_xaf, lang)}</T> : null}
       </View>
       {footer}
       </View>
@@ -583,7 +697,7 @@ function GoodsTable({ q, lang, footer }: { q: Quote; lang: CargoDocLang; footer?
 }
 
 /** Le bandeau du montant : orange quand le client doit payer, violet quand c'est réglé ou reçu. */
-function AmountBand({ label, sub, amount, tone, lang }: { label: string; sub?: string | null; amount: number; tone: 'due' | 'paid'; lang: CargoDocLang }) {
+export function AmountBand({ label, sub, amount, tone, lang }: { label: string; sub?: string | null; amount: number; tone: 'due' | 'paid'; lang: CargoDocLang }) {
   const due = tone === 'due';
   const words = xafInWords(amount, lang);
   return (
@@ -600,7 +714,7 @@ function AmountBand({ label, sub, amount, tone, lang }: { label: string; sub?: s
   );
 }
 
-function Stamp({ dateLine, paid, lang }: { dateLine: string; paid?: boolean; lang: CargoDocLang }) {
+export function Stamp({ dateLine, paid, lang }: { dateLine: string; paid?: boolean; lang: CargoDocLang }) {
   const t = TXT[lang];
   const co = CARGO_COMPANY;
   return (
@@ -624,7 +738,7 @@ function Stamp({ dateLine, paid, lang }: { dateLine: string; paid?: boolean; lan
  * la même section : un devis de 4 ou 5 colis tient sur une page, comme la PL.
  * `children` : ce qui précède la signature à gauche (référence, validité…).
  */
-function SignOff({ place, date, note, paid, lang, children }: { place: string | null; date: string; note: string; paid?: boolean; lang: CargoDocLang; children?: ReactNode }) {
+export function SignOff({ place, date, note, paid, lang, children }: { place: string | null; date: string; note: string; paid?: boolean; lang: CargoDocLang; children?: ReactNode }) {
   const t = TXT[lang];
   const dateLine = t.placeDate(place, date);
   return (
@@ -685,7 +799,7 @@ function PaymentsTable({ payments, highlight, lang }: { payments: QuotePayment[]
   );
 }
 
-function Conditions({ n, where, lang }: { n: number; where: string; lang: CargoDocLang }) {
+export function Conditions({ n, where, lang }: { n: number; where: string; lang: CargoDocLang }) {
   const t = TXT[lang];
   const items = t.conditions(where);
   return (
@@ -700,11 +814,11 @@ function Conditions({ n, where, lang }: { n: number; where: string; lang: CargoD
   );
 }
 
-function HowToPay({ n, payRef, lang }: { n: number; payRef: string; lang: CargoDocLang }) {
+export function HowToPay({ n, payRef, lang }: { n: number; payRef: string; lang: CargoDocLang }) {
   const t = TXT[lang];
   const accounts = companyBankAccounts();
   return (
-    <Section n={n} title={t.secHowToPay} style={{ marginTop: 10 }} wrap={false}>
+    <Section n={n} title={t.secHowToPay} style={{ marginTop: 7 }} wrap={false}>
       {accounts.length ? (
         <View style={{ marginBottom: 6, marginHorizontal: -PAD, marginTop: -PAD }}>
           <View style={st.th}>
@@ -714,19 +828,19 @@ function HowToPay({ n, payRef, lang }: { n: number; payRef: string; lang: CargoD
           </View>
           {accounts.map((a) => (
             <View key={a.iban} style={st.tr} wrap={false}>
-              <T style={[st.td, { width: 160, paddingLeft: PAD, paddingVertical: 4.5, fontSize: 9, fontWeight: 700 }]}>{a.bank}</T>
-              <T style={[st.td, { flex: 1, paddingVertical: 4.5, fontSize: 9 }]}>{a.iban}</T>
-              <T style={[st.td, { width: 82, paddingRight: PAD, paddingVertical: 4.5, fontSize: 9 }]}>{a.swift}</T>
+              <T style={[st.td, { width: 160, paddingLeft: PAD, paddingVertical: 3.5, fontSize: 9, fontWeight: 700 }]}>{a.bank}</T>
+              <T style={[st.td, { flex: 1, paddingVertical: 3.5, fontSize: 9 }]}>{a.iban}</T>
+              <T style={[st.td, { width: 82, paddingRight: PAD, paddingVertical: 3.5, fontSize: 9 }]}>{a.swift}</T>
             </View>
           ))}
         </View>
       ) : null}
-      <T style={st.grey}>{accounts.length ? t.bankHolder(CARGO_COMPANY.legalName) : ''}{t.otherWays(payRef)}</T>
+      <T style={[st.grey, { fontSize: 8.8, lineHeight: 1.3 }]}>{accounts.length ? t.bankHolder(CARGO_COMPANY.legalName) : ''}{t.otherWays(payRef)}</T>
     </Section>
   );
 }
 
-function Addresses({ n, settings, lang }: { n: number; settings: ShippingSettings; lang: CargoDocLang }) {
+export function Addresses({ n, settings, lang }: { n: number; settings: ShippingSettings; lang: CargoDocLang }) {
   const t = TXT[lang];
   const co = CARGO_COMPANY;
   const { office, warehouse } = settings;
@@ -734,7 +848,7 @@ function Addresses({ n, settings, lang }: { n: number; settings: ShippingSetting
   const W = { office: 120, warehouse: 183 };
   const contact = (l: typeof office, w: number) => fitted(contactLine(l), w, 9);
   return (
-    <Section n={n} title={t.secAddresses} style={{ marginTop: 10 }} wrap={false}>
+    <Section n={n} title={t.secAddresses} style={{ marginTop: 7 }} wrap={false}>
       <View style={{ flexDirection: 'row', marginHorizontal: -9 }}>
         <View style={[st.addrCol, { flex: 1 }]}>
           <T style={st.addrTitle}>{t.addrDouala}</T>
@@ -773,61 +887,164 @@ const docSubtitle = (q: Quote, lang: CargoDocLang, lead?: string) => {
 const payRefOf = (q: Quote) => q.client?.customer_code || q.quote_no;
 
 // ============================================================
-// Le devis
+// Le bon de réception et devis
 // ============================================================
-export function CargoQuotePDF({ q, settings, lang = 'fr' }: { q: Quote; settings: ShippingSettings; lang?: CargoDocLang }) {
+/** Une ligne à remplir à la main : le libellé, puis un pointillé jusqu'au bord. */
+function FillLine({ label, width }: { label?: string; width?: number }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 9 }}>
+      {label ? <T style={{ fontSize: 9, fontWeight: 500, marginRight: 4, ...(width ? { width } : {}) }}>{label}</T> : null}
+      <View style={{ flex: 1, borderBottomWidth: 0.7, borderBottomColor: C.grey, borderBottomStyle: 'dotted', height: 10 }} />
+    </View>
+  );
+}
+
+const bullets = (items: readonly string[]) => items.map((x) => `·${NBSP}${x}`).join('\n');
+
+/**
+ * Votre déclaration et votre accord (guide « Documents à remettre aux clients », §3.1) :
+ * ce que le prix comprend, la déclaration de contenu et de valeur, les engagements du
+ * client, et la case « Bon pour accord » — seulement quand il y a un prix à accepter.
+ */
+function Agreement({ n, priced, lang }: { n: number; priced: boolean; lang: CargoDocLang }) {
   const t = TXT[lang];
+  return (
+    <Section n={n} title={t.secAgreement} style={{ marginTop: GAP }} wrap={false}>
+      {priced ? (
+        <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <T style={{ fontSize: 9, fontWeight: 700, color: C.violet }}>{t.priceIncludes}</T>
+            <T style={[st.grey, { fontSize: 8.8, marginTop: 2 }]}>{bullets(t.includes)}</T>
+          </View>
+          <View style={{ flex: 1, paddingLeft: 10, borderLeftWidth: 0.5, borderLeftColor: C.rule }}>
+            <T style={{ fontSize: 9, fontWeight: 700, color: C.orange }}>{t.priceExcludes}</T>
+            <T style={[st.grey, { fontSize: 8.8, marginTop: 2 }]}>{bullets(t.excludes)}</T>
+          </View>
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', ...(priced ? { borderTopWidth: 0.5, borderTopColor: C.rule, paddingTop: 7 } : {}) }}>
+        <View style={{ flex: 1, paddingRight: 14 }}>
+          <T style={{ fontSize: 10, fontWeight: 700 }}>{t.declareTitle}</T>
+          <FillLine label={t.declareContent} />
+          <FillLine />
+          <FillLine label={t.declareValue} />
+          <T style={[st.grey, { fontSize: 8.5, marginTop: 7, lineHeight: 1.35 }]}>{t.declareText}</T>
+          {priced ? <T style={[st.body, { fontSize: 9, marginTop: 5, fontWeight: 500 }]}>{t.agreeText}</T> : null}
+          {priced ? <T style={[st.grey, { fontSize: 8.5, marginTop: 2 }]}>{t.agreeAlt}</T> : null}
+        </View>
+        <View style={{ width: 62 * MM, borderWidth: 1.2, borderColor: C.violet, borderRadius: 2 * MM, padding: 7 }}>
+          <T style={{ fontSize: 10, fontWeight: 700, color: C.violet, letterSpacing: 0.3 }}>{(priced ? t.agreeTitle : t.certifyTitle).toUpperCase()}</T>
+          <FillLine label={t.signName} width={30} />
+          <FillLine label={t.signDate} width={30} />
+          <T style={{ fontSize: 9, fontWeight: 500, marginTop: 9 }}>{t.signHere}</T>
+          <View style={{ height: 15 * MM }} />
+        </View>
+      </View>
+    </Section>
+  );
+}
+
+const ANNEX_PHOTO_W = (180 * MM - 2 * PAD - 3 * 6) / 4;
+
+/** L'annexe : les photos de chaque colis, quatre au plus par rangée, avec son numéro et son état. */
+function PhotoAnnex({ n, q, extras, lang }: { n: number; q: Quote; extras: ReadonlyMap<string, ReceptionParcelExtra>; lang: CargoDocLang }) {
+  const t = TXT[lang];
+  const rows = q.lines.filter((l) => l.kind === 'parcel' && l.parcel_id && (extras.get(l.parcel_id)?.photos.length ?? 0) > 0);
+  if (rows.length === 0) return null;
+  return (
+    <Section n={n} title={t.secPhotos} style={{ marginTop: GAP }}>
+      {rows.map((l, i) => {
+        const x = extras.get(l.parcel_id as string) as ReceptionParcelExtra;
+        const head = fitted(dots([nb(l.parcel_no ?? ''), lineLabel(l, t), l.weight_kg != null ? `${kg(l.weight_kg, lang)}${NBSP}kg` : null]), 470, 9.5, 2);
+        return (
+          <View key={l.id} wrap={false} style={i ? { marginTop: 10, paddingTop: 8, borderTopWidth: 0.4, borderTopColor: C.rule } : undefined}>
+            <T style={{ fontSize: 9.5, fontWeight: 700, fontFamily: head.font }}>{head.text}</T>
+            <ConditionLine extra={x} width={470} t={t} />
+            <View style={{ flexDirection: 'row', marginTop: 5 }}>
+              {x.photos.map((ph, k) => (
+                <View key={k} style={{ width: ANNEX_PHOTO_W, marginRight: k < 3 ? 6 : 0 }}>
+                  <Image src={ph.src} style={{ width: ANNEX_PHOTO_W, height: ANNEX_PHOTO_W * 0.75, objectFit: 'cover', borderRadius: 2 }} />
+                  <T style={{ fontSize: 7, color: C.grey, marginTop: 2 }}>{t.photoOf(l.parcel_no ?? '', k + 1, x.photoCount)}</T>
+                </View>
+              ))}
+            </View>
+          </View>
+        );
+      })}
+    </Section>
+  );
+}
+
+/**
+ * LE BON DE RÉCEPTION ET DEVIS (guide §3.1, « Devis de fret » renommé) : ce qu'on a reçu — photo,
+ * poids, dimensions, volume, état de chaque colis — et, si les prix sont posés, ce que ça coûte.
+ * Sans prix : les mesures seules, et « devis en préparation ». Puis la déclaration du client et
+ * son accord, les photos en annexe, et au verso les conditions, les banques, les adresses.
+ */
+export function ReceptionQuotePDF({ data, settings, lang = 'fr' }: { data: ReceptionDocData; settings: ShippingSettings; lang?: CargoDocLang }) {
+  const t = TXT[lang];
+  const { q, priced, extras } = data;
   const sea = q.location !== 'office';
-  const issued = q.sent_at ?? q.updated_at;
-  // Le devis est établi et signé à Guangzhou : ses dates sont celles de Guangzhou.
+  // Chiffré : la date du devis ; sinon, la date de la réception. Établi à Guangzhou : heure de Guangzhou.
+  const issued = priced ? (q.sent_at ?? q.updated_at) : (q.closed_at ?? q.opened_at);
   const tz = PLACE_TZ.guangzhou;
   const paid = quotePaid(q);
   const balance = quoteBalance(q);
-  const toMeasure = q.lines.filter(lineNeedsMeasure).length;
-  // Réglé : rien ne reste dû ET rien ne reste à mesurer (un colis non mesuré ajoutera un montant).
-  const settled = paid > 0 && balance === 0 && toMeasure === 0;
-  const ref = payRefOf(q);
+  const toMeasure = priced ? q.lines.filter((l) => lineNeedsMeasure(l) && !(l.parcel_id && extras?.get(l.parcel_id)?.unpriced)).length : 0;
+  const toPrice = priced ? [...(extras?.values() ?? [])].filter((x) => x.unpriced).length : 0;
+  const pending = toMeasure + toPrice;
+  // Réglé : rien ne reste dû ET rien ne reste à mesurer ni à chiffrer.
+  const settled = priced && paid > 0 && balance === 0 && pending === 0;
+  const ref = payRefOf(q) || q.deposit_no;
   const [refBefore, refValue, refAfter] = t.payRef(ref);
   const where = sea ? t.whereWarehouse : t.whereOffice;
-  const dueLabel = toMeasure ? (paid > 0 ? t.balanceProvisional : t.provisional) : paid > 0 ? t.balanceToPay : t.toPay;
+  const dueLabel = pending ? (paid > 0 ? t.balanceProvisional : t.provisional) : paid > 0 ? t.balanceToPay : t.toPay;
+  const broughtRows: Kv[] = data.broughtBy ? [[t.broughtBy, [t.broughtByKind[data.broughtBy], data.representative].filter(Boolean).join('\n')]] : [];
+  const annex = extras ? [...extras.values()].some((x) => x.photos.length > 0) : false;
   return (
-    <Shell q={q} lang={lang} headTitle={t.hTitleQuote} reference={q.quote_no} issuedLabel={t.issued} issuedOn={docDay(issued, lang, tz)}>
-      <DocHead title={t.titleQuote[sea ? 'warehouse' : 'office']} subtitle={docSubtitle(q, lang)} />
-      <PartiesRow q={q} lang={lang} asOf={issued} />
+    <Shell footRef={t.footer(q.deposit_no)} lang={lang} headTitle={t.hTitleReception} reference={q.deposit_no}
+      extraMeta={data.hasQuote && q.quote_no ? `${t.quoteWord} ${q.quote_no}` : null} issuedLabel={t.issued} issuedOn={docDay(issued, lang, tz)}>
+      <DocHead title={t.titleReception} subtitle={docSubtitle(q, lang, t.modeLine[sea ? 'warehouse' : 'office'])} />
+      <PartiesRow q={q} lang={lang} asOf={issued} shipTitle={t.secReception} extra={broughtRows} />
       <Section n={3} title={t.secGoods} flush style={{ marginTop: GAP }}>
-        <GoodsTable q={q} lang={lang} footer={
+        <GoodsTable q={q} lang={lang} priced={priced} extras={extras} footer={
         <View style={{ padding: PAD }}>
-          {settled
-            ? <AmountBand label={t.settled} amount={q.total_xaf} tone="paid" lang={lang} />
-            : <AmountBand label={dueLabel} sub={paid > 0 ? t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang)) : null} amount={balance} tone="due" lang={lang} />}
+          {!priced
+            ? <View style={[st.band, { backgroundColor: C.violetTint, borderLeftColor: C.violet }]} wrap={false}><T style={[st.body, { fontWeight: 500, lineHeight: 1.35 }]}>{t.quotePending}</T></View>
+            : settled
+              ? <AmountBand label={t.settled} amount={q.total_xaf} tone="paid" lang={lang} />
+              : <AmountBand label={dueLabel} sub={paid > 0 ? t.totalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang)) : null} amount={balance} tone="due" lang={lang} />}
           {toMeasure ? <T style={[st.note, { color: C.orange, marginTop: 6 }]}>{t.pendingMeasure(toMeasure)}</T> : null}
-          {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{fitted(q.notes, 470, 9, 4).text}</T> : null}
-          <SignOff place="Guangzhou" date={docDay(issued, lang, tz)} note={t.quoteFootnote} lang={lang}>
+          {toPrice ? <T style={[st.note, { color: C.orange, marginTop: toMeasure ? 2 : 6 }]}>{t.pendingPrice(toPrice)}</T> : null}
+          {priced && q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{fitted(q.notes, 470, 9, 4).text}</T> : null}
+          <SignOff place="Guangzhou" date={docDay(issued, lang, tz)} note={extras ? t.receivedAsIs : t.quoteFootnote} lang={lang}>
             {settled
               ? <T style={st.body}>{t.fullyPaid(q.client?.customer_code ? null : q.quote_no)}</T>
-              : <>
-                  <T style={st.body}>{refBefore}<T style={{ fontWeight: 700 }}>{nb(refValue)}</T>{refAfter}</T>
-                  <T style={[st.grey, { marginTop: 3 }]}>{t.validity(docDay(addDays(issued, 30), lang, tz))}</T>
-                </>}
+              : priced
+                ? <>
+                    <T style={st.body}>{refBefore}<T style={{ fontWeight: 700 }}>{nb(refValue)}</T>{refAfter}</T>
+                    <T style={[st.grey, { marginTop: 3 }]}>{t.validity(docDay(addDays(issued, 30), lang, tz))}</T>
+                    <T style={[st.grey, { marginTop: 2 }]}>{t.delayNote}</T>
+                  </>
+                : <T style={st.grey}>{t.delayNote}</T>}
           </SignOff>
         </View>} />
       </Section>
-      {/* Le verso. Un devis à régler : au dos, comme la packing list (conditions, banques, adresses tiennent une page).
-          Un devis réglé : conditions et adresses suivent, et passent ensemble à la page suivante s'il le faut. */}
-      {!settled ? (
-        <View break>
-          <Conditions n={4} where={where} lang={lang} />
-          <HowToPay n={5} payRef={ref} lang={lang} />
-          <Addresses n={6} settings={settings} lang={lang} />
-        </View>
-      ) : (
-        <View wrap={false} style={{ marginTop: GAP }}>
-          <Conditions n={4} where={where} lang={lang} />
-          <Addresses n={5} settings={settings} lang={lang} />
-        </View>
-      )}
+      <Agreement n={4} priced={priced && !settled} lang={lang} />
+      {annex && extras ? <PhotoAnnex n={5} q={q} extras={extras} lang={lang} /> : null}
+      {/* Le verso : conditions, banques (s'il y a un montant à régler), adresses — sur une page à part. */}
+      <View break>
+        <Conditions n={annex ? 6 : 5} where={where} lang={lang} />
+        {priced && !settled ? <HowToPay n={annex ? 7 : 6} payRef={ref} lang={lang} /> : null}
+        <Addresses n={(annex ? 7 : 6) + (priced && !settled ? 1 : 0)} settings={settings} lang={lang} />
+      </View>
     </Shell>
   );
+}
+
+/** Le bon depuis le devis seul (sans le dépôt sous la main) : mêmes sections, sans photos ni état. */
+export function CargoQuotePDF({ q, settings, lang = 'fr' }: { q: Quote; settings: ShippingSettings; lang?: CargoDocLang }) {
+  return <ReceptionQuotePDF data={receptionDocData(null, q)} settings={settings} lang={lang} />;
 }
 
 // ============================================================
@@ -857,8 +1074,9 @@ export function CargoReceiptPDF({ q, p, lang = 'fr' }: { q: Quote; p: QuotePayme
     </View>
   );
   return (
-    <Shell q={q} lang={lang} headTitle={t.hTitleReceipt} reference={p.receipt_no} issuedLabel={t.issued} issuedOn={docDay(p.paid_at, lang, tz)}>
-      <DocHead title={t.titleReceipt} subtitle={docSubtitle(q, lang, nb(`${t.quoteWord} ${q.quote_no}`))} />
+    <Shell footRef={t.footer(q.deposit_no)} lang={lang} headTitle={t.hTitleReceipt} reference={p.receipt_no} issuedLabel={t.issued} issuedOn={docDay(p.paid_at, lang, tz)}>
+      {/* Le reçu se rattache à la facture quand elle existe (guide §9), sinon au devis. */}
+      <DocHead title={t.titleReceipt} subtitle={docSubtitle(q, lang, nb(q.invoice_no ? `${t.titleInvoiceDue} ${q.invoice_no}` : `${t.quoteWord} ${q.quote_no}`))} />
       <PartiesRow q={q} lang={lang} asOf={p.paid_at} />
       <Section n={3} title={t.secPayment} style={{ marginTop: GAP }} wrap={false}>
         <AmountBand label={t.amountReceived} sub={p.receipt_no} amount={p.amount_xaf} tone="paid" lang={lang} />
@@ -882,26 +1100,43 @@ export function CargoReceiptPDF({ q, p, lang = 'fr' }: { q: Quote; p: QuotePayme
 }
 
 // ============================================================
-// La facture acquittée
+// La facture — établie à l'arrivée au Cameroun (guide §3.3) : le service est
+// rendu, le client doit le montant. Numérotée (FA-…, suite continue), elle ne
+// s'efface jamais. Tant qu'il reste à payer : « FACTURE », le montant dû en
+// orange, les comptes où payer. Soldée : « FACTURE ACQUITTÉE », le cachet.
 // ============================================================
 export function CargoInvoicePDF({ q, settings, lang = 'fr' }: { q: Quote; settings: ShippingSettings; lang?: CargoDocLang }) {
   const t = TXT[lang];
   const sea = q.location !== 'office';
   const payments = activePayments(q);
-  // Le dernier encaissement dit où le compte a été soldé (souvent Douala, au retrait) ; sans encaissement, Guangzhou.
+  const paid = quotePaid(q);
+  const balance = quoteBalance(q);
+  const acquitted = Number(q.total_xaf) > 0 && balance === 0;
+  // Le dernier encaissement dit où le compte a été soldé (souvent Douala, au retrait) ; sinon la facture est émise à Douala.
   const last = payments.length ? payments[payments.length - 1] : null;
-  const tz = last ? PLACE_TZ[last.place] : PLACE_TZ.guangzhou;
+  const tz = acquitted && last ? PLACE_TZ[last.place] : PLACE_TZ.douala;
   const issued = q.invoiced_at ?? q.paid_at ?? q.updated_at;
+  const ref = q.invoice_no ?? q.quote_no;
+  const payRef = payRefOf(q);
+  const [refBefore, refValue, refAfter] = t.payRef(payRef);
+  const where = sea ? t.whereWarehouse : t.whereOffice;
+  const n0 = payments.length ? 5 : 4;
   return (
-    <Shell q={q} lang={lang} headTitle={t.hTitleInvoice} reference={q.invoice_no ?? q.quote_no} issuedLabel={t.issuedInvoice} issuedOn={docDay(issued, lang, tz)}>
-      <DocHead title={t.titleInvoice} subtitle={docSubtitle(q, lang, nb(`${t.quoteWord} ${q.quote_no}`))} />
+    <Shell footRef={t.footer(q.deposit_no)} lang={lang} headTitle={acquitted ? t.hTitleInvoice : t.hTitleInvoiceDue} reference={ref}
+      extraMeta={t.invoiceOf(q.quote_no)} issuedLabel={t.issuedInvoice} issuedOn={docDay(issued, lang, tz)}>
+      <DocHead title={acquitted ? t.titleInvoice : t.titleInvoiceDue} subtitle={docSubtitle(q, lang, t.modeLine[sea ? 'warehouse' : 'office'])} />
       <PartiesRow q={q} lang={lang} asOf={issued} />
       <Section n={3} title={t.secGoods} flush style={{ marginTop: GAP }}>
         <GoodsTable q={q} lang={lang} footer={
         <View style={{ padding: PAD }}>
-          <AmountBand label={t.amountPaid} sub={q.paid_at ? docDay(q.paid_at, lang, tz) : null} amount={quotePaid(q)} tone="paid" lang={lang} />
+          {acquitted
+            ? <AmountBand label={t.amountPaid} sub={q.paid_at ? docDay(q.paid_at, lang, tz) : null} amount={paid} tone="paid" lang={lang} />
+            : <AmountBand label={paid > 0 ? t.balanceToPay : t.toPay} sub={paid > 0 ? t.invoiceTotalAndPaid(xaf(q.total_xaf, lang), xaf(paid, lang)) : null} amount={balance} tone="due" lang={lang} />}
           {q.notes ? <T style={[st.note, { fontFamily: fontFor(q.notes) }]}>{fitted(q.notes, 470, 9, 4).text}</T> : null}
-          <SignOff place={last ? t.placeCity[last.place] : 'Guangzhou'} date={docDay(issued, lang, tz)} note={t.invoiceFootnote(q.client?.customer_code ? null : q.quote_no)} paid lang={lang} />
+          <SignOff place={acquitted && last ? t.placeCity[last.place] : 'Douala'} date={docDay(issued, lang, tz)}
+            note={acquitted ? t.invoiceFootnote(q.client?.customer_code ? null : q.quote_no) : t.invoiceDueFootnote(payRef)} paid={acquitted} lang={lang}>
+            {acquitted ? null : <T style={st.body}>{refBefore}<T style={{ fontWeight: 700 }}>{nb(refValue)}</T>{refAfter}</T>}
+          </SignOff>
         </View>} />
       </Section>
       {payments.length ? (
@@ -909,10 +1144,18 @@ export function CargoInvoicePDF({ q, settings, lang = 'fr' }: { q: Quote; settin
           <PaymentsTable payments={payments} lang={lang} />
         </Section>
       ) : null}
-      <View wrap={false} style={{ marginTop: GAP }}>
-        <Conditions n={payments.length ? 5 : 4} where={sea ? t.whereWarehouse : t.whereOffice} lang={lang} />
-        <Addresses n={payments.length ? 6 : 5} settings={settings} lang={lang} />
-      </View>
+      {acquitted ? (
+        <View wrap={false} style={{ marginTop: GAP }}>
+          <Conditions n={n0} where={where} lang={lang} />
+          <Addresses n={n0 + 1} settings={settings} lang={lang} />
+        </View>
+      ) : (
+        <View break>
+          <Conditions n={n0} where={where} lang={lang} />
+          <HowToPay n={n0 + 1} payRef={payRef} lang={lang} />
+          <Addresses n={n0 + 2} settings={settings} lang={lang} />
+        </View>
+      )}
     </Shell>
   );
 }

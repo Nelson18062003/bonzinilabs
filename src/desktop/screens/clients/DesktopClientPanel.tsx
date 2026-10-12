@@ -43,6 +43,7 @@ import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
 import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
 import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
 import { useClientDeposits } from '@/hooks/useReception';
+import { downloadClientStatementPdf } from '@/lib/clientStatementPdf';
 import { depositStage, formatCbm, formatKg, waitingWhere } from '@/lib/reception';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
@@ -238,6 +239,15 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
   const { hasPermission } = useAdminAuth();
   const canManageUsers = hasPermission('canManageUsers');
   const { data: clientDeposits } = useClientDeposits(clientId, hasPermission('canViewCargo'));
+  // Le relevé des colis (PDF) : « quels sont tous mes colis chez vous ? ».
+  const [parcelStatementBusy, setParcelStatementBusy] = useState(false);
+  const downloadParcelStatement = async () => {
+    if (!clientDeposits || parcelStatementBusy) return;
+    setParcelStatementBusy(true);
+    try { await downloadClientStatementPdf(clientDeposits); toast.success('Relevé des colis téléchargé'); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setParcelStatementBusy(false); }
+  };
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
   const [overdraftOpen, setOverdraftOpen] = useState(false);
   // « Repasser en prospect » (07/10) : le super admin seul — gérer les comptes ET piloter les ventes.
@@ -794,9 +804,14 @@ export function DesktopClientPanel({ clientId }: { clientId: string }) {
             <div className="rounded-2xl px-4 pb-2 pt-3.5 ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
               <SecLabel
                 right={
-                  <button type="button" onClick={() => navigate(`/m/clients/${client.id}/parcels`)} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
-                    Voir tout ({clientDeposits?.length ?? 0})
-                  </button>
+                  <span className="inline-flex items-center gap-3">
+                    <button type="button" onClick={() => void downloadParcelStatement()} disabled={parcelStatementBusy} title="Relevé des colis en PDF : à Guangzhou, en route, à Douala, et ce qui reste à payer" className="text-[12px] font-bold text-indigo-700 disabled:opacity-50 dark:text-indigo-400">
+                      {parcelStatementBusy ? 'Relevé…' : 'Relevé des colis (PDF)'}
+                    </button>
+                    <button type="button" onClick={() => navigate(`/m/clients/${client.id}/parcels`)} className="text-[12px] font-bold text-indigo-700 dark:text-indigo-400">
+                      Voir tout ({clientDeposits?.length ?? 0})
+                    </button>
+                  </span>
                 }
               >
                 Colis reçus

@@ -7,8 +7,8 @@
 // départ, retirer, refus de l'aéroport) — l'avion ne part qu'avec tous ses
 // paquets scannés. Puis les colis, client par client, avec « payé » ou
 // « reste … » (ce que Douala regardera) et leur paquet. « Charger des
-// colis » (colis seuls) tant que l'avion n'est pas arrivé ; « Manifeste
-// (PDF) » toujours.
+// colis » (colis seuls) tant que l'avion n'est pas arrivé ; « Avis
+// d'expédition » (PDF, paquets et colis) toujours.
 // ============================================================
 import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -18,7 +18,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAirShipment, useAirUnloadParcel, useSetAirStatus } from '@/hooks/useAirShipments';
 import { airStatusMeta, awbLabel, departureBlocker, flightSentence, fmtDay, groupByClient, nextAirStep, packageProgress, parcelUnpaid, type AirParcel } from '@/lib/airShipment';
-import { deliverAirManifestPdf } from '@/lib/airManifestPdf';
+import { deliverAirNoticePdf } from '@/lib/shippingNoticePdf';
 import { xaf } from '@/lib/cargoQuote';
 import { clientFullName, formatCbm, formatDims, formatKg, initials } from '@/lib/reception';
 import { cn } from '@/lib/utils';
@@ -102,7 +102,7 @@ export function MobileCargoAirDetail() {
           )}
           {canManage && a.status === 'PLANNED' && parcels.length === 0 && <p className={cn(TYPE.small, TEXT.muted)}>Ajoutez des paquets (ou chargez des colis) avant de marquer le départ.</p>}
           <div className="flex flex-wrap gap-2">
-            <SoftPill onClick={() => void deliverAirManifestPdf(a).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className="h-11 flex-1 text-[15px]"><FileText /> Manifeste (PDF)</SoftPill>
+            <SoftPill onClick={() => void deliverAirNoticePdf(a).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message))} disabled={parcels.length === 0} className="h-11 flex-1 text-[15px]"><FileText /> Avis d’expédition</SoftPill>
             {canManage && <SoftPill onClick={() => navigate(`/m/cargo/avion/${a.id}/modifier`)} className="h-11 px-4 text-[15px]"><Pencil /> Fiche</SoftPill>}
             {canManage && a.status === 'DEPARTED' && <SoftPill onClick={() => openConfirm('back')} className="h-11 px-4 text-[15px]"><Undo2 /> Pas parti</SoftPill>}
           </div>

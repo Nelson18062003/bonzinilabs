@@ -193,3 +193,36 @@ export function paidSentence(total: number | null | undefined, paid: number | nu
   if (p >= t) return `Payé · ${xaf(t)}`;
   return `Payé ${xaf(p)} sur ${xaf(t)} · reste ${xaf(t - p)}`;
 }
+
+// ── La facture (20261012100000) : établie à l'arrivée, acquittée au paiement ──
+
+/** La facture est-elle acquittée : établie, et plus rien à payer ? */
+export function invoiceAcquitted(q: Pick<Quote, 'invoice_no' | 'total_xaf' | 'amount_paid_xaf' | 'payments'>): boolean {
+  return !!q.invoice_no && Math.round(Number(q.total_xaf ?? 0)) > 0 && quoteBalance(q) === 0;
+}
+
+/** Tous les colis du dépôt sont-ils à Douala (arrivés, pointés ou remis) ? Le service est alors rendu. */
+export function parcelsAllArrived(parcels: ReadonlyArray<{ status: string; checked_in_at?: string | null; delivered_at?: string | null }>): boolean {
+  return parcels.length > 0 && parcels.every((p) => p.status === 'arrived' || p.status === 'delivered' || !!p.checked_in_at || !!p.delivered_at);
+}
+
+/**
+ * Peut-on établir la facture maintenant ? Miroir de `cargo_quote_invoice` (la base refuse de
+ * toute façon) : un montant, et soit tout est payé (acquittée), soit — rien à mesurer — tout est
+ * arrivé à Douala (à régler).
+ * `parcels` absent (dépôt pas chargé) : on ne sait rien de l'arrivée, seul le paiement compte.
+ */
+export function invoiceReadiness(
+  q: Pick<Quote, 'invoice_no' | 'total_xaf' | 'amount_paid_xaf' | 'payments' | 'lines'>,
+  parcels?: ReadonlyArray<{ status: string; checked_in_at?: string | null; delivered_at?: string | null }> | null,
+): { ready: boolean; acquitted: boolean; reason: string | null } {
+  const acquitted = quoteBalance(q) === 0;
+  if (q.invoice_no) return { ready: false, acquitted: invoiceAcquitted(q), reason: null };
+  if (Math.round(Number(q.total_xaf ?? 0)) <= 0) return { ready: false, acquitted: false, reason: 'Le devis n’a pas de montant' };
+  // Tout payé : la facture sort acquittée, sans autre condition (comme la base).
+  if (acquitted) return { ready: true, acquitted: true, reason: null };
+  const measure = q.lines.filter(lineNeedsMeasure).length;
+  if (measure > 0) return { ready: false, acquitted: false, reason: `${measure} colis à peser ou mesurer avant la facture` };
+  if (parcels && parcelsAllArrived(parcels)) return { ready: true, acquitted: false, reason: null };
+  return { ready: false, acquitted: false, reason: 'La facture s’établit à l’arrivée des colis à Douala (ou une fois tout payé)' };
+}

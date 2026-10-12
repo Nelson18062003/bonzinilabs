@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, PackagePlus, Undo2 } from 'lucide-react';
-import { deliverSeaManifestPdf } from '@/lib/airManifestPdf';
+import { deliverSeaNoticePdf } from '@/lib/shippingNoticePdf';
 import { useShipmentParcels, useUnloadParcel } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
 import type { CargoShipment } from '@/lib/cargo/model';
@@ -39,8 +39,8 @@ export function LoadedParcelsSection({ shipment: s, canManage, className }: { sh
       action={
         <span className="inline-flex items-center gap-2">
           {parcels.length > 0 && (
-            <button type="button" onClick={() => void deliverSeaManifestPdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Manifeste téléchargé'); }).catch((e: Error) => toast.error(e.message))} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold', SOFT_PILL)}>
-              <FileText className="h-3.5 w-3.5" /> Manifeste (PDF)
+            <button type="button" onClick={() => void deliverSeaNoticePdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message))} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12px] font-semibold', SOFT_PILL)}>
+              <FileText className="h-3.5 w-3.5" /> Avis d’expédition (PDF)
             </button>
           )}
           {canManage && (
