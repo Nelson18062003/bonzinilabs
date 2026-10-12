@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
-import { useAirPackages } from '@/hooks/useAirPackages';
+import { useAirPackages, usePackableParcels } from '@/hooks/useAirPackages';
 import { SURFACE, TEXT, TYPE, BottomSheet, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, SoftPill, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
 import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
@@ -162,16 +162,25 @@ export function ReceptionHome() {
 
 /**
  * L'entrée des paquets avion : grande carte au bureau (le lieu de l'avion),
- * simple ligne à l'entrepôt. Le chiffre : les paquets en cours de remplissage.
+ * simple ligne à l'entrepôt. Le chiffre : au bureau, les colis qui attendent
+ * un paquet (ce qu'il y a à faire) ; à l'entrepôt, les paquets en cours.
  */
 function PackagesEntry({ prominent }: { prominent: boolean }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const { data } = useAirPackages('bureau');
+  // Les colis à emballer ne se lisent qu'au bureau : à l'entrepôt, la carte reste une simple ligne.
+  const todo = usePackableParcels(prominent);
+  const toPack = (todo.data?.ready.length ?? 0) + (todo.data?.blocked.length ?? 0);
   const open = data?.filter((p) => p.status === 'open').length ?? 0;
   const ready = data?.filter((p) => p.status === 'sealed' && !p.air_shipment_id).length ?? 0;
-  const summary = [open > 0 ? ti('rc_pk_home_open', { count: open }) : t('rc_pk_home_none'), ready > 0 ? ti('rc_pk_home_ready', { count: ready }) : null].filter(Boolean).join(' · ');
+  const summary = [
+    toPack > 0 ? ti('rc_pk_home_todo', { count: toPack }) : null,
+    open > 0 ? ti('rc_pk_home_open', { count: open }) : t('rc_pk_home_none'),
+    ready > 0 ? ti('rc_pk_home_ready', { count: ready }) : null,
+  ].filter(Boolean).join(' · ');
+  const badge = prominent ? toPack : open;
   return (
     <button
       type="button"
@@ -184,8 +193,8 @@ function PackagesEntry({ prominent }: { prominent: boolean }) {
         <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{summary}</span>
         {prominent && <span className={cn('mt-0.5 block', TYPE.small, TEXT.muted)}>{t('rc_pk_home_hint')}</span>}
       </span>
-      {open > 0 && (
-        <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-[#2C2C2C] px-2.5 text-[16px] font-semibold tabular-nums text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">{open}</span>
+      {badge > 0 && (
+        <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-[#2C2C2C] px-2.5 text-[16px] font-semibold tabular-nums text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">{badge}</span>
       )}
       <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
     </button>

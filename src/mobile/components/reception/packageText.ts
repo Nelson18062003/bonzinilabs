@@ -4,10 +4,12 @@
 // fiche d'un paquet et l'accueil. Les pièces visuelles : packageBits.tsx.
 // ============================================================
 import { useTranslation } from 'react-i18next';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { getCurrentLocale } from '@/i18n';
 import { formatKg } from '@/lib/reception';
 import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
-import { packageStatusMeta, type AirPackage, type AirPackageStatus, type WeightGauge } from '@/lib/airPackage';
+import { packageStatusMeta, type AirPackage, type AirPackageStatus, type PackRefusal, type WeightGauge } from '@/lib/airPackage';
+import type { Parcel } from '@/lib/reception';
 import type { ScanBoxTexts } from '@/mobile/components/cargo/ParcelScanBox';
 import type { Tone } from '@/mobile/designKit';
 
@@ -35,6 +37,11 @@ export function usePackageText() {
     },
     /** « reste 13,6 kg » ou « Plein ». */
     left: (g: WeightGauge) => (g.tone === 'full' ? t('rc_pk_full') : t('rc_pk_left', { kg: formatKg(g.left) })),
+    /** Pourquoi un colis n'entre pas dans un paquet — et quoi faire : « pas pesé : pesez-le ». */
+    why: (reason: PackRefusal, parcel?: Pick<Parcel, 'package_no'>): string =>
+      reason === 'packed'
+        ? (parcel?.package_no ? t('rc_pk_why_packed', { no: parcel.package_no }) : t('rc_pk_why_packed_any'))
+        : t(`rc_pk_why_${reason}`),
   };
 }
 
@@ -42,4 +49,15 @@ export function usePackageText() {
 export function useScanTexts(hint: string): Partial<ScanBoxTexts> {
   const { t } = useTranslation('agent');
   return { hint, openCamera: t('rc_scan_cam_open'), closeCamera: t('rc_scan_cam_close'), cameraStarting: t('rc_scan_cam_starting'), cameraError: t('rc_scan_cam_error') };
+}
+
+/**
+ * « ouvert par Nelson » — seulement quand c'est quelqu'un d'autre : un paquet
+ * préparé depuis l'ordinateur (ou par un collègue) se reconnaît d'un coup d'œil.
+ */
+export function useOpenedBy(pkg: Pick<AirPackage, 'created_by' | 'created_by_name'>): string | null {
+  const { t } = useTranslation('agent');
+  const { currentUser } = useAdminAuth();
+  if (!pkg.created_by_name || !pkg.created_by || pkg.created_by === currentUser?.id) return null;
+  return t('rc_pk_by', { name: pkg.created_by_name });
 }

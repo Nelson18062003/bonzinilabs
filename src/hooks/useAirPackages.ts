@@ -8,8 +8,8 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
-import type { AirPackage } from '@/lib/airPackage';
-import type { ReceptionClient } from '@/lib/reception';
+import { packableParcels, type AirPackage, type PackableBoard } from '@/lib/airPackage';
+import type { Deposit, ReceptionClient } from '@/lib/reception';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
 
@@ -72,6 +72,28 @@ export function useAirPackage(id: string | null | undefined) {
     queryFn: () => rpcJson<{ package: AirPackage }>('air_package_get', { p_package_id: id }).then((r) => r.package),
     enabled: !!id,
     staleTime: 5_000,
+  });
+}
+
+/** Les colis à emballer, et s'il en reste au-delà de ceux lus (300 dépôts). */
+export type PackableList = PackableBoard & { truncated: boolean };
+
+const toPackable = (r: { truncated: boolean; deposits: Deposit[] }): PackableList => ({ ...packableParcels(r.deposits), truncated: r.truncated });
+
+/**
+ * Ce qui attend un paquet : les colis avion du bureau, prêts ou à compléter
+ * (sans client, pas pesé) — air_package_packable, lisible par la réception
+ * (canReceiveParcels) sans l'accès à la console cargo. Sous ['reception'] :
+ * un dépôt fermé, un colis pesé ou un paquet rempli la rafraîchissent.
+ */
+export function usePackableParcels(enabled = true) {
+  return useQuery({
+    queryKey: ['reception', 'packable'] as const,
+    queryFn: () => rpcJson<{ total: number; truncated: boolean; deposits: Deposit[] }>('air_package_packable', { p_limit: 300 }),
+    select: toPackable,
+    enabled,
+    staleTime: 15_000,
+    retry: 1,
   });
 }
 

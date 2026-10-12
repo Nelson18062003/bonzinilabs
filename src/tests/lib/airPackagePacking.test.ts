@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fitsInPackage, packRefusal, packRefusalLabel, packableGroups, packableParcels, packageClientGroups, planPacking, sealCheck, type AirPackageParcel, type PackableParcel } from '@/lib/airPackage';
+import { defaultPackTarget, fitsInPackage, openPackagesByRoom, packRefusal, packRefusalLabel, packableGroups, packableParcels, packageClientGroups, planPacking, sealCheck, type AirPackageParcel, type PackableParcel } from '@/lib/airPackage';
 import type { Deposit, Parcel, ReceptionClient } from '@/lib/reception';
 
 const client = (id: string, code: string): ReceptionClient => ({ user_id: id, customer_code: code, first_name: 'A', last_name: code, phone: null, email: null, company_name: null, city: null, country: null } as ReceptionClient);
@@ -163,5 +163,32 @@ describe('Paquets avion — répartir en paquets de 32 kg', () => {
       expect(ids).toHaveLength(its.length);
       if (into) expect(bins[0].packageId).toBe('kx');
     }
+  });
+});
+
+describe('Paquets avion — le paquet proposé d’office', () => {
+  const pkg = (id: string, net: number, status: 'open' | 'sealed' = 'open') => ({ id, status, net_weight_kg: net, max_weight_kg: 32 });
+  const items = (...kgs: number[]): PackableParcel[] => kgs.map((kg) => ({ parcel: parcel({ weight_kg: kg }), deposit: deposit({ parcels: [] }) }));
+
+  it('les paquets en cours seulement, le plus de place d’abord', () => {
+    const out = openPackagesByRoom([pkg('a', 20), pkg('b', 5), pkg('c', 0, 'sealed'), pkg('d', 31)]);
+    expect(out.map((k) => k.id)).toEqual(['b', 'a', 'd']);
+  });
+
+  it('on finit le carton entamé : le paquet en cours qui a le plus de place, si un colis y tient', () => {
+    expect(defaultPackTarget([pkg('a', 20), pkg('b', 5)], items(6, 30))?.id).toBe('b');
+    // Seul le paquet le plus vide peut prendre le colis le plus léger : c'est lui.
+    expect(defaultPackTarget([pkg('a', 28), pkg('b', 25)], items(6))?.id).toBe('b');
+  });
+
+  it('aucun colis ne tient, aucun paquet en cours, ou rien à emballer : un nouveau paquet', () => {
+    expect(defaultPackTarget([pkg('a', 30), pkg('b', 29)], items(4, 5))).toBeNull();
+    expect(defaultPackTarget([pkg('a', 0, 'sealed')], items(4))).toBeNull();
+    expect(defaultPackTarget([pkg('a', 10)], [])).toBeNull();
+  });
+
+  it('au gramme près, comme le serveur : 31,9 + 0,1 tient', () => {
+    expect(defaultPackTarget([pkg('a', 31.9)], items(0.1))?.id).toBe('a');
+    expect(defaultPackTarget([pkg('a', 31.9)], items(0.101))).toBeNull();
   });
 });

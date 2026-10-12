@@ -5,7 +5,7 @@
 import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
-import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionNewClient } from '@/mobile/screens/reception';
+import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionPackTodo, ReceptionNewClient } from '@/mobile/screens/reception';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { DesktopCargoReception } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
@@ -55,6 +55,7 @@ const Done = reception(ReceptionDone, false);
 const Packages = reception(ReceptionPackages, true);
 const Package = reception(ReceptionPackage, false);
 const NewClient = reception(ReceptionNewClient, false);
+const PackTodo = reception(ReceptionPackTodo, false);
 
 export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.home': { Comp: Home, route: '/r', wrap: 'lang' },
@@ -62,6 +63,9 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.done': { Comp: Done, route: '/r/deposit/dep1c/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
+  // Le réceptionnaire emballe (12/10) : les colis à emballer, et le paquet vide que Grace a ouvert depuis l'ordinateur.
+  'j.guangzhou.pack-todo': { Comp: PackTodo, route: '/r/paquets/emballer', wrap: 'lang' },
+  'j.guangzhou.package-grace': { Comp: Package, route: '/r/paquets/pk46', path: '/r/paquets/:id', wrap: 'lang' },
   'j.guangzhou.quote': { Comp: DeskReception, route: '/m/cargo/reception/dep1c', path: '/m/cargo/reception/:depositId' },
   // Les paquets avion sur l'ordinateur du bureau (12/10) : la vue, la fiche d'un paquet, et « Bureau · Air ».
   'j.guangzhou.desk-packages': { Comp: DeskReception, route: '/m/cargo/reception' },

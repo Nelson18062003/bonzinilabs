@@ -1,26 +1,29 @@
 // ============================================================
-// RÉCEPTION — Les paquets avion du bureau (32 kg au plus chacun). Un geste
-// principal : « Nouveau paquet ». Dessous, une boîte de scan pour rouvrir un
+// RÉCEPTION — Les paquets avion du bureau (32 kg au plus chacun). En tête,
+// ce qui attend : « N colis attendent un paquet » → les choisir, et l'app
+// les répartit (Colis à emballer). Sinon, ou en plus : « Nouveau paquet »
+// (vide, on y scanne les colis). Dessous, une boîte de scan pour rouvrir un
 // paquet par son étiquette (PQ-…), puis les paquets qui n'ont pas encore
 // quitté le bureau, rangés par ce qu'il reste à en faire : en cours,
-// refusés à l'aéroport, fermés et prêts, affectés à une expédition.
+// refusés à l'aéroport, fermés et prêts, affectés à une expédition — qu'ils
+// aient été ouverts ici ou depuis l'ordinateur.
 // L'app BONZINI HQ ouvre /r/paquets?code=PQ-… après un scan natif : on
 // retrouve le paquet et on va droit à sa fiche.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { PackagePlus } from 'lucide-react';
+import { ListChecks, PackagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { packageQueue, parsePackageCode, type PackageQueue } from '@/lib/airPackage';
-import { useAirPackages, useCreateAirPackage, useFindAirPackage } from '@/hooks/useAirPackages';
+import { packageQueue, parsePackageCode, sumParcelKg, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
+import { useAirPackages, useCreateAirPackage, useFindAirPackage, usePackableParcels } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
-import { SURFACE, TEXT, TONE_PILL, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader } from '@/mobile/designKit';
+import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { PackageRow } from '@/mobile/components/reception/packageBits';
-import { useScanTexts } from '@/mobile/components/reception/packageText';
+import { usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
 
 /** Une étiquette de colis (RC-000123-01) n'est pas un paquet, même si elle contenait « PQ ». */
 const PARCEL_LABEL = /RC[^0-9]{0,3}\d{6}/i;
@@ -36,6 +39,8 @@ export function ReceptionPackages() {
   const { data, isLoading, error, refetch } = useAirPackages('bureau');
   const create = useCreateAirPackage();
   const find = useFindAirPackage();
+  const todo = usePackableParcels();
+  const waiting = (todo.data?.ready.length ?? 0) + (todo.data?.blocked.length ?? 0);
   const scanTexts = useScanTexts(t('rc_pk_find_hint'));
   const [codeError, setCodeError] = useState<string | null>(null);
 
@@ -90,9 +95,17 @@ export function ReceptionPackages() {
     <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
       <MobileHeader title={t('rc_pk_title')} subtitle={t('rc_pk_subtitle')} showBack backTo="/r" />
       <div className="space-y-6 px-5 pb-8 pt-5">
-        <PrimaryPill onClick={onCreate} loading={create.isPending} disabled={create.isPending} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
-          <PackagePlus /> {t('rc_pk_new')}
-        </PrimaryPill>
+        {todo.data && waiting > 0 ? (
+          <div className="space-y-3">
+            <TodoCard ready={todo.data.ready} blocked={todo.data.blocked.length} onOpen={() => navigate('/r/paquets/emballer')} />
+            <SoftPill onClick={onCreate} disabled={create.isPending} className="h-14 w-full text-[17px]"><PackagePlus /> {t('rc_pk_new')}</SoftPill>
+            <p className={cn('-mt-1 text-center', TYPE.small, TEXT.muted)}>{t('rc_pk_new_scan_hint')}</p>
+          </div>
+        ) : (
+          <PrimaryPill onClick={onCreate} loading={create.isPending} disabled={create.isPending} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
+            <PackagePlus /> {t('rc_pk_new')}
+          </PrimaryPill>
+        )}
 
         <div className="space-y-2">
           <ParcelScanBox onScan={(text) => openCode(text)} placeholder={t('rc_pk_find_ph')} texts={scanTexts} keepFocus={false} />
@@ -125,5 +138,29 @@ export function ReceptionPackages() {
         )}
       </div>
     </div>
+  );
+}
+
+/** Ce qui attend un paquet : le nombre en grand, les kilos et les clients, puis « Choisir les colis ». */
+function TodoCard({ ready, blocked, onOpen }: { ready: PackableParcel[]; blocked: number; onOpen: () => void }) {
+  const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
+  const tx = usePackageText();
+  const clients = new Set(ready.map((it) => it.deposit.client?.user_id)).size;
+  return (
+    <Card className="space-y-4">
+      <div>
+        <p className={cn('tabular-nums', TYPE.title, TEXT.strong)}>{ti('rc_pk_todo_count', { count: ready.length + blocked })}</p>
+        {ready.length > 0 && (
+          <p className={cn('mt-1 tabular-nums', TYPE.body, TEXT.muted)}>
+            {blocked > 0 && `${ti('rc_pk_todo_ready_n', { count: ready.length })} · `}{formatKg(sumParcelKg(ready))} · {tx.clients(clients)}
+          </p>
+        )}
+        {blocked > 0 && <p className={cn('mt-1 tabular-nums', TYPE.smallStrong, TONE_TEXT.pending)}>{ti('rc_pk_todo_blocked_count', { count: blocked })}</p>}
+      </div>
+      {ready.length > 0
+        ? <PrimaryPill onClick={onOpen} className="h-14 w-full text-[17px]"><ListChecks /> {t('rc_pk_todo_cta')}</PrimaryPill>
+        : <SoftPill onClick={onOpen} className="h-12 w-full">{t('rc_pk_todo_see')}</SoftPill>}
+    </Card>
   );
 }

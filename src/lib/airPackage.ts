@@ -62,6 +62,9 @@ export interface AirPackage {
   opened_at: string | null;
   created_at: string;
   updated_at: string;
+  /** Qui a ouvert le paquet (20261012140000) — absent tant que la migration n'est pas passée. */
+  created_by?: string | null;
+  created_by_name?: string | null;
   /** Présent sur la fiche complète (air_package_get, ajout / retrait d'un colis). */
   parcels?: AirPackageParcel[] | null;
 }
@@ -241,6 +244,24 @@ export function packRefusalLabel(reason: PackRefusal, parcel?: Pick<Parcel, 'pac
     case 'gone': return 'déjà chargé ou parti';
     default: return PACK_BLOCK_LABEL[reason];
   }
+}
+
+/**
+ * Le paquet proposé d'office pour une mise en paquet : le paquet EN COURS qui a
+ * le plus de place, si au moins un des colis y tient — on finit le carton
+ * entamé (le sien, ou celui préparé depuis l'ordinateur) avant d'en ouvrir un
+ * autre. null : un nouveau paquet.
+ */
+export function defaultPackTarget<T extends Pick<AirPackage, 'id' | 'status' | 'net_weight_kg' | 'max_weight_kg'>>(
+  packages: readonly T[],
+  items: readonly PackableParcel[],
+): T | null {
+  return openPackagesByRoom(packages).find((k) => items.some((it) => fitsInPackage(k, it.parcel.weight_kg))) ?? null;
+}
+
+/** Les paquets en cours, ceux qui ont le plus de place d'abord. */
+export function openPackagesByRoom<T extends Pick<AirPackage, 'status' | 'net_weight_kg' | 'max_weight_kg'>>(packages: readonly T[]): T[] {
+  return packages.filter((k) => k.status === 'open').sort((a, b) => weightGauge(b).left - weightGauge(a).left);
 }
 
 /** Un paquet du plan : un paquet en cours que l'on complète, ou un nouveau. */

@@ -3,9 +3,10 @@
 // cochés) et depuis Paquets avion (colis à emballer cochés).
 //   1. Ce qui est coché, et ce qui est écarté avec la raison (entrepôt =
 //      bateau, déjà dans un paquet, sans client, pas pesé…).
-//   2. Dans quel paquet : un NOUVEAU (découpé tout seul en paquets de 32 kg
-//      au plus), ou un paquet EN COURS à compléter — ce qui n'y tient pas part
-//      dans un nouveau.
+//   2. Dans quel paquet : un paquet EN COURS à compléter (proposé d'office
+//      quand un colis y tient : on finit le carton entamé) — ce qui n'y tient
+//      pas part dans un nouveau —, ou un NOUVEAU (découpé tout seul en paquets
+//      de 32 kg au plus).
 //   3. Le plan, paquet par paquet ; puis le résultat, avec « Ouvrir » sur
 //      chaque paquet (le fermer, l'étiquette).
 // Écriture : canReceiveParcels (la base revérifie chaque colis).
@@ -15,7 +16,7 @@ import { AlertTriangle, Check, PackageOpen, PackagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { MAX_PACK_PARCELS, useAirPackages, usePackParcels, type PackRunResult } from '@/hooks/useAirPackages';
 import {
-  PACKAGE_MAX_KG, packRefusal, packRefusalLabel, planPacking, sumParcelKg, weightGauge,
+  PACKAGE_MAX_KG, defaultPackTarget, openPackagesByRoom, packRefusal, packRefusalLabel, planPacking, sumParcelKg, weightGauge,
   type PackableParcel, type PackBin,
 } from '@/lib/airPackage';
 import { clientFullName, formatKg } from '@/lib/reception';
@@ -41,11 +42,12 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
 }) {
   const bureau = useAirPackages('bureau', null, open);
   const pack = usePackParcels();
-  const [dest, setDest] = useState<'new' | string>('new');
+  // 'auto' : le paquet en cours proposé d'office (defaultPackTarget), tant qu'on n'a rien choisi.
+  const [dest, setDest] = useState<'auto' | 'new' | string>('auto');
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [result, setResult] = useState<PackRunResult | null>(null);
 
-  useEffect(() => { if (open) { setDest('new'); setProgress(null); setResult(null); } }, [open]);
+  useEffect(() => { if (open) { setDest('auto'); setProgress(null); setResult(null); } }, [open]);
 
   const ready = useMemo(() => items.filter((it) => packRefusal(it.parcel, it.deposit) === null), [items]);
   const excluded = useMemo(() => items
@@ -53,11 +55,10 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
     .filter((x) => x.reason !== null)
     .map(({ it, reason }) => ({ key: it.parcel.id, label: it.parcel.parcel_no, reason: packRefusalLabel(reason!, it.parcel) })), [items]);
   // Les paquets en cours, ceux qui ont le plus de place d'abord.
-  const openPackages = useMemo(() => (bureau.data ?? [])
-    .filter((k) => k.status === 'open')
-    .sort((a, b) => weightGauge(b).left - weightGauge(a).left), [bureau.data]);
+  const openPackages = useMemo(() => openPackagesByRoom(bureau.data ?? []), [bureau.data]);
+  const proposed = useMemo(() => defaultPackTarget(openPackages, ready), [openPackages, ready]);
   // Le paquet choisi peut avoir été fermé entre-temps : la destination retombe alors sur « nouveau », visiblement.
-  const target = dest === 'new' ? null : openPackages.find((k) => k.id === dest) ?? null;
+  const target = dest === 'auto' ? proposed : dest === 'new' ? null : openPackages.find((k) => k.id === dest) ?? null;
   const chosen = target ? target.id : 'new';
   const plan = useMemo(() => planPacking(ready, target), [ready, target]);
   const filled = plan.filter((b) => b.items.length > 0);
@@ -173,14 +174,6 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
           <section>
             <h3 className={cn('mb-2 text-[13px] font-bold', TEXT.strong)}>Dans quel paquet ?</h3>
             <div role="radiogroup" aria-label="Paquet de destination" className="space-y-2">
-              <ChoiceCard
-                on={chosen === 'new'}
-                onClick={() => setDest('new')}
-                title="Nouveau paquet"
-                meta={newBins.length > 1 && chosen === 'new'
-                  ? `${formatKg(sumParcelKg(ready))} : ${newBins.length} paquets de ${PACKAGE_MAX_KG} kg au plus, créés tout seuls`
-                  : 'Un paquet tout neuf, créé maintenant'}
-              />
               {openPackages.map((k) => {
                 const g = weightGauge(k);
                 return (
@@ -189,10 +182,18 @@ export function PackDialog({ open, items, onClose, onDone, onOpenPackage, onShow
                     on={chosen === k.id}
                     onClick={() => setDest(k.id)}
                     title={<span className="font-mono">{k.package_no} <span className={cn('font-sans text-[12px] font-semibold', TEXT.muted)}>· en cours</span></span>}
-                    meta={`${formatKg(g.net)} / ${formatKg(g.max)} · reste ${formatKg(g.left)} · ${plural(Number(k.parcel_count), 'colis', 'colis')} · ${plural(Number(k.client_count), 'client')}`}
+                    meta={`${formatKg(g.net)} / ${formatKg(g.max)} · reste ${formatKg(g.left)} · ${plural(Number(k.parcel_count), 'colis', 'colis')} · ${plural(Number(k.client_count), 'client')}${k.created_by_name ? ` · ouvert par ${k.created_by_name}` : ''}${proposed?.id === k.id ? ' · proposé : on finit le carton entamé' : ''}`}
                   />
                 );
               })}
+              <ChoiceCard
+                on={chosen === 'new'}
+                onClick={() => setDest('new')}
+                title="Nouveau paquet"
+                meta={newBins.length > 1 && chosen === 'new'
+                  ? `${formatKg(sumParcelKg(ready))} : ${newBins.length} paquets de ${PACKAGE_MAX_KG} kg au plus, créés tout seuls`
+                  : 'Un paquet tout neuf, créé maintenant'}
+              />
             </div>
           </section>
         )}

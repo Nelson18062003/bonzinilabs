@@ -196,6 +196,7 @@ const ReceptionClients = lazy(() => import("./mobile/screens/reception").then(m 
 const ReceptionClientCard = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionClientCard })));
 const ReceptionPackages = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPackages })));
 const ReceptionPackage = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPackage })));
+const ReceptionPackTodo = lazy(() => import("./mobile/screens/reception").then(m => ({ default: m.ReceptionPackTodo })));
 const WarehouseLogin = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseLogin })));
 const WarehouseHome = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseHome })));
 const WarehouseArrivals = lazy(() => import("./mobile/screens/warehouse").then(m => ({ default: m.WarehouseArrivals })));
@@ -457,6 +458,7 @@ const App = () => (
                 <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionClientCard /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets" element={<ReceptionRouteWrapper><ReceptionPackages /></ReceptionRouteWrapper>} />
+                <Route path="/r/paquets/emballer" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackTodo /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets/:id" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackage /></ReceptionRouteWrapper>} />
                 {/* ── Entrepôt de Douala (« /w ») : pointer, remettre ── */}
                 <Route path="/w/login" element={<WarehouseRouteWrapper requireAuth={false} showTabBar={false}><WarehouseLogin /></WarehouseRouteWrapper>} />

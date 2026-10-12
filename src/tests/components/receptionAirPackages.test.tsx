@@ -6,7 +6,11 @@
  *  · « Nouveau paquet » ouvre sa fiche ; le lien de l'app HQ ?code=PQ-… aussi ;
  *  · un scan RC-… met le colis dans le paquet ; 32 kg dépassés → on propose
  *    de fermer ce paquet et d'en commencer un autre ;
- *  · fermer exige un poids pesé ≤ 32 kg ; un paquet fermé s'imprime et se rouvre.
+ *  · fermer exige un poids pesé ≤ 32 kg ; un paquet fermé s'imprime et se rouvre ;
+ *  · (12/10) « N colis attendent un paquet » → les choisir par client, puis
+ *    « Mettre en paquet » : le paquet en cours proposé d'office, le reste
+ *    réparti en paquets de 32 kg ; dans un paquet ouvert, « Ajouter » les
+ *    colis prêts qui y tiennent ; « ouvert par … » quand c'est un collègue.
  * Les hooks sont simulés : le sujet est l'écran, pas la base.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -14,6 +18,7 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import type { AirPackage, AirPackageParcel } from '@/lib/airPackage';
+import type { Deposit, Parcel } from '@/lib/reception';
 
 const m = vi.hoisted(() => ({
   list: [] as unknown[],
@@ -25,6 +30,13 @@ const m = vi.hoisted(() => ({
   seal: vi.fn(),
   reopen: vi.fn(),
   del: vi.fn(),
+  pack: vi.fn(),
+  packable: undefined as unknown,
+}));
+
+vi.mock('@/contexts/AdminAuthContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/contexts/AdminAuthContext')>()),
+  useAdminAuth: () => ({ currentUser: { id: 'me' } }),
 }));
 
 vi.mock('@/integrations/supabase/client', () => {
@@ -56,12 +68,17 @@ vi.mock('@/hooks/useAirPackages', () => {
     useSealAirPackage: () => ({ mutate: m.seal, isPending: false }),
     useReopenAirPackage: () => ({ mutate: m.reopen, isPending: false }),
     useDeleteAirPackage: () => ({ mutate: m.del, isPending: false }),
+    usePackableParcels: () => ({ data: m.packable, isLoading: false, error: null, refetch: vi.fn() }),
+    usePackParcels: () => ({ mutateAsync: m.pack, isPending: false }),
+    MAX_PACK_PARCELS: 200,
   };
 });
 
 import { PackageRpcError } from '@/hooks/useAirPackages';
 import { ReceptionPackages } from '@/mobile/screens/reception/ReceptionPackages';
 import { ReceptionPackage } from '@/mobile/screens/reception/ReceptionPackage';
+import { ReceptionPackTodo } from '@/mobile/screens/reception/ReceptionPackTodo';
+import { packableParcels } from '@/lib/airPackage';
 
 const pkg = (o: Partial<AirPackage>): AirPackage => ({
   id: 'k1', package_no: 'PQ-000001', status: 'open', air_shipment_id: null, awb_number: null, air_status: null, etd: null, flight_no: null,
@@ -78,6 +95,25 @@ const parcel = (o: Partial<AirPackageParcel>): AirPackageParcel => ({
   ...o,
 });
 
+// Les colis à emballer (air_package_packable) : deux dépôts du bureau.
+const rcParcel = (no: string, kg: number | null, o: Partial<Parcel> = {}): Parcel => ({
+  id: `id-${no}`, seq: 1, parcel_no: no, kind: 'carton', weight_kg: kg, length_cm: null, width_cm: null, height_cm: null, cbm: null,
+  description: `Carton ${no}`, courier_waybill: null, photo_path: null, status: 'received', created_at: 'x', ...o,
+});
+const office = (id: string, c: Deposit['client'], parcels: Parcel[]): Deposit => ({
+  id, deposit_no: id, client: c, location: 'office', brought_by: 'client', representative_name: null, representative_phone: null,
+  status: 'closed', received_by: 'r', received_by_name: null, opened_at: 'x', closed_at: 'x', parcel_count: parcels.length,
+  total_weight_kg: 0, total_cbm: 0, notes: null, parcels,
+} as Deposit);
+const samuel = { ...client, user_id: 'u2', customer_code: 'BZ-510224', first_name: 'Samuel', last_name: 'Ondo' };
+const board = () => ({
+  ...packableParcels([
+    office('RC-000301', client as Deposit['client'], [rcParcel('RC-000301-01', 20), rcParcel('RC-000301-02', 9), rcParcel('RC-000301-03', null)]),
+    office('RC-000302', samuel as Deposit['client'], [rcParcel('RC-000302-01', 6)]),
+  ]),
+  truncated: false,
+});
+
 function Where() {
   const loc = useLocation();
   return <div data-testid="where">{loc.pathname}{loc.search}</div>;
@@ -89,6 +125,7 @@ function mount(path: string) {
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/r/paquets" element={<><ReceptionPackages /><Where /></>} />
+          <Route path="/r/paquets/emballer" element={<><ReceptionPackTodo /><Where /></>} />
           <Route path="/r/paquets/:id" element={<><ReceptionPackage /><Where /></>} />
         </Routes>
       </MemoryRouter>
@@ -97,9 +134,10 @@ function mount(path: string) {
 }
 
 beforeEach(() => {
-  for (const fn of [m.find, m.create, m.add, m.remove, m.seal, m.reopen, m.del]) fn.mockReset();
+  for (const fn of [m.find, m.create, m.add, m.remove, m.seal, m.reopen, m.del, m.pack]) fn.mockReset();
   m.list = [];
   m.one = null;
+  m.packable = undefined;
 });
 
 describe('la liste des paquets du bureau', () => {
@@ -197,5 +235,92 @@ describe("la fiche d'un paquet", () => {
     const dialog = screen.getAllByRole('dialog').at(-1)!;
     fireEvent.click(within(dialog).getByRole('button', { name: /Supprimer ce paquet vide/ }));
     expect(m.del).toHaveBeenCalledWith('k1', expect.anything());
+  });
+});
+
+describe('le réceptionnaire fait ses paquets (12/10)', () => {
+  it('la liste dit ce qui attend un paquet et mène aux colis à emballer', () => {
+    m.packable = board();
+    mount('/r/paquets');
+    expect(screen.getByText('4 colis attendent un paquet')).toBeInTheDocument();
+    expect(screen.getByText(/3 prêts · 35 kg · 2 clients/)).toBeInTheDocument();
+    expect(screen.getByText('1 à compléter')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Choisir les colis/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/paquets/emballer');
+  });
+
+  it('sans rien à emballer, « Nouveau paquet » reste le geste principal', () => {
+    m.packable = { ready: [], blocked: [], truncated: false };
+    mount('/r/paquets');
+    expect(screen.queryByRole('button', { name: /Choisir les colis/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Nouveau paquet/ })).toBeInTheDocument();
+  });
+
+  it('« ouvert par » quand un collègue a ouvert le paquet, rien quand c’est soi', () => {
+    m.list = [
+      pkg({ id: 'a', package_no: 'PQ-000010', created_by: 'grace', created_by_name: 'Grace Ebogo' }),
+      pkg({ id: 'b', package_no: 'PQ-000011', created_by: 'me', created_by_name: 'Kevin Nkolo' }),
+    ];
+    mount('/r/paquets');
+    expect(screen.getByText('ouvert par Grace Ebogo')).toBeInTheDocument();
+    expect(screen.queryByText('ouvert par Kevin Nkolo')).toBeNull();
+  });
+
+  it('colis à emballer : la case d’un client coche ses colis, la feuille propose le paquet en cours et répartit le reste', async () => {
+    m.packable = board();
+    m.list = [pkg({ id: 'k9', package_no: 'PQ-000009', net_weight_kg: 10, parcel_count: 1, created_by: 'grace', created_by_name: 'Grace Ebogo' })];
+    m.pack.mockResolvedValue({ packages: [
+      { id: 'k9', package_no: 'PQ-000009', created: false, dropped: false, added: ['RC-000301-01'], refused: [], error: null },
+      { id: 'k10', package_no: 'PQ-000010', created: true, dropped: false, added: ['RC-000301-02'], refused: [], error: null },
+    ] });
+    mount('/r/paquets/emballer');
+    // Le colis sans poids attend, avec quoi faire.
+    expect(screen.getByText('pas pesé : pesez-le')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Mettre en paquet$/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: /BZ-482913/ }));
+    expect(screen.getByText('2 colis · 29 kg')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet$/ }));
+
+    const sheet = screen.getAllByRole('dialog').at(-1)!;
+    // PQ-000009 (reste 22 kg) est proposé : le colis de 20 kg y va, celui de 9 kg dans un nouveau paquet.
+    expect(within(sheet).getByRole('radio', { name: /PQ-000009/ })).toHaveAttribute('aria-checked', 'true');
+    expect(within(sheet).getByText(/Proposé/)).toBeInTheDocument();
+    fireEvent.click(within(sheet).getByRole('button', { name: /Répartir en 2 paquets/ }));
+    await waitFor(() => expect(m.pack).toHaveBeenCalled());
+    expect(m.pack.mock.calls[0][0].bins).toEqual([
+      { packageId: 'k9', packageNo: 'PQ-000009', parcelNos: ['RC-000301-01'] },
+      { packageId: null, packageNo: null, parcelNos: ['RC-000301-02'] },
+    ]);
+    expect(await screen.findByText('Colis mis en paquet')).toBeInTheDocument();
+  });
+
+  it('choisir « Nouveau paquet » à la main : tout part dans des paquets neufs', async () => {
+    m.packable = board();
+    m.list = [pkg({ id: 'k9', package_no: 'PQ-000009', net_weight_kg: 10, parcel_count: 1 })];
+    m.pack.mockResolvedValue({ packages: [{ id: 'k10', package_no: 'PQ-000010', created: true, dropped: false, added: ['RC-000301-01', 'RC-000301-02'], refused: [], error: null }] });
+    mount('/r/paquets/emballer');
+    fireEvent.click(screen.getByRole('checkbox', { name: /BZ-482913/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet$/ }));
+    const sheet = screen.getAllByRole('dialog').at(-1)!;
+    fireEvent.click(within(sheet).getByRole('radio', { name: /Nouveau paquet/ }));
+    fireEvent.click(within(sheet).getByRole('button', { name: /Mettre 2 colis en paquet/ }));
+    await waitFor(() => expect(m.pack).toHaveBeenCalled());
+    expect(m.pack.mock.calls[0][0].bins).toEqual([{ packageId: null, packageNo: null, parcelNos: ['RC-000301-01', 'RC-000301-02'] }]);
+    // Un seul paquet : on l'ouvre d'un geste.
+    expect(await screen.findByRole('button', { name: /Ouvrir PQ-000010/ })).toBeInTheDocument();
+  });
+
+  it('dans un paquet ouvert : « Ajouter » les colis prêts qui y tiennent, les autres sont comptés', async () => {
+    m.packable = board();
+    m.one = pkg({ id: 'k1', net_weight_kg: 20, parcel_count: 1, parcels: [parcel({ weight_kg: 20 })] });
+    m.add.mockResolvedValue({ already: false, parcel_no: 'RC-000301-02', weight_kg: 9, client, package: m.one });
+    mount('/r/paquets/k1');
+    // Reste 12 kg : 9 et 6 kg tiennent, 20 kg non. Le client déjà dedans passe en tête.
+    expect(screen.getByText('client déjà dans ce paquet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajouter RC-000301-01' })).toBeNull();
+    expect(screen.getByText(/1 autre colis prêt ne tient plus \(reste 12 kg\)/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter RC-000301-02' }));
+    await waitFor(() => expect(m.add).toHaveBeenCalledWith('RC-000301-02'));
+    expect(screen.getByRole('button', { name: 'Ajouter RC-000302-01' })).toBeInTheDocument();
   });
 });

@@ -407,7 +407,7 @@ export function PackageWorkbench({ packageId, packable, onClose, onOpenPackage, 
           <div className="flex items-center gap-3">
             <span className={cn('font-mono text-[20px] font-extrabold tracking-[-0.01em]', TEXT.strong)}>{pkg.package_no}</span>
             <StatusPill tone={meta.tone} label={meta.label} />
-            <span className={cn('min-w-0 truncate text-[12.5px]', TEXT.muted)}>Paquet avion · 32 kg au plus · commencé le {formatDateTime(pkg.created_at)}</span>
+            <span className={cn('min-w-0 truncate text-[12.5px]', TEXT.muted)}>Paquet avion · 32 kg au plus · commencé le {formatDateTime(pkg.created_at)}{pkg.created_by_name ? ` par ${pkg.created_by_name}` : ''}</span>
           </div>
         }
       >

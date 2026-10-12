@@ -87,4 +87,24 @@ Expliqué par Nelson lors de la réunion du 05/10. Pour l'avion, le colis n'est 
 | 7 | À Douala, l'équipe amène les paquets à l'entrepôt ; le responsable vérifie qu'**ils sont tous là** | entrepôt (`/w`) | `air_package_receive` : « paquets reçus X / Y » |
 | 8 | Il **ouvre chaque paquet** et **pointe chaque colis** | entrepôt | `air_package_open`, pointage existant (pointer un colis ouvre son paquet) |
 
+**Qui fait les paquets (12/10/2026).** Les deux, au choix, sur les mêmes paquets :
+le bureau (ordinateur, Cargo › Réception › Paquets avion) **et** le réceptionnaire
+sur son téléphone (`/r`). Un paquet ouvert sur l'ordinateur apparaît « en cours »
+sur le téléphone avec « ouvert par … », et inversement. Le parcours du
+réceptionnaire, sans rien retenir de tête :
+
+1. **Dépôt terminé** (au bureau) → carte « Colis avion : mettez-les en paquet » →
+   *Mettre en paquet* : le paquet en cours est proposé d'office si un colis y tient
+   (on finit le carton entamé), sinon un nouveau ; au-delà de 32 kg, l'app crée
+   elle-même les paquets suivants.
+2. **Paquets avion** → « N colis attendent un paquet » → *Choisir les colis* : la
+   liste par client (une case coche tout le client), ce qui n'est pas prêt dit quoi
+   faire (« pas pesé : pesez-le », « sans client : attribuez le dépôt »).
+3. **Dans un paquet ouvert** : la douchette, ou la liste « Colis prêts à mettre
+   dedans » (seulement ceux qui tiennent, les clients déjà dedans en tête) → *Ajouter*.
+4. Carton plein → *Fermer le paquet* (pesée) → étiquette.
+
+Lecture des colis à emballer : `air_package_packable` (canReceiveParcels ou
+canViewCargo) ; chaque ajout repasse par `air_package_add_parcel`, qui revérifie.
+
 Le maritime suivra le même modèle plus tard (colis → unités de chargement → conteneur).

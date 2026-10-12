@@ -113,8 +113,9 @@ const pkg = (o) => ({
   sealed_at: null, handed_over_at: null, refused_at: null, refusal_reason: null, refused_air_shipment_id: null,
   received_at: null, opened_at: null, created_at: gz(9, 0), updated_at: gz(9, 0), parcels: null, ...o,
 });
+// Ouvert par Grace depuis l'ordinateur (« ouvert par Grace Ebogo ») ; c'est Kevin qui le remplit au bureau.
 const pk45 = pkg({
-  id: 'pk45', package_no: 'PQ-000045', created_at: gz(15, 2), updated_at: gz(16, 18),
+  id: 'pk45', package_no: 'PQ-000045', created_at: gz(15, 2), updated_at: gz(16, 18), created_by: 'grace', created_by_name: 'Grace Ebogo',
   net_weight_kg: Math.round(sum(pk45Parcels, (p) => p.weight_kg) * 100) / 100, parcel_count: pk45Parcels.length, client_count: 3, parcels: pk45Parcels,
 });
 const pk45Sealed = { ...pk45, status: 'sealed', gross_weight_kg: 28.1, length_cm: 70, width_cm: 50, height_cm: 45, sealed_at: gz(16, 42), updated_at: gz(16, 42) };
@@ -135,7 +136,8 @@ const listRow = (p) => ({ ...p, parcels: null });
 const state = { sealed: false, made: [], flights: [], assigned: {} };
 const ALL_PARCELS = () => [...dep1c.parcels.map((p) => [p, dep1c]), ...[dep2, dep3, dep4].flatMap((d) => d.parcels.map((p) => [p, d]))];
 /** Un paquet créé pendant l'écran : PQ-000046, 47… avec ses colis. */
-const made = (m) => pkg({ id: m.id, package_no: m.no, created_at: gz(16, 43), updated_at: gz(16, 43 + m.parcels.length),
+const made = (m) => pkg({ id: m.id, package_no: m.no, created_at: m.by ? gz(8, 50) : gz(16, 43), updated_at: gz(16, 43 + m.parcels.length),
+  created_by: m.by ? 'grace' : 'demo', created_by_name: m.by ? 'Grace Ebogo' : 'Kevin Nkolo',
   net_weight_kg: Math.round(sum(m.parcels, (p) => p.weight_kg) * 100) / 100, parcel_count: m.parcels.length,
   client_count: new Set(m.parcels.map((p) => p.client?.user_id)).size, parcels: m.parcels });
 const madeById = (id) => state.made.find((m) => m.id === id);
@@ -202,7 +204,7 @@ export const RPC = {
     stats: { deposits: dayDeposits.length, parcels: sum(dayDeposits, (d) => d.parcel_count), weight_kg: Math.round(sum(dayDeposits, (d) => d.total_weight_kg) * 10) / 10, cbm: Math.round(sum(dayDeposits, (d) => d.total_cbm) * 1000) / 1000, open: 1 },
     pending: 1, deposits: dayDeposits,
   },
-  reception_get_deposit: (b) => ({ success: true, deposit: DEPOSITS[b?.p_deposit_id] ?? dep1 }),
+  reception_get_deposit: (b) => ({ success: true, deposit: withPackages(DEPOSITS[b?.p_deposit_id] ?? dep1) }),
   reception_pending_deposits: { success: true, deposits: [pend1] },
   reception_recent_clients: { success: true, clients: [aicha, samuel, nadia] },
   reception_client: (b) => { const c = [aicha, samuel, nadia].find((x) => x.user_id === b?.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
@@ -273,6 +275,12 @@ export const RPC = {
 
   // Bureau : la console cargo et le devis
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 1, air_open: 1, air_in_flight: 0, parcels_waiting: 19, deposits_pending: 1, deposits_today: 4 },
+  // Ce qui attend un paquet (air_package_packable) : les dépôts du bureau qui ont encore un colis libre.
+  air_package_packable: () => {
+    const free = (p) => !packedIn(p).air_package_id;
+    const rows = [dep1c, dep2, dep3, dep4, pend1].filter((d) => d.location === 'office' && d.parcels.some(free)).map(withPackages);
+    return { success: true, total: rows.length, truncated: false, deposits: rows };
+  },
   reception_board: (b) => {
     const list = b?.p_scope === 'cancelled' ? [] : [dep1c, dep2, dep3, dep4, pend1];
     const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withPackages).map(withQuote);
@@ -368,6 +376,17 @@ async function setup(page, { tz = 'Asia/Shanghai' } = {}) {
 }
 
 const deskSetup = (page) => setup(page, { tz: 'Asia/Shanghai' });
+/** Ce matin, Grace a ouvert depuis l'ordinateur un paquet vide, PQ-000046, pour que Kevin le remplisse au bureau. */
+const withGracePackage = async (page) => {
+  await setup(page);
+  state.made.push({ id: 'pk46', no: 'PQ-000046', parcels: [], by: 'grace' });
+};
+/** « Colis à emballer » : tous les colis d'Aïcha cochés d'un geste (sa case de client). */
+async function pickAicha(page) {
+  await fontsReady(page);
+  await page.getByRole('checkbox', { name: /BZ-482913/ }).first().click();
+  await page.waitForTimeout(400);
+}
 
 /** Les polices (DM Sans, Noto Sans SC) sont chargées avant la capture. */
 async function fontsReady(page) {
@@ -618,6 +637,62 @@ export const SCREENS = [
         console.log(`  · étiquette enregistrée : ${join(OUT, '09b-etiquette-paquet-PQ-000045.png')} (${dl.suggestedFilename()})`);
       } catch (e) { console.log('  · étiquette non enregistrée :', e.message); }
       await page.waitForTimeout(800);
+    } },
+  // 3b. Au bureau, le dépôt terminé dit l'étape suivante : « Colis avion : mettez-les en paquet ».
+  { key: 'j.guangzhou.done', name: '03b-depot-termine-mettre-en-paquet', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1500', before: fontsReady },
+  // 3c. « Mettre en paquet » : aucun des 3 colis ne tient dans PQ-000045 (reste 4,6 kg) → un nouveau paquet.
+  { key: 'j.guangzhou.done', name: '03c-depot-mettre-en-paquet-feuille', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1100', fullPage: false,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(900);
+    } },
+  // 3d. C'est fait : PQ-000046, 3 colis — « Ouvrir PQ-000046 » (le fermer après la pesée).
+  { key: 'j.guangzhou.done', name: '03d-depot-mis-en-paquet', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(800);
+      await page.getByRole('dialog').getByRole('button', { name: /Mettre 3 colis en paquet/ }).click();
+      await page.waitForTimeout(1500);
+    } },
+  // 5b. Colis à emballer : par client ; la case d'Aïcha coche ses 7 colis (66,9 kg).
+  { key: 'j.guangzhou.pack-todo', name: '05b-colis-a-emballer', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1900', before: pickAicha },
+  // 5c. « Mettre en paquet » : PQ-000046, ouvert par Grace sur l'ordinateur, est proposé d'office ;
+  //     le reste se répartit en paquets de 32 kg — trois paquets en tout.
+  { key: 'j.guangzhou.pack-todo', name: '05c-colis-a-emballer-repartir', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1500', fullPage: false,
+    before: async (page) => {
+      await pickAicha(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(900);
+    } },
+  { key: 'j.guangzhou.pack-todo', name: '05d-colis-a-emballer-fait', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1100', fullPage: false,
+    before: async (page) => {
+      await pickAicha(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(800);
+      await page.getByRole('dialog').getByRole('button', { name: /Répartir en 3 paquets/ }).click();
+      await page.waitForTimeout(2500);
+    } },
+  // 5e. La même répartition, en chinois (le réceptionnaire peut travailler dans sa langue).
+  { key: 'j.guangzhou.pack-todo', name: '05e-colis-a-emballer-repartir-zh', role: 'receptionist', lang: 'zh', init: withGracePackage, wait: 1500, viewport: '390x1500', fullPage: false,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('checkbox', { name: /BZ-482913/ }).first().click();
+      await page.waitForTimeout(400);
+      await page.getByRole('button', { name: /^装包$/ }).click();
+      await page.waitForTimeout(900);
+    } },
+  // 6b. PQ-000046, ouvert par Grace : les colis prêts qui y tiennent, « Ajouter » sans scanner.
+  { key: 'j.guangzhou.package-grace', name: '06b-paquet-de-grace-colis-prets', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1500', before: fontsReady },
+  // 6c. Deux touches « Ajouter » : 20,5 kg, les colis d'Aïcha d'abord.
+  { key: 'j.guangzhou.package-grace', name: '06c-paquet-de-grace-rempli', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1700',
+    before: async (page) => {
+      await fontsReady(page);
+      for (let i = 0; i < 2; i += 1) {
+        await page.getByRole('button', { name: /^Ajouter RC-/ }).first().click();
+        await page.waitForTimeout(1200);
+      }
     } },
   // 9. Au bureau : le devis de fret du dépôt RC-000123 (au kilo, avion), envoyé, payé en partie…
   { key: 'j.guangzhou.quote', name: '10-devis-fret', role: 'ops', desktop: true, viewport: '1440x1200', init: deskSetup, wait: 2500, before: fontsReady },
