@@ -1,14 +1,23 @@
 /**
- * Desktop admin — « Nouveau paiement » as ONE page (archetype surface C, §4).
+ * Desktop admin — « Nouveau paiement » dans une FENÊTRE, par-dessus la liste
+ * des paiements (retour du 12/10/2026 : « je ne veux pas un écran à part,
+ * je veux un pop-up, un mini formulaire bien soigné »).
  *
- * Replaces the 5-step phone wizard on desktop: client + both currency legs
- * side-by-side with live conversion, custom rate and backdating inline, the
- * client's carnet facing the new-beneficiary fields, QR paste zone, and a
- * live recap rail with the balance after debit. Same data layer and submit
- * logic as MobileNewPayment (useAdminCreatePayment + frozen snapshot).
+ * L'ordre est celui du geste :
+ *   1. le client, son solde (et le découvert autorisé) à droite ;
+ *   2. la destination (Alipay, WeChat, virement, cash) — elle fixe le taux ;
+ *   3. les montants : ce que le client paie (XAF) ⇄ ce que le fournisseur
+ *      reçoit (¥), l'un se calcule de l'autre au taux du jour (modifiable) ;
+ *   4. le bénéficiaire : un du carnet du client, un nouveau — coordonnées
+ *      saisies AVEC leur format (téléphone à indicatif, email, ID WeChat ;
+ *      src/lib/beneficiaries/contact.ts) — ou « à compléter plus tard » ;
+ *   5. replié : la date de l'opération (antidater).
+ * Le pied résume le paiement (¥, bénéficiaire, débit, solde après) et porte
+ * « Confirmer le paiement » (⌘⏎). Même couche de données et même instantané
+ * (beneficiary_details) qu'avant : useAdminCreatePayment.
  */
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { toStoredPath } from '@/lib/signedUrls';
@@ -24,29 +33,17 @@ import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
+import { draftErrors, draftPayload, emptyDraft, type BeneficiaryDraft } from '@/lib/beneficiaries/contact';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ChevronRight, Info, Wallet, X } from 'lucide-react';
-import {
-  SURFACE,
-  TEXT,
-  SOFT_PILL,
-  PRIMARY_PILL,
-  Card,
-  Avatar,
-  TextInput,
-  FormField,
-  PrimaryPill,
-  SoftPill,
-  Amount,
-  SecLabel,
-  SearchField,
-} from '@/desktop/designKit';
+import { AlertTriangle, ArrowRight, Check } from 'lucide-react';
+import { SURFACE, TEXT, FormDialog, PrimaryPill, SoftPill, TextInput } from '@/desktop/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { PasteDropZone } from '@/components/upload/PasteDropZone';
-import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
+import { ClientPickerField } from '@/desktop/components/ClientPickerField';
+import { BigAmount, CheckRow, Choice, Disclosure, Section } from '@/desktop/components/formDialogParts';
+import { BeneficiaryContactFields } from '@/components/payment-form/BeneficiaryContactFields';
+import { DesktopPaymentsScreen } from './DesktopPaymentsScreen';
 
-const VIOLET = '#8B5CF6';
 const FALLBACK_RATE = 11530;
 
 function fmt(n: number): string {
@@ -61,25 +58,28 @@ const MODES = [
 ] as const;
 type Mode = (typeof MODES)[number];
 
-function logoMethod(id: PaymentMethodKey): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
-  return id === 'virement' ? 'bank_transfer' : id;
-}
+const toDbMode = (id: PaymentMethodKey): BeneficiaryMode => (id === 'virement' ? 'bank_transfer' : (id as BeneficiaryMode));
 
-interface Benef {
-  name: string;
-  ident: string;
-  phone: string;
-  email: string;
-  bank: string;
-  account: string;
-  isClient: boolean;
-}
-const BENEF0: Benef = { name: '', ident: '', phone: '', email: '', bank: '', account: '', isClient: false };
+type BenefTab = 'existing' | 'new' | 'later';
 
+/**
+ * /m/payments/new sur ordinateur : la liste des paiements, et la fenêtre par-
+ * dessus. Fermer revient d'où l'on vient.
+ */
 export function DesktopNewPayment() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const close = () => (location.key !== 'default' ? navigate(-1) : navigate('/m/payments'));
+  return (
+    <>
+      <DesktopPaymentsScreen />
+      <NewPaymentDialog onClose={close} onCreated={(id) => navigate(id ? `/m/payments/${id}` : '/m/payments', { replace: true })} />
+    </>
+  );
+}
 
-  const { data: clients = [] } = useAllClients();
+export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (paymentId: string | null) => void }) {
+  const { data: clients = [], isLoading: clientsLoading } = useAllClients();
   const { data: rateData } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
@@ -95,243 +95,227 @@ export function DesktopNewPayment() {
     staleTime: 30_000,
   });
 
-  // ── Form state ──────────────────────────────────────────────────────────
+  // ── État ────────────────────────────────────────────────────────────────
   const [clientId, setClientId] = useState<string | null>(null);
-  const [clientOpen, setClientOpen] = useState(false);
-  const [clientSearch, setClientSearch] = useState('');
-  const clientRef = useRef<HTMLDivElement>(null);
-
   const [mode, setMode] = useState<Mode | null>(null);
   const [lastEdited, setLastEdited] = useState<'xaf' | 'cny'>('xaf');
-  const [rawXaf, setRawXaf] = useState('');
-  const [rawCny, setRawCny] = useState('');
+  const [rawXaf, setRawXaf] = useState<number | null>(null);
+  const [rawCny, setRawCny] = useState<number | null>(null);
   const [useCustomRate, setUseCustomRate] = useState(false);
-  const [customRateStr, setCustomRateStr] = useState(String(FALLBACK_RATE));
+  const [customRate, setCustomRate] = useState<number | null>(FALLBACK_RATE);
   const [useCustomDate, setUseCustomDate] = useState(false);
   const [customDateStr, setCustomDateStr] = useState('');
 
-  const [benefTab, setBenefTab] = useState<'existing' | 'new'>('existing');
+  const [benefTab, setBenefTab] = useState<BenefTab>('existing');
   const [selectedBenef, setSelectedBenef] = useState<Beneficiary | null>(null);
-  const [benef, setBenef] = useState<Benef>(BENEF0);
-  const [skipBenef, setSkipBenef] = useState(false);
+  const [draft, setDraft] = useState<BeneficiaryDraft>(() => emptyDraft(null));
   const [saveToCarnet, setSaveToCarnet] = useState(true);
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
+  const [tried, setTried] = useState(false);
 
   const client = useMemo(() => clients.find((c) => c.user_id === clientId) ?? null, [clients, clientId]);
+  const clientName = client ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : '';
   const clientBalance = client ? (walletsMap.get(client.user_id)?.balance ?? 0) : 0;
   const clientOverdraft = client ? (walletsMap.get(client.user_id)?.overdraft ?? 0) : 0;
   // Ce que l'équipe peut débiter : le solde, plus le découvert autorisé par le super admin.
   const clientAvailable = clientBalance + clientOverdraft;
 
-  useEffect(() => {
-    if (!clientOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!clientRef.current?.contains(e.target as Node)) setClientOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [clientOpen]);
-
-  const filteredClients = useMemo(() => {
-    const s = clientSearch.trim().toLowerCase();
-    const list = s
-      ? clients.filter((c) => `${c.first_name ?? ''} ${c.last_name ?? ''}`.toLowerCase().includes(s) || (c.phone ?? '').includes(s))
-      : clients;
-    return list.slice(0, 8);
-  }, [clients, clientSearch]);
-
-  // ── Money math ──────────────────────────────────────────────────────────
+  // ── Taux et montants ────────────────────────────────────────────────────
   // Aucun taux « sorti de nulle part » : tant que la destination n'est pas
   // choisie (et sans taux perso), il n'y a PAS de taux ni de conversion.
   // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
-  // client s'il s'en écarte (Gabon −1 %…) — même dérivation que « Taux par
-  // pays » et que la RPC calculate_final_rate, arrondie à l'entier —
-  // … et la TRANCHE du montant (petits paiements, en rouge sur le flyer).
+  // client s'il s'en écarte — même dérivation que « Taux par pays » et que la
+  // RPC calculate_final_rate — et la TRANCHE du montant (petits paiements).
   const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
   const clientKey = client ? clientCountryToRateKey(client.country) : null;
-  const baseRate = refRate == null
-    ? null
-    : lastEdited === 'cny'
-      ? teamPaymentFromCny(refRate, clientKey, adjustments, parseInt(rawCny) || 0).rate
-      : teamPaymentRate(refRate, clientKey, adjustments, parseInt(rawXaf) || 0);
-  // Pour les libellés : l'écart du pays, et si la tranche « petits paiements » s'applique.
+  const baseRate =
+    refRate == null
+      ? null
+      : lastEdited === 'cny'
+        ? teamPaymentFromCny(refRate, clientKey, adjustments, rawCny ?? 0).rate
+        : teamPaymentRate(refRate, clientKey, adjustments, rawXaf ?? 0);
   const countryRate = refRate != null ? clientCountryRate(refRate, clientKey, adjustments) : null;
   const smallPayment = refRate != null && baseRate !== teamPaymentRate(refRate, clientKey, adjustments, 1_000_000);
   const fallbackActive = !!mode && !useCustomRate && baseRate == null;
-  const rate: number | null = useCustomRate ? parseInt(customRateStr) || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
+  const rate: number | null = useCustomRate ? customRate || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
   const hasRate = rate != null && rate > 0;
-  const xaf = lastEdited === 'xaf' ? parseInt(rawXaf) || 0 : hasRate ? Math.round(((parseInt(rawCny) || 0) * 1_000_000) / rate!) : 0;
-  const cny = lastEdited === 'cny' ? parseInt(rawCny) || 0 : hasRate ? Math.round(((parseInt(rawXaf) || 0) * rate!) / 1_000_000) : 0;
+  const xaf = lastEdited === 'xaf' ? (rawXaf ?? 0) : hasRate ? Math.round(((rawCny ?? 0) * 1_000_000) / rate!) : 0;
+  const cny = lastEdited === 'cny' ? (rawCny ?? 0) : hasRate ? Math.round(((rawXaf ?? 0) * rate!) / 1_000_000) : 0;
 
-  const dbMode: BeneficiaryMode | null = mode ? (mode.id === 'virement' ? 'bank_transfer' : (mode.id as BeneficiaryMode)) : null;
+  const dbMode: BeneficiaryMode | null = mode ? toDbMode(mode.id) : null;
   const { data: clientBeneficiaries } = useAdminClientBeneficiaries(client?.user_id, dbMode ?? undefined);
-  // Noms/alias tous modes confondus — numérote le nom par défaut
-  // « Supplier NN » sans dupliquer un numéro déjà pris sur un autre mode.
+  // Noms/alias tous modes confondus — numérote « Supplier NN » sans doublon.
   const { data: beneficiaryNames } = useAdminClientBeneficiaryNames(client?.user_id);
-  // Dernier nom posé automatiquement — recalé à l'arrivée des données tant
-  // que l'admin n'y a pas touché.
   const autoNameRef = useRef<string | null>(null);
   const prefillSupplierName = () => {
     const auto = nextSupplierName(beneficiaryNames);
     autoNameRef.current = auto;
     return auto;
   };
-
-  // Sur « Nouveau » en Alipay/WeChat, le nom (requis) est prérempli
-  // « Supplier NN » — l'admin peut le remplacer librement.
-  const openBenefTab = (tab: 'existing' | 'new') => {
-    setBenefTab(tab);
-    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
-      setBenef((b) => ({ ...b, name: prefillSupplierName() }));
-    }
-  };
-
-  // Nom auto posé avant le chargement de la liste → renuméroté après coup,
-  // uniquement s'il est resté intact.
+  // Nom auto posé avant le chargement de la liste → renuméroté, s'il est resté intact.
   useEffect(() => {
     if (!autoNameRef.current) return;
-    setBenef((b) => {
-      if (b.name !== autoNameRef.current) return b;
+    setDraft((d) => {
+      if (d.name !== autoNameRef.current) return d;
       const next = nextSupplierName(beneficiaryNames);
-      if (next === b.name) return b;
+      if (next === d.name) return d;
       autoNameRef.current = next;
-      return { ...b, name: next };
+      return { ...d, name: next };
     });
   }, [beneficiaryNames]);
 
+  // L'aperçu du QR est une URL d'objet : libérée quand on la remplace, et à la fermeture.
+  const qrUrlRef = useRef<string | null>(null);
+  const setQrUrl = (url: string | null) => {
+    if (qrUrlRef.current) URL.revokeObjectURL(qrUrlRef.current);
+    qrUrlRef.current = url;
+    setQrPreview(url);
+  };
   const setQrFromFiles = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
     setQrFile(file);
-    setQrPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return URL.createObjectURL(file);
-    });
+    setQrUrl(URL.createObjectURL(file));
   }, []);
   const removeQr = useCallback(() => {
     setQrFile(null);
-    setQrPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return null;
-    });
+    setQrUrl(null);
+  }, []);
+  useEffect(() => () => {
+    if (qrUrlRef.current) URL.revokeObjectURL(qrUrlRef.current);
   }, []);
 
-  // Changing mode resets destination choices (the carnet is per-mode).
-  const pickMode = (m: Mode) => {
-    setMode(m);
-    setSelectedBenef(null);
-    setBenef(
-      benefTab === 'new' && (m.id === 'alipay' || m.id === 'wechat')
-        ? { ...BENEF0, name: prefillSupplierName() }
-        : BENEF0,
-    );
-    removeQr();
+  const newDraftFor = (m: Mode | null) => {
+    const d = emptyDraft(m ? toDbMode(m.id) : null);
+    return m && (m.id === 'alipay' || m.id === 'wechat') ? { ...d, name: prefillSupplierName() } : d;
   };
 
-  // ── Validation ──────────────────────────────────────────────────────────
+  // Changer de destination remet le bénéficiaire à zéro (le carnet est par méthode).
+  const pickMode = (m: Mode) => {
+    if (mode?.id === m.id) return;
+    setMode(m);
+    setSelectedBenef(null);
+    setDraft(benefTab === 'new' ? newDraftFor(m) : emptyDraft(toDbMode(m.id)));
+    removeQr();
+  };
+  const openTab = (tab: BenefTab) => {
+    setBenefTab(tab);
+    if (tab === 'new' && !draft.name.trim() && mode) setDraft(newDraftFor(mode));
+  };
+
+  // ── Contrôles ───────────────────────────────────────────────────────────
   const amountValid = isValidXafAmount(xaf, MIN_PAYMENT_XAF);
   const hasEnoughBalance = xaf <= clientAvailable;
   const willOverdraw = xaf > 0 && xaf > clientBalance && hasEnoughBalance;
-  const benefValid = skipBenef
-    ? true
-    : benefTab === 'existing'
-      ? !!selectedBenef
-      : mode?.id === 'cash' && benef.isClient
-        ? true
-        : benef.name.trim().length > 0 && (mode?.id !== 'virement' || (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
-  const canSubmit = !!client && !!mode && amountValid && hasEnoughBalance && benefValid && !createPayment.isPending;
+  const benefErrors = dbMode && benefTab === 'new' ? draftErrors(dbMode, draft, { hasQr: !!qrFile }) : {};
+  const benefError =
+    !mode || benefTab === 'later'
+      ? null
+      : benefTab === 'existing'
+        ? selectedBenef
+          ? null
+          : 'Choisissez un bénéficiaire du carnet, ou créez-en un.'
+        : Object.values(benefErrors)[0] ?? null;
+  const firstError = !client
+    ? 'Choisissez le client.'
+    : !mode
+      ? 'Choisissez la destination.'
+      : !amountValid
+        ? `Montant invalide — minimum ${fmt(MIN_PAYMENT_XAF)} XAF.`
+        : !hasEnoughBalance
+          ? `Solde insuffisant — disponible ${fmt(clientAvailable)} XAF.`
+          : benefError;
+  const dirty = !!client || !!mode || !!rawXaf || !!rawCny || !!qrFile || !!draft.name.trim();
 
-  // ── Submit (same snapshot semantics as the wizard) ──────────────────────
+  // ── Envoi (même instantané que l'assistant mobile) ──────────────────────
   const submit = useCallback(async () => {
-    if (!client || !mode || !dbMode || rate == null) return;
-    if (!amountValid || !hasEnoughBalance) {
-      toast.error(amountValid ? 'Solde insuffisant pour ce paiement.' : 'Montant invalide.');
-      return;
-    }
+    setTried(true);
+    if (firstError || !client || !mode || !dbMode || rate == null || createPayment.isPending) return;
     const opDate = resolveOperationDate(useCustomDate, customDateStr);
     if (opDate.error) {
       toast.error(opDate.error);
       return;
     }
 
-    const autoName = mode.id === 'cash' && benef.isClient ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : undefined;
     let benefPayload: Record<string, unknown> = {};
     let beneficiaryId: string | undefined;
     let snapshot: Record<string, unknown> | undefined;
 
-    if (!skipBenef) {
-      if (benefTab === 'existing' && selectedBenef) {
-        beneficiaryId = selectedBenef.id;
-        snapshot = {
-          id: selectedBenef.id,
-          alias: selectedBenef.alias ?? selectedBenef.name,
-          name: selectedBenef.name,
-          payment_method: selectedBenef.payment_method,
-          identifier: selectedBenef.identifier,
-          identifier_type: selectedBenef.identifier_type,
-          phone: selectedBenef.phone,
-          email: selectedBenef.email,
-          bank_name: selectedBenef.bank_name,
-          bank_account: selectedBenef.bank_account,
-          bank_extra: selectedBenef.bank_extra,
-          relation_type: selectedBenef.relation_type,
-        };
-        benefPayload = {
-          beneficiary_name: selectedBenef.name || undefined,
-          beneficiary_phone: selectedBenef.phone || undefined,
-          beneficiary_email: selectedBenef.email || undefined,
-          beneficiary_bank_name: selectedBenef.bank_name || undefined,
-          beneficiary_bank_account: selectedBenef.bank_account || undefined,
-          beneficiary_bank_extra: selectedBenef.bank_extra || undefined,
-          beneficiary_identifier: selectedBenef.identifier || undefined,
-          beneficiary_identifier_type: selectedBenef.identifier_type || undefined,
-          beneficiary_qr_code_url: toStoredPath(selectedBenef.qr_code_url) || undefined,
-        };
-      } else {
-        const isCashSelf = mode.id === 'cash' && benef.isClient;
-        const resolvedName = autoName ?? (benef.name || undefined);
-        if (saveToCarnet && !isCashSelf && benef.name.trim()) {
-          try {
-            const created = await createBeneficiary.mutateAsync({
-              client_id: client.user_id,
-              payment_method: dbMode,
-              alias: benef.name.trim(),
-              name: benef.name.trim(),
-              identifier: benef.ident || undefined,
-              identifier_type: benef.ident ? 'id' : undefined,
-              phone: benef.phone || undefined,
-              email: benef.email || undefined,
-              bank_name: benef.bank || undefined,
-              bank_account: benef.account || undefined,
-              qr_code_file: qrFile || undefined,
-            });
-            beneficiaryId = created.id;
-          } catch {
-            /* hook toasts; payment proceeds */
-          }
+    if (benefTab === 'existing' && selectedBenef) {
+      beneficiaryId = selectedBenef.id;
+      snapshot = {
+        id: selectedBenef.id,
+        alias: selectedBenef.alias ?? selectedBenef.name,
+        name: selectedBenef.name,
+        payment_method: selectedBenef.payment_method,
+        identifier: selectedBenef.identifier,
+        identifier_type: selectedBenef.identifier_type,
+        phone: selectedBenef.phone,
+        email: selectedBenef.email,
+        bank_name: selectedBenef.bank_name,
+        bank_account: selectedBenef.bank_account,
+        bank_extra: selectedBenef.bank_extra,
+        relation_type: selectedBenef.relation_type,
+      };
+      benefPayload = {
+        beneficiary_name: selectedBenef.name || undefined,
+        beneficiary_phone: selectedBenef.phone || undefined,
+        beneficiary_email: selectedBenef.email || undefined,
+        beneficiary_bank_name: selectedBenef.bank_name || undefined,
+        beneficiary_bank_account: selectedBenef.bank_account || undefined,
+        beneficiary_bank_extra: selectedBenef.bank_extra || undefined,
+        beneficiary_identifier: selectedBenef.identifier || undefined,
+        beneficiary_identifier_type: selectedBenef.identifier_type || undefined,
+        beneficiary_qr_code_url: toStoredPath(selectedBenef.qr_code_url) || undefined,
+      };
+    } else if (benefTab === 'new') {
+      const p = draftPayload(dbMode, draft);
+      const isCashSelf = dbMode === 'cash' && draft.isClient;
+      const resolvedName = isCashSelf ? clientName || undefined : p.name;
+      if (saveToCarnet && !isCashSelf && p.name) {
+        try {
+          const created = await createBeneficiary.mutateAsync({
+            client_id: client.user_id,
+            payment_method: dbMode,
+            alias: p.name,
+            name: p.name,
+            identifier: p.identifier,
+            identifier_type: p.identifier_type,
+            phone: p.phone,
+            email: p.email,
+            bank_name: p.bank_name,
+            bank_account: p.bank_account,
+            bank_extra: p.bank_extra,
+            qr_code_file: qrFile || undefined,
+          });
+          beneficiaryId = created.id;
+        } catch {
+          /* le hook l'a dit ; le paiement part quand même */
         }
-        snapshot = {
-          relation_type: isCashSelf ? 'self' : 'other',
-          name: resolvedName,
-          identifier: benef.ident || undefined,
-          identifier_type: benef.ident ? 'id' : undefined,
-          phone: benef.phone || undefined,
-          email: benef.email || undefined,
-          bank_name: benef.bank || undefined,
-          bank_account: benef.account || undefined,
-        };
-        benefPayload = {
-          beneficiary_name: resolvedName,
-          beneficiary_phone: benef.phone || undefined,
-          beneficiary_email: benef.email || undefined,
-          beneficiary_bank_name: benef.bank || undefined,
-          beneficiary_bank_account: benef.account || undefined,
-          beneficiary_identifier: benef.ident || undefined,
-          beneficiary_identifier_type: benef.ident ? ('id' as const) : undefined,
-          qr_code_files: qrFile ? [qrFile] : undefined,
-        };
       }
+      snapshot = {
+        relation_type: isCashSelf ? 'self' : 'other',
+        name: resolvedName,
+        identifier: p.identifier,
+        identifier_type: p.identifier_type,
+        phone: p.phone,
+        email: p.email,
+        bank_name: p.bank_name,
+        bank_account: p.bank_account,
+        bank_extra: p.bank_extra,
+      };
+      benefPayload = {
+        beneficiary_name: resolvedName,
+        beneficiary_phone: p.phone,
+        beneficiary_email: p.email,
+        beneficiary_bank_name: p.bank_name,
+        beneficiary_bank_account: p.bank_account,
+        beneficiary_bank_extra: p.bank_extra,
+        beneficiary_identifier: p.identifier,
+        beneficiary_identifier_type: p.identifier_type,
+        qr_code_files: qrFile ? [qrFile] : undefined,
+      };
     }
 
     try {
@@ -347,209 +331,185 @@ export function DesktopNewPayment() {
         beneficiary_details: snapshot,
         ...benefPayload,
       });
-      if (res.payment_id) navigate(`/m/payments/${res.payment_id}`);
-      else navigate('/m/payments');
+      onCreated(res.payment_id ?? null);
     } catch {
-      /* toast handled by hook */
+      /* toast géré par le hook */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, mode, dbMode, xaf, cny, rate, useCustomRate, useCustomDate, customDateStr, skipBenef, benefTab, selectedBenef, benef, saveToCarnet, qrFile, amountValid, hasEnoughBalance, createPayment, createBeneficiary, navigate]);
+  }, [firstError, client, mode, dbMode, rate, createPayment, useCustomDate, customDateStr, benefTab, selectedBenef, draft, clientName, saveToCarnet, createBeneficiary, qrFile, xaf, cny, useCustomRate, onCreated]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSubmit) {
-        e.preventDefault();
-        submit();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [canSubmit, submit]);
+  const benefLabel =
+    !mode
+      ? null
+      : benefTab === 'later'
+        ? 'bénéficiaire à compléter'
+        : benefTab === 'existing'
+          ? selectedBenef?.alias || selectedBenef?.name || null
+          : dbMode === 'cash' && draft.isClient
+            ? `${clientName} (le client)`
+            : draft.name.trim() || null;
 
-  const benefLabel = skipBenef
-    ? 'À compléter plus tard'
-    : selectedBenef
-      ? selectedBenef.alias || selectedBenef.name
-      : mode?.id === 'cash' && benef.isClient
-        ? `${client?.first_name ?? ''} ${client?.last_name ?? ''} (le client)`
-        : benef.name || '—';
+  const balanceMeta = (c: { user_id: string }) => {
+    const w = walletsMap.get(c.user_id);
+    if (!w) return null;
+    return (
+      <span className="leading-tight">
+        <span className={cn('block text-[11px]', TEXT.muted)}>Solde</span>
+        <span className={cn('block text-[13px] font-bold tabular-nums', w.balance > 0 ? TEXT.strong : 'text-red-700 dark:text-red-400')}>{fmt(w.balance)} XAF</span>
+      </span>
+    );
+  };
 
   return (
-    <div className="mx-auto max-w-[1120px]">
-      <header className="flex items-center gap-2">
-        <button type="button" onClick={() => navigate('/m/payments')} className={cn('text-[13px] font-semibold', TEXT.muted)}>
-          Paiements
-        </button>
-        <ChevronRight className={cn('h-3.5 w-3.5', TEXT.muted)} />
-        <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Nouveau paiement</h2>
-      </header>
+    <FormDialog
+      open
+      onClose={onClose}
+      onConfirm={submit}
+      title="Nouveau paiement"
+      subtitle="Le portefeuille du client est débité tout de suite ; un refus le rembourse."
+      dirty={dirty}
+      discardTitle="Abandonner ce paiement ?"
+      width={680}
+      footer={
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1 text-[13px] leading-snug">
+            {tried && firstError ? (
+              <p className="font-semibold text-red-700 dark:text-red-400">{firstError}</p>
+            ) : client && cny > 0 ? (
+              <p className={TEXT.muted}>
+                <b className={cn('tabular-nums', TEXT.strong)}>¥{fmt(cny)}</b>
+                {benefLabel ? <> → <b className={TEXT.strong}>{benefLabel}</b></> : null} · débit{' '}
+                <b className={cn('tabular-nums', TEXT.strong)}>{fmt(xaf)} XAF</b>
+                {hasEnoughBalance && (
+                  <>
+                    {' '}· solde après{' '}
+                    <b className={cn('tabular-nums', willOverdraw ? 'text-amber-700 dark:text-amber-400' : TEXT.strong)}>{clientBalance - xaf < 0 ? '−' : ''}{fmt(clientBalance - xaf)} XAF</b>
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className={TEXT.muted}>⌘⏎ pour confirmer</p>
+            )}
+          </div>
+          <SoftPill onClick={onClose} className="h-11 shrink-0 px-5">
+            Annuler
+          </SoftPill>
+          <PrimaryPill onClick={submit} loading={createPayment.isPending || createBeneficiary.isPending} className="h-11 shrink-0 px-6">
+            Confirmer le paiement
+          </PrimaryPill>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <Section label="Client" htmlFor="np-client" error={tried && !client ? 'Choisissez le client.' : null}>
+          <ClientPickerField
+            id="np-client"
+            clients={clients}
+            value={clientId}
+            onChange={(c) => {
+              setClientId(c.user_id);
+              setSelectedBenef(null);
+            }}
+            loading={clientsLoading}
+            invalid={tried && !client}
+            autoFocus
+            meta={balanceMeta}
+          />
+          {client && clientOverdraft > 0 && (
+            <p className={cn('mt-1.5 text-[12.5px]', TEXT.muted)}>
+              Découvert autorisé {fmt(clientOverdraft)} XAF · disponible <b className={cn('tabular-nums', TEXT.strong)}>{fmt(clientAvailable)} XAF</b>
+            </p>
+          )}
+        </Section>
 
-      <div className="mt-5 grid grid-cols-[1fr_360px] items-start gap-5">
-        <div className="space-y-4">
-          {/* ── 1 · Client & montant ─────────────────────────────────────── */}
-          <Card>
-            <SecLabel>1 · Client & montant</SecLabel>
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <FormField
-                label="Client"
-                hint={
-                  client ? (
-                    <>
-                      Solde : <b className={cn('tabular-nums', clientBalance > 0 ? TEXT.strong : 'text-destructive')}>{fmt(clientBalance)} XAF</b>
-                      {clientOverdraft > 0 && <> · découvert autorisé {fmt(clientOverdraft)} XAF · disponible <b className="tabular-nums">{fmt(clientAvailable)} XAF</b></>}
-                    </>
-                  ) : undefined
-                }
-              >
-                <div ref={clientRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setClientOpen((v) => !v)}
-                    className={cn('flex h-12 w-full items-center justify-between rounded-2xl px-3.5 text-[14px]', SURFACE.card, SURFACE.shadow)}
-                  >
-                    {client ? (
-                      <span className="inline-flex min-w-0 items-center gap-2.5">
-                        <Avatar name={`${client.first_name} ${client.last_name}`} size="sm" />
-                        <span className={cn('truncate font-bold', TEXT.strong)}>
-                          {client.first_name} {client.last_name}
-                        </span>
-                      </span>
-                    ) : (
-                      <span className={TEXT.muted}>Choisir un client…</span>
-                    )}
-                    <ChevronDown className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
-                  </button>
-                  {clientOpen && (
-                    <div className={cn('absolute left-0 right-0 top-[calc(100%+6px)] z-40 rounded-2xl p-2', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
-                      <SearchField value={clientSearch} onChange={setClientSearch} placeholder="Nom ou téléphone…" />
-                      <div className="mt-1.5 max-h-[240px] overflow-y-auto">
-                        {filteredClients.map((c) => {
-                          const bal = walletsMap.get(c.user_id)?.balance ?? null;
-                          return (
-                            <button
-                              key={c.user_id}
-                              type="button"
-                              onClick={() => {
-                                setClientId(c.user_id);
-                                setClientOpen(false);
-                                setClientSearch('');
-                                setSelectedBenef(null);
-                              }}
-                              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-muted/50 dark:hover:bg-white/[0.05]"
-                            >
-                              <Avatar name={`${c.first_name} ${c.last_name}`} size="sm" />
-                              <span className="min-w-0 flex-1 leading-[16px]">
-                                <span className={cn('block truncate text-[13px] font-bold', TEXT.strong)}>
-                                  {c.first_name} {c.last_name}
-                                </span>
-                                <span className={cn('block truncate text-[11px] tabular-nums', TEXT.muted)}>{c.phone ?? '—'}</span>
-                              </span>
-                              {bal != null && (
-                                <span className={cn('shrink-0 text-[12px] font-bold tabular-nums', bal > 0 ? TEXT.strong : TEXT.muted)}>
-                                  {fmt(bal)} XAF
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                        {filteredClients.length === 0 && <p className={cn('px-2.5 py-3 text-[12px]', TEXT.muted)}>Aucun client trouvé</p>}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </FormField>
-              <FormField label="Date de l'opération">
-                <OperationDateCard
-                  enabled={useCustomDate}
-                  value={customDateStr}
-                  onToggle={(on, nowLocal) => {
-                    setUseCustomDate(on);
-                    if (on && !customDateStr) setCustomDateStr(nowLocal);
-                  }}
-                  onChange={setCustomDateStr}
-                  accent={VIOLET}
-                />
-              </FormField>
-            </div>
+        <Section label="Destination" error={tried && client && !mode ? 'Choisissez la destination.' : null}>
+          <div className="grid grid-cols-4 gap-2">
+            {MODES.map((m) => (
+              <Choice key={m.id} active={mode?.id === m.id} onClick={() => pickMode(m)} icon={<PaymentMethodLogo method={toDbMode(m.id)} size={22} />} className="justify-start">
+                {m.name}
+              </Choice>
+            ))}
+          </div>
+        </Section>
 
-            <div className="mt-3.5 grid grid-cols-[1fr_auto_1fr] items-end gap-3">
-              <FormField label="Le client paie (XAF)">
-                <div className="relative">
-                  <TextInput
-                    inputMode="numeric"
-                    placeholder="0"
-                    value={xaf > 0 ? fmt(xaf) : lastEdited === 'xaf' ? '' : ''}
-                    onChange={(e) => {
-                      setLastEdited('xaf');
-                      setRawXaf(e.target.value.replace(/[^0-9]/g, ''));
-                    }}
-                    className="pr-16 font-extrabold tabular-nums"
-                  />
-                  {/* « Max » = tout le solde du client (équivalent du « Tout » mobile). */}
+        <Section label="Montant" error={tried && client && mode && !amountValid ? `Indiquez au moins ${fmt(MIN_PAYMENT_XAF)} XAF.` : null}>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2.5">
+            <div className="min-w-0">
+              <p className={cn('mb-1.5 text-[12px] font-semibold', TEXT.muted)}>Le client paie</p>
+              <BigAmount
+                id="np-xaf"
+                value={lastEdited === 'xaf' ? rawXaf : xaf || null}
+                onChange={(v) => {
+                  setLastEdited('xaf');
+                  setRawXaf(v);
+                }}
+                currency="XAF"
+                ariaLabel="Le client paie (XAF)"
+                invalid={tried && !!client && !!mode && (!amountValid || !hasEnoughBalance)}
+                right={
                   <button
                     type="button"
                     disabled={!client || clientAvailable <= 0}
                     onClick={() => {
                       setLastEdited('xaf');
-                      setRawXaf(String(clientAvailable));
+                      setRawXaf(clientAvailable);
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold text-indigo-700 disabled:opacity-40 dark:bg-indigo-950/50 dark:text-indigo-400"
+                    className="rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-extrabold text-indigo-700 disabled:opacity-40 dark:bg-indigo-950/50 dark:text-indigo-400"
                   >
                     Max
                   </button>
-                </div>
-              </FormField>
-              <div className={cn('flex h-12 items-center', TEXT.muted)}>
-                <ArrowRight className="h-4 w-4" />
-              </div>
-              <FormField label="Le fournisseur reçoit (¥)">
-                <TextInput
-                  inputMode="numeric"
-                  placeholder={hasRate ? '0' : 'Choisir la destination'}
-                  disabled={!hasRate}
-                  value={cny > 0 ? fmt(cny) : ''}
-                  onChange={(e) => {
-                    setLastEdited('cny');
-                    setRawCny(e.target.value.replace(/[^0-9]/g, ''));
-                  }}
-                  className="font-extrabold tabular-nums disabled:opacity-60"
-                />
-              </FormField>
+                }
+              />
             </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              {/* La source du taux est toujours nommée : du jour / perso / secours. */}
-              <p className={cn('text-[12px] tabular-nums', TEXT.muted)}>
-                {!hasRate ? (
-                  <>Choisissez la destination — le taux du jour de la méthode s'appliquera.</>
-                ) : (
-                  <>
-                    {useCustomRate
-                      ? 'Taux personnalisé'
-                      : fallbackActive
-                        ? 'Taux de secours'
-                        : countryRate
-                          ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}${smallPayment ? ' · petit paiement' : ''}`
-                          : `Taux du jour ${mode?.name}${smallPayment ? ' · petit paiement' : ''}`} :{' '}
-                    <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
-                    {!useCustomRate && countryRate && refRate != null && <span className="ml-1.5">· Cameroun ¥{fmt(refRate)}</span>}
-                    {useCustomRate && (
-                      <span className="ml-1.5 rounded-md bg-indigo-50 px-1.5 py-px text-[9px] font-extrabold uppercase text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400">
-                        perso
-                      </span>
-                    )}
-                    {useCustomRate && baseRate != null && <span className="ml-1.5">· taux du jour ¥{fmt(baseRate)}</span>}
-                  </>
-                )}
-              </p>
+            <div className={cn('flex h-14 items-center', TEXT.muted)}>
+              <ArrowRight className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className={cn('mb-1.5 text-[12px] font-semibold', TEXT.muted)}>Le fournisseur reçoit</p>
+              <BigAmount
+                id="np-cny"
+                value={lastEdited === 'cny' ? rawCny : cny || null}
+                onChange={(v) => {
+                  setLastEdited('cny');
+                  setRawCny(v);
+                }}
+                currency="¥"
+                disabled={!hasRate}
+                placeholder={hasRate ? '0' : '—'}
+                ariaLabel="Le fournisseur reçoit (¥)"
+              />
+            </div>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <p className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>
+              {!hasRate ? (
+                'Choisissez la destination : le taux du jour de la méthode s’appliquera.'
+              ) : (
+                <>
+                  {useCustomRate
+                    ? 'Taux personnalisé'
+                    : fallbackActive
+                      ? 'Taux de secours'
+                      : countryRate
+                        ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}${smallPayment ? ' · petit paiement' : ''}`
+                        : `Taux du jour ${mode?.name}${smallPayment ? ' · petit paiement' : ''}`}{' '}
+                  : <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
+                  {!useCustomRate && countryRate && refRate != null && <span className="ml-1.5">· Cameroun ¥{fmt(refRate)}</span>}
+                  {useCustomRate && baseRate != null && <span className="ml-1.5">· du jour ¥{fmt(baseRate)}</span>}
+                </>
+              )}
+            </p>
+            {mode && (
               <div className="flex items-center gap-2">
                 {useCustomRate && (
                   <span className="inline-flex items-center gap-1.5">
                     <span className={cn('text-[12px]', TEXT.muted)}>1M XAF =</span>
                     <TextInput
                       inputMode="numeric"
-                      value={customRateStr}
-                      onChange={(e) => setCustomRateStr(e.target.value.replace(/\D/g, ''))}
-                      className="h-8 w-[90px] rounded-full text-center text-[13px] font-bold tabular-nums"
+                      aria-label="Taux personnalisé (¥ pour 1 000 000 XAF)"
+                      value={customRate ? String(customRate) : ''}
+                      onChange={(e) => setCustomRate(Number(e.target.value.replace(/\D/g, '')) || null)}
+                      className="h-8 w-[92px] text-center text-[13px] font-bold tabular-nums"
                     />
                     <span className={cn('text-[12px]', TEXT.muted)}>¥</span>
                   </span>
@@ -557,288 +517,146 @@ export function DesktopNewPayment() {
                 <button
                   type="button"
                   onClick={() => {
-                    setUseCustomRate((v) => {
-                      if (!v) setCustomRateStr(String(baseRate ?? FALLBACK_RATE));
-                      return !v;
-                    });
+                    if (!useCustomRate) setCustomRate(baseRate ?? FALLBACK_RATE);
+                    setUseCustomRate((v) => !v);
                   }}
-                  className="text-[12px] font-bold"
-                  style={{ color: VIOLET }}
+                  className="text-[12.5px] font-bold text-indigo-700 hover:underline dark:text-indigo-400"
                 >
                   {useCustomRate ? 'Revenir au taux du jour' : 'Modifier le taux'}
                 </button>
               </div>
-            </div>
-            {fallbackActive && (
-              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/50">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                <p className="text-[12.5px] font-semibold text-amber-700 dark:text-amber-400">
-                  Taux du jour indisponible — taux de secours ¥{fmt(FALLBACK_RATE)} appliqué. Vérifiez avant de confirmer.
-                </p>
-              </div>
             )}
-            {xaf > 0 && !hasEnoughBalance && (
-              <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-destructive/10 p-3 dark:bg-destructive/10">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
-                <p className="text-[12.5px] font-semibold text-destructive">
-                  Solde insuffisant — disponible : {fmt(clientAvailable)} XAF{clientOverdraft > 0 ? ' (découvert compris)' : ''}
-                </p>
-              </div>
-            )}
-            {willOverdraw && (
-              <div className="mt-2.5 rounded-2xl bg-amber-50 p-3 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                Le client passe en découvert : solde après paiement {fmt(clientBalance - xaf)} XAF.
-              </div>
-            )}
-          </Card>
+          </div>
+          {fallbackActive && (
+            <p className="mt-2 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+              <AlertTriangle className="h-4 w-4 shrink-0" /> Taux du jour indisponible — taux de secours ¥{fmt(FALLBACK_RATE)} appliqué. Vérifiez avant de confirmer.
+            </p>
+          )}
+          {xaf > 0 && client && !hasEnoughBalance && (
+            <p className="mt-2 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400">
+              <AlertTriangle className="h-4 w-4 shrink-0" /> Solde insuffisant — disponible : {fmt(clientAvailable)} XAF{clientOverdraft > 0 ? ' (découvert compris)' : ''}.
+            </p>
+          )}
+          {willOverdraw && (
+            <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+              Le client passe en découvert : solde après paiement −{fmt(xaf - clientBalance)} XAF.
+            </p>
+          )}
+        </Section>
 
-          {/* ── 2 · Destination ──────────────────────────────────────────── */}
-          <Card>
-            <SecLabel>2 · Destination</SecLabel>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {MODES.map((m) => (
+        {mode && dbMode && (
+          <Section label="Bénéficiaire" error={tried && benefTab === 'existing' ? benefError : null}>
+            <div role="tablist" aria-label="Bénéficiaire" className="mb-3 inline-flex rounded-xl bg-black/[0.05] p-1 dark:bg-white/[0.08]">
+              {(
+                [
+                  ['existing', `Carnet${clientBeneficiaries ? ` (${clientBeneficiaries.length})` : ''}`],
+                  ['new', 'Nouveau'],
+                  ['later', 'Plus tard'],
+                ] as const
+              ).map(([tab, label]) => (
                 <button
-                  key={m.id}
+                  key={tab}
                   type="button"
-                  onClick={() => pickMode(m)}
-                  className={cn('inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-[12px] font-semibold', mode?.id === m.id ? PRIMARY_PILL : SOFT_PILL)}
+                  role="tab"
+                  aria-selected={benefTab === tab}
+                  onClick={() => openTab(tab)}
+                  className={cn(
+                    'rounded-lg px-3.5 py-1.5 text-[13px] font-semibold transition',
+                    benefTab === tab ? cn(SURFACE.card, TEXT.strong, 'shadow-sm') : cn(TEXT.muted, 'hover:text-foreground'),
+                  )}
                 >
-                  <PaymentMethodLogo method={logoMethod(m.id)} size={18} />
-                  {m.name}
+                  {label}
                 </button>
               ))}
             </div>
 
-            {mode && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setSkipBenef((v) => !v)}
-                  className={cn('mt-3.5 flex w-full items-center gap-2.5 rounded-2xl p-3 text-left', SURFACE.canvas)}
-                >
-                  <span
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition"
-                    style={{ background: skipBenef ? VIOLET : 'transparent', boxShadow: skipBenef ? 'none' : 'inset 0 0 0 2px rgba(0,0,0,0.18)' }}
-                  >
-                    {skipBenef && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                  </span>
-                  <span className="min-w-0 leading-[16px]">
-                    <span className={cn('block text-[13px] font-bold', TEXT.strong)}>Bénéficiaire à compléter plus tard</span>
-                    <span className={cn('block text-[11px]', TEXT.muted)}>Le paiement sera créé en statut « Info manquante »</span>
-                  </span>
-                </button>
+            {benefTab === 'existing' &&
+              (!client ? (
+                <p className={cn('text-[13px]', TEXT.muted)}>Choisissez d’abord le client : son carnet s’affichera ici.</p>
+              ) : !clientBeneficiaries || clientBeneficiaries.length === 0 ? (
+                <div className={cn('rounded-2xl px-4 py-3.5 text-[13px]', SURFACE.canvas)}>
+                  <p className={TEXT.muted}>Aucun bénéficiaire {mode.name} dans le carnet de {client.first_name}.</p>
+                  <button type="button" onClick={() => openTab('new')} className="mt-1 text-[13px] font-bold text-indigo-700 hover:underline dark:text-indigo-400">
+                    + Nouveau bénéficiaire
+                  </button>
+                </div>
+              ) : (
+                <ul className="max-h-[260px] space-y-1.5 overflow-y-auto pr-1">
+                  {clientBeneficiaries.map((b) => {
+                    const sel = selectedBenef?.id === b.id;
+                    return (
+                      <li key={b.id}>
+                        <button
+                          type="button"
+                          aria-pressed={sel}
+                          onClick={() => setSelectedBenef(sel ? null : b)}
+                          className={cn(
+                            'flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition',
+                            sel ? 'bg-foreground text-background' : cn(SURFACE.card, 'ring-1 ring-black/[0.10] hover:ring-black/25 dark:ring-white/[0.12]'),
+                          )}
+                        >
+                          <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold', sel ? 'bg-background/15' : SURFACE.holder)}>
+                            {(b.alias || b.name)[0]?.toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1 leading-tight">
+                            <span className="block truncate text-[13.5px] font-bold">{b.alias || b.name}</span>
+                            <span className={cn('block truncate text-[12px] tabular-nums', sel ? 'opacity-75' : TEXT.muted)}>
+                              {[b.alias && b.alias !== b.name ? b.name : null, b.identifier, b.phone, b.email, b.bank_name, b.bank_account].filter(Boolean).join(' · ') || '—'}
+                            </span>
+                          </span>
+                          {sel && <Check className="h-4 w-4 shrink-0" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ))}
 
-                {!skipBenef && (
-                  <div className="mt-3.5 grid grid-cols-2 gap-4">
-                    {/* Carnet */}
-                    <div>
-                      <SecLabel
-                        right={
-                          <button type="button" onClick={() => openBenefTab(benefTab === 'existing' ? 'new' : 'existing')} className="text-[12px] font-bold" style={{ color: VIOLET }}>
-                            {benefTab === 'existing' ? '+ Nouveau' : '← Carnet'}
-                          </button>
-                        }
-                      >
-                        {benefTab === 'existing'
-                          ? `Carnet${client ? ` de ${client.first_name}` : ''} · ${mode.name} (${clientBeneficiaries?.length ?? 0})`
-                          : 'Nouveau bénéficiaire'}
-                      </SecLabel>
-
-                      {benefTab === 'existing' ? (
-                        <div className="mt-2 space-y-2">
-                          {!client ? (
-                            <p className={cn('py-4 text-[12px]', TEXT.muted)}>Choisissez d'abord un client.</p>
-                          ) : !clientBeneficiaries || clientBeneficiaries.length === 0 ? (
-                            <div className="py-3">
-                              <p className={cn('text-[12px]', TEXT.muted)}>Aucun bénéficiaire {mode.name} enregistré pour ce client.</p>
-                              <button type="button" onClick={() => openBenefTab('new')} className="mt-1 text-[12.5px] font-bold" style={{ color: VIOLET }}>
-                                + Créer un bénéficiaire
-                              </button>
-                            </div>
-                          ) : (
-                            clientBeneficiaries.map((b) => {
-                              const sel = selectedBenef?.id === b.id;
-                              return (
-                                <button
-                                  key={b.id}
-                                  type="button"
-                                  onClick={() => setSelectedBenef(sel ? null : b)}
-                                  className={cn('flex w-full items-center gap-3 rounded-[22px] p-3 text-left', SURFACE.card, SURFACE.shadow)}
-                                  style={sel ? { boxShadow: `0 0 0 2px ${VIOLET}` } : undefined}
-                                >
-                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold" style={{ background: `${VIOLET}14`, color: VIOLET }}>
-                                    {(b.alias || b.name)[0]?.toUpperCase()}
-                                  </div>
-                                  <div className="min-w-0 flex-1 leading-[16px]">
-                                    <div className={cn('truncate text-[13px] font-bold', TEXT.strong)}>{b.alias || b.name}</div>
-                                    <div className={cn('truncate text-[11px] tabular-nums', TEXT.muted)}>
-                                      {b.identifier || b.phone || b.bank_account || b.name || ''}
-                                    </div>
-                                  </div>
-                                  {sel && <Check className="h-4 w-4 shrink-0" style={{ color: VIOLET }} />}
-                                </button>
-                              );
-                            })
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-2 space-y-3">
-                          {mode.id === 'cash' && (
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setBenef({ ...benef, isClient: true, name: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim(), phone: '' })
-                                }
-                                className={cn('flex-1 rounded-md px-3 py-2 text-[12px] font-bold', benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
-                              >
-                                Le client lui-même
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setBenef({ ...benef, isClient: false, name: '', phone: '' })}
-                                className={cn('flex-1 rounded-md px-3 py-2 text-[12px] font-bold', !benef.isClient ? PRIMARY_PILL : SOFT_PILL)}
-                              >
-                                Quelqu'un d'autre
-                              </button>
-                            </div>
-                          )}
-                          {!(mode.id === 'cash' && benef.isClient) && (
-                            <FormField label="Nom *">
-                              <TextInput placeholder="Ex. : Zhang Wei" value={benef.name} onChange={(e) => setBenef({ ...benef, name: e.target.value })} />
-                            </FormField>
-                          )}
-                          {(mode.id === 'alipay' || mode.id === 'wechat') && (
-                            <FormField label={`Identifiant ${mode.name} (optionnel)`}>
-                              <TextInput value={benef.ident} onChange={(e) => setBenef({ ...benef, ident: e.target.value })} />
-                            </FormField>
-                          )}
-                          {mode.id === 'virement' && (
-                            <>
-                              <FormField label="Banque *">
-                                <TextInput placeholder="Ex. : Bank of China" value={benef.bank} onChange={(e) => setBenef({ ...benef, bank: e.target.value })} />
-                              </FormField>
-                              <FormField label="Numéro de compte *">
-                                <TextInput value={benef.account} onChange={(e) => setBenef({ ...benef, account: e.target.value })} />
-                              </FormField>
-                            </>
-                          )}
-                          <FormField label="Téléphone (optionnel)">
-                            <TextInput type="tel" placeholder="+86 …" value={benef.phone} onChange={(e) => setBenef({ ...benef, phone: e.target.value })} />
-                          </FormField>
-                          {!(mode.id === 'cash' && benef.isClient) && (
-                            <button type="button" onClick={() => setSaveToCarnet((v) => !v)} className="flex items-center gap-2">
-                              <span
-                                className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md"
-                                style={{ background: saveToCarnet ? VIOLET : 'transparent', boxShadow: saveToCarnet ? 'none' : 'inset 0 0 0 2px rgba(0,0,0,0.18)', width: 18, height: 18 }}
-                              >
-                                {saveToCarnet && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                              </span>
-                              <span className={cn('text-[12px] font-semibold', TEXT.strong)}>Enregistrer dans le carnet du client</span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* QR (alipay/wechat, nouveau bénéficiaire) */}
-                    <div className="space-y-3">
-                      {(mode.id === 'alipay' || mode.id === 'wechat') && benefTab === 'new' && (
-                        <FormField label={`QR code ${mode.name}`} hint="Ctrl+V colle la capture — prioritaire sur l'identifiant">
-                          {qrPreview ? (
-                            <div className="relative overflow-hidden rounded-2xl ring-2" style={{ boxShadow: `inset 0 0 0 2px ${VIOLET}40` }}>
-                              <img src={qrPreview} alt="QR code" className="block h-[180px] w-full object-contain bg-white" />
-                              <button
-                                type="button"
-                                onClick={removeQr}
-                                aria-label="Retirer"
-                                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <PasteDropZone
-                              onFiles={setQrFromFiles}
-                              enabled
-                              single
-                              accept={ACCEPT_IMAGE}
-                              title="Collez, glissez ou cliquez le QR code"
-                              hint="Ctrl+V colle directement votre capture"
-                            />
-                          )}
-                        </FormField>
-                      )}
-                    </div>
-                  </div>
+            {benefTab === 'new' && (
+              <div className="space-y-4">
+                <BeneficiaryContactFields
+                  mode={dbMode}
+                  draft={draft}
+                  onChange={setDraft}
+                  errors={benefErrors}
+                  showErrors={tried}
+                  compact
+                  idPrefix="np"
+                  clientName={clientName}
+                  qr={dbMode === 'alipay' || dbMode === 'wechat' ? { preview: qrPreview, onFiles: setQrFromFiles, onRemove: removeQr, pasteEnabled: true } : undefined}
+                />
+                {!(dbMode === 'cash' && draft.isClient) && (
+                  <CheckRow
+                    checked={saveToCarnet}
+                    onChange={setSaveToCarnet}
+                    title="Enregistrer dans le carnet du client"
+                    hint="Il sera proposé au prochain paiement."
+                  />
                 )}
-              </>
+              </div>
             )}
-          </Card>
-        </div>
 
-        {/* ── Rail : récap vivant ──────────────────────────────────────────── */}
-        <Card>
-          <SecLabel>Récapitulatif</SecLabel>
-          <div className={cn('mt-3 rounded-2xl py-4 text-center', SURFACE.canvas)}>
-            <Amount value={`¥${fmt(cny)}`} size="xl" />
-            <div className={cn('mt-1 text-[12px] tabular-nums', TEXT.muted)}>
-              {fmt(xaf)} XAF{mode ? ` · ${mode.name}` : ''}
-            </div>
-          </div>
-          <div className="mt-3 space-y-2 text-[13px]">
-            <div className="flex justify-between gap-3">
-              <span className={TEXT.muted}>Client</span>
-              <span className={cn('truncate font-semibold', client ? TEXT.strong : TEXT.muted)}>
-                {client ? `${client.first_name} ${client.last_name}` : '—'}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className={TEXT.muted}>Bénéficiaire</span>
-              <span className={cn('truncate font-semibold', benefLabel !== '—' ? TEXT.strong : TEXT.muted)}>{benefLabel}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className={TEXT.muted}>Taux</span>
-              <span className={cn('font-semibold tabular-nums', hasRate ? TEXT.strong : TEXT.muted)}>
-                {hasRate ? (
-                  <>
-                    ¥{fmt(rate!)} <span className={cn('text-[11px] font-normal', TEXT.muted)}>/ 1M XAF</span>{' '}
-                    {useCustomRate && <span className="text-[10px] font-extrabold uppercase text-indigo-700 dark:text-indigo-400">perso</span>}
-                  </>
-                ) : (
-                  '—'
-                )}
-              </span>
-            </div>
-            <div className="my-1 border-t border-black/[0.06] dark:border-white/[0.08]" />
-            <div className="flex justify-between gap-3">
-              <span className={cn('inline-flex items-center gap-1', TEXT.muted)}>
-                <Wallet className="h-3 w-3" /> Solde actuel
-              </span>
-              <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{client ? `${fmt(clientBalance)} XAF` : '—'}</span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className={TEXT.muted}>Après débit</span>
-              <span className={cn('font-bold tabular-nums', xaf > 0 && hasEnoughBalance ? (willOverdraw ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400') : TEXT.muted)}>
-                {client && xaf > 0 && hasEnoughBalance ? `${fmt(clientBalance - xaf)} XAF` : '—'}
-              </span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 dark:bg-indigo-950/50">
-            <Info className="mt-px h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />
-            <p className="text-[12px] leading-[16px] text-indigo-700 dark:text-indigo-400">
-              Le wallet est débité immédiatement. Un rejet rembourse automatiquement.
-            </p>
-          </div>
-          <PrimaryPill onClick={submit} loading={createPayment.isPending} disabled={!canSubmit} className="mt-4 w-full bg-primary text-primary-foreground">
-            Confirmer le paiement
-          </PrimaryPill>
-          <SoftPill onClick={() => navigate('/m/payments')} className="mt-2 w-full">
-            Annuler
-          </SoftPill>
-          <p className={cn('mt-2 text-center text-[11px]', TEXT.muted)}>⌘⏎ pour confirmer</p>
-        </Card>
+            {benefTab === 'later' && (
+              <p className={cn('rounded-2xl px-4 py-3 text-[13px]', SURFACE.canvas, TEXT.muted)}>
+                Le paiement sera créé en « Info manquante » : vous compléterez les coordonnées sur sa fiche.
+              </p>
+            )}
+          </Section>
+        )}
+
+        <Disclosure title="Plus d’options" summary={useCustomDate ? 'date antidatée' : 'date de l’opération'}>
+          <OperationDateCard
+            enabled={useCustomDate}
+            value={customDateStr}
+            onToggle={(on, nowLocal) => {
+              setUseCustomDate(on);
+              if (on && !customDateStr) setCustomDateStr(nowLocal);
+            }}
+            onChange={setCustomDateStr}
+            accent="#8B5CF6"
+          />
+        </Disclosure>
       </div>
-    </div>
+    </FormDialog>
   );
 }

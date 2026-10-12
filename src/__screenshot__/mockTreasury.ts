@@ -112,6 +112,8 @@ export const useCounterparties = (type?: CounterpartyType, includeArchived = fal
 
 export const useUsdtWac = () => ok(638.42);
 export const useUsdtStock = () => ok(8_420.5);
+/** Le dernier achat (raccourci « Reprendre ce taux »). */
+export const useLastPurchaseRate = () => ok({ rate: 640.5, at: '2026-10-10T09:30:00Z' } as never);
 
 export const usePurchaseSplits = (purchaseId: string | undefined) =>
   ok(

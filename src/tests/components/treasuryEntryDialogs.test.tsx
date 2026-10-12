@@ -1,7 +1,8 @@
 /**
  * Trésorerie desktop (refonte d'octobre 2026) — le contrat de l'écran :
  *
- *   · achat et vente s'ouvrent en PANNEAU par-dessus la rubrique courante,
+ *   · achat et vente s'ouvrent en FENÊTRE CENTRÉE par-dessus la rubrique
+ *     courante (plus de panneau qui sort du bord, retour du 12/10/2026),
  *     jamais dans une page à part ; la rubrique reste montée derrière ;
  *   · le formulaire tient sur un écran ; deux montants tapés, le troisième
  *     calculé ; rien n'est enregistré tant que la saisie est incomplète ;
@@ -49,18 +50,21 @@ describe('Trésorerie desktop', () => {
     console.error = originalError;
   });
 
-  it("à /purchase, le panneau « Nouvel achat d’USDT » s'ouvre PAR-DESSUS la trésorerie, sur un seul écran", async () => {
+  it("à /purchase, la fenêtre « Nouvel achat d’USDT » s'ouvre AU CENTRE, par-dessus la trésorerie", async () => {
     mountAt('/m/more/treasury/purchase');
     const dialog = await screen.findByRole('dialog', { name: /Nouvel achat d’USDT/i });
     expect(screen.getByRole('heading', { level: 1, name: 'Trésorerie' })).toBeTruthy();
     const inside = within(dialog);
-    for (const label of ['Fournisseur', 'USDT reçus', 'Taux', 'Montant payé', 'Payé depuis']) {
+    for (const label of ['Fournisseur', 'USDT reçus', 'Taux', 'Montant payé (total)', 'Payé depuis']) {
       expect(inside.getByText(label)).toBeTruthy();
     }
+    // Centrée : pas un panneau collé au bord droit.
+    expect(dialog.className).toContain('justify-center');
+    expect(dialog.querySelector('.right-0')).toBeNull();
     expect(inside.getByRole('button', { name: 'Enregistrer l’achat' })).toBeTruthy();
   });
 
-  it('à /sale, le panneau de vente montre le stock disponible', async () => {
+  it('à /sale, la fenêtre de vente montre le stock disponible', async () => {
     mountAt('/m/more/treasury/sale');
     const dialog = await screen.findByRole('dialog', { name: /Nouvelle vente d’USDT/i });
     expect(within(dialog).getByText('Acheteur')).toBeTruthy();
@@ -73,7 +77,7 @@ describe('Trésorerie desktop', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('fermer un panneau vide ramène à la rubrique de fond, sans quitter le module', async () => {
+  it('fermer une fenêtre vide ramène à la rubrique de fond, sans quitter le module', async () => {
     mountAt('/m/more/treasury/purchase');
     const dialog = await screen.findByRole('dialog', { name: /Nouvel achat d’USDT/i });
     fireEvent.click(within(dialog).getAllByRole('button', { name: 'Fermer' })[0]);

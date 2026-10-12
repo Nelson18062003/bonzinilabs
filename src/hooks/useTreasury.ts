@@ -169,6 +169,34 @@ export function useUsdtWac() {
   });
 }
 
+/**
+ * Le taux du dernier achat d'USDT (non annulé) — chez CE fournisseur si on
+ * le donne, sinon tous fournisseurs confondus. Sert de raccourci (« même taux
+ * que la dernière fois ») et de garde-fou contre une faute de frappe.
+ */
+export function useLastPurchaseRate(supplierId?: string) {
+  return useQuery({
+    queryKey: ['treasury', 'last_purchase_rate', supplierId ?? 'all'],
+    queryFn: async () => {
+      let q = supabaseAdmin
+        .from('usdt_purchases')
+        .select('occurred_at, usdt_amount, xaf_amount')
+        .is('voided_at', null)
+        .gt('usdt_amount', 0)
+        .order('occurred_at', { ascending: false })
+        .limit(1);
+      if (supplierId) q = q.eq('supplier_id', supplierId);
+      const { data, error } = await q;
+      if (error) throw error;
+      const row = data?.[0];
+      if (!row) return null;
+      const rate = Number(row.xaf_amount) / Number(row.usdt_amount);
+      return Number.isFinite(rate) && rate > 0 ? { rate, at: row.occurred_at as string } : null;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function useUsdtStock() {
   return useQuery({
     queryKey: ['treasury', 'stock_usdt'],

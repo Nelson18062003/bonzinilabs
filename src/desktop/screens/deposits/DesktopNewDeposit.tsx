@@ -1,22 +1,24 @@
 /**
- * Desktop admin — « Nouveau dépôt » as ONE page (archetype surface C).
+ * Desktop admin — « Nouveau dépôt » dans une FENÊTRE, par-dessus la liste
+ * des dépôts (retour du 12/10/2026 : « je ne veux pas un écran à part
+ * entière, je veux rester dans Dépôts, un pop-up, un mini formulaire »).
  *
- * Replaces the 7-step mobile wizard on desktop routes: every decision —
- * client, montant, méthode (+ sous-type / banque / agence), preuves, note —
- * is visible at once, with the payment coordinates the admin dictates to the
- * client and a live recap in the sticky right rail. ⌘⏎ submits.
- * Same data layer as the wizard: useAllClients + useAdminCreateDeposit.
+ * L'ordre est celui du geste :
+ *   1. le client (recherche nom, téléphone, BZ-…), son solde à droite ;
+ *   2. le montant, grand, avec des montants ronds à un clic ;
+ *   3. la méthode, en boutons (un clic, pas de menu), puis son type et la
+ *      banque ou l'agence quand il le faut — et, repliées, les coordonnées à
+ *      dicter au client ;
+ *   4. la preuve (facultative ; Ctrl+V colle une capture) ;
+ *   5. replié : la date de l'opération (antidater) et la note interne.
+ * Le pied de la fenêtre résume le dépôt et porte « Créer le dépôt » (⌘⏎).
+ * Même couche de données qu'avant : useAllClients + useAdminCreateDeposit.
+ * L'URL reste /m/deposits/new (?clientId= pré-choisit le client) ; une fois
+ * créé, la fiche du dépôt s'ouvre dans la liste.
  */
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  ChevronDown,
-  ChevronRight,
-  Check,
-  Copy,
-  Info,
-  Wallet,
-} from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Copy, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAllClients, useAdminCreateDeposit, useAdminWalletByUserId } from '@/hooks/useAdminDeposits';
 import {
@@ -42,99 +44,17 @@ import {
 import { MIN_DEPOSIT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import { formatCurrency } from '@/lib/formatters';
 import { OperationDateCard, resolveOperationDate } from '@/mobile/components/OperationDateCard';
-import { matchesClientSearch } from '@/lib/clientSearch';
 import { cn } from '@/lib/utils';
-import {
-  SURFACE,
-  TEXT,
-  SOFT_PILL,
-  PRIMARY_PILL,
-  Card,
-  Avatar,
-  TextInput,
-  FormField,
-  PrimaryPill,
-  SoftPill,
-  StatusPill,
-  MIcon,
-  SecLabel,
-  SearchField,
-} from '@/desktop/designKit';
+import { SURFACE, TEXT, FormDialog, MIcon, PrimaryPill, SoftPill } from '@/desktop/designKit';
+import { ClientPickerField } from '@/desktop/components/ClientPickerField';
+import { BigAmount, Choice, Disclosure, Section } from '@/desktop/components/formDialogParts';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { FilePreviewGrid } from '@/components/upload/FilePreviewGrid';
-import { usePasteFiles } from '@/hooks/usePasteFiles';
+import { TextArea } from '@/components/form';
+import { DesktopDepositsScreen } from './DesktopDepositsScreen';
 
 function fmt(n: number) {
   return Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-/** Champ-select de formulaire (h-12, popover local) — le SelectBox du kit forme. */
-function SelectField<T extends string>({
-  value,
-  options,
-  onChange,
-  placeholder,
-}: {
-  value: T | null;
-  options: ReadonlyArray<{ value: T; label: string; meta?: string }>;
-  onChange: (v: T) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDoc);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-  const current = options.find((o) => o.value === value);
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn('flex h-12 w-full items-center justify-between rounded-2xl px-4 text-[14px]', SURFACE.card, SURFACE.shadow, current ? TEXT.strong : TEXT.muted)}
-      >
-        <span className={cn('truncate', current && 'font-semibold')}>{current?.label ?? placeholder}</span>
-        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', TEXT.muted, open && 'rotate-180')} />
-      </button>
-      {open && (
-        <div className={cn('absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-[260px] overflow-y-auto rounded-2xl p-1.5', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => {
-                onChange(o.value);
-                setOpen(false);
-              }}
-              className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[13px] font-semibold transition-colors',
-                o.value === value ? 'bg-accent' : 'hover:bg-muted/50 dark:hover:bg-white/[0.05]',
-                TEXT.strong,
-              )}
-            >
-              <span className="min-w-0">
-                <span className="block truncate">{o.label}</span>
-                {o.meta && <span className={cn('block truncate text-[11px] font-normal', TEXT.muted)}>{o.meta}</span>}
-              </span>
-              {o.value === value && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function CopyLine({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
@@ -243,68 +163,68 @@ function coordinates(
   return null;
 }
 
-const PRESETS = [100_000, 250_000, 500_000, 1_000_000, 2_000_000];
+const PRESETS = [100_000, 250_000, 500_000, 1_000_000, 2_000_000, 5_000_000];
 
+/** Les types d'opération, en mots courts (le détail reste en sous-titre). */
+const SUB_SHORT: Partial<Record<DepositSubMethod, string>> = {
+  BANK_TRANSFER: 'Virement',
+  BANK_CASH_DEPOSIT: 'Dépôt au guichet',
+  OM_TRANSFER: 'Transfert UV (flotte)',
+  OM_WITHDRAWAL: 'Code marchand',
+  MTN_TRANSFER: 'Transfert Float',
+  MTN_WITHDRAWAL: 'Code marchand',
+};
+
+/**
+ * /m/deposits/new sur ordinateur : la liste des dépôts, et la fenêtre par-
+ * dessus. Fermer revient d'où l'on vient (la liste, la fiche d'un client…).
+ */
 export function DesktopNewDeposit() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const preselectedClientId = searchParams.get('clientId');
+  const location = useLocation();
+  const close = () => (location.key !== 'default' ? navigate(-1) : navigate('/m/deposits'));
+  return (
+    <>
+      <DesktopDepositsScreen />
+      <NewDepositDialog onClose={close} onCreated={(id) => navigate(`/m/deposits/${id}`, { replace: true })} />
+    </>
+  );
+}
 
-  const { data: clients, isLoading: clientsLoading } = useAllClients();
+export function NewDepositDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (depositId: string) => void }) {
+  const [searchParams] = useSearchParams();
+  const { data: clients = [], isLoading: clientsLoading } = useAllClients();
   const createDeposit = useAdminCreateDeposit();
 
-  const [clientId, setClientId] = useState<string | null>(preselectedClientId);
-  const [clientOpen, setClientOpen] = useState(false);
-  const [clientSearch, setClientSearch] = useState('');
-  const [amount, setAmount] = useState('');
+  const [clientId, setClientId] = useState<string | null>(searchParams.get('clientId'));
+  const [amount, setAmount] = useState<number | null>(null);
   const [family, setFamily] = useState<DepositMethodFamily | null>(null);
   const [subMethod, setSubMethod] = useState<DepositSubMethod | null>(null);
   const [bank, setBank] = useState<string | null>(null);
   const [agency, setAgency] = useState<string | null>(null);
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [adminComment, setAdminComment] = useState('');
-  // Date de l'opération — « maintenant » par défaut, antidatable (parité
-  // avec le wizard mobile MobileNewDepositV2 et le paiement desktop).
   const [useCustomDate, setUseCustomDate] = useState(false);
   const [customDateStr, setCustomDateStr] = useState('');
-  const clientRef = useRef<HTMLDivElement>(null);
+  const [tried, setTried] = useState(false);
 
-  const client = useMemo(() => clients?.find((c) => c.user_id === clientId) ?? null, [clients, clientId]);
+  const client = useMemo(() => clients.find((c) => c.user_id === clientId) ?? null, [clients, clientId]);
   const { data: wallet } = useAdminWalletByUserId(client?.user_id);
-  const amountNum = parseInt(amount) || 0;
-
-  useEffect(() => {
-    if (!clientOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!clientRef.current?.contains(e.target as Node)) setClientOpen(false);
-    };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [clientOpen]);
-
-  const filteredClients = useMemo(() => {
-    if (!clients) return [];
-    const s = clientSearch.trim();
-    const list = s
-      ? clients.filter((c) =>
-          matchesClientSearch({ firstName: c.first_name ?? '', lastName: c.last_name ?? '', phone: c.phone ?? '', customerCode: c.customer_code }, s),
-        )
-      : clients;
-    return list.slice(0, 8);
-  }, [clients, clientSearch]);
+  const amountNum = amount ?? 0;
 
   const pickFamily = (f: DepositMethodFamily) => {
     setFamily(f);
     setBank(null);
     setAgency(null);
-    if (familyRequiresSubMethod(f)) setSubMethod(null);
-    else if (f === 'AGENCY_BONZINI') setSubMethod('AGENCY_CASH');
+    if (familyRequiresSubMethod(f)) {
+      // Un seul type possible : il est choisi d'office.
+      const subs = getSubMethodsForFamily(f);
+      setSubMethod(subs.length === 1 ? subs[0].subMethod : null);
+    } else if (f === 'AGENCY_BONZINI') setSubMethod('AGENCY_CASH');
     else if (f === 'WAVE') setSubMethod('WAVE_TRANSFER');
   };
 
-  const subOptions = family && familyRequiresSubMethod(family)
-    ? getSubMethodsForFamily(family).map((s) => ({ value: s.subMethod, label: s.label, meta: s.description }))
-    : [];
+  const subs = family && familyRequiresSubMethod(family) ? getSubMethodsForFamily(family) : [];
   const needsBank = !!subMethod && subMethodRequiresBankSelection(subMethod);
   const needsAgency = family === 'AGENCY_BONZINI';
 
@@ -313,26 +233,28 @@ export function DesktopNewDeposit() {
     (!familyRequiresSubMethod(family) || !!subMethod) &&
     (!needsBank || !!bank) &&
     (!needsAgency || !!agency);
-
   const amountValid = isValidXafAmount(amountNum, MIN_DEPOSIT_XAF);
-  const canSubmit = !!client && amountValid && methodComplete && !createDeposit.isPending;
 
-  const getDbMethod = () => {
-    if (subMethod) return SUB_METHOD_TO_DB_METHOD[subMethod];
-    return 'bank_transfer' as const;
-  };
+  const methodError = !family
+    ? 'Choisissez la méthode.'
+    : familyRequiresSubMethod(family) && !subMethod
+      ? 'Choisissez le type d’opération.'
+      : needsBank && !bank
+        ? 'Choisissez la banque.'
+        : needsAgency && !agency
+          ? 'Choisissez l’agence.'
+          : null;
+  const firstError = !client
+    ? 'Choisissez le client.'
+    : !amountValid
+      ? `Montant invalide — minimum ${fmt(MIN_DEPOSIT_XAF)} XAF.`
+      : methodError;
+  const dirty = !!(clientId && !searchParams.get('clientId')) || amount !== null || !!family || proofFiles.length > 0 || !!adminComment.trim() || useCustomDate;
 
   const submit = useCallback(async () => {
-    if (!client || !family) {
-      toast.error('Informations manquantes');
-      return;
-    }
-    if (!amountValid) {
-      toast.error(`Montant invalide — minimum ${fmt(MIN_DEPOSIT_XAF)} XAF`);
-      return;
-    }
-    // Re-vérifié ici (pas seulement dans le champ) : la page peut rester
-    // ouverte au-delà du max affiché par le picker.
+    setTried(true);
+    if (!client || !family || !amountValid || !methodComplete || createDeposit.isPending) return;
+    // Re-vérifiée ici : la fenêtre peut rester ouverte au-delà du maximum du sélecteur.
     const opDate = resolveOperationDate(useCustomDate, customDateStr);
     if (opDate.error) {
       toast.error(opDate.error);
@@ -342,315 +264,221 @@ export function DesktopNewDeposit() {
       const result = await createDeposit.mutateAsync({
         user_id: client.user_id,
         amount_xaf: amountNum,
-        method: getDbMethod(),
+        method: subMethod ? SUB_METHOD_TO_DB_METHOD[subMethod] : 'bank_transfer',
         desired_date: opDate.date,
         bank_name: bank ? banks.find((b) => b.bank === bank)?.label : undefined,
         agency_name: agency ? agencies.find((a) => a.agency === agency)?.label : undefined,
-        admin_comment: adminComment || undefined,
+        admin_comment: adminComment.trim() || undefined,
         proofFiles: proofFiles.length > 0 ? proofFiles : undefined,
       });
-      navigate(`/m/deposits/${result.id}`);
+      onCreated(result.id);
     } catch {
       /* toast handled by the hook */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, family, amountNum, amountValid, useCustomDate, customDateStr, bank, agency, adminComment, proofFiles, createDeposit, navigate]);
-
-  // ⌘⏎ submits from anywhere on the page.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && canSubmit) {
-        e.preventDefault();
-        submit();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [canSubmit, submit]);
-
-  // Ctrl+V anywhere stages a proof.
-  usePasteFiles({
-    onFiles: useCallback((files: File[]) => setProofFiles((prev) => [...prev, ...files]), []),
-    enabled: true,
-  });
+  }, [client, family, amountValid, methodComplete, createDeposit, useCustomDate, customDateStr, amountNum, subMethod, bank, agency, adminComment, proofFiles, onCreated]);
 
   const coords = coordinates(family, subMethod, bank, agency, amountNum);
   const familyLabel = methodFamilies.find((f) => f.family === family)?.label;
-  const subLabel = family && familyRequiresSubMethod(family)
-    ? getSubMethodsForFamily(family).find((s) => s.subMethod === subMethod)?.label
-    : undefined;
+  const subLabel = subMethod ? SUB_SHORT[subMethod] : undefined;
+  const placeLabel = bank ? banks.find((b) => b.bank === bank)?.label : agency ? agencies.find((a) => a.agency === agency)?.label : undefined;
+  const mmLimit = amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (family === 'ORANGE_MONEY' || family === 'MTN_MONEY' || family === 'WAVE');
 
   return (
-    <div className="mx-auto max-w-[1120px]">
-      <header className="flex items-center gap-2">
-        <button type="button" onClick={() => navigate('/m/deposits')} className={cn('text-[13px] font-semibold', TEXT.muted)}>
-          Dépôts
-        </button>
-        <ChevronRight className={cn('h-3.5 w-3.5', TEXT.muted)} />
-        <h2 className={cn('text-[26px] font-extrabold tracking-tight', TEXT.strong)}>Nouveau dépôt</h2>
-      </header>
-
-      <div className="mt-5 grid grid-cols-[1fr_360px] items-start gap-5">
-        {/* ── Colonne principale ─────────────────────────────────────────── */}
-        <div className="space-y-4">
-          <Card>
-            <SecLabel>1 · Client & montant</SecLabel>
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <FormField label="Client">
-                <div ref={clientRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setClientOpen((v) => !v)}
-                    className={cn('flex h-12 w-full items-center justify-between rounded-2xl px-3.5 text-[14px]', SURFACE.card, SURFACE.shadow)}
-                  >
-                    {client ? (
-                      <span className="inline-flex min-w-0 items-center gap-2.5">
-                        <Avatar name={`${client.first_name} ${client.last_name}`} size="sm" />
-                        <span className={cn('truncate font-bold', TEXT.strong)}>
-                          {client.first_name} {client.last_name}
-                        </span>
-                        <span className={cn('hidden truncate text-[12px] tabular-nums xl:inline', TEXT.muted)}>{client.phone}</span>
-                      </span>
-                    ) : (
-                      <span className={TEXT.muted}>{clientsLoading ? 'Chargement…' : 'Choisir un client…'}</span>
-                    )}
-                    <ChevronDown className={cn('h-4 w-4 shrink-0', TEXT.muted)} />
-                  </button>
-                  {clientOpen && (
-                    <div className={cn('absolute left-0 right-0 top-[calc(100%+6px)] z-40 rounded-2xl p-2', SURFACE.card, 'ring-1 ring-black/[0.10] dark:ring-white/[0.10]')}>
-                      <SearchField value={clientSearch} onChange={setClientSearch} placeholder="Nom, téléphone ou identifiant BZ-…" />
-                      <div className="mt-1.5 max-h-[240px] overflow-y-auto">
-                        {filteredClients.map((c) => (
-                          <button
-                            key={c.user_id}
-                            type="button"
-                            onClick={() => {
-                              setClientId(c.user_id);
-                              setClientOpen(false);
-                              setClientSearch('');
-                            }}
-                            className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-muted/50 dark:hover:bg-white/[0.05]')}
-                          >
-                            <Avatar name={`${c.first_name} ${c.last_name}`} size="sm" />
-                            <span className="min-w-0 leading-[16px]">
-                              <span className={cn('block truncate text-[13px] font-bold', TEXT.strong)}>
-                                {c.first_name} {c.last_name}
-                              </span>
-                              <span className={cn('block truncate text-[11px] tabular-nums', TEXT.muted)}>{[c.customer_code, c.phone].filter(Boolean).join(' · ') || '—'}</span>
-                            </span>
-                          </button>
-                        ))}
-                        {filteredClients.length === 0 && (
-                          <p className={cn('px-2.5 py-3 text-[12px]', TEXT.muted)}>Aucun client trouvé</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </FormField>
-              <FormField label="Montant (XAF)" hint={`Min ${fmt(MIN_DEPOSIT_XAF)}`}>
-                <TextInput
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={amountNum > 0 ? fmt(amountNum) : ''}
-                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="font-extrabold tabular-nums"
-                />
-              </FormField>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setAmount(String(p))}
-                  className={cn('rounded-md px-3 py-1.5 text-[12px] font-semibold', amountNum === p ? PRIMARY_PILL : SOFT_PILL)}
-                >
-                  {p >= 1_000_000 ? `${p / 1_000_000}M` : `${p / 1_000}K`}
-                </button>
-              ))}
-              {wallet && (
-                <span className={cn('ml-2 inline-flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
-                  <Wallet className="h-3.5 w-3.5" /> Solde actuel :{' '}
-                  <b className={cn('tabular-nums', TEXT.strong)}>{fmt(wallet.balance_xaf)} XAF</b>
-                </span>
-              )}
-            </div>
-            <OperationDateCard
-              className="mt-3"
-              enabled={useCustomDate}
-              value={customDateStr}
-              onToggle={(on, nowLocal) => {
-                setUseCustomDate(on);
-                if (on && !customDateStr) setCustomDateStr(nowLocal);
-              }}
-              onChange={setCustomDateStr}
-              accent="#10B981"
-            />
-          </Card>
-
-          <Card>
-            <SecLabel>2 · Méthode de dépôt</SecLabel>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {selectableMethodFamilies.map((f) => (
-                <button
-                  key={f.family}
-                  type="button"
-                  onClick={() => pickFamily(f.family)}
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-[12px] font-semibold',
-                    family === f.family ? PRIMARY_PILL : SOFT_PILL,
-                  )}
-                >
-                  <MIcon family={f.family} size={18} />
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            {amountNum > MOBILE_MONEY_TRANSACTION_LIMIT && (family === 'ORANGE_MONEY' || family === 'MTN_MONEY' || family === 'WAVE') && (
-              <div className="mt-3 rounded-2xl bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
-                Le montant dépasse la limite mobile money ({formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)}) — prévoir plusieurs opérations.
-              </div>
-            )}
-            {family && (subOptions.length > 0 || needsBank || needsAgency) && (
-              <div className="mt-3.5 grid grid-cols-2 gap-4">
-                {subOptions.length > 0 && (
-                  <FormField label="Type d'opération">
-                    <SelectField
-                      value={subMethod}
-                      options={subOptions}
-                      onChange={(v) => {
-                        setSubMethod(v);
-                        setBank(null);
-                      }}
-                      placeholder="Choisir…"
-                    />
-                  </FormField>
-                )}
-                {needsBank && (
-                  <FormField label="Banque">
-                    <SelectField
-                      value={bank}
-                      options={banks.map((b) => ({ value: b.bank as string, label: b.label }))}
-                      onChange={setBank}
-                      placeholder="Choisir la banque…"
-                    />
-                  </FormField>
-                )}
-                {needsAgency && (
-                  <FormField label="Agence">
-                    <SelectField
-                      value={agency}
-                      options={agencies.map((a) => ({ value: a.agency as string, label: a.label, meta: a.address }))}
-                      onChange={setAgency}
-                      placeholder="Choisir l'agence…"
-                    />
-                  </FormField>
-                )}
-              </div>
-            )}
-          </Card>
-
-          <Card>
-            <SecLabel>3 · Preuves & note (optionnel)</SecLabel>
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <div>
-                <PasteDropZone onFiles={(files) => setProofFiles((prev) => [...prev, ...files])} enabled={false} busy={createDeposit.isPending} />
-                {proofFiles.length > 0 && (
-                  <div className="mt-2">
-                    <FilePreviewGrid files={proofFiles} onRemove={(i) => setProofFiles((prev) => prev.filter((_, idx) => idx !== i))} />
-                  </div>
-                )}
-              </div>
-              <textarea
-                value={adminComment}
-                onChange={(e) => setAdminComment(e.target.value)}
-                placeholder="Note interne — visible uniquement par les admins…"
-                className={cn('h-[110px] w-full resize-none rounded-2xl p-3 text-[13px] outline-none', SURFACE.canvas, TEXT.strong, 'placeholder:text-muted-foreground focus:ring-2 focus:ring-ring')}
-              />
-            </div>
-          </Card>
-        </div>
-
-        {/* ── Rail : coordonnées + récap + CTA ───────────────────────────── */}
-        <div className="space-y-4">
-          {coords && (
-            <Card>
-              <SecLabel right={family ? <MIcon family={family} size={20} /> : undefined}>Coordonnées à communiquer</SecLabel>
-              <div className="mt-3 space-y-2">
-                {coords.lines.map((l) => (
-                  <CopyLine key={l.label} label={l.label} value={l.value} mono={l.mono} />
-                ))}
-              </div>
-              <ol className="mt-3 space-y-2">
-                {coords.instructions.map((s, i) => (
-                  <li key={s} className="flex gap-2.5">
-                    <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', SURFACE.holder)}>
-                      {i + 1}
-                    </span>
-                    <span className={cn('text-[12.5px]', TEXT.muted)}>{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </Card>
-          )}
-
-          <Card>
-            <SecLabel>Récapitulatif</SecLabel>
-            <div className="mt-2.5 space-y-2 text-[13px]">
-              <div className="flex justify-between gap-3">
-                <span className={TEXT.muted}>Client</span>
-                <span className={cn('truncate font-semibold', client ? TEXT.strong : TEXT.muted)}>
-                  {client ? `${client.first_name} ${client.last_name}` : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className={TEXT.muted}>Montant</span>
-                <span className={cn('font-bold tabular-nums', amountNum > 0 ? TEXT.strong : TEXT.muted)}>
-                  {amountNum > 0 ? `${fmt(amountNum)} XAF` : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className={TEXT.muted}>Méthode</span>
-                <span className={cn('truncate font-semibold', family ? TEXT.strong : TEXT.muted)}>
-                  {family ? [familyLabel, subLabel].filter(Boolean).join(' · ') : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className={TEXT.muted}>Date de l'opération</span>
-                <span className={cn('font-semibold tabular-nums', TEXT.strong)}>
-                  {useCustomDate && customDateStr
-                    ? new Date(customDateStr).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    : 'Maintenant'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className={TEXT.muted}>Statut initial</span>
-                <StatusPill tone="neutral" label={proofFiles.length > 0 ? 'Preuve envoyée' : 'Demande créée'} />
-              </div>
-              {proofFiles.length > 0 && (
-                <div className="flex justify-between gap-3">
-                  <span className={TEXT.muted}>Preuves</span>
-                  <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{proofFiles.length}</span>
-                </div>
-              )}
-            </div>
-            <div className="mt-3 flex items-start gap-2 rounded-2xl bg-indigo-50 p-3 dark:bg-indigo-950/50">
-              <Info className="mt-px h-3.5 w-3.5 shrink-0 text-indigo-700 dark:text-indigo-400" />
-              <p className="text-[12px] leading-[16px] text-indigo-700 dark:text-indigo-400">
-                Le wallet n'est crédité qu'à la validation de la preuve.
+    <FormDialog
+      open
+      onClose={onClose}
+      onConfirm={submit}
+      title="Nouveau dépôt"
+      subtitle="Le portefeuille du client n’est crédité qu’à la validation de la preuve."
+      dirty={dirty}
+      discardTitle="Abandonner ce dépôt ?"
+      width={640}
+      footer={
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1 text-[13px] leading-snug">
+            {tried && firstError ? (
+              <p className="font-semibold text-red-700 dark:text-red-400">{firstError}</p>
+            ) : client && amountNum > 0 ? (
+              <p className={TEXT.muted}>
+                <b className={cn('tabular-nums', TEXT.strong)}>{fmt(amountNum)} XAF</b>
+                {family ? <> · {[familyLabel, subLabel, placeLabel].filter(Boolean).join(' · ')}</> : null} · pour{' '}
+                <b className={TEXT.strong}>{`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}</b>
+                {proofFiles.length > 0 ? <> · {proofFiles.length} preuve{proofFiles.length > 1 ? 's' : ''}</> : null}
               </p>
-            </div>
-            <PrimaryPill onClick={submit} loading={createDeposit.isPending} disabled={!canSubmit} className="mt-4 w-full">
-              Créer le dépôt
-            </PrimaryPill>
-            <SoftPill onClick={() => navigate('/m/deposits')} className="mt-2 w-full">
-              Annuler
-            </SoftPill>
-            <p className={cn('mt-2 text-center text-[11px]', TEXT.muted)}>⌘⏎ pour créer · Ctrl+V colle une preuve</p>
-          </Card>
+            ) : (
+              <p className={TEXT.muted}>⌘⏎ pour créer · Ctrl+V colle une preuve</p>
+            )}
+          </div>
+          <SoftPill onClick={onClose} className="h-11 shrink-0 px-5">
+            Annuler
+          </SoftPill>
+          <PrimaryPill onClick={submit} loading={createDeposit.isPending} className="h-11 shrink-0 px-6">
+            Créer le dépôt
+          </PrimaryPill>
         </div>
+      }
+    >
+      <div className="space-y-6">
+        <Section label="Client" htmlFor="nd-client" error={tried && !client ? 'Choisissez le client.' : null}>
+          <ClientPickerField
+            id="nd-client"
+            clients={clients}
+            value={clientId}
+            onChange={(c) => setClientId(c.user_id)}
+            loading={clientsLoading}
+            invalid={tried && !client}
+            autoFocus={!clientId}
+            meta={(c) =>
+              c.user_id === client?.user_id && wallet ? (
+                <span className="leading-tight">
+                  <span className={cn('block text-[11px]', TEXT.muted)}>Solde</span>
+                  <span className={cn('block text-[13px] font-bold tabular-nums', TEXT.strong)}>{fmt(wallet.balance_xaf)} XAF</span>
+                </span>
+              ) : null
+            }
+          />
+        </Section>
+
+        <Section
+          label="Montant"
+          hint={`minimum ${fmt(MIN_DEPOSIT_XAF)} XAF`}
+          htmlFor="nd-amount"
+          error={tried && client && !amountValid ? `Indiquez un montant d’au moins ${fmt(MIN_DEPOSIT_XAF)} XAF.` : null}
+        >
+          <BigAmount id="nd-amount" value={amount} onChange={setAmount} currency="XAF" invalid={tried && !!client && !amountValid} ariaLabel="Montant du dépôt" />
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setAmount(p)}
+                className={cn(
+                  'rounded-lg px-2.5 py-1 text-[12px] font-semibold tabular-nums transition',
+                  amount === p ? 'bg-foreground text-background' : cn(SURFACE.holder, TEXT.strong, 'hover:bg-accent'),
+                )}
+              >
+                {fmt(p)}
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section label="Méthode" error={tried && client && amountValid ? methodError : null}>
+          <div className="flex flex-wrap gap-2">
+            {selectableMethodFamilies.map((f) => (
+              <Choice key={f.family} active={family === f.family} onClick={() => pickFamily(f.family)} icon={<MIcon family={f.family} size={20} />}>
+                {f.label}
+              </Choice>
+            ))}
+          </div>
+
+          {subs.length > 1 && (
+            <div className="mt-3">
+              <p className={cn('mb-1.5 text-[12px] font-semibold', TEXT.muted)}>Type d’opération</p>
+              <div className="flex flex-wrap gap-2">
+                {subs.map((sm) => (
+                  <Choice
+                    key={sm.subMethod}
+                    active={subMethod === sm.subMethod}
+                    onClick={() => {
+                      setSubMethod(sm.subMethod);
+                      setBank(null);
+                    }}
+                    meta={sm.description}
+                  >
+                    {SUB_SHORT[sm.subMethod] ?? sm.label}
+                  </Choice>
+                ))}
+              </div>
+            </div>
+          )}
+          {needsBank && (
+            <div className="mt-3">
+              <p className={cn('mb-1.5 text-[12px] font-semibold', TEXT.muted)}>Banque</p>
+              <div className="flex flex-wrap gap-2">
+                {banks.map((b) => (
+                  <Choice key={b.bank} active={bank === b.bank} onClick={() => setBank(b.bank)}>
+                    {b.label}
+                  </Choice>
+                ))}
+              </div>
+            </div>
+          )}
+          {needsAgency && (
+            <div className="mt-3">
+              <p className={cn('mb-1.5 text-[12px] font-semibold', TEXT.muted)}>Agence</p>
+              <div className="flex flex-wrap gap-2">
+                {agencies.map((a) => (
+                  <Choice key={a.agency} active={agency === a.agency} onClick={() => setAgency(a.agency)} meta={a.address}>
+                    {a.label}
+                  </Choice>
+                ))}
+              </div>
+            </div>
+          )}
+          {mmLimit && (
+            <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+              Le montant dépasse la limite mobile money ({formatCurrency(MOBILE_MONEY_TRANSACTION_LIMIT)}) : prévoir plusieurs opérations.
+            </p>
+          )}
+          {coords && methodComplete && (
+            <div className="mt-3">
+              <Disclosure title="Coordonnées à donner au client" summary={coords.lines[0]?.value}>
+                <div className="space-y-1.5">
+                  {coords.lines.map((l) => (
+                    <CopyLine key={l.label} label={l.label} value={l.value} mono={l.mono} />
+                  ))}
+                </div>
+                <ol className="space-y-1.5">
+                  {coords.instructions.map((step, i) => (
+                    <li key={step} className="flex gap-2.5">
+                      <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold', SURFACE.holder)}>{i + 1}</span>
+                      <span className={cn('text-[12.5px]', TEXT.muted)}>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </Disclosure>
+            </div>
+          )}
+        </Section>
+
+        <Section label="Preuve" hint="facultatif · Ctrl+V colle une capture">
+          <PasteDropZone onFiles={(files) => setProofFiles((prev) => [...prev, ...files])} enabled busy={createDeposit.isPending} compact />
+          {proofFiles.length > 0 && (
+            <div className="mt-2">
+              <FilePreviewGrid files={proofFiles} onRemove={(i) => setProofFiles((prev) => prev.filter((_, idx) => idx !== i))} />
+            </div>
+          )}
+          {proofFiles.length === 0 && (
+            <p className={cn('mt-1.5 flex items-center gap-1.5 text-[12px]', TEXT.muted)}>
+              <Info className="h-3.5 w-3.5 shrink-0" /> Sans preuve, le dépôt attend que le client l’envoie.
+            </p>
+          )}
+        </Section>
+
+        <Disclosure
+          title="Plus d’options"
+          summary={[useCustomDate ? 'date antidatée' : null, adminComment.trim() ? 'note' : null].filter(Boolean).join(' · ') || 'date, note interne'}
+        >
+          <OperationDateCard
+            enabled={useCustomDate}
+            value={customDateStr}
+            onToggle={(on, nowLocal) => {
+              setUseCustomDate(on);
+              if (on && !customDateStr) setCustomDateStr(nowLocal);
+            }}
+            onChange={setCustomDateStr}
+            accent="#10B981"
+          />
+          <TextArea
+            id="nd-note"
+            label="Note interne (visible des admins seulement)"
+            value={adminComment}
+            onChange={(e) => setAdminComment(e.target.value)}
+            rows={3}
+          />
+        </Disclosure>
       </div>
-    </div>
+    </FormDialog>
   );
 }
