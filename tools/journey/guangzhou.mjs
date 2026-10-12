@@ -129,8 +129,20 @@ const pk41 = pkg({ id: 'pk41', package_no: 'PQ-000041', status: 'refused', refus
   net_weight_kg: 29.8, gross_weight_kg: 30.4, length_cm: 70, width_cm: 50, height_cm: 45, parcel_count: 6, client_count: 2, created_at: gz(10, 0, 1), sealed_at: gz(17, 10, 1), updated_at: gz(18, 5, 2) });
 
 const listRow = (p) => ({ ...p, parcels: null });
-// État du parcours : le paquet PQ-000045 se ferme pendant l'écran 8 (remis à zéro à chaque écran).
-const state = { sealed: false };
+// État du parcours (remis à zéro à chaque écran) : le paquet PQ-000045 se ferme pendant l'écran 8 ;
+// sur l'ordinateur (écrans 18 à 23), Grace commence PQ-000046 et y met des colis d'un clic.
+const state = { sealed: false, created: false, pk46: [] };
+const ALL_PARCELS = () => [...dep1c.parcels.map((p) => [p, dep1c]), ...[dep2, dep3, dep4].flatMap((d) => d.parcels.map((p) => [p, d]))];
+const pk46 = () => {
+  const parcels = state.pk46;
+  return pkg({ id: 'pk46', package_no: 'PQ-000046', created_at: gz(16, 43), updated_at: gz(16, 43 + parcels.length),
+    net_weight_kg: Math.round(sum(parcels, (p) => p.weight_kg) * 100) / 100, parcel_count: parcels.length,
+    client_count: new Set(parcels.map((p) => p.client?.user_id)).size, parcels });
+};
+// La réception voit dans quel paquet est chaque colis (reception_deposit_json : air_package_id, package_no).
+const packedIn = (p) => (pk45Parcels.some((x) => x.id === p.id) ? { air_package_id: 'pk45', package_no: 'PQ-000045' }
+  : state.pk46.some((x) => x.id === p.id) ? { air_package_id: 'pk46', package_no: 'PQ-000046' } : {});
+const withPackages = (d) => ({ ...d, parcels: d.parcels.map((p) => ({ ...p, ...packedIn(p) })) });
 
 // ── Le devis du dépôt RC-000123 (au kilo, avion) et ses encaissements ──
 const pricing = { success: true, air_per_kg_xaf: 6500, sea_per_cbm_xaf: 180000, currency: 'XAF' };
@@ -190,9 +202,9 @@ export const RPC = {
   reception_close_deposit: { success: true, deposit: dep1c },
 
   // Paquets avion
-  air_package_list: () => ({ success: true, packages: [state.sealed ? pk45Sealed : pk45, pk41, pk44, pk43, pk42].map(listRow) }),
+  air_package_list: () => ({ success: true, packages: [...(state.created ? [pk46()] : []), state.sealed ? pk45Sealed : pk45, pk41, pk44, pk43, pk42].map(listRow) }),
   air_package_get: (b) => {
-    const byId = { pk45: state.sealed ? pk45Sealed : pk45, pk44, pk43, pk42, pk41 };
+    const byId = { pk45: state.sealed ? pk45Sealed : pk45, pk44, pk43, pk42, pk41, ...(state.created ? { pk46: pk46() } : {}) };
     const m = /PQ[\s-]?(\d{1,9})/i.exec(b?.p_code ?? '');
     const code = m ? `PQ-${String(Number(m[1])).padStart(6, '0')}` : null;
     const p = b?.p_package_id ? byId[b.p_package_id] : Object.values(byId).find((x) => x.package_no === code);
@@ -203,6 +215,17 @@ export const RPC = {
     const code = /RC-?(\d{6})-?(\d{2,3})/i.exec(b?.p_code ?? '');
     if (!code) return { success: false, error: 'Ce n\'est pas une étiquette de colis (RC-000000-00)' };
     const no = `RC-${code[1]}-${code[2]}`;
+    if (b?.p_package_id === 'pk46') {
+      const hit = ALL_PARCELS().find(([x]) => x.parcel_no === no);
+      if (!hit) return { success: false, error: `Colis ${no} introuvable` };
+      const [p, d] = hit;
+      if (state.pk46.some((x) => x.id === p.id)) return { success: true, already: true, parcel_no: no, package: pk46() };
+      if (pk45Parcels.some((x) => x.id === p.id)) return { success: false, error: `Le colis ${no} est déjà dans le paquet PQ-000045` };
+      const next = Math.round((pk46().net_weight_kg + p.weight_kg) * 10) / 10;
+      if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1)} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
+      state.pk46 = [...state.pk46, pkParcel(p, d)];
+      return { success: true, already: false, parcel_no: no, weight_kg: p.weight_kg, client: d.client, package: pk46() };
+    }
     const p = [...dep1.parcels, ...dep2.parcels, ...dep3.parcels, ...dep4.parcels].find((x) => x.parcel_no === no);
     if (!p) return { success: false, error: `Colis ${no} introuvable` };
     if (pk45Parcels.some((x) => x.parcel_no === no)) return { success: true, already: true, parcel_no: no, package: pk45 };
@@ -211,13 +234,14 @@ export const RPC = {
     return { success: false, error: `Le colis ${no} est déjà dans le paquet PQ-000044` };
   },
   air_package_seal: (b) => { state.sealed = true; return { success: true, package: { ...pk45Sealed, gross_weight_kg: b?.p_gross_weight_kg ?? 28.1, length_cm: b?.p_length_cm ?? null, width_cm: b?.p_width_cm ?? null, height_cm: b?.p_height_cm ?? null } }; },
-  air_package_create: { success: true, package: pkg({ id: 'pk46', package_no: 'PQ-000046', created_at: gz(16, 43), updated_at: gz(16, 43), parcels: [] }) },
+  air_package_create: () => { state.created = true; state.pk46 = []; return { success: true, package: pk46() }; },
+  air_package_remove_parcel: (b) => { state.pk46 = state.pk46.filter((x) => x.id !== b?.p_parcel_id); return { success: true, package: pk46() }; },
 
   // Bureau : la console cargo et le devis
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 1, air_open: 1, air_in_flight: 0, parcels_waiting: 19, deposits_pending: 1, deposits_today: 4 },
   reception_board: (b) => {
     const list = b?.p_scope === 'cancelled' ? [] : [dep1c, dep2, dep3, dep4, pend1];
-    const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withQuote);
+    const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withPackages).map(withQuote);
     return { success: true, scope: b?.p_scope ?? 'stock', total: rows.length, truncated: false, deposits: rows };
   },
   reception_stock: { success: true, stats: { parcels: 15, clients: 3, weight_kg: 104.8, cbm: 0.62, pending: 1 }, by_client: [
@@ -265,6 +289,8 @@ export function REST(url) {
 // ── Préparation de chaque page : heure de Guangzhou, lieu « bureau », photos, police chinoise ──
 async function setup(page, { tz = 'Asia/Shanghai' } = {}) {
   state.sealed = false;
+  state.created = false;
+  state.pk46 = [];
   try {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setTimezoneOverride', { timezoneId: tz });
@@ -342,7 +368,79 @@ async function openSeal(page) {
   await page.waitForTimeout(400);
 }
 
+/** Sur l'ordinateur : la vue « Paquets avion » de Cargo › Réception. */
+const deskPackages = async (page) => {
+  await deskSetup(page);
+  await page.addInitScript(() => { try { localStorage.setItem('bonzini-reception-view', 'packages'); } catch { /* privé */ } });
+};
+/** « Emballer » les colis d'Aïcha : PQ-000046 commence, la liste est filtrée sur elle ; deux colis y entrent d'un clic. */
+async function packAicha(page, n = 2) {
+  await fontsReady(page);
+  await page.getByRole('button', { name: /Emballer les colis de Aïcha Mbarga/ }).click();
+  await page.waitForSelector('#pk-scan', { timeout: 10000 });
+  await page.waitForTimeout(700);
+  for (let i = 0; i < n; i += 1) {
+    await page.getByRole('dialog').getByRole('button', { name: /^Ajouter$/ }).first().click();
+    await page.waitForTimeout(800);
+  }
+}
+
 export const SCREENS = [
+  // 18. Sur l'ordinateur du bureau : Cargo › Réception › Paquets avion — les paquets et les colis à emballer.
+  { key: 'j.guangzhou.desk-packages', name: '18-ordinateur-paquets-avion', role: 'ops', desktop: true, viewport: '1440x1180', init: deskPackages, wait: 2500, before: fontsReady },
+  // 19. La fiche de PQ-000045 : 27,4 kg sur 32, trois clients en couleur ; les colis prêts ne tiennent plus.
+  { key: 'j.guangzhou.desk-package', name: '19-ordinateur-paquet-presque-plein', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('dialog').getByRole('button', { name: /Trop lourd/ }).first().locator('xpath=..').hover();
+      await page.waitForTimeout(500);
+    } },
+  // 20. « Emballer » Aïcha : PQ-000046 commence, deux colis entrent d'un clic, le troisième se dessine au survol.
+  { key: 'j.guangzhou.desk-packages', name: '20-ordinateur-nouveau-paquet-rempli', role: 'ops', desktop: true, viewport: '1440x1000', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await packAicha(page, 2);
+      await page.getByRole('dialog').getByRole('button', { name: /^Ajouter$/ }).first().locator('xpath=..').hover();
+      await page.waitForTimeout(500);
+    } },
+  // 21. La douchette sur un colis de trop : refusé, avec la raison, et « Fermer ce paquet ».
+  { key: 'j.guangzhou.desk-packages', name: '21-ordinateur-colis-de-trop', role: 'ops', desktop: true, viewport: '1440x1000', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await packAicha(page, 2);
+      await page.fill('#pk-scan', 'RC-000123-02');
+      await page.press('#pk-scan', 'Enter');
+      await page.waitForTimeout(900);
+    } },
+  // 22. Fermer le paquet : la pesée et les dimensions.
+  { key: 'j.guangzhou.desk-package', name: '22-ordinateur-fermer-le-paquet', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Fermer le paquet \(pesée\)/ }).click();
+      await page.waitForTimeout(500);
+      await page.fill('#pk-gross', '28,1');
+      const dims = page.locator('input[aria-label$="(cm)"]');
+      await dims.nth(0).fill('70'); await dims.nth(1).fill('50'); await dims.nth(2).fill('45');
+      await page.waitForTimeout(400);
+    } },
+  // 23. Fermé : l'étiquette 100 × 150 mm tout de suite à côté, et « Commencer un nouveau paquet ».
+  { key: 'j.guangzhou.desk-package', name: '23-ordinateur-paquet-ferme-etiquette', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Fermer le paquet \(pesée\)/ }).click();
+      await page.waitForTimeout(500);
+      await page.fill('#pk-gross', '28,1');
+      await page.getByRole('button', { name: /Fermer et préparer l.étiquette/ }).click();
+      await page.waitForFunction(() => !!document.querySelector('[role=dialog] img[alt^="Étiquette PQ-"]'), null, { timeout: 15000 });
+      await page.waitForTimeout(600);
+    } },
+  // 24. Dépôts, « Bureau · Air » : le chemin vers la mise en paquets, et le paquet de chaque colis emballé.
+  { key: 'j.guangzhou.desk-office', name: '24-ordinateur-bureau-air', role: 'ops', desktop: true, viewport: '1440x1100', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Bureau · Air/ }).click();
+      await page.waitForTimeout(600);
+      await page.getByRole('button', { name: 'Déplier les colis' }).nth(1).click();
+      await page.waitForTimeout(600);
+    } },
   // 14. Au bureau, la fiche du client : « Origine » et « Enregistré par », son sexe et sa date de naissance.
   { key: 'j.guangzhou.client-sheet', name: '14-fiche-client-enregistre-par', role: 'super_admin', desktop: true, viewport: '1440x1080', init: deskSetup, wait: 2500, before: fontsReady },
   // 15. « Modifier » : le sexe et la date de naissance se changent avec le reste du profil.

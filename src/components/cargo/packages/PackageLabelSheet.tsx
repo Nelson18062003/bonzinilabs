@@ -5,7 +5,7 @@
 // interne d'un dépôt (InternalLabelSheet). `banner` s'affiche au-dessus de
 // l'aperçu (« paquet fermé »), `footer` sous les boutons (« nouveau paquet »).
 // ============================================================
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Download, FileDown, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -18,18 +18,8 @@ import { usePackageLabel } from './usePackageLabel';
 export function PackageLabelSheet({ open, onClose, pkg, banner, footer }: { open: boolean; onClose: () => void; pkg: AirPackage; banner?: ReactNode; footer?: ReactNode }) {
   const { t } = useTranslation('agent');
   const maker = usePackageLabel(pkg, open);
-  const [preview, setPreview] = useState<string | null>(null);
+  const preview = maker.preview;
   const [busy, setBusy] = useState<'pdf' | 'png' | 'share' | null>(null);
-
-  // L'aperçu, repeint quand le QR est prêt ou que le paquet change (pesée, expédition).
-  useEffect(() => {
-    if (!open || !maker.ready) return;
-    let alive = true;
-    maker.render(1.5).then((c) => { if (alive) setPreview(c.toDataURL('image/png')); }).catch(() => { if (alive) setPreview(null); });
-    return () => { alive = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, maker.ready, pkg.id, pkg.updated_at]);
-  useEffect(() => { if (!open) setPreview(null); }, [open]);
 
   const run = async (what: 'pdf' | 'png' | 'share') => {
     if (busy) return;

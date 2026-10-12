@@ -37,12 +37,23 @@ export const PACKAGE_KEYS = {
   one: (id: string) => ['air-packages', 'one', id] as const,
 };
 
-/** Un paquet change : ses listes, sa fiche, l'expédition, la réception et Douala se rafraîchissent. */
-export function invalidatePackages(qc: QueryClient) {
-  void qc.invalidateQueries({ queryKey: PACKAGE_KEYS.all });
-  void qc.invalidateQueries({ queryKey: ['cargo'] });
-  void qc.invalidateQueries({ queryKey: ['reception'] });
-  void qc.invalidateQueries({ queryKey: ['warehouse'] });
+let heavyRefresh: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Un paquet change : ses listes, sa fiche, l'expédition, la réception et Douala
+ * se rafraîchissent. `fresh` : la fiche que la réponse vient d'écrire (pas la
+ * peine de la relire). Les grandes listes (réception, cargo, Douala) attendent
+ * la fin d'une rafale de scans : une seule relecture, pas une par colis.
+ */
+export function invalidatePackages(qc: QueryClient, fresh?: string) {
+  void qc.invalidateQueries({ queryKey: PACKAGE_KEYS.all, predicate: (q) => !(fresh && q.queryKey[1] === 'one' && q.queryKey[2] === fresh) });
+  if (heavyRefresh) clearTimeout(heavyRefresh);
+  heavyRefresh = setTimeout(() => {
+    heavyRefresh = null;
+    void qc.invalidateQueries({ queryKey: ['cargo'] });
+    void qc.invalidateQueries({ queryKey: ['reception'] });
+    void qc.invalidateQueries({ queryKey: ['warehouse'] });
+  }, 400);
 }
 
 /** 'bureau' : pas encore partis (en cours, fermés, refusés, affectés à une expédition pas partie) ; 'all' : les 300 derniers. */
@@ -95,7 +106,7 @@ export function useAddParcelToPackage(packageId: string) {
     mutationFn: (code: string) => rpcJson<AddParcelResult>('air_package_add_parcel', { p_package_id: packageId, p_code: code }),
     onSuccess: (r) => {
       qc.setQueryData(PACKAGE_KEYS.one(packageId), r.package);
-      invalidatePackages(qc);
+      invalidatePackages(qc, packageId);
     },
   });
 }
@@ -106,7 +117,7 @@ export function useRemoveParcelFromPackage(packageId: string) {
     mutationFn: (parcelId: string) => rpcJson<{ package: AirPackage }>('air_package_remove_parcel', { p_parcel_id: parcelId }).then((r) => r.package),
     onSuccess: (pkg) => {
       qc.setQueryData(PACKAGE_KEYS.one(packageId), pkg);
-      invalidatePackages(qc);
+      invalidatePackages(qc, packageId);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -132,7 +143,7 @@ export function useSealAirPackage(packageId: string) {
       }).then((r) => r.package),
     onSuccess: (pkg) => {
       qc.setQueryData(PACKAGE_KEYS.one(packageId), pkg);
-      invalidatePackages(qc);
+      invalidatePackages(qc, packageId);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -144,7 +155,7 @@ export function useReopenAirPackage(packageId: string) {
     mutationFn: () => rpcJson<{ package: AirPackage }>('air_package_reopen', { p_package_id: packageId }).then((r) => r.package),
     onSuccess: (pkg) => {
       qc.setQueryData(PACKAGE_KEYS.one(packageId), pkg);
-      invalidatePackages(qc);
+      invalidatePackages(qc, packageId);
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { parsePackageCode, type AirPackage } from '@/lib/airPackage';
+import { packageQueue, parsePackageCode, type PackageQueue } from '@/lib/airPackage';
 import { useAirPackages, useCreateAirPackage, useFindAirPackage } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
@@ -25,13 +25,8 @@ import { useScanTexts } from '@/mobile/components/reception/packageText';
 /** Une étiquette de colis (RC-000123-01) n'est pas un paquet, même si elle contenait « PQ ». */
 const PARCEL_LABEL = /RC[^0-9]{0,3}\d{6}/i;
 
-type GroupKey = 'open' | 'refused' | 'ready' | 'assigned';
-const GROUPS: { key: GroupKey; test: (p: AirPackage) => boolean }[] = [
-  { key: 'open', test: (p) => p.status === 'open' },
-  { key: 'refused', test: (p) => p.status === 'refused' },
-  { key: 'ready', test: (p) => p.status === 'sealed' && !p.air_shipment_id },
-  { key: 'assigned', test: (p) => (p.status === 'sealed' || p.status === 'handed_over') && !!p.air_shipment_id },
-];
+type GroupKey = Exclude<PackageQueue, 'gone'>;
+const GROUPS: GroupKey[] = ['open', 'refused', 'ready', 'assigned'];
 
 export function ReceptionPackages() {
   const navigate = useNavigate();
@@ -51,7 +46,7 @@ export function ReceptionPackages() {
     assigned: t('rc_pk_group_assigned'),
   };
   const groups = useMemo(
-    () => GROUPS.map((g) => ({ key: g.key, items: (data ?? []).filter(g.test) })).filter((g) => g.items.length > 0),
+    () => GROUPS.map((key) => ({ key, items: (data ?? []).filter((p) => packageQueue(p) === key) })).filter((g) => g.items.length > 0),
     [data],
   );
 

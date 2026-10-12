@@ -63,6 +63,10 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
   'j.guangzhou.quote': { Comp: DeskReception, route: '/m/cargo/reception/dep1c', path: '/m/cargo/reception/:depositId' },
+  // Les paquets avion sur l'ordinateur du bureau (12/10) : la vue, la fiche d'un paquet, et « Bureau · Air ».
+  'j.guangzhou.desk-packages': { Comp: DeskReception, route: '/m/cargo/reception' },
+  'j.guangzhou.desk-package': { Comp: DeskReception, route: '/m/cargo/reception?paquet=pk45' },
+  'j.guangzhou.desk-office': { Comp: DeskReception, route: '/m/cargo/reception' },
   // Le propriétaire d'un colis n'existe pas : la réception crée le client, l'origine se pose d'office (06/10).
   'j.guangzhou.new-client': { Comp: NewClient, route: '/r/new/client', wrap: 'lang' },
   // La fiche du client au bureau : son origine et « Enregistré par » (qui, quel rôle, quel site),

@@ -8,7 +8,9 @@
 // reçu à Douala → ouvert (ses colis se pointent un par un).
 // ============================================================
 import type { Tone } from '@/mobile/designKit/tokens';
-import type { ReceptionClient } from '@/lib/reception';
+import { isParcelWaiting, type Deposit, type Parcel, type ReceptionClient } from '@/lib/reception';
+import { parseDecimal } from '@/lib/decimalInput';
+import { awbLabel } from '@/lib/airShipment';
 
 export type AirPackageStatus = 'open' | 'sealed' | 'handed_over' | 'refused' | 'received' | 'opened';
 
@@ -112,6 +114,29 @@ export function weightGauge(p: Pick<AirPackage, 'net_weight_kg' | 'max_weight_kg
 /** « 27,9 kg » — espace insécable : le nombre et l'unité ne se séparent jamais en fin de ligne. */
 export const fmtKg1 = (n: number | null | undefined) => `${(Number(n) || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}\u00a0kg`;
 
+/** Le poids d'un paquet dans une liste : pesé s'il est fermé, sinon ses colis. */
+export const packageKg = (k: Pick<AirPackage, 'gross_weight_kg' | 'net_weight_kg'>): number => Number(k.gross_weight_kg ?? k.net_weight_kg ?? 0);
+
+/** Ce qu'il reste à faire d'un paquet : le remplir, le renvoyer, le mettre sur un vol, attendre le départ — ou rien (parti). */
+export type PackageQueue = 'open' | 'refused' | 'ready' | 'assigned' | 'gone';
+
+export function packageQueue(p: Pick<AirPackage, 'status' | 'air_shipment_id' | 'air_status'>): PackageQueue {
+  if (p.status === 'open') return 'open';
+  if (p.status === 'refused') return 'refused';
+  if (p.status === 'sealed' && !p.air_shipment_id) return 'ready';
+  if ((p.status === 'sealed' || p.status === 'handed_over') && p.air_shipment_id && (p.air_status == null || p.air_status === 'PLANNED')) return 'assigned';
+  return 'gone';
+}
+
+/** « LTA 071-12345675 · Vol ET 607 · départ 15/10 » — le vol qui attend le paquet ; null s'il n'est sur aucun. */
+export function expeditionLine(p: Pick<AirPackage, 'air_shipment_id' | 'awb_number' | 'flight_no' | 'etd'>): string | null {
+  if (!p.air_shipment_id) return null;
+  const parts = [p.awb_number ? awbLabel({ awb_number: p.awb_number }) : 'LTA à venir'];
+  if (p.flight_no) parts.push(`Vol ${p.flight_no}`);
+  if (p.etd) parts.push(`départ ${new Date(`${p.etd.slice(0, 10)}T12:00:00`).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}`);
+  return parts.join(' · ');
+}
+
 /** Un paquet peut-il encore partir (être affecté à une expédition) ? */
 export function isAssignable(p: Pick<AirPackage, 'status' | 'air_shipment_id'>): boolean {
   return (p.status === 'sealed' || p.status === 'refused') && !p.air_shipment_id;
@@ -129,4 +154,140 @@ export function packageClientCodes(parcels: readonly Pick<AirPackageParcel, 'cli
     }
   }
   return out;
+}
+
+/* ── Remplir un paquet depuis l'ordinateur ─────────────────────────────── */
+
+/**
+ * Pourquoi un colis du bureau n'entre pas encore dans un paquet. Le miroir des
+ * refus « à corriger » de air_package_add_parcel ; les autres (bateau, déjà
+ * parti, dépôt supprimé) écartent le colis de la liste.
+ */
+export type PackBlock = 'no_client' | 'no_weight' | 'too_heavy';
+export const PACK_BLOCK_LABEL: Record<PackBlock, string> = { no_client: 'sans client', no_weight: 'pas pesé', too_heavy: 'plus de 32 kg' };
+
+/** Le plafond d'un paquet (air_packages.max_weight_kg, 32 par défaut) : un colis plus lourd ne tiendra dans aucun. */
+export const PACKAGE_MAX_KG = 32;
+
+export interface PackableParcel {
+  parcel: Parcel;
+  deposit: Deposit;
+}
+
+export interface PackableBoard {
+  /** Prêts : au bureau, attribués, pesés, dans aucun paquet. */
+  ready: PackableParcel[];
+  /** Au bureau mais pas encore prêts — la raison dit quoi corriger. */
+  blocked: (PackableParcel & { reason: PackBlock })[];
+}
+
+/**
+ * Les colis avion du bureau, triés pour la mise en paquets — à partir des
+ * dépôts de la réception (reception_board, en stock). Mêmes règles que le
+ * serveur : bureau seulement (l'entrepôt part en bateau), dépôt vivant, colis
+ * qui attend encore (ni chargé, ni pointé, ni remis).
+ */
+export function packableParcels(deposits: readonly Deposit[]): PackableBoard {
+  const out: PackableBoard = { ready: [], blocked: [] };
+  for (const deposit of deposits) {
+    if (deposit.status === 'cancelled' || deposit.location !== 'office') continue;
+    for (const parcel of deposit.parcels) {
+      if (!isParcelWaiting(parcel) || parcel.checked_in_at || parcel.delivered_at) continue;
+      if (parcel.air_package_id) continue;
+      const item = { parcel, deposit };
+      if (!deposit.client) out.blocked.push({ ...item, reason: 'no_client' });
+      else if (!(Number(parcel.weight_kg) > 0)) out.blocked.push({ ...item, reason: 'no_weight' });
+      else if (!fitsInPackage({ net_weight_kg: 0, max_weight_kg: PACKAGE_MAX_KG }, parcel.weight_kg)) out.blocked.push({ ...item, reason: 'too_heavy' });
+      else out.ready.push(item);
+    }
+  }
+  // Des numéros RC-000123-01 : l'ordre des caractères suffit.
+  const byNo = (a: PackableParcel, b: PackableParcel) => (a.parcel.parcel_no < b.parcel.parcel_no ? -1 : a.parcel.parcel_no > b.parcel.parcel_no ? 1 : 0);
+  out.ready.sort(byNo);
+  out.blocked.sort(byNo);
+  return out;
+}
+
+export interface PackableGroup {
+  key: string;
+  client: ReceptionClient | null;
+  items: PackableParcel[];
+  kg: number;
+  /** Un client dont des colis sont déjà dans le paquet ouvert : il passe en tête. */
+  inPackage: boolean;
+}
+
+/**
+ * Les colis prêts, par client : ceux déjà présents dans le paquet en tête (on
+ * garde les colis d'un client ensemble), puis par code client.
+ */
+export function packableGroups(items: readonly PackableParcel[], inPackage: ReadonlySet<string> = new Set()): PackableGroup[] {
+  const by = new Map<string, PackableGroup>();
+  for (const it of items) {
+    const key = it.deposit.client?.user_id ?? '—';
+    const g = by.get(key) ?? { key, client: it.deposit.client, items: [], kg: 0, inPackage: inPackage.has(key) };
+    g.items.push(it);
+    g.kg += Number(it.parcel.weight_kg) || 0;
+    by.set(key, g);
+  }
+  const code = (g: PackableGroup) => g.client?.customer_code ?? '';
+  return [...by.values()].sort((a, b) => Number(b.inPackage) - Number(a.inPackage) || code(a).localeCompare(code(b)));
+}
+
+export interface PackageClientGroup {
+  key: string;
+  client: ReceptionClient | null;
+  parcels: AirPackageParcel[];
+  kg: number;
+}
+
+/** Les colis d'un paquet, par client, dans l'ordre où le serveur les donne. */
+export function packageClientGroups(parcels: readonly AirPackageParcel[] | null | undefined): PackageClientGroup[] {
+  const by = new Map<string, PackageClientGroup>();
+  for (const p of parcels ?? []) {
+    const key = p.client?.user_id ?? '—';
+    const g = by.get(key) ?? { key, client: p.client, parcels: [], kg: 0 };
+    g.parcels.push(p);
+    g.kg += Number(p.weight_kg) || 0;
+    by.set(key, g);
+  }
+  return [...by.values()];
+}
+
+/** Le colis tient-il encore dans le paquet ? Même calcul que le serveur (colis + ce colis ≤ 32 kg), au gramme près. */
+export function fitsInPackage(p: Pick<AirPackage, 'net_weight_kg' | 'max_weight_kg'>, kg: number | null | undefined): boolean {
+  const max = Number(p.max_weight_kg) || 32;
+  return Math.round(((Number(p.net_weight_kg) || 0) + (Number(kg) || 0)) * 1000) <= Math.round(max * 1000);
+}
+
+export type SealGrossError = 'required' | 'over' | 'under';
+
+export interface SealCheck {
+  grossError: SealGrossError | null;
+  dimsError: 'invalid' | null;
+  valid: boolean;
+  /** Ce qui part au serveur (poids au centième, dimensions au millimètre) — seulement si `valid`. */
+  input: { grossWeightKg: number; lengthCm: number | null; widthCm: number | null; heightCm: number | null } | null;
+}
+
+/**
+ * La pesée d'un paquet qu'on ferme, contrôlée comme air_package_seal : un
+ * poids > 0, au plus 32 kg, pas moins que ses colis (0,5 kg de tolérance) ;
+ * des dimensions facultatives entre 0 et 400 cm. Les valeurs sont arrondies
+ * AVANT le contrôle : ce qui est vérifié est ce qui part.
+ */
+export function sealCheck(gross: string, dims: readonly [string, string, string], p: Pick<AirPackage, 'net_weight_kg' | 'max_weight_kg'>): SealCheck {
+  const g = weightGauge(p);
+  const kg = Math.round(parseDecimal(gross) * 100) / 100;
+  const cm = dims.map((v) => (v.trim() ? Math.round(parseDecimal(v) * 10) / 10 : null));
+  // En centièmes de kilo, comme le NUMERIC du serveur : 7,8 kg pour 8,3 kg de colis passe (0,5 de tolérance tout juste).
+  const c = (v: number) => Math.round(v * 100);
+  const grossError: SealGrossError | null = !gross.trim() ? null
+    : !(kg > 0) ? 'required'
+    : c(kg) > c(g.max) ? 'over'
+    : c(kg) < c(g.net) - 50 ? 'under'
+    : null;
+  const dimsError = cm.some((v) => v != null && !(v > 0 && v <= 400)) ? 'invalid' as const : null;
+  const valid = gross.trim() !== '' && kg > 0 && !grossError && !dimsError;
+  return { grossError, dimsError, valid, input: valid ? { grossWeightKg: kg, lengthCm: cm[0], widthCm: cm[1], heightCm: cm[2] } : null };
 }

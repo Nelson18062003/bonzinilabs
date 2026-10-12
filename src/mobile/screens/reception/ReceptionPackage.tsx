@@ -14,9 +14,8 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { parseDecimal } from '@/lib/decimalInput';
-import { clientFullName, formatKg, type ParcelKind, type ReceptionClient } from '@/lib/reception';
-import { isAssignable, weightGauge, type AirPackage, type AirPackageParcel } from '@/lib/airPackage';
+import { clientFullName, formatKg, type ParcelKind } from '@/lib/reception';
+import { isAssignable, packageClientGroups, sealCheck, weightGauge, type AirPackage } from '@/lib/airPackage';
 import {
   PackageRpcError, useAddParcelToPackage, useAirPackage, useCreateAirPackage, useDeleteAirPackage,
   useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
@@ -56,17 +55,7 @@ function PackageScreen({ id }: { id: string }) {
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [justSealed, setJustSealed] = useState(false);
 
-  const groups = useMemo(() => {
-    const byClient = new Map<string, { client: ReceptionClient | null; parcels: AirPackageParcel[]; kg: number }>();
-    for (const p of pkg?.parcels ?? []) {
-      const k = p.client?.user_id ?? '—';
-      const g = byClient.get(k) ?? { client: p.client, parcels: [], kg: 0 };
-      g.parcels.push(p);
-      g.kg += Number(p.weight_kg) || 0;
-      byClient.set(k, g);
-    }
-    return [...byClient.values()];
-  }, [pkg?.parcels]);
+  const groups = useMemo(() => packageClientGroups(pkg?.parcels), [pkg?.parcels]);
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
   if (error || !pkg) return <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />;
@@ -280,20 +269,18 @@ function SealSheet({ open, onClose, pkg, pending, onSeal }: { open: boolean; onC
   useEffect(() => { if (open) { setGross(''); setDims(['', '', '']); } }, [open]);
 
   const g = weightGauge(pkg);
-  const kg = parseDecimal(gross);
-  const cm = dims.map((v) => (v.trim() ? parseDecimal(v) : null));
-  const grossError = !gross.trim() ? null
-    : !(kg > 0) ? t('rc_pk_gross_required')
-    : kg > g.max ? ti('rc_pk_gross_over', { max: formatKg(g.max) })
-    : kg < g.net - 0.5 ? ti('rc_pk_gross_under', { kg: formatKg(g.net) })
+  // Le même contrôle que l'ordinateur et que le serveur (air_package_seal), valeurs arrondies d'abord.
+  const check = sealCheck(gross, dims, pkg);
+  const grossError = check.grossError === 'required' ? t('rc_pk_gross_required')
+    : check.grossError === 'over' ? ti('rc_pk_gross_over', { max: formatKg(g.max) })
+    : check.grossError === 'under' ? ti('rc_pk_gross_under', { kg: formatKg(g.net) })
     : null;
-  const dimsError = cm.some((v) => v != null && !(v > 0 && v <= 400)) ? t('rc_pk_dims_invalid') : null;
-  const valid = gross.trim() !== '' && kg > 0 && !grossError && !dimsError;
-  const round = (v: number | null) => (v == null ? null : Math.round(v * 10) / 10);
+  const dimsError = check.dimsError ? t('rc_pk_dims_invalid') : null;
+  const valid = check.valid;
 
   const submit = () => {
-    if (!valid || pending) return;
-    onSeal({ grossWeightKg: Math.round(kg * 100) / 100, lengthCm: round(cm[0]), widthCm: round(cm[1]), heightCm: round(cm[2]) });
+    if (!check.input || pending) return;
+    onSeal(check.input);
   };
   const dimLabels = [t('rc_pk_length'), t('rc_pk_width'), t('rc_pk_height')];
 

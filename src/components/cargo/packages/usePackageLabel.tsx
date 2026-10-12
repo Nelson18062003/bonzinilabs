@@ -4,6 +4,7 @@
 // l'image PNG. Les fichiers partent par les API standard du navigateur
 // (téléchargement, partage) : l'app BONZINI HQ les intercepte.
 // ============================================================
+import { useEffect, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import type { AirPackage } from '@/lib/airPackage';
 import { packageQrPayload } from '@/lib/airPackage';
@@ -17,6 +18,7 @@ export function packageLabelFileName(packageNo: string, ext: 'pdf' | 'png'): str
 
 export function usePackageLabel(pkg: AirPackage | null | undefined, active = true) {
   const qrs = useParcelQrCanvases(active && pkg ? [{ id: pkg.id, value: packageQrPayload(pkg.package_no) }] : []);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const render = async (scale = 3): Promise<HTMLCanvasElement> => {
     if (!pkg) throw new Error('Paquet introuvable');
@@ -36,11 +38,24 @@ export function usePackageLabel(pkg: AirPackage | null | undefined, active = tru
     return new File([await canvasToBlob(canvas)], packageLabelFileName(pkg?.package_no ?? 'paquet', 'png'), { type: 'image/png' });
   };
 
+  // L'aperçu, repeint quand le QR est prêt ou que le paquet change (pesée, expédition) ; effacé hors de l'écran.
+  const ready = !!pkg && qrs.ready;
+  useEffect(() => {
+    if (!active) { setPreview(null); return; }
+    if (!ready) return;
+    let alive = true;
+    render(1.5).then((c) => { if (alive) setPreview(c.toDataURL('image/png')); }).catch(() => { if (alive) setPreview(null); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, ready, pkg?.id, pkg?.updated_at]);
+
   return {
+    /** L'aperçu (image) de l'étiquette, une fois le QR peint. */
+    preview,
     /** Le QR invisible, à monter quelque part. */
     nodes: qrs.nodes,
     /** Le QR est peint : on peut produire. */
-    ready: !!pkg && qrs.ready,
+    ready,
     render,
     pdfFile,
     pngFile,

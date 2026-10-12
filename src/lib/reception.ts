@@ -410,6 +410,15 @@ export function parcelsHere(d: Pick<Deposit, 'parcels'>): string {
   return here === d.parcels.length ? String(d.parcels.length) : `${here} / ${d.parcels.length}`;
 }
 
+/** « 20/09 · 06:05 » cette année, « 20/09/2025 » avant : la date d'une ligne de liste, sans l'année qui se répète. */
+export function listDate(iso: string): string {
+  const t = new Date(iso);
+  const dd = String(t.getDate()).padStart(2, '0'), mm = String(t.getMonth() + 1).padStart(2, '0');
+  return t.getFullYear() === new Date().getFullYear()
+    ? `${dd}/${mm} · ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`
+    : `${dd}/${mm}/${t.getFullYear()}`;
+}
+
 /** La date d'un dépôt : sa fermeture (le reçu), sinon son ouverture. */
 export const depositDate = (d: Pick<Deposit, 'closed_at' | 'opened_at'>): string => d.closed_at ?? d.opened_at;
 
