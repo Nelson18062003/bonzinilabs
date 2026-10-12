@@ -1,0 +1,218 @@
+{
+ "N1_s1": {
+  "key": "N1",
+  "rate": 2.83,
+  "speech": 2.12,
+  "clean": 1.0,
+  "clean_heard": "trouve le mot bonzini",
+  "music": 0.75,
+  "music_heard": "trouve le mot bon signe"
+ },
+ "N1_s2": {
+  "key": "N1",
+  "rate": 2.94,
+  "speech": 2.04,
+  "clean": 0.75,
+  "clean_heard": "trouve le mot bondini",
+  "music": 1.0,
+  "music_heard": "trouve le mot bonzini"
+ },
+ "N1_s3": {
+  "key": "N1",
+  "rate": 3.11,
+  "speech": 1.93,
+  "clean": 0.75,
+  "clean_heard": "trouve le mot bondini",
+  "music": 1.0,
+  "music_heard": "trouve le mot bonzini"
+ },
+ "N2_s1": {
+  "key": "N2",
+  "rate": 4.48,
+  "speech": 1.79,
+  "clean": 1.0,
+  "clean_heard": "il est ecri sur un coli",
+  "music": 1.0,
+  "music_heard": "il est ecri sur un coli"
+ },
+ "N2_s2": {
+  "key": "N2",
+  "rate": 3.55,
+  "speech": 2.25,
+  "clean": 1.0,
+  "clean_heard": "il est ecri sur un coli",
+  "music": 1.0,
+  "music_heard": "il est ecri sur un coli"
+ },
+ "N2_s3": {
+  "key": "N2",
+  "rate": 3.43,
+  "speech": 2.33,
+  "clean": 1.0,
+  "clean_heard": "il est ecri sur un coli",
+  "music": 1.0,
+  "music_heard": "il est ecri sur un coli"
+ },
+ "N3_s1": {
+  "key": "N3",
+  "rate": 3.09,
+  "speech": 1.62,
+  "clean": 1.0,
+  "clean_heard": "stop tu l as vu",
+  "music": 1.0,
+  "music_heard": "stop tu l as vu"
+ },
+ "N3_s2": {
+  "key": "N3",
+  "rate": 3.03,
+  "speech": 1.65,
+  "clean": 1.0,
+  "clean_heard": "stop tu l as vu",
+  "music": 1.0,
+  "music_heard": "stop tu l as vu"
+ },
+ "N3_s3": {
+  "key": "N3",
+  "rate": 3.13,
+  "speech": 1.6,
+  "clean": 1.0,
+  "clean_heard": "stop tu l as vu",
+  "music": 1.0,
+  "music_heard": "stop tu l as vu"
+ },
+ "N4_s1": {
+  "key": "N4",
+  "rate": 4.67,
+  "speech": 2.57,
+  "clean": 1.0,
+  "clean_heard": "le mot bonzini etait la des le debut",
+  "music": 0.875,
+  "music_heard": "le mot bonzini etait la des le delai"
+ },
+ "N4_s2": {
+  "key": "N4",
+  "rate": 4.3,
+  "speech": 2.79,
+  "clean": 1.0,
+  "clean_heard": "le mot bonzini etait la des le debut",
+  "music": 1.0,
+  "music_heard": "le mot bonzini etait la des le debut"
+ },
+ "N4_s3": {
+  "key": "N4",
+  "rate": 3.31,
+  "speech": 3.63,
+  "clean": 1.0,
+  "clean_heard": "le mot bonzini etait la des le debut",
+  "music": 1.0,
+  "music_heard": "le mot bonzini etait la des le debut"
+ },
+ "N5_s1": {
+  "key": "N5",
+  "rate": 4.21,
+  "speech": 3.32,
+  "clean": 0.778,
+  "clean_heard": "avec banzini tes coli vont de chine a voila",
+  "music": 0.778,
+  "music_heard": "avec bondini tes coli vont de chine a voila"
+ },
+ "N5_s2": {
+  "key": "N5",
+  "rate": 4.18,
+  "speech": 3.35,
+  "clean": 0.778,
+  "clean_heard": "avec banzini tes coli vont de chine a duala",
+  "music": 0.889,
+  "music_heard": "avec bounzini tes coli vont de chine a douala"
+ },
+ "N5_s3": {
+  "key": "N5",
+  "rate": 4.18,
+  "speech": 3.35,
+  "clean": 0.889,
+  "clean_heard": "avec bonzini tes coli vont de chine a duala",
+  "music": 0.667,
+  "music_heard": "avec bounzini tes coli vou de chine a doua la"
+ },
+ "N5_s4": {
+  "key": "N5",
+  "rate": 4.2,
+  "speech": 3.34,
+  "clean": 0.889,
+  "clean_heard": "avec bonzini tes coli vont de chine a doua la",
+  "music": 0.889,
+  "music_heard": "avec bonzini tes coli vont de chine a duala"
+ },
+ "N5_s5": {
+  "key": "N5",
+  "rate": 4.11,
+  "speech": 3.41,
+  "clean": 0.889,
+  "clean_heard": "avec bondini tes coli vont de chine a douala",
+  "music": 0.889,
+  "music_heard": "avec bondini tes coli vont de chine a douala"
+ },
+ "N5_s6": {
+  "key": "N5",
+  "rate": 4.21,
+  "speech": 3.33,
+  "clean": 0.667,
+  "clean_heard": "avec bondini tes coli vont de chine adouala",
+  "music": 0.778,
+  "music_heard": "avec bondini tes coli vont de chine a dou a la"
+ },
+ "N6_s1": {
+  "key": "N6",
+  "rate": 3.69,
+  "speech": 2.44,
+  "clean": 1.0,
+  "clean_heard": "repond lui en commentaire bonsoir",
+  "music": 1.0,
+  "music_heard": "repond lui en commentaire bonsoir"
+ },
+ "N6_s2": {
+  "key": "N6",
+  "rate": 3.67,
+  "speech": 2.45,
+  "clean": 1.0,
+  "clean_heard": "repond lui en commentaire bonsoir",
+  "music": 1.0,
+  "music_heard": "repond lui en commentaire bonsoir"
+ },
+ "N6_s3": {
+  "key": "N6",
+  "rate": 3.73,
+  "speech": 2.41,
+  "clean": 1.0,
+  "clean_heard": "repond lui en commentaire bonsoir",
+  "music": 1.0,
+  "music_heard": "repond lui en commentaire bonsoir"
+ },
+ "N6w_s1": {
+  "key": "N6w",
+  "rate": 3.75,
+  "speech": 2.13,
+  "clean": 1.0,
+  "clean_heard": "repond lui en message bonsoir",
+  "music": 0.6,
+  "music_heard": "repondu en message bonsoir"
+ },
+ "N6w_s2": {
+  "key": "N6w",
+  "rate": 3.69,
+  "speech": 2.17,
+  "clean": 1.0,
+  "clean_heard": "repond lui en message bonsoir",
+  "music": 1.0,
+  "music_heard": "repond lui en message bonsoir"
+ },
+ "N6w_s3": {
+  "key": "N6w",
+  "rate": 3.8,
+  "speech": 2.11,
+  "clean": 1.0,
+  "clean_heard": "repond lui en message bonsoir",
+  "music": 1.0,
+  "music_heard": "repond lui en message bonsoir"
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "segments": [
+  {
+   "id": "N1",
+   "text": "Trouve le mot Bonzini.",
+   "tts": "Trouve le mot, Bonzini."
+  },
+  {
+   "id": "N2",
+   "text": "Il est écrit sur un colis.",
+   "tts": "Il est écrit, sur un colis."
+  },
+  {
+   "id": "N3",
+   "text": "Stop ! Tu l'as vu ?",
+   "tts": "Stop. Tu l'as vu ?"
+  },
+  {
+   "id": "N4",
+   "text": "Le mot Bonzini était là dès le début.",
+   "tts": "Le mot Bonzini était là, dès le début."
+  },
+  {
+   "id": "N5",
+   "text": "Avec Bonzini, tes colis vont de Chine à Douala.",
+   "tts": "Avec Bonzini, tes colis vont de Chine, à Douala."
+  },
+  {
+   "id": "N6",
+   "text": "Réponds-lui en commentaire : bonsoir.",
+   "tts": "Réponds-lui en commentaire : bonsoir !"
+  },
+  {
+   "id": "N6w",
+   "text": "Réponds-lui en message : bonsoir.",
+   "tts": "Réponds-lui en message : bonsoir !"
+  }
+ ]
+}

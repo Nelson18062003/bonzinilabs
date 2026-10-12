@@ -1,0 +1,67 @@
+{
+ "N1": {
+  "file": "N1_s3.wav",
+  "on": 0.125,
+  "off": 2.068,
+  "dur": 1.942,
+  "music": 1.0,
+  "clean": 0.75,
+  "rate": 3.11
+ },
+ "N2": {
+  "file": "N2_s2.wav",
+  "on": 0.104,
+  "off": 2.388,
+  "dur": 2.284,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.55
+ },
+ "N3": {
+  "file": "N3_s1.wav",
+  "on": 0.0,
+  "off": 1.627,
+  "dur": 1.627,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.09
+ },
+ "N4": {
+  "file": "N4_s3.wav",
+  "on": 0.088,
+  "off": 3.772,
+  "dur": 3.684,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.31
+ },
+ "N5": {
+  "file": "N5_s4.wav",
+  "on": 0.123,
+  "off": 3.48,
+  "dur": 3.356,
+  "music": 0.889,
+  "clean": 0.889,
+  "rate": 4.2,
+  "stretch": 1.1,
+  "note": "chosen over select_takes' N5_s5 by the integration pass: the only take whose \u00ab Bonzini \u00bb is heard right in BOTH weak-ASR conditions (s5: \u00ab bondini \u00bb twice); its \u00ab duala \u00bb / \u00ab doua la \u00bb are phonetic equivalents of Douala; final-mix listen test 100 %. Review pass: played \u00d71.10 slower (stretch, Rubber Band, pitch and formants kept: R.voice_line) \u2192 14 syl / 3.69 s = 3.79 syl/s, inside DICTION 6 (3.5\u20133.8); on, off, dur, rate stay the RAW take's values, make_timing.py and lib/audio_rush.py apply the stretch"
+ },
+ "N6": {
+  "file": "N6_s1.wav",
+  "on": -0.004,
+  "off": 2.512,
+  "dur": 2.516,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.69
+ },
+ "N6w": {
+  "file": "N6w_s2.wav",
+  "on": 0.0,
+  "off": 2.235,
+  "dur": 2.235,
+  "music": 1.0,
+  "clean": 1.0,
+  "rate": 3.69
+ }
+}

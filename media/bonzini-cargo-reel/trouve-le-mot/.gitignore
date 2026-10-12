@@ -1,0 +1,10 @@
+__pycache__/
+src_frames/
+work/*.wav
+prod/assets/rush/
+prod/assets/zoom/
+prod/assets/fonts/
+prod/audio/
+prod/audio_wa/
+prod/out/
+prod/check/

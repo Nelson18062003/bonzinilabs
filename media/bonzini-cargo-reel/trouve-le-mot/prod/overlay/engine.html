@@ -1,0 +1,113 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- « TROUVE LE MOT. » — Bonsoir, bonsoir (rush edit). The series engine (serie/ep2) adapted to real footage: the page is
+     served by render.mjs on a private origin (http://bz.local/, Playwright routes → no tainted canvas), the rush frames
+     are decoded ON DEMAND into a small LRU cache by window.PRELOAD(times) before each frame (the draw stays synchronous
+     and pure), the HD zoom layer is decoded once at setup when it exists. Clear colour = black (video), the film grain
+     (RU_grain, 05_rush.js) is laid over everything once per frame after the motion-blur accumulation. -->
+<style>
+@font-face { font-family: Satoshi; font-weight: 400; src: url(../assets/fonts/Satoshi-400.woff2); }
+@font-face { font-family: Satoshi; font-weight: 500; src: url(../assets/fonts/Satoshi-500.woff2); }
+@font-face { font-family: Satoshi; font-weight: 700; src: url(../assets/fonts/Satoshi-700.woff2); }
+@font-face { font-family: Satoshi; font-weight: 900; src: url(../assets/fonts/Satoshi-900.woff2); }
+@font-face { font-family: Stencil; font-weight: 100 900; src: url(../assets/fonts/BigShouldersStencilDisplay.ttf); }
+@font-face { font-family: Brico; font-weight: 200 800; src: url(../assets/fonts/BricolageGrotesque.ttf); }
+@font-face { font-family: Martian; font-weight: 100 800; src: url(../assets/fonts/MartianMono.ttf); }
+@font-face { font-family: Shantell; font-weight: 300 800; src: url(../assets/fonts/ShantellSans.ttf); }
+@font-face { font-family: CaveatBrush; src: url(../assets/fonts/CaveatBrush-400.woff2); }
+@font-face { font-family: Kalam; font-weight: 400; src: url(../assets/fonts/Kalam-400.woff2); }
+@font-face { font-family: Kalam; font-weight: 700; src: url(../assets/fonts/Kalam-700.woff2); }
+@font-face { font-family: PatrickHand; src: url(../assets/fonts/PatrickHand-400.woff2); }
+@font-face { font-family: GochiHand; src: url(../assets/fonts/GochiHand-400.woff2); }
+@font-face { font-family: Bangers; src: url(../assets/fonts/Bangers-400.woff2); }
+@font-face { font-family: DMSans; font-weight: 100 1000; src: url(../assets/fonts/DMSans.ttf); }
+html, body { margin: 0; background: #000; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="kit.js"></script>
+<script>
+// Motion blur: MB sub-frames spread over a 180° shutter, averaged (running mean) into the main canvas.
+window.MB = 1;
+const acc = document.createElement('canvas'); acc.width = W; acc.height = H;
+window.setup = (timeline, logo, extra) => {
+  TLD = timeline; Object.assign(window, extra || {});
+  const pieces = logo.map(p => ({ fill: p.fill, path: new Path2D(p.d), cy: p.cy,
+    role: p.fill.toUpperCase() === '#F3A745' ? 'amber' : p.fill.toUpperCase() === '#FE560D' ? 'orange' : 'violet' }));
+  const vi = pieces.filter(p => p.role === 'violet').sort((a, b) => a.cy - b.cy);
+  if (vi[0]) vi[0].role = 'wingTop'; if (vi[1]) vi[1].role = 'wingBot';
+  LOGO = pieces; buildTextures(); return SCENES.map(s => s.id);
+};
+/** the sub-sample times of film frame n (the same formula render.mjs uses to preload) */
+window.subTimes = n => (window.SCORE && window.SCORE.shutter) ? window.SCORE.shutter(n, window.MB)
+  : window.MB <= 1 ? [n / FPS] : Array.from({ length: window.MB }, (_, k) => Math.max(0, (n + (k / (window.MB - 1) - .5) * .5) / FPS));
+function drawAll(t, n) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  for (const s of SCENES) { if (s.when && !s.when(t)) continue; ctx.save(); s.draw(t, n); ctx.restore(); }
+}
+const filmGrain = n => (typeof RU_grain === 'function' ? RU_grain : grain)(n);
+window.renderFrame = (n) => {
+  const main = cv.getContext('2d');
+  if (window.MB <= 1) { ctx = main; drawAll(n / FPS, n); filmGrain(n); return true; }
+  const a = acc.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, W, H);
+  const ts = window.subTimes(n);
+  for (let k = 0; k < ts.length; k++) {
+    ctx = main; drawAll(Math.max(0, ts[k]), n);         // frame 0 = the cover: no sub-sample before t = 0
+    a.globalAlpha = 1 / (k + 1); a.drawImage(cv, 0, 0);
+  }
+  ctx = main; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.drawImage(acc, 0, 0); filmGrain(n);
+  return true;
+};
+
+// ---------------- rush frames: on-demand decode, LRU cache (never all 299 at once) ----------------
+window.RUSH = { cache: new Map(), max: 24, miss: 0, loads: 0, fallbacks: 0 };
+const pad4 = f => String(f).padStart(4, '0');
+async function decodeUrl(u) {
+  for (let k = 0; k < 3; k++) {
+    const im = new Image(); im.src = u;
+    try { await im.decode(); if (im.naturalWidth > 0) return im; } catch (e) { }
+    await new Promise(r => setTimeout(r, 120 * (k + 1)));
+  }
+  return null;
+}
+async function loadFrame(f) {
+  // the prepared frame (render.mjs serves the source PNG under the same URL while it does not exist yet); if it is
+  // being written right now and does not decode, the source PNG directly
+  let im = await decodeUrl(`../assets/rush/f_${pad4(f)}.jpg`);
+  if (!im) { im = await decodeUrl(`../src/${pad4(f)}.png`); RUSH.fallbacks++; }
+  RUSH.loads++; return im;
+}
+/** decode the rush frames needed at these film times (SCORE.rushNeed) into the cache; evict the oldest beyond max */
+window.PRELOAD = async (times) => {
+  const need = new Set();
+  for (const t of times) for (const f of window.SCORE.rushNeed(Math.max(0, t))) need.add(f);
+  const jobs = [];
+  for (const f of need) {
+    if (RUSH.cache.has(f)) { const im = RUSH.cache.get(f); RUSH.cache.delete(f); RUSH.cache.set(f, im); continue; }   // touch (LRU)
+    jobs.push(loadFrame(f).then(im => { if (im) RUSH.cache.set(f, im); }));
+  }
+  await Promise.all(jobs);
+  for (const k of [...RUSH.cache.keys()]) { if (RUSH.cache.size <= RUSH.max) break; if (!need.has(k)) RUSH.cache.delete(k); }
+  return [...need];
+};
+/** synchronous lookup for the draw; a miss (should never happen after PRELOAD) takes the nearest cached frame */
+window.rushImg = f => {
+  const im = RUSH.cache.get(f); if (im) return im;
+  RUSH.miss++; let best = null, bd = 1e9; for (const [k, v] of RUSH.cache) { const d = Math.abs(k - f); if (d < bd) { bd = d; best = v; } }
+  return best;
+};
+/** the brown-bag shades of the two freezes (prep_frames.py: full-frame RGBA, 25 % darkening inside the bag): frame → img */
+window.BAGSHADE = {};
+window.loadBagShades = async () => {
+  for (const f of [60, 228]) { const im = await decodeUrl(`../assets/rush/shade_bag_f${pad4(f)}.png`); if (im) window.BAGSHADE[f] = im; }
+  return Object.keys(window.BAGSHADE).length;
+};
+/** the HD zoom layer (P/assets/zoom/r100_x4.png): window.ZOOM = {url, geo} injected by render.mjs when it exists */
+window.loadZoom = async () => {
+  if (!window.ZOOM || !window.ZOOM.url) return false;
+  const im = await decodeUrl(window.ZOOM.url); if (!im) return false;
+  window.ZOOM.img = im; return true;
+};
+</script>
+</body></html>
