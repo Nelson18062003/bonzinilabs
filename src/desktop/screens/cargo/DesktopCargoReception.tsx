@@ -31,7 +31,7 @@ import { useReceptionBoard, useReceptionStock, type BoardScope } from '@/hooks/u
 import { useWarehouseDay } from '@/hooks/useWarehouse';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { fetchCargoQuote } from '@/hooks/useCargoQuote';
-import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, downloadQuotePdf, readCargoDocLang, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
+import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, downloadReceptionPdf, readCargoDocLang, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { xaf as fmtXaf } from '@/lib/cargoQuote';
 import {
@@ -247,8 +247,8 @@ export function DesktopCargoReception() {
       if (!q) throw new Error(`Le dépôt ${d.deposit_no} n'a pas encore de devis`);
       // Comme dans la fiche : un devis sans ligne ne donne pas de PDF (il serait vide).
       if (q.lines.length === 0) throw new Error(`Le devis ${q.quote_no} n'a aucune ligne`);
-      await downloadQuotePdf(q, settings, lang);
-      toast.success('PDF téléchargé', { description: `Devis ${q.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+      await downloadReceptionPdf({ deposit: d, quote: q }, settings, lang);
+      toast.success('PDF téléchargé', { description: `Bon de réception et devis ${q.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
     } catch (e) {
       toast.error((e as Error).message || 'Le devis n’a pas pu être téléchargé');
     } finally {

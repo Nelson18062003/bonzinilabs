@@ -6,7 +6,7 @@
 // ============================================================
 import type { Deposit, Parcel } from '@/lib/reception';
 import type { Quote, QuotePayment } from '@/lib/cargoQuote';
-import { PLACE_SHORT, xaf } from '@/lib/cargoQuote';
+import { PLACE_SHORT, invoiceAcquitted, quoteBalance, xaf } from '@/lib/cargoQuote';
 import { isProvisionalAwb } from '@/lib/airShipment';
 
 export type TimelineKind = 'opened' | 'closed' | 'quote_sent' | 'payment' | 'payment_cancelled' | 'invoice' | 'loaded' | 'checked_in' | 'missing' | 'delivered';
@@ -31,7 +31,7 @@ function byGroup<T>(items: readonly T[], key: (t: T) => string | null | undefine
 }
 
 /** Les événements d'un dépôt, du plus ancien au plus récent. */
-export function depositTimeline(deposit: Pick<Deposit, 'opened_at' | 'closed_at' | 'received_by_name' | 'parcels'> & { parcels: readonly Parcel[] }, quote?: Pick<Quote, 'sent_at' | 'invoiced_at' | 'invoice_no' | 'quote_no' | 'total_xaf' | 'payments'> | null): TimelineEvent[] {
+export function depositTimeline(deposit: Pick<Deposit, 'opened_at' | 'closed_at' | 'received_by_name' | 'parcels'> & { parcels: readonly Parcel[] }, quote?: Pick<Quote, 'sent_at' | 'invoiced_at' | 'invoice_no' | 'quote_no' | 'total_xaf' | 'amount_paid_xaf' | 'payments'> | null): TimelineEvent[] {
   const ev: TimelineEvent[] = [];
   const parcels = deposit.parcels;
   ev.push({ kind: 'opened', at: deposit.opened_at, text: `Dépôt ouvert${deposit.received_by_name ? ` par ${deposit.received_by_name}` : ''}`, tone: 'neutral' });
@@ -43,7 +43,11 @@ export function depositTimeline(deposit: Pick<Deposit, 'opened_at' | 'closed_at'
     ev.push({ kind: 'payment', at: pay.paid_at, text: `${xaf(pay.amount_xaf)} encaissé à ${PLACE_SHORT[pay.place] ?? pay.place}`, detail: `Reçu ${pay.receipt_no}${pay.received_by_name ? ` · ${pay.received_by_name}` : ''}`, tone: pay.cancelled_at ? 'danger' : 'success' });
     if (pay.cancelled_at) ev.push({ kind: 'payment_cancelled', at: pay.cancelled_at, text: `Encaissement ${pay.receipt_no} annulé`, detail: pay.cancel_reason, tone: 'danger' });
   }
-  if (quote?.invoiced_at) ev.push({ kind: 'invoice', at: quote.invoiced_at, text: `Facture acquittée ${quote.invoice_no ?? ''}`.trim(), tone: 'success' });
+  // La facture : établie à l'arrivée (à régler) ou une fois tout payé (acquittée) — elle dit ce qu'elle est maintenant.
+  if (quote?.invoiced_at) {
+    const acquitted = invoiceAcquitted(quote);
+    ev.push({ kind: 'invoice', at: quote.invoiced_at, text: ['Facture', quote.invoice_no, acquitted ? 'acquittée' : 'établie'].filter(Boolean).join(' '), detail: acquitted ? null : `Reste ${xaf(quoteBalance(quote))} à payer`, tone: acquitted ? 'success' : 'info' });
+  }
 
   // Le transport : les colis chargés dans une boîte ou une LTA (la base ne date pas le chargement ; on le dit sans date propre).
   for (const [ref, ps] of byGroup(parcels, (p) => p.container_number ?? p.awb_number ?? null)) {

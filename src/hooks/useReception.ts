@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
 import { validateUploadFile } from '@/lib/utils';
-import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionLocation, ReceptionistRow, StockByClient, StockStats, SupplierInfo } from '@/lib/reception';
+import type { BroughtBy, DayStats, Deposit, ParcelKind, ParcelWithDeposit, ReceptionClient, ReceptionCondition, ReceptionLocation, ReceptionistRow, StockByClient, StockStats, SupplierInfo } from '@/lib/reception';
 
 // Les RPC de la migration 20261002100000 (photos multiples, contrôle total)
 // passent aussi par `rpcJson` tant que `/gen-types` n'a pas tourné.
@@ -143,6 +143,28 @@ export interface AddParcelInput {
   /** Plusieurs photos : la première devient la couverture. */
   photoPaths?: string[];
   copies?: number;
+  /**
+   * L'état à la réception (bon de réception) : noté juste après l'enregistrement du
+   * colis (reception_set_parcel_condition, 20261012100000). `undefined` : on n'y touche pas.
+   */
+  condition?: { value: ReceptionCondition | null; note: string | null };
+}
+
+/**
+ * Note l'état à la réception des colis donnés. Un refus (migration pas encore
+ * passée, colis déjà parti) n'annule pas l'enregistrement du colis : on le dit,
+ * sans erreur — sinon l'opérateur réessaierait et créerait le colis en double.
+ */
+async function applyCondition(deposit: Deposit, parcelIds: string[], condition: NonNullable<AddParcelInput['condition']>): Promise<Deposit> {
+  let dep = deposit;
+  try {
+    for (const id of parcelIds) {
+      dep = (await rpcJson<{ deposit: Deposit }>('reception_set_parcel_condition', { p_parcel_id: id, p_condition: condition.value, p_note: condition.note?.trim() || null })).deposit;
+    }
+  } catch (e) {
+    toast.warning('Colis enregistré, mais son état n’a pas pu être noté', { description: (e as Error).message });
+  }
+  return dep;
 }
 
 export function useAddParcel() {
@@ -161,7 +183,12 @@ export function useAddParcel() {
         p_photo_path: input.photoPath ?? null,
         p_copies: input.copies ?? 1,
         p_photo_paths: input.photoPaths && input.photoPaths.length > 0 ? input.photoPaths : null,
-      }).then((r) => r.deposit),
+      }).then((r) => {
+        // Les colis créés sont les derniers numéros du dépôt ; sans réserve notée, rien à faire.
+        if (!input.condition || (input.condition.value == null && !input.condition.note?.trim())) return r.deposit;
+        const created = [...r.deposit.parcels].sort((a, b) => a.seq - b.seq).slice(-(input.copies ?? 1)).map((p) => p.id);
+        return applyCondition(r.deposit, created, input.condition);
+      }),
     onSuccess: (deposit) => invalidate(deposit),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -450,7 +477,7 @@ export function useUpdateParcel() {
         p_courier_waybill: input.courierWaybill ?? null,
         p_photo_path: input.photoPath ?? null,
         p_photo_paths: input.photoPaths && input.photoPaths.length > 0 ? input.photoPaths : null,
-      }).then((r) => r.deposit),
+      }).then((r) => (input.condition ? applyCondition(r.deposit, [input.parcelId], input.condition) : r.deposit)),
     onSuccess: (dep) => invalidate(dep),
     onError: (e: Error) => toast.error(e.message),
   });

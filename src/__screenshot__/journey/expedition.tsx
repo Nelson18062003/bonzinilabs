@@ -7,7 +7,7 @@ import { MobileCargoAir, MobileCargoAirDetail, MobileCargoAirForm } from '@/mobi
 import { DesktopCargoAir, DesktopCargoDossier } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
 import { useAirShipment } from '@/hooks/useAirShipments';
-import { buildAirManifestPdf, manifestFileName } from '@/lib/airManifestPdf';
+import { buildAirNoticePdf } from '@/lib/shippingNoticePdf';
 import type { JourneyEntry } from './types';
 
 /** La session de Grace Ebogo (rôle « ops ») : son nom dans le shell, les droits réels de son rôle. */
@@ -26,20 +26,21 @@ function AsGrace({ children }: { children: ReactNode }) {
 
 const desk = (node: ReactNode) => <AsGrace><DesktopAppShell>{node}</DesktopAppShell></AsGrace>;
 
-/** Le manifeste du vol ET 607 du 06/10, fabriqué par le vrai moteur (jsPDF) ; le PDF est posé sur window.__manifest. */
+/** L'avis d'expédition du vol ET 607 du 06/10 (ses paquets, leurs colis), fabriqué par le vrai moteur (react-pdf) ; le PDF est posé sur window.__manifest. */
 function ManifestDoc() {
   const { data: a } = useAirShipment('et607');
-  const [state, setState] = useState('Fabrication du manifeste…');
+  const [state, setState] = useState('Fabrication de l’avis d’expédition…');
   useEffect(() => {
     if (!a) return;
-    try {
-      const pdf = buildAirManifestPdf(a);
-      const b64 = String(pdf.output('datauristring')).split('base64,')[1] ?? '';
-      (window as unknown as { __manifest?: { name: string; b64: string } }).__manifest = { name: manifestFileName(a), b64 };
-      setState(`PDF prêt : ${manifestFileName(a)}`);
-    } catch (e) {
-      setState(`Erreur : ${String(e)}`);
-    }
+    buildAirNoticePdf(a, 'fr', '2026-10-06T08:00:00Z')
+      .then(async (file) => {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        let bin = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        (window as unknown as { __manifest?: { name: string; b64: string } }).__manifest = { name: file.name, b64: btoa(bin) };
+        setState(`PDF prêt : ${file.name}`);
+      })
+      .catch((e) => setState(`Erreur : ${String(e)}`));
   }, [a]);
   return <div style={{ padding: 24, fontFamily: 'sans-serif' }}>{state}</div>;
 }

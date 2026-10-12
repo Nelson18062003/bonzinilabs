@@ -1,7 +1,9 @@
 // ============================================================
 // RÉCEPTION — Un colis, en cinq questions, une par écran :
 //   1. les photos (la preuve, et le geste le plus rapide) — plusieurs
-//      angles : l'étiquette du fournisseur, l'état du carton, le contenu
+//      angles : l'étiquette du fournisseur, l'état du carton, le contenu —
+//      et l'état vu de l'extérieur (bon état, abîmé, ouvert, mouillé), qui
+//      s'imprime sur le bon de réception du client
 //   2. le poids
 //   3. les dimensions (le m³ se calcule sous les yeux)
 //   4. ce que c'est — le type, et ce qu'il y a dedans
@@ -19,7 +21,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind } from '@/lib/reception';
+import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, RECEPTION_CONDITIONS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind, type ReceptionCondition } from '@/lib/reception';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useFilePreviews } from '@/hooks/useFilePreviews';
 import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
@@ -91,6 +93,9 @@ export function ReceptionParcel() {
   const [waybill, setWaybill] = useState(() => readDraftWaybill() ?? '');
   const [showWaybill, setShowWaybill] = useState(() => !!readDraftWaybill());
   const [copies, setCopies] = useState(1);
+  // L'état vu de l'extérieur : « bon état » (rien en base) tant qu'aucune réserve n'est notée.
+  const [condition, setCondition] = useState<ReceptionCondition>('good');
+  const [conditionNote, setConditionNote] = useState('');
   const [uploading, setUploading] = useState(false);
   const [loaded, setLoaded] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -107,6 +112,8 @@ export function ReceptionParcel() {
     setDescription(editing.description ?? '');
     setWaybill(editing.courier_waybill ?? '');
     setShowWaybill(!!editing.courier_waybill);
+    setCondition(editing.reception_condition ?? 'good');
+    setConditionNote(editing.reception_condition_note ?? '');
     setLoaded(editing.id);
   }, [editing, loaded]);
 
@@ -135,7 +142,14 @@ export function ReceptionParcel() {
       toast.error((e as Error).message); setUploading(false); return;
     }
     setUploading(false);
-    const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths };
+    // L'état : envoyé seulement s'il change (ou, pour un nouveau colis, s'il y a une réserve ou une note).
+    const condValue = condition === 'good' ? null : condition;
+    const condNote = conditionNote.trim() || null;
+    const condChanged = editing
+      ? condValue !== (editing.reception_condition === 'good' ? null : editing.reception_condition ?? null) || condNote !== (editing.reception_condition_note?.trim() || null)
+      : condValue != null || condNote != null;
+    const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths,
+      condition: condChanged ? { value: condValue, note: condNote } : undefined };
     if (editing) {
       await update.mutateAsync({ ...fields, parcelId: editing.id, depositId });
       toast.success(t('rc_parcel_saved'), { description: editing.parcel_no });
@@ -198,6 +212,30 @@ export function ReceptionParcel() {
             <div className="flex items-center justify-between gap-3">
               <button type="button" onClick={() => galleryRef.current?.click()} disabled={totalPhotos >= MAX_PARCEL_PHOTOS} className={cn('flex items-center gap-2 disabled:opacity-40', TYPE.bodyStrong, TEXT.muted)}><ImagePlus className="h-5 w-5" /> {t('rc_from_gallery')}</button>
               {totalPhotos > 0 && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{ti('rc_photos_count', { count: totalPhotos })}</span>}
+            </div>
+            {/* L'état vu de l'extérieur : une réserve notée ici protège Bonzini si le client conteste à l'arrivée. */}
+            <div className="space-y-2.5">
+              <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>{t('rc_condition_title')}</span>
+              <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={t('rc_condition_title')}>
+                {RECEPTION_CONDITIONS.map((c) => {
+                  const on = condition === c;
+                  return (
+                    <button key={c} type="button" role="radio" aria-checked={on} onClick={() => setCondition(c)}
+                      className={cn('flex min-h-[52px] items-center justify-center rounded-lg border px-2 text-center transition-colors', TYPE.bodyStrong,
+                        on ? (c === 'good' ? 'border-[#2C2C2C] bg-[#2C2C2C] text-[#F5F5F5] dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'border-[#C2410C] bg-[#C2410C] text-white')
+                          : cn(SURFACE.card, SURFACE.divider, TEXT.strong))}>
+                      {t(`rc_condition_${c}`)}
+                    </button>
+                  );
+                })}
+              </div>
+              {(condition !== 'good' || conditionNote) && (
+                <label className="block">
+                  <span className={cn('mb-1.5 block', TYPE.smallStrong, TEXT.strong)}>{t('rc_condition_note')}</span>
+                  <TextInput id="p-cond-note" value={conditionNote} onChange={(e) => setConditionNote(e.target.value)} placeholder={t('rc_condition_note_ph')} maxLength={300} className="h-14 text-[17px]" />
+                </label>
+              )}
+              <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_condition_help')}</p>
             </div>
           </>
         )}

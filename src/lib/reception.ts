@@ -18,6 +18,23 @@ export type BroughtBy = 'courier' | 'client' | 'representative' | 'pickup';
 export type ParcelKind = 'carton' | 'bag' | 'bale' | 'roll' | 'pallet' | 'other';
 export type DepositStatus = 'open' | 'closed' | 'cancelled';
 export type ParcelStatus = 'received' | 'stored' | 'loaded' | 'shipped' | 'arrived' | 'delivered';
+/**
+ * L'état d'un colis À LA RÉCEPTION à Guangzhou (migration 20261012100000),
+ * imprimé sur le bon de réception. Sans réserve notée (null), le colis a été
+ * reçu « en bon état apparent » — le contenu, lui, n'est jamais vérifié.
+ * À ne pas confondre avec `condition`, le pointage à Douala.
+ */
+export type ReceptionCondition = 'good' | 'damaged' | 'opened' | 'wet';
+export const RECEPTION_CONDITIONS: ReceptionCondition[] = ['good', 'damaged', 'opened', 'wet'];
+export const RECEPTION_CONDITION_LABEL: Record<ReceptionCondition, string> = {
+  good: 'Bon état apparent',
+  damaged: 'Carton abîmé',
+  opened: 'Colis ouvert',
+  wet: 'Colis mouillé',
+};
+/** Une réserve : tout état autre que « bon ». */
+export const hasReceptionReserve = (p: Pick<Parcel, 'reception_condition'>): boolean =>
+  !!p.reception_condition && p.reception_condition !== 'good';
 
 export const BROUGHT_BY: BroughtBy[] = ['courier', 'client', 'representative', 'pickup'];
 export const PARCEL_KINDS: ParcelKind[] = ['carton', 'bag', 'bale', 'roll', 'pallet', 'other'];
@@ -93,6 +110,9 @@ export interface Parcel {
   warehouse_location?: string | null;
   condition?: 'ok' | 'damaged' | 'missing' | null;
   condition_note?: string | null;
+  /** À Guangzhou : l'état constaté à la réception (null = bon état apparent, sans réserve). */
+  reception_condition?: ReceptionCondition | null;
+  reception_condition_note?: string | null;
   delivered_at?: string | null;
   release_id?: string | null;
   release_no?: string | null;
@@ -170,6 +190,20 @@ export interface Deposit {
   quote_total_xaf?: number | null;
   quote_paid_xaf?: number | null;
   invoice_no?: string | null;
+  /** Les relevés du client (reception_client_deposits, 20261012100000) : où voyagent ses colis et quand ils arrivent. */
+  containers?: DepositTransport[];
+  flights?: DepositTransport[];
+}
+
+/** Un conteneur ou un vol où sont chargés des colis d'un dépôt, avec ses dates (réelles si connues, sinon annoncées). */
+export interface DepositTransport {
+  ref: string;
+  etd: string | null;
+  eta: string | null;
+  status?: string | null;
+  vessel_name?: string | null;
+  airline?: string | null;
+  flight_no?: string | null;
 }
 
 export interface DayStats {

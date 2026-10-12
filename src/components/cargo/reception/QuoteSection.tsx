@@ -21,7 +21,7 @@ import { useAddQuoteLine, useCargoQuote, useEnsureQuote, useRemoveQuoteLine, use
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { BASIS_LABEL, BASIS_UNIT, lineNeedsMeasure, quoteStatusMeta, xaf, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
-import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, deliverQuotePdf, downloadQuotePdf, readCargoDocLang, shareQuotePdf, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
+import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, deliverReceptionPdf, downloadReceptionPdf, readCargoDocLang, shareReceptionPdf, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { canShareFiles, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { formatCbm, formatKg, type Deposit } from '@/lib/reception';
 import { Band } from '@/components/cargo/dossier/kit';
@@ -115,7 +115,8 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
   const [lang, setLang] = useState<CargoDocLang>(readCargoDocLang);
 
   const st = quoteStatusMeta(quote?.status);
-  const locked = quote?.status === 'paid' || quote?.status === 'invoiced';
+  // Payé, ou facturé (une facture ne se modifie plus, même pas encore réglée : la base fige ses lignes).
+  const locked = quote?.status === 'paid' || quote?.status === 'invoiced' || !!quote?.invoice_no;
   const editable = canEdit && !locked;
   const missing = quote ? deposit.parcels.filter((p) => !quote.lines.some((l) => l.parcel_id === p.id)).length : 0;
   const hasLines = (quote?.lines.length ?? 0) > 0;
@@ -129,8 +130,8 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
     if (!quote || busy) return;
     setBusy('download');
     try {
-      await downloadQuotePdf(quote, pdfSettings, lang);
-      toast.success('PDF téléchargé', { description: `Devis ${quote.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+      await downloadReceptionPdf({ deposit, quote }, pdfSettings, lang);
+      toast.success('PDF téléchargé', { description: `Bon de réception et devis ${quote.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
 
@@ -138,7 +139,7 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
     if (!quote || busy) return;
     setBusy('share');
     try {
-      if ((await shareQuotePdf(quote, pdfSettings, lang)) === 'downloaded') toast.success('PDF téléchargé');
+      if ((await shareReceptionPdf({ deposit, quote }, pdfSettings, lang)) === 'downloaded') toast.success('PDF téléchargé');
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
 
@@ -149,8 +150,8 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
       // Le hook annonce déjà « Devis marqué comme envoyé » (ou le refus) : pas de second toast.
       const fresh = await send.mutateAsync(quote.id).catch(() => null);
       if (!fresh) return;
-      if ((await deliverQuotePdf(fresh, pdfSettings, lang)) === 'downloaded') {
-        toast.success('PDF téléchargé', { description: `Devis ${fresh.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
+      if ((await deliverReceptionPdf({ deposit, quote: fresh }, pdfSettings, lang)) === 'downloaded') {
+        toast.success('PDF téléchargé', { description: `Bon de réception et devis ${fresh.quote_no} · ${CARGO_DOC_LANG_LABEL[lang]}` });
       }
     } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
   };
@@ -200,8 +201,8 @@ export function QuoteSection({ deposit }: { deposit: Deposit }) {
             <span className="ml-auto flex flex-wrap items-center justify-end gap-2">
               <LangToggle value={lang} onChange={chooseLang} />
               {/* Le téléchargement est le geste principal de qui ne peut pas envoyer (lecture seule, devis payé). */}
-              <button type="button" onClick={() => void downloadQuote()} disabled={!!busy || !hasLines} title={hasLines ? `Télécharger le devis en PDF (${CARGO_DOC_LANG_LABEL[lang]})` : 'Le devis n’a aucune ligne'} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] disabled:opacity-50', editable ? cn('font-semibold', SOFT_PILL) : cn('font-bold', PRIMARY_PILL))}>
-                {busy === 'download' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Télécharger le devis
+              <button type="button" onClick={() => void downloadQuote()} disabled={!!busy || !hasLines} title={hasLines ? `Télécharger le bon de réception et devis en PDF (${CARGO_DOC_LANG_LABEL[lang]}), avec les photos` : 'Le devis n’a aucune ligne'} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] disabled:opacity-50', editable ? cn('font-semibold', SOFT_PILL) : cn('font-bold', PRIMARY_PILL))}>
+                {busy === 'download' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Bon de réception et devis
               </button>
               {canShare && (
                 <button type="button" onClick={() => void shareQuote()} disabled={!!busy || !hasLines} className={cn('inline-flex h-9 items-center gap-2 px-3.5 text-[13px] font-semibold disabled:opacity-50', SOFT_PILL)}>

@@ -26,8 +26,8 @@ import { useReceptionDeposit } from '@/hooks/useReception';
 import { QUOTE_KEYS, useAddQuoteLine, useCargoQuote, useEnsureQuote, useRemoveQuoteLine, useSendQuote, useSetQuoteLine } from '@/hooks/useCargoQuote';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { BASIS_UNIT, lineNeedsMeasure, quoteBalance, quotePaid, quoteStatusMeta, xaf, type Quote, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
-import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, deliverQuotePdf, downloadInvoicePdf, downloadQuotePdf, readCargoDocLang, shareInvoicePdf, shareQuotePdf, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
+import { BASIS_UNIT, invoiceAcquitted, invoiceReadiness, lineNeedsMeasure, quoteBalance, quotePaid, quoteStatusMeta, xaf, type Quote, type QuoteBasis, type QuoteLine } from '@/lib/cargoQuote';
+import { CARGO_DOC_LANGS, CARGO_DOC_LANG_LABEL, deliverReceptionPdf, downloadInvoicePdf, downloadReceptionPdf, readCargoDocLang, shareInvoicePdf, shareReceptionPdf, storeCargoDocLang, type CargoDocLang } from '@/lib/cargoQuotePdf';
 import { canShareFiles, prefersDownload, type Outcome } from '@/components/customer-code/exportShippingLabel';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
@@ -117,7 +117,8 @@ export function MobileCargoQuote() {
 
   const name = deposit.client ? clientFullName(deposit.client) : 'Client à attribuer';
   const st = quoteStatusMeta(quote?.status);
-  const locked = quote?.status === 'paid' || quote?.status === 'invoiced';
+  // Payé, ou facturé (une facture ne se modifie plus, même pas encore réglée).
+  const locked = quote?.status === 'paid' || quote?.status === 'invoiced' || !!quote?.invoice_no;
   const editable = canEdit && !locked;
   const parcelLines = quote?.lines.filter((l) => l.kind === 'parcel') ?? [];
   const extraLines = quote?.lines.filter((l) => l.kind !== 'parcel') ?? [];
@@ -159,7 +160,7 @@ export function MobileCargoQuote() {
       await savedQuote(quote); // le dernier prix tapé d'abord en base
       const fresh = await send.mutateAsync(quote.id);
       // Le devis envoyé : partagé sur téléphone (WhatsApp), téléchargé sur ordinateur.
-      const outcome = await deliverQuotePdf(fresh, pdfSettings, lang);
+      const outcome = await deliverReceptionPdf({ deposit, quote: fresh }, pdfSettings, lang);
       if (outcome === 'downloaded') toast.success('PDF téléchargé');
     } catch (e) {
       toast.error((e as Error).message);
@@ -182,24 +183,25 @@ export function MobileCargoQuote() {
           <StatusPill tone={st.tone} label={st.label} />
         </Card>
 
-        {/* Le PDF du devis : la langue, puis « Télécharger » (un fichier, toujours) et, sur téléphone, « Partager ». */}
-        {quote && quote.lines.length > 0 && (
+        {/* Le bon de réception et devis en PDF (photos, mesures, état ; les prix s'ils sont posés) : la langue,
+            puis « Télécharger » (un fichier, toujours) et, sur téléphone, « Partager ». */}
+        {deposit.parcels.length > 0 && (
           <Card className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <span className="min-w-0">
-                <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>Le devis en PDF</span>
-                <span className={cn('block', TYPE.small, TEXT.muted)}>{lang === 'en' ? 'En anglais' : 'En français'} : devis, reçus, facture.</span>
+                <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>Bon de réception et devis</span>
+                <span className={cn('block', TYPE.small, TEXT.muted)}>{lang === 'en' ? 'En anglais' : 'En français'} · photos, mesures, état{quote && quote.total_xaf > 0 ? ' et prix' : ' (sans prix)'}.</span>
               </span>
               <div role="group" aria-label="Langue du PDF" className="shrink-0">
                 <Segmented<CargoDocLang> value={lang} onChange={chooseLang} options={LANG_OPTIONS} className="w-[104px] [&>button]:h-9 [&>button]:text-[14px]" />
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="neutral" onClick={() => void makePdf('quote', async () => downloadQuotePdf(await savedQuote(quote), pdfSettings, lang), `Devis ${quote.quote_no}`)} loading={pdfBusy === 'quote'} disabled={pdfBusy != null} className="min-h-12 flex-1">
-                <Download /> Télécharger le devis
+              <Button variant="neutral" onClick={() => void makePdf('quote', async () => downloadReceptionPdf({ deposit, quote: quote ? await savedQuote(quote) : null }, pdfSettings, lang), `Bon de réception ${deposit.deposit_no}`)} loading={pdfBusy === 'quote'} disabled={pdfBusy != null} className="min-h-12 flex-1">
+                <Download /> Télécharger le bon
               </Button>
               {canShare && (
-                <Button variant="neutral" onClick={() => void makePdf('quote-share', async () => shareQuotePdf(await savedQuote(quote), pdfSettings, lang), `Devis ${quote.quote_no}`)} loading={pdfBusy === 'quote-share'} disabled={pdfBusy != null} ariaLabel="Partager le devis (WhatsApp, WeChat…)" className="min-h-12 w-12 shrink-0 px-0">
+                <Button variant="neutral" onClick={() => void makePdf('quote-share', async () => shareReceptionPdf({ deposit, quote: quote ? await savedQuote(quote) : null }, pdfSettings, lang), `Bon de réception ${deposit.deposit_no}`)} loading={pdfBusy === 'quote-share'} disabled={pdfBusy != null} ariaLabel="Partager le bon de réception (WhatsApp, WeChat…)" className="min-h-12 w-12 shrink-0 px-0">
                   <Share2 />
                 </Button>
               )}
@@ -256,7 +258,7 @@ export function MobileCargoQuote() {
             {quote.sent_at && <p className={cn(TYPE.small, TEXT.muted)}>Envoyé le {formatDateTime(quote.sent_at)}.</p>}
 
             {/* Phase 2 : encaisser, le reste à payer, la facture acquittée. */}
-            {quote.total_xaf > 0 && <QuotePayments quote={quote} settings={pdfSettings} request={request} lang={lang} />}
+            {quote.total_xaf > 0 && <QuotePayments quote={quote} parcels={deposit.parcels} settings={pdfSettings} request={request} lang={lang} />}
           </>
         )}
       </div>
@@ -270,19 +272,29 @@ export function MobileCargoQuote() {
           {(() => {
             // L'action suivante, une seule en grand : envoyer, encaisser, facturer, ou relire.
             const balance = quoteBalance(quote); const invoiced = !!quote.invoice_no; const total = quote.total_xaf > 0;
-            if (invoiced) return (
-              <div className="flex gap-2">
+            const acquitted = invoiceAcquitted(quote);
+            const ready = invoiceReadiness(quote, deposit.parcels);
+            const invoicePdf = (
+              <>
                 <Button variant="neutral" onClick={() => void makePdf('invoice', () => downloadInvoicePdf(quote, pdfSettings, lang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice'} disabled={pdfBusy != null} className="min-h-12 flex-1">
-                  <Download /> Télécharger la facture
+                  <Download /> {acquitted ? 'Télécharger la facture' : 'Facture'}
                 </Button>
                 {canShare && (
-                  <Button variant="neutral" onClick={() => void makePdf('invoice-share', () => shareInvoicePdf(quote, pdfSettings, lang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice-share'} disabled={pdfBusy != null} ariaLabel="Partager la facture acquittée" className="min-h-12 w-12 shrink-0 px-0">
+                  <Button variant="neutral" onClick={() => void makePdf('invoice-share', () => shareInvoicePdf(quote, pdfSettings, lang), `Facture ${quote.invoice_no}`)} loading={pdfBusy === 'invoice-share'} disabled={pdfBusy != null} ariaLabel={acquitted ? 'Partager la facture acquittée' : 'Partager la facture'} className="min-h-12 w-12 shrink-0 px-0">
                     <Share2 />
                   </Button>
                 )}
+              </>
+            );
+            // Facture établie, pas encore réglée (colis arrivés) : on l'envoie, et on encaisse.
+            if (invoiced && !acquitted && canCollect && balance > 0) return (
+              <div className="flex gap-2">
+                {invoicePdf}
+                <PrimaryPill onClick={() => setRequest({ kind: 'pay', n: Date.now() })} className="h-12 flex-1 text-[16px]"><Banknote /> Encaisser</PrimaryPill>
               </div>
             );
-            if (canCollect && total && balance === 0) return <PrimaryPill onClick={() => setRequest({ kind: 'invoice', n: Date.now() })} className="h-14 w-full text-[17px]"><FileCheck2 /> Établir la facture acquittée</PrimaryPill>;
+            if (invoiced) return <div className="flex gap-2">{invoicePdf}</div>;
+            if (canCollect && ready.ready) return <PrimaryPill onClick={() => setRequest({ kind: 'invoice', n: Date.now() })} className="h-14 w-full text-[17px]"><FileCheck2 /> {ready.acquitted ? 'Établir la facture acquittée' : 'Établir la facture (colis arrivés)'}</PrimaryPill>;
             if (canCollect && total && quote.status === 'sent') return (
               <div className="flex gap-2">
                 <SoftPill onClick={() => void sendQuote()} disabled={sending} className="h-14 px-4 text-[15px]"><Send /> Renvoyer</SoftPill>

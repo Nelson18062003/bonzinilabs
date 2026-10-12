@@ -1,15 +1,22 @@
 // ============================================================
 // Mobile admin — fiche client › ses colis reçus, dépôt par dépôt, avec où
 // en est chaque colis : à l'entrepôt, ou chargé dans telle boîte. C'est
-// aussi ce que le client verra dans son app.
+// aussi ce que le client verra dans son app. En tête, le RELEVÉ DES COLIS en
+// PDF (à Guangzhou, en route, à Douala, ce qui reste à payer), à télécharger
+// ou à partager sur WhatsApp — la réponse à « quels sont mes colis chez vous ? ».
 // ============================================================
+import { useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Download, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { deliverClientStatementPdf, downloadClientStatementPdf } from '@/lib/clientStatementPdf';
+import { canShareFiles, prefersDownload } from '@/components/customer-code/exportShippingLabel';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useClientDeposits } from '@/hooks/useReception';
 import { clientFullName, depositStage, formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Card, ScreenLoader, StatCard, StatusPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Button, Card, ScreenLoader, StatCard, StatusPill } from '@/mobile/designKit';
 import { LocationMark, formatDateTime } from '@/mobile/components/reception/bits';
 
 export function MobileClientParcels() {
@@ -17,6 +24,16 @@ export function MobileClientParcels() {
   const { clientId } = useParams<{ clientId: string }>();
   const { hasPermission } = useAdminAuth();
   const { data: deposits, isLoading } = useClientDeposits(clientId);
+  const [busy, setBusy] = useState<'dl' | 'share' | null>(null);
+  const canShare = canShareFiles() && !prefersDownload();
+  const statement = async (how: 'dl' | 'share') => {
+    if (!deposits || busy) return;
+    setBusy(how);
+    try {
+      if (how === 'dl') { await downloadClientStatementPdf(deposits); toast.success('Relevé des colis téléchargé'); }
+      else if ((await deliverClientStatementPdf(deposits)) === 'downloaded') toast.success('Relevé des colis téléchargé');
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(null); }
+  };
 
   if (!hasPermission('canViewCargo') && !hasPermission('canViewClients')) return <Navigate to="/m" replace />;
   if (isLoading || !deposits) return <ScreenLoader className="min-h-[100dvh]" />;
@@ -36,6 +53,19 @@ export function MobileClientParcels() {
           <StatCard label="Poids" value={formatKg(kg)} />
           <StatCard label="Volume" value={formatCbm(cbm)} />
         </div>
+
+        {parcels.length > 0 && (
+          <Card className="space-y-3">
+            <span className="block">
+              <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>Relevé des colis</span>
+              <span className={cn('block', TYPE.small, TEXT.muted)}>Tout ce qui est encore chez nous — à Guangzhou, en route, à Douala — avec les photos, et ce qui reste à payer.</span>
+            </span>
+            <div className="flex gap-2">
+              <Button variant="neutral" onClick={() => void statement('dl')} loading={busy === 'dl'} disabled={busy != null} className="min-h-12 flex-1"><Download /> Télécharger (PDF)</Button>
+              {canShare && <Button variant="neutral" onClick={() => void statement('share')} loading={busy === 'share'} disabled={busy != null} ariaLabel="Partager le relevé (WhatsApp, WeChat…)" className="min-h-12 w-12 shrink-0 px-0"><Share2 /></Button>}
+            </div>
+          </Card>
+        )}
 
         {deposits.length === 0 ? (
           <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
