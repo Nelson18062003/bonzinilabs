@@ -21,7 +21,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useOnScreen } from '@/hooks/useOnScreen';
 import { DecisionDock } from '@/mobile/components/layout/DecisionDock';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/imageCompression';
@@ -109,6 +109,7 @@ import {
   Pencil,
   Ban,
   RefreshCw,
+  Send,
 } from 'lucide-react';
 import { SkeletonDetail } from '@/mobile/components/ui/SkeletonCard';
 import { PasteDropZone } from '@/components/upload/PasteDropZone';
@@ -117,6 +118,8 @@ import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD, ACCEPT_IMAGE } f
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import type { PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
+import { canSendPaymentInstruction, instructionEntryFromPayment, type PaymentForInstruction } from '@/lib/paymentInstruction';
+import { MobilePaymentInstructionSheet } from './MobilePaymentInstructionSheet';
 
 // Map méthode DB → logo (PaymentMethodLogo n'accepte que 4 clés).
 function logoMethod(method: string): 'alipay' | 'wechat' | 'bank_transfer' | 'cash' {
@@ -193,6 +196,7 @@ export function MobilePaymentDetail() {
   const [proofToDelete,   setProofToDelete]   = useState<string | null>(null);
   const [fullscreenProof, setFullscreenProof] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isInstructionOpen, setIsInstructionOpen] = useState(false);
   const [showDetail,      setShowDetail]      = useState(false);
   const decision = useOnScreen();
 
@@ -503,6 +507,31 @@ export function MobilePaymentDetail() {
     }
   };
 
+  // L'instruction au partenaire : le MÊME document que sur ordinateur.
+  const instructionInput: PaymentForInstruction | null = payment
+    ? {
+        ...payment,
+        beneficiary_bank_extra: (payment as { beneficiary_bank_extra?: string | null }).beneficiary_bank_extra ?? null,
+        beneficiary_identifier: (payment as { beneficiary_identifier?: string | null }).beneficiary_identifier ?? null,
+      }
+    : null;
+  const canSendInstruction = !!instructionInput && canSendPaymentInstruction(instructionInput);
+
+  // « ?instruction=1 » (au sortir de la création du paiement) : la feuille
+  // s'ouvre d'elle-même, puis le paramètre s'efface — le retour arrière ne la
+  // rouvre pas.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const wantsInstruction = searchParams.get('instruction') === '1';
+  useEffect(() => {
+    if (!wantsInstruction || isLoading) return;
+    if (canSendInstruction) setIsInstructionOpen(true);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('instruction');
+      return next;
+    }, { replace: true });
+  }, [wantsInstruction, isLoading, canSendInstruction, setSearchParams]);
+
   // Quand le paiement change de statut sous nos pieds, on ferme l'édition.
   useEffect(() => {
     if (payment && isClosedPayment(payment.status)) setEditBenef(false);
@@ -566,7 +595,7 @@ export function MobilePaymentDetail() {
     : canComplete
     ? { label: 'Valider le paiement', icon: <CheckCircle />, onClick: () => setIsCompleteOpen(true) }
     : null;
-  const sheetOpen = isRejectOpen || isCompleteOpen || isCancelOpen || isAmountsOpen || !!proofToDelete || !!fullscreenProof;
+  const sheetOpen = isRejectOpen || isCompleteOpen || isCancelOpen || isAmountsOpen || isInstructionOpen || !!proofToDelete || !!fullscreenProof;
   const dockShown = !!mainAction && !decision.onScreen && !sheetOpen;
 
   const when = (iso: string) => format(new Date(iso), "d MMMM yyyy 'à' HH:mm", { locale: fr });
@@ -620,6 +649,14 @@ export function MobilePaymentDetail() {
             <Stat label="Client débité" value={`${formatNumber(payment.amount_xaf)} XAF`} />
             <Stat label={extra.rate_is_custom ? 'Taux (personnalisé)' : 'Taux'} value={`¥ ${formatNumber(rateInt)} / 1 M`} />
           </div>
+
+          {/* Le geste quotidien : envoyer CE paiement au partenaire qui paie en Chine. */}
+          {canSendInstruction && (
+            <Button className="w-full" onClick={() => setIsInstructionOpen(true)}>
+              <Send />
+              Instruction de paiement · 付款指令
+            </Button>
+          )}
 
           {payment.status === 'rejected' && payment.rejection_reason && <Line tone="bad">Refusé : {payment.rejection_reason}</Line>}
           {payment.status === 'cancelled_by_admin' && (
@@ -1028,6 +1065,13 @@ export function MobilePaymentDetail() {
       </div>
 
       {/* ══ Feuilles basses ══════════════════════════════════ */}
+      {instructionInput && canSendInstruction && (
+        <MobilePaymentInstructionSheet
+          open={isInstructionOpen}
+          onClose={() => setIsInstructionOpen(false)}
+          entry={instructionEntryFromPayment(instructionInput)}
+        />
+      )}
 
       {/* Refus */}
       <BottomSheet

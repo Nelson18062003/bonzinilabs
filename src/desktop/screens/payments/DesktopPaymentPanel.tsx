@@ -76,7 +76,7 @@ import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF, type PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
 import { captureQrDataUrl } from '@/components/payment-detail/paymentReceiptHelpers';
 import { PaymentInstructionDialog } from './PaymentInstructionDialog';
-import type { PaymentInstructionEntry } from '@/lib/paymentInstruction';
+import { canSendPaymentInstruction, instructionEntryFromPayment, type PaymentInstructionEntry } from '@/lib/paymentInstruction';
 import {
   Loader2,
   AlertTriangle,
@@ -622,23 +622,14 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
      par `signStored`), donc utilisable tel quel à l'écran comme dans le PDF.
      Le cash n'en a pas : personne à payer en Chine, et l'export du lot
      l'exclut déjà. */
-  const instructionEntry: PaymentInstructionEntry = {
-    id: payment.id,
-    reference: payment.reference,
-    amount_rmb: payment.amount_rmb,
-    method: payment.method,
-    created_at: payment.created_at,
-    beneficiary_name: payment.beneficiary_name,
-    beneficiary_phone: payment.beneficiary_phone,
-    beneficiary_email: payment.beneficiary_email,
-    beneficiary_bank_name: payment.beneficiary_bank_name,
-    beneficiary_bank_account: payment.beneficiary_bank_account,
+  const instructionInput = {
+    ...payment,
     beneficiary_bank_extra: bankExtra ?? null,
-    beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
-    beneficiary_notes: (payment as { beneficiary_notes?: string | null }).beneficiary_notes ?? null,
     beneficiary_identifier: identifier ?? null,
+    beneficiary_notes: (payment as { beneficiary_notes?: string | null }).beneficiary_notes ?? null,
   };
-  const canSendInstruction = !isCash && hasBeneficiaryInfo;
+  const instructionEntry: PaymentInstructionEntry = instructionEntryFromPayment(instructionInput);
+  const canSendInstruction = canSendPaymentInstruction(instructionInput);
 
   // Timeline: built from real events, completed steps stamped with their time.
   const evt = (type: string) => timeline?.find((e) => e.event_type === type);

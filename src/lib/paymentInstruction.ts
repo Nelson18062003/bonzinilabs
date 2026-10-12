@@ -127,3 +127,70 @@ export function buildPaymentInstructionText(entry: PaymentInstructionEntry): str
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
+/** Ce qu'il faut d'un paiement pour en tirer l'instruction (fiche ordinateur ou téléphone). */
+export interface PaymentForInstruction {
+  id: string;
+  reference: string;
+  amount_rmb: number;
+  method: string;
+  created_at?: string | null;
+  beneficiary_name?: string | null;
+  beneficiary_phone?: string | null;
+  beneficiary_email?: string | null;
+  beneficiary_bank_name?: string | null;
+  beneficiary_bank_account?: string | null;
+  beneficiary_qr_code_url?: string | null;
+  beneficiary_bank_extra?: string | null;
+  beneficiary_identifier?: string | null;
+  beneficiary_notes?: string | null;
+}
+
+/**
+ * L'instruction d'un paiement, telle que la fiche la construit — le MÊME
+ * objet sur ordinateur et sur téléphone, pour que les deux produisent le même
+ * document. Le QR doit déjà être signé (useAdminPaymentDetail le fait).
+ */
+export function instructionEntryFromPayment(p: PaymentForInstruction): PaymentInstructionEntry {
+  return {
+    id: p.id,
+    reference: p.reference,
+    amount_rmb: p.amount_rmb,
+    method: p.method,
+    created_at: p.created_at ?? null,
+    beneficiary_name: p.beneficiary_name ?? null,
+    beneficiary_phone: p.beneficiary_phone ?? null,
+    beneficiary_email: p.beneficiary_email ?? null,
+    beneficiary_bank_name: p.beneficiary_bank_name ?? null,
+    beneficiary_bank_account: p.beneficiary_bank_account ?? null,
+    beneficiary_bank_extra: p.beneficiary_bank_extra ?? null,
+    beneficiary_qr_code_url: p.beneficiary_qr_code_url ?? null,
+    beneficiary_notes: p.beneficiary_notes ?? null,
+    beneficiary_identifier: p.beneficiary_identifier ?? null,
+  };
+}
+
+/**
+ * L'instruction a-t-elle un sens ? Pas pour le cash (personne à payer en
+ * Chine), ni tant que le bénéficiaire est vide : le partenaire ne saurait
+ * pas qui payer.
+ */
+export function canSendPaymentInstruction(p: PaymentForInstruction): boolean {
+  if (p.method === 'cash') return false;
+  return !!(p.beneficiary_name || p.beneficiary_bank_account || p.beneficiary_qr_code_url || p.beneficiary_phone || p.beneficiary_email || p.beneficiary_identifier);
+}
+
+/** Le nom de l'image (PNG) de l'instruction. */
+export function paymentInstructionImageFilename(entry: PaymentInstructionEntry): string {
+  return `Bonzini_Payment_${entry.reference}.png`;
+}
+
+/**
+ * Ce qui change VRAIMENT le document. L'URL signée du QR change à chaque
+ * relecture du paiement (nouveau jeton) sans que l'image change : la clé ne
+ * garde que son chemin. Sans elle, la feuille du téléphone refabriquerait PDF
+ * et image à chaque rendu de la fiche.
+ */
+export function instructionDocumentKey(entry: PaymentInstructionEntry): string {
+  return JSON.stringify({ ...entry, beneficiary_qr_code_url: entry.beneficiary_qr_code_url?.split('?')[0] ?? null });
+}

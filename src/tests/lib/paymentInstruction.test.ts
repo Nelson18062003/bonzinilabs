@@ -14,6 +14,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildPaymentInstructionText,
+  canSendPaymentInstruction,
+  instructionDocumentKey,
+  instructionEntryFromPayment,
   methodLabel,
   formatDateIso,
   paymentInstructionFilename,
@@ -130,5 +133,54 @@ describe('Le texte de l’instruction', () => {
   it('jamais trois sauts de ligne d’affilée, même avec tout vide', () => {
     expect(buildPaymentInstructionText(base)).not.toMatch(/\n{3}/);
     expect(buildPaymentInstructionText({ ...base, method: 'alipay' })).not.toMatch(/\n{3}/);
+  });
+});
+
+// Le MÊME document sur ordinateur et sur téléphone (12/10/2026) : la fiche en
+// tire l'instruction par une seule fonction, et la feuille du téléphone ne la
+// refabrique que si le document change vraiment.
+describe('Instruction tirée d’un paiement (ordinateur et téléphone)', () => {
+  const payment = {
+    id: 'p9',
+    reference: 'BZ-PY-2026-1280',
+    amount_rmb: 12_500,
+    method: 'alipay',
+    created_at: '2026-10-12T08:00:00.000Z',
+    beneficiary_name: 'Yiwu Star Bags',
+    beneficiary_identifier: '139 0000 1111',
+    beneficiary_qr_code_url: 'https://x/storage/v1/object/sign/payment-proofs/qr.png?token=t1',
+    // Ce que la fiche porte aussi, et que l'instruction ignore.
+    amount_xaf: 1_000_000,
+    status: 'processing',
+  };
+
+  it('ne garde que ce que le partenaire doit lire, absents en null', () => {
+    const entry = instructionEntryFromPayment(payment);
+    expect(entry).toMatchObject({ reference: 'BZ-PY-2026-1280', amount_rmb: 12_500, beneficiary_identifier: '139 0000 1111' });
+    expect(entry.beneficiary_bank_account).toBeNull();
+    expect(entry).not.toHaveProperty('amount_xaf');
+    expect(entry).not.toHaveProperty('status');
+  });
+
+  it('pas d’instruction pour le cash, ni sans bénéficiaire', () => {
+    expect(canSendPaymentInstruction(payment)).toBe(true);
+    expect(canSendPaymentInstruction({ ...payment, method: 'cash' })).toBe(false);
+    expect(
+      canSendPaymentInstruction({ id: 'p', reference: 'R', amount_rmb: 1, method: 'bank_transfer', beneficiary_name: null }),
+    ).toBe(false);
+  });
+
+  it('un identifiant Alipay seul suffit', () => {
+    expect(canSendPaymentInstruction({ id: 'p', reference: 'R', amount_rmb: 1, method: 'alipay', beneficiary_identifier: 'abc' })).toBe(true);
+  });
+
+  it('la clé ignore le jeton du QR signé, pas le reste', () => {
+    const a = instructionEntryFromPayment(payment);
+    const resigned = instructionEntryFromPayment({ ...payment, beneficiary_qr_code_url: payment.beneficiary_qr_code_url.replace('t1', 't2') });
+    expect(instructionDocumentKey(resigned)).toBe(instructionDocumentKey(a));
+    expect(instructionDocumentKey({ ...a, amount_rmb: 12_600 })).not.toBe(instructionDocumentKey(a));
+    expect(instructionDocumentKey({ ...a, beneficiary_qr_code_url: 'https://x/storage/v1/object/sign/payment-proofs/qr2.png?token=t1' })).not.toBe(
+      instructionDocumentKey(a),
+    );
   });
 });
