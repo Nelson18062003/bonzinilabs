@@ -1,35 +1,43 @@
 /**
- * Nouvel achat d'USDT — un seul écran, sans étapes ni « mode ».
+ * Nouvel achat d'USDT — une fenêtre au centre de l'écran, sans étapes.
  *
  *   · le fournisseur ;
- *   · trois montants liés (USDT, taux, XAF) : on en tape deux, le troisième
- *     se calcule ;
- *   · le compte qui a payé (ou plusieurs, au besoin) ;
- *   · la date (maintenant, sauf si on la change), la référence et la note,
- *     repliées.
+ *   · le ou les comptes qui ont payé — avec plusieurs comptes, chacun son
+ *     montant, et le TOTAL se fait tout seul ;
+ *   · le total payé, le taux, les USDT reçus : on tape ce qu'on sait, le
+ *     reste se calcule (src/lib/treasuryPurchaseMath.ts) :
+ *       somme des comptes → total ; total + taux → USDT ; total + USDT →
+ *       taux ; USDT + taux → total ; un compte sans montant prend le reste ;
+ *   · le taux du dernier achat, à reprendre d'un clic, et un garde-fou si le
+ *     taux s'en écarte de plus de 8 % (faute de frappe probable) ;
+ *   · la date (maintenant), la référence et la note, repliées.
  *
- * Une fois enregistré, le panneau montre le reçu, prêt à copier en image.
+ * Une fois enregistré, la fenêtre montre le reçu, prêt à copier en image.
  * Ce qui part au serveur ne change pas (`record_usdt_purchase` : l'USDT reçu
  * et la répartition XAF par compte). XAF entier et exact, USDT à 2 décimales.
  */
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Check, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isValidXafAmount } from '@/lib/amountLimits';
-import { useCounterparties, useRecordUsdtPurchase, useTreasuryAccountBalances } from '@/hooks/useTreasury';
+import {
+  EMPTY_PURCHASE,
+  addAccount,
+  rateDeviation,
+  removeAccount,
+  resolvePurchase,
+  splitAccounts,
+  typeAmount,
+  typeSplit,
+  type PurchaseInputs,
+} from '@/lib/treasuryPurchaseMath';
+import { useCounterparties, useLastPurchaseRate, useRecordUsdtPurchase, useTreasuryAccountBalances, useUsdtWac } from '@/hooks/useTreasury';
 import { BTN, TK } from './tstyle';
-import { AmountInput, Picker, SideSheet, SubmitButton, TextLink } from './tkit';
+import { AmountInput, FormModal, Notice, Picker, SubmitButton, TextLink } from './tkit';
 import { QuickCounterparty } from './CounterpartyForm';
 import { LabeledRow, LinkedField, RefAndNote, SavedView, WhenLine } from './EntryParts';
-import { useLinkedAmounts } from './linkedAmounts';
-import { fmtNum } from './treasuryFormat';
+import { fmtNum, fmtWhen } from './treasuryFormat';
 import type { ReceiptData } from './receiptData';
-
-interface Split {
-  key: number;
-  accountId: string;
-  amount: number | null;
-}
 
 export function PurchaseForm({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [round, setRound] = useState(0);
@@ -41,37 +49,55 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
   const suppliers = useCounterparties('usdt_supplier');
   const balances = useTreasuryAccountBalances();
   const submit = useRecordUsdtPurchase();
-  const amounts = useLinkedAmounts(0);
+  const wac = useUsdtWac();
 
   const [supplierId, setSupplierId] = useState('');
   const [quick, setQuick] = useState(false);
-  const [splits, setSplits] = useState<Split[]>([{ key: 0, accountId: '', amount: null }]);
+  const [inputs, setInputs] = useState<PurchaseInputs>(EMPTY_PURCHASE);
+  // Le compte de chaque ligne — même longueur que `inputs.splits`.
+  const [accountIds, setAccountIds] = useState<string[]>(['']);
   const [at, setAt] = useState(() => new Date().toISOString());
   const [ref, setRef] = useState('');
   const [notes, setNotes] = useState('');
   const [tried, setTried] = useState(false);
   const [saved, setSaved] = useState<ReceiptData | null>(null);
 
-  const xaf = amounts.counter;
-  const usdt = amounts.usdt;
+  const lastForSupplier = useLastPurchaseRate(supplierId || undefined);
+  const lastAny = useLastPurchaseRate();
+  const last = (supplierId ? lastForSupplier.data : null) ?? lastAny.data ?? null;
+  const lastIsSupplier = !!supplierId && !!lastForSupplier.data;
+
+  const r = resolvePurchase(inputs);
+  const multi = inputs.splits.length > 1;
+  const xaf = r.total;
+  const usdt = r.usdt;
+  const rate = xaf && usdt ? xaf / usdt : r.rate;
+
   const accounts = (balances.data ?? []).filter((b) => b.currency === 'XAF' && b.is_active !== false && b.id);
   const accountOptions = accounts.map((a) => ({ value: a.id!, label: a.label ?? '—', hint: `${fmtNum(Number(a.balance ?? 0), 0)} XAF` }));
-  const accountName = (id: string) => accounts.find((a) => a.id === id)?.label ?? '—';
-  const multi = splits.length > 1;
-  // Un seul compte : il paie tout. Plusieurs : la répartition est tapée.
-  const lines = multi ? splits : splits.map((s) => ({ ...s, amount: xaf }));
-  const remaining = xaf !== null ? xaf - lines.reduce((s, l) => s + (l.amount ?? 0), 0) : null;
+  const account = (id: string) => accounts.find((a) => a.id === id);
   const supplier = (suppliers.data ?? []).find((s) => s.id === supplierId);
+
+  // Le compte qui passe sous zéro : on le montre, sans bloquer (l'écriture peut précéder l'appro).
+  const lines = r.splits.map((s, i) => ({ accountId: accountIds[i] ?? '', amount: s.amount, computed: s.computed }));
+  const overdrawn = lines
+    .map((l) => ({ l, a: account(l.accountId) }))
+    .filter(({ l, a }) => a && l.amount && Number(a.balance ?? 0) - l.amount < 0);
+
+  const reference = last?.rate ?? (wac.data && wac.data > 0 ? wac.data : null);
+  const deviation = rateDeviation(rate ?? null, reference);
 
   const error =
     !supplierId ? 'Choisissez le fournisseur.'
-    : !usdt || usdt <= 0 || !xaf || !isValidXafAmount(xaf, 1) ? 'Indiquez deux des trois montants (USDT, taux, XAF).'
-    : lines.some((l) => !l.accountId) ? 'Choisissez le compte qui a payé.'
+    : lines.some((l) => !l.accountId) ? (multi ? 'Choisissez le compte de chaque ligne.' : 'Choisissez le compte qui a payé.')
     : new Set(lines.map((l) => l.accountId)).size !== lines.length ? 'Un même compte apparaît deux fois.'
+    : r.totalLocked && !usdt ? 'Tapez le taux ou les USDT reçus : le total est la somme des comptes.'
+    : !usdt || usdt <= 0 || !xaf || !isValidXafAmount(xaf, 1) ? (multi ? 'Indiquez les montants des comptes, puis le taux ou les USDT reçus.' : 'Indiquez deux des trois montants : total payé, taux, USDT reçus.')
+    : r.remaining !== null && r.remaining > 0 ? `Il reste ${fmtNum(r.remaining, 0)} XAF à répartir entre les comptes.`
+    : r.remaining !== null && r.remaining < 0 ? `Les comptes dépassent le total de ${fmtNum(-r.remaining, 0)} XAF.`
     : lines.some((l) => !l.amount || !isValidXafAmount(l.amount, 1)) ? 'Indiquez le montant payé par chaque compte.'
-    : remaining !== 0 ? `La répartition doit faire ${fmtNum(xaf, 0)} XAF (${remaining! > 0 ? `il manque ${fmtNum(remaining, 0)}` : `${fmtNum(-remaining!, 0)} de trop`}).`
     : null;
-  const dirty = !saved && !!(supplierId || amounts.touched || ref || notes || splits.some((s) => s.accountId));
+  const dirty = !saved && !!(supplierId || inputs.order.length || inputs.splits.some((v) => v !== null) || ref || notes || accountIds.some(Boolean));
 
   const save = () => {
     setTried(true);
@@ -92,36 +118,68 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
             counter: xaf,
             counterCur: 'XAF',
             counterparty: supplier ? { name: supplier.display_name, short: supplier.short_id, phone: supplier.phone, wechat: supplier.wechat_id } : null,
-            accounts: paid.map((p) => ({ label: accountName(p.account_id), amount: p.xaf_amount })),
+            accounts: paid.map((p) => ({ label: account(p.account_id)?.label ?? '—', amount: p.xaf_amount })),
             ref: ref.trim() || null,
           }),
       },
     );
   };
 
-  const setSplit = (key: number, patch: Partial<Split>) => setSplits((all) => all.map((s) => (s.key === key ? { ...s, ...patch } : s)));
-  const addSplit = () =>
-    setSplits((all) => [...(all.length === 1 ? [{ ...all[0], amount: xaf }] : all), { key: Math.max(...all.map((s) => s.key)) + 1, accountId: '', amount: null }]);
+  const goMulti = () => {
+    setInputs((s) => splitAccounts(s));
+    setAccountIds((ids) => [ids[0] ?? '', '']);
+  };
+  const add = () => {
+    setInputs((s) => addAccount(s));
+    setAccountIds((ids) => [...ids, '']);
+  };
+  const remove = (i: number) => {
+    setInputs((s) => removeAccount(s, i));
+    setAccountIds((ids) => ids.filter((_, j) => j !== i));
+  };
+
+  // Ce qui se calcule, dit en clair sous les montants.
+  const how =
+    r.totalLocked && usdt && rate
+      ? r.source.usdt === 'computed'
+        ? `${fmtNum(xaf ?? 0, 0)} XAF ÷ ${fmtNum(rate, 2)} = ${fmtNum(usdt, 2)} USDT`
+        : `Taux : ${fmtNum(xaf ?? 0, 0)} XAF ÷ ${fmtNum(usdt, 2)} USDT = ${fmtNum(rate, 2)}`
+      : r.source.total === 'computed' && xaf
+        ? `${fmtNum(usdt ?? 0, 2)} USDT × ${fmtNum(r.rate ?? 0, 2)} = ${fmtNum(xaf, 0)} XAF`
+        : r.source.usdt === 'computed' && usdt
+          ? `${fmtNum(xaf ?? 0, 0)} XAF ÷ ${fmtNum(r.rate ?? 0, 2)} = ${fmtNum(usdt, 2)} USDT`
+          : r.source.rate === 'computed' && rate
+            ? `Taux : ${fmtNum(xaf ?? 0, 0)} XAF ÷ ${fmtNum(usdt ?? 0, 2)} USDT = ${fmtNum(rate, 2)}`
+            : multi
+              ? 'Le total se fait avec les montants des comptes. Tapez ensuite le taux OU les USDT reçus.'
+              : 'Tapez deux des trois montants, le troisième se calcule.';
 
   return (
-    <SideSheet
+    <FormModal
       open
       onClose={onClose}
+      onConfirm={saved ? undefined : save}
       title={saved ? 'Reçu de l’achat' : 'Nouvel achat d’USDT'}
+      description={saved ? undefined : 'Ce que vous avez payé en XAF, et les USDT reçus.'}
       dirty={dirty}
-      width={540}
+      width={640}
       footer={
         saved ? undefined : (
-          <div className="space-y-3">
-            {tried && error ? (
-              <p className="text-[13.5px] font-medium text-red-700 dark:text-red-400">{error}</p>
-            ) : usdt && xaf ? (
-              <p className="text-[14px] text-muted-foreground">
-                Vous recevez <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(usdt, 2)} USDT</span> et payez{' '}
-                <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(xaf, 0)} XAF</span>.
-              </p>
-            ) : null}
-            <SubmitButton busy={submit.isPending} onClick={save} className="h-12 w-full text-[15px]">
+          <div className="flex items-center gap-4">
+            <div className="min-w-0 flex-1">
+              {tried && error ? (
+                <p className="text-[13.5px] font-medium text-red-700 dark:text-red-400">{error}</p>
+              ) : usdt && xaf ? (
+                <p className="text-[14px] leading-snug text-muted-foreground">
+                  Vous payez <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(xaf, 0)} XAF</span> et recevez{' '}
+                  <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(usdt, 2)} USDT</span>
+                  {rate ? <> au taux de <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(rate, 2)}</span></> : null}.
+                </p>
+              ) : (
+                <p className="text-[13px] text-muted-foreground">⌘⏎ pour enregistrer</p>
+              )}
+            </div>
+            <SubmitButton busy={submit.isPending} onClick={save} className="h-12 shrink-0 px-6 text-[15px]">
               Enregistrer l’achat
             </SubmitButton>
           </div>
@@ -154,39 +212,43 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
             )}
           </LabeledRow>
 
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <LinkedField id="pu-usdt" label="USDT reçus" unit="USDT" decimals={2} value={amounts.usdt} computed={amounts.computed === 'usdt'} onChange={(v) => amounts.set('usdt', v)} invalid={tried && !usdt} />
-              <LinkedField id="pu-rate" label="Taux" unit="XAF / USDT" decimals={2} value={amounts.rate} computed={amounts.computed === 'rate'} onChange={(v) => amounts.set('rate', v)} />
-            </div>
-            <LinkedField id="pu-xaf" label="Montant payé" unit="XAF" decimals={0} value={amounts.counter} computed={amounts.computed === 'counter'} onChange={(v) => amounts.set('counter', v)} invalid={tried && !xaf} big />
-            <p className="text-[12.5px] text-muted-foreground">Tapez deux valeurs, la troisième se calcule.</p>
-          </div>
-
+          {/* ── Les comptes qui ont payé ───────────────────────────── */}
           <LabeledRow
             label={multi ? 'Payé depuis plusieurs comptes' : 'Payé depuis'}
-            action={!multi && <TextLink onClick={addSplit}>Plusieurs comptes ?</TextLink>}
+            action={!multi && <TextLink onClick={goMulti}><Plus className="h-4 w-4" /> Plusieurs comptes</TextLink>}
           >
             <div className="space-y-2">
-              {splits.map((s, i) => (
-                <div key={s.key} className={cn('grid items-center gap-2', multi ? 'grid-cols-[minmax(0,1fr)_170px_40px]' : 'grid-cols-1')}>
+              {lines.map((l, i) => (
+                <div key={i} className={cn('grid items-center gap-2', multi ? 'grid-cols-[minmax(0,1fr)_200px_40px]' : 'grid-cols-1')}>
                   <Picker
                     variant="field"
-                    value={s.accountId}
-                    onChange={(v) => setSplit(s.key, { accountId: v })}
+                    value={l.accountId}
+                    onChange={(v) => setAccountIds((ids) => ids.map((x, j) => (j === i ? v : x)))}
                     options={accountOptions}
                     placeholder="Choisir le compte XAF"
-                    invalid={tried && !s.accountId}
+                    invalid={tried && !l.accountId}
                     ariaLabel={`Compte ${i + 1}`}
                     compact={multi}
                   />
                   {multi && (
                     <>
-                      <AmountInput value={s.amount} onChange={(v) => setSplit(s.key, { amount: v })} unit="XAF" decimals={0} invalid={tried && !s.amount} ariaLabel={`Montant payé par le compte ${i + 1}`} />
+                      <div className={cn('relative', l.computed && '[&>div]:border-transparent [&>div]:bg-muted/60')}>
+                        <AmountInput
+                          value={l.amount}
+                          onChange={(v) => setInputs((s) => typeSplit(s, i, v))}
+                          unit="XAF"
+                          decimals={0}
+                          invalid={tried && !l.amount}
+                          ariaLabel={`Montant payé par le compte ${i + 1}`}
+                        />
+                        {l.computed && (
+                          <span className="pointer-events-none absolute -top-2 right-3 rounded bg-card px-1 text-[11px] font-medium text-muted-foreground">le reste</span>
+                        )}
+                      </div>
                       <button
                         type="button"
-                        className={cn(BTN.icon, 'h-12 w-10 bg-transparent ring-0 text-muted-foreground hover:text-red-700')}
-                        onClick={() => setSplits((all) => all.filter((x) => x.key !== s.key))}
+                        className={cn(BTN.icon, 'h-12 w-10 bg-transparent text-muted-foreground ring-0 hover:text-red-700')}
+                        onClick={() => remove(i)}
                         aria-label={`Retirer le compte ${i + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -197,18 +259,66 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
               ))}
             </div>
             {multi && (
-              <div className="mt-2 flex items-center justify-between">
-                <TextLink onClick={addSplit}>
+              <div className="mt-2.5 flex items-center justify-between">
+                <TextLink onClick={add}>
                   <Plus className="h-4 w-4" /> Ajouter un compte
                 </TextLink>
-                {xaf !== null && (
-                  <span className={cn('text-[13px] font-medium', TK.num, remaining === 0 ? TK.in : TK.warn)}>
-                    {remaining === 0 ? 'Le compte est bon' : `Reste ${fmtNum(remaining, 0)} XAF`}
+                {r.remaining === 0 ? (
+                  <span className={cn('inline-flex items-center gap-1 text-[13px] font-medium', TK.in)}>
+                    <Check className="h-4 w-4" /> Le compte est bon
                   </span>
+                ) : r.remaining !== null && r.remaining > 0 ? (
+                  <span className={cn('text-[13px] font-medium', TK.num, TK.warn)}>Reste à répartir : {fmtNum(r.remaining, 0)} XAF</span>
+                ) : r.remaining !== null && r.remaining < 0 ? (
+                  <span className={cn('text-[13px] font-medium', TK.num, TK.out)}>Dépasse le total de {fmtNum(-r.remaining, 0)} XAF</span>
+                ) : null}
+              </div>
+            )}
+            {overdrawn.length > 0 && (
+              <p className={cn('mt-2 text-[12.5px]', TK.warn)}>
+                {overdrawn.map(({ a, l }) => `${a!.label} passera à ${fmtNum(Number(a!.balance ?? 0) - (l.amount ?? 0), 0)} XAF`).join(' · ')}.
+              </p>
+            )}
+          </LabeledRow>
+
+          {/* ── Les montants liés ──────────────────────────────────── */}
+          <div className="space-y-3 rounded-2xl bg-muted/40 p-4 ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
+            {r.totalLocked ? (
+              <div>
+                <div className="mb-1.5 flex items-center justify-between text-[13.5px] font-medium text-foreground">
+                  Montant payé (total)
+                  <span className="text-[12px] font-medium text-muted-foreground">somme des comptes</span>
+                </div>
+                <div className="[&>div]:border-transparent [&>div]:bg-card [&_input]:text-[22px]">
+                  <AmountInput id="pu-xaf" value={xaf} onChange={() => undefined} unit="XAF" decimals={0} readOnly ariaLabel="Montant payé, somme des comptes" />
+                </div>
+              </div>
+            ) : (
+              <LinkedField id="pu-xaf" label="Montant payé (total)" unit="XAF" decimals={0} value={r.total} computed={r.source.total === 'computed'} onChange={(v) => setInputs((s) => typeAmount(s, 'total', v))} invalid={tried && !xaf} big />
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <LinkedField id="pu-rate" label="Taux" unit="XAF / USDT" decimals={2} value={r.rate} computed={r.source.rate === 'computed'} onChange={(v) => setInputs((s) => typeAmount(s, 'rate', v))} />
+              <LinkedField id="pu-usdt" label="USDT reçus" unit="USDT" decimals={2} value={r.usdt} computed={r.source.usdt === 'computed'} onChange={(v) => setInputs((s) => typeAmount(s, 'usdt', v))} invalid={tried && !usdt} />
+            </div>
+            <p className={cn('text-[12.5px] text-muted-foreground', TK.num)}>{how}</p>
+            {last && (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-[13px]">
+                <span className="text-muted-foreground">
+                  Dernier taux{lastIsSupplier && supplier ? ` chez ${supplier.display_name}` : ''} :{' '}
+                  <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(last.rate, 2)}</span> · {fmtWhen(last.at)}
+                </span>
+                {r.source.rate !== 'typed' && (
+                  <TextLink onClick={() => setInputs((s) => typeAmount(s, 'rate', Math.round(last.rate * 100) / 100))}>Reprendre ce taux</TextLink>
                 )}
               </div>
             )}
-          </LabeledRow>
+          </div>
+          {deviation !== null && (
+            <Notice>
+              Taux inhabituel : {fmtNum(Math.abs(deviation) * 100, 0)} % {deviation > 0 ? 'au-dessus' : 'en dessous'} du{' '}
+              {last ? 'dernier achat' : 'coût moyen du stock'} ({fmtNum(reference ?? 0, 2)}). Vérifiez la saisie.
+            </Notice>
+          )}
 
           <div className="space-y-4 border-t border-border/60 pt-5">
             <WhenLine id="pu-at" value={at} onChange={setAt} />
@@ -216,6 +326,6 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
           </div>
         </div>
       )}
-    </SideSheet>
+    </FormModal>
   );
 }

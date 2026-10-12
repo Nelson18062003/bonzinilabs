@@ -33,6 +33,8 @@ import { MIN_PAYMENT_XAF, isValidXafAmount } from '@/lib/amountLimits';
 import type { PaymentMethodKey } from '@/types/rates';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
+import { draftErrors, draftPayload, emptyDraft, type BeneficiaryDraft } from '@/lib/beneficiaries/contact';
+import { BeneficiaryContactFields } from '@/components/payment-form/BeneficiaryContactFields';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -52,12 +54,9 @@ import {
   Amount,
   PrimaryPill,
   SoftPill,
-  FormField,
   TextInput,
 } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { PasteDropZone } from '@/components/upload/PasteDropZone';
-import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
 const VIOLET = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
@@ -89,27 +88,7 @@ const MODES = [
 
 type Mode = typeof MODES[number];
 
-interface Benef {
-  name: string;
-  ident: string;
-  phone: string;
-  email: string;
-  bank: string;
-  account: string;
-  isClient: boolean;
-}
-
-const BENEF0: Benef = {
-  name: '', ident: '', phone: '', email: '', bank: '', account: '', isClient: false,
-};
-
 // ── Micro-composants ───────────────────────────────────────────
-function Opt() {
-  return <span className={cn('text-[16px] font-medium', TEXT.muted)}> optionnel</span>;
-}
-function Req() {
-  return <span className="text-[#900B09] dark:text-[#FDD3D0]"> *</span>;
-}
 
 // Case à cocher au langage kit (logique conservée par les parents).
 function CheckRow({
@@ -191,7 +170,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const [customDateStr, setCustomDateStr] = useState('');
 
   // Bénéficiaire
-  const [benef, setBenef] = useState<Benef>(BENEF0);
+  const [draft, setDraft] = useState<BeneficiaryDraft>(() => emptyDraft(null));
   const [skipBenef, setSkipBenef] = useState(false);
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string | null>(null);
@@ -226,10 +205,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // le nom (requis) est prérempli « Supplier NN » — l'admin peut le modifier.
   function openBenefTab(tab: 'existing' | 'new') {
     setBenefTab(tab);
-    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !benef.name.trim()) {
+    if (tab === 'new' && (mode?.id === 'alipay' || mode?.id === 'wechat') && !draft.name.trim()) {
       const auto = nextSupplierName(beneficiaryNames);
       autoNameRef.current = auto;
-      setBenef((b) => ({ ...b, name: auto }));
+      setDraft((b) => ({ ...b, name: auto }));
     }
   }
 
@@ -237,7 +216,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // renumérote à l'arrivée des données — uniquement s'il est resté intact.
   useEffect(() => {
     if (!autoNameRef.current) return;
-    setBenef((b) => {
+    setDraft((b) => {
       if (b.name !== autoNameRef.current) return b;
       const next = nextSupplierName(beneficiaryNames);
       if (next === b.name) return b;
@@ -289,16 +268,17 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   });
 
   // ── Validation par étape ──────────────────────────────────────
+  // Le nouveau bénéficiaire : ses coordonnées AVEC leur format (src/lib/beneficiaries/contact.ts).
+  const benefErrors = dbMode && !skipBenef && benefTab === 'new' ? draftErrors(dbMode, draft, { hasQr: !!qrFile }) : {};
+  const benefFirstError = Object.values(benefErrors)[0] ?? null;
+  // Ce qui partira, mis en forme — pour le récapitulatif de l'étape 5.
+  const typed = dbMode && !selectedBenef ? draftPayload(dbMode, draft) : {};
   const benef4Valid =
     skipBenef
       ? true
       : benefTab === 'existing'
       ? !!selectedBenef
-      : mode?.id === 'cash' && benef.isClient
-      ? true
-      : benef.name.trim().length > 0 &&
-        (mode?.id !== 'virement' ||
-          (benef.bank.trim().length > 0 && benef.account.trim().length > 0));
+      : !benefFirstError;
 
   const hasEnoughBalance = xaf <= clientAvailable;
   const willOverdraw = xaf > 0 && xaf > clientBalance && hasEnoughBalance;
@@ -317,7 +297,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     setInputCurrency('xaf'); setRawAmount('');
     setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
     setUseCustomDate(false); setCustomDateStr('');
-    setBenef(BENEF0); setSkipBenef(false); carnetIdRef.current = null;
+    setDraft(emptyDraft(null)); setSkipBenef(false); carnetIdRef.current = null;
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
     removeQr(); setDone(null);
   }
@@ -347,11 +327,11 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // carnet de CE client pour CE mode. Sans cela « Suivant » restait actif et
   // le paiement partait avec le bénéficiaire d'un autre client.
   const chooseClient = (c: NonNullable<typeof client>) => {
-    if (c.user_id !== client?.user_id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    if (c.user_id !== client?.user_id) { setSelectedBenef(null); setDraft(emptyDraft(dbMode)); removeQr(); carnetIdRef.current = null; }
     setClient(c);
   };
   const chooseMode = (m: NonNullable<typeof mode>) => {
-    if (m.id !== mode?.id) { setSelectedBenef(null); setBenef(BENEF0); removeQr(); carnetIdRef.current = null; }
+    if (m.id !== mode?.id) { setSelectedBenef(null); setDraft(emptyDraft(m.id === 'virement' ? 'bank_transfer' : (m.id as BeneficiaryMode))); removeQr(); carnetIdRef.current = null; }
     setMode(m);
   };
 
@@ -378,7 +358,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
     const dbMethod = dbMode;
 
     const autoName =
-      mode.id === 'cash' && benef.isClient
+      mode.id === 'cash' && draft.isClient
         ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()
         : undefined;
 
@@ -419,26 +399,29 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           beneficiary_qr_code_url: toStoredPath(selectedBenef.qr_code_url) || undefined,
         };
       } else {
-        // New beneficiary typed by the admin.
-        const isCashSelf = mode.id === 'cash' && benef.isClient;
-        const resolvedName = autoName ?? (benef.name || undefined);
+        // New beneficiary typed by the admin — coordonnées mises en forme
+        // (téléphone à indicatif, email en minuscules, ID WeChat vérifié).
+        const p = draftPayload(dbMode, draft);
+        const isCashSelf = mode.id === 'cash' && draft.isClient;
+        const resolvedName = autoName ?? p.name;
 
         // Save to the CLIENT's carnet (unless cash+self — that's the client).
         if (carnetIdRef.current) {
           beneficiaryId = carnetIdRef.current;
-        } else if (saveToCarnet && !isCashSelf && benef.name.trim()) {
+        } else if (saveToCarnet && !isCashSelf && p.name) {
           try {
             const created = await createBeneficiary.mutateAsync({
               client_id: client.user_id,
               payment_method: dbMode,
-              alias: benef.name.trim(),
-              name: benef.name.trim(),
-              identifier: benef.ident || undefined,
-              identifier_type: benef.ident ? 'id' : undefined,
-              phone: benef.phone || undefined,
-              email: benef.email || undefined,
-              bank_name: benef.bank || undefined,
-              bank_account: benef.account || undefined,
+              alias: p.name,
+              name: p.name,
+              identifier: p.identifier,
+              identifier_type: p.identifier_type,
+              phone: p.phone,
+              email: p.email,
+              bank_name: p.bank_name,
+              bank_account: p.bank_account,
+              bank_extra: p.bank_extra,
               qr_code_file: qrFile || undefined,
             });
             beneficiaryId = created.id;
@@ -451,21 +434,23 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
         snapshot = {
           relation_type: isCashSelf ? 'self' : 'other',
           name: resolvedName,
-          identifier: benef.ident || undefined,
-          identifier_type: benef.ident ? 'id' : undefined,
-          phone: benef.phone || undefined,
-          email: benef.email || undefined,
-          bank_name: benef.bank || undefined,
-          bank_account: benef.account || undefined,
+          identifier: p.identifier,
+          identifier_type: p.identifier_type,
+          phone: p.phone,
+          email: p.email,
+          bank_name: p.bank_name,
+          bank_account: p.bank_account,
+          bank_extra: p.bank_extra,
         };
         benefPayload = {
           beneficiary_name: resolvedName,
-          beneficiary_phone: benef.phone || undefined,
-          beneficiary_email: benef.email || undefined,
-          beneficiary_bank_name: benef.bank || undefined,
-          beneficiary_bank_account: benef.account || undefined,
-          beneficiary_identifier: benef.ident || undefined,
-          beneficiary_identifier_type: benef.ident ? ('id' as const) : undefined,
+          beneficiary_phone: p.phone,
+          beneficiary_email: p.email,
+          beneficiary_bank_name: p.bank_name,
+          beneficiary_bank_account: p.bank_account,
+          beneficiary_bank_extra: p.bank_extra,
+          beneficiary_identifier: p.identifier,
+          beneficiary_identifier_type: p.identifier_type,
           qr_code_files: qrFile ? [qrFile] : undefined,
         };
       }
@@ -499,9 +484,9 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       ? ''
       : selectedBenef
       ? selectedBenef.alias || selectedBenef.name
-      : benef.isClient
+      : draft.isClient
       ? clientName
-      : benef.name || '';
+      : draft.name.trim() || '';
     const canSendInstruction = !!done.paymentId && mode?.id !== 'cash' && !skipBenef;
 
     return (
@@ -905,7 +890,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 desc="Les infos du bénéficiaire seront ajoutées après"
                 onClick={() => {
                   setSkipBenef(!skipBenef);
-                  if (!skipBenef) setBenef(BENEF0);
+                  if (!skipBenef) setDraft(emptyDraft(dbMode));
                 }}
               />
             </div>
@@ -990,184 +975,35 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               </>
             )}
 
-            {!skipBenef && benefTab === 'new' && (
+            {!skipBenef && benefTab === 'new' && dbMode && (
               <div className="space-y-4">
-                {/* CASH : choix "le client lui-même" ou "quelqu'un d'autre" */}
-                {mode?.id === 'cash' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() =>
-                        setBenef({
-                          ...benef,
-                          isClient: true,
-                          name: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim(),
-                          phone: '',
-                        })
-                      }
-                      className={cn(
-                        'flex-1 rounded-lg py-3 text-[16px] font-bold transition active:scale-95',
-                        SURFACE.card,
-                        SURFACE.shadow,
-                      )}
-                      style={benef.isClient ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
-                    >
-                      Le client lui-même
-                    </button>
-                    <button
-                      onClick={() => setBenef({ ...benef, isClient: false, name: '', phone: '' })}
-                      className={cn(
-                        'flex-1 rounded-lg py-3 text-[16px] font-bold transition active:scale-95',
-                        SURFACE.card,
-                        SURFACE.shadow,
-                      )}
-                      style={!benef.isClient ? { boxShadow: `0 0 0 2px ${VIOLET}`, color: VIOLET } : undefined}
-                    >
-                      Quelqu'un d'autre
-                    </button>
-                  </div>
-                )}
-
-                {/* CASH : carte du client (quand "le client lui-même") */}
-                {mode?.id === 'cash' && benef.isClient && client && (
-                  <Card className="flex items-center gap-3">
-                    <div
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[16px] font-bold"
-                      style={{ background: 'rgba(128,128,128,0.16)' }}
-                    >
-                      {getInitials(client.first_name ?? '', client.last_name ?? '')}
-                    </div>
-                    <div className="min-w-0">
-                      <div className={cn('text-[16px] font-bold', TEXT.strong)}>
-                        {`${client.first_name ?? ''} ${client.last_name ?? ''}`.trim()}
-                      </div>
-                      <div className={cn('text-[16px]', TEXT.muted)}>{client.phone ?? '—'}</div>
-                    </div>
-                  </Card>
-                )}
-
-                {/* Nom du bénéficiaire — tous modes sauf cash+isClient */}
-                {!(mode?.id === 'cash' && benef.isClient) && (
-                  <FormField label={<>Nom du bénéficiaire<Req /></>}>
-                    <TextInput
-                      placeholder="Ex: Zhang Wei"
-                      value={benef.name}
-                      onChange={(e) => setBenef({ ...benef, name: e.target.value })}
-                    />
-                  </FormField>
-                )}
-
-                {/* CASH autre : téléphone */}
-                {mode?.id === 'cash' && !benef.isClient && (
-                  <FormField label={<>Téléphone<Opt /></>}>
-                    <TextInput
-                      placeholder="Ex: +86 138 0000 0000"
-                      value={benef.phone}
-                      onChange={(e) => setBenef({ ...benef, phone: e.target.value })}
-                      type="tel"
-                    />
-                  </FormField>
-                )}
-
-                {/* ALIPAY / WECHAT */}
-                {(mode?.id === 'alipay' || mode?.id === 'wechat') && (
-                  <>
-                    {/* QR Code upload */}
-                    <FormField label={<>QR Code {mode.name}<Opt /></>}>
-                      {qrPreview ? (
-                        <div className="relative overflow-hidden rounded-lg ring-2" style={{ boxShadow: 'inset 0 0 0 2px rgba(128,128,128,0.35)' }}>
-                          <img
-                            src={qrPreview}
-                            alt="QR code"
-                            className="block h-[180px] w-full object-cover"
-                          />
-                          <button
-                            onClick={removeQr}
-                            aria-label="Retirer"
-                            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        /* Live only on step 4 with no QR yet — the QR is almost
-                           always a screenshot, so Ctrl+V is the primary route. */
-                        <PasteDropZone
-                          onFiles={setQrFromFiles}
-                          enabled={step === 4}
-                          single
-                          accept={ACCEPT_IMAGE}
-                          title="Collez, glissez ou cliquez le QR code"
-                          hint="Ctrl+V colle directement votre capture d'écran"
-                        />
-                      )}
-                    </FormField>
-
-                    {/* Séparateur "et / ou" */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
-                      <span className={cn('text-[16px]', TEXT.muted)}>et / ou</span>
-                      <div className="h-px flex-1 bg-black/[0.06] dark:bg-white/[0.08]" />
-                    </div>
-
-                    {/* Identifiant */}
-                    <FormField label={<>Identifiant {mode.name}<Opt /></>}>
-                      <TextInput
-                        placeholder={`ID ${mode.name} du bénéficiaire`}
-                        value={benef.ident}
-                        onChange={(e) => setBenef({ ...benef, ident: e.target.value })}
-                      />
-                    </FormField>
-
-                    {/* Téléphone */}
-                    <FormField label={<>Téléphone<Opt /></>}>
-                      <TextInput
-                        placeholder="Ex: +86 138 0000 0000"
-                        value={benef.phone}
-                        onChange={(e) => setBenef({ ...benef, phone: e.target.value })}
-                        type="tel"
-                      />
-                    </FormField>
-
-                    {/* Email */}
-                    <FormField label={<>Email<Opt /></>}>
-                      <TextInput
-                        placeholder="Ex: zhangwei@mail.com"
-                        value={benef.email}
-                        onChange={(e) => setBenef({ ...benef, email: e.target.value })}
-                        type="email"
-                      />
-                    </FormField>
-                  </>
-                )}
-
-                {/* VIREMENT */}
-                {mode?.id === 'virement' && (
-                  <>
-                    <FormField label={<>Banque<Req /></>}>
-                      <TextInput
-                        placeholder="Ex: Bank of China"
-                        value={benef.bank}
-                        onChange={(e) => setBenef({ ...benef, bank: e.target.value })}
-                      />
-                    </FormField>
-                    <FormField label={<>Numéro de compte<Req /></>}>
-                      <TextInput
-                        placeholder="Ex: 6214 8888 1234 5678"
-                        value={benef.account}
-                        onChange={(e) => setBenef({ ...benef, account: e.target.value })}
-                        type="tel"
-                      />
-                    </FormField>
-                  </>
-                )}
+                <BeneficiaryContactFields
+                  mode={dbMode}
+                  draft={draft}
+                  onChange={setDraft}
+                  errors={benefErrors}
+                  showErrors={false}
+                  idPrefix="mnp"
+                  clientName={client ? `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() : undefined}
+                  qr={
+                    dbMode === 'alipay' || dbMode === 'wechat'
+                      ? { preview: qrPreview, onFiles: setQrFromFiles, onRemove: removeQr, pasteEnabled: step === 4 }
+                      : undefined
+                  }
+                />
 
                 {/* Enregistrer au carnet du client (sauf cash + client lui-même) */}
-                {!(mode?.id === 'cash' && benef.isClient) && (
+                {!(mode?.id === 'cash' && draft.isClient) && (
                   <CheckRow
                     checked={saveToCarnet}
                     title="Enregistrer dans le carnet du client"
                     onClick={() => setSaveToCarnet(!saveToCarnet)}
                   />
+                )}
+
+                {/* « Suivant » est grisé : dire pourquoi, plutôt que laisser deviner. */}
+                {benefFirstError && (
+                  <p className="text-[14px] font-medium text-[#975102] dark:text-[#E8B931]">Pour continuer : {benefFirstError}</p>
                 )}
               </div>
             )}
@@ -1194,26 +1030,29 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                   ? { l: 'Bénéficiaire', v: 'À remplir plus tard' }
                   : selectedBenef
                   ? { l: 'Bénéficiaire', v: selectedBenef.alias || selectedBenef.name }
-                  : mode?.id === 'cash' && benef.isClient
+                  : mode?.id === 'cash' && draft.isClient
                   ? { l: 'Bénéficiaire', v: `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() + ' (le client)' }
-                  : benef.name
-                  ? { l: 'Bénéficiaire', v: benef.name }
+                  : typed.name
+                  ? { l: 'Bénéficiaire', v: typed.name }
                   : null,
-                // Détails : bénéficiaire enregistré sélectionné OU saisi manuellement
-                !skipBenef && (selectedBenef?.identifier || (!selectedBenef && benef.ident))
-                  ? { l: `ID ${mode?.name}`, v: selectedBenef?.identifier || benef.ident }
+                // Détails : bénéficiaire enregistré sélectionné OU saisi (mis en forme)
+                !skipBenef && (selectedBenef?.identifier || (!selectedBenef && typed.identifier))
+                  ? { l: `Compte ${mode?.name}`, v: selectedBenef?.identifier || typed.identifier }
                   : null,
-                !skipBenef && (selectedBenef?.bank_name || (!selectedBenef && benef.bank))
-                  ? { l: 'Banque', v: selectedBenef?.bank_name || benef.bank }
+                !skipBenef && (selectedBenef?.bank_name || (!selectedBenef && typed.bank_name))
+                  ? { l: 'Banque', v: selectedBenef?.bank_name || typed.bank_name }
                   : null,
-                !skipBenef && (selectedBenef?.bank_account || (!selectedBenef && benef.account))
-                  ? { l: 'Compte', v: selectedBenef?.bank_account || benef.account }
+                !skipBenef && (selectedBenef?.bank_account || (!selectedBenef && typed.bank_account))
+                  ? { l: 'Compte', v: selectedBenef?.bank_account || typed.bank_account }
                   : null,
-                !skipBenef && (selectedBenef?.phone || (!selectedBenef && benef.phone))
-                  ? { l: 'Téléphone', v: selectedBenef?.phone || benef.phone }
+                !skipBenef && (selectedBenef?.bank_extra || (!selectedBenef && typed.bank_extra))
+                  ? { l: 'SWIFT', v: selectedBenef?.bank_extra || typed.bank_extra }
                   : null,
-                !skipBenef && (selectedBenef?.email || (!selectedBenef && benef.email))
-                  ? { l: 'Email', v: selectedBenef?.email || benef.email }
+                !skipBenef && (selectedBenef?.phone || (!selectedBenef && typed.phone))
+                  ? { l: 'Téléphone', v: selectedBenef?.phone || typed.phone }
+                  : null,
+                !skipBenef && (selectedBenef?.email || (!selectedBenef && typed.email))
+                  ? { l: 'Email', v: selectedBenef?.email || typed.email }
                   : null,
                 { l: 'Taux', v: `1M XAF = ¥${fmt(rate)}${useCustomRate ? ' (perso.)' : rateNote ? ` (${rateNote})` : ''}` },
                 useCustomDate && customDateStr

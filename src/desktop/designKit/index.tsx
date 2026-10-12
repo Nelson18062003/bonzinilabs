@@ -575,28 +575,17 @@ export function RefChip({ children, className }: { children: React.ReactNode; cl
  */
 const dialogStack: symbol[] = [];
 
-export function CenterDialog({
-  open,
-  onClose,
-  onConfirm,
-  title,
-  children,
-  footer,
-  width = 520,
-  bodyClassName,
-}: {
-  open: boolean;
-  onClose: () => void;
-  /** Bound to ⌘⏎ / Ctrl+⏎ while the dialog is open. */
-  onConfirm?: () => void;
-  title: React.ReactNode;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-  width?: number;
-  /** Marges du corps — permet à un contenu en bandes de toucher les bords. */
-  bodyClassName?: string;
-}) {
-  const panelRef = React.useRef<HTMLDivElement>(null);
+/**
+ * Clavier et défilement d'une fenêtre centrée : Échap ferme la couche du
+ * DESSUS, ⌘⏎ / Ctrl+⏎ confirme, la tabulation reste dans la fenêtre, le
+ * focus y entre à l'ouverture, la page derrière ne défile plus.
+ */
+function useDialogLayer(
+  open: boolean,
+  panelRef: React.RefObject<HTMLDivElement>,
+  onClose: () => void,
+  onConfirm?: () => void,
+) {
   const onCloseRef = React.useRef(onClose);
   onCloseRef.current = onClose;
   const onConfirmRef = React.useRef(onConfirm);
@@ -642,7 +631,10 @@ export function CenterDialog({
     // Un champ qui a déjà pris le focus (autoFocus : le motif d'une suppression) le garde ;
     // sinon, le premier élément de la fenêtre.
     const focusTimer = window.setTimeout(() => {
-      if (!panelRef.current?.contains(document.activeElement)) focusables()[0]?.focus();
+      if (panelRef.current?.contains(document.activeElement)) return;
+      // Une saisie désigne son premier champ (`data-autofocus`) ; sinon, le premier élément.
+      const first = panelRef.current?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0];
+      first?.focus();
     }, 60);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -653,7 +645,33 @@ export function CenterDialog({
       const at = dialogStack.indexOf(layer);
       if (at >= 0) dialogStack.splice(at, 1);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+}
+
+export function CenterDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  children,
+  footer,
+  width = 520,
+  bodyClassName,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Bound to ⌘⏎ / Ctrl+⏎ while the dialog is open. */
+  onConfirm?: () => void;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  width?: number;
+  /** Marges du corps — permet à un contenu en bandes de toucher les bords. */
+  bodyClassName?: string;
+}) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  useDialogLayer(open, panelRef, onClose, onConfirm);
 
   if (!open) return null;
   return (
@@ -681,6 +699,103 @@ export function CenterDialog({
         <div className={bodyClassName}>{children}</div>
         {footer && <div className="mt-4 flex gap-2">{footer}</div>}
       </div>
+    </div>
+  );
+}
+
+/**
+ * La fenêtre d'une SAISIE (nouveau dépôt, nouveau paiement) : centrée, par-
+ * dessus la liste qui reste visible derrière. En-tête et pied fixes, corps
+ * qui défile — le bouton « Créer » reste toujours à portée. Fermer une
+ * saisie entamée (Échap, clic à côté, croix) demande confirmation.
+ */
+export function FormDialog({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  subtitle,
+  dirty = false,
+  discardTitle = 'Abandonner la saisie ?',
+  width = 640,
+  footer,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** ⌘⏎ / Ctrl+⏎ tant que la fenêtre est ouverte. */
+  onConfirm?: () => void;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+  /** Une saisie entamée : fermer demande confirmation. */
+  dirty?: boolean;
+  discardTitle?: string;
+  width?: number;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const [askDiscard, setAskDiscard] = React.useState(false);
+  const requestClose = () => (dirty ? setAskDiscard(true) : onClose());
+  useDialogLayer(open && !askDiscard, panelRef, requestClose, onConfirm);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}>
+      <button
+        type="button"
+        aria-label="Fermer"
+        tabIndex={-1}
+        onClick={requestClose}
+        className="absolute inset-0 cursor-default bg-black/35 backdrop-blur-[2px] animate-in fade-in-0 duration-150"
+      />
+      <div
+        ref={panelRef}
+        className={cn(
+          'relative flex max-h-[calc(100vh-48px)] w-full flex-col overflow-hidden rounded-[24px] shadow-2xl',
+          'animate-in fade-in-0 zoom-in-[0.97] duration-150',
+          SURFACE.card,
+          'ring-1 ring-black/[0.08] dark:ring-white/[0.08]',
+        )}
+        style={{ maxWidth: width }}
+      >
+        <header className="flex items-start justify-between gap-4 px-7 pb-4 pt-6">
+          <div className="min-w-0">
+            {typeof title === 'string' ? <h2 className={cn('text-[21px] font-extrabold tracking-[-0.02em]', TEXT.strong)}>{title}</h2> : title}
+            {subtitle && <div className={cn('mt-1 text-[13.5px] leading-snug', TEXT.muted)}>{subtitle}</div>}
+          </div>
+          <Holder icon={X} size="sm" onClick={requestClose} ariaLabel="Fermer" />
+        </header>
+        <div data-scroll-root className="min-h-0 flex-1 overflow-y-auto px-7 pb-6 pt-1">
+          {children}
+        </div>
+        {footer && <footer className="border-t border-black/[0.06] bg-muted/40 px-7 py-4 dark:border-white/[0.08]">{footer}</footer>}
+      </div>
+      <CenterDialog
+        open={askDiscard}
+        onClose={() => setAskDiscard(false)}
+        title={discardTitle}
+        width={420}
+        footer={
+          <>
+            <button type="button" onClick={() => setAskDiscard(false)} className={cn('h-10 flex-1 text-[13px] font-bold', SOFT_PILL)}>
+              Continuer la saisie
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAskDiscard(false);
+                onClose();
+              }}
+              className="h-10 flex-1 rounded-md bg-red-600 text-[13px] font-bold text-white hover:bg-red-700"
+            >
+              Abandonner
+            </button>
+          </>
+        }
+      >
+        <p className={cn('text-[14px]', TEXT.muted)}>Les informations saisies seront perdues.</p>
+      </CenterDialog>
     </div>
   );
 }

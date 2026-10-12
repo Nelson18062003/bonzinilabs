@@ -1,5 +1,5 @@
 /**
- * Nouvelle vente d'USDT — un seul écran, frère de l'achat : l'acheteur, trois
+ * Nouvelle vente d'USDT — une fenêtre au centre de l'écran, sœur de l'achat : l'acheteur, trois
  * montants liés (USDT, taux, CNY — deux tapés, le troisième calculé), le
  * compte CNY qui encaisse (facultatif), la date et la référence repliées.
  *
@@ -12,7 +12,7 @@ import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCounterparties, useRecordUsdtSale, useTreasuryAccountBalances, useUsdtStock } from '@/hooks/useTreasury';
 import { TK } from './tstyle';
-import { Notice, Picker, SideSheet, SubmitButton, TextLink } from './tkit';
+import { FormModal, Notice, Picker, SubmitButton, TextLink } from './tkit';
 import { QuickCounterparty } from './CounterpartyForm';
 import { LabeledRow, LinkedField, RefAndNote, SavedView, WhenLine } from './EntryParts';
 import { useLinkedAmounts } from './linkedAmounts';
@@ -79,24 +79,30 @@ function SaleFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: () =
   };
 
   return (
-    <SideSheet
+    <FormModal
       open
       onClose={onClose}
+      onConfirm={saved ? undefined : save}
       title={saved ? 'Reçu de la vente' : 'Nouvelle vente d’USDT'}
+      description={saved ? undefined : 'Les USDT vendus, et ce que vous recevez en CNY.'}
       dirty={dirty}
-      width={540}
+      width={600}
       footer={
         saved ? undefined : (
-          <div className="space-y-3">
-            {tried && error ? (
-              <p className="text-[13.5px] font-medium text-red-700 dark:text-red-400">{error}</p>
-            ) : usdt && cny ? (
-              <p className="text-[14px] text-muted-foreground">
-                Vous vendez <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(usdt, 2)} USDT</span> et recevez{' '}
-                <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(cny, 2)} CNY</span>.
-              </p>
-            ) : null}
-            <SubmitButton busy={submit.isPending} onClick={save} className="h-12 w-full text-[15px]">
+          <div className="flex items-center gap-4">
+            <div className="min-w-0 flex-1">
+              {tried && error ? (
+                <p className="text-[13.5px] font-medium text-red-700 dark:text-red-400">{error}</p>
+              ) : usdt && cny ? (
+                <p className="text-[14px] leading-snug text-muted-foreground">
+                  Vous vendez <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(usdt, 2)} USDT</span> et recevez{' '}
+                  <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(cny, 2)} CNY</span>.
+                </p>
+              ) : (
+                <p className="text-[13px] text-muted-foreground">⌘⏎ pour enregistrer</p>
+              )}
+            </div>
+            <SubmitButton busy={submit.isPending} onClick={save} className="h-12 shrink-0 px-6 text-[15px]">
               Enregistrer la vente
             </SubmitButton>
           </div>
@@ -166,6 +172,6 @@ function SaleFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: () =
           </div>
         </div>
       )}
-    </SideSheet>
+    </FormModal>
   );
 }
