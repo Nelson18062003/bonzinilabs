@@ -40,6 +40,7 @@ import {
   Check,
   ChevronLeft,
   Search,
+  Send,
   User,
   X,
 } from 'lucide-react';
@@ -501,6 +502,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
       : benef.isClient
       ? clientName
       : benef.name || '';
+    const canSendInstruction = !!done.paymentId && mode?.id !== 'cash' && !skipBenef;
 
     return (
       <div className={cn('mx-auto flex flex-col items-center justify-center px-6 text-center', desktop ? 'h-[calc(100vh-120px)] min-h-[560px] max-w-xl rounded-lg shadow-[0_8px_30px_-12px_rgba(46,32,92,0.22)] ring-1 ring-black/[0.05] dark:shadow-none dark:ring-white/[0.06]' : 'h-[100dvh] max-w-[480px]', SURFACE.canvas)}>
@@ -519,16 +521,35 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
           {benefLabel ? ` → ${benefLabel}` : ''}
         </div>
 
-        <div className="mt-7 flex w-full max-w-[360px] gap-2.5">
+        {/* Le geste qui suit la création : envoyer l'instruction au
+            partenaire en Chine. La fiche s'ouvre avec la feuille dépliée
+            (« ?instruction=1 »). Pas pour le cash, ni sans bénéficiaire. */}
+        {canSendInstruction && (
+          <PrimaryPill
+            onClick={() => navigate(`/m/payments/${done.paymentId}?instruction=1`)}
+            className="mt-7 w-full max-w-[360px] bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
+          >
+            <Send />
+            Envoyer l'instruction au partenaire
+          </PrimaryPill>
+        )}
+
+        <div className={cn('flex w-full max-w-[360px] gap-2.5', canSendInstruction ? 'mt-2.5' : 'mt-7')}>
           <SoftPill onClick={reset} className="flex-1">
             Nouveau
           </SoftPill>
-          <PrimaryPill
-            onClick={() => navigate(`/m/payments/${done.paymentId}`)}
-            className="flex-[1.4] bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
-          >
-            Voir la fiche
-          </PrimaryPill>
+          {canSendInstruction ? (
+            <SoftPill onClick={() => navigate(`/m/payments/${done.paymentId}`)} className="flex-1">
+              Voir la fiche
+            </SoftPill>
+          ) : (
+            <PrimaryPill
+              onClick={() => navigate(`/m/payments/${done.paymentId}`)}
+              className="flex-[1.4] bg-[#2C2C2C] text-white dark:bg-[#2C2C2C] dark:text-white"
+            >
+              Voir la fiche
+            </PrimaryPill>
+          )}
         </div>
       </div>
     );
