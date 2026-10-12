@@ -13,11 +13,11 @@
 // expédition (Cargo › Avion).
 // ============================================================
 import { useMemo, useState } from 'react';
-import { PackagePlus, ScanLine } from 'lucide-react';
+import { PackagePlus, PlaneTakeoff, ScanLine } from 'lucide-react';
 import { useCreateAirPackage, useFindAirPackage } from '@/hooks/useAirPackages';
 import {
-  PACK_BLOCK_LABEL, expeditionLine, isAssignable, packableGroups, packageKg, packageQueue, packageStatusMeta,
-  type AirPackage, type PackageQueue,
+  PACK_BLOCK_LABEL, expeditionLine, isAssignable, packableGroups, packageQueue, packageStatusMeta, packagesTotals, sumParcelKg,
+  type AirPackage, type PackableParcel, type PackageQueue,
 } from '@/lib/airPackage';
 import { clientFullName, depositMatches, formatKg, initials, listDate } from '@/lib/reception';
 import { parseWarehouseScan } from '@/lib/warehouse';
@@ -25,8 +25,12 @@ import { plural } from '@/lib/cargo/plain';
 import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/mobile/components/reception/bits';
 import { MiniGauge } from './PackageGauge';
+import { PackDialog } from './PackDialog';
+import { ShipDialog } from './ShipDialog';
+import { Btn, GroupTick, SelectionBar, Tick } from './bits';
+import { toggleId } from './selection';
 import { filterPackages, knownClientCodes, type PackageScope, type usePackingBoard } from './usePackingBoard';
-import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, Card, CardHeader, Holder, KV, ScreenLoader, StatusPill, TextInput, Th, Td } from '@/desktop/designKit';
+import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, Card, Holder, KV, ScreenLoader, StatusPill, TextInput, Th, Td } from '@/desktop/designKit';
 
 /** Les groupes de la liste, dans l'ordre de ce qu'il reste à faire ; « partis » seulement sur les 300 derniers. */
 const GROUP_TITLE: Record<PackageQueue, string> = {
@@ -38,20 +42,30 @@ const GROUP_TITLE: Record<PackageQueue, string> = {
 };
 const GROUP_ORDER: PackageQueue[] = ['open', 'refused', 'ready', 'assigned', 'gone'];
 
-export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPackage, onOpenDeposit }: {
+export function DesktopPackagesView({ query, scope, canWrite, canShip, packing, onOpenPackage, onOpenDeposit, onOpenFlight }: {
   query: string;
   scope: PackageScope;
+  /** Créer et remplir des paquets (canReceiveParcels). */
   canWrite: boolean;
+  /** Mettre des paquets sur un vol (canReceiveParcels ou canManageCargo). */
+  canShip: boolean;
   packing: ReturnType<typeof usePackingBoard>;
-  /** Ouvrir la fiche d'un paquet ; `filter` : la liste des colis prêts, filtrée (« emballer ce client »). */
-  onOpenPackage: (id: string, filter?: string) => void;
+  /** Ouvrir la fiche d'un paquet. */
+  onOpenPackage: (id: string) => void;
   onOpenDeposit: (depositId: string, parcelId?: string) => void;
+  /** Ouvrir une expédition (Cargo › Avion). */
+  onOpenFlight: (airId: string) => void;
 }) {
   const { packages, packable, contents, truncated } = packing;
   const create = useCreateAirPackage();
   const find = useFindAirPackage();
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState<string | null>(null);
+  // Les deux sélections : des colis à emballer (→ « Mettre en paquet »), des paquets fermés (→ « Mettre sur un vol »).
+  const [pickedParcels, setPickedParcels] = useState<Set<string>>(new Set());
+  const [pickedPackages, setPickedPackages] = useState<Set<string>>(new Set());
+  const [packItems, setPackItems] = useState<PackableParcel[] | null>(null);
+  const [shipIds, setShipIds] = useState<string[] | null>(null);
 
   const q = query.trim();
   const list = useMemo(() => filterPackages(packages.data ?? [], contents, query), [packages.data, contents, query]);
@@ -67,18 +81,21 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
   const all = packages.data ?? [];
   const kpi = {
     readyN: packable?.ready.length ?? 0,
-    readyKg: (packable?.ready ?? []).reduce((s, it) => s + Number(it.parcel.weight_kg ?? 0), 0),
+    readyKg: sumParcelKg(packable?.ready ?? []),
     blocked: packable?.blocked.length ?? 0,
     open: all.filter((p) => packageQueue(p) === 'open'),
     sealed: all.filter(isAssignable),
     assigned: all.filter((p) => packageQueue(p) === 'assigned'),
   };
-  const sumKg = (xs: AirPackage[]) => xs.reduce((s, p) => s + packageKg(p), 0);
+  const sumKg = (xs: AirPackage[]) => packagesTotals(xs).kg;
 
-  const newPackage = (filter?: string) => {
+  const newPackage = () => {
     if (create.isPending) return;
-    create.mutate(undefined, { onSuccess: (p) => onOpenPackage(p.id, filter) });
+    create.mutate(undefined, { onSuccess: (p) => onOpenPackage(p.id) });
   };
+  // Ce qui est coché ET encore là (une recherche, un rafraîchissement peuvent l'avoir fait sortir).
+  const parcelsChosen = ready.filter((it) => pickedParcels.has(it.parcel.id));
+  const packagesChosen = list.filter((k) => pickedPackages.has(k.id) && isAssignable(k));
 
   const openCode = async () => {
     const scan = parseWarehouseScan(code);
@@ -122,7 +139,7 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
         ))}
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1.9fr)_minmax(320px,1fr)] items-start gap-5">
+      <div className="grid grid-cols-[minmax(0,2.1fr)_minmax(300px,1fr)] items-start gap-5">
         {/* ── Les paquets ──────────────────────────────────────────────── */}
         <Card className="overflow-x-auto p-0">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-3 dark:border-white/[0.06]">
@@ -147,30 +164,49 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
               {!q && newButton('mt-4')}
             </div>
           ) : (
+            <>
+            {packagesChosen.length > 0 && (
+              <SelectionBar
+                label={`${plural(packagesChosen.length, 'paquet sélectionné', 'paquets sélectionnés')}`}
+                meta={`${formatKg(packagesTotals(packagesChosen).kg)} · ${plural(packagesTotals(packagesChosen).parcels, 'colis', 'colis')}`}
+                onClear={() => setPickedPackages(new Set())}
+              >
+                <Btn kind="primary" size="sm" onClick={() => setShipIds(packagesChosen.map((k) => k.id))}><PlaneTakeoff /> Mettre sur un vol</Btn>
+              </SelectionBar>
+            )}
             <table className="w-full text-left">
               <thead className={SURFACE.card}>
-                <tr><Th first>Paquet</Th><Th>Contenu</Th><Th className="w-[150px]">Poids</Th><Th last>État · expédition</Th></tr>
+                <tr><Th first className="w-[34px]" /><Th>Paquet</Th><Th>Contenu</Th><Th className="w-[150px]">Poids</Th><Th last>État · expédition</Th></tr>
               </thead>
-              {groups.map((g) => (
+              {groups.map((g) => {
+                // Seuls les paquets fermés (ou refusés, à renvoyer) et libres se cochent : ce sont eux qui montent dans un vol.
+                const shippable = canShip ? g.items.filter(isAssignable).map((k) => k.id) : [];
+                return (
                 <tbody key={g.key}>
                   <tr>
-                    <td colSpan={4} className={cn('bg-muted/40 px-5 py-1.5 text-[12px] font-bold', g.key === 'refused' ? 'text-destructive' : TEXT.strong)}>
+                    <td className="bg-muted/40 py-1.5 pl-5 pr-2">
+                      {shippable.length > 0 && <GroupTick ids={shippable} selected={pickedPackages} setSelected={setPickedPackages} label={`Cocher : ${g.title}`} />}
+                    </td>
+                    <td colSpan={4} className={cn('bg-muted/40 px-2 py-1.5 text-[12px] font-bold', g.key === 'refused' ? 'text-destructive' : TEXT.strong)}>
                       {g.title} <span className={cn('font-normal tabular-nums', TEXT.muted)}>· {g.items.length} · {formatKg(sumKg(g.items))}</span>
+                      {g.key === 'open' && <span className={cn('ml-2 font-normal', TEXT.muted)}>— fermez-les (pesée) pour qu'ils puissent partir</span>}
                     </td>
                   </tr>
                   {g.items.map((p) => {
                     const meta = packageStatusMeta(p.status);
                     const codes = knownClientCodes(p, contents)?.join(', ');
                     const open = p.status === 'open';
+                    const on = pickedPackages.has(p.id);
                     return (
-                      <tr key={p.id} onClick={() => onOpenPackage(p.id)} className="cursor-pointer transition-colors hover:bg-muted/40">
-                        <Td first>
+                      <tr key={p.id} onClick={() => onOpenPackage(p.id)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', on && 'bg-accent/60')}>
+                        <Td first>{canShip && isAssignable(p) && <Tick on={on} label={`Sélectionner ${p.package_no}`} onChange={() => setPickedPackages((s) => toggleId(s, p.id))} />}</Td>
+                        <Td>
                           <span className={cn('block font-mono text-[13px] font-bold', TEXT.strong)}>{p.package_no}</span>
                           <span className={cn('block text-[11.5px] tabular-nums', TEXT.muted)} title={formatDateTime(p.sealed_at ?? p.created_at)}>{p.sealed_at ? `fermé ${listDate(p.sealed_at)}` : `commencé ${listDate(p.created_at)}`}</span>
                         </Td>
                         <Td>
                           <span className={cn('block text-[13px] font-semibold tabular-nums', TEXT.strong)}>{p.parcel_count} colis · {plural(Number(p.client_count), 'client')}</span>
-                          {codes && <span className={cn('block max-w-[170px] truncate font-mono text-[11.5px]', TEXT.muted)} title={codes}>{codes}</span>}
+                          {codes && <span className={cn('block max-w-[150px] truncate font-mono text-[11.5px]', TEXT.muted)} title={codes}>{codes}</span>}
                         </Td>
                         <Td>
                           <MiniGauge pkg={p} sealed={!open} />
@@ -182,21 +218,41 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
                         <Td last>
                           <StatusPill tone={meta.tone} label={meta.label} className="h-7 px-2 text-[12.5px]" />
                           {p.status === 'refused' && p.refusal_reason
-                            ? <span className="mt-1 block max-w-[165px] truncate text-[11.5px] font-semibold text-destructive" title={p.refusal_reason}>{p.refusal_reason}</span>
-                            : expeditionLine(p) && <span className={cn('mt-1 block max-w-[165px] truncate text-[11.5px] tabular-nums', TEXT.muted)} title={expeditionLine(p) ?? undefined}>{expeditionLine(p)}</span>}
+                            ? <span className="mt-1 block max-w-[150px] truncate text-[11.5px] font-semibold text-destructive" title={p.refusal_reason}>{p.refusal_reason}</span>
+                            : p.air_shipment_id && (
+                              <button type="button" onClick={(e) => { e.stopPropagation(); onOpenFlight(p.air_shipment_id!); }} title={`Ouvrir l'expédition · ${expeditionLine(p)}`}
+                                className={cn('mt-1 block max-w-[150px] truncate text-left text-[11.5px] tabular-nums underline-offset-2 hover:underline', TEXT.muted)}>
+                                {expeditionLine(p)}
+                              </button>
+                            )}
                         </Td>
                       </tr>
                     );
                   })}
                 </tbody>
-              ))}
+                );
+              })}
             </table>
+            </>
           )}
         </Card>
 
         {/* ── Les colis avion qui attendent d'être emballés ─────────────── */}
         <Card className="overflow-hidden p-0">
-          <CardHeader title="Colis avion à emballer" meta={`${ready.length} · ${formatKg(ready.reduce((s, it) => s + Number(it.parcel.weight_kg ?? 0), 0))}`} />
+          <div className="flex items-center gap-3 border-b border-black/[0.06] px-5 py-2.5 dark:border-white/[0.06]">
+            {canWrite && ready.length > 0 && <GroupTick ids={ready.map((it) => it.parcel.id)} selected={pickedParcels} setSelected={setPickedParcels} label="Tous les colis à emballer" />}
+            <span className={cn('flex-1 text-[13px] font-bold', TEXT.strong)}>Colis avion à emballer</span>
+            <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>{ready.length} · {formatKg(sumParcelKg(ready))}</span>
+          </div>
+          {parcelsChosen.length > 0 && (
+            <SelectionBar
+              label={plural(parcelsChosen.length, 'colis', 'colis')}
+              meta={formatKg(sumParcelKg(parcelsChosen))}
+              onClear={() => setPickedParcels(new Set())}
+            >
+              <Btn kind="primary" size="sm" onClick={() => setPackItems(parcelsChosen)}><PackagePlus /> Mettre en paquet</Btn>
+            </SelectionBar>
+          )}
           {!packable ? <ScreenLoader /> : readyGroups.length === 0 ? (
             <p className={cn('px-5 py-10 text-center text-[13px]', TEXT.muted)}>
               {q ? `Aucun colis prêt ne correspond à « ${query.trim()} ».` : 'Aucun colis avion n\'attend d\'être emballé au bureau.'}
@@ -208,28 +264,33 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
                 return (
                   <li key={g.key} className="border-t border-black/[0.05] first:border-t-0 dark:border-white/[0.05]">
                     <div className="flex items-center gap-3 px-5 py-3">
+                      {canWrite && <GroupTick ids={g.items.map((it) => it.parcel.id)} selected={pickedParcels} setSelected={setPickedParcels} label={`Tous les colis de ${name}`} />}
                       <Holder size="sm">{initials(name)}</Holder>
                       <span className="min-w-0 flex-1">
                         <span className={cn('block truncate text-[13px] font-semibold', TEXT.strong)}>{name}</span>
                         <span className={cn('block text-[11.5px] tabular-nums', TEXT.muted)}><span className="font-mono">{g.client?.customer_code}</span> · {g.items.length} colis · {formatKg(g.kg)}</span>
                       </span>
                       {canWrite && (
-                        <button type="button" onClick={() => newPackage(g.client?.customer_code ?? undefined)} disabled={create.isPending}
-                          aria-label={`Emballer les colis de ${name}`} title={`Commencer un paquet avec les colis de ${name}`} className={cn('inline-flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[12px] font-semibold disabled:opacity-50', SOFT_PILL)}>
+                        <button type="button" onClick={() => setPackItems(g.items)}
+                          aria-label={`Emballer les colis de ${name}`} title={`Mettre en paquet tous les colis de ${name}`} className={cn('inline-flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[12px] font-semibold', SOFT_PILL)}>
                           <PackagePlus className="h-3.5 w-3.5" /> Emballer
                         </button>
                       )}
                     </div>
                     <ul className="pb-2">
-                      {g.items.map((it) => (
-                        <li key={it.parcel.id}>
-                          <button type="button" onClick={() => onOpenDeposit(it.deposit.id, it.parcel.id)} className="flex w-full items-center gap-3 px-5 py-1.5 pl-[60px] text-left transition-colors hover:bg-muted/40">
-                            <span className={cn('font-mono text-[12px] font-semibold', TEXT.strong)}>{it.parcel.parcel_no}</span>
-                            <span className={cn('min-w-0 flex-1 truncate text-[12px]', TEXT.muted)}>{it.parcel.description ?? ''}</span>
-                            <span className={cn('shrink-0 text-[12px] tabular-nums', TEXT.body)}>{formatKg(it.parcel.weight_kg)}</span>
-                          </button>
-                        </li>
-                      ))}
+                      {g.items.map((it) => {
+                        const on = pickedParcels.has(it.parcel.id);
+                        return (
+                          <li key={it.parcel.id} className={cn('flex items-center gap-3 px-5 py-1.5 transition-colors hover:bg-muted/40', on && 'bg-accent/60')}>
+                            {canWrite && <Tick on={on} label={`Sélectionner ${it.parcel.parcel_no}`} onChange={() => setPickedParcels((s) => toggleId(s, it.parcel.id))} />}
+                            <button type="button" onClick={() => onOpenDeposit(it.deposit.id, it.parcel.id)} title={`Ouvrir le dépôt ${it.deposit.deposit_no}`} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', !canWrite && 'pl-[42px]')}>
+                              <span className={cn('font-mono text-[12px] font-semibold', TEXT.strong)}>{it.parcel.parcel_no}</span>
+                              <span className={cn('min-w-0 flex-1 truncate text-[12px]', TEXT.muted)}>{it.parcel.description ?? ''}</span>
+                              <span className={cn('shrink-0 text-[12px] tabular-nums', TEXT.body)}>{formatKg(it.parcel.weight_kg)}</span>
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </li>
                 );
@@ -255,6 +316,21 @@ export function DesktopPackagesView({ query, scope, canWrite, packing, onOpenPac
           )}
         </Card>
       </div>
+
+      <PackDialog
+        open={!!packItems}
+        items={packItems ?? []}
+        onClose={() => setPackItems(null)}
+        onDone={() => setPickedParcels(new Set())}
+        onOpenPackage={(id) => { setPackItems(null); onOpenPackage(id); }}
+      />
+      <ShipDialog
+        open={!!shipIds}
+        mode="ship"
+        preselected={shipIds ?? []}
+        onClose={() => setShipIds(null)}
+        onDone={(r) => { setShipIds(null); setPickedPackages(new Set()); onOpenFlight(r.airId); }}
+      />
     </div>
   );
 }

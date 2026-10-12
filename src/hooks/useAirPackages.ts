@@ -111,6 +111,83 @@ export function useAddParcelToPackage(packageId: string) {
   });
 }
 
+/** Ce qu'a donné une mise en paquet : chaque paquet rempli (créé ou complété), et les refus du serveur. */
+export interface PackRunResult {
+  packages: {
+    /** Vide si le paquet n'a pas pu être créé (`error`). */
+    id: string;
+    package_no: string;
+    created: boolean;
+    /** Créé pour l'occasion puis supprimé : aucun de ses colis n'a été accepté. */
+    dropped: boolean;
+    added: string[];
+    refused: { parcel_no: string; error: string }[];
+    /** Le paquet lui-même a échoué (création impossible) : ses colis n'ont pas bougé. */
+    error: string | null;
+  }[];
+}
+
+/** Au-delà, une mise en paquet se fait en plusieurs fois : un appel au serveur par colis. */
+export const MAX_PACK_PARCELS = 200;
+
+/**
+ * Mettre des colis en paquet(s), selon un plan (planPacking) : chaque paquet
+ * nouveau se crée, puis ses colis y entrent un par un — le serveur revérifie
+ * chacun (client, pesée, 32 kg). Un échec ne perd jamais ce qui est déjà fait :
+ * il est noté sur la ligne de son paquet, et la suite continue. Un paquet créé
+ * qui reste vide est supprimé aussitôt. `onProgress` : colis traités / total.
+ */
+export function usePackParcels() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ bins, onProgress }: {
+      bins: { packageId: string | null; packageNo: string | null; parcelNos: string[] }[];
+      onProgress?: (done: number, total: number) => void;
+    }): Promise<PackRunResult> => {
+      const total = bins.reduce((t, b) => t + b.parcelNos.length, 0);
+      if (total > MAX_PACK_PARCELS) throw new Error(`${MAX_PACK_PARCELS} colis au plus à la fois : allégez la sélection`);
+      let done = 0;
+      const out: PackRunResult = { packages: [] };
+      try {
+        for (const bin of bins) {
+          if (bin.parcelNos.length === 0) continue;
+          const row: PackRunResult['packages'][number] = { id: bin.packageId ?? '', package_no: bin.packageNo ?? '', created: !bin.packageId, dropped: false, added: [], refused: [], error: null };
+          out.packages.push(row);
+          if (!bin.packageId) {
+            try {
+              const pkg = (await rpcJson<{ package: AirPackage }>('air_package_create', { p_notes: null })).package;
+              row.id = pkg.id;
+              row.package_no = pkg.package_no;
+            } catch (e) {
+              row.error = (e as Error).message;
+              done += bin.parcelNos.length;
+              onProgress?.(done, total);
+              continue;
+            }
+          }
+          for (const no of bin.parcelNos) {
+            try {
+              const r = await rpcJson<AddParcelResult>('air_package_add_parcel', { p_package_id: row.id, p_code: no });
+              row.added.push(r.parcel_no);
+            } catch (e) {
+              row.refused.push({ parcel_no: no, error: (e as Error).message });
+            }
+            done += 1;
+            onProgress?.(done, total);
+          }
+          if (row.created && row.added.length === 0) {
+            await rpcJson<object>('air_package_delete', { p_package_id: row.id }).then(() => { row.dropped = true; }, () => undefined);
+          }
+        }
+        return out;
+      } finally {
+        invalidatePackages(qc);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useRemoveParcelFromPackage(packageId: string) {
   const qc = useQueryClient();
   return useMutation({

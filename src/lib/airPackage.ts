@@ -117,6 +117,15 @@ export const fmtKg1 = (n: number | null | undefined) => `${(Number(n) || 0).toLo
 /** Le poids d'un paquet dans une liste : pesé s'il est fermé, sinon ses colis. */
 export const packageKg = (k: Pick<AirPackage, 'gross_weight_kg' | 'net_weight_kg'>): number => Number(k.gross_weight_kg ?? k.net_weight_kg ?? 0);
 
+/** Le poids de colis (prêts à emballer, cochés…). */
+export const sumParcelKg = (items: readonly { parcel: Pick<Parcel, 'weight_kg'> }[]): number =>
+  items.reduce((t, i) => t + (Number(i.parcel.weight_kg) || 0), 0);
+
+/** Le poids (pesé, sinon les colis) et le nombre de colis d'un lot de paquets. */
+export function packagesTotals(pkgs: readonly Pick<AirPackage, 'gross_weight_kg' | 'net_weight_kg' | 'parcel_count'>[]): { kg: number; parcels: number } {
+  return { kg: pkgs.reduce((t, k) => t + packageKg(k), 0), parcels: pkgs.reduce((t, k) => t + (Number(k.parcel_count) || 0), 0) };
+}
+
 /** Ce qu'il reste à faire d'un paquet : le remplir, le renvoyer, le mettre sur un vol, attendre le départ — ou rien (parti). */
 export type PackageQueue = 'open' | 'refused' | 'ready' | 'assigned' | 'gone';
 
@@ -190,15 +199,10 @@ export interface PackableBoard {
 export function packableParcels(deposits: readonly Deposit[]): PackableBoard {
   const out: PackableBoard = { ready: [], blocked: [] };
   for (const deposit of deposits) {
-    if (deposit.status === 'cancelled' || deposit.location !== 'office') continue;
     for (const parcel of deposit.parcels) {
-      if (!isParcelWaiting(parcel) || parcel.checked_in_at || parcel.delivered_at) continue;
-      if (parcel.air_package_id) continue;
-      const item = { parcel, deposit };
-      if (!deposit.client) out.blocked.push({ ...item, reason: 'no_client' });
-      else if (!(Number(parcel.weight_kg) > 0)) out.blocked.push({ ...item, reason: 'no_weight' });
-      else if (!fitsInPackage({ net_weight_kg: 0, max_weight_kg: PACKAGE_MAX_KG }, parcel.weight_kg)) out.blocked.push({ ...item, reason: 'too_heavy' });
-      else out.ready.push(item);
+      const reason = packRefusal(parcel, deposit);
+      if (reason === null) out.ready.push({ parcel, deposit });
+      else if (reason === 'no_client' || reason === 'no_weight' || reason === 'too_heavy') out.blocked.push({ parcel, deposit, reason });
     }
   }
   // Des numéros RC-000123-01 : l'ordre des caractères suffit.
@@ -206,6 +210,117 @@ export function packableParcels(deposits: readonly Deposit[]): PackableBoard {
   out.ready.sort(byNo);
   out.blocked.sort(byNo);
   return out;
+}
+
+/**
+ * Pourquoi un colis ne peut pas entrer dans un paquet — null : il peut. Les
+ * mêmes conditions que air_package_add_parcel, dans l'ordre utile à l'écran :
+ * ce qui ne se corrige pas (dépôt supprimé, entrepôt = bateau, déjà dans un
+ * paquet, déjà chargé ou parti), puis ce qui se corrige (client, pesée, plus
+ * de 32 kg).
+ */
+export type PackRefusal = 'cancelled' | 'sea' | 'packed' | 'gone' | PackBlock;
+
+export function packRefusal(parcel: Parcel, deposit: Pick<Deposit, 'status' | 'location' | 'client'>): PackRefusal | null {
+  if (deposit.status === 'cancelled') return 'cancelled';
+  if (deposit.location !== 'office') return 'sea';
+  if (parcel.air_package_id) return 'packed';
+  if (!isParcelWaiting(parcel) || parcel.checked_in_at || parcel.delivered_at) return 'gone';
+  if (!deposit.client) return 'no_client';
+  if (!(Number(parcel.weight_kg) > 0)) return 'no_weight';
+  if (!fitsInPackage({ net_weight_kg: 0, max_weight_kg: PACKAGE_MAX_KG }, parcel.weight_kg)) return 'too_heavy';
+  return null;
+}
+
+/** La raison, en clair : « reçu à l'entrepôt : part en bateau », « déjà dans PQ-000045 »… */
+export function packRefusalLabel(reason: PackRefusal, parcel?: Pick<Parcel, 'package_no'>): string {
+  switch (reason) {
+    case 'cancelled': return 'dépôt supprimé';
+    case 'sea': return "reçu à l'entrepôt : part en bateau";
+    case 'packed': return `déjà dans ${parcel?.package_no ?? 'un paquet'}`;
+    case 'gone': return 'déjà chargé ou parti';
+    default: return PACK_BLOCK_LABEL[reason];
+  }
+}
+
+/** Un paquet du plan : un paquet en cours que l'on complète, ou un nouveau. */
+export interface PackBin {
+  /** Le paquet en cours complété ; null : un nouveau paquet. */
+  packageId: string | null;
+  packageNo: string | null;
+  /** Ce qu'il contenait déjà. */
+  baseKg: number;
+  items: PackableParcel[];
+  /** Poids total une fois rempli (déjà là + ajoutés). */
+  kg: number;
+}
+
+/**
+ * Répartir des colis en paquets de 32 kg au plus. `into` : un paquet en cours
+ * à compléter D'ABORD (les colis les plus lourds qui y tiennent encore) ; ce
+ * qui n'y tient pas part dans de nouveaux paquets. Pour ces nouveaux paquets,
+ * deux répartitions sont essayées et la plus courte gagne (à égalité, la
+ * première) :
+ *   1. client par client — les colis d'un client restent ensemble quand ils
+ *      tiennent dans un même paquet (plus simple à Douala) ;
+ *   2. colis par colis, du plus lourd au plus léger (« first fit decreasing »).
+ * Les colis doivent être prêts (packRefusal === null).
+ */
+export function planPacking(
+  items: readonly PackableParcel[],
+  into?: Pick<AirPackage, 'id' | 'package_no' | 'net_weight_kg' | 'max_weight_kg'> | null,
+  max = PACKAGE_MAX_KG,
+): PackBin[] {
+  const kgOf = (it: PackableParcel) => sumParcelKg([it]);
+  const g = (kg: number) => Math.round(kg * 1000);
+  const fits = (b: PackBin, kg: number, cap: number) => g(b.kg) + g(kg) <= g(cap);
+  const fresh = (): PackBin => ({ packageId: null, packageNo: null, baseKg: 0, items: [], kg: 0 });
+  const put = (b: PackBin, its: PackableParcel[]) => { b.items.push(...its); b.kg = Math.round((b.kg + sumParcelKg(its)) * 1000) / 1000; };
+  const heavyFirst = (a: PackableParcel, b: PackableParcel) => kgOf(b) - kgOf(a) || (a.parcel.parcel_no < b.parcel.parcel_no ? -1 : 1);
+  const placeOne = (bins: PackBin[], it: PackableParcel) => {
+    const b = bins.find((x) => fits(x, kgOf(it), max)) ?? (bins.push(fresh()), bins[bins.length - 1]);
+    put(b, [it]);
+  };
+
+  // 0. Le paquet en cours d'abord : les plus lourds qui y tiennent encore.
+  let rest = [...items];
+  const head: PackBin | null = into
+    ? { packageId: into.id, packageNo: into.package_no, baseKg: Number(into.net_weight_kg) || 0, items: [], kg: Number(into.net_weight_kg) || 0 }
+    : null;
+  if (head) {
+    const cap = Number(into!.max_weight_kg) || max;
+    const left: PackableParcel[] = [];
+    for (const it of [...rest].sort(heavyFirst)) {
+      if (fits(head, kgOf(it), cap)) put(head, [it]);
+      else left.push(it);
+    }
+    rest = left;
+  }
+
+  // 1. Client par client.
+  const byClient = new Map<string, PackableParcel[]>();
+  for (const it of rest) {
+    const k = it.deposit.client?.user_id ?? '—';
+    byClient.set(k, [...(byClient.get(k) ?? []), it]);
+  }
+  const groups = [...byClient.values()]
+    .map((its) => ({ its: [...its].sort(heavyFirst), kg: sumParcelKg(its) }))
+    .sort((a, b) => b.kg - a.kg);
+  const byGroup: PackBin[] = [];
+  for (const grp of groups) {
+    const whole = byGroup.find((b) => fits(b, grp.kg, max));
+    if (whole) put(whole, grp.its);
+    else if (g(grp.kg) <= g(max)) { const b = fresh(); put(b, grp.its); byGroup.push(b); }
+    else grp.its.forEach((it) => placeOne(byGroup, it));
+  }
+
+  // 2. Colis par colis, du plus lourd au plus léger.
+  const byParcel: PackBin[] = [];
+  [...rest].sort(heavyFirst).forEach((it) => placeOne(byParcel, it));
+
+  const best = byParcel.length < byGroup.length ? byParcel : byGroup;
+  // Le paquet en cours reste en tête, même s'il n'a rien reçu (il le dit).
+  return head ? [head, ...best] : best;
 }
 
 export interface PackableGroup {

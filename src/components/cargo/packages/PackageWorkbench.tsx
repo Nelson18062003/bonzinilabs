@@ -12,8 +12,8 @@
 // En bas : fermer (pesée + dimensions), rouvrir, supprimer un paquet vide.
 // Écriture : canReceiveParcels (la base revérifie chaque RPC air_package_*).
 // ============================================================
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Check, FileDown, Loader2, LockOpen, PackageCheck, PackagePlus, Printer, ScanLine, Search, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, FileDown, Loader2, LockOpen, PackageCheck, PackagePlus, Plane, PlaneTakeoff, Printer, ScanLine, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
@@ -33,45 +33,28 @@ import { openForPrint } from '@/components/cargo/reception/useParcelLabels';
 import { usePackageLabel } from './usePackageLabel';
 import { GaugeLegend, PackageGauge, type GaugePreview } from './PackageGauge';
 import { clientFills } from './packageColors';
-import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, DANGER_SOFT_PILL, TONE_PILL, CenterDialog, ScreenLoader, StatusPill, TextInput, type Tone } from '@/desktop/designKit';
+import { Btn } from './bits';
+import { ShipDialog } from './ShipDialog';
+import { SURFACE, TEXT, TONE_PILL, CenterDialog, ScreenLoader, StatusPill, TextInput, type Tone } from '@/desktop/designKit';
 
 /** La couleur de la réponse à un scan : celle des pastilles d'état. */
 const OUTCOME_TONE: Record<ScanOutcome, Tone> = { ok: 'success', again: 'neutral', unknown: 'pending', refused: 'danger' };
 
-function Btn({ kind = 'soft', onClick, disabled, loading, children, className }: {
-  /** `destroy` : la confirmation d'une suppression (rouge plein). */
-  kind?: 'primary' | 'soft' | 'danger' | 'destroy'; onClick?: () => void; disabled?: boolean; loading?: boolean; children: ReactNode; className?: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={cn(
-        'inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap px-3.5 text-[13px] font-semibold disabled:opacity-50 [&_svg]:h-4 [&_svg]:w-4',
-        kind === 'primary' ? cn(PRIMARY_PILL, 'font-bold') : kind === 'danger' ? DANGER_SOFT_PILL
-          : kind === 'destroy' ? 'rounded-md bg-red-600 font-bold text-white hover:bg-red-700' : SOFT_PILL,
-        className,
-      )}
-    >
-      {loading ? <Loader2 className="animate-spin" /> : children}
-    </button>
-  );
-}
-
-export function PackageWorkbench({ packageId, packable, initialFilter = '', onClose, onOpenPackage, onOpenDeposit }: {
+export function PackageWorkbench({ packageId, packable, onClose, onOpenPackage, onOpenDeposit, onOpenFlight }: {
   packageId: string;
   /** Les colis avion du bureau (reception_board, en stock) : ceux qu'on peut y mettre. */
   packable: PackableBoard | null;
-  /** Le filtre de la liste à l'ouverture (« emballer ce client »). */
-  initialFilter?: string;
   onClose: () => void;
   /** Ouvrir un autre paquet (le suivant, juste créé). */
   onOpenPackage: (id: string) => void;
   onOpenDeposit: (depositId: string, parcelId?: string) => void;
+  /** Ouvrir l'expédition où le paquet est affecté (Cargo › Avion). */
+  onOpenFlight: (airId: string) => void;
 }) {
   const { hasPermission } = useAdminAuth();
   const canWrite = hasPermission('canReceiveParcels');
+  const canShip = canWrite || hasPermission('canManageCargo');
+  const [shipping, setShipping] = useState(false);
   const labels = useReceptionLabels();
   const { data: pkg, error, refetch, isLoading } = useAirPackage(packageId);
   const add = useAddParcelToPackage(packageId);
@@ -87,7 +70,7 @@ export function PackageWorkbench({ packageId, packable, initialFilter = '', onCl
   const [over, setOver] = useState(false);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [justSealed, setJustSealed] = useState(false);
-  const [filter, setFilter] = useState(initialFilter);
+  const [filter, setFilter] = useState('');
   const [hover, setHover] = useState<PackableParcel | null>(null);
   const scanRef = useRef<HTMLInputElement>(null);
   // La douchette peut lire plus vite que le serveur ne répond : les codes attendent leur tour, aucun ne se perd.
@@ -216,9 +199,14 @@ export function PackageWorkbench({ packageId, packable, initialFilter = '', onCl
       )}
       {expedition && (
         <div className="rounded-lg bg-indigo-50 px-4 py-3 text-[13px] text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-300">
-          <p className="font-bold">Affecté à une expédition</p>
-          <p className="mt-0.5 tabular-nums">{expedition}</p>
-          <p className="mt-1 text-[12.5px]">Pour le modifier, retirez-le d'abord de l'expédition (Cargo › Avion).</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-bold">Affecté à une expédition</p>
+              <p className="mt-0.5 tabular-nums">{expedition}</p>
+            </div>
+            {pkg.air_shipment_id && <Btn size="sm" onClick={() => onOpenFlight(pkg.air_shipment_id!)} className="shrink-0"><Plane /> Ouvrir l'expédition</Btn>}
+          </div>
+          <p className="mt-1 text-[12.5px]">Pour le modifier, retirez-le d'abord de l'expédition.</p>
         </div>
       )}
       {over && editable && (
@@ -403,6 +391,7 @@ export function PackageWorkbench({ packageId, packable, initialFilter = '', onCl
       <span className="flex-1" />
       <Btn onClick={onClose}>Fermer la fiche</Btn>
       {editable && <Btn kind="primary" onClick={() => setSub('seal')} disabled={busy || pkg.parcel_count === 0}><PackageCheck /> Fermer le paquet (pesée)</Btn>}
+      {canShip && isAssignable(pkg) && <Btn kind={justSealed ? 'soft' : 'primary'} onClick={() => setShipping(true)}><PlaneTakeoff /> Mettre sur un vol</Btn>}
       {canWrite && justSealed && <Btn kind="primary" onClick={startNext} loading={create.isPending}><PackagePlus /> Commencer un nouveau paquet</Btn>}
     </>
   );
@@ -427,6 +416,8 @@ export function PackageWorkbench({ packageId, packable, initialFilter = '', onCl
           {right}
         </div>
       </CenterDialog>
+
+      <ShipDialog open={shipping} mode="ship" preselected={[packageId]} onClose={() => setShipping(false)} onDone={(r) => { setShipping(false); onOpenFlight(r.airId); }} />
 
       <SealDialog
         open={sub === 'seal'}

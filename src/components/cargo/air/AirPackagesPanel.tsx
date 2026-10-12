@@ -296,7 +296,8 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
                     {done
                       ? <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white" title="Scanné au départ"><Check className="h-3 w-3" strokeWidth={3} /></span>
                       : <span className="h-5 w-5 shrink-0 rounded-full border border-muted-foreground/50" title="Pas encore scanné au départ" />}
-                    <span className={cn('font-mono text-[12px] font-bold', T.strong)}>{k.package_no}</span>
+                    <button type="button" onClick={() => navigate(`/m/cargo/reception?${new URLSearchParams({ paquet: k.id }).toString()}`)} title={`Ouvrir le paquet ${k.package_no} (ses colis, son étiquette)`}
+                      className={cn('font-mono text-[12px] font-bold underline-offset-2 hover:underline', T.strong)}>{k.package_no}</button>
                   </span>
                 </Td>
                 <Td><span className="block max-w-[160px] truncate font-mono text-[11.5px]" title={clientsLine(k)}>{clientsLine(k)}</span></Td>

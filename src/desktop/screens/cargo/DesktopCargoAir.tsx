@@ -7,14 +7,21 @@
  * expédition »), chips d'état, table triée (en vol, préparation, arrivés,
  * remis). Sélectionner une ligne ouvre l'expédition en dialogue — la route
  * /m/cargo/avion/:airId porte la sélection (lien profond).
+ * « Nouvelle expédition » s'ouvre en fenêtre, avec les paquets fermés au
+ * bureau à cocher (ShipDialog) ; un bandeau dit quand des paquets fermés
+ * attendent un vol, et les y met.
  */
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, Plane, Plus } from 'lucide-react';
+import { ChevronRight, Package, Plane, Plus } from 'lucide-react';
 import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { AirQuickView } from '@/components/cargo/air/AirQuickView';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAirShipments } from '@/hooks/useAirShipments';
+import { useAirPackages } from '@/hooks/useAirPackages';
+import { isAssignable, packagesTotals } from '@/lib/airPackage';
+import { plural } from '@/lib/cargo/plain';
+import { ShipDialog } from '@/components/cargo/packages/ShipDialog';
 import { airStatusMeta, flightSentence, fmtDay, formatAwb, isProvisionalAwb, type AirStatus } from '@/lib/airShipment';
 import { formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
@@ -28,6 +35,11 @@ export function DesktopCargoAir() {
   const { airId } = useParams<{ airId?: string }>();
   const { data, isLoading } = useAirShipments();
   const [filter, setFilter] = useState<Filter>('open');
+  const [shipMode, setShipMode] = useState<'ship' | 'create' | null>(null);
+  // Les paquets fermés au bureau, qui attendent un vol.
+  // Seulement pour qui peut les mettre sur un vol : les autres n'ont pas le bandeau.
+  const bureau = useAirPackages('bureau', null, hasPermission('canViewCargo') && (hasPermission('canManageCargo') || hasPermission('canReceiveParcels')));
+  const waiting = useMemo(() => (bureau.data ?? []).filter(isAssignable), [bureau.data]);
 
   const all = useMemo(() => data ?? [], [data]);
   const rows = useMemo(() => filter === 'all' ? all : filter === 'open' ? all.filter((a) => a.status !== 'DELIVERED') : all.filter((a) => a.status === filter), [all, filter]);
@@ -63,9 +75,21 @@ export function DesktopCargoAir() {
           ) : 'Expéditions aériennes'}
         </p>
         {canManage && (
-          <button type="button" onClick={() => navigate('/m/cargo/avion/nouveau')} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold', PRIMARY_PILL)}><Plus className="h-4 w-4" /> Nouvelle expédition</button>
+          <button type="button" onClick={() => setShipMode('create')} className={cn('inline-flex h-9 items-center gap-2 px-4 text-[13px] font-bold', PRIMARY_PILL)}><Plus className="h-4 w-4" /> Nouvelle expédition</button>
         )}
       </header>
+
+      {/* Des paquets fermés attendent un vol : le chemin le plus court pour les y mettre. */}
+      {waiting.length > 0 && (canManage || hasPermission('canReceiveParcels')) && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50/70 px-4 py-2.5 dark:border-indigo-900/60 dark:bg-indigo-950/30">
+          <Package className="h-4 w-4 shrink-0 text-indigo-700 dark:text-indigo-300" />
+          <span className="min-w-0 flex-1 text-[13px] text-indigo-900 dark:text-indigo-200">
+            <span className="font-bold">{plural(waiting.length, 'paquet fermé attend', 'paquets fermés attendent')} un vol</span> · {formatKg(packagesTotals(waiting).kg)} · {plural(packagesTotals(waiting).parcels, 'colis', 'colis')}
+          </span>
+          <button type="button" onClick={() => navigate('/m/cargo/reception?vue=paquets')} className="text-[13px] font-semibold text-indigo-800 underline-offset-2 hover:underline dark:text-indigo-200">Voir les paquets</button>
+          <button type="button" onClick={() => setShipMode('ship')} className={cn('inline-flex h-8 items-center gap-2 px-3 text-[12.5px] font-bold', PRIMARY_PILL)}><Plane className="h-4 w-4" /> Mettre sur un vol</button>
+        </div>
+      )}
 
       <section className="mt-4 flex flex-wrap items-center gap-2">
         <Chip label="En cours" count={counts.open || null} active={filter === 'open'} onClick={() => setFilter('open')} />
@@ -133,6 +157,13 @@ export function DesktopCargoAir() {
       </Card>
 
       <AirQuickView airId={airId ?? null} onClose={() => navigate('/m/cargo/avion')} />
+      <ShipDialog
+        open={shipMode !== null}
+        mode={shipMode ?? 'create'}
+        preselected={shipMode === 'ship' ? waiting.map((k) => k.id) : []}
+        onClose={() => setShipMode(null)}
+        onDone={(r) => { setShipMode(null); navigate(`/m/cargo/avion/${r.airId}`); }}
+      />
     </div>
   );
 }

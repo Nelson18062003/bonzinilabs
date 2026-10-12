@@ -26,7 +26,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Download, FileDown, Images, Loader2, Package, Tag, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, FileDown, Images, Package, PackagePlus, Tag, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { DesktopCargoParts } from '@/components/cargo/CargoParts';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -56,7 +56,10 @@ import { DesktopPackagesView } from '@/components/cargo/packages/DesktopPackages
 import { filterPackages, knownClientCodes, usePackingBoard, type PackageScope } from '@/components/cargo/packages/usePackingBoard';
 import { plural } from '@/lib/cargo/plain';
 import { PackageWorkbench } from '@/components/cargo/packages/PackageWorkbench';
-import { packageStatusMeta } from '@/lib/airPackage';
+import { packRefusal, packageStatusMeta } from '@/lib/airPackage';
+import { PackDialog } from '@/components/cargo/packages/PackDialog';
+import { Btn, GroupTick, SelectionBar, Tick } from '@/components/cargo/packages/bits';
+import { toggleId } from '@/components/cargo/packages/selection';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, SOFT_PILL, PRIMARY_PILL, Card, CardHeader, Chip, DropChip, Holder, KV, PaginationBar, ScreenLoader, SearchField, StatusPill, Th, Td } from '@/desktop/designKit';
 
@@ -115,7 +118,6 @@ export function DesktopCargoReception() {
   const labels = useReceptionLabels();
   const [view, setViewState] = useState<View>(() => (params.get('vue') === 'paquets' ? 'packages' : readView()));
   const [pkScope, setPkScope] = useState<PackageScope>('bureau');
-  const [packFilter, setPackFilter] = useState('');
   const [period, setPeriod] = useState<Period>('stock');
   const [where, setWhere] = useState<'all' | ReceptionLocation>('all');
   const [queue, setQueue] = useState<ReceptionQueue>('all');
@@ -124,6 +126,9 @@ export function DesktopCargoReception() {
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Les dépôts cochés (vue Dépôts) : leurs colis encore ici forment la sélection.
+  const [selDeposits, setSelDeposits] = useState<Set<string>>(new Set());
+  const [packItems, setPackItems] = useState<LabelItem[] | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
   const [labelsFor, setLabelsFor] = useState<Deposit | null>(null);
   const [viewerDeposit, setViewerDeposit] = useState<Deposit | null>(null);
@@ -144,7 +149,7 @@ export function DesktopCargoReception() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vueParam]);
   useEffect(() => { setPage(1); }, [period, where, queue, query, receivedBy]);
-  useEffect(() => { setSelected(new Set()); }, [period, where]);
+  useEffect(() => { setSelected(new Set()); setSelDeposits(new Set()); }, [period, where]);
   // La fiche d'un dépôt peut changer la langue : on la relit quand elle se ferme.
   useEffect(() => { setDocLangState(readCargoDocLang()); }, [depositId]);
   const setDocLang = (l: CargoDocLang) => { setDocLangState(l); storeCargoDocLang(l); };
@@ -157,8 +162,7 @@ export function DesktopCargoReception() {
   const packing = usePackingBoard({ scope: pkScope, enabled: hasPermission('canViewCargo'), boardEnabled: view === 'packages' || where === 'office' || !!packageId });
   const shownPackages = useMemo(() => filterPackages(packing.packages.data ?? [], packing.contents, query), [packing.packages.data, packing.contents, query]);
   /** `replace` : d'un paquet au suivant (« Commencer un nouveau paquet »), le retour arrière ne rouvre pas l'ancien. */
-  const openPackage = (id: string, filter = '', replace = false) => {
-    setPackFilter(filter);
+  const openPackage = (id: string, replace = false) => {
     setParams((cur) => { const n = new URLSearchParams(cur); n.set('paquet', id); return n; }, { replace });
   };
   const closePackage = () => setParams((cur) => { const n = new URLSearchParams(cur); n.delete('paquet'); return n; }, { replace: true });
@@ -231,10 +235,17 @@ export function DesktopCargoReception() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board.data, query, period]);
 
-  // La sélection (vue Colis) → étiquettes en lot.
-  const selectedItems = useMemo(() => parcelRows.filter((r) => selected.has(r.parcel.id)), [parcelRows, selected]);
+  // La sélection → étiquettes en lot, ou « Mettre en paquet ». Vue Colis : les colis cochés ;
+  // vue Dépôts : les colis encore ici des dépôts cochés. Une seule barre pour les deux.
+  const selectedItems = useMemo<LabelItem[]>(() => (view === 'deposits'
+    ? deposits.filter((d) => selDeposits.has(d.id)).flatMap((d) => sortedParcels(d.parcels).filter((p) => inScope(p, d)).map((parcel) => ({ parcel, deposit: d })))
+    : view === 'parcels' ? parcelRows.filter((r) => selected.has(r.parcel.id)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [view, deposits, selDeposits, parcelRows, selected, period]);
   const tooMany = selectedItems.length > MAX_BULK_LABELS;
-  const bulk = useParcelLabels(selectedItems, settings, view === 'parcels' && selectedItems.length > 0 && !tooMany);
+  const bulk = useParcelLabels(selectedItems, settings, selectedItems.length > 0 && !tooMany);
+  const packableCount = useMemo(() => selectedItems.filter((r) => packRefusal(r.parcel, r.deposit) === null).length, [selectedItems]);
+  const clearSelection = () => { setSelected(new Set()); setSelDeposits(new Set()); };
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
 
@@ -254,7 +265,6 @@ export function DesktopCargoReception() {
     setViewerDeposit({ ...d, parcels: sorted });
     viewer.open(Math.max(0, parcelId ? sorted.findIndex((p) => p.id === parcelId) : sorted.findIndex((p) => parcelPhotoPaths(p).length > 0)), k);
   };
-  const toggle = (set: Set<string>, id: string) => { const n = new Set(set); if (n.has(id)) n.delete(id); else n.add(id); return n; };
 
   const runBulk = async (what: 'pdf' | 'print') => {
     setBulkBusy(what);
@@ -270,6 +280,30 @@ export function DesktopCargoReception() {
       setBulkBusy(null);
     }
   };
+
+  // La barre de la sélection, la même dans Dépôts et dans Colis : mettre en paquet, étiquettes.
+  const canPack = hasPermission('canReceiveParcels');
+  const selectionBar = selectedItems.length > 0 && (
+    <SelectionBar
+      label={`${plural(selectedItems.length, 'colis sélectionné', 'colis sélectionnés')}${view === 'deposits' ? ` · ${plural(new Set(selectedItems.map((r) => r.deposit.id)).size, 'dépôt')}` : ''}`}
+      meta={<>
+        {formatKg(selectedItems.reduce((s, r) => s + Number(r.parcel.weight_kg ?? 0), 0))} · {formatCbm(selectedItems.reduce((s, r) => s + Number(r.parcel.cbm ?? 0), 0))}
+        {bulk.skipped > 0 && ` · ${bulk.skipped} sans client (pas d'étiquette)`}
+        {tooMany && <span className="font-semibold text-amber-700 dark:text-amber-400"> · {MAX_BULK_LABELS} étiquettes au plus par PDF : allégez la sélection</span>}
+      </>}
+      onClear={clearSelection}
+    >
+      {bulk.nodes}
+      {canPack && (
+        <Btn kind={packableCount > 0 ? 'primary' : 'soft'} size="sm" onClick={() => setPackItems(selectedItems)} disabled={packableCount === 0}
+          title={packableCount === 0 ? 'Aucun de ces colis ne peut entrer dans un paquet : entrepôt (bateau), sans client, pas pesé, déjà emballé ou parti.' : undefined}>
+          <PackagePlus /> Mettre en paquet{packableCount > 0 && packableCount < selectedItems.length ? ` (${packableCount})` : ''}
+        </Btn>
+      )}
+      <Btn onClick={() => void runBulk('pdf')} disabled={!bulk.ready || bulkBusy !== null} loading={bulkBusy === 'pdf'} size="sm"><FileDown /> Étiquettes (PDF)</Btn>
+      <Btn onClick={() => void runBulk('print')} disabled={!bulk.ready || bulkBusy !== null} loading={bulkBusy === 'print'} size="sm"><Tag /> Imprimer</Btn>
+    </SelectionBar>
+  );
 
   // Le devis d'un dépôt, téléchargé depuis la liste : un fichier, jamais la feuille de partage.
   const downloadQuote = async (d: Deposit) => {
@@ -451,8 +485,8 @@ export function DesktopCargoReception() {
       {/* ── La vue + la colonne de droite ──────────────────────────────── */}
       {view === 'packages' ? (
         <div className="mt-4">
-          <DesktopPackagesView query={query} scope={pkScope} canWrite={hasPermission('canReceiveParcels')} packing={packing}
-            onOpenPackage={openPackage} onOpenDeposit={openDepositId} />
+          <DesktopPackagesView query={query} scope={pkScope} canWrite={hasPermission('canReceiveParcels')} canShip={hasPermission('canReceiveParcels') || hasPermission('canManageCargo')} packing={packing}
+            onOpenPackage={(id) => openPackage(id)} onOpenDeposit={openDepositId} onOpenFlight={(id) => navigate(`/m/cargo/avion/${id}`)} />
         </div>
       ) : (
       <div className="mt-4 flex min-h-0 flex-1 flex-col gap-5">
@@ -496,10 +530,14 @@ export function DesktopCargoReception() {
           ) : loading ? <ScreenLoader /> : board.error ? empty((board.error as Error).message) : view === 'deposits' ? (
             deposits.length === 0 ? empty(emptyMsg) : (
               <>
+                {selectionBar}
                 <table className="w-full text-left">
                   <thead className={SURFACE.card}>
                     <tr>
-                      <Th first className="w-[34px]" />
+                      <Th first className="w-[34px]">
+                        <GroupTick ids={slice(deposits).map((d) => d.id)} selected={selDeposits} setSelected={setSelDeposits} label="Tous les dépôts de cette page" />
+                      </Th>
+                      <Th className="w-[34px]" />
                       <Th>Dépôt · reçu le</Th>
                       <Th>Client</Th>
                       <Th align="right">Colis</Th>
@@ -518,9 +556,12 @@ export function DesktopCargoReception() {
                       const photos = sorted.reduce((s, p) => s + parcelPhotoPaths(p).length, 0);
                       return (
                         <Fragment key={d.id}>
-                          <tr onClick={() => openDeposit(d)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', depositId === d.id && 'bg-accent', d.status === 'cancelled' && 'opacity-70')}>
+                          <tr onClick={() => openDeposit(d)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', (depositId === d.id || selDeposits.has(d.id)) && 'bg-accent', d.status === 'cancelled' && 'opacity-70')}>
                             <Td first>
-                              <button type="button" aria-label={open ? 'Replier' : 'Déplier les colis'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setExpanded((s) => toggle(s, d.id)); }} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent">
+                              <Tick on={selDeposits.has(d.id)} label={`Sélectionner ${d.deposit_no}`} onChange={() => setSelDeposits((s) => toggleId(s, d.id))} />
+                            </Td>
+                            <Td>
+                              <button type="button" aria-label={open ? 'Replier' : 'Déplier les colis'} aria-expanded={open} onClick={(e) => { e.stopPropagation(); setExpanded((s) => toggleId(s, d.id)); }} className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-accent">
                                 {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                               </button>
                             </Td>
@@ -563,6 +604,7 @@ export function DesktopCargoReception() {
                             return (
                               <tr key={p.id} onClick={() => openDeposit(d, p.id)} className={cn('cursor-pointer bg-muted/25 transition-colors hover:bg-muted/50', !inScope(p, d) && 'opacity-60')}>
                                 <Td first />
+                                <Td />
                                 <Td><span className={cn('pl-8 font-mono text-[12px]', TEXT.muted)}>{p.parcel_no}</span></Td>
                                 <Td className="max-w-[240px]">
                                   <span className="flex items-center gap-2.5">
@@ -582,7 +624,11 @@ export function DesktopCargoReception() {
                                 <Td>
                                   <span className="flex flex-wrap items-center gap-1.5">
                                     <StatusPill tone={st.tone} label={st.label} />
-                                    {p.package_no && <PackageChip packageNo={p.package_no} variant="desktop" />}
+                                    {p.package_no && p.air_package_id && (
+                                      <button type="button" title={`Ouvrir le paquet ${p.package_no}`} onClick={(e) => { e.stopPropagation(); openPackage(p.air_package_id!); }} className="rounded-md hover:ring-1 hover:ring-foreground/40">
+                                        <PackageChip packageNo={p.package_no} variant="desktop" />
+                                      </button>
+                                    )}
                                   </span>
                                 </Td>
                                 <Td colSpan={2} last />
@@ -600,40 +646,13 @@ export function DesktopCargoReception() {
           ) : view === 'parcels' ? (
             parcelRows.length === 0 ? empty(emptyMsg) : (
               <>
-                {selectedItems.length > 0 && (
-                  <div className="sticky top-0 z-[2] flex flex-wrap items-center gap-3 border-b border-border bg-accent px-5 py-2.5">
-                    {bulk.nodes}
-                    <span className={cn('text-[13px] font-bold', TEXT.strong)}>{selectedItems.length} colis sélectionné{selectedItems.length > 1 ? 's' : ''}</span>
-                    <span className={cn('text-[12px] tabular-nums', TEXT.muted)}>
-                      {formatKg(selectedItems.reduce((s, r) => s + Number(r.parcel.weight_kg ?? 0), 0))} · {formatCbm(selectedItems.reduce((s, r) => s + Number(r.parcel.cbm ?? 0), 0))}
-                      {bulk.skipped > 0 && ` · ${bulk.skipped} sans client (pas d'étiquette)`}
-                      {tooMany && <span className="font-semibold text-amber-700 dark:text-amber-400"> · {MAX_BULK_LABELS} étiquettes au plus par PDF : allégez la sélection</span>}
-                    </span>
-                    <span className="ml-auto flex gap-2">
-                      <button type="button" onClick={() => void runBulk('pdf')} disabled={!bulk.ready || bulkBusy !== null} className={cn('inline-flex h-8 items-center gap-2 px-3 text-[12.5px] font-bold disabled:opacity-50', PRIMARY_PILL)}>
-                        {bulkBusy === 'pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} Étiquettes (PDF)
-                      </button>
-                      <button type="button" onClick={() => void runBulk('print')} disabled={!bulk.ready || bulkBusy !== null} className={cn('inline-flex h-8 items-center gap-2 px-3 text-[12.5px] font-semibold disabled:opacity-50', SOFT_PILL)}>
-                        <Tag className="h-4 w-4" /> Imprimer
-                      </button>
-                      <button type="button" onClick={() => setSelected(new Set())} className={cn('inline-flex h-8 items-center gap-1.5 px-3 text-[12.5px] font-semibold', SOFT_PILL)}>
-                        <X className="h-4 w-4" /> Désélectionner
-                      </button>
-                    </span>
-                  </div>
-                )}
+                {selectionBar}
                 <table className="w-full text-left">
                   <thead className={SURFACE.card}>
                     <tr>
                       <Th first className="w-[34px]">
-                        <input type="checkbox" aria-label="Tout sélectionner" className="h-4 w-4"
-                          checked={slice(parcelRows).length > 0 && slice(parcelRows).every((r) => selected.has(r.parcel.id))}
-                          onChange={(e) => setSelected((cur) => {
-                            // La case de l'en-tête coche la PAGE affichée, pas toutes les pages.
-                            const n = new Set(cur);
-                            for (const r of slice(parcelRows)) { if (e.target.checked) n.add(r.parcel.id); else n.delete(r.parcel.id); }
-                            return n;
-                          })} />
+                        {/* La case de l'en-tête coche la PAGE affichée, pas toutes les pages. */}
+                        <GroupTick ids={slice(parcelRows).map((r) => r.parcel.id)} selected={selected} setSelected={setSelected} label="Tout sélectionner (cette page)" />
                       </Th>
                       <Th>Photo</Th>
                       <Th>Colis · reçu le</Th>
@@ -651,7 +670,7 @@ export function DesktopCargoReception() {
                       return (
                         <tr key={p.id} onClick={() => openDeposit(d, p.id)} className={cn('cursor-pointer transition-colors hover:bg-muted/40', on && 'bg-accent/60')}>
                           <Td first>
-                            <input type="checkbox" aria-label={`Sélectionner ${p.parcel_no}`} className="h-4 w-4" checked={on} onClick={(e) => e.stopPropagation()} onChange={() => setSelected((s) => toggle(s, p.id))} />
+                            <Tick on={on} label={`Sélectionner ${p.parcel_no}`} onChange={() => setSelected((s) => toggleId(s, p.id))} />
                           </Td>
                           <Td><CoverThumb parcel={p} onClick={() => openViewer(d, p.id)} /></Td>
                           <Td>
@@ -679,7 +698,11 @@ export function DesktopCargoReception() {
                           <Td last>
                             <span className="flex flex-wrap items-center gap-1.5">
                               <StatusPill tone={st.tone} label={st.label} />
-                              {p.package_no && <PackageChip packageNo={p.package_no} variant="desktop" />}
+                              {p.package_no && p.air_package_id && (
+                                      <button type="button" title={`Ouvrir le paquet ${p.package_no}`} onClick={(e) => { e.stopPropagation(); openPackage(p.air_package_id!); }} className="rounded-md hover:ring-1 hover:ring-foreground/40">
+                                        <PackageChip packageNo={p.package_no} variant="desktop" />
+                                      </button>
+                                    )}
                             </span>
                           </Td>
                         </tr>
@@ -794,12 +817,20 @@ export function DesktopCargoReception() {
 
       {/* La fiche d'un paquet (lien profond ?paquet=) ; un dépôt ouvert depuis elle s'empile par-dessus, elle reste montée. */}
       {packageId && (
-        <PackageWorkbench key={packageId} packageId={packageId} packable={packing.packable} initialFilter={packFilter}
-          onClose={closePackage} onOpenPackage={(id) => openPackage(id, '', true)} onOpenDeposit={openDepositId} />
+        <PackageWorkbench key={packageId} packageId={packageId} packable={packing.packable}
+          onClose={closePackage} onOpenPackage={(id) => openPackage(id, true)} onOpenDeposit={openDepositId} onOpenFlight={(id) => navigate(`/m/cargo/avion/${id}`)} />
       )}
       <ClientParcelsQuickView clientId={clientId} onClose={() => setClientId(null)} onOpenDeposit={(id) => { setClientId(null); navigate(`/m/cargo/reception/${id}`); }} />
       <DepositQuickView depositId={depositId ?? null} focusParcelId={focusParcel} onClose={() => navigate(packageId ? `/m/cargo/reception?${new URLSearchParams({ paquet: packageId }).toString()}` : '/m/cargo/reception')} />
       {labelsFor && <DepositLabelsDialog deposit={labelsFor} open onClose={() => setLabelsFor(null)} />}
+      <PackDialog
+        open={!!packItems}
+        items={packItems ?? []}
+        onClose={() => setPackItems(null)}
+        onDone={clearSelection}
+        onOpenPackage={(id) => { setPackItems(null); openPackage(id); }}
+        onShowPackages={() => { setPackItems(null); setView('packages'); }}
+      />
 
       {viewerDeposit && (
         <ParcelPhotoViewer

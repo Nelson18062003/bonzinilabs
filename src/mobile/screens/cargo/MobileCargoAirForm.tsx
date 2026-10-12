@@ -16,7 +16,7 @@ import { Check, Plane } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAirShipment, useCreateAirShipment, useUpdateAirShipment } from '@/hooks/useAirShipments';
-import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
+import { cleanAwb, formatAwb, isAwbValid, isProvisionalAwb, parseFreightUsd } from '@/lib/airShipment';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, FormField, PrimaryPill, ScreenLoader, TextInput } from '@/mobile/designKit';
 import { TextArea } from '@/components/form';
@@ -56,17 +56,16 @@ export function MobileCargoAirForm({ desktop = false }: { desktop?: boolean } = 
   const provisional = editing && (existing.awb_provisional ?? isProvisionalAwb(existing.awb_number));
   const locked = editing && existing.status !== 'PLANNED' && !provisional;
   const noAwb = !editing && awbUnknown;
-  const awbClean = awb.replace(/\s|-/g, '');
+  const awbClean = cleanAwb(awb);
   // Sans LTA (création) : la date de départ prévue est obligatoire. LTA provisoire : vide = toujours à venir.
-  const valid = noAwb ? !!etd : provisional ? awbClean.length === 0 || awbClean.length >= 4 : awbClean.length >= 4;
+  const valid = noAwb ? !!etd : provisional ? awbClean.length === 0 || isAwbValid(awb) : isAwbValid(awb);
   const pending = create.isPending || update.isPending;
 
   const submit = async () => {
     if (!valid || pending) return;
-    const freightUsd = freight.trim() ? Number(freight.replace(',', '.')) : null;
     // Vide à la création = LTA provisoire (la base la génère) ; vide en correction = on n'y touche pas.
     const awbNumber = locked ? undefined : noAwb ? '' : editing && awbClean.length === 0 ? undefined : awbClean;
-    const input = { awbNumber, airline: airline.trim(), flightNo: flight.trim(), etd: etd || null, eta: eta || null, freightUsd: Number.isFinite(freightUsd as number) ? freightUsd : null, notes: notes.trim() };
+    const input = { awbNumber, airline: airline.trim(), flightNo: flight.trim(), etd: etd || null, eta: eta || null, freightUsd: parseFreightUsd(freight), notes: notes.trim() };
     try {
       const s = editing ? await update.mutateAsync({ id: existing.id, ...input }) : await create.mutateAsync(input);
       navigate(`/m/cargo/avion/${s.id}`, { replace: true });

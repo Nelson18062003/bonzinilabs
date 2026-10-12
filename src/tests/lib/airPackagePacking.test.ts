@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fitsInPackage, packableGroups, packableParcels, packageClientGroups, sealCheck, type AirPackageParcel } from '@/lib/airPackage';
+import { fitsInPackage, packRefusal, packRefusalLabel, packableGroups, packableParcels, packageClientGroups, planPacking, sealCheck, type AirPackageParcel, type PackableParcel } from '@/lib/airPackage';
 import type { Deposit, Parcel, ReceptionClient } from '@/lib/reception';
 
 const client = (id: string, code: string): ReceptionClient => ({ user_id: id, customer_code: code, first_name: 'A', last_name: code, phone: null, email: null, company_name: null, city: null, country: null } as ReceptionClient);
@@ -91,5 +91,77 @@ describe('Paquets avion — 32 kg et pesée', () => {
     // 0,04 cm s'arrondit à 0 : refusé ici plutôt que par le serveur.
     expect(sealCheck('28', ['0,04', '', ''], pkg).dimsError).toBe('invalid');
     expect(sealCheck('28', ['abc', '', ''], pkg).valid).toBe(false);
+  });
+});
+
+describe('Paquets avion — pourquoi un colis n’entre pas', () => {
+  it('donne la raison, dans l’ordre utile à l’écran', () => {
+    const d = (o: Partial<Deposit> = {}) => deposit({ parcels: [], ...o });
+    expect(packRefusal(parcel(), d())).toBeNull();
+    expect(packRefusal(parcel(), d({ status: 'cancelled' }))).toBe('cancelled');
+    expect(packRefusal(parcel(), d({ location: 'warehouse' }))).toBe('sea');
+    expect(packRefusal(parcel({ air_package_id: 'k1', package_no: 'PQ-000045' }), d())).toBe('packed');
+    expect(packRefusal(parcel({ shipment_id: 's1', status: 'loaded' }), d())).toBe('gone');
+    expect(packRefusal(parcel(), d({ client: null }))).toBe('no_client');
+    expect(packRefusal(parcel({ weight_kg: null }), d())).toBe('no_weight');
+    expect(packRefusal(parcel({ weight_kg: 40 }), d())).toBe('too_heavy');
+    expect(packRefusalLabel('packed', { package_no: 'PQ-000045' })).toBe('déjà dans PQ-000045');
+    expect(packRefusalLabel('sea')).toMatch(/bateau/);
+  });
+});
+
+describe('Paquets avion — répartir en paquets de 32 kg', () => {
+  const item = (c: ReceptionClient, kg: number): PackableParcel => ({ parcel: parcel({ weight_kg: kg }), deposit: deposit({ client: c, parcels: [] }) });
+  const C = client('u3', 'BZ-100003');
+  const kgs = (bins: ReturnType<typeof planPacking>) => bins.map((b) => Math.round(b.kg * 10) / 10);
+
+  it('un seul paquet quand tout tient', () => {
+    const bins = planPacking([item(A, 8), item(B, 10), item(A, 6)]);
+    expect(bins).toHaveLength(1);
+    expect(bins[0]).toMatchObject({ packageId: null, kg: 24 });
+  });
+
+  it('jamais plus de 32 kg, et le moins de paquets possible', () => {
+    const bins = planPacking([item(A, 20), item(A, 15), item(B, 12), item(B, 10), item(C, 5)]);
+    expect(bins.every((b) => b.kg <= 32)).toBe(true);
+    expect(bins).toHaveLength(2); // 62 kg : deux paquets suffisent
+    expect(bins.flatMap((b) => b.items)).toHaveLength(5);
+  });
+
+  it('garde les colis d’un client ensemble quand cela ne coûte pas de paquet', () => {
+    const bins = planPacking([item(A, 10), item(B, 9), item(A, 8), item(B, 7)]);
+    expect(bins).toHaveLength(2);
+    for (const b of bins) expect(new Set(b.items.map((i) => i.deposit.client?.user_id)).size).toBe(1);
+  });
+
+  it('complète d’abord le paquet en cours, le reste part dans un nouveau', () => {
+    const into = { id: 'k45', package_no: 'PQ-000045', net_weight_kg: 27.4, max_weight_kg: 32 };
+    const bins = planPacking([item(A, 4), item(B, 9.2)], into);
+    expect(bins[0]).toMatchObject({ packageId: 'k45', packageNo: 'PQ-000045' });
+    expect(kgs(bins)).toEqual([31.4, 9.2]);
+    // Rien ne tient : le paquet en cours reste affiché, vide de nouveaux colis.
+    const none = planPacking([item(A, 9.2)], into);
+    expect(none.map((b) => [b.packageId, b.items.length])).toEqual([['k45', 0], [null, 1]]);
+  });
+
+  it('le paquet en cours se remplit d’abord, même quand un client devrait être coupé', () => {
+    const into = { id: 'k1', package_no: 'PQ-000001', net_weight_kg: 17, max_weight_kg: 32 };
+    const bins = planPacking([item(A, 10), item(A, 10)], into);
+    expect(bins.map((b) => [b.packageId, b.items.length, b.kg])).toEqual([['k1', 1, 27], [null, 1, 10]]);
+  });
+
+  it('au hasard : jamais plus de 32 kg, aucun colis perdu ni doublé', () => {
+    let seed = 7;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let run = 0; run < 300; run += 1) {
+      const its = Array.from({ length: 1 + Math.floor(rnd() * 14) }, () => item([A, B, C][Math.floor(rnd() * 3)], Math.round((0.5 + rnd() * 31) * 10) / 10));
+      const into = rnd() < 0.5 ? { id: 'kx', package_no: 'PQ-000009', net_weight_kg: Math.round(rnd() * 300) / 10, max_weight_kg: 32 } : null;
+      const bins = planPacking(its, into);
+      expect(bins.every((b) => Math.round(b.kg * 1000) <= 32000)).toBe(true);
+      const ids = bins.flatMap((b) => b.items.map((i) => i.parcel.id));
+      expect(new Set(ids).size).toBe(its.length);
+      expect(ids).toHaveLength(its.length);
+      if (into) expect(bins[0].packageId).toBe('kx');
+    }
   });
 });

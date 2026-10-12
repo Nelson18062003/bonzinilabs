@@ -391,6 +391,19 @@ export const SCREENS = [
   { key: 'j.expedition.manifest', name: '10-avis-expedition-pdf', desktop: true, role: 'ops', init: reset, viewport: '900x1290', before: showManifest },
   // 11. La liste des vols sur ordinateur : « LTA à venir » en italique.
   { key: 'j.expedition.desk-list', name: '11-bureau-liste-vols', desktop: true, role: 'ops', init: reset },
+  // 11b. « Nouvelle expédition » en fenêtre : la fiche du vol et les paquets fermés du bureau, à cocher (12/10).
+  {
+    key: 'j.expedition.desk-list', name: '11b-bureau-nouvelle-expedition-avec-paquets', desktop: true, role: 'ops', init: reset, viewport: '1440x1200',
+    before: async (page) => {
+      await page.getByRole('button', { name: /Nouvelle expédition/ }).first().click();
+      await settle(page, 700);
+      await page.getByRole('dialog').getByPlaceholder('071-12345675').fill('071-23456782');
+      await page.getByRole('dialog').getByPlaceholder('Ethiopian, Turkish…').fill('Ethiopian Airlines');
+      await page.getByRole('dialog').getByPlaceholder('ET 607').fill('ET 609');
+      await page.getByRole('dialog').getByRole('button', { name: 'Tout cocher' }).click();
+      await settle(page, 400);
+    },
+  },
   // 12. Maritime : MIEU3611115, déchargé à Kribi, que Maersk ne signale pas — « Marquer arrivé ».
   {
     key: 'j.expedition.container', name: '12-conteneur-suivi', desktop: true, role: 'ops', init: reset, viewport: '1440x1000', wait: 1500,
