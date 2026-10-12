@@ -172,8 +172,11 @@ export function BeneficiaryContactFields({
             ? draft.accountText.trim()
             : null;
 
-    // Coller un numéro ou une adresse choisit le bon type de compte.
+    // Coller un numéro ou une adresse DANS LE CHAMP DU COMPTE choisit le bon
+    // type de compte (pas dans la recherche du pays, qui est aussi dans ce bloc).
     const onPaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.id !== `${idPrefix}-account` && target.id !== `${idPrefix}-account-phone`) return;
       const text = e.clipboardData.getData('text');
       if (!text) return;
       const kind = detectAccountKind(text);

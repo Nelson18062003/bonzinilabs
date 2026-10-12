@@ -307,7 +307,9 @@ function PurchaseFormBody({ onClose, onAgain }: { onClose: () => void; onAgain: 
                   Dernier taux{lastIsSupplier && supplier ? ` chez ${supplier.display_name}` : ''} :{' '}
                   <span className={cn('font-semibold text-foreground', TK.num)}>{fmtNum(last.rate, 2)}</span> · {fmtWhen(last.at)}
                 </span>
-                {r.source.rate !== 'typed' && (
+                {/* Seulement quand le taux manque : déjà calculé (total + USDT tapés), le reprendre
+                    recalculerait en silence un montant que l'opérateur a tapé. */}
+                {r.source.rate === null && (
                   <TextLink onClick={() => setInputs((s) => typeAmount(s, 'rate', Math.round(last.rate * 100) / 100))}>Reprendre ce taux</TextLink>
                 )}
               </div>

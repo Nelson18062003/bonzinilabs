@@ -165,25 +165,25 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
     });
   }, [beneficiaryNames]);
 
+  // L'aperçu du QR est une URL d'objet : libérée quand on la remplace, et à la fermeture.
+  const qrUrlRef = useRef<string | null>(null);
+  const setQrUrl = (url: string | null) => {
+    if (qrUrlRef.current) URL.revokeObjectURL(qrUrlRef.current);
+    qrUrlRef.current = url;
+    setQrPreview(url);
+  };
   const setQrFromFiles = useCallback((files: File[]) => {
     const file = files[0];
     if (!file) return;
     setQrFile(file);
-    setQrPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return URL.createObjectURL(file);
-    });
+    setQrUrl(URL.createObjectURL(file));
   }, []);
   const removeQr = useCallback(() => {
     setQrFile(null);
-    setQrPreview((old) => {
-      if (old) URL.revokeObjectURL(old);
-      return null;
-    });
+    setQrUrl(null);
   }, []);
   useEffect(() => () => {
-    if (qrPreview) URL.revokeObjectURL(qrPreview);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (qrUrlRef.current) URL.revokeObjectURL(qrUrlRef.current);
   }, []);
 
   const newDraftFor = (m: Mode | null) => {

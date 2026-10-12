@@ -133,6 +133,14 @@ describe('Le taux', () => {
     expect(num(screen.getByLabelText(/^USDT reçus/))).toBe('10000');
   });
 
+  it('taux déjà calculé (total + USDT tapés) : pas de « Reprendre », qui recalculerait le total en silence', () => {
+    h.last = { rate: 655.4, at: '2026-10-10T09:30:00Z' };
+    render(<PurchaseForm open onClose={() => undefined} />);
+    type(screen.getByLabelText(/^Montant payé \(total\)/), '6554000');
+    type(screen.getByLabelText(/^USDT reçus/), '10000');
+    expect(screen.queryByRole('button', { name: 'Reprendre ce taux' })).toBeNull();
+  });
+
   it('un taux à 10 fois le dernier achat est signalé', () => {
     h.last = { rate: 655, at: '2026-10-10T10:00:00Z' };
     render(<PurchaseForm open onClose={() => undefined} />);
