@@ -40,7 +40,8 @@ function mountNativeButton(elementId: string): HTMLButtonElement | null {
   return btn;
 }
 
-export function useQrScanner(elementId: string, onDecode: (text: string) => void, enabled = true, { continuous = false }: { continuous?: boolean } = {}) {
+/** `restartKey` : le changer relance la caméra (après un refus du serveur, on rescanne sans quitter l'écran). */
+export function useQrScanner(elementId: string, onDecode: (text: string) => void, enabled = true, { continuous = false, restartKey = 0 }: { continuous?: boolean; restartKey?: number } = {}) {
   const native = isNativeApp();
   const [starting, setStarting] = useState(enabled && !native);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,8 @@ export function useQrScanner(elementId: string, onDecode: (text: string) => void
       };
     }
     let mounted = true;
+    setStarting(true);
+    setError(null);
     const start = async () => {
       try {
         const scanner = new Html5Qrcode(elementId);
@@ -83,7 +86,7 @@ export function useQrScanner(elementId: string, onDecode: (text: string) => void
       safeStopScanner(scannerRef.current);
       scannerRef.current = null;
     };
-  }, [elementId, enabled, native, continuous]);
+  }, [elementId, enabled, native, continuous, restartKey]);
 
   return { starting, error, stop: () => (native ? closeNativeScanner() : safeStopScanner(scannerRef.current)) };
 }

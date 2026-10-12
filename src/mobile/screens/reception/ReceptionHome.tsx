@@ -1,12 +1,15 @@
 // ============================================================
 // RÉCEPTION — Accueil. Un seul geste qui compte : « Nouveau dépôt ». En
 // dessous, la journée du réceptionnaire : ses dépôts, ses colis, ses kilos,
-// ses m³, et ce qui reste en attente d'attribution. C'est tout son tableau
-// de bord — il ne voit rien d'autre de la plateforme.
+// ses m³, et ce qui reste en attente d'attribution. Chaque dépôt ouvre SA
+// fiche (en cours ou terminé). Les paquets avion ont leur onglet.
+// Le lieu (bureau = avion, entrepôt = bateau) se lit en haut, et se change
+// par « Changer » (confirmation) — plus d'interrupteur qu'on touche par
+// mégarde. Le premier choix du lieu se fait dans la coquille (LocationGate).
 // ============================================================
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, ChevronLeft, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
+import { Box, Check, ChevronLeft, ChevronRight, HelpCircle, LogOut, Package, Ruler, Scale, ScanLine } from 'lucide-react';
 import { getCurrentLocale } from '@/i18n';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,8 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatCbm, formatKg, type ReceptionLocation } from '@/lib/reception';
 import { useReceptionDay } from '@/hooks/useReception';
-import { useAirPackages, usePackableParcels } from '@/hooks/useAirPackages';
-import { SURFACE, TEXT, TYPE, BottomSheet, Card, IconButton, PrimaryPill, ScreenLoader, Segmented, SoftPill, StatCard } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BottomSheet, Card, IconButton, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatCard } from '@/mobile/designKit';
 import { DepositRow, LocationMark } from '@/mobile/components/reception/bits';
 import { LanguagePicker } from '@/mobile/components/reception/LanguagePicker';
 import { useReceptionLocation } from './useReceptionLocation';
@@ -29,43 +31,14 @@ export function ReceptionHome() {
   // La journée, puis les précédentes : ‹ › sous le titre. 0 = aujourd'hui.
   const [back, setBack] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [placeOpen, setPlaceOpen] = useState(false);
   const day = (() => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
-  const { data, isLoading } = useReceptionDay(back === 0 ? undefined : day);
+  const { data, isLoading, error, refetch } = useReceptionDay(back === 0 ? undefined : day);
   const dayLabel = back === 0 ? t('rc_today') : back === 1 ? t('rc_yesterday') : new Date(`${day}T12:00:00`).toLocaleDateString(getCurrentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
 
   const firstName = currentUser?.firstName || '';
   const stats = data?.stats;
   const pending = data?.pending ?? 0;
-
-  const locationOptions = (['warehouse', 'office'] as ReceptionLocation[]).map((l) => ({
-    value: l,
-    label: (
-      <span className="inline-flex items-center gap-2">
-        <LocationMark location={l} size={24} />
-        {l === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}
-      </span>
-    ),
-  }));
-
-  // Premier lancement sur cet appareil : où est-on ? Le lieu décide du mode.
-  if (!location) {
-    return (
-      <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-10 pt-[calc(1.25rem+env(safe-area-inset-top))]', SURFACE.canvas)}>
-        <div className="mb-8 flex justify-end"><LanguagePicker /></div>
-        <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_choose_location')}</h1>
-        <p className={cn('mt-3', TYPE.body, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
-        <div className="mt-8 flex flex-col gap-4">
-          {(['warehouse', 'office'] as ReceptionLocation[]).map((l) => (
-            <button key={l} type="button" onClick={() => setLocation(l)} className={cn('flex min-h-[72px] w-full items-center gap-4 rounded-lg px-4 text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
-              <LocationMark location={l} size={44} />
-              <span className={cn('flex-1', TYPE.bodyStrong, TEXT.strong)}>{l === 'warehouse' ? t('rc_warehouse') : t('rc_office')}</span>
-              <ChevronRight className={cn('h-5 w-5', TEXT.muted)} />
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
@@ -79,9 +52,14 @@ export function ReceptionHome() {
             <IconButton icon={LogOut} ariaLabel={t('logout')} onClick={() => void logout().then(() => navigate('/r/login'))} />
           </div>
         </div>
-        <div className="mt-5">
-          <Segmented value={location} onChange={setLocation} options={locationOptions} />
-        </div>
+        {/* Le lieu : une information, pas un interrupteur. Il décide du mode des prochains dépôts. */}
+        {location && (
+          <button type="button" onClick={() => setPlaceOpen(true)} className={cn('mt-4 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
+            <LocationMark location={location} size={32} />
+            <span className={cn('min-w-0 flex-1', TYPE.bodyStrong, TEXT.strong)}>{location === 'warehouse' ? t('rc_warehouse') : t('rc_office')}</span>
+            <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</span>
+          </button>
+        )}
       </header>
 
       <div className="space-y-6 px-5 pb-8 pt-4">
@@ -93,9 +71,6 @@ export function ReceptionHome() {
             <HelpCircle className="h-4 w-4" /> {t('rc_how_it_works')}
           </button>
         </div>
-
-        {/* Au bureau (avion), les paquets de 32 kg sont le second geste de la journée. */}
-        {location === 'office' && <PackagesEntry prominent />}
 
         {pending > 0 && (
           <button type="button" onClick={() => navigate('/r/pending')} className="flex w-full items-center gap-4 rounded-lg bg-[#FFF1C2] px-4 py-4 text-left text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
@@ -113,8 +88,10 @@ export function ReceptionHome() {
               <IconButton icon={ChevronRight} variant="subtle" ariaLabel={t('rc_day_next')} onClick={() => setBack((b) => Math.max(0, b - 1))} disabled={back === 0} />
             </span>
           </div>
-          {isLoading || !stats ? (
+          {isLoading ? (
             <ScreenLoader />
+          ) : error || !stats ? (
+            <ScreenError title={t('error')} description={(error as Error | null)?.message ?? ''} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <StatCard icon={Box} label={t('rc_deposits')} value={stats.deposits} />
@@ -134,15 +111,28 @@ export function ReceptionHome() {
             ) : (
               <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
                 {data.deposits.map((d) => (
-                  <DepositRow key={d.id} deposit={d} onClick={() => navigate(d.status === 'open' ? `/r/deposit/${d.id}` : `/r/deposit/${d.id}/done`)} />
+                  <DepositRow key={d.id} deposit={d} onClick={() => navigate(`/r/deposit/${d.id}`)} />
                 ))}
               </Card>
             )}
           </section>
         )}
 
-        {location === 'warehouse' && <PackagesEntry prominent={false} />}
       </div>
+
+      {/* Changer de lieu : un choix explicite, confirmé d'un toucher. */}
+      <BottomSheet open={placeOpen} onClose={() => setPlaceOpen(false)} title={t('rc_choose_location')}>
+        <p className={cn('mb-4', TYPE.body, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
+        <div className="flex flex-col gap-3">
+          {(['warehouse', 'office'] as ReceptionLocation[]).map((l) => (
+            <button key={l} type="button" onClick={() => { setLocation(l); setPlaceOpen(false); }} className={cn('flex min-h-[64px] w-full items-center gap-4 rounded-lg border px-4 text-left', l === location ? 'border-[#2C2C2C] dark:border-[#E3E3E3]' : SURFACE.divider)}>
+              <LocationMark location={l} size={40} />
+              <span className={cn('flex-1', TYPE.bodyStrong, TEXT.strong)}>{l === 'warehouse' ? t('rc_warehouse') : t('rc_office')}</span>
+              {l === location && <Check className={cn('h-5 w-5', TEXT.strong)} />}
+            </button>
+          ))}
+        </div>
+      </BottomSheet>
 
       {/* La pédagogie tient en quatre lignes, à portée de main, jamais imposée. */}
       <BottomSheet open={helpOpen} onClose={() => setHelpOpen(false)} title={t('rc_how_it_works')}>
@@ -160,43 +150,3 @@ export function ReceptionHome() {
   );
 }
 
-/**
- * L'entrée des paquets avion : grande carte au bureau (le lieu de l'avion),
- * simple ligne à l'entrepôt. Le chiffre : au bureau, les colis qui attendent
- * un paquet (ce qu'il y a à faire) ; à l'entrepôt, les paquets en cours.
- */
-function PackagesEntry({ prominent }: { prominent: boolean }) {
-  const navigate = useNavigate();
-  const { t } = useLanguage();
-  const { t: ti } = useTranslation('agent');
-  const { data } = useAirPackages('bureau');
-  // Les colis à emballer ne se lisent qu'au bureau : à l'entrepôt, la carte reste une simple ligne.
-  const todo = usePackableParcels(prominent);
-  const toPack = (todo.data?.ready.length ?? 0) + (todo.data?.blocked.length ?? 0);
-  const open = data?.filter((p) => p.status === 'open').length ?? 0;
-  const ready = data?.filter((p) => p.status === 'sealed' && !p.air_shipment_id).length ?? 0;
-  const summary = [
-    toPack > 0 ? ti('rc_pk_home_todo', { count: toPack }) : null,
-    open > 0 ? ti('rc_pk_home_open', { count: open }) : t('rc_pk_home_none'),
-    ready > 0 ? ti('rc_pk_home_ready', { count: ready }) : null,
-  ].filter(Boolean).join(' · ');
-  const badge = prominent ? toPack : open;
-  return (
-    <button
-      type="button"
-      onClick={() => navigate('/r/paquets')}
-      className={cn('flex w-full items-center gap-4 rounded-lg text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]', prominent ? 'min-h-[88px] px-4 py-4' : 'min-h-[64px] px-4 py-3')}
-    >
-      <LocationMark location="office" size={prominent ? 48 : 32} />
-      <span className="min-w-0 flex-1">
-        <span className={cn('block', prominent ? TYPE.lead : TYPE.bodyStrong, TEXT.strong)}>{t('rc_pk_title')}</span>
-        <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{summary}</span>
-        {prominent && <span className={cn('mt-0.5 block', TYPE.small, TEXT.muted)}>{t('rc_pk_home_hint')}</span>}
-      </span>
-      {badge > 0 && (
-        <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-[#2C2C2C] px-2.5 text-[16px] font-semibold tabular-nums text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]">{badge}</span>
-      )}
-      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-    </button>
-  );
-}

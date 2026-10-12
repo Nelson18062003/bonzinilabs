@@ -10,14 +10,14 @@ import { cn } from '@/lib/utils';
 import { formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionPending } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Button, Card, Holder, ScreenLoader } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Button, Card, Holder, ScreenError, ScreenLoader } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 
 export function ReceptionPending() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
-  const { data, isLoading } = useReceptionPending();
+  const { data, isLoading, error, refetch } = useReceptionPending();
 
   return (
     <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
@@ -26,6 +26,9 @@ export function ReceptionPending() {
         <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pending_hint')}</p>
         {isLoading ? (
           <ScreenLoader />
+        ) : error ? (
+          // Une coupure réseau ne se montre jamais comme « rien en attente ».
+          <ScreenError title={t('error')} description={(error as Error).message} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />
         ) : !data || data.length === 0 ? (
           <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
             <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pending_empty')}</p>

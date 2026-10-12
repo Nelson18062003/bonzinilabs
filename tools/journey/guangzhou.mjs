@@ -91,7 +91,12 @@ const pend1 = deposit({
   id: 'pend1', deposit_no: 'RC-000119', client: null, brought_by: 'courier', opened_at: gz(9, 12), closed_at: gz(9, 15), ...noSupplier,
   parcels: [parcel('RC-000119', 1, 'carton', 'Fournisseur Yiwu Hengda (sur le bordereau)', 4.4, [40, 30, 30], { courier_waybill: 'YT7731002588108' })],
 });
-const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1 };
+// RC-000124 : un dépôt que Li Wei (un collègue) est en train de saisir — Kevin le voit en lecture.
+const depLi = deposit({
+  id: 'depLi', deposit_no: 'RC-000124', client: samuel, status: 'open', received_by: 'li', received_by_name: 'Li Wei', opened_at: gz(16, 2), ...noSupplier,
+  parcels: [parcel('RC-000124', 1, 'carton', 'Pièces auto (amortisseurs)', 11.2, [60, 40, 30])],
+});
+const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1, depLi };
 const dayDeposits = [dep1, dep2, dep3, dep4];
 const sum = (xs, f) => xs.reduce((s, x) => s + f(x), 0);
 
@@ -385,6 +390,11 @@ const withGracePackage = async (page) => {
   await setup(page);
   state.made.push({ id: 'pk46', no: 'PQ-000046', parcels: [], by: 'grace' });
 };
+/** Un téléphone neuf : aucun lieu mémorisé (la coquille demande « Où êtes-vous ? »). */
+const noPlace = async (page) => {
+  await setup(page);
+  await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
+};
 /** « Colis à emballer » : tous les colis d'Aïcha cochés d'un geste (sa case de client). */
 async function pickAicha(page) {
   await fontsReady(page);
@@ -614,7 +624,7 @@ export const SCREENS = [
   // 2. Le dépôt d'Aïcha en cours : 3 colis pesés, mesurés, photographiés.
   { key: 'j.guangzhou.deposit', name: '02-depot-en-cours', role: 'receptionist', init: setup, wait: 1800, viewport: '390x1090', before: fontsReady },
   // 3. Le dépôt terminé : le reçu…
-  { key: 'j.guangzhou.done', name: '03-depot-termine', role: 'receptionist', init: setup, wait: 1500 },
+  { key: 'j.guangzhou.done', name: '03-depot-termine', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1500', fullPage: false },
   // …et les étiquettes des colis (une par carton).
   { key: 'j.guangzhou.done', name: '04-etiquettes-colis', role: 'receptionist', init: setup, wait: 1500, fullPage: false, viewport: '390x1010',
     before: async (page) => { await page.getByRole('button', { name: /Imprimer les étiquettes/ }).click(); await page.waitForTimeout(3000); } },
@@ -641,24 +651,6 @@ export const SCREENS = [
         console.log(`  · étiquette enregistrée : ${join(OUT, '09b-etiquette-paquet-PQ-000045.png')} (${dl.suggestedFilename()})`);
       } catch (e) { console.log('  · étiquette non enregistrée :', e.message); }
       await page.waitForTimeout(800);
-    } },
-  // 3b. Au bureau, le dépôt terminé dit l'étape suivante : « Colis avion : mettez-les en paquet ».
-  { key: 'j.guangzhou.done', name: '03b-depot-termine-mettre-en-paquet', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1500', before: fontsReady },
-  // 3c. « Mettre en paquet » : aucun des 3 colis ne tient dans PQ-000045 (reste 4,6 kg) → un nouveau paquet.
-  { key: 'j.guangzhou.done', name: '03c-depot-mettre-en-paquet-feuille', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1100', fullPage: false,
-    before: async (page) => {
-      await fontsReady(page);
-      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
-      await page.waitForTimeout(900);
-    } },
-  // 3d. C'est fait : PQ-000046, 3 colis — « Ouvrir PQ-000046 » (le fermer après la pesée).
-  { key: 'j.guangzhou.done', name: '03d-depot-mis-en-paquet', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
-    before: async (page) => {
-      await fontsReady(page);
-      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
-      await page.waitForTimeout(800);
-      await page.getByRole('dialog').getByRole('button', { name: /Mettre 3 colis en paquet/ }).click();
-      await page.waitForTimeout(1500);
     } },
   // 5b. Colis à emballer : par client ; la case d'Aïcha coche ses 7 colis (66,9 kg).
   { key: 'j.guangzhou.pack-todo', name: '05b-colis-a-emballer', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1900', before: pickAicha },
@@ -698,6 +690,15 @@ export const SCREENS = [
         await page.waitForTimeout(1200);
       }
     } },
+  // 15a. Téléphone neuf : le lieu se choisit avant tout (plus de « Continuer » grisé plus loin).
+  { key: 'j.guangzhou.home', name: '15a-ou-etes-vous', role: 'receptionist', init: noPlace, wait: 1200, viewport: '390x844', fullPage: false, before: fontsReady },
+  // 15b. Un dépôt terminé s'ouvre sur SA fiche : ses colis, leurs photos, les étiquettes sur place.
+  { key: 'j.guangzhou.deposit-closed', name: '15b-depot-termine-sa-fiche', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  // 15c. Le dépôt en cours d'un collègue : en lecture, avec qui le saisit.
+  { key: 'j.guangzhou.deposit-other', name: '15c-depot-dun-collegue', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', before: fontsReady },
+  // 15d. Retirer un colis demande confirmation.
+  { key: 'j.guangzhou.deposit', name: '15d-retirer-un-colis-confirmation', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
+    before: async (page) => { await fontsReady(page); await page.getByRole('button', { name: 'Retirer' }).first().click(); await page.waitForTimeout(700); } },
   // 9. Au bureau : le devis de fret du dépôt RC-000123 (au kilo, avion), envoyé, payé en partie…
   { key: 'j.guangzhou.quote', name: '10-devis-fret', role: 'ops', desktop: true, viewport: '1440x1200', init: deskSetup, wait: 2500, before: fontsReady },
   // …et l'encaissement du reste (Mobile Money reçu à Douala), qui fera le reçu.

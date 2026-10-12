@@ -6,45 +6,72 @@
 // téléphone (un autre écran), ou enregistrer sans connaître le client.
 // Un bordereau de transporteur scanné ici est gardé pour le premier colis.
 //
-// Avec `?assign=<dépôt>`, l'écran sert à attribuer un dépôt en attente.
+// Avec `?assign=<dépôt>`, l'écran sert à attribuer un dépôt en attente :
+// réussi, on revient là d'où l'on venait (En attente, la fiche du dépôt…) ;
+// refusé (un collègue l'a déjà attribué), l'écran se remet à scanner et
+// propose « Voir le dépôt » — jamais un voile « Client trouvé » figé.
+// Les étapes avancent en REMPLAÇANT l'écran : le retour du téléphone ne
+// ramène jamais dans une étape close.
 // ============================================================
 import { useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Barcode, Check, HelpCircle, Search } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Barcode, Check, HelpCircle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, parseScan, type ReceptionClient } from '@/lib/reception';
 import { UnknownCodeError, useAssignDeposit, useClientByCode } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TYPE, Button } from '@/mobile/designKit';
+import { SURFACE, TONE_PILL, TYPE, Button } from '@/mobile/designKit';
 import { StepHeader } from '@/mobile/components/reception/bits';
 import { useQrScanner } from '@/mobile/components/reception/useQrScanner';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { readDraftWaybill, writeDraftWaybill } from './useReceptionLocation';
 
 const SCANNER_ID = 'reception-qr-reader';
 
 export function ReceptionIdentify() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const [params] = useSearchParams();
   const assignId = params.get('assign');
   const { t } = useLanguage();
   const [waybill, setWaybill] = useState<string | null>(() => readDraftWaybill());
   const [found, setFound] = useState<ReceptionClient | null>(null);
+  // Le refus du serveur (attribution) : affiché avec ses sorties, la caméra repart.
+  const [refused, setRefused] = useState<string | null>(null);
+  const [epoch, setEpoch] = useState(0);
   const lockRef = useRef(false);
   const assign = useAssignDeposit();
   const byCode = useClientByCode();
   const qs = assignId ? `?assign=${assignId}` : '';
 
+  /** L'écran redevient utilisable : plus de voile, la caméra repart. */
+  const resume = () => {
+    setFound(null);
+    lockRef.current = false;
+    setEpoch((e) => e + 1);
+  };
+
   const pick = async (client: ReceptionClient) => {
     scanner.stop();
     if (assignId) {
-      const dep = await assign.mutateAsync({ depositId: assignId, clientUserId: client.user_id });
-      toast.success(t('rc_assigned'), { description: clientFullName(client) });
-      navigate(`/r/deposit/${dep.id}`, { replace: true });
+      try {
+        await assign.mutateAsync({ depositId: assignId, clientUserId: client.user_id });
+      } catch (e) {
+        // Le hook a déjà dit le refus (toast) : ici, la sortie et la caméra.
+        setRefused((e as Error).message);
+        resume();
+        return;
+      }
+      toast.success(t('rc_assigned'), {
+        description: clientFullName(client),
+        action: { label: t('rc_see_deposit'), onClick: () => navigate(`/r/deposit/${assignId}`) },
+      });
+      back('/r/pending');
       return;
     }
-    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`);
+    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
   };
 
   const scanner = useQrScanner(SCANNER_ID, (text) => {
@@ -61,21 +88,33 @@ export function ReceptionIdentify() {
           return new Promise<void>((r) => setTimeout(r, 700)).then(() => pick(client));
         })
         .catch((err: unknown) => {
-          toast.error(t('rc_code_unknown'), { description: err instanceof UnknownCodeError ? err.code : (err as Error).message });
+          // « Code inconnu » seulement quand le code ne mène à personne ; une coupure réseau le dit autrement.
+          if (err instanceof UnknownCodeError) toast.error(t('rc_code_unknown'), { description: err.code });
+          else toast.error(t('error'), { description: (err as Error).message });
           setTimeout(() => { lockRef.current = false; }, 2000);
         });
     } else {
       setWaybill(res.value);
       writeDraftWaybill(res.value);
     }
-  });
+  }, true, { restartKey: epoch });
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack backTo={assignId ? '/r/pending' : '/r'} />
+      <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack onBack={() => back(assignId ? '/r/pending' : '/r')} />
 
       <div className="flex-1 space-y-6 px-5 pb-10 pt-4">
         <StepHeader step={1} total={4} title={t('rc_s1_title')} help={t('rc_s1_help')} />
+
+        {refused && assignId && (
+          <div role="alert" className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.danger)}>
+            <p className={cn('flex items-start gap-2', TYPE.bodyStrong)}><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /> {refused}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="neutral" className="h-11 px-4" onClick={() => navigate(`/r/deposit/${assignId}`, { replace: true })}>{t('rc_see_deposit')}</Button>
+              <Button variant="subtle" className="h-11 px-4" onClick={() => back('/r/pending')}><ArrowLeft /> {t('rc_back')}</Button>
+            </div>
+          </div>
+        )}
 
         {/* La caméra : carrée, grande, seule. */}
         <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
@@ -103,11 +142,11 @@ export function ReceptionIdentify() {
 
         {/* Pas de QR ? Deux sorties, grandes, l'une après l'autre. */}
         <div className="flex flex-col gap-3">
-          <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => { scanner.stop(); navigate(`/r/new/search${qs}`); }}>
+          <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => { scanner.stop(); navigate(`/r/new/search${qs}`, { replace: true }); }}>
             <Search /> {t('rc_s1_search')}
           </Button>
           {!assignId && (
-            <Button variant="subtle" className="h-14 w-full text-[16px]" onClick={() => { scanner.stop(); navigate('/r/new/how'); }}>
+            <Button variant="subtle" className="h-14 w-full text-[16px]" onClick={() => { scanner.stop(); navigate('/r/new/how', { replace: true }); }}>
               <HelpCircle /> {t('rc_s1_unknown')}
             </Button>
           )}

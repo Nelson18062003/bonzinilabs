@@ -75,6 +75,6 @@ export function usePackFix() {
     if (it.reason === 'too_heavy') return null;
     if (it.deposit.received_by !== currentUser?.id && !hasPermission('canManageCargo')) return null;
     if (it.reason === 'deposit_open') return `/r/deposit/${it.deposit.id}`;
-    return `/r/deposit/${it.deposit.id}/parcel/${it.parcel.id}`;
+    return `/r/deposit/${it.deposit.id}/parcel/${it.parcel.id}?step=weight`; // droit à la pesée
   };
 }

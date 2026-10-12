@@ -1,29 +1,33 @@
 // ============================================================
-// RÉCEPTION — Les paquets avion du bureau (32 kg au plus chacun). En tête,
-// ce qui attend : « N colis attendent un paquet » → les choisir, et l'app
-// les répartit (Colis à emballer). Sinon, ou en plus : « Nouveau paquet »
-// (vide, on y scanne les colis). Dessous, une boîte de scan pour rouvrir un
-// paquet par son étiquette (PQ-…), puis les paquets qui n'ont pas encore
-// quitté le bureau, rangés par ce qu'il reste à en faire : en cours,
-// refusés à l'aéroport, fermés et prêts, affectés à une expédition — qu'ils
-// aient été ouverts ici ou depuis l'ordinateur.
+// RÉCEPTION — Onglet Paquets : les paquets avion du bureau (32 kg au plus
+// chacun). Le geste principal suit le terrain : on prend son carton et on y
+// met les colis disponibles — « Continuer PQ-… · reste X kg » s'il y a un
+// paquet en cours (celui touché en dernier, le sien d'abord), sinon
+// « Nouveau paquet ». Dessous, en une ligne, ce qui attend un paquet (→ la
+// liste des colis à emballer, à cocher par client). Puis une boîte de scan
+// pour rouvrir un paquet par son étiquette (PQ-…), et les paquets qui n'ont
+// pas encore quitté le bureau, rangés par ce qu'il reste à en faire — qu'ils
+// aient été ouverts ici ou depuis l'ordinateur. À l'entrepôt (bateau), un
+// mot le dit : les paquets avion se font au bureau.
 // L'app BONZINI HQ ouvre /r/paquets?code=PQ-… après un scan natif : on
 // retrouve le paquet et on va droit à sa fiche.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ListChecks, PackagePlus } from 'lucide-react';
+import { ChevronRight, ListChecks, PackageOpen, PackagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { packageQueue, parsePackageCode, sumParcelKg, waitingCount, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
+import { packageQueue, parsePackageCode, sumParcelKg, waitingCount, weightGauge, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
 import { useAirPackages, useCreateAirPackage, useFindAirPackage, usePackableParcels } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
 import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { PackageRow } from '@/mobile/components/reception/packageBits';
 import { usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
+import { useReceptionLocation } from './useReceptionLocation';
 
 /** Une étiquette de colis (RC-000123-01) n'est pas un paquet, même si elle contenait « PQ ». */
 const PARCEL_LABEL = /RC[^0-9]{0,3}\d{6}/i;
@@ -39,10 +43,14 @@ export function ReceptionPackages() {
   const { data, isLoading, error, refetch } = useAirPackages('bureau');
   const create = useCreateAirPackage();
   const find = useFindAirPackage();
-  const todo = usePackableParcels();
+  const { currentUser } = useAdminAuth();
+  const { location } = useReceptionLocation();
+  const atOffice = location !== 'warehouse';
+  const todo = usePackableParcels(atOffice);
   // Ce qui attend un paquet : prêts et à compléter — un colis de plus de 32 kg part seul, il ne compte pas.
   const count = todo.data ? waitingCount(todo.data) : null;
   const scanTexts = useScanTexts(t('rc_pk_find_hint'));
+  const tx = usePackageText();
   const [codeError, setCodeError] = useState<string | null>(null);
 
   const groupTitle: Record<GroupKey, string> = {
@@ -51,6 +59,12 @@ export function ReceptionPackages() {
     ready: t('rc_pk_group_ready'),
     assigned: t('rc_pk_group_assigned'),
   };
+  // Le paquet à continuer : celui touché en dernier, le mien d'abord.
+  const current = useMemo(() => {
+    const open = (data ?? []).filter((p) => p.status === 'open');
+    const pool = open.some((p) => p.created_by === currentUser?.id) ? open.filter((p) => p.created_by === currentUser?.id) : open;
+    return [...pool].sort((a, b) => (a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0))[0] ?? null;
+  }, [data, currentUser?.id]);
   const groups = useMemo(
     () => GROUPS.map((key) => ({ key, items: (data ?? []).filter((p) => packageQueue(p) === key) })).filter((g) => g.items.length > 0),
     [data],
@@ -94,18 +108,34 @@ export function ReceptionPackages() {
 
   return (
     <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_pk_title')} subtitle={t('rc_pk_subtitle')} showBack backTo="/r" />
+      <MobileHeader title={t('rc_pk_title')} subtitle={t('rc_pk_subtitle')} alignStart />
       <div className="space-y-6 px-5 pb-8 pt-5">
-        {todo.data && count && count.total > 0 ? (
-          <div className="space-y-3">
-            <TodoCard ready={todo.data.ready} blocked={count.toFix} onOpen={() => navigate('/r/paquets/emballer')} />
-            <SoftPill onClick={onCreate} disabled={create.isPending} className="h-14 w-full text-[17px]"><PackagePlus /> {t('rc_pk_new')}</SoftPill>
-            <p className={cn('-mt-1 text-center', TYPE.small, TEXT.muted)}>{t('rc_pk_new_scan_hint')}</p>
-          </div>
+        {!atOffice ? (
+          <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.info)}>{t('rc_pk_warehouse_note')}</p>
         ) : (
-          <PrimaryPill onClick={onCreate} loading={create.isPending} disabled={create.isPending} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
-            <PackagePlus /> {t('rc_pk_new')}
-          </PrimaryPill>
+          <div className="space-y-3">
+            {/* Le geste principal : continuer le carton en cours, sinon en ouvrir un. */}
+            {current ? (
+              <>
+                <PrimaryPill onClick={() => navigate(`/r/paquets/${current.id}`)} ariaLabel={ti('rc_pk_continue', { no: current.package_no, left: formatKg(weightGauge(current).left) })} className="h-auto min-h-16 w-full py-2.5 text-[18px] [&_svg]:h-6 [&_svg]:w-6">
+                  <PackageOpen />
+                  <span className="flex flex-col items-start leading-tight">
+                    <span className="tabular-nums">{ti('rc_pk_continue_no', { no: current.package_no })}</span>
+                    <span className="text-[14px] font-medium tabular-nums opacity-80">{tx.left(weightGauge(current))}</span>
+                  </span>
+                </PrimaryPill>
+                <SoftPill onClick={onCreate} disabled={create.isPending} className="h-12 w-full"><PackagePlus /> {t('rc_pk_new')}</SoftPill>
+              </>
+            ) : (
+              <PrimaryPill onClick={onCreate} loading={create.isPending} disabled={create.isPending} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
+                <PackagePlus /> {t('rc_pk_new')}
+              </PrimaryPill>
+            )}
+            {/* Ce qui attend un paquet, en une ligne : la liste à cocher, par client. */}
+            {todo.data && count && count.total > 0 && (
+              <TodoLine ready={todo.data.ready} toFix={count.toFix} onOpen={() => navigate('/r/paquets/emballer')} />
+            )}
+          </div>
         )}
 
         <div className="space-y-2">
@@ -142,26 +172,22 @@ export function ReceptionPackages() {
   );
 }
 
-/** Ce qui attend un paquet : le nombre en grand, les kilos et les clients, puis « Choisir les colis ». */
-function TodoCard({ ready, blocked, onOpen }: { ready: PackableParcel[]; blocked: number; onOpen: () => void }) {
-  const { t } = useLanguage();
+/** Ce qui attend un paquet, en une ligne : combien, quels kilos, combien à compléter — et la liste. */
+function TodoLine({ ready, toFix, onOpen }: { ready: PackableParcel[]; toFix: number; onOpen: () => void }) {
   const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
   const clients = new Set(ready.map((it) => it.deposit.client?.user_id)).size;
   return (
-    <Card className="space-y-4">
-      <div>
-        <p className={cn('tabular-nums', TYPE.title, TEXT.strong)}>{ti('rc_pk_todo_count', { count: ready.length + blocked })}</p>
-        {ready.length > 0 && (
-          <p className={cn('mt-1 tabular-nums', TYPE.body, TEXT.muted)}>
-            {blocked > 0 && `${ti('rc_pk_todo_ready_n', { count: ready.length })} · `}{formatKg(sumParcelKg(ready))} · {tx.clients(clients)}
-          </p>
-        )}
-        {blocked > 0 && <p className={cn('mt-1 tabular-nums', TYPE.smallStrong, TONE_TEXT.pending)}>{ti('rc_pk_todo_blocked_count', { count: blocked })}</p>}
-      </div>
-      {ready.length > 0
-        ? <PrimaryPill onClick={onOpen} className="h-14 w-full text-[17px]"><ListChecks /> {t('rc_pk_todo_cta')}</PrimaryPill>
-        : <SoftPill onClick={onOpen} className="h-12 w-full">{t('rc_pk_todo_see')}</SoftPill>}
-    </Card>
+    <button type="button" onClick={onOpen} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
+      <ListChecks className={cn('h-6 w-6 shrink-0', TEXT.strong)} />
+      <span className="min-w-0 flex-1">
+        <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{ti('rc_pk_todo_count', { count: ready.length + toFix })}</span>
+        <span className={cn('block tabular-nums', TYPE.small, TEXT.muted)}>
+          {ready.length > 0 && `${formatKg(sumParcelKg(ready))} · ${tx.clients(clients)}`}
+          {toFix > 0 && <span className={TONE_TEXT.pending}>{ready.length > 0 ? ' · ' : ''}{ti('rc_pk_todo_blocked_count', { count: toFix })}</span>}
+        </span>
+      </span>
+      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
+    </button>
   );
 }

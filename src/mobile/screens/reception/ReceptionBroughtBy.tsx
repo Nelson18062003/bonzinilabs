@@ -2,7 +2,10 @@
 // RÉCEPTION — « Qui apporte le colis ? » Quatre cas du terrain, quatre
 // grandes cartes : un transporteur, le client lui-même (retour du marché),
 // quelqu'un pour lui (nom + téléphone), Bonzini qui est allé le chercher.
-// Puis on ouvre le dépôt.
+// Puis on ouvre le dépôt. La flèche ramène à la caméra (ou à la fiche du
+// client si l'on vient de là, `?from=client`). Si l'appareil ne sait pas
+// encore où il est (bureau ou entrepôt), on le demande ICI : jamais un
+// « Continuer » grisé sans raison.
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -11,16 +14,19 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { BROUGHT_BY, initials, type BroughtBy } from '@/lib/reception';
 import { useOpenDeposit } from '@/hooks/useReception';
+import type { ReceptionLocation } from '@/lib/reception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, FormField, Holder, PrimaryPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, StepHeader } from '@/mobile/components/reception/bits';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionBroughtBy() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const [params] = useSearchParams();
   const { t } = useLanguage();
-  const { location } = useReceptionLocation();
+  const { location, setLocation } = useReceptionLocation();
   const open = useOpenDeposit();
 
   const clientId = params.get('client');
@@ -29,30 +35,33 @@ export function ReceptionBroughtBy() {
   const [choice, setChoice] = useState<BroughtBy | null>(null);
   const [repName, setRepName] = useState('');
   const [repPhone, setRepPhone] = useState('');
+  const fromCard = params.get('from') === 'client';
+  /** Revenir au choix du client : la caméra (en remplaçant cette étape), ou la fiche d'où l'on est parti. */
+  const leave = () => (fromCard && clientId ? back(`/r/clients/${clientId}`) : navigate('/r/new', { replace: true }));
 
   const canOpen = !!location && !!choice && (choice !== 'representative' || repName.trim().length > 0);
 
   const submit = async () => {
-    if (!location || !choice) return;
+    if (!location || !choice || open.isPending) return;
     const dep = await open.mutateAsync({
       location,
       clientUserId: clientId,
       broughtBy: choice,
       representativeName: choice === 'representative' ? repName : undefined,
       representativePhone: choice === 'representative' ? repPhone : undefined,
-    });
-    navigate(`/r/deposit/${dep.id}/supplier`, { replace: true });
+    }).catch(() => null); // le hook dit le refus ; on reste sur l'étape, rien de perdu
+    if (dep) navigate(`/r/deposit/${dep.id}/supplier`, { replace: true });
   };
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_new_deposit')} showBack backTo="/r/new" />
+      <MobileHeader title={t('rc_new_deposit')} showBack onBack={leave} />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
         <StepHeader step={2} total={4} title={t('rc_brought_title')} help={t('rc_s2_help')} />
 
         {/* Le client, en une ligne : on sait pour qui on travaille, sans que ça prenne l'écran. */}
-        <button type="button" onClick={() => navigate('/r/new')} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
+        <button type="button" onClick={leave} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
           <Holder size="sm" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
           <span className={cn('min-w-0 flex-1 break-words', TYPE.bodyStrong, TEXT.strong)}>
             {clientId ? clientName : t('rc_unknown_client')}
@@ -61,6 +70,20 @@ export function ReceptionBroughtBy() {
           {location && <LocationMark location={location} size={24} />}
           <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</span>
         </button>
+
+        {!location && (
+          <Card className="space-y-3">
+            <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('rc_choose_location')}</p>
+            <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(['warehouse', 'office'] as ReceptionLocation[]).map((l) => (
+                <button key={l} type="button" onClick={() => setLocation(l)} className={cn('flex min-h-[56px] items-center justify-center gap-2 rounded-lg border px-3', SURFACE.card, SURFACE.divider, TYPE.bodyStrong, TEXT.strong)}>
+                  <LocationMark location={l} size={24} /> {l === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}
+                </button>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="flex flex-col gap-3" role="radiogroup" aria-label={t('rc_brought_title')}>
           {BROUGHT_BY.map((b) => {
@@ -98,7 +121,13 @@ export function ReceptionBroughtBy() {
         )}
       </div>
 
-      <div className={cn('shrink-0 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
+      <div className={cn('shrink-0 space-y-2 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
+        {/* Le bouton grisé dit pourquoi. */}
+        {!canOpen && (
+          <p className={cn('text-center', TYPE.small, TEXT.muted)}>
+            {!location ? t('rc_need_location') : !choice ? t('rc_need_brought') : t('rc_need_rep_name')}
+          </p>
+        )}
         <PrimaryPill onClick={() => void submit()} disabled={!canOpen} loading={open.isPending} className="h-14 w-full text-[17px]">
           {t('rc_continue_next')}
         </PrimaryPill>

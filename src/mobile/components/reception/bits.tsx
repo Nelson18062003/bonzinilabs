@@ -89,8 +89,9 @@ export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parc
   const Body = onClick ? 'button' : 'span';
   return (
     <div className="flex items-center gap-3 py-4">
-      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
+      {/* La vignette est son propre bouton (la photo en grand) : à côté de la ligne, jamais dedans. */}
       <ParcelThumb path={parcel.photo_path} onOpen={onPhoto} />
+      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
       <span className="min-w-0 flex-1">
         <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>
           <span className={cn('mr-2 tabular-nums', TEXT.muted)}>{String(parcel.seq).padStart(2, '0')}</span>

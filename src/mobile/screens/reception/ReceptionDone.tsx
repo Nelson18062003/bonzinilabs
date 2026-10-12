@@ -9,27 +9,38 @@
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Printer, ScanLine } from 'lucide-react';
+import { Check, Printer, ScanLine, UserSearch } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, TONE_PILL, TYPE, Card, Holder, PrimaryPill, Row, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionDone() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { depositId } = useParams<{ depositId: string }>();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
-  const { data: deposit, isLoading } = useReceptionDeposit(depositId);
+  const { data: deposit, isLoading, error, refetch } = useReceptionDeposit(depositId);
   const { data: settings } = useAdminShippingSettings();
   const [internalOpen, setInternalOpen] = useState(false);
 
-  if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
+  // Chargement et erreur : un en-tête avec sa flèche, jamais un sablier sans fin.
+  if (isLoading || error || !deposit) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_done_title')} showBack onBack={() => back('/r')} />
+        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
+      </div>
+    );
+  }
 
   const client = deposit.client ?? null;
   const name = client ? clientFullName(client) : t('rc_unknown_client');
@@ -70,9 +81,18 @@ export function ReceptionDone() {
           </div>
         )}
 
+        {/* Sans client : le dépôt attend dans « En attente » — ou s'attribue tout de suite. */}
+        {!client && (
+          <div className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.pending)}>
+            <p className={TYPE.bodyStrong}>{t('rc_done_no_client')}</p>
+            <PrimaryPill onClick={() => navigate(`/r/new?assign=${deposit.id}`)} className="h-12 w-full"><UserSearch /> {t('rc_assign_now')}</PrimaryPill>
+          </div>
+        )}
+
         <div className="space-y-3">
-          <SoftPill onClick={() => navigate('/r/new')} className="h-14 w-full text-[17px]"><ScanLine /> {t('rc_next_deposit')}</SoftPill>
-          <button type="button" onClick={() => navigate('/r')} className={cn('h-12 w-full', TYPE.bodyStrong, TEXT.muted)}>{t('rc_back_home')}</button>
+          {/* Le dépôt suivant remplace celui-ci : le retour du téléphone ne revient pas sur un dépôt terminé. */}
+          <SoftPill onClick={() => navigate('/r/new', { replace: true })} className="h-14 w-full text-[17px]"><ScanLine /> {t('rc_next_deposit')}</SoftPill>
+          <button type="button" onClick={() => back('/r')} className={cn('h-12 w-full', TYPE.bodyStrong, TEXT.muted)}>{t('rc_done_finish')}</button>
         </div>
       </div>
       {client && <InternalLabelSheet open={internalOpen} onClose={() => setInternalOpen(false)} deposit={deposit} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}

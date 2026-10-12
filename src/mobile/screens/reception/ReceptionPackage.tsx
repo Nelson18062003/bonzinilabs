@@ -12,16 +12,17 @@
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, LockOpen, PackageCheck, PackagePlus, Plus, Printer, Trash2 } from 'lucide-react';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { Check, ListPlus, LockOpen, PackageCheck, PackagePlus, Plus, Printer, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatKg, type ParcelKind } from '@/lib/reception';
-import { fitsInPackage, isAssignable, packableGroups, packageClientGroups, sealCheck, weightGauge, type AirPackage, type PackableParcel } from '@/lib/airPackage';
+import { fitsInPackage, isAssignable, packableGroups, packageClientGroups, planPacking, sealCheck, sumParcelKg, weightGauge, type AirPackage, type PackableParcel } from '@/lib/airPackage';
 import {
   PackageRpcError, useAddParcelToPackage, useAirPackage, useCreateAirPackage, useDeleteAirPackage,
-  usePackableParcels, useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
+  usePackableParcels, usePackParcels, useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
 } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
@@ -41,6 +42,7 @@ export function ReceptionPackage() {
 
 function PackageScreen({ id }: { id: string }) {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
@@ -61,8 +63,15 @@ function PackageScreen({ id }: { id: string }) {
   const groups = useMemo(() => packageClientGroups(pkg?.parcels), [pkg?.parcels]);
   const by = useOpenedBy(pkg ?? {});
 
-  if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
-  if (error || !pkg) return <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />;
+  // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie.
+  if (isLoading || error || !pkg) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
+        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />}
+      </div>
+    );
+  }
 
   const open = pkg.status === 'open';
   const g = weightGauge(pkg);
@@ -101,16 +110,17 @@ function PackageScreen({ id }: { id: string }) {
   };
   const doDelete = () => {
     if (del.isPending) return;
-    del.mutate(pkg.id, { onSuccess: () => navigate('/r/paquets', { replace: true }) });
+    del.mutate(pkg.id, { onSuccess: () => back('/r/paquets') });
   };
   const startNext = () => {
     if (create.isPending) return;
-    create.mutate(undefined, { onSuccess: (p) => { setSheet(null); navigate(`/r/paquets/${p.id}`); } });
+    // Le paquet suivant REMPLACE celui-ci : un seul retour ramène à l'onglet Paquets.
+    create.mutate(undefined, { onSuccess: (p) => { setSheet(null); navigate(`/r/paquets/${p.id}`, { replace: true }); } });
   };
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={pkg.package_no} subtitle={by ?? t('rc_pk_title')} showBack backTo="/r/paquets" />
+      <MobileHeader title={pkg.package_no} subtitle={by ?? t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-6 pt-5">
         {/* La jauge : ce que pèsent les colis sur 32 kg, et ce qu'il reste. */}
@@ -281,17 +291,20 @@ function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: str
   const labels = useReceptionLabels();
   const { data } = usePackableParcels();
   const add = useAddParcelToPackage(pkg.id);
+  const fillAll = usePackParcels();
   const [pending, setPending] = useState<string | null>(null);
   const [more, setMore] = useState(false);
 
   const g = weightGauge(pkg);
-  const { groups, fit, noRoom } = useMemo(() => {
+  const { groups, fit, noRoom, best } = useMemo(() => {
     // Un colis tout juste ajouté reste dans la liste lue tant qu'elle ne s'est pas relue : on l'écarte ici.
     const inside = new Set((pkg.parcels ?? []).map((p) => p.id));
     const here = new Set((pkg.parcels ?? []).map((p) => p.client?.user_id).filter(Boolean) as string[]);
     const candidates = (data?.ready ?? []).filter((it) => !inside.has(it.parcel.id));
     const ok = candidates.filter((it) => fitsInPackage(pkg, it.parcel.weight_kg));
-    return { groups: packableGroups(ok, here), fit: ok.length, noRoom: candidates.length - ok.length };
+    // « Tout ajouter » : ce qui tient encore, les plus lourds d'abord (le même calcul que « Mettre en paquet »).
+    const head = planPacking(ok, pkg)[0];
+    return { groups: packableGroups(ok, here), fit: ok.length, noRoom: candidates.length - ok.length, best: head?.packageId === pkg.id ? head.items : [] };
   }, [data, pkg]);
 
   if (!data || (fit === 0 && noRoom === 0)) return null;
@@ -302,6 +315,21 @@ function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: str
     budget -= items.length;
     return { ...grp, items };
   }).filter((grp) => grp.items.length > 0);
+
+  const onFillAll = async () => {
+    if (pending || fillAll.isPending || best.length === 0) return;
+    setPending('all');
+    try {
+      const r = await fillAll.mutateAsync({ bins: [{ packageId: pkg.id, packageNo: pkg.package_no, parcelNos: best.map((it) => it.parcel.parcel_no) }] });
+      const row = r.packages[0];
+      if (row?.added.length) { onAdded(row.added[row.added.length - 1]); toast.success(ti('rc_pk_fill_done', { count: row.added.length, no: pkg.package_no })); }
+      if (row?.refused.length) toast.error(row.refused[0].error, { description: row.refused.map((x) => x.parcel_no).join(', ') });
+    } catch {
+      // le hook dit le refus
+    } finally {
+      setPending(null);
+    }
+  };
 
   const onAdd = async (it: PackableParcel) => {
     if (pending) return;
@@ -322,6 +350,12 @@ function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: str
         <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_ready_title')}</h2>
         {fit > 0 && <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_pk_ready_hint')}</span>}
       </span>
+      {/* Un geste pour remplir le carton avec ce qui tient encore. */}
+      {best.length > 1 && (
+        <SoftPill onClick={() => void onFillAll()} disabled={pending !== null} className="h-12 w-full">
+          <ListPlus /> {ti('rc_pk_fill_all', { count: best.length, kg: formatKg(sumParcelKg(best)) })}
+        </SoftPill>
+      )}
       {shown.map((grp) => (
         <Card key={grp.key} className="overflow-hidden p-0">
           <div className={cn('flex items-start justify-between gap-3 border-b px-4 py-3', SURFACE.divider, SURFACE.inset)}>

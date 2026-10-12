@@ -85,7 +85,8 @@ export function AgentCashLogin({ home = '/a', titleKey = 'agent_login' }: { home
       if (result.success) {
         toast.success(pick('Login successful', '登录成功', 'Connexion réussie'));
         setIsFadingOut(true);
-        setTimeout(() => navigate(home), 300);
+        // Remplacer la connexion : le retour du téléphone ne ramène pas au formulaire une fois connecté.
+        setTimeout(() => navigate(home, { replace: true }), 300);
       } else {
         setError(result.error || t('invalid_credentials'));
       }

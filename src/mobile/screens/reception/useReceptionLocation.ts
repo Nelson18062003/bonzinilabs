@@ -1,9 +1,19 @@
-import { useCallback, useState } from 'react';
-import { readStoredLocation, storeLocation, type ReceptionLocation } from '@/lib/reception';
+import { useCallback, useEffect, useState } from 'react';
+import { LOCATION_EVENT, readStoredLocation, storeLocation, type ReceptionLocation } from '@/lib/reception';
 
-/** Le lieu du réceptionnaire (entrepôt = Sea, bureau = Air), mémorisé sur l'appareil. */
+/**
+ * Le lieu du réceptionnaire (entrepôt = Sea, bureau = Air), mémorisé sur
+ * l'appareil. Tous les écrans qui le lisent suivent un changement aussitôt
+ * (accueil, barre d'onglets, porte d'entrée de la coquille).
+ */
 export function useReceptionLocation() {
   const [location, setLocationState] = useState<ReceptionLocation | null>(() => readStoredLocation());
+  useEffect(() => {
+    const sync = () => setLocationState(readStoredLocation());
+    window.addEventListener(LOCATION_EVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener(LOCATION_EVENT, sync); window.removeEventListener('storage', sync); };
+  }, []);
   const setLocation = useCallback((loc: ReceptionLocation) => {
     storeLocation(loc);
     setLocationState(loc);

@@ -5,14 +5,14 @@
 // ou à envoyer, et un nouveau dépôt pour ce client. Identité seule.
 // ============================================================
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Search, UserPlus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, initials, type ReceptionClient } from '@/lib/reception';
 import { useReceptionSearch, useRecentClients } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Button, Card, Holder, ScreenLoader, TextInput } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Button, Card, Holder, ScreenError, ScreenLoader, TextInput } from '@/mobile/designKit';
 
 function ClientRow({ client, onClick }: { client: ReceptionClient; onClick: () => void }) {
   const name = clientFullName(client);
@@ -31,15 +31,23 @@ function ClientRow({ client, onClick }: { client: ReceptionClient; onClick: () =
 export function ReceptionClients() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [debounced, setDebounced] = useState('');
-  useEffect(() => { const id = setTimeout(() => setDebounced(query), 250); return () => clearTimeout(id); }, [query]);
+  const [params, setParams] = useSearchParams();
+  // La recherche reste dans l'URL (?q=, sans ajouter d'entrée) : revenir d'une fiche la retrouve telle quelle.
+  const [query, setQuery] = useState(() => params.get('q') ?? '');
+  const [debounced, setDebounced] = useState(query);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebounced(query);
+      setParams((p) => { const n = new URLSearchParams(p); if (query.trim()) n.set('q', query.trim()); else n.delete('q'); return n; }, { replace: true });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [query, setParams]);
   const searching = debounced.trim().length >= 2;
   const search = useReceptionSearch(debounced);
   const recent = useRecentClients();
 
-  const list = searching ? search.data ?? [] : recent.data ?? [];
-  const loading = searching ? search.isLoading : recent.isLoading;
+  const current = searching ? search : recent;
+  const list = current.data ?? [];
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
@@ -50,10 +58,17 @@ export function ReceptionClients() {
           <TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('rc_search_clients_ph')} className="h-14 pl-12 text-[17px]" autoComplete="off" inputMode="search" aria-label={t('rc_search_clients_ph')} />
         </div>
 
+        {/* Créer un client : sous la recherche, pas au bas d'une longue liste. */}
+        <Button variant="neutral" className="h-12 w-full text-[16px]" onClick={() => navigate('/r/new/client?from=clients')}>
+          <UserPlus /> {t('rc_new_client')}
+        </Button>
+
         <section>
           <h2 className={cn('mb-2', TYPE.smallStrong, TEXT.muted)}>{searching ? t('rc_results') : t('rc_recent_clients')}</h2>
-          {loading ? (
+          {current.isLoading ? (
             <ScreenLoader />
+          ) : current.isError ? (
+            <ScreenError title={t('error')} description={(current.error as Error).message} retryLabel={t('rc_retry')} onRetry={() => void current.refetch()} />
           ) : list.length === 0 ? (
             <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
               <p className={cn(TYPE.body, TEXT.muted)}>{searching ? t('rc_no_result') : t('rc_no_client_yet')}</p>
@@ -64,10 +79,6 @@ export function ReceptionClients() {
             </Card>
           )}
         </section>
-
-        <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => navigate('/r/new/client')}>
-          <UserPlus /> {t('rc_new_client')}
-        </Button>
       </div>
     </div>
   );

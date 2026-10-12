@@ -3,7 +3,7 @@ import { LiquidTabBar } from '@/components/navigation/LiquidTabBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useReceptionDay } from '@/hooks/useReception';
 import { usePackableCount } from '@/hooks/useAirPackages';
-import { readStoredLocation } from '@/lib/reception';
+import { useReceptionLocation } from '@/mobile/screens/reception/useReceptionLocation';
 import type { TabItem } from '@/components/navigation/types';
 
 /**
@@ -15,11 +15,12 @@ import type { TabItem } from '@/components/navigation/types';
 export function ReceptionTabBar() {
   const { t } = useLanguage();
   const { data: day } = useReceptionDay();
-  const { data: toPack } = usePackableCount(readStoredLocation() === 'office');
+  const { location } = useReceptionLocation();
+  const { data: toPack } = usePackableCount(location === 'office');
   const items: TabItem[] = [
     { to: '/r', icon: Home, label: t('rc_today'), end: true },
     { to: '/r/new', icon: ScanLine, label: t('rc_tab_new') },
-    { to: '/r/paquets', icon: Package, label: t('rc_tab_packages'), badgeCount: toPack ?? 0 },
+    { to: '/r/paquets', icon: Package, label: t('rc_tab_packages'), badgeCount: location === 'office' ? toPack ?? 0 : 0 },
     { to: '/r/clients', icon: Users, label: t('rc_tab_clients') },
     { to: '/r/pending', icon: Inbox, label: t('rc_tab_pending'), badgeCount: day?.pending ?? 0 },
   ];

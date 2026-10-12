@@ -4,7 +4,7 @@
 // au bureau, Grace Ebogo (ops, ordinateur) chiffre le fret du dépôt et l'encaisse.
 import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
 import type { JourneyEntry } from './types';
-import { AdminAuthContext } from '@/contexts/AdminAuthContext';
+import { AdminAuthContext, ROLE_PERMISSIONS } from '@/contexts/AdminAuthContext';
 import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionPackTodo, ReceptionNewClient } from '@/mobile/screens/reception';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { DesktopCargoReception } from '@/desktop/screens/cargo';
@@ -16,13 +16,15 @@ type Staff = { first: string; last: string; role: string; email: string };
 const KEVIN: Staff = { first: 'Kevin', last: 'Nkolo', role: 'receptionist', email: 'kevin.nkolo@bonzinilabs.com' };
 const GRACE: Staff = { first: 'Grace', last: 'Ebogo', role: 'ops', email: 'grace.ebogo@bonzinilabs.com' };
 
-/** La fausse session du harnais, au nom de la personne du parcours (toutes permissions gardées). */
+/** La fausse session du harnais, au nom de la personne du parcours, avec les VRAIS droits de son rôle. */
 function AsStaff({ who, children }: { who: Staff; children: ReactNode }) {
   const ctx = useContext(AdminAuthContext);
   const value = useMemo(() => {
     if (!ctx) return ctx;
     const user = ctx.currentUser ? { ...ctx.currentUser, firstName: who.first, lastName: who.last, email: who.email, role: who.role } : ctx.currentUser;
-    return { ...(ctx as object), currentUser: user, profile: { first_name: who.first, last_name: who.last } } as unknown as typeof ctx;
+    const perms = ROLE_PERMISSIONS[who.role as keyof typeof ROLE_PERMISSIONS] as unknown as Record<string, boolean> | undefined;
+    const hasPermission = (k: string) => (perms ? !!perms[k] : true);
+    return { ...(ctx as object), currentUser: user, profile: { first_name: who.first, last_name: who.last }, hasPermission } as unknown as typeof ctx;
   }, [ctx, who]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }
@@ -51,7 +53,7 @@ function DeskReception() {
 
 const Home = reception(ReceptionHome, true);
 const Deposit = reception(ReceptionDeposit, false);
-const Done = reception(ReceptionDone, false);
+const DoneWithBar = reception(ReceptionDone, true);
 const Packages = reception(ReceptionPackages, true);
 const Package = reception(ReceptionPackage, false);
 const NewClient = reception(ReceptionNewClient, false);
@@ -60,7 +62,10 @@ const PackTodo = reception(ReceptionPackTodo, false);
 export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.home': { Comp: Home, route: '/r', wrap: 'lang' },
   'j.guangzhou.deposit': { Comp: Deposit, route: '/r/deposit/dep1', path: '/r/deposit/:depositId', wrap: 'lang' },
-  'j.guangzhou.done': { Comp: Done, route: '/r/deposit/dep1c/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'j.guangzhou.done': { Comp: DoneWithBar, route: '/r/deposit/dep1c/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  // La fiche d'un dépôt terminé, et le dépôt en cours d'un collègue (lecture) — 12/10.
+  'j.guangzhou.deposit-closed': { Comp: Deposit, route: '/r/deposit/dep1c', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'j.guangzhou.deposit-other': { Comp: Deposit, route: '/r/deposit/depLi', path: '/r/deposit/:depositId', wrap: 'lang' },
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
   // Le réceptionnaire emballe (12/10) : les colis à emballer, et le paquet vide que Grace a ouvert depuis l'ordinateur.

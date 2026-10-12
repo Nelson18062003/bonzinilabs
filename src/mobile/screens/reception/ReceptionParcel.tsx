@@ -15,7 +15,7 @@
 // `?step=` ouvre directement une question (harnais, lien).
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Camera, ImagePlus, Minus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,7 @@ import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposi
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, PrimaryPill, SoftPill, TextInput } from '@/mobile/designKit';
 import { StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { readDraftWaybill, writeDraftWaybill } from './useReceptionLocation';
 
 type Step = 'photo' | 'weight' | 'dims' | 'inside' | 'copies';
@@ -63,13 +64,13 @@ function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove }: { photo
 }
 
 export function ReceptionParcel() {
-  const navigate = useNavigate();
+  const goBack = useReceptionBack();
   const { depositId, parcelId } = useParams<{ depositId: string; parcelId?: string }>();
   const [params] = useSearchParams();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const labels = useReceptionLabels();
-  const { data: deposit } = useReceptionDeposit(depositId);
+  const { data: deposit, isLoading: depositLoading } = useReceptionDeposit(depositId);
   const add = useAddParcel();
   const update = useUpdateParcel();
   const removePhoto = useRemoveParcelPhoto();
@@ -99,6 +100,8 @@ export function ReceptionParcel() {
   const [uploading, setUploading] = useState(false);
   const [loaded, setLoaded] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Les photos déjà envoyées : un nouvel essai (refus, réseau) ne les renvoie pas une seconde fois.
+  const uploadedRef = useRef<{ files: File[]; paths: string[] } | null>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
   // Édition : le formulaire se remplit une fois, avec ce que le colis porte déjà.
@@ -130,14 +133,23 @@ export function ReceptionParcel() {
   const nextSeq = (deposit?.parcels.length ?? 0) + 1;
   const index = steps.indexOf(step);
   const last = index === steps.length - 1;
-  const back = () => (index === 0 ? navigate(deposit?.status === 'closed' ? `/r/deposit/${depositId}/done` : `/r/deposit/${depositId}`) : setStep(steps[index - 1]));
+  // Sortir : là d'où l'on vient (la fiche du dépôt, les colis à emballer…) — jamais « Dépôt terminé ».
+  const exit = () => goBack(`/r/deposit/${depositId}`);
+  const back = () => (index === 0 ? exit() : setStep(steps[index - 1]));
   const next = () => setStep(steps[index + 1]);
 
   const submit = async () => {
-    if (!depositId) return;
+    if (!depositId || (parcelId && !editing)) return; // un colis introuvable ne devient jamais un nouveau colis
     let photoPaths: string[] = [];
     try {
-      if (photos.length > 0) { setUploading(true); photoPaths = await uploadParcelPhotos(depositId, photos); }
+      if (photos.length > 0) {
+        if (uploadedRef.current?.files === photos) photoPaths = uploadedRef.current.paths;
+        else {
+          setUploading(true);
+          photoPaths = await uploadParcelPhotos(depositId, photos);
+          uploadedRef.current = { files: photos, paths: photoPaths };
+        }
+      }
     } catch (e) {
       toast.error((e as Error).message); setUploading(false); return;
     }
@@ -150,15 +162,16 @@ export function ReceptionParcel() {
       : condValue != null || condNote != null;
     const fields = { kind, weightKg: num(weight), lengthCm: num(length), widthCm: num(width), heightCm: num(height), description, courierWaybill: waybill, photoPaths,
       condition: condChanged ? { value: condValue, note: condNote } : undefined };
+    // Un refus du serveur est dit par le hook : on reste sur la question, rien de perdu.
     if (editing) {
-      await update.mutateAsync({ ...fields, parcelId: editing.id, depositId });
+      if (!(await update.mutateAsync({ ...fields, parcelId: editing.id, depositId }).then(() => true, () => false))) return;
       toast.success(t('rc_parcel_saved'), { description: editing.parcel_no });
     } else {
-      await add.mutateAsync({ ...fields, depositId, copies });
+      if (!(await add.mutateAsync({ ...fields, depositId, copies }).then(() => true, () => false))) return;
       writeDraftWaybill(null);
       toast.success(copies > 1 ? ti('rc_parcels_added', { count: copies }) : t('rc_parcel_added'));
     }
-    navigate(deposit?.status === 'closed' ? `/r/deposit/${depositId}/done` : `/r/deposit/${depositId}`, { replace: true });
+    exit();
   };
 
   const busy = uploading || add.isPending || update.isPending;
@@ -169,6 +182,19 @@ export function ReceptionParcel() {
   // Le bouton du bas : « Suivant », ou, à la dernière question, « Ajouter » / « Enregistrer ».
   const primaryLabel = !last ? t('rc_next') : uploading ? (photos.length > 1 ? t('rc_uploading_n') : t('rc_uploading')) : editing ? t('rc_save') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add');
   const optional = step === 'photo' || step === 'weight' || step === 'dims';
+
+  // Un colis demandé qui n'existe plus (retiré par un collègue, lien ancien) : on le dit, avec la sortie.
+  if (parcelId && !depositLoading && deposit && !editing) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_parcel')} showBack onBack={exit} />
+        <div className="space-y-4 px-5 pt-8 text-center">
+          <p className={cn(TYPE.lead, TEXT.strong)}>{t('rc_parcel_not_found')}</p>
+          <SoftPill onClick={exit} className="h-12 w-full">{t('rc_back')}</SoftPill>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>

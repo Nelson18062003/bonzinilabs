@@ -153,7 +153,9 @@ describe('la liste des paquets du bureau', () => {
     for (const title of ['En cours', 'Refusés à l\'aéroport', 'Fermés, prêts à partir', 'Affectés à une expédition']) expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
     expect(screen.getByText('Motif : Batterie au lithium')).toBeInTheDocument();
     expect(screen.getByText(/LTA 071-12345675 · Vol ET 607/)).toBeInTheDocument();
-    expect(screen.getByText('reste 20 kg')).toBeInTheDocument();
+    // Sur la ligne du paquet, et sur « Continuer PQ-000010 » (le paquet en cours) en tête.
+    expect(screen.getAllByText('reste 20 kg')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /Continuer PQ-000010 · reste 20 kg/ })).toBeInTheDocument();
   });
 
   it('« Nouveau paquet » ouvre la fiche du paquet créé', () => {
@@ -240,14 +242,35 @@ describe("la fiche d'un paquet", () => {
 });
 
 describe('le réceptionnaire fait ses paquets (12/10)', () => {
-  it('la liste dit ce qui attend un paquet et mène aux colis à emballer', () => {
+  it('la liste dit ce qui attend un paquet, en une ligne qui mène aux colis à emballer', () => {
     m.packable = board();
     mount('/r/paquets');
-    expect(screen.getByText('4 colis attendent un paquet')).toBeInTheDocument();
-    expect(screen.getByText(/3 prêts · 35 kg · 2 clients/)).toBeInTheDocument();
-    expect(screen.getByText('1 à compléter')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Choisir les colis/ }));
+    const line = screen.getByRole('button', { name: /4 colis attendent un paquet/ });
+    expect(line).toHaveTextContent('35 kg · 2 clients');
+    expect(line).toHaveTextContent('1 à compléter');
+    fireEvent.click(line);
     expect(screen.getByTestId('where').textContent).toBe('/r/paquets/emballer');
+  });
+
+  it('un paquet en cours : « Continuer PQ-… · reste X kg » est le geste principal (le mien d’abord)', () => {
+    m.list = [
+      pkg({ id: 'a', package_no: 'PQ-000020', net_weight_kg: 10, updated_at: '2026-10-12T10:00:00Z', created_by: 'grace', created_by_name: 'Grace Ebogo' }),
+      pkg({ id: 'b', package_no: 'PQ-000021', net_weight_kg: 25, updated_at: '2026-10-12T09:00:00Z', created_by: 'me' }),
+    ];
+    mount('/r/paquets');
+    fireEvent.click(screen.getByRole('button', { name: /Continuer PQ-000021 · reste 7 kg/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/paquets/b');
+  });
+
+  it('à l’entrepôt : la note dit que les paquets se font au bureau, sans bouton pour en créer', () => {
+    localStorage.setItem('bonzini-reception-location', 'warehouse');
+    try {
+      mount('/r/paquets');
+      expect(screen.getByText(/Les paquets avion se préparent au bureau/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Nouveau paquet$/ })).toBeNull();
+    } finally {
+      localStorage.removeItem('bonzini-reception-location');
+    }
   });
 
   it('sans rien à emballer, « Nouveau paquet » reste le geste principal', () => {
@@ -318,7 +341,7 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     m.packable = { ...packableParcels([mine, theirs, unassigned]), truncated: false };
     mount('/r/paquets/emballer');
     fireEvent.click(screen.getByRole('button', { name: /RC-000303-01/ }));
-    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/RC-000303/parcel/id-RC-000303-01');
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/RC-000303/parcel/id-RC-000303-01?step=weight');
   });
 
   it('à compléter : le dépôt d’un collègue ne s’ouvre pas, il dit qui l’a reçu ; sans client, on l’attribue', () => {
@@ -347,5 +370,24 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter RC-000301-02' }));
     await waitFor(() => expect(m.add).toHaveBeenCalledWith('RC-000301-02'));
     expect(screen.getByRole('button', { name: 'Ajouter RC-000302-01' })).toBeInTheDocument();
+  });
+
+  it('« Tout ajouter » n’apparaît pas pour un seul colis qui tient (le bouton « Ajouter » suffit)', () => {
+    m.packable = board();
+    m.one = pkg({ id: 'k1', package_no: 'PQ-000001', net_weight_kg: 10, parcel_count: 1, parcels: [parcel({ weight_kg: 10 })] });
+    mount('/r/paquets/k1');
+    // Reste 22 kg : 20 kg tient, puis plus rien (9 et 6 dépasseraient).
+    expect(screen.queryByRole('button', { name: /Tout ajouter/ })).toBeNull();
+  });
+
+  it('« Tout ajouter » : 9 + 6 kg tiennent dans un paquet presque vide après 20 kg', async () => {
+    m.packable = board();
+    m.one = pkg({ id: 'k1', package_no: 'PQ-000001', net_weight_kg: 2, parcel_count: 1, parcels: [parcel({ weight_kg: 2 })] });
+    m.pack.mockResolvedValue({ packages: [{ id: 'k1', package_no: 'PQ-000001', created: false, dropped: false, added: ['RC-000301-01', 'RC-000301-02'], refused: [], error: null }] });
+    mount('/r/paquets/k1');
+    // Reste 30 kg : 20 + 9 = 29 kg (le 6 kg ne tient plus).
+    fireEvent.click(screen.getByRole('button', { name: /Tout ajouter : 2 colis · 29 kg/ }));
+    await waitFor(() => expect(m.pack).toHaveBeenCalled());
+    expect(m.pack.mock.calls[0][0].bins).toEqual([{ packageId: 'k1', packageNo: 'PQ-000001', parcelNos: ['RC-000301-01', 'RC-000301-02'] }]);
   });
 });

@@ -453,10 +453,10 @@ const App = () => (
                 <Route path="/r/deposit/:depositId/supplier" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionSupplier /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/parcel" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
                 <Route path="/r/deposit/:depositId/parcel/:parcelId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionParcel /></ReceptionRouteWrapper>} />
-                <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionDone /></ReceptionRouteWrapper>} />
+                <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper><ReceptionDone /></ReceptionRouteWrapper>} />
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
-                <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionClientCard /></ReceptionRouteWrapper>} />
+                <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper><ReceptionClientCard /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets" element={<ReceptionRouteWrapper><ReceptionPackages /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets/emballer" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackTodo /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets/:id" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackage /></ReceptionRouteWrapper>} />

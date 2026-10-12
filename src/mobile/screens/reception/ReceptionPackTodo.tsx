@@ -21,12 +21,14 @@ import { SURFACE, TEXT, TONE_TEXT, TYPE, Button, Card, PrimaryPill, ScreenError,
 import { useReceptionLabels } from '@/mobile/components/reception/bits';
 import { TickBox } from '@/mobile/components/reception/packageBits';
 import { usePackFix, usePackageText } from '@/mobile/components/reception/packageText';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { PackSheet } from '@/mobile/components/reception/PackSheet';
 
 const ROW = cn('flex w-full items-center gap-3 border-b px-4 py-3 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider);
 
 export function ReceptionPackTodo() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
@@ -55,7 +57,7 @@ export function ReceptionPackTodo() {
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_pk_todo_title')} subtitle={t('rc_pk_subtitle')} showBack backTo="/r/paquets" />
+      <MobileHeader title={t('rc_pk_todo_title')} subtitle={t('rc_pk_subtitle')} showBack onBack={() => back('/r/paquets')} />
 
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
         {isLoading ? (

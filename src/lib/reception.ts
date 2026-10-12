@@ -320,8 +320,11 @@ export function readStoredLocation(): ReceptionLocation | null {
     return null;
   }
 }
+/** L'évènement émis quand le lieu change : la barre d'onglets (pastille Paquets) suit sans attendre. */
+export const LOCATION_EVENT = 'bonzini-reception-location';
 export function storeLocation(loc: ReceptionLocation): void {
   try { localStorage.setItem(LOCATION_KEY, loc); } catch { /* stockage indisponible : on redemandera */ }
+  try { window.dispatchEvent(new Event(LOCATION_EVENT)); } catch { /* hors navigateur */ }
 }
 
 /**
