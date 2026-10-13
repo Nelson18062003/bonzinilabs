@@ -10,9 +10,10 @@ import { getCurrentLocale } from '@/i18n';
 import { DESTINATION_THEME } from '@/lib/customerCode';
 import { ICON_PATHS } from '@/lib/shippingLabelCanvas';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Holder, StatusPill, type Tone } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Holder, ScreenError, ScreenLoader, StatusPill, type Tone } from '@/mobile/designKit';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useParcelPhotoUrl } from '@/hooks/useReception';
-import { clientFullName, formatCbm, formatDims, formatKg, initials, isParcelIncomplete, type BroughtBy, type Deposit, type Parcel, type ParcelKind, type ReceptionLocation } from '@/lib/reception';
+import { clientFullName, formatCbm, formatDims, formatKg, initials, isParcelIncomplete, listDate, type BroughtBy, type Deposit, type Parcel, type ParcelKind, type ReceptionLocation } from '@/lib/reception';
 
 /** Sea (bateau bleu) ou Air (avion rouge) : exactement la silhouette de l'étiquette. */
 export function LocationMark({ location, size = 28, className }: { location: ReceptionLocation; size?: number; className?: string }) {
@@ -48,15 +49,22 @@ export function formatDateTime(iso: string): string {
 }
 
 /** Une ligne de dépôt dans une liste : qui, combien, quand, dans quel état. */
-export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: () => void }) {
+/**
+ * Un dépôt dans une liste. Sur la fiche d'un client (`byNumber`), le client va
+ * sans dire : la ligne dit le dépôt (RC-…), son lieu et sa date — ils couvrent
+ * plusieurs jours, l'heure seule ne suffit plus.
+ */
+export function DepositRow({ deposit, onClick, byNumber = false }: { deposit: Deposit; onClick?: () => void; byNumber?: boolean }) {
   const { t } = useTranslation('agent');
   const labels = useReceptionLabels();
-  const name = deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');
+  const name = byNumber ? deposit.deposit_no : deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');
   const st = labels.status(deposit);
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex w-full items-start gap-3 py-4 text-left', onClick && 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
-      <Holder size="lg" tone={deposit.client ? 'neutral' : 'pending'}>{deposit.client ? initials(name) : '?'}</Holder>
+      {byNumber
+        ? <LocationMark location={deposit.location} size={44} className="shrink-0" />
+        : <Holder size="lg" tone={deposit.client ? 'neutral' : 'pending'}>{deposit.client ? initials(name) : '?'}</Holder>}
       {/* Rien n'est coupé : sur un petit écran le nom passe à la ligne, l'état et l'heure gardent leur colonne. */}
       <span className="min-w-0 flex-1">
         <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
@@ -65,7 +73,7 @@ export function DepositRow({ deposit, onClick }: { deposit: Deposit; onClick?: (
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1.5">
-        <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{formatTime(deposit.opened_at)}</span>
+        <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{byNumber ? listDate(deposit.opened_at) : formatTime(deposit.opened_at)}</span>
         <StatusPill tone={st.tone} label={st.label} className="h-7 text-[14px]" />
       </span>
     </Tag>
@@ -89,8 +97,9 @@ export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parc
   const Body = onClick ? 'button' : 'span';
   return (
     <div className="flex items-center gap-3 py-4">
-      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
+      {/* La vignette est son propre bouton (la photo en grand) : à côté de la ligne, jamais dedans. */}
       <ParcelThumb path={parcel.photo_path} onOpen={onPhoto} />
+      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3 text-left', onClick && 'active:opacity-70')}>
       <span className="min-w-0 flex-1">
         <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>
           <span className={cn('mr-2 tabular-nums', TEXT.muted)}>{String(parcel.seq).padStart(2, '0')}</span>
@@ -107,6 +116,20 @@ export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parc
           <Trash2 className="h-5 w-5" />
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Un dépôt qui charge, ou qui n'a pas pu être lu : l'en-tête et sa flèche
+ * restent — jamais un sablier sans fin, jamais un écran sans sortie.
+ */
+export function DepositLoadState({ title, onBack, isLoading, error, onRetry }: { title: string; onBack: () => void; isLoading: boolean; error: unknown; onRetry: () => void }) {
+  const { t } = useTranslation('agent');
+  return (
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <MobileHeader title={title} showBack onBack={onBack} />
+      {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={onRetry} />}
     </div>
   );
 }

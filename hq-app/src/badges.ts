@@ -2,19 +2,22 @@
 // Les pastilles des onglets natifs : ce qui attend la personne, par rôle.
 // Mêmes sources que les barres du site :
 //   · admin    → « Opérations » : lib/actionable.ts (dépôts + paiements à traiter)
-//   · réception → « En attente » : reception_my_day.pending (ReceptionTabBar)
+//   · réception → « En attente » : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
+//     seulement (le lieu de ce téléphone, dit par le site) — comme ReceptionTabBar : à l'entrepôt, l'onglet
+//     n'a rien à faire, la pastille ne doit rien annoncer
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)
 //   · agent cash → « Paiements » : paiements cash en attente (useAgentCashPayments)
 // Le total s'affiche aussi sur l'icône de l'app. Rafraîchies toutes les
 // minutes, au retour dans l'app, à chaque notification reçue et quelques secondes après chaque changement de page
 // (un dépôt validé fait baisser la pastille sans attendre).
 // ============================================================
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { db, hasFreshToken } from './supabase';
 import { can, staffHome, type StaffRole } from './roles';
 import { CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from './statuses';
+import type { ReceptionLocation } from './bridge';
 
 export type Badges = Record<string, number>;
 
@@ -34,12 +37,19 @@ async function count(table: 'deposits' | 'payments', statuses: string[], cashOnl
   return error ? 0 : n ?? 0;
 }
 
+/** Les colis qui attendent un paquet : les compteurs seuls (p_limit = 0), pas la liste. */
+async function packableCount(): Promise<number> {
+  const { data, error } = await db.rpc('air_package_packable', { p_limit: 0 });
+  const p = (error ? null : data) as { success?: boolean; ready_count?: number; to_fix_count?: number } | null;
+  return p?.success ? Number(p.ready_count ?? 0) + Number(p.to_fix_count ?? 0) : 0;
+}
+
 /** Les pastilles du rôle, par clé d'onglet (voir tabs.ts). */
-export async function fetchBadges(role: StaffRole): Promise<Badges> {
+export async function fetchBadges(role: StaffRole, location: ReceptionLocation = null): Promise<Badges> {
   switch (role) {
     case 'receptionist': {
-      const day = await rpc('reception_my_day');
-      return { pending: Number(day?.pending ?? 0) };
+      const [day, packages] = await Promise.all([rpc('reception_my_day'), location === 'office' ? packableCount() : 0]);
+      return { pending: Number(day?.pending ?? 0), packages };
     }
     case 'warehouse_agent': {
       const day = await rpc('warehouse_day');
@@ -60,13 +70,17 @@ export async function fetchBadges(role: StaffRole): Promise<Badges> {
   }
 }
 
-export function useBadges(role: StaffRole | null, route: string): Badges {
+export function useBadges(role: StaffRole | null, route: string, location: ReceptionLocation = null): Badges {
   const [badges, setBadges] = useState<Badges>({});
+  // Le lieu est lu au moment du chargement (pas une dépendance de `load`) : un changement
+  // de lieu recharge UNE fois, sans relancer la minuterie ni le rechargement de page.
+  const locationRef = useRef(location);
+  locationRef.current = location;
 
   const load = useCallback(async () => {
     if (!role || !hasFreshToken()) return;
     try {
-      const next = await fetchBadges(role);
+      const next = await fetchBadges(role, locationRef.current);
       setBadges(next);
       // Le même total sur l'icône de l'app (écran d'accueil du téléphone).
       void Notifications.setBadgeCountAsync(Object.values(next).reduce((a, b) => a + b, 0)).catch(() => {});
@@ -74,6 +88,14 @@ export function useBadges(role: StaffRole | null, route: string): Badges {
       // Réseau coupé : on garde les derniers chiffres.
     }
   }, [role]);
+
+  // Le lieu a changé (« Où êtes-vous ? », « Changer ») : la pastille Paquets suit aussitôt.
+  const seenLocation = useRef(location);
+  useEffect(() => {
+    if (seenLocation.current === location) return;
+    seenLocation.current = location;
+    void load();
+  }, [location, load]);
 
   useEffect(() => {
     if (!role) {

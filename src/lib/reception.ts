@@ -184,6 +184,8 @@ export interface Deposit {
   total_cbm: number;
   notes: string | null;
   parcels: Parcel[];
+  /** Le devis déjà vu par le client ou par l'argent (envoyé, encaissé, réglé, facturé) : la raison, sinon null (20261013100000). */
+  quote_engaged?: string | null;
   /** Côté admin seulement (reception_overview) : l'état du devis du dépôt. */
   quote_status?: 'draft' | 'sent' | 'paid' | 'invoiced' | null;
   quote_no?: string | null;
@@ -320,8 +322,11 @@ export function readStoredLocation(): ReceptionLocation | null {
     return null;
   }
 }
+/** L'évènement émis quand le lieu change : la barre d'onglets (pastille Paquets) suit sans attendre. */
+export const LOCATION_EVENT = 'bonzini-reception-location';
 export function storeLocation(loc: ReceptionLocation): void {
   try { localStorage.setItem(LOCATION_KEY, loc); } catch { /* stockage indisponible : on redemandera */ }
+  try { window.dispatchEvent(new Event(LOCATION_EVENT)); } catch { /* hors navigateur */ }
 }
 
 /**
@@ -399,6 +404,15 @@ export function parcelLockReason(p: Pick<Parcel, 'delivered_at' | 'release_id' |
   return null;
 }
 
+/**
+ * Le miroir de reception_update_parcel : un dépôt TERMINÉ dont le devis est
+ * engagé ne se corrige plus qu'à l'équipe cargo. Vrai : la réception n'ouvre
+ * pas la correction (elle finirait sur ce refus), elle montre les photos.
+ */
+export function quoteLocksParcels(d: Pick<Deposit, 'status' | 'quote_engaged'>, canManageCargo: boolean): boolean {
+  return d.status === 'closed' && !!d.quote_engaged && !canManageCargo;
+}
+
 /** Le colis attend-il encore ici (reçu, pas chargé) ? */
 export function isParcelWaiting(p: Pick<Parcel, 'status' | 'shipment_id' | 'air_shipment_id'>): boolean {
   return !p.shipment_id && !p.air_shipment_id && (p.status === 'received' || p.status === 'stored');
@@ -408,6 +422,15 @@ export function isParcelWaiting(p: Pick<Parcel, 'status' | 'shipment_id' | 'air_
 export function parcelsHere(d: Pick<Deposit, 'parcels'>): string {
   const here = d.parcels.filter(isParcelWaiting).length;
   return here === d.parcels.length ? String(d.parcels.length) : `${here} / ${d.parcels.length}`;
+}
+
+/** « 20/09 · 06:05 » cette année, « 20/09/2025 » avant : la date d'une ligne de liste, sans l'année qui se répète. */
+export function listDate(iso: string): string {
+  const t = new Date(iso);
+  const dd = String(t.getDate()).padStart(2, '0'), mm = String(t.getMonth() + 1).padStart(2, '0');
+  return t.getFullYear() === new Date().getFullYear()
+    ? `${dd}/${mm} · ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`
+    : `${dd}/${mm}/${t.getFullYear()}`;
 }
 
 /** La date d'un dépôt : sa fermeture (le reçu), sinon son ouverture. */

@@ -16,6 +16,9 @@
 // On garde donc une référence au Blob au moment où l'URL est CRÉÉE.
 // ============================================================
 
+/** Le lieu de réception du téléphone (bureau = avion, entrepôt = bateau), dit par le site. */
+export type ReceptionLocation = 'office' | 'warehouse' | null;
+
 /** Ce que la page envoie à l'app. */
 export type BridgeMessage =
   | { type: 'file'; action: 'save' | 'share'; name: string; mime: string; base64: string }
@@ -30,7 +33,15 @@ export type BridgeMessage =
   | { type: 'route'; path: string }
   | { type: 'scan-open'; continuous: boolean }
   | { type: 'scan-close' }
+  | { type: 'reception-location'; location: ReceptionLocation }
   | { type: 'error'; message: string };
+
+/** Les messages que l'écran principal traite lui-même (les autres : fichiers, partage — files.ts). */
+export const SITE_MESSAGE_TYPES = ['auth', 'route', 'scan-open', 'scan-close', 'theme', 'reception-location'] as const;
+export type SiteMessage = Extract<BridgeMessage, { type: (typeof SITE_MESSAGE_TYPES)[number] }>;
+export function isSiteMessage(m: BridgeMessage): m is SiteMessage {
+  return (SITE_MESSAGE_TYPES as readonly string[]).includes(m.type);
+}
 
 export function parseBridgeMessage(raw: string): BridgeMessage | null {
   try {

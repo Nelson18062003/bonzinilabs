@@ -74,6 +74,7 @@ export async function handleBridgeMessage(msg: BridgeMessage, openUrl: (url: str
     case 'route':
     case 'scan-open':
     case 'scan-close':
+    case 'reception-location':
       return; // gérés par l'écran principal
     case 'error':
       Alert.alert('Fichier', 'Le fichier n’a pas pu être préparé. Réessayez.');

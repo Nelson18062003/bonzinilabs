@@ -14,17 +14,20 @@ import { cn } from '@/lib/utils';
 import { depositSupplier, supplierLine, type SupplierInfo, type SupplierKind } from '@/lib/reception';
 import { useClientSuppliers, useReceptionDeposit, useSetSupplier } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Card, Fold, FormField, PrimaryPill, ScreenLoader, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Card, Fold, FormField, PrimaryPill, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
 import { TextArea } from '@/components/form';
-import { StepHeader } from '@/mobile/components/reception/bits';
+import { DepositLoadState, StepHeader } from '@/mobile/components/reception/bits';
+import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionSupplier() {
   const navigate = useNavigate();
+  const goBack = useReceptionBack();
+  const stillHere = useStillHere();
   const { depositId } = useParams<{ depositId: string }>();
   const [params] = useSearchParams();
   const editing = params.has('edit');
   const { t } = useLanguage();
-  const { data: deposit, isLoading } = useReceptionDeposit(depositId);
+  const { data: deposit, isLoading, error, refetch } = useReceptionDeposit(depositId);
   const { data: recent } = useClientSuppliers(deposit?.client?.user_id);
   const set = useSetSupplier();
 
@@ -46,20 +49,31 @@ export function ReceptionSupplier() {
     setSeeded(true);
   }, [deposit, seeded]);
 
-  if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
-  const back = `/r/deposit/${deposit.id}`;
+  // Sortir vers la fiche du dépôt : en correction, là d'où l'on vient ; pendant la création, en
+  // remplaçant l'étape (le retour du téléphone ne ramène pas à un fournisseur déjà réglé).
+  const depositPath = `/r/deposit/${depositId}`;
+  const exit = () => (editing ? goBack(depositPath) : navigate(depositPath, { replace: true }));
+
+  // Chargement et erreur gardent l'en-tête et sa flèche : jamais un sablier sans fin.
+  if (!deposit) { // une relecture ratée en arrière-plan garde le formulaire
+    return (
+      <DepositLoadState title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} onBack={() => goBack(depositPath)} isLoading={isLoading} error={error} onRetry={() => void refetch()} />
+    );
+  }
   const fill = (s: SupplierInfo) => { setKind(s.kind); setName(s.name); setContact(s.contact ?? ''); setPhone(s.phone ?? ''); setEmail(s.email ?? ''); setWechat(s.wechat ?? ''); setAddress(s.address ?? ''); setMore(!!(s.email || s.wechat || s.address)); };
   const canSave = name.trim().length > 0;
 
   const save = async () => {
     if (!canSave) return;
-    await set.mutateAsync({ depositId: deposit.id, supplier: { kind, name: name.trim(), contact: contact.trim() || null, phone: phone.trim() || null, email: email.trim() || null, wechat: wechat.trim() || null, address: address.trim() || null } });
-    navigate(back, { replace: true });
+    if (set.isPending) return;
+    const ok = await set.mutateAsync({ depositId: deposit.id, supplier: { kind, name: name.trim(), contact: contact.trim() || null, phone: phone.trim() || null, email: email.trim() || null, wechat: wechat.trim() || null, address: address.trim() || null } })
+      .then(() => true, () => false); // le hook dit le refus ; on reste sur l'écran
+    if (ok && stillHere()) exit(); // quitté pendant l'envoi : on ne navigue plus depuis un autre écran
   };
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} showBack backTo={back} />
+      <MobileHeader title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} showBack onBack={exit} />
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
         {!editing && <StepHeader step={3} total={4} title={t('rc_sup_title')} help={t('rc_sup_help')} />}
         {editing && <h1 className={cn(TYPE.heading, TEXT.strong)}>{t('rc_sup_title')}</h1>}
@@ -112,8 +126,8 @@ export function ReceptionSupplier() {
       </div>
 
       <div className={cn('shrink-0 space-y-2 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
-        <PrimaryPill onClick={() => void save()} disabled={!canSave} loading={set.isPending} className="h-14 w-full text-[17px]">{t('rc_continue_next')}</PrimaryPill>
-        {!editing && <SoftPill onClick={() => navigate(back, { replace: true })} className="h-12 w-full text-[16px]">{t('rc_skip')}</SoftPill>}
+        <PrimaryPill onClick={() => void save()} disabled={!canSave} loading={set.isPending} className="h-14 w-full text-[17px]">{editing ? t('rc_save') : t('rc_continue_next')}</PrimaryPill>
+        {!editing && <SoftPill onClick={exit} className="h-12 w-full text-[16px]">{t('rc_skip')}</SoftPill>}
       </div>
     </div>
   );

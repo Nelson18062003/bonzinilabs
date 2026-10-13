@@ -104,7 +104,8 @@ export function filesFromDataTransfer(dt: DataTransfer | null, now = new Date())
   const out: File[] = [];
 
   // `dt.files` is the reliable path for drops and for most paste sources.
-  for (const file of Array.from(dt.files)) {
+  // (Absent from some synthetic DataTransfer objects — a text-only paste in jsdom.)
+  for (const file of Array.from(dt.files ?? [])) {
     if (file.size > 0) out.push(file);
   }
 

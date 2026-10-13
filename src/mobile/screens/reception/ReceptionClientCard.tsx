@@ -19,9 +19,11 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { DepositRow } from '@/mobile/components/reception/bits';
 import { ReceptionLabelSheet } from '@/mobile/components/reception/ReceptionLabelSheet';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionClientCard() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { userId } = useParams<{ userId: string }>();
   const { t } = useLanguage();
   const { data: client, isLoading, error, refetch } = useReceptionClient(userId);
@@ -29,15 +31,22 @@ export function ReceptionClientCard() {
   const { data: settings } = useAdminShippingSettings();
   const [labelOpen, setLabelOpen] = useState(false);
 
-  if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
-  if (error || !client) return <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_client_not_found')} onRetry={() => void refetch()} />;
+  // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie.
+  if (isLoading || error || !client) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_tab_clients')} showBack onBack={() => back('/r/clients')} />
+        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_client_not_found')} onRetry={() => void refetch()} />}
+      </div>
+    );
+  }
 
   const name = clientFullName(client);
-  const goDeposit = () => navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(name)}&code=${client.customer_code}`);
+  const goDeposit = () => navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(name)}&code=${client.customer_code}&from=client`);
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={client.customer_code} subtitle={name} showBack backTo="/r/clients" />
+      <MobileHeader title={client.customer_code} subtitle={name} showBack onBack={() => back('/r/clients')} />
       <div className="space-y-6 px-5 pb-10 pt-5">
         {/* L'identité et le QR : ce que le réceptionnaire scanne, ce que le client montre. */}
         <Card className="space-y-4">
@@ -76,7 +85,7 @@ export function ReceptionClientCard() {
           ) : (
             <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
               {deposits.map((d) => (
-                <DepositRow key={d.id} deposit={d} onClick={() => navigate(d.status === 'open' ? `/r/deposit/${d.id}` : `/r/deposit/${d.id}/done`)} />
+                <DepositRow key={d.id} deposit={d} byNumber onClick={() => navigate(`/r/deposit/${d.id}`)} />
               ))}
             </Card>
           )}

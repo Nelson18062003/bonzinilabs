@@ -516,8 +516,9 @@ export interface BoardQuery {
  * a été reçu sur une période, ou ce qui a été supprimé. Une seule source pour
  * les vues Dépôts, Colis et Photos de la console.
  */
-export function useReceptionBoard(q: BoardQuery) {
+export function useReceptionBoard(q: BoardQuery, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ['reception', 'board', q.scope, q.location ?? 'all', q.from?.toISOString() ?? null, q.to?.toISOString() ?? null],
     queryFn: () => rpcJson<{ total: number; truncated: boolean; deposits: Deposit[] }>('reception_board', {
       p_scope: q.scope,

@@ -1,25 +1,28 @@
 // ============================================================
 // RÉCEPTION — Un paquet avion (32 kg au plus). En haut, la jauge : ce que
-// pèsent ses colis, ce qu'il reste. Tant qu'il est ouvert, la boîte de scan
-// est le geste : chaque étiquette de colis lue y entre (bip aigu) ou est
-// refusée avec la raison du serveur (bip grave) ; trop lourd, on propose de
-// le fermer et d'en commencer un autre. Les colis, rangés par client.
+// pèsent ses colis, ce qu'il reste. Tant qu'il est ouvert, deux gestes pour
+// le remplir : la boîte de scan (chaque étiquette lue y entre — bip aigu —
+// ou est refusée avec la raison du serveur — bip grave ; trop lourd, on
+// propose de le fermer et d'en commencer un autre), et la liste des colis
+// prêts qui y tiennent encore (« Ajouter », les clients déjà dedans en
+// tête). Le paquet peut avoir été ouvert ici ou depuis l'ordinateur.
+// Les colis, rangés par client.
 // En bas : fermer (pesée, dimensions, puis l'étiquette), rouvrir, imprimer,
 // ou supprimer un paquet vide.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, LockOpen, PackageCheck, PackagePlus, Printer, Trash2 } from 'lucide-react';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { Check, ListPlus, LockOpen, PackageCheck, PackagePlus, Plus, Printer, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { parseDecimal } from '@/lib/decimalInput';
-import { clientFullName, formatKg, type ParcelKind, type ReceptionClient } from '@/lib/reception';
-import { isAssignable, weightGauge, type AirPackage, type AirPackageParcel } from '@/lib/airPackage';
+import { clientFullName, formatKg, type ParcelKind } from '@/lib/reception';
+import { fitsInPackage, isAssignable, packableGroups, packageClientGroups, planPacking, sealCheck, sumParcelKg, weightGauge, type AirPackage, type PackableParcel } from '@/lib/airPackage';
 import {
   PackageRpcError, useAddParcelToPackage, useAirPackage, useCreateAirPackage, useDeleteAirPackage,
-  useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
+  usePackableParcels, usePackParcels, useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
 } from '@/hooks/useAirPackages';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
@@ -27,7 +30,7 @@ import { PackageLabelSheet } from '@/components/cargo/packages/PackageLabelSheet
 import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, BottomSheet, Button, Card, FormField, PrimaryPill, Row, ScreenError, ScreenLoader, SoftPill, StatusPill, TextInput } from '@/mobile/designKit';
 import { formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { WeightBar } from '@/mobile/components/reception/packageBits';
-import { GAUGE_TONE, usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
+import { GAUGE_TONE, useOpenedBy, usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
 
 type Sheet = 'seal' | 'label' | 'reopen' | 'delete' | null;
 
@@ -39,6 +42,7 @@ export function ReceptionPackage() {
 
 function PackageScreen({ id }: { id: string }) {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
@@ -56,20 +60,18 @@ function PackageScreen({ id }: { id: string }) {
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [justSealed, setJustSealed] = useState(false);
 
-  const groups = useMemo(() => {
-    const byClient = new Map<string, { client: ReceptionClient | null; parcels: AirPackageParcel[]; kg: number }>();
-    for (const p of pkg?.parcels ?? []) {
-      const k = p.client?.user_id ?? '—';
-      const g = byClient.get(k) ?? { client: p.client, parcels: [], kg: 0 };
-      g.parcels.push(p);
-      g.kg += Number(p.weight_kg) || 0;
-      byClient.set(k, g);
-    }
-    return [...byClient.values()];
-  }, [pkg?.parcels]);
+  const groups = useMemo(() => packageClientGroups(pkg?.parcels), [pkg?.parcels]);
+  const by = useOpenedBy(pkg ?? {});
 
-  if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
-  if (error || !pkg) return <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />;
+  // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie.
+  if (isLoading || error || !pkg) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
+        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />}
+      </div>
+    );
+  }
 
   const open = pkg.status === 'open';
   const g = weightGauge(pkg);
@@ -108,16 +110,17 @@ function PackageScreen({ id }: { id: string }) {
   };
   const doDelete = () => {
     if (del.isPending) return;
-    del.mutate(pkg.id, { onSuccess: () => navigate('/r/paquets', { replace: true }) });
+    del.mutate(pkg.id, { onSuccess: () => back('/r/paquets') });
   };
   const startNext = () => {
     if (create.isPending) return;
-    create.mutate(undefined, { onSuccess: (p) => { setSheet(null); navigate(`/r/paquets/${p.id}`); } });
+    // Le paquet suivant REMPLACE celui-ci : un seul retour ramène à l'onglet Paquets.
+    create.mutate(undefined, { onSuccess: (p) => { setSheet(null); navigate(`/r/paquets/${p.id}`, { replace: true }); } });
   };
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={pkg.package_no} subtitle={t('rc_pk_title')} showBack backTo="/r/paquets" />
+      <MobileHeader title={pkg.package_no} subtitle={by ?? t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
 
       <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-6 pt-5">
         {/* La jauge : ce que pèsent les colis sur 32 kg, et ce qu'il reste. */}
@@ -176,6 +179,8 @@ function PackageScreen({ id }: { id: string }) {
             )}
           </div>
         )}
+
+        {open && <ReadyToAdd pkg={pkg} onAdded={(no) => { setOver(false); setLastAdded(no); }} />}
 
         {/* Les colis, par client. */}
         <section className="space-y-3">
@@ -271,6 +276,117 @@ function PackageScreen({ id }: { id: string }) {
   );
 }
 
+/* ── Les colis prêts qui tiennent encore : « Ajouter », sans scanner. ── */
+const READY_SHOWN = 8;
+
+/**
+ * Les colis avion du bureau prêts à emballer, qui tiennent encore dans ce
+ * paquet — les clients déjà dedans en tête (on garde un client ensemble).
+ * « Ajouter » passe par la même RPC que le scan : le serveur revérifie.
+ */
+function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: string) => void }) {
+  const { t } = useLanguage();
+  const { t: ti } = useTranslation('agent');
+  const tx = usePackageText();
+  const labels = useReceptionLabels();
+  const { data } = usePackableParcels();
+  const add = useAddParcelToPackage(pkg.id);
+  const fillAll = usePackParcels();
+  const [pending, setPending] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
+
+  const g = weightGauge(pkg);
+  const { groups, fit, noRoom, best } = useMemo(() => {
+    // Un colis tout juste ajouté reste dans la liste lue tant qu'elle ne s'est pas relue : on l'écarte ici.
+    const inside = new Set((pkg.parcels ?? []).map((p) => p.id));
+    const here = new Set((pkg.parcels ?? []).map((p) => p.client?.user_id).filter(Boolean) as string[]);
+    const candidates = (data?.ready ?? []).filter((it) => !inside.has(it.parcel.id));
+    const ok = candidates.filter((it) => fitsInPackage(pkg, it.parcel.weight_kg));
+    // « Tout ajouter » : ce qui tient encore, les plus lourds d'abord (le même calcul que « Mettre en paquet »).
+    const head = planPacking(ok, pkg)[0];
+    return { groups: packableGroups(ok, here), fit: ok.length, noRoom: candidates.length - ok.length, best: head?.packageId === pkg.id ? head.items : [] };
+  }, [data, pkg]);
+
+  if (!data || (fit === 0 && noRoom === 0)) return null;
+  // Les premiers colis seulement (client par client), tant qu'on ne demande pas la suite.
+  let budget = more ? Infinity : READY_SHOWN;
+  const shown = groups.map((grp) => {
+    const items = grp.items.slice(0, Math.max(0, budget));
+    budget -= items.length;
+    return { ...grp, items };
+  }).filter((grp) => grp.items.length > 0);
+
+  const onFillAll = async () => {
+    if (pending || fillAll.isPending || best.length === 0) return;
+    setPending('all');
+    try {
+      const r = await fillAll.mutateAsync({ bins: [{ packageId: pkg.id, packageNo: pkg.package_no, parcelNos: best.map((it) => it.parcel.parcel_no) }] });
+      const row = r.packages[0];
+      if (row?.added.length) { onAdded(row.added[row.added.length - 1]); toast.success(ti('rc_pk_fill_done', { count: row.added.length, no: pkg.package_no })); }
+      if (row?.refused.length) toast.error(row.refused[0].error, { description: row.refused.map((x) => x.parcel_no).join(', ') });
+    } catch {
+      // le hook dit le refus
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const onAdd = async (it: PackableParcel) => {
+    if (pending) return;
+    setPending(it.parcel.id);
+    try {
+      const r = await add.mutateAsync(it.parcel.parcel_no);
+      onAdded(r.parcel_no);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setPending(null);
+    }
+  };
+
+  return (
+    <section className="space-y-3">
+      <span className="block">
+        <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_ready_title')}</h2>
+        {fit > 0 && <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_pk_ready_hint')}</span>}
+      </span>
+      {/* Un geste pour remplir le carton avec ce qui tient encore. */}
+      {best.length > 1 && (
+        <SoftPill onClick={() => void onFillAll()} disabled={pending !== null} className="h-12 w-full">
+          <ListPlus /> {ti('rc_pk_fill_all', { count: best.length, kg: formatKg(sumParcelKg(best)) })}
+        </SoftPill>
+      )}
+      {shown.map((grp) => (
+        <Card key={grp.key} className="overflow-hidden p-0">
+          <div className={cn('flex items-start justify-between gap-3 border-b px-4 py-3', SURFACE.divider, SURFACE.inset)}>
+            <span className="min-w-0">
+              <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{grp.client?.customer_code ?? t('rc_unknown_client')}</span>
+              {grp.client && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{clientFullName(grp.client)}</span>}
+            </span>
+            {grp.inPackage && <span className={cn('shrink-0 text-right', TYPE.smallStrong, TONE_TEXT.success)}>{t('rc_pk_ready_in_package')}</span>}
+          </div>
+          {grp.items.map((it) => (
+            <div key={it.parcel.id} className={cn('flex items-center gap-3 border-b px-4 py-3 last:border-b-0', SURFACE.divider)}>
+              <span className="min-w-0 flex-1">
+                <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{it.parcel.parcel_no}</span>
+                <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{it.parcel.description || labels.kind(it.parcel.kind as ParcelKind)}</span>
+              </span>
+              <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(it.parcel.weight_kg)}</span>
+              <Button variant="primary" onClick={() => void onAdd(it)} loading={pending === it.parcel.id} disabled={pending !== null} ariaLabel={`${t('rc_pk_ready_add')} ${it.parcel.parcel_no}`} className="h-11 shrink-0 px-3 text-[15px]">
+                <Plus /> {t('rc_pk_ready_add')}
+              </Button>
+            </div>
+          ))}
+        </Card>
+      ))}
+      {fit > READY_SHOWN && (
+        <SoftPill onClick={() => setMore((m) => !m)} className="h-11 w-full">{more ? t('rc_pk_ready_less') : ti('rc_pk_ready_more', { count: fit - READY_SHOWN })}</SoftPill>
+      )}
+      {noRoom > 0 && <p className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{ti('rc_pk_ready_no_room', { count: noRoom, left: tx.left(g) })}</p>}
+    </section>
+  );
+}
+
 /* ── Fermer le paquet : la pesée (obligatoire), les dimensions (facultatives). ── */
 function SealSheet({ open, onClose, pkg, pending, onSeal }: { open: boolean; onClose: () => void; pkg: AirPackage; pending: boolean; onSeal: (v: SealInput) => void }) {
   const { t } = useLanguage();
@@ -280,20 +396,18 @@ function SealSheet({ open, onClose, pkg, pending, onSeal }: { open: boolean; onC
   useEffect(() => { if (open) { setGross(''); setDims(['', '', '']); } }, [open]);
 
   const g = weightGauge(pkg);
-  const kg = parseDecimal(gross);
-  const cm = dims.map((v) => (v.trim() ? parseDecimal(v) : null));
-  const grossError = !gross.trim() ? null
-    : !(kg > 0) ? t('rc_pk_gross_required')
-    : kg > g.max ? ti('rc_pk_gross_over', { max: formatKg(g.max) })
-    : kg < g.net - 0.5 ? ti('rc_pk_gross_under', { kg: formatKg(g.net) })
+  // Le même contrôle que l'ordinateur et que le serveur (air_package_seal), valeurs arrondies d'abord.
+  const check = sealCheck(gross, dims, pkg);
+  const grossError = check.grossError === 'required' ? t('rc_pk_gross_required')
+    : check.grossError === 'over' ? ti('rc_pk_gross_over', { max: formatKg(g.max) })
+    : check.grossError === 'under' ? ti('rc_pk_gross_under', { kg: formatKg(g.net) })
     : null;
-  const dimsError = cm.some((v) => v != null && !(v > 0 && v <= 400)) ? t('rc_pk_dims_invalid') : null;
-  const valid = gross.trim() !== '' && kg > 0 && !grossError && !dimsError;
-  const round = (v: number | null) => (v == null ? null : Math.round(v * 10) / 10);
+  const dimsError = check.dimsError ? t('rc_pk_dims_invalid') : null;
+  const valid = check.valid;
 
   const submit = () => {
-    if (!valid || pending) return;
-    onSeal({ grossWeightKg: Math.round(kg * 100) / 100, lengthCm: round(cm[0]), widthCm: round(cm[1]), heightCm: round(cm[2]) });
+    if (!check.input || pending) return;
+    onSeal(check.input);
   };
   const dimLabels = [t('rc_pk_length'), t('rc_pk_width'), t('rc_pk_height')];
 

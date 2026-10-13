@@ -97,6 +97,19 @@ export function formatAwb(raw: string): string {
   return /^\d{11}$/.test(s) ? `${s.slice(0, 3)}-${s.slice(3)}` : s;
 }
 
+/** « 071-1234 5675 » → « 07112345675 » : la LTA telle qu'on l'envoie à la base. */
+export const cleanAwb = (raw: string): string => raw.replace(/\s|-/g, '');
+
+/** Une LTA saisie est-elle utilisable ? (La base accepte dès 4 caractères ; elle en a 11 d'habitude.) */
+export const isAwbValid = (raw: string): boolean => cleanAwb(raw).length >= 4;
+
+/** Le fret saisi (« 1 840,50 ») en dollars ; null si vide ou illisible. */
+export function parseFreightUsd(raw: string): number | null {
+  if (!raw.trim()) return null;
+  const n = Number(raw.replace(/\s/g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
 /** La phrase du vol : « ET 607 · Ethiopian » ou « Vol à préciser ». */
 export function flightSentence(a: Pick<AirShipment, 'flight_no' | 'airline'>): string {
   const parts = [a.flight_no, a.airline].filter(Boolean);

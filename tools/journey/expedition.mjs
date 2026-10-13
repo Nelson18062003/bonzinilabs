@@ -84,7 +84,8 @@ const FLIGHTS = {
 const realId = (id) => (id === 'et607-vide' ? 'et607' : id);
 
 /* ── L'état simulé (scan au départ, refus) : remis à zéro avant chaque écran ── */
-const state = { scanned: new Set(), refused: new Set() };
+// emptyBureau : plus aucun paquet fermé au bureau (seul PQ-000046, en cours) — la fenêtre « Ajouter des paquets » vide.
+const state = { scanned: new Set(), refused: new Set(), emptyBureau: false };
 
 /**
  * DM Sans servie depuis node_modules/@fontsource (Google Fonts passe par le proxy et
@@ -94,7 +95,7 @@ const FONT_DIR = 'node_modules/@fontsource/dm-sans/files';
 const FONT_CSS = [400, 500, 600, 700, 800, 900].flatMap((w) => ['latin', 'latin-ext'].map((sub) =>
   `@font-face{font-family:'DM Sans';font-style:normal;font-weight:${w};font-display:block;src:url(https://fonts.local/dm-sans-${sub}-${w}-normal.woff2) format('woff2');${sub === 'latin-ext' ? 'unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;' : ''}}`)).join('\n');
 async function reset(page) {
-  state.scanned = new Set(); state.refused = new Set();
+  state.scanned = new Set(); state.refused = new Set(); state.emptyBureau = false;
   await page.route(/fonts\.googleapis\.com\/css2/, (r) => r.fulfill({ status: 200, contentType: 'text/css', headers: { 'access-control-allow-origin': '*' }, body: FONT_CSS }));
   await page.route(/fonts\.local\//, (r) => r.fulfill({ status: 200, contentType: 'font/woff2', headers: { 'access-control-allow-origin': '*' }, path: join(FONT_DIR, r.request().url().split('/').pop()) }));
 }
@@ -253,7 +254,7 @@ export const RPC = {
   },
   cargo_air_loadable_parcels: { success: true, parcels: [] },
   // Les paquets qui attendent au bureau : PQ-000039 refusé (à renvoyer), PQ-000041 à 45 fermés, PQ-000046 encore ouvert.
-  air_package_list: () => ({ success: true, packages: [packageJson(46, { forAir: null }), packageJson(39, { forAir: null }), ...[45, 44, 43, 42, 41].map((n) => packageJson(n, { forAir: null }))] }),
+  air_package_list: () => ({ success: true, packages: state.emptyBureau ? [packageJson(46, { forAir: null })] : [packageJson(46, { forAir: null }), packageJson(39, { forAir: null }), ...[45, 44, 43, 42, 41].map((n) => packageJson(n, { forAir: null }))] }),
   air_package_get: (b) => { const n = Number(/(\d+)$/.exec(b.p_package_id ?? b.p_code ?? '')?.[1]); return GROSS[n] ? { success: true, package: packageJson(n, { withParcels: true }) } : { success: false, error: 'Paquet introuvable' }; },
   air_package_assign: (b) => ({ success: true, assigned: (b.p_package_ids ?? []).length, parcels: (b.p_package_ids ?? []).reduce((t, id) => t + parcelsOfPackage(Number(id.slice(4))).length, 0), skipped: [] }),
   air_package_unassign: (b) => ({ success: true, package: packageJson(Number(String(b.p_package_id).slice(4)), { withParcels: true, forAir: null }) }),
@@ -377,10 +378,32 @@ export const SCREENS = [
       await settle(page, 400);
     },
   },
+  // 9b. Sur ordinateur, un vol vide et aucun paquet fermé au bureau : la fenêtre mène à la préparation des paquets (12/10).
+  {
+    key: 'j.expedition.desk-add', name: '09b-bureau-ajouter-aucun-paquet-ferme', desktop: true, role: 'ops', viewport: '1440x900',
+    init: async (page) => { await reset(page); state.emptyBureau = true; },
+    before: async (page) => {
+      await page.getByRole('button', { name: /Ajouter des paquets/ }).click();
+      await settle(page, 800);
+    },
+  },
   // 10. L'avis d'expédition du vol (ses paquets et leurs colis), 1re page.
   { key: 'j.expedition.manifest', name: '10-avis-expedition-pdf', desktop: true, role: 'ops', init: reset, viewport: '900x1290', before: showManifest },
   // 11. La liste des vols sur ordinateur : « LTA à venir » en italique.
   { key: 'j.expedition.desk-list', name: '11-bureau-liste-vols', desktop: true, role: 'ops', init: reset },
+  // 11b. « Nouvelle expédition » en fenêtre : la fiche du vol et les paquets fermés du bureau, à cocher (12/10).
+  {
+    key: 'j.expedition.desk-list', name: '11b-bureau-nouvelle-expedition-avec-paquets', desktop: true, role: 'ops', init: reset, viewport: '1440x1200',
+    before: async (page) => {
+      await page.getByRole('button', { name: /Nouvelle expédition/ }).first().click();
+      await settle(page, 700);
+      await page.getByRole('dialog').getByPlaceholder('071-12345675').fill('071-23456782');
+      await page.getByRole('dialog').getByPlaceholder('Ethiopian, Turkish…').fill('Ethiopian Airlines');
+      await page.getByRole('dialog').getByPlaceholder('ET 607').fill('ET 609');
+      await page.getByRole('dialog').getByRole('button', { name: 'Tout cocher' }).click();
+      await settle(page, 400);
+    },
+  },
   // 12. Maritime : MIEU3611115, déchargé à Kribi, que Maersk ne signale pas — « Marquer arrivé ».
   {
     key: 'j.expedition.container', name: '12-conteneur-suivi', desktop: true, role: 'ops', init: reset, viewport: '1440x1000', wait: 1500,

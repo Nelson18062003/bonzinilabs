@@ -3,55 +3,47 @@
 // qui), et les étiquettes : une page par colis, la même étiquette que
 // celle des fournisseurs, avec « 3/10 » dans la case Carton no. et la date
 // d'arrivée. Un aperçu, puis le PDF ou l'image se téléchargent ; le partage
-// (AirPrint, WeChat) reste possible.
+// (AirPrint, WeChat) reste possible. Rien d'autre : l'étiquette du client
+// est dans sa fiche (Clients), la mise en paquet se fait plus tard, depuis
+// l'onglet Paquets.
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Printer, ScanLine, Tag } from 'lucide-react';
+import { Check, Printer, ScanLine, UserSearch } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { useShippingLabel } from '@/components/customer-code/useShippingLabel';
-import { SURFACE, TEXT, TYPE, Card, Holder, PrimaryPill, Row, ScreenLoader, SoftPill } from '@/mobile/designKit';
-import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
-import { ReceptionLabelSheet } from '@/mobile/components/reception/ReceptionLabelSheet';
+import { SURFACE, TEXT, TONE_PILL, TYPE, Card, Holder, PrimaryPill, Row, SoftPill } from '@/mobile/designKit';
+import { DepositLoadState, LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
+import { assignPath } from '@/mobile/components/reception/useAssignFlow';
+import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionDone() {
   const navigate = useNavigate();
+  const back = useReceptionBack();
   const { depositId } = useParams<{ depositId: string }>();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
-  const { data: deposit, isLoading } = useReceptionDeposit(depositId);
+  const { data: deposit, isLoading, error, refetch } = useReceptionDeposit(depositId);
   const { data: settings } = useAdminShippingSettings();
   const [internalOpen, setInternalOpen] = useState(false);
-  const [labelOpen, setLabelOpen] = useState(false);
 
-  const client = deposit?.client ?? null;
-  const { qr } = useShippingLabel({
-    code: client?.customer_code ?? '',
-    clientName: clientFullName(client),
-    clientPhone: client?.phone,
-    clientEmail: client?.email,
-    companyName: client?.company_name,
-    clientCity: client?.city,
-    clientCountry: client?.country,
-    destination: deposit?.location ?? 'warehouse',
-    settings: settings ?? DEFAULT_SHIPPING_SETTINGS,
-  }, { active: !!client });
+  // Chargement et erreur : un en-tête avec sa flèche, jamais un sablier sans fin.
+  if (!deposit) { // une relecture ratée en arrière-plan garde l'écran déjà affiché
+    return <DepositLoadState title={t('rc_done_title')} onBack={() => back('/r')} isLoading={isLoading} error={error} onRetry={() => void refetch()} />;
+  }
 
-  if (isLoading || !deposit) return <ScreenLoader className="min-h-[100dvh]" />;
-
+  const client = deposit.client ?? null;
   const name = client ? clientFullName(client) : t('rc_unknown_client');
   const count = deposit.parcels.length;
   const receivedAt = deposit.closed_at ?? deposit.opened_at;
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      {qr}
       <div className="flex-1 space-y-6 px-5 pb-10 pt-[calc(2.5rem+env(safe-area-inset-top))]">
         <div className="text-center">
           <div className="mx-auto mb-4 flex justify-center"><Holder icon={Check} tone="success" size="lg" className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8" /></div>
@@ -75,22 +67,31 @@ export function ReceptionDone() {
           </div>
         )}
 
-        <div className="space-y-3 pt-2">
-          {client && (
-            <>
-              <PrimaryPill onClick={() => setInternalOpen(true)} className="h-14 w-full text-[17px]">
-                <Printer /> {t('rc_print_labels')} ({count})
-              </PrimaryPill>
-              <p className={cn('text-center', TYPE.small, TEXT.muted)}>{t('rc_labels_hint')}</p>
-              <SoftPill onClick={() => setLabelOpen(true)} className="h-14 w-full text-[17px]"><Tag /> {t('rc_client_label_short')}</SoftPill>
-            </>
-          )}
-          <SoftPill onClick={() => navigate('/r/new')} className="h-14 w-full text-[17px]"><ScanLine /> {t('rc_next_deposit')}</SoftPill>
-          <button type="button" onClick={() => navigate('/r')} className={cn('h-12 w-full', TYPE.bodyStrong, TEXT.muted)}>{t('rc_back_home')}</button>
+        {client && (
+          <div className="space-y-3 pt-2">
+            <PrimaryPill onClick={() => setInternalOpen(true)} className="h-14 w-full text-[17px]">
+              <Printer /> {t('rc_print_labels')} ({count})
+            </PrimaryPill>
+            <p className={cn('text-center', TYPE.small, TEXT.muted)}>{t('rc_labels_hint')}</p>
+          </div>
+        )}
+
+        {/* Sans client : le dépôt attend dans « En attente » — ou s'attribue tout de suite. */}
+        {!client && (
+          <div className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.pending)}>
+            <p className={TYPE.bodyStrong}>{t('rc_done_no_client')}</p>
+            <PrimaryPill onClick={() => navigate(assignPath(deposit.id))} className="h-12 w-full"><UserSearch /> {t('rc_assign_now')}</PrimaryPill>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {/* Le dépôt suivant remplace celui-ci : le retour du téléphone ne revient pas sur un dépôt terminé. */}
+          <SoftPill onClick={() => navigate('/r/new', { replace: true })} className="h-14 w-full text-[17px]"><ScanLine /> {t('rc_next_deposit')}</SoftPill>
+          <button type="button" onClick={() => back('/r')} className={cn('h-12 w-full', TYPE.bodyStrong, TEXT.muted)}>{t('rc_done_finish')}</button>
         </div>
       </div>
-      {client && <ReceptionLabelSheet open={labelOpen} onClose={() => setLabelOpen(false)} client={client} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
       {client && <InternalLabelSheet open={internalOpen} onClose={() => setInternalOpen(false)} deposit={deposit} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
     </div>
   );
 }
+

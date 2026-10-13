@@ -91,7 +91,14 @@ const pend1 = deposit({
   id: 'pend1', deposit_no: 'RC-000119', client: null, brought_by: 'courier', opened_at: gz(9, 12), closed_at: gz(9, 15), ...noSupplier,
   parcels: [parcel('RC-000119', 1, 'carton', 'Fournisseur Yiwu Hengda (sur le bordereau)', 4.4, [40, 30, 30], { courier_waybill: 'YT7731002588108' })],
 });
-const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1 };
+// RC-000124 : un dépôt que Li Wei (un collègue) est en train de saisir — Kevin le voit en lecture.
+const depLi = deposit({
+  id: 'depLi', deposit_no: 'RC-000124', client: samuel, status: 'open', received_by: 'li', received_by_name: 'Li Wei', opened_at: gz(16, 2), ...noSupplier,
+  parcels: [parcel('RC-000124', 1, 'carton', 'Pièces auto (amortisseurs)', 11.2, [60, 40, 30])],
+});
+// Le même dépôt terminé, devis déjà envoyé au client : le réceptionnaire ne corrige plus (l'équipe cargo, si).
+const depQ = { ...dep3, id: 'depQ', quote_engaged: 'Le devis DV-000031 a déjà été envoyé au client' };
+const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1, depLi, depQ };
 const dayDeposits = [dep1, dep2, dep3, dep4];
 const sum = (xs, f) => xs.reduce((s, x) => s + f(x), 0);
 
@@ -113,8 +120,9 @@ const pkg = (o) => ({
   sealed_at: null, handed_over_at: null, refused_at: null, refusal_reason: null, refused_air_shipment_id: null,
   received_at: null, opened_at: null, created_at: gz(9, 0), updated_at: gz(9, 0), parcels: null, ...o,
 });
+// Ouvert par Grace depuis l'ordinateur (« ouvert par Grace Ebogo ») ; c'est Kevin qui le remplit au bureau.
 const pk45 = pkg({
-  id: 'pk45', package_no: 'PQ-000045', created_at: gz(15, 2), updated_at: gz(16, 18),
+  id: 'pk45', package_no: 'PQ-000045', created_at: gz(15, 2), updated_at: gz(16, 18), created_by: 'grace', created_by_name: 'Grace Ebogo',
   net_weight_kg: Math.round(sum(pk45Parcels, (p) => p.weight_kg) * 100) / 100, parcel_count: pk45Parcels.length, client_count: 3, parcels: pk45Parcels,
 });
 const pk45Sealed = { ...pk45, status: 'sealed', gross_weight_kg: 28.1, length_cm: 70, width_cm: 50, height_cm: 45, sealed_at: gz(16, 42), updated_at: gz(16, 42) };
@@ -129,8 +137,29 @@ const pk41 = pkg({ id: 'pk41', package_no: 'PQ-000041', status: 'refused', refus
   net_weight_kg: 29.8, gross_weight_kg: 30.4, length_cm: 70, width_cm: 50, height_cm: 45, parcel_count: 6, client_count: 2, created_at: gz(10, 0, 1), sealed_at: gz(17, 10, 1), updated_at: gz(18, 5, 2) });
 
 const listRow = (p) => ({ ...p, parcels: null });
-// État du parcours : le paquet PQ-000045 se ferme pendant l'écran 8 (remis à zéro à chaque écran).
-const state = { sealed: false };
+// État du parcours (remis à zéro à chaque écran) : le paquet PQ-000045 se ferme pendant l'écran 8 ;
+// sur l'ordinateur (écrans 18 et suivants), Grace crée des paquets (PQ-000046, 47…) et les remplit,
+// puis met des paquets fermés sur un vol (existant ou ouvert pour l'occasion).
+const state = { sealed: false, made: [], flights: [], assigned: {} };
+const ALL_PARCELS = () => [...dep1c.parcels.map((p) => [p, dep1c]), ...[dep2, dep3, dep4].flatMap((d) => d.parcels.map((p) => [p, d]))];
+/** Un paquet créé pendant l'écran : PQ-000046, 47… avec ses colis. */
+const made = (m) => pkg({ id: m.id, package_no: m.no, created_at: m.by ? gz(8, 50) : gz(16, 43), updated_at: gz(16, 43 + m.parcels.length),
+  created_by: m.by ? 'grace' : 'demo', created_by_name: m.by ? 'Grace Ebogo' : 'Kevin Nkolo',
+  net_weight_kg: Math.round(sum(m.parcels, (p) => p.weight_kg) * 100) / 100, parcel_count: m.parcels.length,
+  client_count: new Set(m.parcels.map((p) => p.client?.user_id)).size, parcels: m.parcels });
+const madeById = (id) => state.made.find((m) => m.id === id);
+// La réception voit dans quel paquet est chaque colis (reception_deposit_json : air_package_id, package_no).
+const packedIn = (p) => {
+  if (pk45Parcels.some((x) => x.id === p.id)) return { air_package_id: 'pk45', package_no: 'PQ-000045' };
+  const m = state.made.find((x) => x.parcels.some((y) => y.id === p.id));
+  return m ? { air_package_id: m.id, package_no: m.no } : {};
+};
+// Un vol en préparation (mercredi) et ceux ouverts pendant l'écran ; les paquets montés à bord.
+const plannedAir = { id: 'air1', awb_number: '07112345675', airline: 'Ethiopian Airlines', flight_no: 'ET 607', origin: 'Guangzhou (CAN)', destination: 'Douala (DLA)', status: 'PLANNED',
+  etd: '2026-10-07', eta: '2026-10-08', departed_at: null, arrived_at: null, delivered_at: null, freight_usd: null, notes: null, created_at: gz(9, 0, 3), updated_at: gz(9, 0, 3),
+  parcel_count: 8, total_weight_kg: 30.6, total_cbm: 0.2, client_count: 3, unpaid_count: 0, package_count: 1, parcels: [] };
+const withAssigned = (k) => (state.assigned[k.id] ? { ...k, air_shipment_id: state.assigned[k.id], awb_number: '07112345675', air_status: 'PLANNED', flight_no: 'ET 607', etd: '2026-10-07' } : k);
+const withPackages = (d) => ({ ...d, parcels: d.parcels.map((p) => ({ ...p, ...packedIn(p) })) });
 
 // ── Le devis du dépôt RC-000123 (au kilo, avion) et ses encaissements ──
 const pricing = { success: true, air_per_kg_xaf: 6500, sea_per_cbm_xaf: 180000, currency: 'XAF' };
@@ -182,7 +211,7 @@ export const RPC = {
     stats: { deposits: dayDeposits.length, parcels: sum(dayDeposits, (d) => d.parcel_count), weight_kg: Math.round(sum(dayDeposits, (d) => d.total_weight_kg) * 10) / 10, cbm: Math.round(sum(dayDeposits, (d) => d.total_cbm) * 1000) / 1000, open: 1 },
     pending: 1, deposits: dayDeposits,
   },
-  reception_get_deposit: (b) => ({ success: true, deposit: DEPOSITS[b?.p_deposit_id] ?? dep1 }),
+  reception_get_deposit: (b) => ({ success: true, deposit: withPackages(DEPOSITS[b?.p_deposit_id] ?? dep1) }),
   reception_pending_deposits: { success: true, deposits: [pend1] },
   reception_recent_clients: { success: true, clients: [aicha, samuel, nadia] },
   reception_client: (b) => { const c = [aicha, samuel, nadia].find((x) => x.user_id === b?.p_user_id); return c ? { success: true, client: c } : { success: false, error: 'Client introuvable' }; },
@@ -190,9 +219,9 @@ export const RPC = {
   reception_close_deposit: { success: true, deposit: dep1c },
 
   // Paquets avion
-  air_package_list: () => ({ success: true, packages: [state.sealed ? pk45Sealed : pk45, pk41, pk44, pk43, pk42].map(listRow) }),
+  air_package_list: () => ({ success: true, packages: [...state.made.map(made), state.sealed ? pk45Sealed : pk45, pk41, pk44, pk43, pk42].map(withAssigned).map(listRow) }),
   air_package_get: (b) => {
-    const byId = { pk45: state.sealed ? pk45Sealed : pk45, pk44, pk43, pk42, pk41 };
+    const byId = { pk45: state.sealed ? pk45Sealed : pk45, pk44, pk43, pk42, pk41, ...Object.fromEntries(state.made.map((m) => [m.id, made(m)])) };
     const m = /PQ[\s-]?(\d{1,9})/i.exec(b?.p_code ?? '');
     const code = m ? `PQ-${String(Number(m[1])).padStart(6, '0')}` : null;
     const p = b?.p_package_id ? byId[b.p_package_id] : Object.values(byId).find((x) => x.package_no === code);
@@ -203,21 +232,69 @@ export const RPC = {
     const code = /RC-?(\d{6})-?(\d{2,3})/i.exec(b?.p_code ?? '');
     if (!code) return { success: false, error: 'Ce n\'est pas une étiquette de colis (RC-000000-00)' };
     const no = `RC-${code[1]}-${code[2]}`;
+    const m = madeById(b?.p_package_id);
+    if (m) {
+      const hit = ALL_PARCELS().find(([x]) => x.parcel_no === no);
+      if (!hit) return { success: false, error: `Colis ${no} introuvable` };
+      const [p, d] = hit;
+      if (m.parcels.some((x) => x.id === p.id)) return { success: true, already: true, parcel_no: no, package: made(m) };
+      const other = packedIn(p);
+      if (other.package_no) return { success: false, error: `Le colis ${no} est déjà dans le paquet ${other.package_no}` };
+      const next = Math.round((made(m).net_weight_kg + p.weight_kg) * 10) / 10;
+      if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1).replace(".", ",")} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
+      m.parcels = [...m.parcels, pkParcel(p, d)];
+      return { success: true, already: false, parcel_no: no, weight_kg: p.weight_kg, client: d.client, package: made(m) };
+    }
     const p = [...dep1.parcels, ...dep2.parcels, ...dep3.parcels, ...dep4.parcels].find((x) => x.parcel_no === no);
     if (!p) return { success: false, error: `Colis ${no} introuvable` };
     if (pk45Parcels.some((x) => x.parcel_no === no)) return { success: true, already: true, parcel_no: no, package: pk45 };
     const next = Math.round((pk45.net_weight_kg + p.weight_kg) * 10) / 10;
-    if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1)} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
+    if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1).replace(".", ",")} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
     return { success: false, error: `Le colis ${no} est déjà dans le paquet PQ-000044` };
   },
   air_package_seal: (b) => { state.sealed = true; return { success: true, package: { ...pk45Sealed, gross_weight_kg: b?.p_gross_weight_kg ?? 28.1, length_cm: b?.p_length_cm ?? null, width_cm: b?.p_width_cm ?? null, height_cm: b?.p_height_cm ?? null } }; },
-  air_package_create: { success: true, package: pkg({ id: 'pk46', package_no: 'PQ-000046', created_at: gz(16, 43), updated_at: gz(16, 43), parcels: [] }) },
+  air_package_create: () => {
+    const n = 46 + state.made.length;
+    const m = { id: `pk${n}`, no: `PQ-0000${n}`, parcels: [] };
+    state.made.push(m);
+    return { success: true, package: made(m) };
+  },
+  air_package_remove_parcel: (b) => {
+    const m = state.made.find((x) => x.parcels.some((y) => y.id === b?.p_parcel_id));
+    if (!m) return { success: false, error: 'Ce colis n\'est dans aucun paquet' };
+    m.parcels = m.parcels.filter((x) => x.id !== b?.p_parcel_id);
+    return { success: true, package: made(m) };
+  },
+  air_package_delete: (b) => { state.made = state.made.filter((x) => x.id !== b?.p_package_id); return { success: true }; },
+  // Les vols : celui de mercredi, et ceux ouverts pendant l'écran.
+  cargo_air_list: () => ({ success: true, shipments: [plannedAir, ...state.flights] }),
+  cargo_air_create: (b) => {
+    const a = { ...plannedAir, id: `airN${state.flights.length + 1}`, awb_number: b?.p_awb_number || 'PROV-7K2Q9D', airline: b?.p_airline || null, flight_no: b?.p_flight_no || null, etd: b?.p_etd ?? null, eta: b?.p_eta ?? null, parcel_count: 0, total_weight_kg: 0, client_count: 0, package_count: 0, created_at: gz(17, 5), updated_at: gz(17, 5) };
+    state.flights.push(a);
+    return { success: true, shipment: a };
+  },
+  air_package_assign: (b) => {
+    const ids = b?.p_package_ids ?? [];
+    for (const id of ids) state.assigned[id] = b.p_air_id;
+    const all = [pk41, pk44, pk43, ...state.made.map(made)];
+    return { success: true, assigned: ids.length, parcels: sum(all.filter((k) => ids.includes(k.id)), (k) => k.parcel_count), skipped: [] };
+  },
 
   // Bureau : la console cargo et le devis
   cargo_parts_summary: { success: true, containers: 1, containers_at_sea: 1, air_open: 1, air_in_flight: 0, parcels_waiting: 19, deposits_pending: 1, deposits_today: 4 },
+  // Ce qui attend un paquet (air_package_packable) : les dépôts du bureau qui ont encore un colis libre.
+  air_package_packable: (b) => {
+    const free = (p) => !packedIn(p).air_package_id;
+    const rows = [dep1c, dep2, dep3, dep4, pend1].filter((d) => d.location === 'office' && d.parcels.some(free)).map(withPackages);
+    // Les compteurs, comme la RPC : prêts (dépôt terminé, attribué, 0 < poids ≤ 32) ; à compléter (le reste, hors plus de 32 kg).
+    const all = rows.flatMap((d) => d.parcels.filter(free).map((p) => ({ p, d })));
+    const ready = all.filter(({ p, d }) => d.status !== 'open' && d.client && p.weight_kg > 0 && p.weight_kg <= 32).length;
+    const toFix = all.filter(({ p, d }) => d.status === 'open' || !d.client || !(p.weight_kg > 0)).length;
+    return { success: true, total: rows.length, truncated: false, deposits: b?.p_limit === 0 ? [] : rows, ready_count: ready, to_fix_count: toFix };
+  },
   reception_board: (b) => {
     const list = b?.p_scope === 'cancelled' ? [] : [dep1c, dep2, dep3, dep4, pend1];
-    const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withQuote);
+    const rows = list.filter((d) => !b?.p_location || d.location === b.p_location).map(withPackages).map(withQuote);
     return { success: true, scope: b?.p_scope ?? 'stock', total: rows.length, truncated: false, deposits: rows };
   },
   reception_stock: { success: true, stats: { parcels: 15, clients: 3, weight_kg: 104.8, cbm: 0.62, pending: 1 }, by_client: [
@@ -228,6 +305,10 @@ export const RPC = {
   ] },
   reception_overview: { success: true, by_receptionist: [{ received_by: 'demo', name: 'Kevin Nkolo', deposits: 5, parcels: 15, weight_kg: 104.8, cbm: 0.62, pending: 1, incomplete: 0 }], deposits: [dep1c, dep2, dep3, dep4, pend1].map(withQuote) },
   reception_search_clients: { success: true, clients: [aicha] },
+  // La visite du 13/10 : le QR d'Aïcha, ses dépôts, et l'attribution que Li Wei vient de faire avant Kevin.
+  reception_client_by_code: (b) => ([aicha, samuel, nadia].find((c) => c.customer_code === b?.p_code) ? { success: true, client: [aicha, samuel, nadia].find((c) => c.customer_code === b?.p_code) } : { success: false, error: 'unknown_code', code: b?.p_code }),
+  reception_client_deposits: (b) => ({ success: true, deposits: [dep1c, dep2].filter((d) => d.client?.user_id === (b?.p_user_id ?? 'u1')).map(withPackages) }),
+  reception_assign_client: { success: false, error: 'Ce dépôt est déjà attribué' },
   warehouse_day: { success: true, day: '2026-10-05', stats: { to_checkin: 0, waiting: 0, missing: 0, delivered_today: 0 }, arrivals: [], waiting_by_client: [], releases_today: [] },
   cargo_pricing_get: pricing,
   cargo_quote_get: (b) => ({ success: true, quote: QUOTES[b?.p_deposit_id] ?? null }),
@@ -265,6 +346,9 @@ export function REST(url) {
 // ── Préparation de chaque page : heure de Guangzhou, lieu « bureau », photos, police chinoise ──
 async function setup(page, { tz = 'Asia/Shanghai' } = {}) {
   state.sealed = false;
+  state.made = [];
+  state.flights = [];
+  state.assigned = {};
   try {
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setTimezoneOverride', { timezoneId: tz });
@@ -307,6 +391,41 @@ async function setup(page, { tz = 'Asia/Shanghai' } = {}) {
 }
 
 const deskSetup = (page) => setup(page, { tz: 'Asia/Shanghai' });
+/** Ce matin, Grace a ouvert depuis l'ordinateur un paquet vide, PQ-000046, pour que Kevin le remplisse au bureau. */
+const withGracePackage = async (page) => {
+  await setup(page);
+  state.made.push({ id: 'pk46', no: 'PQ-000046', parcels: [], by: 'grace' });
+};
+/** Un téléphone neuf : aucun lieu mémorisé (la coquille demande « Où êtes-vous ? »). */
+const noPlace = async (page) => {
+  await setup(page);
+  await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
+};
+/** Dans l'app BONZINI HQ (la WebView) : la caméra est native, le site montre « Ouvrir le scanner ». */
+const inHQ = async (page) => {
+  await setup(page);
+  await page.addInitScript(() => { window.ReactNativeWebView = { postMessage() {} }; });
+};
+/** La caméra native rend un code, comme l'app le fait (window.__bonziniHQ.deliverScan). */
+const nativeScan = (code, ms) => async (page) => {
+  await fontsReady(page);
+  await page.evaluate((c) => window.__bonziniHQ?.deliverScan(c), code);
+  await page.waitForTimeout(ms);
+};
+/** Une question du colis, la réponse tapée (poids, dimensions…). */
+const typeIn = (...values) => async (page) => {
+  await fontsReady(page);
+  const inputs = page.locator('main input:not([type=file]), input[inputmode="decimal"]');
+  for (let i = 0; i < values.length; i += 1) await inputs.nth(i).fill(values[i]);
+  await page.waitForTimeout(300);
+};
+
+/** « Colis à emballer » : tous les colis d'Aïcha cochés d'un geste (sa case de client). */
+async function pickAicha(page) {
+  await fontsReady(page);
+  await page.getByRole('checkbox', { name: /BZ-482913/ }).first().click();
+  await page.waitForTimeout(400);
+}
 
 /** Les polices (DM Sans, Noto Sans SC) sont chargées avant la capture. */
 async function fontsReady(page) {
@@ -342,7 +461,141 @@ async function openSeal(page) {
   await page.waitForTimeout(400);
 }
 
+/** Sur l'ordinateur, la vue Colis (ou Dépôts) de Cargo › Réception, au bureau. */
+const deskView = (view) => async (page) => {
+  await deskSetup(page);
+  await page.addInitScript((v) => { try { localStorage.setItem('bonzini-reception-view', v); } catch { /* privé */ } }, view);
+};
+const tick = (page, name) => page.getByRole('checkbox', { name }).first().click();
+
+/** Sur l'ordinateur : la vue « Paquets avion » de Cargo › Réception. */
+const deskPackages = async (page) => {
+  await deskSetup(page);
+  await page.addInitScript(() => { try { localStorage.setItem('bonzini-reception-view', 'packages'); } catch { /* privé */ } });
+};
+/** « Nouveau paquet » : PQ-000046 commence ; la liste filtrée sur Aïcha, deux de ses colis y entrent d'un clic. */
+async function packAicha(page, n = 2) {
+  await fontsReady(page);
+  await page.getByRole('button', { name: /^Nouveau paquet$/ }).first().click();
+  await page.waitForSelector('#pk-scan', { timeout: 10000 });
+  await page.getByRole('dialog').getByLabel('Filtrer les colis prêts').fill('BZ-482913');
+  await page.waitForTimeout(700);
+  for (let i = 0; i < n; i += 1) {
+    await page.getByRole('dialog').getByRole('button', { name: /^Ajouter$/ }).first().click();
+    await page.waitForTimeout(800);
+  }
+}
+
 export const SCREENS = [
+  // 25. Réception › Colis, au bureau : quatre colis d'Aïcha cochés (39,9 kg), « Mettre en paquet » : deux paquets de 32 kg au plus.
+  { key: 'j.guangzhou.desk-office', name: '25-ordinateur-colis-coches-mettre-en-paquet', role: 'ops', desktop: true, viewport: '1440x1000', init: deskView('parcels'), wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Bureau · Air/ }).click();
+      await page.waitForTimeout(500);
+      for (const no of ['RC-000122-01', 'RC-000122-02', 'RC-000122-05', 'RC-000123-01']) await tick(page, `Sélectionner ${no}`);
+      await page.getByRole('button', { name: /Mettre en paquet/ }).first().click();
+      await page.waitForTimeout(800);
+    } },
+  // 26. …c'est fait : deux paquets créés, à remplir physiquement, « Ouvrir » sur chacun.
+  { key: 'j.guangzhou.desk-office', name: '26-ordinateur-mise-en-paquet-faite', role: 'ops', desktop: true, viewport: '1440x1000', init: deskView('parcels'), wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Bureau · Air/ }).click();
+      await page.waitForTimeout(500);
+      for (const no of ['RC-000122-01', 'RC-000122-02', 'RC-000122-05', 'RC-000123-01']) await tick(page, `Sélectionner ${no}`);
+      await page.getByRole('button', { name: /Mettre en paquet/ }).first().click();
+      await page.waitForTimeout(600);
+      await page.getByRole('dialog').getByRole('button', { name: /Répartir en 2 paquets/ }).click();
+      await page.getByText('Colis mis en paquet').first().waitFor({ timeout: 10000 });
+      await page.waitForTimeout(600);
+    } },
+  // 27. Réception › Dépôts : deux dépôts cochés d'un coup — la même barre (mettre en paquet, étiquettes).
+  { key: 'j.guangzhou.desk-office', name: '27-ordinateur-depots-coches', role: 'ops', desktop: true, viewport: '1440x900', init: deskView('deposits'), wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await tick(page, 'Sélectionner RC-000123');
+      await tick(page, 'Sélectionner RC-000121');
+      await page.waitForTimeout(500);
+    } },
+  // 28. Paquets avion : les paquets fermés (et le refusé) cochés, « Mettre sur un vol » : le vol de mercredi.
+  { key: 'j.guangzhou.desk-packages', name: '28-ordinateur-paquets-sur-un-vol', role: 'ops', desktop: true, viewport: '1440x1050', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await tick(page, 'Cocher : Fermés, prêts à partir');
+      await tick(page, "Cocher : Refusés à l'aéroport");
+      await page.getByRole('button', { name: /Mettre sur un vol/ }).first().click();
+      await page.waitForTimeout(900);
+    } },
+  // 29. …ou une nouvelle expédition, ouverte dans la même fenêtre.
+  { key: 'j.guangzhou.desk-packages', name: '29-ordinateur-paquets-nouvelle-expedition', role: 'ops', desktop: true, viewport: '1440x1150', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await tick(page, 'Cocher : Fermés, prêts à partir');
+      await page.getByRole('button', { name: /Mettre sur un vol/ }).first().click();
+      await page.waitForTimeout(700);
+      await page.getByRole('radio', { name: /Nouvelle expédition/ }).click();
+      await page.waitForTimeout(300);
+      await page.getByRole('dialog').getByPlaceholder('071-12345675').fill('071-23456782');
+      await page.getByRole('dialog').getByPlaceholder('Ethiopian, Turkish…').fill('Ethiopian Airlines');
+      await page.getByRole('dialog').getByPlaceholder('ET 607').fill('ET 609');
+      await page.waitForTimeout(400);
+    } },
+  // 18. Sur l'ordinateur du bureau : Cargo › Réception › Paquets avion — les paquets et les colis à emballer.
+  { key: 'j.guangzhou.desk-packages', name: '18-ordinateur-paquets-avion', role: 'ops', desktop: true, viewport: '1440x1180', init: deskPackages, wait: 2500, before: fontsReady },
+  // 19. La fiche de PQ-000045 : 27,4 kg sur 32, trois clients en couleur ; les colis prêts ne tiennent plus.
+  { key: 'j.guangzhou.desk-package', name: '19-ordinateur-paquet-presque-plein', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('dialog').getByRole('button', { name: /Trop lourd/ }).first().locator('xpath=..').hover();
+      await page.waitForTimeout(500);
+    } },
+  // 20. « Emballer » Aïcha : PQ-000046 commence, deux colis entrent d'un clic, le troisième se dessine au survol.
+  { key: 'j.guangzhou.desk-packages', name: '20-ordinateur-nouveau-paquet-rempli', role: 'ops', desktop: true, viewport: '1440x1000', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await packAicha(page, 2);
+      await page.getByRole('dialog').getByRole('button', { name: /^Ajouter$/ }).first().locator('xpath=..').hover();
+      await page.waitForTimeout(500);
+    } },
+  // 21. La douchette sur un colis de trop : refusé, avec la raison, et « Fermer ce paquet ».
+  { key: 'j.guangzhou.desk-packages', name: '21-ordinateur-colis-de-trop', role: 'ops', desktop: true, viewport: '1440x1000', init: deskPackages, wait: 2500,
+    before: async (page) => {
+      await packAicha(page, 2);
+      await page.fill('#pk-scan', 'RC-000123-02');
+      await page.press('#pk-scan', 'Enter');
+      await page.waitForTimeout(900);
+    } },
+  // 22. Fermer le paquet : la pesée et les dimensions.
+  { key: 'j.guangzhou.desk-package', name: '22-ordinateur-fermer-le-paquet', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Fermer le paquet \(pesée\)/ }).click();
+      await page.waitForTimeout(500);
+      await page.fill('#pk-gross', '28,1');
+      const dims = page.locator('input[aria-label$="(cm)"]');
+      await dims.nth(0).fill('70'); await dims.nth(1).fill('50'); await dims.nth(2).fill('45');
+      await page.waitForTimeout(400);
+    } },
+  // 23. Fermé : l'étiquette 100 × 150 mm tout de suite à côté, et « Commencer un nouveau paquet ».
+  { key: 'j.guangzhou.desk-package', name: '23-ordinateur-paquet-ferme-etiquette', role: 'ops', desktop: true, viewport: '1440x1000', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Fermer le paquet \(pesée\)/ }).click();
+      await page.waitForTimeout(500);
+      await page.fill('#pk-gross', '28,1');
+      await page.getByRole('button', { name: /Fermer et préparer l.étiquette/ }).click();
+      await page.waitForFunction(() => !!document.querySelector('[role=dialog] img[alt^="Étiquette PQ-"]'), null, { timeout: 15000 });
+      await page.waitForTimeout(600);
+    } },
+  // 24. Dépôts, « Bureau · Air » : le chemin vers la mise en paquets, et le paquet de chaque colis emballé.
+  { key: 'j.guangzhou.desk-office', name: '24-ordinateur-bureau-air', role: 'ops', desktop: true, viewport: '1440x1100', init: deskSetup, wait: 2500,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('button', { name: /Bureau · Air/ }).click();
+      await page.waitForTimeout(600);
+      await page.getByRole('button', { name: 'Déplier les colis' }).nth(1).click();
+      await page.waitForTimeout(600);
+    } },
   // 14. Au bureau, la fiche du client : « Origine » et « Enregistré par », son sexe et sa date de naissance.
   { key: 'j.guangzhou.client-sheet', name: '14-fiche-client-enregistre-par', role: 'super_admin', desktop: true, viewport: '1440x1080', init: deskSetup, wait: 2500, before: fontsReady },
   // 15. « Modifier » : le sexe et la date de naissance se changent avec le reste du profil.
@@ -396,7 +649,7 @@ export const SCREENS = [
   // 2. Le dépôt d'Aïcha en cours : 3 colis pesés, mesurés, photographiés.
   { key: 'j.guangzhou.deposit', name: '02-depot-en-cours', role: 'receptionist', init: setup, wait: 1800, viewport: '390x1090', before: fontsReady },
   // 3. Le dépôt terminé : le reçu…
-  { key: 'j.guangzhou.done', name: '03-depot-termine', role: 'receptionist', init: setup, wait: 1500 },
+  { key: 'j.guangzhou.done', name: '03-depot-termine', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1500', fullPage: false },
   // …et les étiquettes des colis (une par carton).
   { key: 'j.guangzhou.done', name: '04-etiquettes-colis', role: 'receptionist', init: setup, wait: 1500, fullPage: false, viewport: '390x1010',
     before: async (page) => { await page.getByRole('button', { name: /Imprimer les étiquettes/ }).click(); await page.waitForTimeout(3000); } },
@@ -424,6 +677,75 @@ export const SCREENS = [
       } catch (e) { console.log('  · étiquette non enregistrée :', e.message); }
       await page.waitForTimeout(800);
     } },
+  // 5b. Colis à emballer : par client ; la case d'Aïcha coche ses 7 colis (66,9 kg).
+  { key: 'j.guangzhou.pack-todo', name: '05b-colis-a-emballer', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1900', before: pickAicha },
+  // 5c. « Mettre en paquet » : PQ-000046, ouvert par Grace sur l'ordinateur, est proposé d'office ;
+  //     le reste se répartit en paquets de 32 kg — trois paquets en tout.
+  { key: 'j.guangzhou.pack-todo', name: '05c-colis-a-emballer-repartir', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1500', fullPage: false,
+    before: async (page) => {
+      await pickAicha(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(900);
+    } },
+  { key: 'j.guangzhou.pack-todo', name: '05d-colis-a-emballer-fait', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1100', fullPage: false,
+    before: async (page) => {
+      await pickAicha(page);
+      await page.getByRole('button', { name: /^Mettre en paquet$/ }).click();
+      await page.waitForTimeout(800);
+      await page.getByRole('dialog').getByRole('button', { name: /Répartir en 3 paquets/ }).click();
+      await page.waitForTimeout(2500);
+    } },
+  // 5e. La même répartition, en chinois (le réceptionnaire peut travailler dans sa langue).
+  { key: 'j.guangzhou.pack-todo', name: '05e-colis-a-emballer-repartir-zh', role: 'receptionist', lang: 'zh', init: withGracePackage, wait: 1500, viewport: '390x1500', fullPage: false,
+    before: async (page) => {
+      await fontsReady(page);
+      await page.getByRole('checkbox', { name: /BZ-482913/ }).first().click();
+      await page.waitForTimeout(400);
+      await page.getByRole('button', { name: /^装包$/ }).click();
+      await page.waitForTimeout(900);
+    } },
+  // 6b. PQ-000046, ouvert par Grace : les colis prêts qui y tiennent, « Ajouter » sans scanner.
+  { key: 'j.guangzhou.package-grace', name: '06b-paquet-de-grace-colis-prets', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1500', before: fontsReady },
+  // 6c. Deux touches « Ajouter » : 20,5 kg, les colis d'Aïcha d'abord.
+  { key: 'j.guangzhou.package-grace', name: '06c-paquet-de-grace-rempli', role: 'receptionist', init: withGracePackage, wait: 1500, viewport: '390x1700',
+    before: async (page) => {
+      await fontsReady(page);
+      for (let i = 0; i < 2; i += 1) {
+        await page.getByRole('button', { name: /^Ajouter RC-/ }).first().click();
+        await page.waitForTimeout(1200);
+      }
+    } },
+  // 15a. Téléphone neuf : le lieu se choisit avant tout (plus de « Continuer » grisé plus loin).
+  { key: 'j.guangzhou.home', name: '15a-ou-etes-vous', role: 'receptionist', init: noPlace, wait: 1200, viewport: '390x844', fullPage: false, before: fontsReady },
+  // 15b. Un dépôt terminé s'ouvre sur SA fiche : ses colis, leurs photos, les étiquettes sur place.
+  { key: 'j.guangzhou.deposit-closed', name: '15b-depot-termine-sa-fiche', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  // 15c. Le dépôt en cours d'un collègue : en lecture, avec qui le saisit.
+  { key: 'j.guangzhou.deposit-other', name: '15c-depot-dun-collegue', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', before: fontsReady },
+  // 15e. Terminé, devis déjà chez le client : la fiche le dit, toucher un colis ouvre ses photos.
+  // ── La visite complète (13/10) ──
+  // Nouveau dépôt, dans l'app BONZINI HQ : la caméra native, puis « Client trouvé ».
+  { key: 'j.guangzhou.identify', name: '20-nouveau-depot-camera', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.identify', name: '20b-client-trouve', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x844', fullPage: false, before: nativeScan('BZ-482913', 120) },
+  { key: 'j.guangzhou.search', name: '21-chercher-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.brought-by', name: '22-qui-apporte', role: 'receptionist', init: setup, wait: 1200, viewport: '390x1000', before: fontsReady },
+  { key: 'j.guangzhou.supplier', name: '22b-fournisseur', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  { key: 'j.guangzhou.parcel-photo', name: '24-colis-1-photos', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-weight', name: '24b-colis-2-poids', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: typeIn('8,4') },
+  { key: 'j.guangzhou.parcel-dims', name: '24c-colis-3-dimensions', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: typeIn('60', '40', '40') },
+  { key: 'j.guangzhou.parcel-inside', name: '24d-colis-4-contenu', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-copies', name: '24e-colis-5-identiques', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-edit', name: '24f-corriger-un-colis', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  // En attente : le colis du coursier sans client ; l'attribution, refusée (Li Wei l'a fait avant) : des sorties.
+  { key: 'j.guangzhou.pending', name: '25-en-attente', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.assign', name: '25b-attribution-refusee', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x1000', fullPage: false, before: nativeScan('BZ-207781', 1800) },
+  { key: 'j.guangzhou.done-no-client', name: '25c-depot-termine-sans-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', fullPage: false, before: fontsReady },
+  // Clients : la liste, et la fiche (étiquette du client, ses dépôts, « Nouveau dépôt pour lui »).
+  { key: 'j.guangzhou.clients', name: '26-clients', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.client-card', name: '26b-fiche-client', role: 'receptionist', init: setup, wait: 1800, viewport: '390x1300', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.deposit-quote', name: '15e-depot-devis-chez-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  // 15d. Retirer un colis demande confirmation.
+  { key: 'j.guangzhou.deposit', name: '15d-retirer-un-colis-confirmation', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
+    before: async (page) => { await fontsReady(page); await page.getByRole('button', { name: 'Retirer' }).first().click(); await page.waitForTimeout(700); } },
   // 9. Au bureau : le devis de fret du dépôt RC-000123 (au kilo, avion), envoyé, payé en partie…
   { key: 'j.guangzhou.quote', name: '10-devis-fret', role: 'ops', desktop: true, viewport: '1440x1200', init: deskSetup, wait: 2500, before: fontsReady },
   // …et l'encaissement du reste (Mobile Money reçu à Douala), qui fera le reçu.

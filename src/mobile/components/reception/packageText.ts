@@ -4,10 +4,13 @@
 // fiche d'un paquet et l'accueil. Les pièces visuelles : packageBits.tsx.
 // ============================================================
 import { useTranslation } from 'react-i18next';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { getCurrentLocale } from '@/i18n';
-import { formatKg } from '@/lib/reception';
+import { formatKg, quoteLocksParcels } from '@/lib/reception';
 import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
-import { packageStatusMeta, type AirPackage, type AirPackageStatus, type WeightGauge } from '@/lib/airPackage';
+import { packageStatusMeta, type AirPackage, type AirPackageStatus, type PackBlock, type PackRefusal, type WeightGauge } from '@/lib/airPackage';
+import type { Deposit, Parcel } from '@/lib/reception';
+import { assignPath } from './useAssignFlow';
 import type { ScanBoxTexts } from '@/mobile/components/cargo/ParcelScanBox';
 import type { Tone } from '@/mobile/designKit';
 
@@ -35,6 +38,11 @@ export function usePackageText() {
     },
     /** « reste 13,6 kg » ou « Plein ». */
     left: (g: WeightGauge) => (g.tone === 'full' ? t('rc_pk_full') : t('rc_pk_left', { kg: formatKg(g.left) })),
+    /** Pourquoi un colis n'entre pas dans un paquet — et quoi faire : « pas pesé : pesez-le ». */
+    why: (reason: PackRefusal, parcel?: Pick<Parcel, 'package_no'>): string =>
+      reason === 'packed'
+        ? (parcel?.package_no ? t('rc_pk_why_packed', { no: parcel.package_no }) : t('rc_pk_why_packed_any'))
+        : t(`rc_pk_why_${reason}`),
   };
 }
 
@@ -42,4 +50,40 @@ export function usePackageText() {
 export function useScanTexts(hint: string): Partial<ScanBoxTexts> {
   const { t } = useTranslation('agent');
   return { hint, openCamera: t('rc_scan_cam_open'), closeCamera: t('rc_scan_cam_close'), cameraStarting: t('rc_scan_cam_starting'), cameraError: t('rc_scan_cam_error') };
+}
+
+/**
+ * « ouvert par Nelson » — seulement quand c'est quelqu'un d'autre : un paquet
+ * préparé depuis l'ordinateur (ou par un collègue) se reconnaît d'un coup d'œil.
+ */
+export function useOpenedBy(pkg: Pick<AirPackage, 'created_by' | 'created_by_name'>): string | null {
+  const { t } = useTranslation('agent');
+  const { currentUser } = useAdminAuth();
+  if (!pkg.created_by_name || !pkg.created_by || pkg.created_by === currentUser?.id) return null;
+  return t('rc_pk_by', { name: pkg.created_by_name });
+}
+
+/**
+ * Où compléter un colis qui n'est pas encore prêt pour un paquet (`path`) — et,
+ * quand ce n'est pas ici, qui le fait (`note`). Rien à faire : plus de 32 kg (il
+ * part seul). Pas à moi : le serveur ne laisse corriger un dépôt qu'à celui qui
+ * l'a reçu, ou à l'équipe cargo — et un dépôt terminé dont le devis est engagé,
+ * qu'à l'équipe cargo. Un dépôt sans client s'attribue, lui, par n'importe quel
+ * réceptionnaire.
+ */
+export function usePackFix() {
+  const { t } = useTranslation('agent');
+  const { currentUser, hasPermission } = useAdminAuth();
+  type Fix = { path: string | null; note: string | null };
+  return (it: { parcel: Pick<Parcel, 'id'>; deposit: Pick<Deposit, 'id' | 'received_by' | 'received_by_name' | 'status' | 'quote_engaged'>; reason: PackBlock }): Fix => {
+    if (it.reason === 'no_client') return { path: assignPath(it.deposit.id), note: null };
+    if (it.reason === 'too_heavy') return { path: null, note: null };
+    const cargo = hasPermission('canManageCargo');
+    if (it.deposit.received_by !== currentUser?.id && !cargo) {
+      return { path: null, note: it.deposit.received_by_name ? t('rc_pk_todo_by', { name: it.deposit.received_by_name }) : null };
+    }
+    if (it.reason === 'deposit_open') return { path: `/r/deposit/${it.deposit.id}`, note: null };
+    if (quoteLocksParcels(it.deposit, cargo)) return { path: null, note: t('rc_pk_todo_cargo') };
+    return { path: `/r/deposit/${it.deposit.id}/parcel/${it.parcel.id}?step=weight`, note: null }; // droit à la pesée
+  };
 }

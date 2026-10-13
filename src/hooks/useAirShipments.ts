@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { invalidatePackages } from '@/hooks/useAirPackages';
 import type { AirParcel, AirShipment, AirStatus } from '@/lib/airShipment';
 
 type RpcResult<T> = ({ success: true } & T) | { success: false; error?: string };
@@ -42,11 +43,12 @@ const toArgs = (v: AirShipmentInput) => ({
   p_freight_usd: v.freightUsd ?? null, p_notes: v.notes ?? null,
 });
 
-export function useAirShipments() {
+export function useAirShipments(enabled = true) {
   return useQuery({
     queryKey: AIR_KEYS.list,
     queryFn: () => rpcJson<{ shipments: AirShipment[] }>('cargo_air_list').then((r) => r.shipments),
     staleTime: 15_000,
+    enabled,
   });
 }
 
@@ -79,6 +81,52 @@ function useAirMutation<TArgs>(name: string, args: (a: TArgs) => Record<string, 
 export const useCreateAirShipment = () => useAirMutation<AirShipmentInput>('cargo_air_create', toArgs, 'Expédition ouverte');
 export const useUpdateAirShipment = () => useAirMutation<{ id: string } & AirShipmentInput>('cargo_air_update', (a) => ({ p_air_id: a.id, ...toArgs(a) }), 'Fiche enregistrée');
 export const useSetAirStatus = () => useAirMutation<{ id: string; status: AirStatus; at?: string | null }>('cargo_air_set_status', (a) => ({ p_air_id: a.id, p_status: a.status, p_at: a.at ?? null }), undefined, true);
+
+export interface ShipResult {
+  airId: string;
+  /** L'expédition ouverte pour l'occasion (null : un vol qui existait). */
+  created: AirShipment | null;
+  assigned: number;
+  parcels: number;
+  skipped: string[];
+  /** Le vol est ouvert mais les paquets n'ont pas pu y monter : la raison du serveur. */
+  assignError: string | null;
+}
+
+/**
+ * Mettre des paquets fermés sur un vol — un vol en préparation, ou un vol
+ * ouvert à l'instant (`create`). Le vol ouvert reste ouvert même si les
+ * paquets sont refusés : `assignError` le dit, on n'efface rien.
+ */
+export function useShipPackages() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ airId, create, packageIds }: { airId?: string | null; create?: AirShipmentInput; packageIds: string[] }): Promise<ShipResult> => {
+      let created: AirShipment | null = null;
+      let id = airId ?? null;
+      if (!id) {
+        if (!create) throw new Error('Choisissez un vol');
+        created = (await rpcJson<{ shipment: AirShipment }>('cargo_air_create', toArgs(create))).shipment;
+        id = created.id;
+      }
+      const res: ShipResult = { airId: id, created, assigned: 0, parcels: 0, skipped: [], assignError: null };
+      if (packageIds.length === 0) return res;
+      try {
+        const r = await rpcJson<{ assigned: number; parcels: number; skipped: string[] | null }>('air_package_assign', { p_air_id: id, p_package_ids: packageIds });
+        return { ...res, assigned: r.assigned, parcels: r.parcels, skipped: r.skipped ?? [] };
+      } catch (e) {
+        if (!created) throw e;
+        return { ...res, assignError: (e as Error).message };
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: AIR_KEYS.list });
+      // Les paquets, la réception et Douala suivent (une seule relecture des grandes listes).
+      invalidatePackages(qc);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
 
 /** Ce qu'on peut mettre dans cet avion : les colis reçus, ni en boîte ni en vol. */
 export function useAirLoadableParcels(id: string | null | undefined) {

@@ -12,11 +12,12 @@
 // Écriture : canManageCargo (la base revérifie chaque RPC air_package_*).
 // ============================================================
 import { useMemo, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Check, Loader2, Package, PackagePlus, ScanLine, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAirPackages, useAssignAirPackages, useRefuseAirPackage, useScanPackageDeparture, useUnassignAirPackage } from '@/hooks/useAirPackages';
-import { fmtKg1, isAssignable, packageStatusMeta, parsePackageCode, type AirPackage, type AirPackageParcel } from '@/lib/airPackage';
+import { fmtKg1, isAssignable, packageKg, packageStatusMeta, parsePackageCode, type AirPackage, type AirPackageParcel } from '@/lib/airPackage';
 import { packageClientsFromParcels, packageProgress, type AirShipment } from '@/lib/airShipment';
 import { clientFullName } from '@/lib/reception';
 import { cn } from '@/lib/utils';
@@ -37,8 +38,6 @@ const isGone = (k: Pick<AirPackage, 'status'>) => k.status === 'handed_over' || 
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 /** « 1 colis », « 3 colis » (invariable). */
 const colis = (n: number | null | undefined) => `${Number(n ?? 0)} colis`;
-/** Le poids pesé du paquet fermé ; à défaut, la somme de ses colis. */
-const packageKg = (k: Pick<AirPackage, 'gross_weight_kg' | 'net_weight_kg'>) => Number(k.gross_weight_kg ?? k.net_weight_kg ?? 0);
 
 const QUICK_REASONS = ['Batterie ou produit dangereux', 'Emballage abîmé', 'Poids ou dimensions refusés', 'Contrôle de sûreté'];
 
@@ -153,7 +152,10 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
   const desk = variant === 'desktop';
   const T = desk ? D_TEXT : M_TEXT;
   const { hasPermission } = useAdminAuth();
+  const navigate = useNavigate();
   const canManage = hasPermission('canManageCargo');
+  // Les paquets se préparent à la réception : Cargo › Réception › Paquets avion sur ordinateur, /r/paquets au téléphone.
+  const packingPath = desk ? '/m/cargo/reception?vue=paquets' : hasPermission('canReceiveParcels') ? '/r/paquets' : null;
   const planned = a.status === 'PLANNED';
   const departed = a.status === 'DEPARTED';
   const arrived = a.status === 'ARRIVED' || a.status === 'DELIVERED';
@@ -294,7 +296,8 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
                     {done
                       ? <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white" title="Scanné au départ"><Check className="h-3 w-3" strokeWidth={3} /></span>
                       : <span className="h-5 w-5 shrink-0 rounded-full border border-muted-foreground/50" title="Pas encore scanné au départ" />}
-                    <span className={cn('font-mono text-[12px] font-bold', T.strong)}>{k.package_no}</span>
+                    <button type="button" onClick={() => navigate(`/m/cargo/reception?${new URLSearchParams({ paquet: k.id }).toString()}`)} title={`Ouvrir le paquet ${k.package_no} (ses colis, son étiquette)`}
+                      className={cn('font-mono text-[12px] font-bold underline-offset-2 hover:underline', T.strong)}>{k.package_no}</button>
                   </span>
                 </Td>
                 <Td><span className="block max-w-[160px] truncate font-mono text-[11.5px]" title={clientsLine(k)}>{clientsLine(k)}</span></Td>
@@ -334,8 +337,17 @@ export function AirPackagesPanel({ shipment: a, variant }: { shipment: AirShipme
   );
 
   /* — les fenêtres — */
+  const toPacking = packingPath ? (
+    <Act variant={variant} onClick={() => { closeAdd(); navigate(packingPath); }} className={desk ? undefined : 'h-12 w-full'}>
+      <Package /> {stillOpen > 0 ? 'Voir les paquets du bureau' : 'Préparer des paquets'}
+    </Act>
+  ) : null;
   const addList = !bureau.data ? <ScreenLoader className="min-h-[120px]" /> : assignable.length === 0 ? (
-    <Say variant={variant}>Aucun paquet fermé n'attend au bureau.{stillOpen > 0 ? ` ${plural(stillOpen, 'paquet')} encore ouvert${stillOpen > 1 ? 's' : ''} : fermez-le${stillOpen > 1 ? 's' : ''} (pesée) pour qu'il${stillOpen > 1 ? 's' : ''} puisse${stillOpen > 1 ? 'nt' : ''} partir.` : ''}</Say>
+    <div className="space-y-3">
+      <Say variant={variant}>Aucun paquet fermé n'attend au bureau.{stillOpen > 0 ? ` ${plural(stillOpen, 'paquet')} encore ouvert${stillOpen > 1 ? 's' : ''} : fermez-le${stillOpen > 1 ? 's' : ''} (pesée) pour qu'il${stillOpen > 1 ? 's' : ''} puisse${stillOpen > 1 ? 'nt' : ''} partir.` : ''}</Say>
+      <Say variant={variant}>Un paquet se prépare au bureau : on y met des colis avion (32 kg au plus), puis on le ferme en le pesant. Il apparaît alors ici.</Say>
+      {toPacking}
+    </div>
   ) : (
     <div className={cn('space-y-2', desk ? 'max-h-[340px] overflow-auto' : '')}>
       {assignable.map((k) => {

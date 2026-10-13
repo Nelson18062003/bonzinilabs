@@ -59,6 +59,7 @@ export const SCREENS: Record<string, JourneyEntry> = {
   // Avion — ordinateur
   'j.expedition.desk-list': { Comp: () => desk(<DesktopCargoAir />), route: '/m/cargo/avion' },
   'j.expedition.desk-detail': { Comp: () => desk(<DesktopCargoAir />), route: '/m/cargo/avion/et607', path: AIR_DETAIL },
+  'j.expedition.desk-add': { Comp: () => desk(<DesktopCargoAir />), route: '/m/cargo/avion/et607-vide', path: AIR_DETAIL },
   'j.expedition.manifest': { Comp: () => <AsGrace><ManifestDoc /></AsGrace>, route: '/' },
   // Maritime — le dossier du conteneur MIEU3611115, onglet Suivi (« Marquer arrivé »)
   'j.expedition.container': { Comp: () => desk(<DesktopCargoDossier />), route: '/m/cargo/ct-mieu/suivi', path: '/m/cargo/:shipmentId/:tab' },

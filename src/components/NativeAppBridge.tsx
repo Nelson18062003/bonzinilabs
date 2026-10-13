@@ -5,6 +5,9 @@
 //   · dit à l'app qui est connecté (rôle, nom) et lui passe chaque nouveau
 //     jeton d'accès — le site reste le seul à rafraîchir la session ;
 //   · dit à l'app sur quelle page on est (pour allumer le bon onglet natif) ;
+//   · dit à l'app le lieu de réception de ce téléphone (au chargement, puis à
+//     chaque changement) : la pastille « Paquets » ne compte qu'au bureau,
+//     comme la barre du site (ReceptionTabBar) ;
 //   · laisse l'app naviguer, poser la session de sa connexion native, et
 //     déconnecter.
 // ============================================================
@@ -14,6 +17,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { isNativeApp } from '@/lib/nativeApp';
 import { installNativeSiteApi, postToApp } from '@/lib/nativeBridge';
+import { useReceptionLocation } from '@/mobile/screens/reception/useReceptionLocation';
 
 export function NativeAppBridge() {
   const native = useMemo(() => isNativeApp(), []);
@@ -25,6 +29,12 @@ export function NativeAppBridge() {
   useEffect(() => {
     if (native) postToApp({ type: 'route', path: location.pathname + location.search });
   }, [native, location.pathname, location.search]);
+
+  // Le lieu de réception : au chargement, puis à chaque choix (« Où êtes-vous ? », « Changer »).
+  const { location: receptionLocation } = useReceptionLocation();
+  useEffect(() => {
+    if (native) postToApp({ type: 'reception-location', location: receptionLocation });
+  }, [native, receptionLocation]);
 
   // Qui est connecté, et le jeton du moment (puis à chaque rafraîchissement).
   useEffect(() => {
