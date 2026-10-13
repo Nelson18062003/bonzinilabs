@@ -2,7 +2,9 @@
 // Les pastilles des onglets natifs : ce qui attend la personne, par rôle.
 // Mêmes sources que les barres du site :
 //   · admin    → « Opérations » : lib/actionable.ts (dépôts + paiements à traiter)
-//   · réception → « En attente » : reception_my_day.pending ; « Paquets » : air_package_packable (ReceptionTabBar)
+//   · réception → « En attente » : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
+//     seulement (le lieu de ce téléphone, dit par le site) — comme ReceptionTabBar : à l'entrepôt, l'onglet
+//     n'a rien à faire, la pastille ne doit rien annoncer
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)
 //   · agent cash → « Paiements » : paiements cash en attente (useAgentCashPayments)
 // Le total s'affiche aussi sur l'icône de l'app. Rafraîchies toutes les
@@ -34,14 +36,20 @@ async function count(table: 'deposits' | 'payments', statuses: string[], cashOnl
   return error ? 0 : n ?? 0;
 }
 
+export type ReceptionLocation = 'office' | 'warehouse' | null;
+
+/** Les colis qui attendent un paquet : les compteurs seuls (p_limit = 0), pas la liste. */
+async function packableCount(): Promise<number> {
+  const { data, error } = await db.rpc('air_package_packable', { p_limit: 0 });
+  const p = (error ? null : data) as { success?: boolean; ready_count?: number; to_fix_count?: number } | null;
+  return p?.success ? Number(p.ready_count ?? 0) + Number(p.to_fix_count ?? 0) : 0;
+}
+
 /** Les pastilles du rôle, par clé d'onglet (voir tabs.ts). */
-export async function fetchBadges(role: StaffRole): Promise<Badges> {
+export async function fetchBadges(role: StaffRole, location: ReceptionLocation = null): Promise<Badges> {
   switch (role) {
     case 'receptionist': {
-      // Les colis qui attendent un paquet : les compteurs seuls (p_limit = 0), pas la liste.
-      const [day, pack] = await Promise.all([rpc('reception_my_day'), db.rpc('air_package_packable', { p_limit: 0 })]);
-      const p = (pack.error ? null : pack.data) as { success?: boolean; ready_count?: number; to_fix_count?: number } | null;
-      const packages = p?.success ? Number(p.ready_count ?? 0) + Number(p.to_fix_count ?? 0) : 0;
+      const [day, packages] = await Promise.all([rpc('reception_my_day'), location === 'office' ? packableCount() : 0]);
       return { pending: Number(day?.pending ?? 0), packages };
     }
     case 'warehouse_agent': {
@@ -63,20 +71,20 @@ export async function fetchBadges(role: StaffRole): Promise<Badges> {
   }
 }
 
-export function useBadges(role: StaffRole | null, route: string): Badges {
+export function useBadges(role: StaffRole | null, route: string, location: ReceptionLocation = null): Badges {
   const [badges, setBadges] = useState<Badges>({});
 
   const load = useCallback(async () => {
     if (!role || !hasFreshToken()) return;
     try {
-      const next = await fetchBadges(role);
+      const next = await fetchBadges(role, location);
       setBadges(next);
       // Le même total sur l'icône de l'app (écran d'accueil du téléphone).
       void Notifications.setBadgeCountAsync(Object.values(next).reduce((a, b) => a + b, 0)).catch(() => {});
     } catch {
       // Réseau coupé : on garde les derniers chiffres.
     }
-  }, [role]);
+  }, [role, location]);
 
   useEffect(() => {
     if (!role) {

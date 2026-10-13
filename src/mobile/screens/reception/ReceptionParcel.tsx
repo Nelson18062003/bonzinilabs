@@ -26,7 +26,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useFilePreviews } from '@/hooks/useFilePreviews';
 import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, PrimaryPill, SoftPill, TextInput } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, PrimaryPill, ScreenError, ScreenLoader, SoftPill, TextInput } from '@/mobile/designKit';
 import { StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { readDraftWaybill, writeDraftWaybill } from './useReceptionLocation';
@@ -70,7 +70,7 @@ export function ReceptionParcel() {
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const labels = useReceptionLabels();
-  const { data: deposit, isLoading: depositLoading } = useReceptionDeposit(depositId);
+  const { data: deposit, isLoading: depositLoading, error: depositError, refetch } = useReceptionDeposit(depositId);
   const add = useAddParcel();
   const update = useUpdateParcel();
   const removePhoto = useRemoveParcelPhoto();
@@ -183,8 +183,20 @@ export function ReceptionParcel() {
   const primaryLabel = !last ? t('rc_next') : uploading ? (photos.length > 1 ? t('rc_uploading_n') : t('rc_uploading')) : editing ? t('rc_save') : copies > 1 ? `${t('rc_add_n')} (${copies})` : t('rc_add');
   const optional = step === 'photo' || step === 'weight' || step === 'dims';
 
+  // Corriger un colis : le formulaire attend ce que le colis porte déjà. Pendant
+  // le chargement (sinon une saisie serait écrasée à l'arrivée des données) ou
+  // après un échec (sinon « Enregistrer » ne ferait rien), l'en-tête et sa flèche.
+  if (parcelId && (depositLoading || depositError || !deposit)) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <MobileHeader title={t('rc_parcel')} showBack onBack={exit} />
+        {depositLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(depositError as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
+      </div>
+    );
+  }
+
   // Un colis demandé qui n'existe plus (retiré par un collègue, lien ancien) : on le dit, avec la sortie.
-  if (parcelId && !depositLoading && deposit && !editing) {
+  if (parcelId && !editing) {
     return (
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
         <MobileHeader title={t('rc_parcel')} showBack onBack={exit} />

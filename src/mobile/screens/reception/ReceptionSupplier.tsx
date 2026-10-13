@@ -17,11 +17,12 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, Fold, FormField, PrimaryPill, ScreenError, ScreenLoader, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
 import { TextArea } from '@/components/form';
 import { StepHeader } from '@/mobile/components/reception/bits';
-import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionSupplier() {
   const navigate = useNavigate();
   const goBack = useReceptionBack();
+  const stillHere = useStillHere();
   const { depositId } = useParams<{ depositId: string }>();
   const [params] = useSearchParams();
   const editing = params.has('edit');
@@ -70,7 +71,7 @@ export function ReceptionSupplier() {
     if (set.isPending) return;
     const ok = await set.mutateAsync({ depositId: deposit.id, supplier: { kind, name: name.trim(), contact: contact.trim() || null, phone: phone.trim() || null, email: email.trim() || null, wechat: wechat.trim() || null, address: address.trim() || null } })
       .then(() => true, () => false); // le hook dit le refus ; on reste sur l'écran
-    if (ok) exit();
+    if (ok && stillHere()) exit(); // quitté pendant l'envoi : on ne navigue plus depuis un autre écran
   };
 
   return (

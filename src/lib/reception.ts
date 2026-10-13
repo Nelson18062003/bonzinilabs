@@ -184,6 +184,8 @@ export interface Deposit {
   total_cbm: number;
   notes: string | null;
   parcels: Parcel[];
+  /** Le devis déjà vu par le client ou par l'argent (envoyé, encaissé, réglé, facturé) : la raison, sinon null (20261013100000). */
+  quote_engaged?: string | null;
   /** Côté admin seulement (reception_overview) : l'état du devis du dépôt. */
   quote_status?: 'draft' | 'sent' | 'paid' | 'invoiced' | null;
   quote_no?: string | null;
@@ -400,6 +402,15 @@ export function parcelLockReason(p: Pick<Parcel, 'delivered_at' | 'release_id' |
   if (p.air_shipment_id) return 'Chargé dans une LTA : retirez-le d\'abord de l\'expédition';
   if (p.air_package_id) return `Dans le paquet ${p.package_no ?? 'avion'} : retirez-le d'abord du paquet`;
   return null;
+}
+
+/**
+ * Le miroir de reception_update_parcel : un dépôt TERMINÉ dont le devis est
+ * engagé ne se corrige plus qu'à l'équipe cargo. Vrai : la réception n'ouvre
+ * pas la correction (elle finirait sur ce refus), elle montre les photos.
+ */
+export function quoteLocksParcels(d: Pick<Deposit, 'status' | 'quote_engaged'>, canManageCargo: boolean): boolean {
+  return d.status === 'closed' && !!d.quote_engaged && !canManageCargo;
 }
 
 /** Le colis attend-il encore ici (reçu, pas chargé) ? */

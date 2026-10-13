@@ -66,6 +66,7 @@ export const SCREENS: Record<string, JourneyEntry> = {
   // La fiche d'un dépôt terminé, et le dépôt en cours d'un collègue (lecture) — 12/10.
   'j.guangzhou.deposit-closed': { Comp: Deposit, route: '/r/deposit/dep1c', path: '/r/deposit/:depositId', wrap: 'lang' },
   'j.guangzhou.deposit-other': { Comp: Deposit, route: '/r/deposit/depLi', path: '/r/deposit/:depositId', wrap: 'lang' },
+  'j.guangzhou.deposit-quote': { Comp: Deposit, route: '/r/deposit/depQ', path: '/r/deposit/:depositId', wrap: 'lang' },
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
   // Le réceptionnaire emballe (12/10) : les colis à emballer, et le paquet vide que Grace a ouvert depuis l'ordinateur.

@@ -96,7 +96,9 @@ const depLi = deposit({
   id: 'depLi', deposit_no: 'RC-000124', client: samuel, status: 'open', received_by: 'li', received_by_name: 'Li Wei', opened_at: gz(16, 2), ...noSupplier,
   parcels: [parcel('RC-000124', 1, 'carton', 'Pièces auto (amortisseurs)', 11.2, [60, 40, 30])],
 });
-const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1, depLi };
+// Le même dépôt terminé, devis déjà envoyé au client : le réceptionnaire ne corrige plus (l'équipe cargo, si).
+const depQ = { ...dep3, id: 'depQ', quote_engaged: 'Le devis DV-000031 a déjà été envoyé au client' };
+const DEPOSITS = { dep1, dep1c, dep2, dep3, dep4, pend1, depLi, depQ };
 const dayDeposits = [dep1, dep2, dep3, dep4];
 const sum = (xs, f) => xs.reduce((s, x) => s + f(x), 0);
 
@@ -697,6 +699,7 @@ export const SCREENS = [
   // 15c. Le dépôt en cours d'un collègue : en lecture, avec qui le saisit.
   { key: 'j.guangzhou.deposit-other', name: '15c-depot-dun-collegue', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', before: fontsReady },
   // 15d. Retirer un colis demande confirmation.
+  { key: 'j.guangzhou.deposit-quote', name: '15e-depot-devis-chez-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
   { key: 'j.guangzhou.deposit', name: '15d-retirer-un-colis-confirmation', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
     before: async (page) => { await fontsReady(page); await page.getByRole('button', { name: 'Retirer' }).first().click(); await page.waitForTimeout(700); } },
   // 9. Au bureau : le devis de fret du dépôt RC-000123 (au kilo, avion), envoyé, payé en partie…

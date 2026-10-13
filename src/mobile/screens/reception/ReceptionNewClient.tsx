@@ -26,14 +26,16 @@ import { ClientFormSections } from '@/components/clients/ClientFormSections';
 import { useAssignDeposit } from '@/hooks/useReception';
 import { useReceptionLocation } from './useReceptionLocation';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { useAssignFlow } from '@/mobile/components/reception/useAssignFlow';
 
 export function ReceptionNewClient() {
   const { t: tc } = useTranslation('common');
   const { t } = useLanguage();
   const navigate = useNavigate();
   const back = useReceptionBack();
+  const flow = useAssignFlow();
+  const { assignId } = flow;
   const [params] = useSearchParams();
-  const assignId = params.get('assign');
   const fromClients = params.get('from') === 'clients';
   // Le lieu de réception décide de l'origine du client (« Colis reçu · Bureau / Entrepôt de Guangzhou ») : on ne la choisit pas ici.
   const { location } = useReceptionLocation();
@@ -42,7 +44,7 @@ export function ReceptionNewClient() {
   const [copied, setCopied] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   /** Quitter : l'onglet Clients, l'attribution abandonnée, ou le début du dépôt. */
-  const leave = () => (fromClients ? back('/r/clients') : assignId ? back('/r/pending') : back('/r'));
+  const leave = () => (fromClients ? back('/r/clients') : assignId ? flow.leave() : back('/r'));
 
   if (form.created) {
     const c = form.created;
@@ -67,7 +69,7 @@ export function ReceptionNewClient() {
         return;
       }
       toast.success(t('rc_assigned'), { description: c.fullName });
-      back('/r/pending');
+      flow.leave(); // ne part pas si l'écran a été quitté pendant l'envoi
     };
     return (
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
@@ -105,7 +107,7 @@ export function ReceptionNewClient() {
             <div role="alert" className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.danger)}>
               <p className={cn('flex items-start gap-2', TYPE.bodyStrong)}><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /> {refused}</p>
               <div className="flex flex-wrap gap-2">
-                {assignId && <Button variant="neutral" className="h-11 px-4" onClick={() => navigate(`/r/deposit/${assignId}`, { replace: true })}>{t('rc_see_deposit')}</Button>}
+                {assignId && <Button variant="neutral" className="h-11 px-4" onClick={flow.seeDeposit}>{t('rc_see_deposit')}</Button>}
                 <Button variant="neutral" className="h-11 px-4" onClick={seeCard}>{t('rc_see_client_card')}</Button>
               </div>
             </div>
@@ -125,7 +127,7 @@ export function ReceptionNewClient() {
 
   return (
     <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_new_client')} showBack onBack={() => (fromClients ? back('/r/clients') : navigate(`/r/new/search${assignId ? `?assign=${assignId}` : ''}`, { replace: true }))} />
+      <MobileHeader title={t('rc_new_client')} showBack onBack={() => (fromClients ? back('/r/clients') : navigate(`/r/new/search${flow.qs}`, { replace: true }))} />
       <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
         <ClientFormSections form={form} />
       </div>

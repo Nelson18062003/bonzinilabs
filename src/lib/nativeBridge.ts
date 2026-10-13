@@ -23,7 +23,9 @@ export type SiteToApp =
   | { type: 'auth'; user: { id: string; email: string; firstName: string; lastName: string; role: string } | null; accessToken: string | null; expiresAt: number | null }
   | { type: 'route'; path: string }
   | { type: 'scan-open'; continuous: boolean }
-  | { type: 'scan-close' };
+  | { type: 'scan-close' }
+  /** Le lieu de réception de ce téléphone (bureau / entrepôt) : la pastille « Paquets » ne vaut qu'au bureau. */
+  | { type: 'reception-location'; location: 'office' | 'warehouse' | null };
 
 /** Ce que l'app peut demander au site (window.__bonziniHQ). */
 export interface NativeSiteApi {

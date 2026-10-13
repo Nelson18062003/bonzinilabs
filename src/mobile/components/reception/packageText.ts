@@ -6,7 +6,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { getCurrentLocale } from '@/i18n';
-import { formatKg } from '@/lib/reception';
+import { formatKg, quoteLocksParcels } from '@/lib/reception';
 import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
 import { packageStatusMeta, type AirPackage, type AirPackageStatus, type PackBlock, type PackRefusal, type WeightGauge } from '@/lib/airPackage';
 import type { Deposit, Parcel } from '@/lib/reception';
@@ -63,18 +63,26 @@ export function useOpenedBy(pkg: Pick<AirPackage, 'created_by' | 'created_by_nam
 }
 
 /**
- * Où compléter un colis qui n'est pas encore prêt pour un paquet — null : rien
- * à faire ici (plus de 32 kg : il part seul), ou ce n'est pas à moi (le serveur
- * ne laisse corriger un dépôt qu'à celui qui l'a reçu, ou à l'équipe cargo).
- * Un dépôt sans client s'attribue, lui, par n'importe quel réceptionnaire.
+ * Où compléter un colis qui n'est pas encore prêt pour un paquet (`path`) — et,
+ * quand ce n'est pas ici, qui le fait (`note`). Rien à faire : plus de 32 kg (il
+ * part seul). Pas à moi : le serveur ne laisse corriger un dépôt qu'à celui qui
+ * l'a reçu, ou à l'équipe cargo — et un dépôt terminé dont le devis est engagé,
+ * qu'à l'équipe cargo. Un dépôt sans client s'attribue, lui, par n'importe quel
+ * réceptionnaire.
  */
 export function usePackFix() {
+  const { t } = useTranslation('agent');
   const { currentUser, hasPermission } = useAdminAuth();
-  return (it: { parcel: Pick<Parcel, 'id'>; deposit: Pick<Deposit, 'id' | 'received_by'>; reason: PackBlock }): string | null => {
-    if (it.reason === 'no_client') return `/r/new?assign=${it.deposit.id}`;
-    if (it.reason === 'too_heavy') return null;
-    if (it.deposit.received_by !== currentUser?.id && !hasPermission('canManageCargo')) return null;
-    if (it.reason === 'deposit_open') return `/r/deposit/${it.deposit.id}`;
-    return `/r/deposit/${it.deposit.id}/parcel/${it.parcel.id}?step=weight`; // droit à la pesée
+  type Fix = { path: string | null; note: string | null };
+  return (it: { parcel: Pick<Parcel, 'id'>; deposit: Pick<Deposit, 'id' | 'received_by' | 'received_by_name' | 'status' | 'quote_engaged'>; reason: PackBlock }): Fix => {
+    if (it.reason === 'no_client') return { path: `/r/new?assign=${it.deposit.id}`, note: null };
+    if (it.reason === 'too_heavy') return { path: null, note: null };
+    const cargo = hasPermission('canManageCargo');
+    if (it.deposit.received_by !== currentUser?.id && !cargo) {
+      return { path: null, note: it.deposit.received_by_name ? t('rc_pk_todo_by', { name: it.deposit.received_by_name }) : null };
+    }
+    if (it.reason === 'deposit_open') return { path: `/r/deposit/${it.deposit.id}`, note: null };
+    if (quoteLocksParcels(it.deposit, cargo)) return { path: null, note: t('rc_pk_todo_cargo') };
+    return { path: `/r/deposit/${it.deposit.id}/parcel/${it.parcel.id}?step=weight`, note: null }; // droit à la pesée
   };
 }

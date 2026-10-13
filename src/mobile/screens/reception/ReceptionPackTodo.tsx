@@ -10,7 +10,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, PackagePlus } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, formatKg, type ParcelKind } from '@/lib/reception';
@@ -30,7 +29,6 @@ export function ReceptionPackTodo() {
   const navigate = useNavigate();
   const back = useReceptionBack();
   const { t } = useLanguage();
-  const { t: ti } = useTranslation('agent');
   const tx = usePackageText();
   const labels = useReceptionLabels();
   const { data, isLoading, error, refetch } = usePackableParcels();
@@ -50,7 +48,7 @@ export function ReceptionPackTodo() {
     return s;
   });
 
-  const fixPath = usePackFix();
+  const fixFor = usePackFix();
   // À compléter (attribuer, peser, terminer le dépôt) ; à part, les plus de 32 kg, qui partent seuls.
   const toFix = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason !== 'too_heavy'), [data]);
   const alone = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason === 'too_heavy'), [data]);
@@ -118,14 +116,14 @@ export function ReceptionPackTodo() {
                 </span>
                 <Card className="overflow-hidden p-0">
                   {toFix.map((it) => {
-                    const path = fixPath(it);
+                    const { path, note } = fixFor(it);
                     const body = (
                       <>
                         <span className="min-w-0 flex-1">
                           <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{it.parcel.parcel_no}</span>
                           <span className={cn('block break-words', TYPE.smallStrong, TONE_TEXT.pending)}>{tx.why(it.reason)}</span>
                           <span className={cn('block break-words tabular-nums', TYPE.small, TEXT.muted)}>{it.deposit.client?.customer_code ?? t('rc_unknown_client')} · {it.deposit.deposit_no}</span>
-                          {!path && it.deposit.received_by_name && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{ti('rc_pk_todo_by', { name: it.deposit.received_by_name })}</span>}
+                          {note && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{note}</span>}
                         </span>
                         <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(it.parcel.weight_kg)}</span>
                         {path && <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} aria-hidden="true" />}

@@ -74,7 +74,9 @@ COMMENT ON FUNCTION public.air_package_json(uuid, boolean) IS
 -- ─────────────────────────────────────────────────────────────────────────
 -- 2. Ce qui attend un paquet : les dépôts du bureau qui ont encore un colis à
 --    emballer, du plus récent au plus ancien. Un dépôt en cours de saisie en
---    fait partie (ses colis déjà pesés peuvent partir), un dépôt supprimé non.
+--    fait partie (ses colis sont « à compléter » : on le termine d'abord —
+--    air_package_add_parcel le refuse depuis 20261013100000), un dépôt
+--    supprimé non.
 -- ─────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.air_package_packable(p_limit INTEGER DEFAULT 300)
 RETURNS JSONB

@@ -114,11 +114,16 @@ export default function Main() {
 
   const tabs = useMemo(() => (user ? tabsFor(user.role) : []), [user]);
   const hasHome = tabs.some((t) => t.native === 'home');
-  const badges = useBadges(user?.role ?? null, route);
+  // Le lieu de réception du téléphone (dit par le site) : la pastille « Paquets » ne compte qu'au bureau.
+  const [receptionLocation, setReceptionLocation] = useState<'office' | 'warehouse' | null>(null);
+  const badges = useBadges(user?.role ?? null, route, receptionLocation);
 
   // Ce que le site dit à l'app.
-  const onSiteMessage = useCallback((msg: Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' }>) => {
+  const onSiteMessage = useCallback((msg: Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' | 'reception-location' }>) => {
     switch (msg.type) {
+      case 'reception-location':
+        setReceptionLocation(msg.location === 'office' || msg.location === 'warehouse' ? msg.location : null);
+        return;
       case 'theme':
         setBackground(msg.background);
         return;

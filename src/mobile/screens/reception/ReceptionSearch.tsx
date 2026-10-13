@@ -17,13 +17,15 @@ import { useAssignDeposit, useReceptionSearch } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Button, Card, Holder, TextInput } from '@/mobile/designKit';
 import { StepHeader } from '@/mobile/components/reception/bits';
-import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { useStillHere } from '@/mobile/components/reception/useReceptionBack';
+import { useAssignFlow } from '@/mobile/components/reception/useAssignFlow';
 
 export function ReceptionSearch() {
   const navigate = useNavigate();
-  const back = useReceptionBack();
+  const stillHere = useStillHere();
+  const flow = useAssignFlow();
+  const { assignId, qs } = flow;
   const [params, setParams] = useSearchParams();
-  const assignId = params.get('assign');
   const { t } = useLanguage();
   const [query, setQuery] = useState(() => params.get('q') ?? '');
   const [debounced, setDebounced] = useState(query);
@@ -37,7 +39,6 @@ export function ReceptionSearch() {
   }, [query, setParams]);
   const search = useReceptionSearch(debounced);
   const assign = useAssignDeposit();
-  const qs = assignId ? `?assign=${assignId}` : '';
 
   const pick = async (client: ReceptionClient) => {
     if (assignId) {
@@ -49,12 +50,12 @@ export function ReceptionSearch() {
       }
       toast.success(t('rc_assigned'), {
         description: clientFullName(client),
-        action: { label: t('rc_see_deposit'), onClick: () => navigate(`/r/deposit/${assignId}`) },
+        action: flow.fromDeposit ? undefined : { label: t('rc_see_deposit'), onClick: () => navigate(`/r/deposit/${assignId}`) },
       });
-      back('/r/pending');
+      flow.leave(); // ne part pas si l'écran a été quitté pendant l'envoi
       return;
     }
-    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
+    if (stillHere()) navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
   };
 
   const results = search.data ?? [];

@@ -27,6 +27,7 @@ import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/component
 import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
 import { PackageRow } from '@/mobile/components/reception/packageBits';
 import { usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
+import { useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
 
 /** Une étiquette de colis (RC-000123-01) n'est pas un paquet, même si elle contenait « PQ ». */
@@ -37,6 +38,7 @@ const GROUPS: GroupKey[] = ['open', 'refused', 'ready', 'assigned'];
 
 export function ReceptionPackages() {
   const navigate = useNavigate();
+  const stillHere = useStillHere();
   const { t } = useLanguage();
   const { t: ti } = useTranslation('agent');
   const [params, setParams] = useSearchParams();
@@ -77,7 +79,7 @@ export function ReceptionPackages() {
     try {
       const pkg = await find.mutateAsync(code);
       setCodeError(null);
-      navigate(`/r/paquets/${pkg.id}`, { replace });
+      if (stillHere()) navigate(`/r/paquets/${pkg.id}`, { replace }); // l'onglet quitté pendant la recherche : on n'y revient pas
       return { outcome: 'ok', text: ti('rc_pk_opening', { no: pkg.package_no }) };
     } catch (e) {
       return { outcome: 'refused', text: `${code} · ${(e as Error).message}` };

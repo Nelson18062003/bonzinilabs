@@ -453,6 +453,8 @@
   "rc_need_rep_name": "Indiquez le nom de la personne.",
   "rc_dep_cancelled": "Ce dépôt a été supprimé.",
   "rc_dep_other_open": "En cours de saisie par {{name}} : cette personne seulement peut le compléter.",
+  "rc_pk_todo_cargo": "devis déjà chez le client : l'équipe cargo le corrige",
+  "rc_dep_quote_locked": "Le devis de ce dépôt est déjà chez le client (envoyé, encaissé ou facturé) : pour corriger un colis, demandez à l'équipe cargo.",
   "rc_dep_colleague": "un collègue",
   "rc_dep_abandon": "Abandonner ce dépôt vide",
   "rc_dep_abandon_hint": "Le dépôt {{no}} n'a aucun colis : il disparaît de la journée.",

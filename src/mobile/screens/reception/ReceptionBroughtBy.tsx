@@ -18,12 +18,13 @@ import type { ReceptionLocation } from '@/lib/reception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Card, FormField, Holder, PrimaryPill, TextInput } from '@/mobile/designKit';
 import { LocationMark, StepHeader } from '@/mobile/components/reception/bits';
-import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
 
 export function ReceptionBroughtBy() {
   const navigate = useNavigate();
   const back = useReceptionBack();
+  const stillHere = useStillHere();
   const [params] = useSearchParams();
   const { t } = useLanguage();
   const { location, setLocation } = useReceptionLocation();
@@ -50,7 +51,7 @@ export function ReceptionBroughtBy() {
       representativeName: choice === 'representative' ? repName : undefined,
       representativePhone: choice === 'representative' ? repPhone : undefined,
     }).catch(() => null); // le hook dit le refus ; on reste sur l'étape, rien de perdu
-    if (dep) navigate(`/r/deposit/${dep.id}/supplier`, { replace: true });
+    if (dep && stillHere()) navigate(`/r/deposit/${dep.id}/supplier`, { replace: true }); // quitté pendant l'envoi : le dépôt attend dans Aujourd'hui
   };
 
   return (

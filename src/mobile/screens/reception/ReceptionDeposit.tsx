@@ -8,8 +8,9 @@
 //     ne laisse compléter un dépôt qu'à celui qui l'a reçu (reception_can_edit) :
 //     on ne fait plus remplir cinq étapes pour finir sur un refus.
 //   · Terminé : la consultation — ses colis, leurs photos, la correction d'un
-//     colis (s'il est à moi et pas encore parti), et « Imprimer les étiquettes
-//     des colis » sur place.
+//     colis (s'il est à moi, pas encore parti, et que le devis n'est pas déjà
+//     chez le client : sinon l'équipe cargo corrige), et « Imprimer les
+//     étiquettes des colis » sur place.
 // Un dépôt sans client se voit tout de suite, avec le bouton pour l'attribuer.
 // La flèche ramène là d'où l'on vient (Aujourd'hui, la fiche client…).
 // ============================================================
@@ -20,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, depositSupplier, formatCbm, formatKg, initials, parcelLockReason, supplierLine, type Parcel } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatKg, initials, parcelLockReason, quoteLocksParcels, supplierLine, type Parcel } from '@/lib/reception';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { useCancelDeposit, useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
@@ -29,7 +30,7 @@ import { SURFACE, TEXT, TONE_PILL, TYPE, BottomSheet, Button, Card, Holder, Prim
 import { LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
-import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 
 /** Le motif posé quand on abandonne un dépôt ouvert par erreur (la suppression exige un motif). */
 const ABANDON_REASON = 'Ouvert par erreur à la réception (vide)';
@@ -37,6 +38,7 @@ const ABANDON_REASON = 'Ouvert par erreur à la réception (vide)';
 export function ReceptionDeposit() {
   const navigate = useNavigate();
   const back = useReceptionBack();
+  const stillHere = useStillHere();
   const { depositId } = useParams<{ depositId: string }>();
   const { t } = useLanguage();
   const labels = useReceptionLabels();
@@ -69,13 +71,15 @@ export function ReceptionDeposit() {
   const mine = deposit.received_by === currentUser?.id || hasPermission('canManageCargo');
   const cancelled = deposit.status === 'cancelled';
   const editable = deposit.status === 'open' && mine;
+  // Terminé, devis déjà chez le client ou encaissé : le serveur ne laisse plus corriger qu'à l'équipe cargo.
+  const quoteLocked = mine && quoteLocksParcels(deposit, hasPermission('canManageCargo'));
   const name = deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');
   const st = labels.status(deposit);
 
   const finish = async () => {
     if (close.isPending) return;
     const dep = await close.mutateAsync({ depositId: deposit.id }).catch(() => null);
-    if (!dep) return; // le hook a dit le refus ; on reste sur le dépôt
+    if (!dep || !stillHere()) return; // refus (le hook l'a dit) : on reste sur le dépôt ; écran quitté : on n'y revient pas
     setConfirm(false);
     navigate(`/r/deposit/${dep.id}/done`, { replace: true });
   };
@@ -87,9 +91,9 @@ export function ReceptionDeposit() {
     if (cancel.isPending) return;
     cancel.mutate({ depositId: deposit.id, reason: ABANDON_REASON }, { onSuccess: () => { setAbandon(false); leave(); } });
   };
-  /** Toucher un colis : le corriger s'il est à moi et pas encore parti ; sinon, ses photos. */
+  /** Toucher un colis : le corriger s'il est à moi, pas encore parti, devis pas engagé ; sinon, ses photos. */
   const openParcel = (p: Parcel) => {
-    if (mine && !cancelled && !parcelLockReason(p)) navigate(`/r/deposit/${deposit.id}/parcel/${p.id}`);
+    if (mine && !cancelled && !quoteLocked && !parcelLockReason(p)) navigate(`/r/deposit/${deposit.id}/parcel/${p.id}`);
     else viewer.open(deposit.parcels.indexOf(p));
   };
 
@@ -102,6 +106,9 @@ export function ReceptionDeposit() {
 
         {cancelled && (
           <p className={cn('rounded-lg px-4 py-3', TYPE.bodyStrong, TONE_PILL.danger)}>{t('rc_dep_cancelled')}</p>
+        )}
+        {quoteLocked && (
+          <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.pending)}>{t('rc_dep_quote_locked')}</p>
         )}
         {deposit.status === 'open' && !mine && (
           <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.pending)}>
@@ -136,7 +143,7 @@ export function ReceptionDeposit() {
             </p>
           )}
           {!deposit.client && !cancelled && (
-            <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${deposit.id}`)}>
+            <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${deposit.id}&from=deposit`)}>
               <UserSearch /> {t('rc_assign')}
             </Button>
           )}
@@ -155,7 +162,7 @@ export function ReceptionDeposit() {
           ) : (
             <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
               {deposit.parcels.map((p) => (
-                <ParcelRow key={p.id} parcel={p} onClick={() => openParcel(p)} onPhoto={() => viewer.open(deposit.parcels.indexOf(p))} onRemove={editable ? () => setRemoving(p) : undefined} />
+                <ParcelRow key={p.id} parcel={p} onClick={() => openParcel(p)} onPhoto={() => viewer.open(deposit.parcels.indexOf(p))} onRemove={editable && !parcelLockReason(p) ? () => setRemoving(p) : undefined} />
               ))}
             </Card>
           )}

@@ -38,6 +38,26 @@
 > 07/10, l'ancien site ne connaît pas non plus le statut « À vérifier » qu'une saisie peut désormais produire : autre
 > raison de ne pas laisser d'intervalle.
 
+### `20261013100000_reception_guards.sql` → `migrations/20261013_consolidated.sql`
+**PR :** Réception : navigation repensée (relecture) — deux gardes que l'écran ne pouvait pas tenir seul
+**Contenu :**
+- `reception_deposit_json` (aide interne) : même corps que le 12/10, plus `quote_engaged` — la raison si le devis du
+  dépôt est déjà envoyé, encaissé, réglé ou facturé (`reception_quote_engaged`), sinon `null`. L'app réception
+  n'ouvre plus la correction d'un colis que `reception_update_parcel` refuserait au réceptionnaire : elle montre ses
+  photos.
+- `air_package_add_parcel` : même corps que le 05/10, plus un refus — « Le dépôt RC-… est en cours de saisie :
+  terminez-le d'abord ». La règle n'existait que dans les listes ; la douchette et Mola emballaient quand même un
+  colis que son réceptionnaire saisissait encore.
+- Aucune table, aucune donnée modifiée ; droits et étiquettes `@mola` inchangés.
+- Testée sur Postgres 16 (schéma cargo réel des migrations, matrice des droits réelle) : passée deux fois dans une
+  transaction, 21 contrôles, et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net
+  sans les documents cargo du 12/10.
+
+**Comment pousser :** coller `migrations/20261013_consolidated.sql` (APRÈS `migrations/20261012_consolidated.sql` :
+`reception_deposit_json` lit l'état à la réception de chaque colis), puis
+`npx supabase migration repair --status applied 20261013100000`, puis `/gen-types`. **Ordre :** libre par rapport au
+site ; sans le SQL, l'écran ouvre la correction comme avant et le serveur la refuse avec sa raison.
+
 ### `20261012140000_air_package_packable.sql` → `migrations/20261012b_consolidated.sql`
 **PR :** Cargo : le réceptionnaire fait ses paquets avion sur son téléphone (colis à emballer, mise en paquet, ajout au toucher)
 **Contenu :**

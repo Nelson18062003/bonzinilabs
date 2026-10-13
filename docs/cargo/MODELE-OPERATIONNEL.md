@@ -100,14 +100,18 @@ avec les colis disponibles. Le parcours du réceptionnaire :
    d'office si un colis y tient ; au-delà de 32 kg, l'app crée elle-même les
    paquets suivants. Ce qui n'est pas prêt dit quoi faire et y mène (« pas pesé :
    pesez-le », « sans client : attribuez le dépôt », « dépôt en cours de saisie ») ;
-   le dépôt d'un collègue dit qui l'a reçu (lui seul peut le corriger). Plus de
-   32 kg : à part, il part sans paquet.
+   le dépôt d'un collègue dit qui l'a reçu (lui seul peut le corriger) ; un dépôt
+   terminé dont le devis est déjà chez le client (envoyé, encaissé, facturé) ne se
+   corrige plus qu'à l'équipe cargo. Plus de 32 kg : à part, il part sans paquet.
+   La pastille ne compte qu'au **bureau** (site comme app BONZINI HQ) : à
+   l'entrepôt, l'onglet n'a rien à faire.
 2. **Dans un paquet ouvert** : la douchette, ou « Colis prêts à mettre dedans »
    (seulement ceux qui tiennent, les clients déjà dedans en tête) → *Ajouter*.
 3. Carton plein → *Fermer le paquet* (pesée) → étiquette.
 
 Lecture des colis à emballer : `air_package_packable` (canReceiveParcels ou
 canViewCargo ; `p_limit = 0` : les compteurs seuls, pour la pastille) ; chaque
-ajout repasse par `air_package_add_parcel`, qui revérifie.
+ajout repasse par `air_package_add_parcel`, qui revérifie — et refuse, depuis le
+13/10, le colis d'un dépôt encore en saisie (douchette et Mola compris).
 
 Le maritime suivra le même modèle plus tard (colis → unités de chargement → conteneur).

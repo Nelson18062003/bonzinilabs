@@ -30,6 +30,7 @@ export type BridgeMessage =
   | { type: 'route'; path: string }
   | { type: 'scan-open'; continuous: boolean }
   | { type: 'scan-close' }
+  | { type: 'reception-location'; location: 'office' | 'warehouse' | null }
   | { type: 'error'; message: string };
 
 export function parseBridgeMessage(raw: string): BridgeMessage | null {

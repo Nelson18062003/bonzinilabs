@@ -21,7 +21,7 @@ import { handleBridgeMessage } from './files';
 import { START_URL, USER_AGENT_SUFFIX, isAppUrl } from './config';
 import type { WebHandle } from './store';
 
-type SiteMessage = Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' }>;
+type SiteMessage = Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' | 'reception-location' }>;
 
 interface Props {
   /** Première page affichée : on peut retirer l'écran de lancement. */
@@ -102,7 +102,7 @@ export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFir
     if (!isAppUrl(e.nativeEvent.url)) return;
     const msg = parseBridgeMessage(e.nativeEvent.data);
     if (!msg) return;
-    if (msg.type === 'auth' || msg.type === 'route' || msg.type === 'scan-open' || msg.type === 'scan-close' || msg.type === 'theme') {
+    if (msg.type === 'auth' || msg.type === 'route' || msg.type === 'scan-open' || msg.type === 'scan-close' || msg.type === 'theme' || msg.type === 'reception-location') {
       onSiteMessage(msg);
       return;
     }

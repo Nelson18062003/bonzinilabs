@@ -10,22 +10,34 @@
  *  · un « Continuer » grisé parce que le lieu n'a jamais été choisi
  *    → « Où êtes-vous ? » avant l'accueil et avant un nouveau dépôt ;
  *  · une flèche qui empile l'écran parent (boucles) → la flèche revient là
- *    d'où l'on vient, ou remplace par le parent quand il n'y a pas d'historique.
+ *    d'où l'on vient, ou remplace par le parent quand il n'y a pas d'historique ;
+ *  · un retour qui part après un envoi alors qu'on a déjà quitté l'écran
+ *    (double retour) → rien ne part d'un écran quitté ;
+ *  · une attribution refusée sous une caméra qui se relance en boucle → la
+ *    caméra attend « Scanner encore » ; partie de la fiche, l'attribution y revient ;
+ *  · quatre étapes de correction pour finir sur « devis déjà envoyé » → les photos.
  * Les hooks de données sont simulés : le sujet est l'écran.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, within, act, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import type { Deposit, Parcel } from '@/lib/reception';
 
 const m = vi.hoisted(() => ({
   deposit: null as unknown,
+  depLoading: false,
+  depError: null as Error | null,
   me: 'kevin',
   cargo: false,
   cancel: vi.fn(),
   close: vi.fn(),
   remove: vi.fn(),
+  assign: vi.fn(),
+  byCode: vi.fn(),
+  stop: vi.fn(),
+  decode: null as ((text: string) => void) | null,
+  restartKeys: [] as number[],
 }));
 
 vi.mock('@/contexts/AdminAuthContext', async (importOriginal) => ({
@@ -34,11 +46,28 @@ vi.mock('@/contexts/AdminAuthContext', async (importOriginal) => ({
 }));
 
 vi.mock('@/hooks/useReception', () => ({
-  useReceptionDeposit: () => ({ data: m.deposit, isLoading: false, error: null, refetch: vi.fn() }),
+  UnknownCodeError: class UnknownCodeError extends Error {},
+  useReceptionDeposit: () => ({ data: m.deposit, isLoading: m.depLoading, error: m.depError, refetch: vi.fn() }),
   useCancelDeposit: () => ({ mutate: m.cancel, isPending: false }),
   useCloseDeposit: () => ({ mutateAsync: m.close, isPending: false }),
   useRemoveParcel: () => ({ mutate: m.remove, isPending: false }),
   useParcelPhotoUrl: () => ({ data: null }),
+  useAssignDeposit: () => ({ mutateAsync: m.assign, isPending: false }),
+  useClientByCode: () => ({ mutateAsync: m.byCode, isPending: false }),
+  useAddParcel: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateParcel: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRemoveParcelPhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  uploadParcelPhotos: vi.fn(),
+}));
+
+// La caméra : on garde le texte qu'elle rendrait, et chaque relance (restartKey).
+vi.mock('@/mobile/components/reception/useQrScanner', () => ({
+  useQrScanner: (_id: string, onDecode: (text: string) => void, _enabled?: boolean, opts?: { restartKey?: number }) => {
+    m.decode = onDecode;
+    const k = opts?.restartKey ?? 0;
+    if (m.restartKeys.at(-1) !== k) m.restartKeys.push(k);
+    return { starting: false, error: null, stop: m.stop };
+  },
 }));
 
 vi.mock('@/hooks/useShippingSettings', () => ({ useAdminShippingSettings: () => ({ data: undefined }) }));
@@ -49,8 +78,11 @@ vi.mock('@/mobile/components/reception/InternalLabelSheet', () => ({
 
 import { ReceptionDeposit } from '@/mobile/screens/reception/ReceptionDeposit';
 import { ReceptionDone } from '@/mobile/screens/reception/ReceptionDone';
+import { ReceptionIdentify } from '@/mobile/screens/reception/ReceptionIdentify';
+import { ReceptionParcel } from '@/mobile/screens/reception/ReceptionParcel';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
-import { canGoBack } from '@/mobile/components/reception/useReceptionBack';
+import { canGoBack, useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
+import { usePackFix } from '@/mobile/components/reception/packageText';
 
 const client = { user_id: 'u1', customer_code: 'BZ-482913', first_name: 'Aïcha', last_name: 'Mbarga', phone: null, email: null, company_name: null, city: null, country: null };
 const parcel = (o: Partial<Parcel> = {}): Parcel => ({
@@ -63,15 +95,23 @@ const deposit = (o: Partial<Deposit> = {}): Deposit => ({
   total_weight_kg: 8, total_cbm: 0, notes: null, parcels: [parcel()], ...o,
 } as Deposit);
 
+/** Où l'on est — et un « retour du téléphone » témoin : il montre ce que l'historique a gardé. */
 function Where() {
   const loc = useLocation();
-  return <div data-testid="where">{loc.pathname}{loc.search}</div>;
+  const navigate = useNavigate();
+  return (
+    <>
+      <div data-testid="where">{loc.pathname}{loc.search}</div>
+      <button type="button" onClick={() => navigate(-1)}>geste-retour</button>
+    </>
+  );
 }
 
-function mount(path: string, element: React.ReactNode, routePath: string) {
+function mount(path: string | string[], element: React.ReactNode, routePath: string) {
+  const entries = Array.isArray(path) ? path : [path];
   return render(
     <LanguageProvider>
-      <MemoryRouter initialEntries={[path]}>
+      <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
         <Routes>
           <Route path={routePath} element={<>{element}<Where /></>} />
           <Route path="*" element={<Where />} />
@@ -82,11 +122,19 @@ function mount(path: string, element: React.ReactNode, routePath: string) {
 }
 
 beforeEach(() => {
-  for (const fn of [m.cancel, m.close, m.remove]) fn.mockReset();
+  for (const fn of [m.cancel, m.close, m.remove, m.assign, m.byCode, m.stop]) fn.mockReset();
   m.me = 'kevin';
   m.cargo = false;
   m.deposit = deposit();
+  m.depLoading = false;
+  m.depError = null;
+  m.decode = null;
+  m.restartKeys = [];
   localStorage.removeItem('bonzini-reception-location');
+});
+
+afterEach(() => {
+  window.history.replaceState(null, ''); // canGoBack lit window.history.state.idx
 });
 
 describe('la fiche du dépôt', () => {
@@ -157,6 +205,165 @@ describe('la fiche du dépôt', () => {
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
     expect(screen.getByTestId('where').textContent).toBe('/r');
+    // Remplacée, la fiche n'est plus dans l'historique : le geste retour ne la rouvre pas.
+    fireEvent.click(screen.getByRole('button', { name: 'geste-retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r');
+  });
+
+  it('avec un historique, la flèche fait comme le geste retour : là d’où l’on vient', () => {
+    window.history.replaceState({ idx: 1 }, '');
+    mount(['/r/clients/u1', '/r/deposit/d1'], <ReceptionDeposit />, '/r/deposit/:depositId');
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/clients/u1');
+  });
+
+  it('« Attribuer » part de la fiche et dit qu’on en vient (pour y revenir, pas l’empiler)', () => {
+    m.deposit = deposit({ status: 'closed', client: null });
+    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    fireEvent.click(screen.getByRole('button', { name: /Attribuer à un client/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/new?assign=d1&from=deposit');
+  });
+
+  it('un colis déjà emballé n’a pas de corbeille, même dans mon dépôt en cours (le serveur refuserait)', () => {
+    m.deposit = deposit({ parcels: [parcel({ air_package_id: 'k1', package_no: 'PQ-000045' }), parcel({ id: 'p2', seq: 2, parcel_no: 'RC-000123-02', description: 'Sacs' })] });
+    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    expect(screen.getAllByRole('button', { name: /Retirer/ })).toHaveLength(1);
+  });
+
+  it('terminé, devis déjà chez le client : le dire, et ouvrir les photos plutôt que la correction', () => {
+    m.deposit = deposit({ status: 'closed', quote_engaged: 'Le devis DV-000012 a déjà été envoyé au client' });
+    const { unmount } = mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    expect(screen.getByText(/déjà chez le client/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Chaussures'));
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1');
+    unmount();
+
+    // L'équipe cargo, elle, corrige toujours.
+    m.cargo = true;
+    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    expect(screen.queryByText(/déjà chez le client/)).toBeNull();
+    fireEvent.click(screen.getByText('Chaussures'));
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1/parcel/p1');
+  });
+});
+
+describe('rien ne part d’un écran déjà quitté', () => {
+  it('un retour demandé après l’envoi, l’écran déjà quitté : il ne part pas (pas de double retour)', () => {
+    let late: ((fallback: string) => void) | null = null;
+    function Sender() {
+      const back = useReceptionBack();
+      const navigate = useNavigate();
+      late = back;
+      return <button type="button" onClick={() => navigate('/r/ailleurs')}>quitter</button>;
+    }
+    mount('/r/deposit/d1/parcel', <Sender />, '/r/deposit/:depositId/parcel');
+    fireEvent.click(screen.getByRole('button', { name: 'quitter' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/ailleurs');
+    act(() => late!('/r/deposit/d1')); // l'envoi se termine : sans garde, il remplacerait /r/ailleurs
+    expect(screen.getByTestId('where').textContent).toBe('/r/ailleurs');
+  });
+
+  it('quitté pendant le voile vert « Client trouvé » : ni attribution, ni étape suivante', async () => {
+    m.byCode.mockResolvedValue(client);
+    mount('/r/new?assign=d1', <ReceptionIdentify />, '/r/new');
+    await act(async () => { m.decode!('BZ-482913'); });
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/pending');
+    await act(() => new Promise((r) => setTimeout(r, 900)));
+    expect(m.assign).not.toHaveBeenCalled();
+    expect(screen.getByTestId('where').textContent).toBe('/r/pending');
+  });
+});
+
+describe('attribuer : un refus laisse l’écran utilisable', () => {
+  it('la caméra ne repart pas d’elle-même (ni boucle sur le même QR, ni caméra native par-dessus le message)', async () => {
+    m.byCode.mockResolvedValue(client);
+    m.assign.mockRejectedValue(new Error('Ce dépôt est déjà attribué'));
+    mount('/r/new?assign=d1', <ReceptionIdentify />, '/r/new');
+    await act(async () => { m.decode!('BZ-482913'); });
+    const alert = await screen.findByRole('alert', {}, { timeout: 2000 });
+    expect(alert).toHaveTextContent('Ce dépôt est déjà attribué');
+    expect(m.stop).toHaveBeenCalled();
+    expect(m.restartKeys).toEqual([0]); // aucune relance
+    expect(within(alert).getByRole('button', { name: /Voir le dépôt/ })).toBeInTheDocument();
+    expect(within(alert).getByRole('button', { name: /Retour/ })).toBeInTheDocument();
+    // « Scanner encore » : la relance vient d'un geste.
+    fireEvent.click(within(alert).getByRole('button', { name: /Scanner encore/ }));
+    expect(m.restartKeys).toEqual([0, 1]);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('partie de la fiche du dépôt, « Voir le dépôt » y REVIENT au lieu d’en empiler une seconde', async () => {
+    window.history.replaceState({ idx: 2 }, '');
+    m.byCode.mockResolvedValue(client);
+    m.assign.mockRejectedValue(new Error('Ce dépôt est déjà attribué'));
+    mount(['/r', '/r/deposit/d1', '/r/new?assign=d1&from=deposit'], <ReceptionIdentify />, '/r/new');
+    await act(async () => { m.decode!('BZ-482913'); });
+    const alert = await screen.findByRole('alert', {}, { timeout: 2000 });
+    fireEvent.click(within(alert).getByRole('button', { name: /Voir le dépôt/ }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1');
+    fireEvent.click(screen.getByRole('button', { name: 'geste-retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r'); // une seule fiche dans l'historique
+  });
+
+  it('réussie depuis la fiche : retour à la fiche', async () => {
+    m.byCode.mockResolvedValue(client);
+    m.assign.mockResolvedValue({});
+    mount('/r/new?assign=d1&from=deposit', <ReceptionIdentify />, '/r/new');
+    await act(async () => { m.decode!('BZ-482913'); });
+    await waitFor(() => expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1'), { timeout: 2000 });
+    expect(m.assign).toHaveBeenCalledWith({ depositId: 'd1', clientUserId: 'u1' });
+  });
+});
+
+describe('corriger un colis', () => {
+  it('pendant le chargement : l’en-tête et sa flèche, pas un formulaire vide qu’on remplirait pour rien', () => {
+    m.deposit = undefined;
+    m.depLoading = true;
+    mount('/r/deposit/d1/parcel/p1?step=weight', <ReceptionParcel />, '/r/deposit/:depositId/parcel/:parcelId');
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('spinbutton')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1');
+  });
+
+  it('lecture en échec : le dire, avec « Réessayer » — pas un « Enregistrer » muet', () => {
+    m.deposit = undefined;
+    m.depError = new Error('Réseau indisponible');
+    mount('/r/deposit/d1/parcel/p1?step=weight', <ReceptionParcel />, '/r/deposit/:depositId/parcel/:parcelId');
+    expect(screen.getByText('Réseau indisponible')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Réessayer/ })).toBeInTheDocument();
+  });
+});
+
+describe('colis à emballer : où le compléter', () => {
+  function Fix({ d }: { d: Deposit }) {
+    const fix = usePackFix()({ parcel: { id: 'p1' }, deposit: d, reason: 'no_weight' });
+    return <output>{JSON.stringify(fix)}</output>;
+  }
+  const show = (d: Deposit) => {
+    const { unmount } = render(<LanguageProvider><MemoryRouter><Fix d={d} /></MemoryRouter></LanguageProvider>);
+    const fix = JSON.parse(screen.getByRole('status').textContent ?? '{}') as { path: string | null; note: string | null };
+    unmount();
+    return fix;
+  };
+
+  it('mon dépôt terminé, pas pesé : droit à la pesée', () => {
+    expect(show(deposit({ status: 'closed' })).path).toBe('/r/deposit/d1/parcel/p1?step=weight');
+  });
+
+  it('devis déjà chez le client : pas de lien (le serveur refuserait), et qui le fait', () => {
+    const fix = show(deposit({ status: 'closed', quote_engaged: 'Le devis DV-000012 a déjà été envoyé au client' }));
+    expect(fix.path).toBeNull();
+    expect(fix.note).toMatch(/équipe cargo/);
+    m.cargo = true;
+    expect(show(deposit({ status: 'closed', quote_engaged: 'Le devis DV-000012 a déjà été envoyé au client' })).path).toBe('/r/deposit/d1/parcel/p1?step=weight');
+  });
+
+  it('le dépôt d’un collègue : pas de lien, son nom', () => {
+    const fix = show(deposit({ status: 'closed', received_by: 'li', received_by_name: 'Li Wei' }));
+    expect(fix.path).toBeNull();
+    expect(fix.note).toMatch(/Li Wei/);
   });
 });
 
