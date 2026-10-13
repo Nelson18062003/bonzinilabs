@@ -12,6 +12,7 @@ import { useReceptionPending } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Button, Card, Holder, ScreenError, ScreenLoader } from '@/mobile/designKit';
 import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { assignPath } from '@/mobile/components/reception/useAssignFlow';
 
 export function ReceptionPending() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export function ReceptionPending() {
                     {descriptions.length > 0 && <span className={cn('mt-1 block', TYPE.small, TEXT.muted)}>{descriptions.join(', ')}</span>}
                   </span>
                 </div>
-                <Button variant="primary" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${d.id}`)}>
+                <Button variant="primary" className="h-12 w-full" onClick={() => navigate(assignPath(d.id))}>
                   <UserSearch /> {t('rc_assign')}
                 </Button>
               </Card>

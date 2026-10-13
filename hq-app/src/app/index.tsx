@@ -33,7 +33,7 @@ import { isStaffRole, staffHome, type StaffUser } from '../roles';
 import { tabForPath, tabsFor, type Tab } from '../tabs';
 import { useHQ } from '../store';
 import { C } from '../theme';
-import type { BridgeMessage } from '../bridge';
+import type { ReceptionLocation, SiteMessage } from '../bridge';
 import * as Notifications from 'expo-notifications';
 import { pathOf, registerForPush } from '../push';
 import { LOGIN_PATHS, onSitePathQueued, peekSitePath, queueSitePath, staffPath, takeSitePath } from '../links';
@@ -115,11 +115,11 @@ export default function Main() {
   const tabs = useMemo(() => (user ? tabsFor(user.role) : []), [user]);
   const hasHome = tabs.some((t) => t.native === 'home');
   // Le lieu de réception du téléphone (dit par le site) : la pastille « Paquets » ne compte qu'au bureau.
-  const [receptionLocation, setReceptionLocation] = useState<'office' | 'warehouse' | null>(null);
+  const [receptionLocation, setReceptionLocation] = useState<ReceptionLocation>(null);
   const badges = useBadges(user?.role ?? null, route, receptionLocation);
 
   // Ce que le site dit à l'app.
-  const onSiteMessage = useCallback((msg: Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' | 'reception-location' }>) => {
+  const onSiteMessage = useCallback((msg: SiteMessage) => {
     switch (msg.type) {
       case 'reception-location':
         setReceptionLocation(msg.location === 'office' || msg.location === 'warehouse' ? msg.location : null);

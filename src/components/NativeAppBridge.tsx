@@ -17,7 +17,7 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { isNativeApp } from '@/lib/nativeApp';
 import { installNativeSiteApi, postToApp } from '@/lib/nativeBridge';
-import { LOCATION_EVENT, readStoredLocation } from '@/lib/reception';
+import { useReceptionLocation } from '@/mobile/screens/reception/useReceptionLocation';
 
 export function NativeAppBridge() {
   const native = useMemo(() => isNativeApp(), []);
@@ -31,17 +31,10 @@ export function NativeAppBridge() {
   }, [native, location.pathname, location.search]);
 
   // Le lieu de réception : au chargement, puis à chaque choix (« Où êtes-vous ? », « Changer »).
+  const { location: receptionLocation } = useReceptionLocation();
   useEffect(() => {
-    if (!native) return;
-    const send = () => postToApp({ type: 'reception-location', location: readStoredLocation() });
-    send();
-    window.addEventListener(LOCATION_EVENT, send);
-    window.addEventListener('storage', send);
-    return () => {
-      window.removeEventListener(LOCATION_EVENT, send);
-      window.removeEventListener('storage', send);
-    };
-  }, [native]);
+    if (native) postToApp({ type: 'reception-location', location: receptionLocation });
+  }, [native, receptionLocation]);
 
   // Qui est connecté, et le jeton du moment (puis à chaque rafraîchissement).
   useEffect(() => {

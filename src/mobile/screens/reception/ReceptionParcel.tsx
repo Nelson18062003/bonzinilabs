@@ -26,8 +26,8 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useFilePreviews } from '@/hooks/useFilePreviews';
 import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, PrimaryPill, ScreenError, ScreenLoader, SoftPill, TextInput } from '@/mobile/designKit';
-import { StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { SURFACE, TEXT, TYPE, PrimaryPill, SoftPill, TextInput } from '@/mobile/designKit';
+import { DepositLoadState, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { readDraftWaybill, writeDraftWaybill } from './useReceptionLocation';
 
@@ -187,12 +187,7 @@ export function ReceptionParcel() {
   // le chargement (sinon une saisie serait écrasée à l'arrivée des données) ou
   // après un échec (sinon « Enregistrer » ne ferait rien), l'en-tête et sa flèche.
   if (parcelId && (depositLoading || depositError || !deposit)) {
-    return (
-      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('rc_parcel')} showBack onBack={exit} />
-        {depositLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(depositError as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
-      </div>
-    );
+    return <DepositLoadState title={t('rc_parcel')} onBack={exit} isLoading={depositLoading} error={depositError} onRetry={() => void refetch()} />;
   }
 
   // Un colis demandé qui n'existe plus (retiré par un collègue, lien ancien) : on le dit, avec la sortie.

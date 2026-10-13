@@ -81,7 +81,7 @@ export function ReceptionIdentify() {
       flow.leave();
       return;
     }
-    if (stillHere()) navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
+    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
   };
 
   const scanner = useQrScanner(SCANNER_ID, (text) => {

@@ -83,6 +83,7 @@ import { ReceptionParcel } from '@/mobile/screens/reception/ReceptionParcel';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { canGoBack, useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 import { usePackFix } from '@/mobile/components/reception/packageText';
+import { assignPath } from '@/mobile/components/reception/useAssignFlow';
 
 const client = { user_id: 'u1', customer_code: 'BZ-482913', first_name: 'Aïcha', last_name: 'Mbarga', phone: null, email: null, company_name: null, city: null, country: null };
 const parcel = (o: Partial<Parcel> = {}): Parcel => ({
@@ -304,6 +305,16 @@ describe('attribuer : un refus laisse l’écran utilisable', () => {
     expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1');
     fireEvent.click(screen.getByRole('button', { name: 'geste-retour' }));
     expect(screen.getByTestId('where').textContent).toBe('/r'); // une seule fiche dans l'historique
+  });
+
+  it('un lien fabriqué (?assign=x&from=…) ne glisse ni paramètre ni chemin', () => {
+    expect(assignPath('d1')).toBe('/r/new?assign=d1');
+    expect(assignPath('d1', true)).toBe('/r/new?assign=d1&from=deposit');
+    mount('/r/new?assign=x%26from%3Ddeposit', <ReceptionIdentify />, '/r/new');
+    // Pas une attribution : l'écran d'un nouveau dépôt, et sa sortie vers l'accueil.
+    expect(screen.queryByText(/Attribuer à un client/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
+    expect(screen.getByTestId('where').textContent).toBe('/r');
   });
 
   it('réussie depuis la fiche : retour à la fiche', async () => {

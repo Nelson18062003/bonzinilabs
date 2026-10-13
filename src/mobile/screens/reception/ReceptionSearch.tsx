@@ -17,12 +17,10 @@ import { useAssignDeposit, useReceptionSearch } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { SURFACE, TEXT, TYPE, Button, Card, Holder, TextInput } from '@/mobile/designKit';
 import { StepHeader } from '@/mobile/components/reception/bits';
-import { useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useAssignFlow } from '@/mobile/components/reception/useAssignFlow';
 
 export function ReceptionSearch() {
   const navigate = useNavigate();
-  const stillHere = useStillHere();
   const flow = useAssignFlow();
   const { assignId, qs } = flow;
   const [params, setParams] = useSearchParams();
@@ -55,7 +53,7 @@ export function ReceptionSearch() {
       flow.leave(); // ne part pas si l'écran a été quitté pendant l'envoi
       return;
     }
-    if (stillHere()) navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
+    navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
   };
 
   const results = search.data ?? [];

@@ -16,10 +16,10 @@ import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { useReceptionDeposit } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { SURFACE, TEXT, TONE_PILL, TYPE, Card, Holder, PrimaryPill, Row, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { SURFACE, TEXT, TONE_PILL, TYPE, Card, Holder, PrimaryPill, Row, SoftPill } from '@/mobile/designKit';
+import { DepositLoadState, LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
+import { assignPath } from '@/mobile/components/reception/useAssignFlow';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionDone() {
@@ -34,12 +34,7 @@ export function ReceptionDone() {
 
   // Chargement et erreur : un en-tête avec sa flèche, jamais un sablier sans fin.
   if (isLoading || error || !deposit) {
-    return (
-      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('rc_done_title')} showBack onBack={() => back('/r')} />
-        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
-      </div>
-    );
+    return <DepositLoadState title={t('rc_done_title')} onBack={() => back('/r')} isLoading={isLoading} error={error} onRetry={() => void refetch()} />;
   }
 
   const client = deposit.client ?? null;
@@ -85,7 +80,7 @@ export function ReceptionDone() {
         {!client && (
           <div className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.pending)}>
             <p className={TYPE.bodyStrong}>{t('rc_done_no_client')}</p>
-            <PrimaryPill onClick={() => navigate(`/r/new?assign=${deposit.id}`)} className="h-12 w-full"><UserSearch /> {t('rc_assign_now')}</PrimaryPill>
+            <PrimaryPill onClick={() => navigate(assignPath(deposit.id))} className="h-12 w-full"><UserSearch /> {t('rc_assign_now')}</PrimaryPill>
           </div>
         )}
 

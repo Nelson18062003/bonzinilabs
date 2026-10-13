@@ -11,12 +11,13 @@
 // minutes, au retour dans l'app, à chaque notification reçue et quelques secondes après chaque changement de page
 // (un dépôt validé fait baisser la pastille sans attendre).
 // ============================================================
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { db, hasFreshToken } from './supabase';
 import { can, staffHome, type StaffRole } from './roles';
 import { CASH_PENDING, DEPOSITS_TO_PROCESS, PAYMENTS_TO_PROCESS } from './statuses';
+import type { ReceptionLocation } from './bridge';
 
 export type Badges = Record<string, number>;
 
@@ -35,8 +36,6 @@ async function count(table: 'deposits' | 'payments', statuses: string[], cashOnl
   const { count: n, error } = await q;
   return error ? 0 : n ?? 0;
 }
-
-export type ReceptionLocation = 'office' | 'warehouse' | null;
 
 /** Les colis qui attendent un paquet : les compteurs seuls (p_limit = 0), pas la liste. */
 async function packableCount(): Promise<number> {
@@ -73,18 +72,30 @@ export async function fetchBadges(role: StaffRole, location: ReceptionLocation =
 
 export function useBadges(role: StaffRole | null, route: string, location: ReceptionLocation = null): Badges {
   const [badges, setBadges] = useState<Badges>({});
+  // Le lieu est lu au moment du chargement (pas une dépendance de `load`) : un changement
+  // de lieu recharge UNE fois, sans relancer la minuterie ni le rechargement de page.
+  const locationRef = useRef(location);
+  locationRef.current = location;
 
   const load = useCallback(async () => {
     if (!role || !hasFreshToken()) return;
     try {
-      const next = await fetchBadges(role, location);
+      const next = await fetchBadges(role, locationRef.current);
       setBadges(next);
       // Le même total sur l'icône de l'app (écran d'accueil du téléphone).
       void Notifications.setBadgeCountAsync(Object.values(next).reduce((a, b) => a + b, 0)).catch(() => {});
     } catch {
       // Réseau coupé : on garde les derniers chiffres.
     }
-  }, [role, location]);
+  }, [role]);
+
+  // Le lieu a changé (« Où êtes-vous ? », « Changer ») : la pastille Paquets suit aussitôt.
+  const seenLocation = useRef(location);
+  useEffect(() => {
+    if (seenLocation.current === location) return;
+    seenLocation.current = location;
+    void load();
+  }, [location, load]);
 
   useEffect(() => {
     if (!role) {

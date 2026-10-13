@@ -10,6 +10,7 @@ import { formatKg, quoteLocksParcels } from '@/lib/reception';
 import { formatAwb, isProvisionalAwb } from '@/lib/airShipment';
 import { packageStatusMeta, type AirPackage, type AirPackageStatus, type PackBlock, type PackRefusal, type WeightGauge } from '@/lib/airPackage';
 import type { Deposit, Parcel } from '@/lib/reception';
+import { assignPath } from './useAssignFlow';
 import type { ScanBoxTexts } from '@/mobile/components/cargo/ParcelScanBox';
 import type { Tone } from '@/mobile/designKit';
 
@@ -75,7 +76,7 @@ export function usePackFix() {
   const { currentUser, hasPermission } = useAdminAuth();
   type Fix = { path: string | null; note: string | null };
   return (it: { parcel: Pick<Parcel, 'id'>; deposit: Pick<Deposit, 'id' | 'received_by' | 'received_by_name' | 'status' | 'quote_engaged'>; reason: PackBlock }): Fix => {
-    if (it.reason === 'no_client') return { path: `/r/new?assign=${it.deposit.id}`, note: null };
+    if (it.reason === 'no_client') return { path: assignPath(it.deposit.id), note: null };
     if (it.reason === 'too_heavy') return { path: null, note: null };
     const cargo = hasPermission('canManageCargo');
     if (it.deposit.received_by !== currentUser?.id && !cargo) {

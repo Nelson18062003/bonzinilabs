@@ -16,12 +16,11 @@ import { BackHandler, Linking, Platform } from 'react-native';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 import type { ShouldStartLoadRequest, WebViewMessageEvent, WebViewOpenWindowEvent } from 'react-native-webview/lib/WebViewTypes';
 import * as WebBrowser from 'expo-web-browser';
-import { INJECTED_BEFORE_CONTENT, parseBridgeMessage, type BridgeMessage } from './bridge';
+import { INJECTED_BEFORE_CONTENT, isSiteMessage, parseBridgeMessage, type SiteMessage } from './bridge';
 import { handleBridgeMessage } from './files';
 import { START_URL, USER_AGENT_SUFFIX, isAppUrl } from './config';
 import type { WebHandle } from './store';
 
-type SiteMessage = Extract<BridgeMessage, { type: 'auth' | 'route' | 'scan-open' | 'scan-close' | 'theme' | 'reception-location' }>;
 
 interface Props {
   /** Première page affichée : on peut retirer l'écran de lancement. */
@@ -102,7 +101,7 @@ export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFir
     if (!isAppUrl(e.nativeEvent.url)) return;
     const msg = parseBridgeMessage(e.nativeEvent.data);
     if (!msg) return;
-    if (msg.type === 'auth' || msg.type === 'route' || msg.type === 'scan-open' || msg.type === 'scan-close' || msg.type === 'theme' || msg.type === 'reception-location') {
+    if (isSiteMessage(msg)) {
       onSiteMessage(msg);
       return;
     }

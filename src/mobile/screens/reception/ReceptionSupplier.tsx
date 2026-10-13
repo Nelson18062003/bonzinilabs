@@ -14,9 +14,9 @@ import { cn } from '@/lib/utils';
 import { depositSupplier, supplierLine, type SupplierInfo, type SupplierKind } from '@/lib/reception';
 import { useClientSuppliers, useReceptionDeposit, useSetSupplier } from '@/hooks/useReception';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Card, Fold, FormField, PrimaryPill, ScreenError, ScreenLoader, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Card, Fold, FormField, PrimaryPill, Segmented, SoftPill, TextInput } from '@/mobile/designKit';
 import { TextArea } from '@/components/form';
-import { StepHeader } from '@/mobile/components/reception/bits';
+import { DepositLoadState, StepHeader } from '@/mobile/components/reception/bits';
 import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 
 export function ReceptionSupplier() {
@@ -57,10 +57,7 @@ export function ReceptionSupplier() {
   // Chargement et erreur gardent l'en-tête et sa flèche : jamais un sablier sans fin.
   if (isLoading || error || !deposit) {
     return (
-      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} showBack onBack={() => goBack(depositPath)} />
-        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
-      </div>
+      <DepositLoadState title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} onBack={() => goBack(depositPath)} isLoading={isLoading} error={error} onRetry={() => void refetch()} />
     );
   }
   const fill = (s: SupplierInfo) => { setKind(s.kind); setName(s.name); setContact(s.contact ?? ''); setPhone(s.phone ?? ''); setEmail(s.email ?? ''); setWechat(s.wechat ?? ''); setAddress(s.address ?? ''); setMore(!!(s.email || s.wechat || s.address)); };

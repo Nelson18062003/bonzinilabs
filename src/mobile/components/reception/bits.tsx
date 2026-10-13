@@ -10,7 +10,8 @@ import { getCurrentLocale } from '@/i18n';
 import { DESTINATION_THEME } from '@/lib/customerCode';
 import { ICON_PATHS } from '@/lib/shippingLabelCanvas';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Holder, StatusPill, type Tone } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, Holder, ScreenError, ScreenLoader, StatusPill, type Tone } from '@/mobile/designKit';
+import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useParcelPhotoUrl } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatDims, formatKg, initials, isParcelIncomplete, type BroughtBy, type Deposit, type Parcel, type ParcelKind, type ReceptionLocation } from '@/lib/reception';
 
@@ -115,6 +116,20 @@ export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parc
 /* ── Le fil du parcours : « Étape 2 sur 3 », une phrase pour titre, une
  * ligne d'aide, une barre. Le réceptionnaire sait toujours où il en est et
  * ce qu'on attend de lui — une question par écran, rien d'autre. */
+/**
+ * Un dépôt qui charge, ou qui n'a pas pu être lu : l'en-tête et sa flèche
+ * restent — jamais un sablier sans fin, jamais un écran sans sortie.
+ */
+export function DepositLoadState({ title, onBack, isLoading, error, onRetry }: { title: string; onBack: () => void; isLoading: boolean; error: unknown; onRetry: () => void }) {
+  const { t } = useTranslation('agent');
+  return (
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <MobileHeader title={title} showBack onBack={onBack} />
+      {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={onRetry} />}
+    </div>
+  );
+}
+
 export function StepHeader({ step, total, title, help, className }: { step: number; total: number; title: ReactNode; help?: ReactNode; className?: string }) {
   const { t } = useTranslation('agent');
   return (

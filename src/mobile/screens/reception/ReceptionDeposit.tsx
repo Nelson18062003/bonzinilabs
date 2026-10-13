@@ -26,10 +26,11 @@ import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { useCancelDeposit, useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TONE_PILL, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
-import { LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { SURFACE, TEXT, TONE_PILL, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, SoftPill, StatusPill } from '@/mobile/designKit';
+import { DepositLoadState, LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
+import { assignPath } from '@/mobile/components/reception/useAssignFlow';
 import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 
 /** Le motif posé quand on abandonne un dépôt ouvert par erreur (la suppression exige un motif). */
@@ -59,20 +60,16 @@ export function ReceptionDeposit() {
 
   // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie.
   if (isLoading || error || !deposit) {
-    return (
-      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('rc_deposits')} showBack onBack={leave} />
-        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={() => void refetch()} />}
-      </div>
-    );
+    return <DepositLoadState title={t('rc_deposits')} onBack={leave} isLoading={isLoading} error={error} onRetry={() => void refetch()} />;
   }
 
   // Le miroir de reception_can_edit : le dépôt est à moi, ou je suis de l'équipe cargo.
-  const mine = deposit.received_by === currentUser?.id || hasPermission('canManageCargo');
+  const cargo = hasPermission('canManageCargo');
+  const mine = deposit.received_by === currentUser?.id || cargo;
   const cancelled = deposit.status === 'cancelled';
   const editable = deposit.status === 'open' && mine;
   // Terminé, devis déjà chez le client ou encaissé : le serveur ne laisse plus corriger qu'à l'équipe cargo.
-  const quoteLocked = mine && quoteLocksParcels(deposit, hasPermission('canManageCargo'));
+  const quoteLocked = mine && quoteLocksParcels(deposit, cargo);
   const name = deposit.client ? clientFullName(deposit.client) : t('rc_unknown_client');
   const st = labels.status(deposit);
 
@@ -143,7 +140,7 @@ export function ReceptionDeposit() {
             </p>
           )}
           {!deposit.client && !cancelled && (
-            <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(`/r/new?assign=${deposit.id}&from=deposit`)}>
+            <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(assignPath(deposit.id, true))}>
               <UserSearch /> {t('rc_assign')}
             </Button>
           )}
