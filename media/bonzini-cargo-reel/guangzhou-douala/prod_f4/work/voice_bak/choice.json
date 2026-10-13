@@ -1,0 +1,172 @@
+{
+ "N1": {
+  "file": "N1_s2.wav",
+  "stretch": 1.0,
+  "syl": 6,
+  "note": "natural phrasing « Là-bas, | en Chine, | on charge. », no stretch",
+  "auto": false
+ },
+ "N2": {
+  "file": "N2_s10.wav",
+  "stretch": 1.17,
+  "syl": 8,
+  "note": "pb .25 take whose « Douala » survives the phone filter at every stretch tried (×1.13/1.14/1.15): large-v3 « Douala », the weak listener « D'Ouala » (same sounds [dwala]); the « Dou-a-la » / « Douwala » spellings did no better · review 2: ×1,17 (≤ 3,2 syl/s on the energy at −30 dB)",
+  "auto": false
+ },
+ "N3a": {
+  "file": "N3a_s61.wav",
+  "stretch": 1.21,
+  "syl": 5,
+  "note": "run 6 (pb .25, temp .3); the 0.2 s before « part » is the /p/ closure held · review 2: ×1,17 (audible rate ≤ 3,2 syl/s measured on the energy too), window 6,75–8,45",
+  "auto": false
+ },
+ "N3b": {
+  "file": "N3b_s99.wav",
+  "stretch": 1.04,
+  "syl": 4,
+  "note": "run 10 (pb .5); « Un autre | arrive. »",
+  "auto": false
+ },
+ "N4": {
+  "file": "N4_s65.wav",
+  "stretch": 1.16,
+  "syl": 9,
+  "note": "run 6; 9 syllables (« autre » keeps its schwa before « voiture »): the comma pause after « Ici, » lengthened by 0.15 s (0.43 → 0.58 s raw) to stay ≤ 3.2 syl/s at ×1.14 · review 2: ×1,16 (≤ 3,2 syl/s on the energy at −30 dB)",
+  "auto": false,
+  "pause_add": {
+   "at": 0.62,
+   "add": 0.15
+  }
+ },
+ "N5a": {
+  "file": "N5a_sLN5a-73.wav",
+  "stretch": 1.13,
+  "syl": 6,
+  "note": "lead-in take (« Regarde bien. » cut off): « Tes » not held, the question rises on « Chine » (+5.4 st)",
+  "auto": false
+ },
+ "N5b": {
+  "file": "N5b_sPN5-72.wav",
+  "stretch": 1.06,
+  "syl": 4,
+  "note": "second half of « Tes colis sont en Chine ? Écris : colis. »; a 0.5 s beat before the keyword",
+  "auto": false
+ },
+ "NC2b": {
+  "file": "NC2b_sPNC2-1.wav",
+  "stretch": 1.098,
+  "syl": 4,
+  "note": "second half of « Tes colis sont en Chine ? Réponds : colis. » (NC2b_sPNC2-4 was heard « coulie » through the phone filter)",
+  "auto": false
+ },
+ "NA": {
+  "file": "NA_s70.wav",
+  "stretch": 1.121,
+  "syl": 4,
+  "note": "every take holds « Ils » (0.35–0.55 s; here 0.43 s, the shortest of the fitting takes); rises on « quoi » (+4.3 st)",
+  "auto": false
+ },
+ "NB": {
+  "file": "NB_s82.wav",
+  "stretch": 1.15,
+  "syl": 8,
+  "note": "run 8 (padding_between 1): « Une voiture | sort du conteneur ! », the beat after the subject lengthened by 0.05 s; ×1.15 (the limit)",
+  "auto": false,
+  "pause_add": {
+   "at": 1.04,
+   "add": 0.05
+  }
+ },
+ "NC": {
+  "file": "NC_sLNC-94.wav",
+  "stretch": 1.139,
+  "syl": 8,
+  "note": "lead-in take (pb .5): « Et » / « les » not held (they are 0.5–0.75 s in the plain takes)",
+  "auto": false
+ },
+ "NDa": {
+  "file": "NDa_s8.wav",
+  "stretch": 1.119,
+  "syl": 7,
+  "note": "pb .25; final rise on « venir » (slope +38 st/s)",
+  "auto": false
+ },
+ "NDb": {
+  "file": "NDb_s16.wav",
+  "stretch": 1.012,
+  "syl": 4,
+  "note": "",
+  "auto": false
+ },
+ "NDw": {
+  "file": "NDw_s2.wav",
+  "stretch": 1.0,
+  "syl": 4,
+  "note": "",
+  "auto": false
+ },
+ "H": {
+  "file": "H_s4.wav",
+  "stretch": 1.067,
+  "syl": 6,
+  "note": "rise on « machine » (+3.5 st)",
+  "auto": false
+ },
+ "S1": {
+  "file": "S1_s65.wav",
+  "stretch": 1.101,
+  "syl": 6,
+  "note": "run 6",
+  "auto": false
+ },
+ "S2": {
+  "file": "S2_s8.wav",
+  "stretch": 1.132,
+  "syl": 5,
+  "note": "no break between « la » and « soulève » (S2_s9 had one)",
+  "auto": false
+ },
+ "S3": {
+  "file": "S3_s1.wav",
+  "stretch": 1.086,
+  "syl": 8,
+  "note": "slow step: « Elle | passe | au-dessus de la rue. »",
+  "auto": false
+ },
+ "S4": {
+  "file": "S4_s10.wav",
+  "stretch": 1.065,
+  "syl": 8,
+  "note": "« Elle arrive devant la | boutique. »: every take pauses before « boutique » (S4_s8 was heard « bouteille » through the phone filter)",
+  "auto": false
+ },
+ "S5": {
+  "file": "S5_sLS5-74.wav",
+  "stretch": 1.0,
+  "syl": 3,
+  "note": "lead-in take: « Et » not held (0.6 s in S5_s2)",
+  "auto": false
+ },
+ "NEa": {
+  "file": "NEa_sPNE-70.wav",
+  "stretch": 1.083,
+  "syl": 7,
+  "note": "first half of « Une machine à faire venir ? Écris : machine. »; strong final rise (slope +60 st/s), beat after « machine »",
+  "auto": false
+ },
+ "NEb": {
+  "file": "NEb_s9.wav",
+  "stretch": 1.049,
+  "syl": 4,
+  "note": "",
+  "auto": false
+ },
+ "NEw": {
+  "file": "NEw_sPNEw-2.wav",
+  "stretch": 1.04,
+  "syl": 4,
+  "note": "second half of « Une machine à faire venir ? Réponds : machine. » (the single-line takes start on the first sample: « R » clipped)",
+  "auto": false
+ },
+ "_method": "rb_crisp"
+}

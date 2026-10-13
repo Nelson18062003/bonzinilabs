@@ -1,0 +1,52 @@
+{
+ "NA": {
+  "file": "NA.wav",
+  "syl": 4,
+  "marked": 1.261,
+  "sps_marked": 3.172086,
+  "span30": 1.26,
+  "sps30": 3.17,
+  "span40": 1.28,
+  "sps40": 3.12
+ },
+ "NB": {
+  "file": "NB.wav",
+  "syl": 8,
+  "marked": 2.55,
+  "sps_marked": 3.137255,
+  "span30": 2.55,
+  "sps30": 3.14,
+  "span40": 2.56,
+  "sps40": 3.12
+ },
+ "NC": {
+  "file": "NC.wav",
+  "syl": 8,
+  "marked": 2.536,
+  "sps_marked": 3.154574,
+  "span30": 2.54,
+  "sps30": 3.15,
+  "span40": 2.57,
+  "sps40": 3.11
+ },
+ "NDa": {
+  "file": "NDa.wav",
+  "syl": 7,
+  "marked": 2.223,
+  "sps_marked": 3.148898,
+  "span30": 2.23,
+  "sps30": 3.14,
+  "span40": 2.27,
+  "sps40": 3.08
+ },
+ "NDb": {
+  "file": "../prod_f3/voice_f3/NDb.wav",
+  "syl": 4,
+  "marked": 1.383,
+  "sps_marked": 2.892263,
+  "span30": 1.25,
+  "sps30": 3.2,
+  "span40": 1.33,
+  "sps40": 3.01
+ }
+}

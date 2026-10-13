@@ -1,0 +1,91 @@
+{
+ "dur": {
+  "RV5": 0.8,
+  "RV4": 3.865
+ },
+ "words": {
+  "RV5": [
+   {
+    "w": "fort",
+    "s": 0.23,
+    "e": 0.39,
+    "p": 0.99
+   },
+   {
+    "w": "c",
+    "s": 0.39,
+    "e": 0.79,
+    "p": 0.213
+   }
+  ],
+  "RV4": [
+   {
+    "w": "Voilà,",
+    "s": 0.2,
+    "e": 0.54,
+    "p": 0.997
+   },
+   {
+    "w": "c",
+    "s": 0.62,
+    "e": 0.7,
+    "p": 1.0
+   },
+   {
+    "w": "'est",
+    "s": 0.7,
+    "e": 0.82,
+    "p": 1.0
+   },
+   {
+    "w": "fort,",
+    "s": 0.82,
+    "e": 0.96,
+    "p": 0.999
+   },
+   {
+    "w": "Bonzini",
+    "s": 1.16,
+    "e": 1.56,
+    "p": 0.992
+   },
+   {
+    "w": "Traini,",
+    "s": 1.56,
+    "e": 1.9,
+    "p": 0.868
+   },
+   {
+    "w": "faites",
+    "s": 2.06,
+    "e": 2.92,
+    "p": 0.998
+   },
+   {
+    "w": "-nous",
+    "s": 2.92,
+    "e": 3.1,
+    "p": 0.991
+   },
+   {
+    "w": "confiance.",
+    "s": 3.1,
+    "e": 3.38,
+    "p": 1.0
+   }
+  ]
+ },
+ "seg": {
+  "RV5": {
+   "clip": "v1",
+   "in": 87.95,
+   "out": 88.75
+  },
+  "RV4": {
+   "clip": "v2",
+   "in": 18.8,
+   "out": 22.665
+  }
+ },
+ "note": "real-voice segments: word times relative to each segment start (tools/voice_words.py from work/transcripts.json); the score places the segments"
+}

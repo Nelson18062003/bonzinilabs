@@ -1,0 +1,56 @@
+{
+ "NDb": {
+  "file": "../prod_f3/voice_f3/NDb.wav",
+  "text": "Écris : voiture.",
+  "dur": 1.383,
+  "syl": 4,
+  "on": 0.03,
+  "stretch": 1.1,
+  "wav_dur": 1.443,
+  "source": "NDb_s16.wav",
+  "stretch_method": "rb_crisp",
+  "words": [
+   {
+    "w": "Écris :",
+    "s": 0.03,
+    "e": 0.541
+   },
+   {
+    "w": "voiture.",
+    "s": 0.769,
+    "e": 1.432
+   }
+  ],
+  "span30": 1.25,
+  "sps30": 3.2,
+  "note": "film 3: re-stretched ×1.1 from NDb_s16.wav (was ×1.012): the energy-measured rate (−30 dB span) was 3.48 syl/s > 3,2",
+  "off": 1.413
+ },
+ "NDw": {
+  "file": "../prod_f3/voice_f3/NDw.wav",
+  "text": "Réponds : voiture.",
+  "dur": 1.394,
+  "syl": 4,
+  "on": 0.03,
+  "stretch": 1.08,
+  "wav_dur": 1.454,
+  "source": "NDw_s2.wav",
+  "stretch_method": "rb_crisp",
+  "words": [
+   {
+    "w": "Réponds :",
+    "s": 0.03,
+    "e": 0.538
+   },
+   {
+    "w": "voiture.",
+    "s": 0.797,
+    "e": 1.422
+   }
+  ],
+  "span30": 1.27,
+  "sps30": 3.15,
+  "note": "film 3: re-stretched ×1.08 from NDw_s2.wav (was ×1.0): the energy-measured rate (−30 dB span) was 3.39 syl/s > 3,2",
+  "off": 1.424
+ }
+}

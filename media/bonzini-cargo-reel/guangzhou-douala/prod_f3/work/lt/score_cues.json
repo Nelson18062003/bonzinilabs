@@ -1,0 +1,528 @@
+{
+ "T": {
+  "NA": 0.15,
+  "NB": 2.1,
+  "RV5": 6.29,
+  "NC": 7.95,
+  "RV4": 10.85,
+  "end": 20.2,
+  "NDa": 15,
+  "NDb": 18.167
+ },
+ "A": {
+  "cover": 0,
+  "rec1": 0.15,
+  "plunge": 1.7,
+  "suck1": 1.9,
+  "P2": 2,
+  "txtB": 2.05,
+  "P3": 3,
+  "P4": 5,
+  "pulseRoll": 6.1,
+  "pulseCut": 6.2,
+  "txtBEnd": 6.17,
+  "P5": 6.4,
+  "fort1": 6.54,
+  "fort1End": 8,
+  "P6": 7.85,
+  "rec2": 7.95,
+  "txtC": 7.9,
+  "musicIn": 7.85,
+  "T0": 10.85,
+  "F": 10.85,
+  "P6F": 11.3,
+  "fort2": 11.71,
+  "musicCut": 11.51,
+  "sigSub": 12.1,
+  "sigSubOut": 14.8,
+  "rec2End": 12.1,
+  "whip": 13.25,
+  "panel": 13.35,
+  "major": 13.95,
+  "pill": 14.85,
+  "freeze": 19.9
+ },
+ "N": 606,
+ "FPS": 30,
+ "variant": "main",
+ "voices": [
+  {
+   "id": "RV5",
+   "clip": "v1",
+   "in": 87.95,
+   "out": 88.75,
+   "t": 6.29,
+   "end": 7.09,
+   "speech": [
+    6.34,
+    6.94
+   ],
+   "src": "vocals",
+   "denoise": 0,
+   "fadeIn": 0.02,
+   "fadeOut": 0.02,
+   "gain": 0,
+   "text": "C\u2019est fort !",
+   "hp": 120,
+   "presence": {
+    "hz": 3000,
+    "db": 2.5
+   },
+   "air": {
+    "src": "accomp",
+    "g": -24
+   }
+  },
+  {
+   "id": "RV4",
+   "clip": "v2",
+   "in": 18.8,
+   "out": 22.665,
+   "t": 10.85,
+   "end": 14.715,
+   "speech": [
+    11.275,
+    14.695
+   ],
+   "src": "vocals",
+   "denoise": 0,
+   "fadeIn": 0.02,
+   "fadeOut": 0.02,
+   "gain": 0,
+   "text": "Bonzini Trading, faites-nous confiance.",
+   "hp": 120,
+   "presence": {
+    "hz": 3000,
+    "db": 2.5
+   },
+   "air": {
+    "src": "accomp",
+    "g": -24
+   }
+  }
+ ],
+ "narr": [
+  {
+   "id": "NA",
+   "text": "Ils filment quoi ?",
+   "t": 0.15,
+   "end": 1.411,
+   "dur": 1.261,
+   "budget": 1.3,
+   "syl": 4,
+   "sps": 3.172086,
+   "file": "NA.wav",
+   "lead": 0.04,
+   "wavDur": 1.341,
+   "stretch": 1.121,
+   "wav": 0.11,
+   "source": "takes.json"
+  },
+  {
+   "id": "NB",
+   "text": "Une voiture sort du conteneur !",
+   "t": 2.1,
+   "end": 4.65,
+   "dur": 2.55,
+   "budget": 2.85,
+   "syl": 8,
+   "sps": 3.137255,
+   "file": "NB.wav",
+   "lead": 0.03,
+   "wavDur": 2.625,
+   "stretch": 1.15,
+   "wav": 2.07,
+   "source": "takes.json"
+  },
+  {
+   "id": "NC",
+   "text": "Et les t\u00e9l\u00e9phones sortent aussi !",
+   "t": 7.95,
+   "end": 10.486,
+   "dur": 2.536,
+   "budget": 2.85,
+   "syl": 8,
+   "sps": 3.154574,
+   "file": "NC.wav",
+   "lead": 0.04,
+   "wavDur": 2.631,
+   "stretch": 1.139,
+   "wav": 7.91,
+   "source": "takes.json"
+  },
+  {
+   "id": "NDa",
+   "text": "Une voiture \u00e0 faire venir ?",
+   "t": 15,
+   "end": 17.223,
+   "dur": 2.223,
+   "budget": 2.85,
+   "syl": 7,
+   "sps": 3.148898,
+   "file": "NDa.wav",
+   "lead": 0.04,
+   "wavDur": 2.358,
+   "stretch": 1.142,
+   "wav": 14.96,
+   "source": "takes.json"
+  },
+  {
+   "id": "NDb",
+   "text": "\u00c9cris : voiture.",
+   "t": 18.167,
+   "end": 19.55,
+   "dur": 1.383,
+   "budget": 1.45,
+   "syl": 4,
+   "sps": 2.892263,
+   "file": "../prod_f3/voice_f3/NDb.wav",
+   "lead": 0.03,
+   "wavDur": 1.443,
+   "stretch": 1.1,
+   "wav": 18.137,
+   "source": "takes.json"
+  }
+ ],
+ "amb": [
+  {
+   "shot": "P1",
+   "clip": "v7",
+   "t0": 0,
+   "t1": 2,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.03,
+   "fadeOut": 0.03,
+   "in": 17,
+   "keys": [
+    [
+     1.8,
+     0
+    ],
+    [
+     2,
+     -12
+    ]
+   ],
+   "lvl": -16,
+   "gz": false,
+   "filt": {
+    "type": "phone",
+    "lo": 300,
+    "hi": 3000,
+    "keys": [
+     [
+      1.55,
+      0
+     ],
+     [
+      1.85,
+      1
+     ]
+    ]
+   }
+  },
+  {
+   "shot": "P2",
+   "clip": "v7",
+   "t0": 2,
+   "t1": 3,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.03,
+   "fadeOut": 0.03,
+   "in": 3.4,
+   "keys": [
+    [
+     2,
+     -4
+    ],
+    [
+     2.12,
+     0
+    ]
+   ],
+   "lvl": -16,
+   "gz": false
+  },
+  {
+   "shot": "P4",
+   "clip": "v7",
+   "t0": 5,
+   "t1": 6.4,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.03,
+   "fadeOut": 0.03,
+   "in": 8.4,
+   "keys": [
+    [
+     6.12,
+     0
+    ],
+    [
+     6.2,
+     -60
+    ]
+   ],
+   "lvl": -16,
+   "gz": false
+  },
+  {
+   "shot": "P6",
+   "clip": "v7",
+   "t0": 7.85,
+   "t1": 11.3,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.03,
+   "fadeOut": 0.03,
+   "in": 24.6,
+   "keys": [],
+   "lvl": -15,
+   "gz": false
+  },
+  {
+   "shot": "P6F",
+   "clip": "v7",
+   "t0": 11.3,
+   "t1": 13.3,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.03,
+   "fadeOut": 0.1,
+   "in": 25.1,
+   "keys": [],
+   "lvl": -17,
+   "gz": false
+  },
+  {
+   "shot": "PN",
+   "clip": "v3",
+   "t0": 13.2,
+   "t1": 20.233333,
+   "mode": "hold",
+   "g": 0,
+   "fadeIn": 0.1,
+   "fadeOut": 0.03,
+   "in": 2.4,
+   "keys": [],
+   "lvl": -18,
+   "gz": true
+  }
+ ],
+ "cues": [
+  {
+   "t": 0.15,
+   "name": "beep",
+   "g": 0.6,
+   "pan": -0.3,
+   "d": 0.06,
+   "note": "REC on the phone (1 kHz, 60 ms)"
+  },
+  {
+   "t": 1.4,
+   "name": "riser",
+   "g": 0.7,
+   "pan": 0,
+   "d": 0.6,
+   "note": "souffle montant into the phone"
+  },
+  {
+   "t": 1.7,
+   "name": "suck",
+   "g": 0.8,
+   "pan": 0,
+   "d": 0.26,
+   "note": "the band is sucked into the screen (reverse whoosh)"
+  },
+  {
+   "t": 2,
+   "name": "whoosh",
+   "g": 0.45,
+   "pan": 0,
+   "d": 0.35,
+   "note": "band glide \u2192 H (enter)"
+  },
+  {
+   "t": 2,
+   "name": "engine",
+   "g": 0.8,
+   "pan": 0,
+   "d": 3.5,
+   "note": "synthetic low engine: idle 2,00\u20133,00, revs with the \u00d72 (3,00\u20135,00), fades as the crowd returns (5,00\u20135,50)"
+  },
+  {
+   "t": 3.3,
+   "name": "creak",
+   "g": 0.5,
+   "pan": -0.2,
+   "d": 0.45,
+   "note": "planks creak under the wheels"
+  },
+  {
+   "t": 3.95,
+   "name": "creak",
+   "g": 0.5,
+   "pan": -0.06999999999999992,
+   "d": 0.45,
+   "note": "planks creak under the wheels"
+  },
+  {
+   "t": 4.55,
+   "name": "creak",
+   "g": 0.5,
+   "pan": 0.04999999999999999,
+   "d": 0.45,
+   "note": "planks creak under the wheels"
+  },
+  {
+   "t": 6.54,
+   "name": "stamp_big",
+   "g": 0.75,
+   "pan": 0,
+   "note": "C\u2019EST FORT ! (1) \u2014 2,5 dB under the signature\u2019s: \u00ab fort \u00bb stays over it"
+  },
+  {
+   "t": 7.85,
+   "name": "whoosh",
+   "g": 0.55,
+   "pan": 0,
+   "d": 0.35,
+   "note": "band glide \u2192 M"
+  },
+  {
+   "t": 7.95,
+   "name": "beep",
+   "g": 0.6,
+   "pan": -0.3,
+   "d": 0.06,
+   "note": "REC on the pink phone"
+  },
+  {
+   "t": 10.85,
+   "name": "whoosh",
+   "g": 0.45,
+   "pan": 0,
+   "d": 0.35,
+   "note": "band out"
+  },
+  {
+   "t": 11.71,
+   "name": "stamp_big",
+   "g": 1,
+   "pan": 0,
+   "note": "C\u2019EST FORT ! (2, signature)"
+  },
+  {
+   "t": 13.15,
+   "name": "whip",
+   "g": 0.8,
+   "pan": 0,
+   "d": 0.2,
+   "note": "fil\u00e9"
+  },
+  {
+   "t": 13.35,
+   "name": "tonk",
+   "g": 0.8,
+   "pan": 0,
+   "note": "the violet plate lands"
+  },
+  {
+   "t": 13.35,
+   "name": "bonzini_sig",
+   "g": 0.85,
+   "pan": 0,
+   "note": "balafon signature"
+  },
+  {
+   "t": 14.85,
+   "name": "pop",
+   "g": 0.6,
+   "pan": 0,
+   "note": "the amber pill"
+  }
+ ],
+ "music": {
+  "bpm": 100,
+  "beat": 0.6,
+  "grid0": 7.85,
+  "prog": "major",
+  "sections": [
+   {
+    "t0": 7.85,
+    "t1": 11.51,
+    "level": "bass",
+    "db": -18,
+    "duckUnderVoice": -26,
+    "prog": "major",
+    "shaker": true,
+    "grid0": 7.85,
+    "note": "the groove comes in with the phones (7,85)"
+   },
+   {
+    "t0": 13.95,
+    "t1": 19.9,
+    "level": "full",
+    "db": -16,
+    "duckUnderVoice": -22,
+    "prog": "major",
+    "shaker": true,
+    "congas": true,
+    "balafon": true,
+    "grid0": 13.95,
+    "note": "back in major after the balafon signature; button before the freeze"
+   }
+  ],
+  "hits": [
+   7.85,
+   13.95
+  ],
+  "stops": [
+   [
+    11.51,
+    13.95
+   ]
+  ],
+  "end": 19.9,
+  "duck": {
+   "voice": 12,
+   "amb": 9
+  },
+  "ambOnly": [
+   19.9,
+   20.2
+  ],
+  "pulse": {
+   "t0": 0.3,
+   "t1": 6.2,
+   "db": -24,
+   "bpm": [
+    [
+     0.3,
+     84
+    ],
+    [
+     3,
+     84
+    ],
+    [
+     5,
+     150
+    ],
+    [
+     6.1,
+     150
+    ]
+   ],
+   "roll": [
+    6.1,
+    6.2
+   ],
+   "note": "pulsation grave \u221224 dB from 0,30, accelerates with the \u00d72, rolls at 6,10, stops at 6,20 (0,08 s of silence before RV5)"
+  },
+  "note": "no makossa before the phones; coup\u00e9e net 0,2 s avant le 2e C\u2019EST FORT ! ; reprise en majeur (\u00a73.11)"
+ },
+ "dur": 20.2
+}

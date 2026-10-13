@@ -1,0 +1,125 @@
+{
+ "mix": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/rush2/prod_f3/work/lt/mix.wav",
+ "band": [
+  300.0,
+  3400.0
+ ],
+ "model": "small",
+ "rows": [
+  {
+   "id": "NA",
+   "kind": "narrator",
+   "text": "Ils filment quoi ?",
+   "heard": "Il filme quoi",
+   "ok": 1,
+   "n": 3,
+   "pct": 33,
+   "missed": [
+    "ils",
+    "filment"
+   ],
+   "span": [
+    0.15,
+    1.411
+   ]
+  },
+  {
+   "id": "NB",
+   "kind": "narrator",
+   "text": "Une voiture sort du conteneur !",
+   "heard": "Une voiture sort du conteneur.",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    2.1,
+    4.65
+   ]
+  },
+  {
+   "id": "NC",
+   "kind": "narrator",
+   "text": "Et les téléphones sortent aussi !",
+   "heard": "Et les téléphones sortent aussi.",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    7.95,
+    10.486
+   ]
+  },
+  {
+   "id": "NDa",
+   "kind": "narrator",
+   "text": "Une voiture à faire venir ?",
+   "heard": "! Une voiture à faire venir",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    15,
+    17.223
+   ]
+  },
+  {
+   "id": "NDb",
+   "kind": "narrator",
+   "text": "Écris : voiture.",
+   "heard": "écrits voitures.",
+   "ok": 1,
+   "n": 2,
+   "pct": 50,
+   "missed": [
+    "ecri"
+   ],
+   "span": [
+    18.167,
+    19.55
+   ]
+  },
+  {
+   "id": "RV5",
+   "kind": "real voice",
+   "text": "C’est fort !",
+   "heard": "'est fort !",
+   "ok": 1,
+   "n": 2,
+   "pct": 50,
+   "missed": [
+    "cest"
+   ],
+   "span": [
+    6.34,
+    6.94
+   ]
+  },
+  {
+   "id": "RV4",
+   "kind": "real voice",
+   "text": "Bonzini Trading, faites-nous confiance.",
+   "heard": "fort ! Banzini Freddy ! Faites -nous confiance !",
+   "ok": 3,
+   "n": 5,
+   "pct": 60,
+   "missed": [
+    "bonzini",
+    "trading"
+   ],
+   "span": [
+    12.175,
+    14.695
+   ]
+  }
+ ],
+ "totals": {
+  "narrator": 85.0,
+  "real voice": 57.1
+ },
+ "pass_": false,
+ "asr": "Il filme quoi ? Une voiture sort du conteneur. C 'est fort ! Et les téléphones sortent aussi. Voilà c 'est fort ! Banzini Freddy ! Faites -nous confiance ! Une voiture à faire venir écrits voitures.",
+ "normalisations": []
+}

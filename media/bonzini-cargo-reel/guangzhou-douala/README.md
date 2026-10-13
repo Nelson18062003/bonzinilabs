@@ -10,8 +10,8 @@ Série de 4 vidéos verticales (1080 × 1920, 30 i/s) remontées à partir de 44
 |---|---|---|
 | 1 « LÀ-BAS, ON CHARGE. ICI, ON REÇOIT. » (héros, écran coupé par la bande-route) | 36,7 s | livré (`prod_f1`) |
 | 2 « DÉPOSÉ. REÇU. » (statut WhatsApp, variante `cut` de `prod_f1`) | 19,2 s | livré |
-| 3 « LA VOITURE SORT… ET LES TÉLÉPHONES AUSSI ! » | ≈ 20 s | en production (`prod_f3`) |
-| 4 « ELLE VA OÙ, CETTE MACHINE ? » | ≈ 25 s | en production (`prod_f4`) |
+| 3 « LA VOITURE SORT… ET LES TÉLÉPHONES AUSSI ! » (fins VOITURE, `wa`, `colis`) | 20,2 s | livré (`prod_f3`) |
+| 4 « ELLE VA OÙ, CETTE MACHINE ? » (fins MACHINE, `wa`) | 24,7 s | livré (`prod_f4`) |
 
 ## Documents
 - `BRIEF.md` : la demande, le journal des plans, ce qui est dit (horodaté), le fond du message, ce qu'on peut affirmer ou
@@ -23,9 +23,10 @@ Série de 4 vidéos verticales (1080 × 1920, 30 i/s) remontées à partir de 44
   avec les mots horodatés. `work/index.json` : l'index des clips.
 
 ## Fabrication
-- `prod_f1/` : le moteur multi-clips (Canvas 2D rendu dans Chromium, déterministe, une seule partition pour l'image et
-  le son) et la partition des films 1 et 2. Commandes, contrats des modules et historique des relectures :
-  `prod_f1/README.md` et `prod_f1/MODULES.md`.
+- `prod_f1/`, `prod_f3/`, `prod_f4/` : le moteur multi-clips (Canvas 2D rendu dans Chromium, déterministe, une seule partition pour l'image et
+  le son) et la partition de chaque film (films 1 et 2 dans `prod_f1`). Commandes, contrats des modules et historique des
+  relectures : `README.md` et `MODULES.md` de chaque dossier. `prod_f4` porte les options les plus récentes des modules
+  communs (`G.band.lock`, `keep` des flous) ; elles sont inactives tant qu'une partition ne les active pas.
 - `voice/` : les 23 phrases de la narratrice des 4 films (Kyutai, réglage « diction claire », ≤ 3,2 syllabes/s telles que
   jouées), `takes.json` et `words.json`, plus les temps mesurés de la vraie voix dans `real_words.json`.
 - `tools/ingest.py` : importe les clips envoyés (sans doublon). `tools/transcribe_more.py` : transcription.

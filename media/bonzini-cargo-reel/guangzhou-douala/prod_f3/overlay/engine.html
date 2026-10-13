@@ -1,0 +1,106 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Multi-clip engine (rush2). The rush1 engine generalised to an EDL of many clips: served by render.mjs on a private
+     origin (http://bz.local/, Playwright routes → no tainted canvas). The footage frames are decoded ON DEMAND into an
+     LRU cache keyed « clip/f » by window.PRELOAD(times) before each frame (it asks SCORE.need(t) for every motion-blur
+     sub-sample), so the draw stays synchronous and pure: window.clipImg(clip, f). The cache is sized for transitions and
+     split screens where 2–3 clips show at once (+ the blended neighbour frames of a slow motion). Clear colour = black;
+     the film grain (window.COMPOSE_GRAIN, 50_compose.js) is laid over everything ONCE per frame after the accumulation. -->
+<style>
+@font-face { font-family: Satoshi; font-weight: 400; src: url(../assets/fonts/Satoshi-400.woff2); }
+@font-face { font-family: Satoshi; font-weight: 500; src: url(../assets/fonts/Satoshi-500.woff2); }
+@font-face { font-family: Satoshi; font-weight: 700; src: url(../assets/fonts/Satoshi-700.woff2); }
+@font-face { font-family: Satoshi; font-weight: 900; src: url(../assets/fonts/Satoshi-900.woff2); }
+@font-face { font-family: Stencil; font-weight: 100 900; src: url(../assets/fonts/BigShouldersStencilDisplay.ttf); }
+@font-face { font-family: Brico; font-weight: 200 800; src: url(../assets/fonts/BricolageGrotesque.ttf); }
+@font-face { font-family: Martian; font-weight: 100 800; src: url(../assets/fonts/MartianMono.ttf); }
+@font-face { font-family: Shantell; font-weight: 300 800; src: url(../assets/fonts/ShantellSans.ttf); }
+@font-face { font-family: CaveatBrush; src: url(../assets/fonts/CaveatBrush-400.woff2); }
+@font-face { font-family: Kalam; font-weight: 400; src: url(../assets/fonts/Kalam-400.woff2); }
+@font-face { font-family: Kalam; font-weight: 700; src: url(../assets/fonts/Kalam-700.woff2); }
+@font-face { font-family: PatrickHand; src: url(../assets/fonts/PatrickHand-400.woff2); }
+@font-face { font-family: GochiHand; src: url(../assets/fonts/GochiHand-400.woff2); }
+@font-face { font-family: Bangers; src: url(../assets/fonts/Bangers-400.woff2); }
+@font-face { font-family: DMSans; font-weight: 100 1000; src: url(../assets/fonts/DMSans.ttf); }
+html, body { margin: 0; background: #000; overflow: hidden; }
+canvas { display: block; }
+</style></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script src="kit.js"></script>
+<script>
+// Motion blur: MB sub-frames spread over a 180° shutter (SCORE.shutter: never across a hard cut), averaged (running mean).
+window.MB = 1;
+const acc = document.createElement('canvas'); acc.width = W; acc.height = H;
+window.setup = (timeline, logo, extra) => {
+  TLD = timeline; Object.assign(window, extra || {});
+  const pieces = logo.map(p => ({ fill: p.fill, path: new Path2D(p.d), cy: p.cy,
+    role: p.fill.toUpperCase() === '#F3A745' ? 'amber' : p.fill.toUpperCase() === '#FE560D' ? 'orange' : 'violet' }));
+  const vi = pieces.filter(p => p.role === 'violet').sort((a, b) => a.cy - b.cy);
+  if (vi[0]) vi[0].role = 'wingTop'; if (vi[1]) vi[1].role = 'wingBot';
+  LOGO = pieces; buildTextures(); return SCENES.map(s => s.id);
+};
+/** the sub-sample times of film frame n (the same formula render.mjs uses to preload) */
+window.subTimes = n => (window.SCORE && window.SCORE.shutter) ? window.SCORE.shutter(n, window.MB) : [n / FPS];
+function drawAll(t, n) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  for (const s of SCENES) { if (s.when && !s.when(t)) continue; ctx.save(); s.draw(t, n); ctx.restore(); }
+}
+const filmGrain = n => { if (typeof window.COMPOSE_GRAIN === 'function') { ctx.save(); window.COMPOSE_GRAIN(n); ctx.restore(); } };
+// review 2: the CRISP pass — type, subtitles, badges and the logo are drawn ONCE, at the frame's own time n / FPS, over the
+// motion-blur accumulation (the band, the windows and the footage keep their blur; the text never smears into streaks)
+const crisp = n => { if (typeof window.COMPOSE_CRISP === 'function') { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; window.COMPOSE_CRISP(n / FPS, n); ctx.restore(); } };
+window.renderFrame = (n) => {
+  const main = cv.getContext('2d');
+  if (window.MB <= 1) { ctx = main; drawAll(n / FPS, n); crisp(n); filmGrain(n); return true; }
+  const a = acc.getContext('2d'); a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, W, H);
+  const ts = window.subTimes(n);
+  for (let k = 0; k < ts.length; k++) {
+    ctx = main; drawAll(Math.max(0, ts[k]), n);         // frame 0 = the cover: no sub-sample before t = 0
+    a.globalAlpha = 1 / (k + 1); a.drawImage(cv, 0, 0);
+  }
+  ctx = main; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(acc, 0, 0); crisp(n); filmGrain(n);
+  return true;
+};
+
+// ---------------- footage frames: on-demand decode into an LRU of ImageBitmaps keyed « clip/f » ----------------
+// max entries AND a pixel budget (a 1620×2880 frame is 4.7 MP): what the current frame needs is never evicted.
+window.CLIPCACHE = { cache: new Map(), max: 40, maxPx: 160e6, px: 0, miss: 0, loads: 0, fails: 0, peak: 0, peakPx: 0 };
+const pad4 = f => String(f).padStart(4, '0');
+const keyOf = (clip, f) => `${clip}/${f}`;
+async function decodeFrame(clip, f) {
+  const u = `../assets/clips/${clip}/f_${pad4(f)}.jpg`;
+  for (let k = 0; k < 3; k++) {
+    try { const r = await fetch(u); if (r.ok) { const bm = await createImageBitmap(await r.blob()); if (bm.width > 0) return bm; } } catch (e) { }
+    await new Promise(r => setTimeout(r, 100 * (k + 1)));
+  }
+  return null;
+}
+/** decode the frames SCORE.need(t) names for these film times; evict the least recently used beyond the limits */
+window.PRELOAD = async (times) => {
+  const C = window.CLIPCACHE, need = new Map();
+  for (const t of times) for (const q of window.SCORE.need(Math.max(0, t))) need.set(keyOf(q.clip, q.f), q);
+  const jobs = [];
+  for (const [k, q] of need) {
+    if (C.cache.has(k)) { const im = C.cache.get(k); C.cache.delete(k); C.cache.set(k, im); continue; }   // touch (LRU)
+    jobs.push(decodeFrame(q.clip, q.f).then(im => { C.loads++; if (!im) { C.fails++; return; } C.cache.set(k, im); C.px += im.width * im.height; }));
+  }
+  await Promise.all(jobs);
+  for (const k of [...C.cache.keys()]) {
+    if (C.cache.size <= C.max && C.px <= C.maxPx) break;
+    if (need.has(k)) continue;
+    const im = C.cache.get(k); C.px -= im.width * im.height; C.cache.delete(k); try { im.close(); } catch (e) { }
+  }
+  C.peak = Math.max(C.peak, C.cache.size); C.peakPx = Math.max(C.peakPx, C.px);
+  return need.size;
+};
+/** synchronous lookup for the draw; a miss (never after PRELOAD) takes the nearest cached frame of the same clip */
+window.clipImg = (clip, f) => {
+  const C = window.CLIPCACHE, im = C.cache.get(keyOf(clip, f)); if (im) return im;
+  C.miss++; let best = null, bd = 1e9;
+  for (const [k, v] of C.cache) { const [c, g] = k.split('/'); if (c !== clip) continue; const d = Math.abs(+g - f); if (d < bd) { bd = d; best = v; } }
+  return best;
+};
+</script>
+</body></html>

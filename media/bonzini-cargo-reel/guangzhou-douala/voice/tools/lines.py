@@ -19,7 +19,7 @@ LINES = {
     'NDb':  ("Écris : voiture.",                      4, 18.25, 19.55, 'film 3', ['Écris', 'voiture']),
     'NDw':  ("Réponds : voiture.",                    4, 18.25, 19.55, 'film 3 wa', ['Réponds', 'voiture']),
     'H':    ("Elle va où, cette machine ?",           6, 0.05, 2.25, 'film 4', ['va où', 'machine']),
-    'S1':   ("Elle sort du conteneur.",               6, 2.40, 4.35, 'film 4', ['sort', 'conteneur']),
+    'S1':   ("Elle sort du conteneur.",               6, 2.32, 4.33, 'film 4', ['sort', 'conteneur']),
     'S2':   ("La grue la soulève.",                   5, 4.75, 6.35, 'film 4', ['grue', 'soulève']),
     'S3':   ("Elle passe au-dessus de la rue.",       8, 6.90, 9.75, 'film 4', ['passe', 'dessus', 'rue']),
     'S4':   ("Elle arrive devant la boutique.",       8, 10.15, 12.90, 'film 4', ['arrive', 'devant', 'boutique']),
