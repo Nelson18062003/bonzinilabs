@@ -1,0 +1,189 @@
+{
+ "mix": "/tmp/claude-0/-home-user-bonzinilabs/5fd5d24c-f443-5c7d-8c0d-137b9d5733f0/scratchpad/rush2/prod_f1/audio/mix.wav",
+ "band": [
+  300.0,
+  3400.0
+ ],
+ "model": "small",
+ "rows": [
+  {
+   "id": "N1",
+   "kind": "narrator",
+   "text": "Là-bas, en Chine, on charge.",
+   "heard": "Là -bas, en Chine, on charge.",
+   "ok": 6,
+   "n": 6,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    0.2,
+    2.283
+   ]
+  },
+  {
+   "id": "N2",
+   "kind": "narrator",
+   "text": "Ici, à Douala, on reçoit.",
+   "heard": "Ici, à Douala, on reçoit.",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    2.95,
+    5.485
+   ]
+  },
+  {
+   "id": "N3a",
+   "kind": "narrator",
+   "text": "Un conteneur part.",
+   "heard": "Un conteneur part.",
+   "ok": 3,
+   "n": 3,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    6.8,
+    8.408
+   ]
+  },
+  {
+   "id": "N3b",
+   "kind": "narrator",
+   "text": "Un autre arrive.",
+   "heard": "Un autre arrive.",
+   "ok": 3,
+   "n": 3,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    8.8,
+    10.067
+   ]
+  },
+  {
+   "id": "N4",
+   "kind": "narrator",
+   "text": "Ici, une autre voiture arrive.",
+   "heard": "Ici, une autre voiture arrive.",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    15.2,
+    18.016
+   ]
+  },
+  {
+   "id": "N5a",
+   "kind": "narrator",
+   "text": "Tes colis sont en Chine ?",
+   "heard": "Tes colis sont en Chine,",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    32.45,
+    34.369
+   ]
+  },
+  {
+   "id": "N5b",
+   "kind": "narrator",
+   "text": "Écris : colis.",
+   "heard": "écrit colis.",
+   "ok": 2,
+   "n": 2,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    34.719,
+    36.05
+   ]
+  },
+  {
+   "id": "RV2",
+   "kind": "real voice",
+   "text": "Voilà, ce véhicule doit être chargé dans le conteneur.",
+   "heard": "Voilà ce véhicule doit être chargé dans le conteneur.",
+   "ok": 9,
+   "n": 9,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    11.31,
+    14.485
+   ]
+  },
+  {
+   "id": "RV1A",
+   "kind": "real voice",
+   "text": "Nous disons comme ça : merci déjà…",
+   "heard": "Nous avons comme ça, merci déjà",
+   "ok": 5,
+   "n": 6,
+   "pct": 83,
+   "missed": [
+    "dison"
+   ],
+   "span": [
+    19.212,
+    20.97
+   ]
+  },
+  {
+   "id": "RV1B",
+   "kind": "real voice",
+   "text": "…aux clients qui nous ont fait confiance.",
+   "heard": "aux clients qui nous ont fait confiance.",
+   "ok": 7,
+   "n": 7,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    21.472,
+    23.14
+   ]
+  },
+  {
+   "id": "RV3",
+   "kind": "real voice",
+   "text": "Voilà, directement déposé, directement reçu.",
+   "heard": "Voilà, directement déposé, directement reçu.",
+   "ok": 5,
+   "n": 5,
+   "pct": 100,
+   "missed": [],
+   "span": [
+    23.9,
+    27.8
+   ]
+  },
+  {
+   "id": "RV4",
+   "kind": "real voice",
+   "text": "Bonzini Trading, faites-nous confiance.",
+   "heard": "fort ! Benzini treaty ! Faites -nous confiance !",
+   "ok": 3,
+   "n": 5,
+   "pct": 60,
+   "missed": [
+    "bonzini",
+    "trading"
+   ],
+   "span": [
+    29.625,
+    32.145
+   ]
+  }
+ ],
+ "totals": {
+  "narrator": 100.0,
+  "real voice": 90.6
+ },
+ "pass_": true,
+ "asr": "Là -bas, en Chine, on charge. Ici, à Douala, on reçoit. Un conteneur part. Un autre arrive. Voilà ce véhicule doit être chargé dans le conteneur. Ici, une autre voiture arrive. Nous avons comme ça, merci déjà aux clients qui nous ont fait confiance. Voilà, directement déposé, directement reçu. Voilà c 'est fort ! Benzini treaty ! Faites -nous confiance ! Tes colis sont en Chine, écrit colis."
+}

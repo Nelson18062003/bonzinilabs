@@ -1,0 +1,8 @@
+listen test — audio_cut/mix.wav · phone band 300–3400 Hz · faster-whisper large-v3 (beam 1, no context)
+  N1    narrator    100%  « Là-bas, en Chine, on charge. »  →  « Là -bas, en Chine, on charge. »
+  N2    narrator    100%  « Ici, à Douala, on reçoit. »  →  « Ici, à Douala, on reçoit. »
+  NCa   narrator    100%  « Tes colis sont en Chine ? »  →  « Tes colis sont en Chine ? »
+  NCb   narrator    100%  « Réponds : colis. »  →  « Réponds, colis. »
+  RV3   real voice  100%  « Voilà, directement déposé, directement reçu. »  →  « Voilà, directement déposé, directement reçu. »
+  RV4   real voice   60%  « Bonzini Trading, faites-nous confiance. »  →  « bon zuni, Freddy. Faites -nous confiance. Tes »   missed ['bonzini', 'trading']
+  narrator: 18/18 words = 100.0 % · real voice: 8/10 words = 80.0 %  →  FAIL (≥ 90 % each)

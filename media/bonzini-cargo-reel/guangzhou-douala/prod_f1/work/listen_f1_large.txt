@@ -1,0 +1,14 @@
+listen test — audio/mix.wav · phone band 300–3400 Hz · faster-whisper large-v3 (beam 1, no context)
+  N1    narrator    100%  « Là-bas, en Chine, on charge. »  →  « Là -bas, en Chine, on charge. »
+  N2    narrator    100%  « Ici, à Douala, on reçoit. »  →  « Ici, à Douala, on reçoit. »
+  N3a   narrator    100%  « Un conteneur part. »  →  « Un conteneur part. Un »
+  N3b   narrator    100%  « Un autre arrive. »  →  « Un autre arrive. »
+  N4    narrator    100%  « Ici, une autre voiture arrive. »  →  « Ici, une autre voiture arrive. »
+  N5a   narrator    100%  « Tes colis sont en Chine ? »  →  « Tes colis sont en Chine. »
+  N5b   narrator    100%  « Écris : colis. »  →  « Écrit Coli. »
+  RV2   real voice  100%  « Voilà, ce véhicule doit être chargé dans le conteneur. »  →  « Voilà, ce véhicule doit être chargé dans le conteneur. »
+  RV1A  real voice  100%  « Nous disons comme ça : merci déjà… »  →  « Nous disons comme ça merci déjà aux »
+  RV1B  real voice   86%  « …aux clients qui nous ont fait confiance. »  →  « clients qui nous ont fait confiance. »   missed ['aux']
+  RV3   real voice  100%  « Voilà, directement déposé, directement reçu. »  →  « Voilà, directement déposé, directement reçu. »
+  RV4   real voice   80%  « Bonzini Trading, faites-nous confiance. »  →  « Bonzini, Freddy. Faites -nous confiance. Tes »   missed ['trading']
+  narrator: 29/29 words = 100.0 % · real voice: 30/32 words = 93.8 %  →  PASS (≥ 90 % each)

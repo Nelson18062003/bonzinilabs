@@ -1,0 +1,16 @@
+QA — prod_f1 · variant cut · T.end 19.202 s · N 576 frames · 8 shots
+  ok    picture: 8 shots — crops inside the sources, must-hide regions out of frame or covered, transitions linked
+  ok    stickers: 0 mask pixel (dilated 8 px) in 3024 crop windows of v1–v3 (every sub-sample at --mb 6) — source extents: G1 x 188–464 y 319–541 · G2 x 188–464 y 395–545 · G10 x 188–464 y 326–614 · PN x -0–464 y 25–262
+  ok    blurs: 10 gaussian hides baked (v1 g7_sim/g7_u/g7_30a/g8_en/card_plate/g9_so · v17 v17_liujo · v2 v2_hub/v2_hub2 · v7 v7_toyota)
+  ok    frames: all 716 footage frames the render needs (--mb 6) are on disk (v1 253 · v31 184 · v40 160 · v38 55 · v3 64)
+  ok    voices: RV3 speech 6.450–10.350 · RV4 speech 11.275–14.695 — no overlap
+  ok    type: 12 text boxes inside the safe zones (y ≥ 150, ≤ 1540, x ≤ 960 for y 900–1560); violet only with Bonzini
+  ok    type: at most 3 text blocks + the mention at once (at 10.033)
+  ok    hygiene: no Math.random, no ctx.filter in the scenes
+  ok    contract: browser path (window.TIMING / CLIPS) = node path — N 576, 7 T, 19 A, 8 shots
+  ok    narrator: N1 0.20–2.28 2.88 syl/s (N1.wav) · N2 2.95–5.49 3.16 syl/s (N2.wav) · NCa 15.00–16.92 3.13 syl/s (N5a.wav) · NCb 17.27–18.55 3.12 syl/s (NC2b.wav) — ≤ 3,2 syl/s, in budget, no overlap
+  ok    outputs: audio_cut/mix.wav built on this very score (score_cues.json = the live T, A, voices, narrator, ambience, cues, music)
+  ok    outputs: audio_cut/mix.wav = 19.2020 s = T.end, 48 kHz stereo 24-bit
+  ok    outputs: -14.01 LUFS, TP -1.3 dBTP, real voice untouched true
+  ok    outputs: listen test (phone band 300–3400 Hz, faster-whisper small): narrator 94.4 % · real voice 90 %
+PASSED (0 warning(s))

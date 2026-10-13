@@ -1,0 +1,2111 @@
+[
+ {
+  "id": "v9",
+  "summary": "Un homme en tee-shirt beige montre du doigt le plateau vide d'une dépanneuse, puis un panoramique rapide vers la droite révèle le conteneur bleu ouvert, chargé, sur sa remorque, dans une rue de Douala.",
+  "orientation_note": "Droit, paysage 1280x720 (rot 0). Horizon à peu près droit, léger penché vers la droite au début.",
+  "quality": "Compression WhatsApp 720p, correcte. Ciel couvert bien exposé. Assez net de 0 à 1,5 s. Filé et flou de bougé pendant le panoramique (1,6 à 2,6 s), légère mollesse à 2,8 s. Plan final exploitable mais court (environ 0,8 s stable).",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.6,
+    "desc": "Homme en tee-shirt beige au premier plan gauche, de trois quarts, visage en gros plan moyen (net), qui pointe l'index droit vers le plateau rouge-jaune écaillé de la dépanneuse en diagonale vers la droite. Fond : façades peintes bleu et rouge, portes en tôle, une femme en rouge assise devant une porte au centre, deux hommes assis à gauche (maillot bleu à inscription jaune, tee-shirt blanc-rouge). Parasol orange « Orange » en haut à gauche. Caméra quasi fixe, petite dérive à droite."
+   },
+   {
+    "t0": 1.6,
+    "t1": 2.4,
+    "desc": "Panoramique rapide vers la droite le long du plateau : l'homme sort du cadre par la gauche (à 2,0 s seule sa main reste visible), les portes ouvertes du conteneur entrent par le bord droit. Filé."
+   },
+   {
+    "t0": 2.4,
+    "t1": 3.3,
+    "desc": "Le cadre se pose : plateau de la dépanneuse en diagonale au premier plan (bas gauche vers centre), conteneur bleu portes ouvertes sur sa semi-remorque à droite, cartons jaunes sur palettes, ballots jaunes, longs rouleaux blancs emballés et caisse en bois visibles à l'intérieur. Rue en terre, trottoir pavé en bas à droite. Légère mollesse."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Le geste qui désigne le plateau : visage expressif et net, on sent l'explication « c'est là que ça va »",
+    "framing": "homme à gauche (tiers gauche), main pointée au centre, plateau en diagonale vers la droite"
+   },
+   {
+    "t": 3,
+    "why": "Révélation du conteneur ouvert et chargé, au bout du plateau : bon plan d'arrivée",
+    "framing": "conteneur dans le tiers droit, plateau en diagonale de bas gauche vers le conteneur"
+   }
+  ],
+  "people": "Un homme en tee-shirt beige (le même que dans v10 et v11), visage en gros plan moyen et net de 0 à 1,5 s, attitude calme et non contrariée. Au fond, à distance moyenne : une femme en haut rouge assise devant une porte, deux hommes assis (maillot bleu, tee-shirt blanc-rouge), visages petits. Rien de sensible.",
+  "brands_text": "Parasol de la marque « Orange » (opérateur télécom), en haut à gauche de 0 à 1,6 s, logo lisible. Conteneur bleu dont l'inscription latérale n'est pas lisible ici (MAERSK lisible dans v10). Maillot bleu à inscription jaune (illisible) sur un homme assis au fond. Aucune plaque, aucun numéro de téléphone.",
+  "audio_note": "Plus fort de 0 à 1 s (environ -21 dB RMS, probablement une voix proche, sans doute l'homme qui explique), puis ambiance de rue plus calme.",
+  "story_role": "Arrivée du conteneur, plan de situation : de la dépanneuse à plateau vers le conteneur ouvert. Variante courte de v10 et v11."
+ },
+ {
+  "id": "v10",
+  "summary": "En partant d'un cadre penché sur la cabine et la grue hydraulique d'une vieille dépanneuse, la caméra suit l'homme en beige appuyé au plateau puis pivote vers la droite jusqu'au conteneur MAERSK ouvert sur sa remorque.",
+  "orientation_note": "Paysage 1280x720 (rot 0), mais fortement penché (environ 15 à 20 degrés, angle hollandais) de 0 à environ 3,5 s. Horizon redressé à partir d'environ 4,5 s.",
+  "quality": "720p WhatsApp. Exposition correcte, ciel couvert. Penché et un peu tremblé dans la première moitié. Filé pendant le panoramique (3,5 à 5 s). Plan final 5 à 7,13 s stable et net : la meilleure image du conteneur parmi v9 à v11.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 0.9,
+    "desc": "Plan penché, rapproché sur l'avant de la dépanneuse : cabine jaune et grise usée (sans portière, volant visible), pot d'échappement vertical, flexibles et vérins de la grue au centre. Bras de grue gris-rouge à droite, homme en beige au bord droit (épaule, profil). Parasol « Orange » en haut à droite."
+   },
+   {
+    "t0": 0.9,
+    "t1": 2.2,
+    "desc": "Toujours penché, la caméra glisse à droite : l'homme en beige se retourne vers l'objectif, visage en plan rapproché à droite du cadre (net vers 1,2 s), main posée sur le plateau. Bras de grue marqué « GO-ME » au centre."
+   },
+   {
+    "t0": 2.2,
+    "t1": 3.5,
+    "desc": "Cadre penché, plus large : l'homme au centre gauche, bras tendu sur le rebord du plateau, regard hors champ à droite. Au fond, maisons bleues et rouges, parasol Orange, deux hommes assis, une femme en rouge à une porte."
+   },
+   {
+    "t0": 3.5,
+    "t1": 5,
+    "desc": "Panoramique vers la droite le long du plateau, redressement de l'horizon. L'homme sort par la gauche (seule sa main reste visible vers 4,5 s), le conteneur entre par la droite. Filé."
+   },
+   {
+    "t0": 5,
+    "t1": 7.13,
+    "desc": "Plan large stable : plateau de la dépanneuse en diagonale au premier plan (de bas gauche vers le centre), conteneur bleu portes ouvertes sur sa semi-remorque à droite, cartons sur palettes avec étiquettes blanches, ballots jaunes, rouleaux blancs, caisse en bois, inscription « MAERSK » lisible sur le flanc. Rue en terre et trottoir pavé à droite, rue animée au fond à droite (parasol rouge, deux-roues), un piéton entre au bord droit vers 6,8 s."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 6.2,
+    "why": "Le plus beau plan d'établissement du conteneur ouvert et chargé, horizon droit, net, MAERSK lisible",
+    "framing": "conteneur sur la moitié droite, plateau en diagonale à gauche, trottoir en bas à droite"
+   },
+   {
+    "t": 1.2,
+    "why": "L'homme se retourne vers la caméra devant la grue de la dépanneuse : moment humain, ambiance atelier",
+    "framing": "homme sur le tiers droit, visage net, mécanique de grue à gauche ; cadre penché"
+   },
+   {
+    "t": 0.3,
+    "why": "Texture : gros plan sur la vieille cabine et l'hydraulique, utile en plan de coupe",
+    "framing": "cabine jaune à gauche, vérins au centre, cadre penché"
+   }
+  ],
+  "people": "Le même homme en tee-shirt beige, visage en plan rapproché net vers 1 à 2 s (il regarde vers l'objectif), attitude neutre. Au fond, petits et lointains : deux hommes assis (maillot bleu à inscription jaune, tee-shirt blanc-rouge), une femme en rouge assise à une porte, un piéton partiel au bord droit en fin de plan. Rien de sensible.",
+  "brands_text": "« MAERSK » en grandes lettres blanches sur le flanc bleu du conteneur, lisible de 5 à 7,13 s (moitié droite). Parasol « Orange » en haut à droite de 0 à 2 s et en haut à gauche de 2,2 à 4 s. « GO-ME » peint au pochoir sur le bras de grue (centre, 0,9 à 2 s), probablement un nom ou une marque d'atelier, sens incertain. Aucune plaque lisible, aucun numéro de téléphone.",
+  "audio_note": "Ambiance de rue stable (environ -29 dB RMS), sans pic net. Probablement des voix lointaines.",
+  "story_role": "Arrivée du conteneur et décor : la dépanneuse à plateau, qui sert aux voitures, garée devant le conteneur MAERSK ouvert. Meilleur plan large paysage du conteneur."
+ },
+ {
+  "id": "v11",
+  "summary": "Version verticale du même mouvement : gros plan sur l'avant de la dépanneuse et sa grue, l'homme en beige appuyé au plateau avec un spectateur coiffé d'un kufi au premier plan, puis panoramique jusqu'au conteneur ouvert.",
+  "orientation_note": "Portrait 720x1280 (rot -90, appliquée par ffmpeg), affiché droit. Pas de contenu paysage incrusté. Légère inclinaison pendant le panoramique.",
+  "quality": "720p vertical WhatsApp. Net sur la cabine (0 à 0,8 s) et sur le plan final (4,5 à 5,67 s). Flou de bougé pendant les panoramiques (0,9 à 1,6 s et 3,2 à 4,2 s). Exposition bonne.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 0.9,
+    "desc": "Plan vertical rapproché sur l'avant de la dépanneuse : cabine grise à montant jaune, sans portière, volant visible ; pot d'échappement ; vérins hydrauliques de la grue à droite ; roue avant et pneu de secours au sol en bas. Poteau peint bleu et blanc au bord gauche, immeuble beige et rouge en haut. Chiffres « 675 » peints sur l'aile."
+   },
+   {
+    "t0": 0.9,
+    "t1": 1.6,
+    "desc": "Panoramique vers la droite à travers la mécanique de la grue, filé."
+   },
+   {
+    "t0": 1.6,
+    "t1": 3.2,
+    "desc": "L'homme en tee-shirt beige au centre, de profil, regard vers la droite, main posée sur le rebord du plateau rouge-jaune. Au premier plan, en bas, l'arrière d'une tête coiffée d'un kufi crocheté noir et blanc et une épaule en gilet fluo vert. Fond : maison bleue, parasol Orange, hommes assis, une femme en rouge à une porte. « GO-ME » sur le bras de grue à gauche."
+   },
+   {
+    "t0": 3.2,
+    "t1": 4,
+    "desc": "Panoramique à droite le long du flanc du plateau (roues, coffre métallique), l'homme sort du cadre."
+   },
+   {
+    "t0": 4,
+    "t1": 5.67,
+    "desc": "Plan vertical stable : plateau en diagonale à gauche et au centre, conteneur bleu portes ouvertes sur sa semi-remorque en haut à droite (cartons sur palettes, ballots jaunes, rouleaux blancs, caisse en bois), sol de gravier et trottoir en dalles en bas à droite. Ciel nuageux en haut."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 5,
+    "why": "Plan vertical net du conteneur ouvert au bout du plateau, prêt pour Reels ou Shorts",
+    "framing": "conteneur dans le quart supérieur droit, plateau en diagonale à gauche, trottoir en bas à droite"
+   },
+   {
+    "t": 2.4,
+    "why": "L'homme appuyé au plateau, observé par un spectateur en kufi au premier plan : profondeur et ambiance de foule",
+    "framing": "homme au centre, kufi en bas au centre (amorce), maisons colorées en fond"
+   },
+   {
+    "t": 0.3,
+    "why": "Gros plan texturé sur la vieille dépanneuse (cabine, échappement, hydraulique)",
+    "framing": "cabine à gauche, vérins à droite, plein cadre vertical"
+   }
+  ],
+  "people": "L'homme en tee-shirt beige, de profil, à distance moyenne (visage net mais pas en gros plan). Spectateur de dos au premier plan, en kufi crocheté noir et blanc et gilet fluo, visage non visible (seulement l'oreille et la joue). Au fond : hommes assis (maillot bleu, tee-shirt blanc-rouge), un homme debout en noir et blanc à une porte, une femme en rouge, tous petits. Rien de sensible.",
+  "brands_text": "Parasol « Orange » (opérateur télécom) en haut à gauche et au centre, de 1,6 à 3,2 s, lisible. Gilet fluo du spectateur au premier plan : texte partiel en bas à gauche (« …Sta… » ou « …SION »), illisible. « GO-ME » peint sur le bras de grue (1,6 à 3 s). Chiffres « 675 » sur l'aile avant (0 à 0,8 s) : sans doute un numéro de parc ou un fragment, pas un téléphone complet, à vérifier si on s'en sert. Le texte du flanc du conteneur n'est pas lisible ici. Aucune plaque.",
+  "audio_note": "Niveau ambiant plus élevé et constant (environ -21 dB RMS) : voix proches probables, sans doute la foule autour.",
+  "story_role": "Arrivée du conteneur et décor, en vertical : dépanneuse à plateau puis conteneur ouvert. Doublon vertical de v10, à préférer pour un montage 9:16."
+ },
+ {
+  "id": "v12",
+  "summary": "Déchargement du conteneur MAERSK ouvert : deux manutentionnaires à l'intérieur (maillot vert du Cameroun, tee-shirt rouge) passent des cartons à des jeunes au pied du camion, puis la caméra balaie la foule qui regarde et filme, avant de revenir au conteneur.",
+  "orientation_note": "Portrait 720x1280 (rot -90), affiché droit. Horizon droit.",
+  "quality": "720p vertical WhatsApp, net dans l'ensemble. Ciel couvert un peu clair mais pas brûlé. Léger tremblé à la main. Panoramique vers la gauche (4,6 à 5,5 s) et retour (6,8 à 7,2 s) un peu filés.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2.4,
+    "desc": "Plan large vertical : conteneur bleu portes ouvertes en haut à droite. À l'intérieur, un manutentionnaire en maillot vert passe des cartons ; plus loin, un autre en rouge ; cartons sur palettes, ballots jaunes, rouleau blanc. Au pied du camion, de dos : un jeune en chemise blanche bras tendu, un en short bleu, un en tee-shirt gris. Coin du plateau de la dépanneuse à gauche, avant-bras et téléphone d'une femme au bord gauche."
+   },
+   {
+    "t0": 2.4,
+    "t1": 4.6,
+    "desc": "Même cadre, la caméra se recentre un peu. Le manutentionnaire en vert tend un carton vers le bas (2,5 à 3,2 s) ; deux jeunes au pied du camion (chemise blanche, maillot marron et short bleu, bonnet gris) regardent, mains sur les hanches. Un jeune en maillot bleu, accoudé au plateau à gauche, regarde vers l'objectif."
+   },
+   {
+    "t0": 4.6,
+    "t1": 7,
+    "desc": "Panoramique vers la gauche sur la foule : au premier plan centre gauche, une femme aux longues tresses rouges, de dos, tee-shirt imprimé, sac à l'épaule, filme avec son téléphone levé. De l'autre côté du plateau, des hommes accoudés au rebord ou assis devant les maisons bleues regardent : polo rayé, maillot bleu, tee-shirt beige, un homme debout au téléphone à gauche, une moto garée. Grand ciel nuageux et fils électriques en haut."
+   },
+   {
+    "t0": 7,
+    "t1": 9.23,
+    "desc": "Retour à droite sur le conteneur : un porteur à droite emporte un carton sur la tête le long du trottoir (7,3 à 8,2 s) ; le manutentionnaire en rouge grimpe sur les caisses ; à 8,8–9,2 s, le manutentionnaire en maillot vert du Cameroun se tient à la porte, sourit et fait un grand geste du bras. Logo étoile Maersk bien visible sur la porte droite. Jeunes au premier plan, de dos et de profil."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 9,
+    "why": "Le manutentionnaire en maillot du Cameroun sourit et fait un geste à la porte du conteneur : moment de joie et de fierté, idéal en fin de séquence",
+    "framing": "il est au centre gauche, dans l'embrasure du conteneur, à mi-hauteur ; collègue en rouge au centre droit sur les caisses ; logo Maersk sur la porte droite"
+   },
+   {
+    "t": 3,
+    "why": "Le geste type du déchargement : un carton passe des mains du manutentionnaire à l'intérieur vers l'extérieur",
+    "framing": "carton au centre gauche dans l'embrasure, spectateurs au premier plan centre et droite"
+   },
+   {
+    "t": 6,
+    "why": "La foule regarde et filme : une femme aux tresses rouges, de dos, téléphone levé, des hommes accoudés au plateau",
+    "framing": "femme au centre gauche, au premier plan ; hommes alignés à mi-hauteur derrière le plateau"
+   },
+   {
+    "t": 7.6,
+    "why": "Un porteur emporte un carton sur la tête : le colis part vers son destinataire",
+    "framing": "porteur au bord droit, à mi-hauteur"
+   }
+  ],
+  "people": "Deux manutentionnaires dans le conteneur (maillot vert du Cameroun avec numéro, tee-shirt rouge), visages petits à moyens ; celui en vert sourit vers l'objectif vers 9 s. Une dizaine de jeunes hommes au pied du camion, surtout de dos ou de profil. Certains paraissent adolescents (silhouettes fines, en tongs) mais sont en groupe avec des adultes, aucun enfant seul. Une femme aux tresses rouges, de dos, qui filme. Au fond, des hommes accoudés au plateau, visages de face à distance moyenne (5 à 6,5 s) : polo rayé, maillot bleu ; personne ne paraît contrarié. Personne torse nu.",
+  "brands_text": "Logo étoile Maersk et lettre « M… » sur le flanc et la porte droite du conteneur (0 à 4,5 s et 7 à 9,23 s), étoile très lisible à 9 s. Maillot vert de l'équipe du Cameroun porté par un manutentionnaire (écusson petit). Maillot bleu de type équipe de France porté par un jeune accoudé au plateau (5 à 6,5 s ; écusson petit, à confirmer). Tee-shirt de la femme imprimé de texte violet et blanc, partiellement lisible (voir v13 : « …ENGE »). Étiquettes blanches sur les cartons, illisibles. Aucune plaque, aucun numéro de téléphone.",
+  "audio_note": "Ambiance de rue et de voix, niveau modéré (-25 à -33 dB RMS), petites pointes vers 3 s et 5,5 s (sans doute des voix ou des appels). Pas d'événement fort évident.",
+  "story_role": "Déchargement du conteneur et foule qui regarde et filme. Moment de joie à 9 s, colis emporté sur la tête à 7,5 s."
+ },
+ {
+  "id": "v13",
+  "summary": "Plan par-dessus l'épaule d'une femme aux tresses rouges qui filme au téléphone le déchargement du conteneur, où deux manutentionnaires s'activent sur les cartons sous les yeux des jeunes rassemblés au pied du camion.",
+  "orientation_note": "Portrait 720x1280 (rot -90), affiché droit. Horizon droit, légère dérive vers la droite.",
+  "quality": "720p vertical WhatsApp, net, plan stable tenu à la main. Ciel couvert bien exposé. Plan court (3,87 s) mais entièrement exploitable.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2,
+    "desc": "Plan fixe à la main, vertical. Au premier plan gauche, de dos : la femme aux longues tresses rouges (amorce sur tout le bord gauche, en bas), tee-shirt gris délavé imprimé « …ENGE » violet et turquoise, qui tient son smartphone levé (écran sombre au centre gauche) et filme. Au centre, conteneur bleu portes ouvertes : manutentionnaire en maillot vert à gauche à l'intérieur ; un autre en rouge grimpe sur les cartons et les ballots jaunes ; longs rouleaux blancs emballés à droite. Au pied du camion : jeunes en tee-shirt bleu clair et en blanc, homme en chemise blanche appuyé au rebord du plateau à droite, bonnet gris."
+   },
+   {
+    "t0": 2,
+    "t1": 3.87,
+    "desc": "Même cadre, la caméra glisse légèrement vers la droite. Une caisse en bois entre par le bord droit, portée (2,0 à 3,0 s) ; le manutentionnaire en rouge se redresse sur la pile ; un jeune en tee-shirt clair se retourne au centre ; un piéton en gris passe au bord droit (3,4 à 3,87 s). Rue animée au fond à droite avec un parasol rouge."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Le plan de la foule qui filme : téléphone de la femme au premier plan, déchargement en arrière-plan, idéal pour le moment « tout le monde filme l'arrivée »",
+    "framing": "tresses et épaule à gauche du premier plan ; téléphone au centre gauche ; conteneur au centre, en haut"
+   },
+   {
+    "t": 2.5,
+    "why": "Le manutentionnaire en rouge debout sur les cartons, une caisse en bois portée à droite : activité maximale",
+    "framing": "conteneur au centre, en haut ; homme en chemise blanche au centre droit ; caisse au bord droit"
+   }
+  ],
+  "people": "La femme aux tresses rouges, de dos, visage non visible (on voit l'oreille et la joue), main aux ongles rouges sur le téléphone. Deux manutentionnaires (maillot vert, tee-shirt rouge), visages petits. Plusieurs jeunes hommes de dos ou de profil ; un garçon en tee-shirt blanc au centre paraît adolescent, mais il est dans le groupe, pas seul. Aucun gros plan de visage, personne torse nu, personne contrarié.",
+  "brands_text": "Tee-shirt de la femme : lettres « …ENGE » lisibles, violet et turquoise (sans doute « REVENGE » ou un mot proche, marque de streetwear, incertain), en bas à gauche sur tout le plan. Flanc du conteneur : lettres verticales floues (probablement MAERSK), illisibles. L'écran du téléphone est sombre, rien de lisible. Aucune plaque, aucun numéro de téléphone.",
+  "audio_note": "Le plus fort des cinq (-14 à -21 dB RMS, pic vers 1 s) : sans doute des voix toutes proches de la foule, ou de la femme.",
+  "story_role": "Foule et ferveur : on filme l'arrivée au téléphone pendant le déchargement du conteneur. Plan à insérer entre l'ouverture du conteneur et la remise des colis."
+ },
+ {
+  "id": "v4",
+  "summary": "Dans une rue de Douala, la Toyota Yaris blanche est posée sur le plateau horizontal d'une dépanneuse à grue (cabine jaune). Un jeune homme en crop top rouge entre dans le champ, s'arrête devant le camion puis se retourne vers la caméra en souriant.",
+  "orientation_note": "Vertical 720x1280 (la rotation -90 est appliquée par ffmpeg). Image droite et horizon correct, avec une légère contre-plongée.",
+  "quality": "Net et bien exposé. Le ciel couvert est blanc, presque brûlé. Tenue à la main assez stable, léger flottement. 720x1280, utilisable tel quel en 9:16.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan d'ensemble quasi fixe en légère contre-plongée. Au centre, la Yaris blanche de 3/4 face sur le plateau de la dépanneuse, à l'arrêt ; la cabine jaune et la grue sont à gauche. Derrière, immeubles beige et rouge, câbles électriques et parasols de vendeurs. Au premier plan à droite, un homme en gilet fluo jaune et casquette sort du champ par la droite (~0.6 s). Au premier plan bas, chaussée en terre et bordure en béton."
+   },
+   {
+    "t0": 1,
+    "t1": 2,
+    "desc": "Un jeune homme en crop top rouge et jogging noir entre de dos par le bord droit, très près de l'objectif, puis avance vers le centre. Il masque un moment la partie droite du camion."
+   },
+   {
+    "t0": 2,
+    "t1": 3,
+    "desc": "Il s'arrête de dos au centre-droit et regarde le camion. La caméra se recadre légèrement à gauche : une Peugeot 208 grise garée apparaît au bord gauche. Au fond à droite, deux enfants en uniforme vert avec cartable près d'une moto, très petits."
+   },
+   {
+    "t0": 3,
+    "t1": 4.97,
+    "desc": "Il se tourne vers la caméra, sourit, rit et parle en faisant un geste de la main. Plan moyen en pied, sujet au centre-gauche, la Yaris sur le plateau juste derrière sa tête à droite. Le cadre reste stable jusqu'à la fin."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Plan propre de la Yaris sur la dépanneuse dans la rue : plan d'établissement « voiture livrée à Douala ».",
+    "framing": "Voiture au centre, à mi-hauteur. Le camion occupe le tiers central, le gilet fluo est au bord droit. En 9:16 natif, aucun recadrage nécessaire."
+   },
+   {
+    "t": 3.6,
+    "why": "Jeune homme souriant devant la voiture livrée : moment de joie et d'ambiance.",
+    "framing": "Personnage au centre-gauche, en pied. La Yaris est en haut, entre sa tête et le bord droit."
+   }
+  ],
+  "people": "Un homme en gilet de sécurité fluo et casquette, vu de profil, plan moyen, de 0 à 0.6 s. Un jeune homme en crop top rouge qui laisse le ventre nu : il n'est pas torse nu, mais le ventre est bien visible en plan moyen (à juger selon la ligne éditoriale). Il est de dos de 1 à 3 s, puis visage de face, souriant et détendu, de 3 à 5 s (plan moyen, pas un gros plan). En arrière-plan : passants, vendeuses sous parasols, et deux enfants en uniforme scolaire vert avec cartable (vers 2–3 s, à droite, lointains et accompagnés d'adultes à proximité).",
+  "brands_text": "Logo Toyota sur la calandre de la Yaris, au centre, pendant tout le clip. Logo Peugeot (lion) sur la calandre de la Peugeot 208 grise au bord gauche, de 2.0 à 4.97 s. La plaque avant de cette Peugeot est partiellement lisible (caractères flous, quelque chose comme « LT 6.. .S ») : à flouter par précaution. Plaque arrière orange de la dépanneuse au centre, de 0 à 1.5 s : illisible. Petit logo ou texte blanc illisible sur le crop top rouge, de 3 à 5 s.",
+  "story_role": "Voitures livrées sur dépanneuse dans les rues de Douala : plan d'établissement du quartier et de la livraison au client, avec une réaction joyeuse. La Yaris est probablement la même que dans v5 et v6, et le camion à grue jaune semble être celui de v8 (même rue, même immeuble à piliers rouges ; à confirmer).",
+  "audio_note": "Ambiance de rue (voix, circulation), niveau stable, aucun pic. Le jeune homme semble parler ou rire à la fin (3–5 s)."
+ },
+ {
+  "id": "v5",
+  "summary": "La Yaris blanche est sur le plateau abaissé en rampe d'une dépanneuse. Un homme en maillot rayé rouge et jaune avance vers la caméra avec un gros ballot noir sur la tête, pendant qu'une femme aux tresses rouges filme au téléphone au premier plan.",
+  "orientation_note": "Vertical 720x1280 (rotation appliquée). Image droite.",
+  "quality": "Net, bonne exposition. Tenue à la main assez stable, avec de légers recadrages. Le passage du porteur tout près de l'objectif (5.8–6.4 s) est flou de bougé.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 3,
+    "desc": "Plan fixe. La Yaris blanche, de face/3/4, est au centre sur le plateau incliné en rampe. Un homme en t-shirt bleu se tient debout à côté (centre-gauche). Le porteur en maillot rayé rouge et jaune, ballot noir sur la tête, est derrière à gauche, en partie caché. Au premier plan gauche, de dos, une femme aux longues tresses rouges filme avec son téléphone. Au fond : immeuble à piliers rouges, rideau métallique fermé, homme en t-shirt rouge « DIESEL » près d'une moto et d'un parasol bleu et rouge (à droite)."
+   },
+   {
+    "t0": 3,
+    "t1": 4,
+    "desc": "Léger recadrage vers le bas et la gauche. Le porteur contourne la femme et commence à avancer vers la caméra, côté gauche du cadre."
+   },
+   {
+    "t0": 4,
+    "t1": 5.5,
+    "desc": "Le porteur marche droit vers la caméra au centre. Il tient d'une main sur sa tête un gros ballot noir d'où dépassent des tissus rouges. Plan moyen puis plan rapproché : visage de face sous une casquette rouge, maillot Barça bien lisible. La voiture sur la rampe reste visible derrière lui."
+   },
+   {
+    "t0": 5.5,
+    "t1": 6.5,
+    "desc": "Il passe tout près, à droite de l'objectif, et remplit la moitié droite du cadre (bras et ballot en très gros plan, flou), puis sort du champ. La femme qui filme reste au bord gauche."
+   },
+   {
+    "t0": 6.5,
+    "t1": 7.87,
+    "desc": "Retour au plan de la Yaris sur la rampe, le cadre un peu décalé à gauche. L'homme en bleu est à côté de la voiture. À droite, au fond, passe une moto-taxi avec passagers sous le parasol, et l'homme DIESEL est debout. La femme qui filme est en amorce à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 5,
+    "why": "Porteur avec le ballot de marchandises sur la tête, qui marche vers la caméra : colis sortis et remis, plan vivant et authentique.",
+    "framing": "Porteur au centre, des genoux à la tête. La voiture sur la rampe est derrière, en haut à gauche ; la femme qui filme est au bord gauche."
+   },
+   {
+    "t": 1,
+    "why": "Plan large de la Yaris sur la rampe avec la femme qui filme au premier plan : « tout le monde filme l'arrivée ».",
+    "framing": "Voiture au centre, en haut. Femme au tiers gauche, de dos, à recadrer pour cacher le texte de son t-shirt."
+   },
+   {
+    "t": 7.2,
+    "why": "Plan propre de la voiture sur la rampe de la dépanneuse, sans porteur devant.",
+    "framing": "Voiture au centre, homme en bleu à gauche de la voiture, moto au fond à droite."
+   }
+  ],
+  "people": "Porteur en maillot Barça rayé et casquette rouge : visage de face net en plan rapproché, de 4.5 à 5.6 s (gros plan quasi). Homme en t-shirt bleu, de profil ou de dos. Femme aux longues tresses rouges, de dos ou 3/4, visage non visible, qui filme au téléphone. Son t-shirt noir porte un texte blanc partiellement lisible, « …O BITCH » (mot vulgaire probable) : à recadrer ou flouter. Homme en t-shirt rouge DIESEL en fond. Passagers d'une moto-taxi (7–7.5 s, lointains). Personne ne paraît contrarié.",
+  "brands_text": "Écusson FC Barcelona et logo Nike sur le maillot rayé rouge et jaune (centre-droite, de 0 à 6.5 s, très lisible de 4.5 à 6 s). « DIESEL » sur le t-shirt rouge d'un homme au fond à droite (de 0 à 7.87 s, petit mais lisible). Logo Toyota sur la calandre de la Yaris (centre). Sur le t-shirt noir de la femme au premier plan gauche : imprimé violet « GE… » et texte « …O BITCH » (de 0 à 7.87 s, possiblement vulgaire). Aucune plaque lisible ; la Yaris n'a pas de plaque avant.",
+  "story_role": "Déchargement et remise des colis (ballot porté sur la tête), voiture sur la dépanneuse, foule qui filme : beat « les clients récupèrent leurs marchandises ».",
+  "audio_note": "Ambiance de rue et voix. Un peu plus fort au tout début (0–0.5 s), sinon aucun pic notable."
+ },
+ {
+  "id": "v6",
+  "summary": "Caméra à la main qui longe la Yaris blanche, pleine de sacs et de ballots, garée contre le conteneur ouvert où des manutentionnaires déchargent des cartons. La caméra pivote ensuite jusqu'à filmer l'avant de la voiture de travers.",
+  "orientation_note": "Le fichier vertical 720x1280 est bien orienté, mais l'opérateur tourne le téléphone pendant la prise. L'image est droite de 0 à 1 s, penchée d'environ 20 à 30° de 1.5 à 2.5 s, puis de travers d'environ 70 à 90° de 3 s à la fin (la voiture paraît verticale ou en diagonale). Deux options : n'utiliser que 0–1.6 s, redresser numériquement (avec perte de cadre), ou garder la rotation comme un mouvement dynamique.",
+  "quality": "Net et bien exposé. Mouvement continu (avancée et rotation), avec un peu de bougé. Jambes floues d'un passant de 4.6 à 5.0 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Profil de la Yaris blanche (portières côté passager), qui occupe les deux tiers bas du cadre. Par les vitres arrière, on voit l'habitacle bourré de sacs et de ballots. Bande du haut : le conteneur bleu ouvert, posé sur une remorque, avec un homme en short debout à l'intérieur et des cartons marqués « 15x90 » posés au bord. Un porteur en maillot violet lève un carton sur sa tête ; à côté, un homme en t-shirt vert fluo et calotte à motifs, et le porteur au maillot Barça au bord gauche."
+   },
+   {
+    "t0": 1,
+    "t1": 2,
+    "desc": "La caméra avance vers l'avant de la voiture en penchant (cadre incliné). Au fond : le porteur Barça soulève un ballot noir et rouge, des cartons et un pack passent de main en main depuis le conteneur, et des chaises blanches sont visibles."
+   },
+   {
+    "t0": 2,
+    "t1": 3.5,
+    "desc": "Rotation forte. L'avant de la voiture passe en diagonale : rétroviseur, pare-brise, roue avant en bas à gauche. En haut à droite : déchargement des cartons, homme en t-shirt rouge DIESEL, porteur Barça. En bas à droite : groupe en uniformes verts à écusson."
+   },
+   {
+    "t0": 3.5,
+    "t1": 4.6,
+    "desc": "Image presque à 90°. Plan rapproché sur la roue avant (jante au logo Toyota), le phare et l'aile (badge VVT-i). Sol bétonné et terre à gauche."
+   },
+   {
+    "t0": 4.6,
+    "t1": 5,
+    "desc": "Les jambes d'un passant (claquettes, short noir Under Armour « WORLD TOUR ») traversent le bas gauche du cadre."
+   },
+   {
+    "t0": 5,
+    "t1": 6.8,
+    "desc": "Toujours de travers : l'avant de la Yaris (phare, calandre au logo Toyota) au centre-gauche, le pare-brise à droite. En bas à droite, des passants en uniforme vert et un short bleu, des pavés. Fin."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Résume l'arrivée en un seul plan : voiture livrée et remplie de marchandises, avec le déchargement des cartons du conteneur juste derrière. Image encore droite.",
+    "framing": "Voiture sur les deux tiers bas. L'action de déchargement est sur la bande haute (porteurs au centre-gauche, conteneur en haut à droite). En recadrage, privilégier le haut."
+   },
+   {
+    "t": 1.6,
+    "why": "Porteurs avec cartons et ballot devant le conteneur, la voiture chargée en amorce.",
+    "framing": "Inclinaison d'environ 20°. Action en haut, du centre vers la droite ; vitre arrière avec les sacs au centre-droit."
+   },
+   {
+    "t": 4,
+    "why": "Détail de la roue et du phare, utilisable comme plan d'insert ou de transition dynamique (image tournée).",
+    "framing": "Roue en bas à gauche, phare au centre. Rotation d'environ 90° à corriger ou à assumer."
+   }
+  ],
+  "people": "Manutentionnaires en plan large, visages petits ou partiels : homme en short dans le conteneur, porteur au maillot violet, homme en t-shirt vert fluo et calotte, porteur au maillot Barça. Homme en t-shirt rouge DIESEL. De 2.5 à 6.8 s, un groupe en uniformes verts à écusson, probablement des élèves (âge incertain), à l'arrière-plan et non identifiables. Jambes d'un passant de 4.6 à 5.0 s. Aucun gros plan de visage, rien de sensible.",
+  "brands_text": "Logo Toyota sur les jantes et la calandre (de 3.5 à 6.8 s, centre ou gauche). Badge « VVT-i » sur l'aile avant. « DIESEL » sur un t-shirt rouge (vers 2.5–3.2 s, en haut à droite, petit). Maillot FC Barcelona rayé (de 0 à 3 s, en haut à gauche, petit). Logo Under Armour et texte « WORLD TOUR » sur un short noir (vers 4.6–5.0 s, en bas à gauche). Cartons marqués « 15x90 » (de 0 à 1.6 s, en haut à droite) : une dimension, pas une marque. Texte illisible sur le t-shirt vert fluo (peut-être « CGT 18 ») et sur le maillot violet. Aucune plaque lisible.",
+  "story_role": "Ouverture et déchargement du conteneur, avec les cartons passés de main en main. Voiture arrivée avec les marchandises entassées à l'intérieur : beat « arrivée du conteneur et déchargement ».",
+  "audio_note": "Ambiance de chantier et de rue, voix. Niveau stable, léger renforcement vers 5 s, sans événement marquant identifiable."
+ },
+ {
+  "id": "v7",
+  "summary": "Devant le conteneur ouvert, posé à l'arrière d'un camion plateau, un Toyota Fortuner blanc sort lentement du conteneur et avance sur le plateau. Un homme en t-shirt beige le guide, sous les yeux d'une foule de curieux qui filment au téléphone.",
+  "orientation_note": "Vertical 576x1024 (rotation appliquée). Image droite, avec de petites inclinaisons ponctuelles d'environ 5°.",
+  "quality": "Résolution plus faible (576x1024), image un peu douce et compressée. Ciel couvert lumineux, sujet correctement exposé. Tenue à la main avec dérives et recadrages. Fortes obstructions par des têtes au premier plan de 10.5 à 16.5 s et de 18.5 à 20.5 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan large en légère contre-plongée. Le Fortuner blanc, de 3/4 face, est dans l'encadrement du conteneur ouvert (portes bordeaux) posé sur le plateau. Au bord droit, le flanc bleu clair du conteneur porte l'étoile blanche Maersk (jusqu'à 0.6 s). À gauche, un homme en t-shirt beige debout sur le plateau regarde son téléphone. Au premier plan : un homme en maillot gris « 22 » et short rouge, un homme en t-shirt blanc avec sacoche, un homme en maillot violet « 15 » (à droite), et un homme assis en bas au centre avec un bob, main à l'oreille."
+   },
+   {
+    "t0": 1,
+    "t1": 3,
+    "desc": "Léger recadrage à droite. L'homme en beige marche sur le plateau vers le bord. En bas à gauche, une main tenant un téléphone avec câble entre dans le champ (quelqu'un filme)."
+   },
+   {
+    "t0": 3,
+    "t1": 4.5,
+    "desc": "L'homme en beige saute du plateau (3.0–3.5 s) et atterrit accroupi en bas à gauche. Le SUV commence à sortir du conteneur."
+   },
+   {
+    "t0": 4.5,
+    "t1": 9,
+    "desc": "Le Fortuner avance lentement hors du conteneur, vers la gauche du cadre. L'homme en beige, debout, une main sur le bord du plateau, le regarde avancer. Le groupe (maillot 22, t-shirt blanc) est au premier plan droit et l'homme au bob en bas. La caméra dérive un peu vers la gauche."
+   },
+   {
+    "t0": 9,
+    "t1": 11,
+    "desc": "L'homme en beige lève la main droite pour guider le conducteur (9.5–10.5 s). Le SUV est presque entièrement sur le plateau. Une tête chauve en t-shirt blanc entre au premier plan en bas à droite (10.5–11 s)."
+   },
+   {
+    "t0": 11,
+    "t1": 16.5,
+    "desc": "Obstruction : l'arrière d'une tête chauve (t-shirt blanc) occupe 40 à 60 % du bas du cadre. Le SUV, en haut, continue d'avancer ; on voit l'homme en beige et l'homme au t-shirt blanc au milieu. Une main passe vers 13.5 s."
+   },
+   {
+    "t0": 16.5,
+    "t1": 18.5,
+    "desc": "Au premier plan au centre, une main lève un smartphone qui filme le SUV (la voiture est visible sur l'écran). Le Fortuner est de profil au-dessus, sa roue arrière enfin sortie du conteneur."
+   },
+   {
+    "t0": 18.5,
+    "t1": 21,
+    "desc": "La caméra se recadre vers l'avant du plateau : le nez du SUV est près de la cabine, avec des planches en bois. Un homme en t-shirt vert est debout sur le plateau à gauche (19.5 s). Une tête chauve masque le bas. Vers 20.5–21 s, l'homme en beige lève lui aussi un téléphone ou la main près de la portière."
+   },
+   {
+    "t0": 21,
+    "t1": 24,
+    "desc": "Plan large de nouveau : le SUV de 3/4 face sur le plateau, l'homme en beige tenant le bord du plateau à droite, une main avec un téléphone au centre (vers 22 s). L'homme en vert est debout en haut à gauche."
+   },
+   {
+    "t0": 24,
+    "t1": 28.1,
+    "desc": "Plan final assez stable. Le Fortuner est au centre sur le plateau, l'homme en beige à droite la main sur le bord. Au premier plan en bas à gauche, une femme aux tresses rouges filme avec un téléphone à coque rose (ongles vernis) ; un homme en t-shirt bleu est au bord gauche. L'homme en vert est sur le plateau en haut à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Le SUV apparaît dans l'encadrement du conteneur ouvert, avec la foule au premier plan : beat « ouverture du conteneur, la voiture sort ». Attention : l'étoile Maersk est visible au bord droit.",
+    "framing": "SUV au centre, conteneur en haut à droite, foule sur le tiers bas. Recadrer légèrement à gauche pour couper le logo Maersk."
+   },
+   {
+    "t": 9.8,
+    "why": "Geste de guidage de l'homme en beige, main levée, pendant que le SUV sort : action humaine claire.",
+    "framing": "Homme au centre-gauche (à mi-hauteur), SUV au-dessus de lui à droite, t-shirt blanc à droite."
+   },
+   {
+    "t": 17,
+    "why": "Une main avec un smartphone filme le SUV, la voiture visible sur l'écran : illustre parfaitement « la foule filme ».",
+    "framing": "Téléphone au centre-gauche, SUV en haut, tête floue en amorce en bas à gauche."
+   },
+   {
+    "t": 26.5,
+    "why": "Plan final stable : SUV posé sur le plateau, femme qui filme au premier plan. Bon plan de conclusion.",
+    "framing": "SUV au centre, en haut. Téléphone de la femme en bas à gauche, homme en beige à droite."
+   }
+  ],
+  "people": "Homme en t-shirt beige (guide, probablement le même que le chauffeur de v8) : plan moyen, visage de profil ou 3/4 à distance moyenne. Homme en maillot gris adidas « BOGARD 22 » et short rouge, de profil, de 0 à 10 s. Homme en t-shirt blanc avec sacoche en bandoulière. Homme en maillot violet « 15 » (de 0 à 1 s, à droite). Homme assis au premier plan bas avec un bob, main contre l'oreille ou le visage (de 0 à 10 s) : il semble au téléphone ou pensif, pas clairement contrarié. Têtes chauves de dos en très gros plan (obstruction). Femme aux tresses rouges qui filme (de 24 à 28 s, visage non visible). Homme en t-shirt vert debout sur le plateau (de 19 à 28 s, petit). Pas de gros plan de visage de face, pas d'enfant, rien de sensible.",
+  "brands_text": "MAERSK : étoile blanche à 7 branches sur fond bleu clair et début de la lettre « M » sur le flanc du conteneur, au bord droit, de 0 à 0.6 s. Logo Toyota sur la calandre du Fortuner (de 0 à 28 s, centre). Maillot adidas (logo et trois bandes) floqué « BOGARD 22 » (de 0 à 10 s, centre-droite, lisible). Maillot violet de type Toronto Raptors « RAPTORS 15 » (de 0 à 0.5 s, à droite). Écrans de téléphones montrant la scène (17–20 s, vers 22 s, 24–28 s). Aucune plaque visible sur le Fortuner ni sur le camion.",
+  "story_role": "Arrivée et ouverture du conteneur, sortie de la voiture, foule qui filme, curiosité et joie : beat clé « la voiture sort du conteneur ».",
+  "audio_note": "Niveau plus faible et stable, ambiance de foule et voix. Aucun pic marquant."
+ },
+ {
+  "id": "v8",
+  "summary": "Plan paysage : le Fortuner blanc posé sur le plateau du camion devant le conteneur ouvert. Panoramique vers la cabine jaune délabrée et la grue du camion, où est assis un chauffeur en t-shirt beige, puis retour sur le SUV.",
+  "orientation_note": "Horizontal 1280x720, le seul plan paysage de ce lot. Image droite. En 9:16, recadrer : SUV au centre (0–1.5 s et 7–8.6 s), cabine au tiers gauche (3–5.5 s).",
+  "quality": "Net, bonne résolution, bonne exposition sous ciel nuageux. Panoramiques à la main un peu saccadés. Tête chauve en amorce en bas à droite de 0 à 0.8 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.2,
+    "desc": "Plan latéral fixe : le Fortuner blanc de profil sur le plateau, orienté vers la gauche. Le conteneur ouvert, sombre, est à droite ; un parasol orange à gauche ; ciel nuageux et câbles. Une tête chauve est en amorce en bas à droite."
+   },
+   {
+    "t0": 1.2,
+    "t1": 3,
+    "desc": "Panoramique vers la gauche. L'avant du SUV est à droite, avec des cales en bois sous la roue avant. La colonne de grue et ses flexibles hydrauliques sont au centre-gauche. Au fond, des passants en blanc devant l'immeuble jaune."
+   },
+   {
+    "t0": 3,
+    "t1": 5.5,
+    "desc": "Le cadre s'arrête sur la cabine jaune cabossée (gyrophare orange) à gauche. Le chauffeur en t-shirt beige y est assis, main à la tête vers 3.5 s puis au volant vers 5 s. Bras de grue au centre, nez du SUV au bord droit, parasol orange au fond. Vers 4.3 s, un homme en chemise à carreaux et casquette noire entre en bas au centre, visage de 3/4."
+   },
+   {
+    "t0": 5.5,
+    "t1": 7,
+    "desc": "Panoramique de retour vers la droite. L'homme à carreaux marche vers la droite le long du plateau ; le SUV revient au centre."
+   },
+   {
+    "t0": 7,
+    "t1": 8.6,
+    "desc": "Le SUV, de profil, est centré sur le plateau. À droite, dans le conteneur ouvert, une personne en chemise rose et des cartons blancs. Au premier plan bas : l'homme à carreaux de dos et un homme en polo rayé à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.4,
+    "why": "Plan horizontal propre du Fortuner sur le plateau devant le conteneur : beau plan « voiture arrivée », net.",
+    "framing": "SUV centré entre x≈170 et x≈1150. Un recadrage 9:16 centré sur la portière avant (x≈450–850) garde le nez ou l'arrière ; le conteneur est à droite."
+   },
+   {
+    "t": 8.3,
+    "why": "SUV avec, derrière, le conteneur ouvert où l'on voit une personne et des cartons : relie voiture et conteneur.",
+    "framing": "SUV au centre-gauche, intérieur du conteneur au bord droit, personnes en bas."
+   },
+   {
+    "t": 4,
+    "why": "Cabine jaune délabrée du camion à grue avec son chauffeur : détail authentique du transport local.",
+    "framing": "Cabine et chauffeur au tiers gauche, grue au centre ; en 9:16, recadrer sur x≈150–550."
+   }
+  ],
+  "people": "Chauffeur en t-shirt beige dans la cabine (probablement le même homme que le guide de v7) : visage de profil, plan moyen. Homme en chemise à carreaux et casquette noire : visage de 3/4 en plan moyen, vers 4.3–5.5 s. Homme en polo rayé (en bas à gauche, de 7 à 8.6 s). Passants en blanc en fond. Personne en chemise rose dans le conteneur (de 8 à 8.6 s). Tête chauve en amorce (de 0 à 0.8 s). Rien de sensible.",
+  "brands_text": "Logo Toyota sur la calandre du Fortuner (petit). Parasol orange avec un logo ou texte blanc illisible (à gauche, pendant tout le clip) : peut-être une marque commerciale, impossible à identifier. Aucune plaque lisible, aucun texte lisible sur la grue ni sur la cabine.",
+  "story_role": "Voiture arrivée, posée sur le camion devant le conteneur : plan horizontal « voiture livrée » et détail du camion à grue. Peut servir de transition entre le déchargement (v7) et la livraison dans la rue (v4/v5).",
+  "audio_note": "Niveau plus fort et stable, probablement le moteur du camion au ralenti plus l'ambiance. Aucun pic."
+ },
+ {
+  "id": "v14",
+  "summary": "Plan fixe à hauteur d'homme, pris derrière un petit groupe à l'arrière du conteneur ouvert sur sa remorque, à Douala. À l'intérieur, des machines vertes et rouges et des cartons ; un homme en chemise à fleurs lève les deux bras.",
+  "orientation_note": "Droit, vertical natif 576x1024 (rot 0). Aucune inclinaison notable. Léger recadrage vers le haut à partir de 2,0 s.",
+  "quality": "Résolution faible (576x1024, compression WhatsApp) et image un peu molle. Exposition correcte, ciel blanc brûlé à gauche. Tenu à la main, assez stable. Un objet blanc flou (carrosserie ou objet proche) entre dans le coin bas gauche, et l'arête d'un plateau métallique gris au bord gauche.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 0.7,
+    "desc": "Plan moyen fixe, de dos, sur l'arrière du conteneur ouvert (portes bordeaux, cadre turquoise) qui occupe le haut du cadre. Dedans, des machines vertes à pièces rouges, des cartons empilés, un ouvrier en t-shirt rouge et un autre en vert. Au premier plan à gauche, un homme en chemise à fleurs et pantalon beige lève les deux bras au-dessus de la tête (étirement ou geste d'entrain, intention incertaine). Au centre, un homme en polo blanc à liseré noir et short noir, de dos. À 0,6 s, un jeune en maillot violet n°15 entre par la droite en souriant."
+   },
+   {
+    "t0": 0.7,
+    "t1": 2,
+    "desc": "Même cadre. Le jeune en violet passe derrière le groupe. L'homme à la chemise à fleurs baisse les bras et se tourne vers le plateau du camion, où sont posés des paquets bleus et blancs. Petits mouvements de foule à l'arrière du camion, polo blanc toujours au centre."
+   },
+   {
+    "t0": 2,
+    "t1": 4.1,
+    "desc": "Léger recadrage vers le haut : on voit maintenant le bord supérieur du conteneur et la remorque avec ses roues à droite. L'homme à la chemise à fleurs et un homme en bonnet gris se penchent au bord du plateau pour prendre des paquets. Dans le conteneur, on voit des caisses jaunes et un carton bleu et blanc. Polo blanc au centre, de dos."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Geste fort : l'homme lève les deux bras devant le conteneur plein, ce qui fait une bonne image d'arrivée et d'ouverture.",
+    "framing": "Conteneur ouvert sur les deux tiers supérieurs, au centre. Homme bras levés dans le tiers gauche, polo blanc de dos au centre bas."
+   },
+   {
+    "t": 0.6,
+    "why": "Un jeune homme souriant entre dans le champ et apporte de la chaleur humaine.",
+    "framing": "Bord droit du cadre, mi-corps, maillot violet n°15."
+   },
+   {
+    "t": 3.5,
+    "why": "Le plan le plus large de l'intérieur du conteneur chargé (machines, cartons), avec le haut du conteneur visible.",
+    "framing": "Conteneur au centre et en haut, intérieur bien lisible. Deux hommes de dos en bas."
+   }
+  ],
+  "people": "Hommes adultes ou jeunes hommes, presque tous de dos. Le jeune en maillot violet n°15 montre son visage souriant à mi-distance (0,6-1,0 s, à droite). Les ouvriers dans le conteneur (t-shirt rouge, vert) sont visibles mais sans visage net. Pas de gros plan de visage, pas d'enfant seul, pas de torse nu, personne ne semble contrarié.",
+  "brands_text": "Maillot violet n°15 au graphisme de type Toronto Raptors (NBA), sur le jeune homme à droite, 0,6-1,0 s. Étiquettes blanches sur les caisses jaunes dans le conteneur : illisibles. Pas de plaque ni de logo MAERSK visibles dans ce clip.",
+  "story_role": "Ouverture et début du déchargement : conteneur ouvert, marchandises visibles à l'intérieur, petit groupe qui attend à l'arrière du camion.",
+  "audio_note": "Niveau constant (voix, ambiance de rue), qui baisse vers la fin. Pas d'événement sonore marquant."
+ },
+ {
+  "id": "v15",
+  "summary": "Caméra à l'épaule derrière un homme en maillot gris « BOGARD 22 » qui marche vers le conteneur ouvert. Un passage agité vers la gauche autour d'une planche métallique, puis un plan stable : un ouvrier en t-shirt rouge, dans le conteneur, passe des cartons bleus et blancs.",
+  "orientation_note": "Droit en affichage (720x1280 ; rotation -90 appliquée par ffmpeg). Pas d'inclinaison gênante, sauf le passage bougé de 1,5 à 3,0 s.",
+  "quality": "Résolution 720x1280 correcte. Netteté bonne de 0 à 1 s et de 3,5 à 7,4 s. De 1,5 à 3,0 s : panoramique brusque, flou de bougé, cadre chaotique (inutilisable sauf comme transition). Exposition correcte, ciel blanc.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Gros plan de dos sur un homme chauve en maillot gris et marron : logo adidas, « BOGARD » et « 22 » en grand, remplissant les deux tiers bas du cadre. Il avance vers le conteneur ouvert. On aperçoit l'intérieur en haut à droite : machines rouges et vertes, caisse jaune, ouvrier en rouge."
+   },
+   {
+    "t0": 1,
+    "t1": 1.5,
+    "desc": "BOGARD se tourne vers la gauche et la caméra le suit. Le cadre glisse vers le flanc du camion."
+   },
+   {
+    "t0": 1.5,
+    "t1": 3,
+    "desc": "Panoramique brusque vers la gauche, image bougée. Bras tendu de BOGARD (à droite) appuyé sur une longue planche métallique cabossée peinte en jaune et bleu, posée sur une caisse en bois (peut-être le plateau d'une charrette à bras, à confirmer). En arrière-plan : bâtiment turquoise, un homme bras levé, un homme en t-shirt blanc et short noir, tongs roses."
+   },
+   {
+    "t0": 3,
+    "t1": 3.5,
+    "desc": "Retour rapide vers la droite sur l'arrière du conteneur. BOGARD de dos en bas à gauche."
+   },
+   {
+    "t0": 3.5,
+    "t1": 7.4,
+    "desc": "Plan moyen assez stable sur l'arrière du conteneur ouvert, cadré en entier (cadre turquoise, portes bordeaux à droite, bandes de signalisation rouges et blanches sur la remorque). Dedans, au centre droit, un ouvrier en t-shirt rouge se penche et passe des cartons bleus et blancs. Derrière lui, un ouvrier en vert. Au sol du conteneur : une caisse jaune étiquetée et une machine rouge sous film plastique. En bas à gauche, BOGARD et un homme en polo blanc (de dos) réceptionnent ; le polo blanc tient un carton bleu (5,0-6,5 s). Pavés au sol."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 5,
+    "why": "Geste clair de déchargement : l'ouvrier en rouge tend un carton vers l'extérieur, le conteneur est entier dans le cadre et l'image est nette.",
+    "framing": "Conteneur sur 70 % du cadre, ouvrier au centre droit, à l'intérieur. Deux réceptionnaires de dos en bas à gauche."
+   },
+   {
+    "t": 6.8,
+    "why": "Plan stable et net de l'ouvrier qui ramasse une pile de petits cartons. Bon plan de coupe pour le déchargement.",
+    "framing": "Ouvrier au centre, à l'intérieur. Polo blanc de dos en bas, au centre gauche."
+   },
+   {
+    "t": 0.5,
+    "why": "Entrée dynamique de dos vers le conteneur, en suivant le « chef de chantier ». Attention : logo adidas bien visible.",
+    "framing": "Dos BOGARD 22 plein cadre en bas, conteneur ouvert en haut à droite."
+   }
+  ],
+  "people": "BOGARD 22 : homme adulte chauve, toujours de dos, visage jamais vu. Ouvrier en t-shirt rouge dans le conteneur, en plan moyen, visage peu visible (penché). Homme en polo blanc, de dos. Passants à mi-distance en arrière-plan entre 1,5 et 3,0 s, visages flous. Pas de gros plan de visage, pas d'enfant seul, pas de torse nu.",
+  "brands_text": "Logo adidas et « BOGARD 22 » sur le maillot, très lisibles en gros plan entre 0,0 et 1,0 s (centre et bas), puis plus petits entre 3,0 et 4,5 s (bas gauche). « PRADA » en petites lettres rouges sur le short noir de l'homme en polo blanc, entre 5,0 et 7,0 s (bas centre gauche, petit, sans doute une contrefaçon). Étiquettes blanches sur les caisses jaunes : illisibles. Pas de plaque lisible.",
+  "story_role": "Déchargement : cartons passés depuis le conteneur. Le début peut servir d'entrée « on y va » en suivant BOGARD vers le conteneur.",
+  "audio_note": "Pics de voix vers 1,0 s, 3,5 s et 5,0 s (interpellations probables). Rien de marquant d'autre."
+ },
+ {
+  "id": "v16",
+  "summary": "Plan court et fixe sur l'arrière du conteneur : un porteur part avec une pile de paquets sous film plastique sur la tête, pendant qu'un ouvrier en maillot vert attend debout au bord du conteneur.",
+  "orientation_note": "Droit en affichage (720x1280 ; rotation -90 appliquée). Horizon correct.",
+  "quality": "Résolution 720x1280, assez nette, compression WhatsApp. Exposition correcte, ciel gris couvert. Caméra quasi fixe, légère dérive vers la droite.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 0.6,
+    "desc": "Plan large, à hauteur d'homme, depuis le trottoir dallé. À droite, le conteneur ouvert sur sa remorque ; dans l'ouverture, un ouvrier en maillot vert (de dos). Au premier plan à droite, un jeune en t-shirt gris, short noir et tongs roses porte sur la tête une pile de paquets bleus et blancs sous film plastique et marche vers la droite, puis sort du cadre. Au centre, un homme en maillot rouge et noir marche vers le conteneur. À gauche, un homme en t-shirt bordeaux et short bleu, de dos. Au fond, des boutiques bleues et orange à rideaux métalliques, des palmiers."
+   },
+   {
+    "t0": 0.6,
+    "t1": 2.8,
+    "desc": "Même cadre, légère dérive à droite. L'ouvrier en vert se retourne au bord du conteneur. L'homme au maillot rouge et noir attend en bas en levant la tête vers lui, au centre gauche. À gauche, un homme en t-shirt vert fluo porte la main à la tête, et un homme est assis devant une boutique. Caisse jaune et machine rouge visibles au sol du conteneur."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.1,
+    "why": "Porteur avec sa pile de paquets sur la tête devant le conteneur ouvert. C'est l'image type du déchargement « à la main ».",
+    "framing": "Porteur au tiers droit, plein pied, paquets en haut du cadre. Conteneur et ouvrier en vert en haut à droite, rue à gauche."
+   },
+   {
+    "t": 1.5,
+    "why": "Plan calme : l'ouvrier dans le conteneur et l'homme qui attend en bas, avec le décor de rue de Douala.",
+    "framing": "Conteneur à droite, homme en rouge et noir au centre, boutiques à gauche."
+   }
+  ],
+  "people": "Jeune porteur au t-shirt gris (âge difficile à estimer, jeune homme), visage peu visible car caché sous les paquets. Homme au maillot rouge et noir, visage de profil à mi-distance. Ouvrier en vert, de dos. Pas de gros plan de visage, pas d'enfant seul, pas de torse nu.",
+  "brands_text": "Début du texte « LI… » (sponsor LIU JO) sur le maillot rouge et marine, vers 0,1 s, au centre gauche, petit. T-shirt vert fluo avec le chiffre « 78 » à gauche, en arrière-plan, petit. Aucune enseigne lisible. Pas de plaque.",
+  "story_role": "Déchargement : paquets portés sur la tête depuis le conteneur. Peut aussi servir de plan d'ambiance de rue.",
+  "audio_note": "Niveau stable (ambiance de rue, voix). Rien de marquant."
+ },
+ {
+  "id": "v17",
+  "summary": "Long plan à l'épaule pris dans la rue : la chaîne de déchargement, avec des paquets passés depuis le conteneur sur la tête des porteurs. Un panoramique vers la gauche montre la foule et les boutiques autour d'une charrette en bois, puis la caméra revient sur le conteneur.",
+  "orientation_note": "Droit en affichage (576x1024 ; rotation -90 appliquée). Horizon globalement droit.",
+  "quality": "Résolution faible (576x1024), image molle et compressée. Exposition correcte, ciel gris. Caméra à l'épaule avec des panoramiques à gauche (4,0-6,5 s) puis à droite (7,5-8,0 s) : utilisable, mais à couper autour des mouvements.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2,
+    "desc": "Plan large : le conteneur ouvert à droite, un ouvrier en maillot vert debout dans l'ouverture. Au centre gauche, un porteur en maillot rouge et marine « LIU JO » s'éloigne du camion avec une haute pile de paquets bleus et blancs sous film sur la tête, bras levé pour la tenir. Il traverse vers la droite et la caméra le suit légèrement. Au fond, un passant en t-shirt rose et une femme en pagne."
+   },
+   {
+    "t0": 2,
+    "t1": 4,
+    "desc": "Le porteur sort par la droite. L'ouvrier en vert prend un carton blanc, se tourne vers la caméra et la regarde, carton à la main, au centre droit en haut. Caisse jaune et machine rouge dans le conteneur."
+   },
+   {
+    "t0": 4,
+    "t1": 5,
+    "desc": "Léger panoramique vers la gauche : des gens au bord de la rue, dont un homme en t-shirt vert fluo et bonnet à motifs qui téléphone. BOGARD 22 (maillot gris, short rouge) entre par la droite au premier plan."
+   },
+   {
+    "t0": 5,
+    "t1": 6.5,
+    "desc": "Panoramique vers la gauche en suivant BOGARD, qui marche vers un groupe réuni autour d'une charrette à bras en bois. Fond : boutiques bleues et orange, toits en tôle, ciel nuageux, fils électriques."
+   },
+   {
+    "t0": 6.5,
+    "t1": 7.5,
+    "desc": "BOGARD (de dos, au centre) et un homme en chemise rose et jean déchiré (premier plan gauche) manœuvrent le plateau de la charrette. Derrière, un homme en maillot rouge et blanc, un homme en polo blanc, et l'homme en vert fluo."
+   },
+   {
+    "t0": 7.5,
+    "t1": 8,
+    "desc": "Panoramique de retour vers la droite, vers le conteneur."
+   },
+   {
+    "t0": 8,
+    "t1": 9.5,
+    "desc": "BOGARD de dos au premier plan à gauche. Au centre droit, un porteur en t-shirt gris et short noir soulève une pile de paquets depuis le plateau du camion et la cale sur sa tête. L'ouvrier en vert est dans le conteneur, en haut à droite."
+   },
+   {
+    "t0": 9.5,
+    "t1": 11.5,
+    "desc": "L'ouvrier en vert se penche et pose une deuxième pile de paquets sur celle du porteur. Un jeune en maillot violet « 15 » entre par la droite et marche vers le camion."
+   },
+   {
+    "t0": 11.5,
+    "t1": 13.4,
+    "desc": "Le porteur, avec sa double pile sur la tête, se tourne, au centre droit. Le jeune en violet n°15 est de dos au centre. BOGARD est en amorce à gauche, l'ouvrier en vert se penche dans le conteneur."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Porteur avec une haute pile de paquets sur la tête, qui quitte le conteneur. C'est le plan le plus graphique du déchargement.",
+    "framing": "Porteur au tiers gauche, plein pied. Conteneur et ouvrier dans les deux tiers droits en haut."
+   },
+   {
+    "t": 3,
+    "why": "L'ouvrier regarde la caméra, carton à la main : une petite présence humaine.",
+    "framing": "Ouvrier au centre droit, en haut du cadre, dans l'ouverture du conteneur. Visage à mi-distance."
+   },
+   {
+    "t": 10.5,
+    "why": "Passage de relais : l'ouvrier pose les paquets sur la tête du porteur.",
+    "framing": "Mains et paquets au centre haut, porteur au centre. Jeune en violet au premier plan centre droit, BOGARD en amorce à gauche."
+   },
+   {
+    "t": 12.5,
+    "why": "Vue d'ensemble de la chaîne humaine : porteur chargé, aides, conteneur.",
+    "framing": "Conteneur à droite, porteur au centre droit, violet n°15 au centre, BOGARD bord gauche."
+   }
+  ],
+  "people": "BOGARD 22, de dos. L'ouvrier en vert montre son visage en plan moyen et regarde la caméra (2,5-4,5 s, et de profil vers 10,5 s). L'homme en vert fluo est visible de face à mi-distance, téléphone à l'oreille (4,0-7,0 s). L'homme en maillot rouge et blanc, derrière la charrette, est visible de face à mi-distance (6,5-7,5 s). Les porteurs sont jeunes, peut-être adolescents pour certains (âge incertain), mais aucun enfant seul. Une femme en pagne et un passant en rose au loin. Pas de gros plan de visage, pas de torse nu, personne de visiblement contrarié.",
+  "brands_text": "« LIU JO » sur le maillot rouge et marine du porteur, lisible entre 0,0 et 2,0 s (centre gauche, puis bord droit). « BOGARD 22 » sur le maillot gris entre 4,5 et 13,4 s (le logo adidas est probablement là, mais peu lisible à cette distance). Maillot violet style Toronto Raptors avec « CAPTFP 15 » (texte approximatif, sans doute une contrefaçon) entre 10,0 et 13,4 s, au centre. T-shirt vert fluo avec « 78 » et un texte illisible entre 4,0 et 7,0 s, en arrière-plan. Écusson sur la manche du maillot vert de l'ouvrier (liserés rouge et jaune) : illisible. Enseignes des boutiques illisibles. Aucune plaque.",
+  "story_role": "Déchargement, chaîne humaine du conteneur jusqu'à la tête des porteurs. Le passage de 4,0 à 7,5 s sert de plan d'installation du lieu : rue de Douala, boutiques, foule autour.",
+  "audio_note": "Niveau moyen au début, qui baisse après 8 s. Pas d'événement marquant."
+ },
+ {
+  "id": "v18",
+  "summary": "Clip très mobile. Un jeune en maillot violet porte une caisse en bois sur le trottoir. La caméra balaie ensuite le flanc du conteneur MAERSK garé dans la rue, puis bascule sur l'arrière ouvert, où un ouvrier lance de petits cartons blancs à la foule qui attend, mains dans le dos.",
+  "orientation_note": "Droit en affichage (720x1280 ; rotation -90 appliquée). Cadre un peu penché pendant le passage de 0,4 à 1,0 s.",
+  "quality": "720x1280. De 0,0 à 1,2 s : mouvements rapides et filé (whip pan vers 1,0 s), bougé. De 1,2 à 3,0 s : plus stable et assez net. Exposition correcte, ciel blanc.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 0.35,
+    "desc": "Plan rapproché, caméra très proche : un jeune homme en maillot violet sans manches et short beige porte une caisse à claire-voie en bois (carton à l'intérieur), à droite du cadre. Son visage est visible, tête baissée, à gauche. À l'arrière-plan à gauche, le bout bleu du conteneur « …RSK »."
+   },
+   {
+    "t0": 0.35,
+    "t1": 0.9,
+    "desc": "La caméra avance et pivote vers la droite sur le trottoir. Le conteneur bleu MAERSK, posé sur sa remorque, est garé le long de la rue : logo étoile et mot « MAERSK » en grand, lisibles. Au fond : immeubles d'habitation, foule, auvents. Sur le trottoir : bancs et chaises en bois. Le jeune en violet passe en amorce à droite et sort du cadre."
+   },
+   {
+    "t0": 0.9,
+    "t1": 1.2,
+    "desc": "Panoramique filé vers la droite, vers l'arrière du conteneur : portes bordeaux ouvertes, logo étoile MAERSK visible sur le flanc."
+   },
+   {
+    "t0": 1.2,
+    "t1": 3,
+    "desc": "Plan moyen sur l'arrière ouvert du conteneur. L'ouvrier en maillot vert, debout au bord, lance de petits cartons blancs vers la foule en bas : un carton en l'air vers 2,1 s et vers 2,7 s. Au premier plan, deux hommes de dos, mains croisées dans le dos (t-shirt noir à gauche ; t-shirt bordeaux, bonnet gris et short bleu à droite). À gauche, la foule, dont un homme qui lève le bras pour attraper. Au fond, des boutiques à rideaux métalliques."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.6,
+    "why": "Plan d'installation idéal : le conteneur MAERSK arrivé dans une rue de Douala, avec le logo lisible. Attention à la marque si le montage l'exige.",
+    "framing": "Conteneur en diagonale, du centre vers la droite, logo au centre droit. Trottoir en bas à droite, immeubles en haut à gauche."
+   },
+   {
+    "t": 2.1,
+    "why": "Moment vivant : un carton lancé en l'air depuis le conteneur, la foule attend.",
+    "framing": "Ouvrier en haut au centre dans l'ouverture, carton en l'air à sa droite. Deux hommes de dos, mains dans le dos, en bas au centre."
+   },
+   {
+    "t": 0.1,
+    "why": "Un client ou porteur emporte sa caisse en bois, ce qui montre le colis reçu.",
+    "framing": "Caisse sur la moitié droite, jeune homme à gauche, visage en gros plan."
+   }
+  ],
+  "people": "Gros plan du visage du jeune homme en maillot violet de 0,0 à 0,35 s (tête baissée, jeune, âge incertain, peut-être adolescent) : à flouter ou éviter si le droit à l'image n'est pas acquis. Les deux hommes du premier plan sont de dos. L'ouvrier en vert est vu en plan moyen, visage peu net. La foule est à distance. Pas de torse nu, pas d'enfant seul, personne de contrarié.",
+  "brands_text": "MAERSK (mot et logo étoile) entièrement lisible en grand sur le flanc du conteneur entre 0,35 et 1,2 s, du centre vers la droite. « …RSK » partiel à 0,0 s en haut à gauche. Maillot violet n°15 style Raptors à 0,0-0,7 s. Pas de plaque lisible : une cabine de camion rouge au loin vers 0,4 s, sans plaque visible. Étiquette sur la caisse en bois illisible.",
+  "story_role": "Arrivée et installation du lieu : le conteneur MAERSK dans la rue. Colis emporté (caisse en bois). Distribution : cartons lancés à la foule.",
+  "audio_note": "Niveau stable, ambiance de foule. Rien de marquant."
+ },
+ {
+  "id": "v19",
+  "summary": "Plan large pris derrière la foule massée à l'arrière du conteneur ouvert. Dedans, BOGARD 22 et des ouvriers (dont un torse nu au début) déchargent. Au premier plan, deux hommes penchés sur un petit carton posé au sol.",
+  "orientation_note": "Droit en affichage (720x1280 ; rotation -90 appliquée). Horizon légèrement penché, acceptable.",
+  "quality": "720x1280, assez net, compression WhatsApp. Exposition correcte, ciel blanc couvert. Caméra à l'épaule assez stable, avec un léger déplacement vers la droite et l'arrière vers 2,0 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2,
+    "desc": "Plan large, de dos, derrière la foule. Le conteneur ouvert, sur sa remorque, occupe la moitié haute (portes bordeaux, flanc bleu à droite avec étoile MAERSK partielle). Dedans, à gauche, BOGARD 22 (maillot gris, short rouge) de dos. À la porte de droite, un jeune homme torse nu en pantalon sombre grimpe ou descend, et un homme en short kaki se penche. Au premier plan : un jeune en maillot violet « CAPTFP 15 » à gauche, un homme en t-shirt vert fluo « 7823 Team CSET » et un homme en t-shirt bleu penchés sur un petit carton au sol, au centre bas (ils l'ouvrent ou le vérifient), un homme au sac à dos beige au bord gauche. Pavés au sol."
+   },
+   {
+    "t0": 2,
+    "t1": 4.1,
+    "desc": "La caméra se décale vers la droite et recule un peu. Au premier plan à gauche, un homme en maillot rouge et blanc avec un sac à dos beige, de dos. À droite, l'homme en vert fluo « M. Stadelmayer 7823 Team CSET », de dos, bien lisible. Le jeune en violet est au centre. Dans le conteneur, BOGARD 22 et un homme en chemise à motifs et short kaki manipulent des marchandises rouges et vertes. Étoile MAERSK sur le flanc droit, fils électriques et immeubles au fond."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Vue d'ensemble de la foule autour du conteneur, avec deux hommes penchés sur un carton reçu : bon plan « réception des colis ».",
+    "framing": "Conteneur en haut au centre gauche. Les hommes penchés sur le carton au centre bas, le violet n°15 à gauche. Attention : homme torse nu à la porte du conteneur, au centre droit, en plan moyen."
+   },
+   {
+    "t": 3.6,
+    "why": "Plan de foule propre et stable (sans torse nu), avec le déchargement en cours au fond. Bon plan de coupe « la foule attend ».",
+    "framing": "Hommes de dos sur le tiers bas (sac à dos à gauche, vert fluo à droite). Conteneur et ouvriers au centre haut. Logo étoile au bord droit."
+   }
+  ],
+  "people": "Foule d'hommes, tous de dos, aucun visage net. Un jeune homme torse nu, en pantalon sombre, monte ou descend à la porte du conteneur de 0,0 à 2,0 s : plan moyen et large, de profil et de dos, pas en gros plan. À éviter ou recadrer selon la charte, et à préférer après 2,0 s. L'homme en short kaki semble aussi torse nu au début (incertain). Quelques jeunes, peut-être adolescents (âge incertain), mais aucun enfant seul. Personne de visiblement contrarié.",
+  "brands_text": "« M. Stadelmayer / 7823 / Team CSET » sur le t-shirt vert fluo : un nom de personne tiers, très lisible entre 2,0 et 4,1 s (bord droit, bas), partiellement entre 0,0 et 2,0 s (centre). Maillot violet style Raptors « CAPTFP 15 » entre 0,0 et 1,5 s (bord gauche). « 22 » de BOGARD lisible dans le conteneur. Logo étoile MAERSK partiel sur le flanc droit du conteneur entre 0,0 et 4,1 s, sans le mot. Maillot rouge et blanc sans logo lisible. Aucune plaque.",
+  "story_role": "Foule et attente, réception des colis (hommes penchés sur un carton). Déchargement à l'intérieur en fond.",
+  "audio_note": "Clip le plus fort de la série : brouhaha et voix de la foule, pic vers 1,0 s. Pas d'événement isolé identifiable."
+ },
+ {
+  "id": "v20",
+  "summary": "Rush déclenché par erreur (téléphone pointé vers le sol) : dalles de béton et pieds en tongs de personnes qui attendent, aucun sujet utile.",
+  "orientation_note": "Image droite telle qu'affichée (portrait 720x1280, rotation appliquée), mais la caméra vise le sol en plongée et penche vers la droite ; aucun horizon.",
+  "quality": "Flou de bougé net de 0 à 1 s (le téléphone tangue), puis à peu près stable de 1 à 5,3 s. Exposition correcte, lumière de ciel couvert. Utilisable techniquement, mais sans intérêt visuel.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plongée sur une dalle de béton grise qui occupe les deux tiers bas du cadre. En haut à gauche, jambes d'un homme en short gris et tongs bleues ; un autre pied, flou, au bord gauche. Fort flou de bougé, le cadre glisse."
+   },
+   {
+    "t0": 1,
+    "t1": 5.33,
+    "desc": "Le cadre se stabilise sur des dalles de béton disjointes, fissurées, posées en diagonale en haut du cadre. On voit des pieds en tongs et des jambes : l'homme en short gris en haut à gauche, d'autres pieds et un bas de jean bleu en haut à droite. Le bas du cadre ne montre qu'une chape de béton. Légères dérives de la caméra, aucun mouvement voulu."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 5,
+    "why": "Seul instant à peu près net, où l'on voit des pieds sur les dalles. Ce plan ne sert à rien pour le récit ; il pourrait au mieux faire une coupe de 0,5 s pour « l'attente », mais il vaut mieux l'écarter.",
+    "framing": "Pieds dans le tiers haut, sol vide dans les deux tiers bas"
+   }
+  ],
+  "people": "Uniquement des jambes et des pieds en tongs, aucun visage. Rien de sensible.",
+  "brands_text": "Aucune marque ni aucun texte lisible.",
+  "story_role": "Aucun : rush accidentel, téléphone tenu vers le sol entre deux prises (horodaté à 14:35:55, juste avant v21). À écarter.",
+  "audio_note": "Ambiance continue de niveau moyen (≈ −20 dB RMS), sans pic marquant. Probablement des voix et la rue en fond ; non transcrit."
+ },
+ {
+  "id": "v21",
+  "summary": "Le conteneur est ouvert à l'arrière du plateau, avec des manutentionnaires debout dedans devant la foule qui regarde ; un panoramique vers la gauche va jusqu'au camion-grue jaune devant un immeuble crème à liserés rouges.",
+  "orientation_note": "Image droite en portrait (576x1024, rotation appliquée). Pas de penché notable, sauf un léger dévers pendant le panoramique de 3 à 5 s.",
+  "quality": "Définition faible (576x1024, compression WhatsApp), mais image nette sur les plans fixes (0 à 2,8 s et 7,5 à 10,5 s). Panoramique flou de 2,8 à 5,5 s. Ciel couvert un peu brûlé en haut, sujets bien exposés.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2.8,
+    "desc": "Plan d'ensemble. Le conteneur est ouvert dans le tiers droit, en haut : parois intérieures rouge bordeaux, encadrement bleu-vert. Il est posé au bout d'un plateau rouillé à bord jaune et rouge qui traverse le cadre. Debout dans l'ouverture, un homme en chemise à motifs et short beige (centre-droit). Vers 1,0 s, un deuxième homme en t-shirt blanc et short rouge apparaît au bord droit. Au plancher du conteneur : un carton jaune, des colis emballés sous plastique et une pièce verte. Au premier plan, de dos : à gauche un jeune homme en maillot rouge et blanc avec un sac à dos beige, à droite un jeune homme en maillot violet n°15 qui téléphone. En fond, une boutique peinte en bleu avec des gens dans l'embrasure, sous un ciel gris. La caméra se rapproche légèrement et recadre à droite."
+   },
+   {
+    "t0": 2.8,
+    "t1": 3.8,
+    "desc": "Panoramique rapide vers la gauche, flou. Au premier plan passent des têtes : un homme coiffé d'un bonnet tricoté noir et blanc (kufi) à gauche, un jeune en maillot rose délavé au centre, une épaule en maillot vert fluo en bas. Au fond, la boutique bleue et des fils électriques."
+   },
+   {
+    "t0": 3.8,
+    "t1": 5.5,
+    "desc": "Le panoramique continue vers la gauche et monte un peu. L'homme au kufi est de dos au centre (maillot vert fluo, sangle de sacoche). À gauche apparaît l'angle d'un immeuble crème à balcons rouges, avec un parasol orange et noir. Le plateau porte des cales et des bouts de bois à gauche. Vers 5,0 s, un homme en polo rayé beige s'appuie au bord du plateau (centre)."
+   },
+   {
+    "t0": 5.5,
+    "t1": 7.5,
+    "desc": "Cadrage sur la grue noire, bras replié à la verticale, et la cabine jaune du camion (gauche-centre), devant l'immeuble crème et rouge à plusieurs étages. L'homme au kufi reste au premier plan, centre droit puis centre bas. Une fumée d'échappement bleutée flotte à gauche du cadre."
+   },
+   {
+    "t0": 7.5,
+    "t1": 10.5,
+    "desc": "Plan presque fixe sur le camion-grue jaune : cabine à gauche, grue repliée au centre, cales de bois sur la droite. Derrière, l'immeuble avec du linge aux balcons ; une voiture grise est garée au fond à gauche. Un homme en t-shirt beige se tient près de la cabine. Au premier plan à gauche, un homme âgé, chauve, avec une écharpe rose et une chemise rayée, regarde vers la droite (profil). Une tête aux cheveux tressés apparaît au bord droit, en bas."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 1.5,
+    "why": "Image clé du déchargement : le conteneur est ouvert avec deux manutentionnaires debout dedans, la marchandise est visible et les clients regardent de dos. Le plan est stable et lisible.",
+    "framing": "Conteneur et hommes dans le tiers droit (moitié haute), clients de dos au premier plan à gauche et à droite. Un recadrage 16:9 doit se centrer sur le tiers droit et le haut."
+   },
+   {
+    "t": 9,
+    "why": "Plan stable du camion-grue jaune devant l'immeuble, qui situe le lieu dans un quartier de Douala et montre les moyens de manutention ; l'homme à l'écharpe rose au premier plan représente le client qui attend.",
+    "framing": "Camion au centre-droit, homme âgé en bas à gauche (profil), immeuble dans la moitié haute"
+   },
+   {
+    "t": 0.5,
+    "why": "Variante plus serrée sur le manutentionnaire en chemise à motifs, debout seul dans le conteneur ouvert.",
+    "framing": "Conteneur dans la moitié droite, homme au centre-droit en haut"
+   }
+  ],
+  "people": "Foule d'hommes adultes (jeunes et moins jeunes), presque tous de dos ou de profil. Les manutentionnaires dans le conteneur ont le visage visible à distance moyenne. Gros plan de profil de l'homme âgé à l'écharpe rose de 7,5 à 10,5 s. L'homme au kufi est de dos ou en trois-quarts arrière, en gros plan. Aucun enfant, personne torse nu, personne ne semble contrarié.",
+  "brands_text": "Maillot violet « RAPTORS » n°15 (Toronto Raptors, NBA), lisible de 0,5 à 3,0 s, centre-droit en bas. Maillot vert fluo avec l'inscription « Stadelmayer » (et un chiffre partiel) dans le dos, bas du cadre, de 3,5 à 8,0 s, net vers 7,0 s. Parasol orange et noir aux logos de l'opérateur Orange, à gauche de 4,0 à 5,0 s puis au bord droit vers 6,0 s, logo peu lisible. Lettres « S… » sur le maillot rouge et blanc : illisibles. Une voiture est garée au fond à gauche (7,5–10,5 s), plaque illisible. Aucun numéro de téléphone.",
+  "story_role": "Ouverture du conteneur et début du déchargement : conteneur ouvert avec la marchandise, curieux et clients qui attendent, camion-grue prêt. Sert aussi à situer le quartier (immeuble, boutiques peintes). Horodaté à 14:36:04.",
+  "audio_note": "Ambiance assez forte et continue (≈ −15 dB RMS), sans pic isolé. Probablement des voix de la foule ; non transcrit."
+ },
+ {
+  "id": "v22",
+  "summary": "La foule attend devant le conteneur ouvert, où un manutentionnaire se tient debout ; un panoramique vers la gauche longe le plateau jusqu'au camion-grue jaune qui fume, avec au premier plan un jeune homme torse nu.",
+  "orientation_note": "Image droite en portrait (720x1280, rotation appliquée). Le cadre penche légèrement à droite pendant le panoramique (2,5 à 5 s).",
+  "quality": "Bonne définition (720x1280) et image nette de 0 à 2,5 s puis de 5,3 à 7,7 s. Flou de bougé pendant le panoramique de 2,5 à 5,0 s. Ciel couvert clair, visages bien exposés.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.8,
+    "desc": "Plan d'ensemble du conteneur ouvert, en haut à droite. Un homme en t-shirt blanc et short rouge s'y tient debout et regarde vers le bas. On voit des cartons jaunes et des colis sous plastique, ainsi qu'une petite tête à côté de lui (une autre personne, partiellement cachée). Devant le plateau rouillé, des jeunes hommes : à gauche-centre un maillot vert de l'équipe du Cameroun, qui regarde à gauche puis vers la caméra ; au centre, de dos, le maillot rouge et blanc avec le sac à dos beige ; à droite un maillot violet ; au bord droit un maillot rose. Boutique bleue et immeuble en fond. Légère approche de la caméra."
+   },
+   {
+    "t0": 1.8,
+    "t1": 2.8,
+    "desc": "Panoramique vers la gauche. Gros plan de profil du jeune homme au maillot du Cameroun, dans la moitié droite, qui regarde vers la gauche. Derrière lui, le plateau à bord jaune et rouge, un gros pneu, puis la boutique bleue où des gens sont assis dans l'embrasure. Une épaule en maillot bleu apparaît en bas à gauche."
+   },
+   {
+    "t0": 2.8,
+    "t1": 4.2,
+    "desc": "Le panoramique continue vers la gauche. Au premier plan, en bas au centre, la nuque d'un jeune homme aux cheveux tressés en maillot bleu à liseré rouge et blanc tient un sachet d'eau. Le plateau, avec des cales de bois à gauche, traverse le cadre. Au fond, devant la boutique bleue, des hommes en blanc sont debout et des gens sont assis. Un parasol orange est en haut à gauche."
+   },
+   {
+    "t0": 4.2,
+    "t1": 5.3,
+    "desc": "Panoramique vers la gauche et vers le haut sur l'immeuble crème et rouge. Le cadre arrive sur l'arrière du camion-grue : grue noire à gauche, flanc gris portant l'inscription peinte « CO-ME-… », cales de bois. Un homme en chemise blanche est à droite, sous un parasol orange et noir. Le dos nu d'un jeune homme occupe le premier plan en bas à gauche."
+   },
+   {
+    "t0": 5.3,
+    "t1": 7.73,
+    "desc": "Plan sur le camion-grue jaune (cabine au centre-gauche, grue repliée au centre) devant l'immeuble ; une fumée d'échappement bleutée monte à gauche. Un homme en t-shirt beige longe la cabine. Au premier plan : à gauche, un jeune homme en maillot rouge et bleu, en trois-quarts face, parle et pose la main sur l'épaule d'un jeune homme torse nu vu de dos (droite, épaules et nuque en gros plan). Léger tremblé."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.8,
+    "why": "Plan d'ensemble lisible : conteneur ouvert, manutentionnaire debout dedans et foule de clients qui attend devant. Bon plan d'établissement de l'arrivée.",
+    "framing": "Conteneur en haut à droite, foule dans la moitié basse. Un recadrage 16:9 doit se centrer sur le haut et la droite."
+   },
+   {
+    "t": 2.4,
+    "why": "Gros plan de profil d'un jeune Camerounais en maillot des Lions Indomptables devant le plateau : touche locale forte et visage qui attend (droits à l'image à vérifier).",
+    "framing": "Visage dans la moitié droite, plateau et pneu à gauche"
+   },
+   {
+    "t": 6.5,
+    "why": "Camion-grue jaune avec fumée d'échappement, moteur qui tourne : la manutention se prépare.",
+    "framing": "Camion au centre, personnages au premier plan en bas. Le jeune homme torse nu occupe le bas droit : recadrer au-dessus."
+   }
+  ],
+  "people": "Gros plan de visage du jeune homme au maillot du Cameroun (face puis profil) de 0,5 à 2,8 s. Visage en trois-quarts du jeune homme au maillot rouge et bleu, en gros plan de 5,5 à 7,7 s. ATTENTION : jeune homme torse nu en gros plan (de dos, épaules et nuque) de 4,5 à 7,7 s, à recadrer ou à éviter. Le manutentionnaire du conteneur est visible à distance moyenne. Le geste de la main sur l'épaule (6 à 7,7 s) paraît amical, sans tension visible, mais c'est à vérifier à l'écoute. Aucun enfant.",
+  "brands_text": "Maillot de l'équipe du Cameroun : écusson FECAFOOT, sponsor « One » et badge à tête de lion, lisibles de 0,5 à 2,8 s, centre-gauche puis droite. Maillot violet avec un numéro partiel « 15 » (Raptors), bord droit, de 0 à 1,5 s. Lettres noires partielles sur le maillot rose, bord droit, de 0 à 1,5 s : illisibles. Parasol orange et noir aux logos de l'opérateur Orange (mot « Orange » presque lisible), en haut à gauche de 3,5 à 4,2 s puis au centre-droit de 4,5 à 5,3 s. Inscription peinte « CO-ME-… » sur le flanc du camion-grue, de 4,5 à 5,3 s au centre-gauche, partiellement lisible (probablement le nom du propriétaire de la grue). Sachet d'eau avec un texte bleu « Soif… » (?), incertain, vers 3,5 s. Logo « macron » lisible sur le maillot rouge et bleu, en bas à gauche, de 5,5 à 7,7 s. Une voiture sombre est au bord gauche vers 7,5 s, plaque illisible.",
+  "story_role": "Attente des clients devant le conteneur ouvert (curiosité, foule), puis préparation de la manutention avec le camion-grue moteur en marche. Horodaté à 14:36:23, 20 s après v21 et presque au même endroit.",
+  "audio_note": "Ambiance moyenne qui monte un peu après 1 s (de ≈ −21 à −18 dB RMS) ; voix de la foule probables. Le moteur du camion tourne sans doute (fumée visible), sans pic net. Non transcrit."
+ },
+ {
+  "id": "v23",
+  "summary": "Un opérateur debout sur le marchepied manœuvre la grue du camion, dont le bras est désormais déployé au-dessus du plateau ; la foule boit de l'eau en sachet en attendant, puis un panoramique mène au conteneur ouvert où deux manutentionnaires se tiennent prêts.",
+  "orientation_note": "Image droite en portrait (576x1024, rotation appliquée), horizon correct.",
+  "quality": "Définition faible (576x1024, compression WhatsApp), mais image nette sur les parties fixes (0 à 4,8 s, 6 à 7,5 s, 9 à 11,5 s). Panoramiques flous vers 4,8–5,8 s et 7,6–9,0 s. Ciel couvert clair, sujets bien exposés.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan sur l'arrière du camion-grue. Le bras noir de la grue barre le haut du cadre en diagonale, de gauche à droite. À gauche, un homme en t-shirt beige et jean noir, debout sur le marchepied, tient les leviers de commande. Le plateau porte des cales et des blocs de bois à droite, avec l'inscription « CO-ME-… » sur le flanc. Au fond, l'immeuble crème et rouge, un parasol orange et un homme en t-shirt blanc. Une épaule en maillot bleu apparaît en bas à droite."
+   },
+   {
+    "t0": 1,
+    "t1": 4.8,
+    "desc": "Cadre un peu décalé vers la droite et plus serré : l'opérateur est au centre, de profil, la main droite sur les leviers ; le bras de grue part à l'horizontale vers la droite. De 1,5 à 4,0 s, un jeune homme torse nu entre au premier plan à gauche et boit à un sachet d'eau (profil, torse en gros plan). On voit la cabine jaune et son pot d'échappement vertical en arrière-plan à gauche, puis l'immeuble."
+   },
+   {
+    "t0": 4.8,
+    "t1": 5.8,
+    "desc": "Panoramique vers la droite le long du bras de grue, qui s'étend au-dessus du plateau ; le crochet pend au bout. On voit les cales de bois et un parasol orange. En bas à droite entre la tête d'un jeune homme aux cheveux tressés en maillot bleu ; une main tenant un sachet d'eau apparaît en bas à gauche."
+   },
+   {
+    "t0": 5.8,
+    "t1": 7.6,
+    "desc": "Gros plan de profil du jeune homme en maillot bleu à liseré rouge et blanc qui boit à un sachet d'eau (centre bas). Derrière lui : le bout du bras de grue et son crochet au-dessus du plateau, deux hommes debout derrière le plateau (t-shirt blanc, chemise blanche), puis la boutique bleue avec des gens assis. Le ciel gris occupe le haut."
+   },
+   {
+    "t0": 7.6,
+    "t1": 9,
+    "desc": "Panoramique vers la droite le long du plateau vide et rouillé à bord jaune et rouge, avec un gros pneu en bas. Le bord du conteneur et un homme debout apparaissent au bord droit. La boutique bleue, avec des gens assis à l'entrée, est en fond. La nuque du jeune homme en bleu apparaît en bas à gauche."
+   },
+   {
+    "t0": 9,
+    "t1": 11.53,
+    "desc": "Le conteneur ouvert est cadré au centre-droit : parois intérieures rouge bordeaux, carton jaune, colis emballés et pièce verte. Deux manutentionnaires se tiennent au bord : à gauche un homme en chemise et short beige, à droite un homme en chemise à motifs et short beige, mains sur les hanches. Au premier plan, centre bas, un jeune homme en maillot rouge et blanc avec un sac à dos beige boit à un sachet d'eau en trois-quarts. Un maillot rose est au bord droit, une tête au bord droit. Légère approche de la caméra."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 2.5,
+    "why": "L'opérateur actionne les leviers de la grue : un geste concret de manutention, dans un plan stable.",
+    "framing": "Opérateur au centre, bras de grue en haut. Le jeune homme torse nu est au bord gauche : recadrer à droite pour l'exclure."
+   },
+   {
+    "t": 6.5,
+    "why": "Le bras de grue est déployé, crochet au-dessus du plateau, et un client boit de l'eau en attendant : l'attente sous la chaleur, la grue prête.",
+    "framing": "Visage de profil au centre bas, crochet et plateau au centre gauche"
+   },
+   {
+    "t": 10.5,
+    "why": "Conteneur ouvert avec deux manutentionnaires prêts à décharger et un client au premier plan : un beau plan du déchargement imminent.",
+    "framing": "Conteneur et hommes au centre-droit dans la moitié haute, client au centre bas"
+   }
+  ],
+  "people": "Visage de l'opérateur de la grue visible de profil à distance moyenne (0 à 4,8 s). Gros plan de profil du jeune homme en maillot bleu qui boit (5,8 à 7,6 s). Visage en trois-quarts du jeune homme au maillot rouge et blanc qui boit (9 à 11,5 s) ; un autre visage partiel au bord droit vers 10 s. ATTENTION : jeune homme torse nu en gros plan (profil, torse) au bord gauche de 1,5 à 4,0 s, à recadrer. Les deux manutentionnaires du conteneur sont visibles à distance moyenne. Aucun enfant, personne ne paraît contrarié.",
+  "brands_text": "Inscription peinte « CO-ME-… » sur le flanc gris du camion-grue, de 0 à 4,8 s au centre-droit, partiellement lisible. Parasol orange et noir aux logos de l'opérateur Orange, au centre-droit vers 0,5 s puis à droite vers 4,5 s. Sachet d'eau avec un texte bleu partiel (« Soif… » ?), de 5,5 à 7,5 s, incertain. Logo adidas (trèfle et trois bandes) sur le short gris du jeune homme au sac à dos, de 10 à 11,5 s en bas au centre. Lettres noires partielles illisibles sur le maillot rose au bord droit, de 10 à 11,5 s. Aucune plaque ni aucun numéro de téléphone lisible.",
+  "story_role": "Préparation du déchargement : la grue déployée et manœuvrée par l'opérateur (dans v21 et v22, 20 minutes plus tôt, elle était repliée), les manutentionnaires prêts dans le conteneur, les clients qui attendent en buvant de l'eau. Horodaté à 14:56:08.",
+  "audio_note": "Ambiance stable et continue (≈ −18 dB RMS), sans pic net. Probablement des voix et le moteur ou la grue ; non transcrit."
+ },
+ {
+  "id": "v24",
+  "summary": "Plan d'attente, au milieu des curieux, sur le plateau rouillé du camion-grue garé contre l'arrière du conteneur ouvert, où un manutentionnaire en tenue beige se tient debout dans l'embrasure.",
+  "orientation_note": "Droit, portrait natif 576x1024 (rotation -90 appliquée par ffmpeg). Léger penché, pas de bascule.",
+  "quality": "Correcte : net au centre, ciel gris couvert qui écrase un peu les hautes lumières, légère instabilité de main. Résolution faible (WhatsApp 576x1024). De 8.0 à 10.8 s, une tache floue rose/orange en bas à droite (probablement le doigt du filmeur au bord de l'objectif) : à recadrer ou à couper.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.5,
+    "desc": "Caméra derrière un jeune homme de dos (dreadlocks courtes, maillot bleu marine à liseré tricolore), en amorce en bas à gauche. Au centre, le plateau rouillé jaune/rouge du camion et la flèche noire de la grue en diagonale, en haut à gauche. En fond, des boutiques bleues et orange avec des hommes assis ou debout à l'entrée. Ciel gris et fils électriques. Caméra presque fixe."
+   },
+   {
+    "t0": 1.5,
+    "t1": 3,
+    "desc": "Panoramique vers la droite. Le jeune homme au maillot bleu sort du cadre par la gauche. Le bord du conteneur ouvert apparaît à droite (intérieur bordeaux, cadre bleu-vert à bandes de danger jaune/noir), avec un manutentionnaire en chemise et short beiges debout sur le seuil. Un jeune homme en maillot blanc et rouge, sac à dos beige, entre en amorce à droite."
+   },
+   {
+    "t0": 3,
+    "t1": 10.8,
+    "desc": "Cadre stabilisé. Le plateau vide occupe la moitié gauche. En haut à droite, le conteneur ouvert : le manutentionnaire beige est debout immobile à l'entrée, une caisse jaune et des colis emballés de plastique à ses pieds. Au premier plan à droite, le jeune homme en maillot blanc et rouge, de 3/4 dos, boit un sachet ou une bouteille d'eau (vers 6.5-9 s) puis tient un petit objet blanc. Un parasol bleu passe en fond vers 4-4.5 s. En bas à gauche, l'épaule bleue du premier jeune homme. Peu d'action."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 3.5,
+    "why": "Révélation du conteneur ouvert avec le manutentionnaire debout à l'entrée : premier regard sur le conteneur arrivé, au milieu des curieux.",
+    "framing": "Conteneur et manutentionnaire au tiers droit, en haut. Plateau en diagonale à gauche. Spectateur en maillot blanc et rouge en amorce en bas à droite."
+   },
+   {
+    "t": 7,
+    "why": "Plan d'attente avec la foule : le spectateur boit de l'eau face au conteneur ouvert. Utile pour l'ambiance et la chaleur.",
+    "framing": "Spectateur au premier plan à droite. Conteneur en haut à droite, grue en haut à gauche."
+   },
+   {
+    "t": 0.5,
+    "why": "Plan d'ouverture : la grue et le plateau vides, la foule de dos. Bon plan d'attente avant l'action.",
+    "framing": "Nuque du spectateur en bas à gauche, flèche de la grue en diagonale au centre."
+   }
+  ],
+  "people": "Spectateur en maillot bleu, de dos uniquement. Jeune homme en maillot blanc et rouge avec sac à dos, de 3/4 dos et profil partiel (pas de gros plan net du visage). Manutentionnaire en tenue beige dans le conteneur, visage visible en plan moyen, petit dans le cadre. Hommes assis au fond devant les boutiques, minuscules. Pas d'enfant seul, pas de torse nu, personne visiblement contrarié.",
+  "brands_text": "Aucun texte ni logo lisible sur le conteneur ou le camion. Maillot bleu de dos : style équipe de France (liseré tricolore), sans logo lisible. Maillot blanc et rouge : style club (motif à bande rouge), sans logo lisible. Pas de plaque, pas de numéro de téléphone lisible.",
+  "story_role": "Arrivée du conteneur à Douala, avant le déchargement : conteneur ouvert, grue en attente, curieux rassemblés. Plan d'attente ou d'établissement.",
+  "audio_note": "Ambiance continue de rue et de voix, niveau stable (environ -16 à -18 dBFS), aucun pic notable. Non transcrit."
+ },
+ {
+  "id": "v25",
+  "summary": "Déchargement : depuis le conteneur ouvert, des manutentionnaires sanglent de gros ballots blancs emballés sur le plateau du camion-grue et les accrochent au crochet de la grue, sous le regard de la foule.",
+  "orientation_note": "Droit, portrait natif 576x1024. À 19.0-20.4 s, la caméra bascule vers le bas en filé (fin accidentelle).",
+  "quality": "Bonne de 0 à 18.5 s : net, stable, ciel couvert. Vers 13.5-14 s, l'exposition s'éclaircit (ciel brûlé). De 19.0 à 19.7 s, filé très flou (mouvement brusque, inutilisable). De 19.7 à 20.4 s, cadrage plongeant sur le dos d'un spectateur : net mais sans intérêt.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 7,
+    "desc": "Cadre fixe, derrière l'épaule d'un jeune homme de dos (dreadlocks, maillot bleu marine à liseré tricolore) en amorce en bas à droite. Au centre-droit du plateau, un manutentionnaire en tenue beige, penché, manipule et sangle un gros ballot blanc emballé de plastique, sous le crochet de la grue (flèche noire en haut à gauche). Fond : boutiques bleues et orange, des hommes assis à l'ombre. Le conteneur ouvert, intérieur bordeaux, est en bord droit."
+   },
+   {
+    "t0": 7,
+    "t1": 13.5,
+    "desc": "Léger recadrage à droite. Deux hommes apparaissent sur le seuil du conteneur : l'un en t-shirt blanc et short rouge, l'autre en chemise à motifs et short jaune. Celui en blanc tend le bras et désigne le ballot. Le manutentionnaire beige, penché, fixe la sangle rouge au crochet. Un jeune en maillot vert (style Cameroun) entre en bas à droite. Le jeune homme au maillot bleu reste en amorce au centre-bas."
+   },
+   {
+    "t0": 13.5,
+    "t1": 17.5,
+    "desc": "Exposition plus claire, même axe. Le ballot sanglé est accroché au crochet de la grue (sangle rouge visible), au centre du plateau. Les deux hommes du conteneur regardent vers le bas, l'un se penche. Un spectateur en chemise rose à motifs entre par la droite au premier plan. Le jeune homme au maillot bleu toujours en amorce au centre-bas."
+   },
+   {
+    "t0": 17.5,
+    "t1": 19,
+    "desc": "La caméra recule et pivote vers la gauche et le bas. Le conteneur et le plateau sont vus de plus près, en légère plongée : le manutentionnaire beige se penche vers un deuxième colis, l'homme au t-shirt blanc l'aide, l'homme à la chemise à motifs observe. Le jeune homme au maillot bleu, mains croisées dans le dos, occupe le tiers inférieur. Spectateur en rose à droite."
+   },
+   {
+    "t0": 19,
+    "t1": 20.37,
+    "desc": "Filé rapide vers le bas et la droite (très flou, 19.0-19.7 s), puis le cadre plonge sur le dos du jeune homme au maillot bleu (mains dans le dos, short sombre, claquettes), le trottoir et le caniveau. Fin accidentelle, à couper."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 1,
+    "why": "Le manutentionnaire beige sangle un ballot sur le plateau, crochet de grue au-dessus : geste de déchargement lisible, cadre propre.",
+    "framing": "Manutentionnaire au centre-droit, au tiers haut. Ballot au centre. Amorce du spectateur en bas à droite. Recadrage 9:16 possible sans changement."
+   },
+   {
+    "t": 13,
+    "why": "Meilleure composition : le ballot sanglé au crochet, le manutentionnaire au travail, deux équipiers debout dans le conteneur ouvert. Cela raconte l'arrivée et le déchargement.",
+    "framing": "Ballot au centre-gauche du tiers médian, conteneur et équipiers à droite, nuque du spectateur en bas au centre."
+   },
+   {
+    "t": 16.5,
+    "why": "Le ballot est accroché à la grue, prêt à être soulevé : la foule se masse (spectateur rose à droite). Image d'ambiance de l'arrivée.",
+    "framing": "Ballot au centre-gauche, équipiers sur le seuil du conteneur à droite."
+   },
+   {
+    "t": 18.3,
+    "why": "Plan plus serré, en légère plongée, sur le seuil du conteneur : trois hommes au travail, intérieur bordeaux bien visible.",
+    "framing": "Conteneur dans les 2/3 droits en haut, spectateur au maillot bleu en bas au centre."
+   }
+  ],
+  "people": "Manutentionnaire en tenue beige (chemise et short), visage surtout de profil ou penché, jamais en gros plan. Deux équipiers dans le conteneur : l'un en t-shirt blanc et short rouge, l'autre en chemise à motifs et short jaune ; leurs visages sont visibles en plan moyen (petits dans le cadre), non gros plan. Spectateur au premier plan, toujours de dos (nuque et dreadlocks). Spectateur en chemise rose à motifs (de dos ou de profil, coupé). Jeune en maillot vert. Clients ou passants assis au fond devant les boutiques, minuscules. Pas d'enfant seul, pas de torse nu, personne visiblement contrarié.",
+  "brands_text": "Aucun texte lisible sur le conteneur (pas de logo de compagnie maritime visible). Maillot bleu au premier plan : style équipe de France (liseré bleu-blanc-rouge au col), aucun logo lisible car toujours vu de dos. Maillot vert style Cameroun en bord de cadre. Chemise rose à 16-18 s : impression partielle illisible. Pas de plaque d'immatriculation lisible.",
+  "story_role": "Déchargement à Douala : ouverture du conteneur, colis sortis sur le plateau, sanglés et accrochés à la grue, devant les curieux. Utilisable comme plan d'action principal du déchargement (0-18.5 s).",
+  "audio_note": "Ambiance continue de rue et de voix, niveau stable (environ -16 à -18 dBFS), aucun pic notable. Baisse légère en fin (-21 dBFS) pendant le filé. Contenu des paroles non vérifié."
+ },
+ {
+  "id": "v26",
+  "summary": "La grue du camion soulève un gros colis emballé de film plastique depuis le plateau. On voit le grutier aux commandes près de la cabine, puis un manutentionnaire guide la charge suspendue.",
+  "orientation_note": "Droit, portrait natif 576x1024.",
+  "quality": "Bonne : net, ciel couvert clair. Panoramiques rapides à 2.5-4 s et 6.5-7.5 s avec léger flou de bougé. Le reste est stable et exploitable.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2.5,
+    "desc": "Plan large du plateau rouillé jaune/rouge, roue au premier plan à gauche. Sur le plateau, le manutentionnaire beige (centre-gauche) se tient à côté d'un colis gris/blanc à marquages rouges, emballé de film plastique et accroché à la chaîne de la grue (flèche noire en haut). À droite, sur le seuil du conteneur ouvert (intérieur bordeaux) : trois hommes debout, en chemise à motifs et short jaune, en maillot vert et short bleu, en t-shirt blanc et short rouge. Au fond à gauche, des curieux en blanc devant une boutique bleue."
+   },
+   {
+    "t0": 2.5,
+    "t1": 4,
+    "desc": "Panoramique vers la gauche, le long du plateau. La charge suspendue et le manutentionnaire se décalent à droite du cadre. Le conteneur sort du cadre. Au fond, deux hommes en blanc regardent, debout devant les boutiques bleues et orange."
+   },
+   {
+    "t0": 4,
+    "t1": 6.5,
+    "desc": "Le panoramique se poursuit jusqu'à l'avant du camion. Le grutier, en t-shirt crème et pantalon noir, debout de dos sur le marchepied à gauche, actionne les leviers de la grue derrière la cabine. Au centre-droit, des cales et planches de bois sur le plateau, un parasol rouge en fond et un immeuble jaune."
+   },
+   {
+    "t0": 6.5,
+    "t1": 7.5,
+    "desc": "Retour en panoramique vers la droite. On repasse sur le plateau, les cales de bois et les curieux au fond."
+   },
+   {
+    "t0": 7.5,
+    "t1": 12.3,
+    "desc": "Plan fixe. Le manutentionnaire beige, au centre, accompagne le colis suspendu au crochet, avec un grand voile de film plastique qui traîne sur le plateau à droite. Vers 9-12 s, il tient la chaîne et met la main sur sa tête. La charge bouge légèrement. En fond, la boutique bleue, des curieux en blanc et un parasol multicolore. Un équipier en chemise à motifs en bord droit."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Plan le plus complet : colis accroché à la grue, manutentionnaire, et trois équipiers alignés sur le seuil du conteneur ouvert. Tableau de l'arrivée.",
+    "framing": "Colis et manutentionnaire au centre-gauche, au tiers médian. Équipiers et conteneur au tiers droit. Plateau et roue en bas."
+   },
+   {
+    "t": 5,
+    "why": "Le grutier de dos aux leviers : plan de détail métier, montre qui manœuvre.",
+    "framing": "Grutier à gauche, sur toute la hauteur. Plateau, cales et parasol à droite."
+   },
+   {
+    "t": 7.5,
+    "why": "La charge emballée suspendue au crochet, le manutentionnaire la guide, film plastique au vent : beau plan de levage.",
+    "framing": "Manutentionnaire et charge au centre, flèche de la grue en haut, plateau au tiers inférieur."
+   },
+   {
+    "t": 11,
+    "why": "Charge soulevée avec le voile de plastique, l'ouvrier en appui : variante dynamique.",
+    "framing": "Charge au centre, ouvrier derrière elle au centre, curieux en fond à gauche."
+   }
+  ],
+  "people": "Manutentionnaire en tenue beige, visage visible en plan moyen à 0-3 s et 7.5-12 s (pas de gros plan). Trois équipiers sur le seuil du conteneur à 0-2.5 s, visages visibles mais petits. Grutier, uniquement de dos. Curieux au fond, petits. Pas de gros plan de visage, pas d'enfant seul, pas de torse nu.",
+  "brands_text": "Maillot vert d'un équipier à 0-2.5 s : style équipe du Cameroun (écusson, motif jaune et rouge), numéro « 44 » sur le short bleu. Aucun texte lisible sur le conteneur ni sur le camion. Parasols rouge/blanc et multicolores en fond sans marque lisible. Pas de plaque lisible.",
+  "story_role": "Déchargement : la grue soulève un colis du conteneur, avec un plan métier sur le grutier. À enchaîner après v25 et avant v27 (le colis est déposé sur le trottoir).",
+  "audio_note": "Ambiance continue de rue, de voix et probablement du moteur de la grue, niveau stable (environ -15 à -18 dBFS), aucun pic notable. Non transcrit."
+ },
+ {
+  "id": "v27",
+  "summary": "Sur le trottoir, un manutentionnaire en polo rayé accompagne à pied le colis emballé que la grue a déposé côté rue. En fond, la rue de Douala : voiture garée, motos-taxis.",
+  "orientation_note": "Droit, portrait natif 720x1280 (meilleure résolution que v24-v26).",
+  "quality": "Bonne : net, lumière douce couverte, caméra qui suit le sujet en marchant (légère oscillation). Fin un peu bougée vers 5.5-6.27 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2,
+    "desc": "Le manutentionnaire en polo rayé beige et short beige, de dos au centre, marche sur le trottoir en tenant un grand film plastique. Devant lui, le colis emballé, suspendu bas au crochet (sangle rouge). À droite, l'arrière du camion-grue jaune/olive, avec le grutier en t-shirt crème aux commandes. À gauche au fond, une cabine bleue et blanche, une voiture grise garée et des motos-taxis dans la rue."
+   },
+   {
+    "t0": 2,
+    "t1": 4,
+    "desc": "La caméra suit en marchant et pivote un peu à gauche. Le manutentionnaire avance de dos vers la gauche du cadre. La flèche de la grue traverse le haut du cadre, la chaîne descend vers la charge. Fond : murs et cabine bleue et blanche, poteaux et fils électriques, cabine du camion à droite."
+   },
+   {
+    "t0": 4,
+    "t1": 6.27,
+    "desc": "Plan large de la ruelle : le manutentionnaire, de dos au centre-gauche, tient le film plastique. La flèche de la grue sort en diagonale en haut à droite. Au fond, la cabine bleue et blanche, une Peugeot 208 grise garée et un passant en rose. À droite, l'avant du camion olive."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "La charge passe par-dessus le trottoir avec le camion-grue et le grutier : on voit d'un coup d'œil la livraison au pied de la boutique.",
+    "framing": "Manutentionnaire au centre, sur toute la hauteur. Grue et camion au tiers droit et en haut. Rue en fond à gauche."
+   },
+   {
+    "t": 2.5,
+    "why": "Le manutentionnaire au centre, chaîne et crochet bien visibles au-dessus de la charge : bon plan de liaison.",
+    "framing": "Sujet au centre-droit, flèche en haut à droite."
+   },
+   {
+    "t": 5,
+    "why": "Plan large d'ambiance de rue à Douala : bel établissement du lieu de livraison.",
+    "framing": "Sujet au centre-gauche, grue en diagonale en haut à droite, rue en profondeur au centre."
+   }
+  ],
+  "people": "Manutentionnaire en polo rayé, toujours de dos ou de 3/4 dos, visage non visible. Grutier de dos ou de profil, petit. Motards et passants au loin, minuscules. Pas de gros plan de visage, pas d'enfant seul, pas de torse nu.",
+  "brands_text": "Voiture grise garée au fond : Peugeot 208 (calandre au logo lion reconnaissable) visible de 0 à 1 s (gauche) et de 4 à 6.27 s (centre-droit). Plaque avant floue, non lisible à la résolution d'origine, mais à flouter par précaution. Enseignes de boutiques au fond (une jaune à 0.5 s, « AL-… » vers 5 s), illisibles. Aucune marque lisible sur le camion-grue.",
+  "story_role": "Fin du déchargement et livraison : le colis passe du camion au trottoir devant les boutiques. Plan d'établissement du lieu (rue de Douala).",
+  "audio_note": "Ambiance continue de rue et de voix, niveau stable (environ -14 à -16 dBFS), un peu plus fort que v24-v26, aucun pic net. Non transcrit."
+ },
+ {
+  "id": "v28",
+  "summary": "Filmé depuis l'intérieur d'un entrepôt vide en béton : la grue du camion fait entrer par la porte roulante ouverte une machine en inox (coins rouges) suspendue à son crochet, guidée à la main par un ouvrier en uniforme kaki, film plastique qui traîne au sol.",
+  "orientation_note": "Portrait 576x1024, droit tel qu'affiché (rotation appliquée). Pas d'inclinaison notable.",
+  "quality": "Résolution faible (576x1024, WhatsApp). Fort contre-jour : l'intérieur est sombre, l'extérieur (rue) lumineux, les personnes au premier plan à droite sont en silhouette. Caméra à l'épaule assez stable de 0 à 15 s, net correct ; flou de bougé net vers 15,5-17 s (recadrage vers la gauche). Exposition stable ensuite.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 5,
+    "desc": "Plan fixe à l'épaule depuis le fond de l'entrepôt, sol en béton occupant la moitié basse. Dans l'encadrement de la porte (haut-centre) : machine en inox suspendue au crochet de la grue, entourée de film plastique, au centre ; ouvrier en uniforme kaki (droite du cadre extérieur) la retient d'une main et tient un pan de plastique de l'autre ; derrière, homme en t-shirt crème aux commandes de la grue ; cabine de camion jaune à gauche, parasol orange, immeuble beige en fond. Jambes d'un passant qui traverse au premier plan droit."
+   },
+   {
+    "t0": 5,
+    "t1": 10,
+    "desc": "Même cadre, léger recadrage vers le haut/la droite (on voit le linteau de la porte roulante). La machine se rapproche du seuil ; l'ouvrier kaki la pousse vers l'intérieur, un homme partiellement visible au bord droit tend le bras. Balai et raclette contre le mur à gauche."
+   },
+   {
+    "t0": 10,
+    "t1": 15.5,
+    "desc": "Un homme en vêtements sombres entre au premier plan droit et reste debout, de dos/profil, en silhouette (visage non lisible) ; il regarde la machine qui franchit la porte. L'ouvrier kaki continue de guider la charge au centre. Cadre quasi fixe."
+   },
+   {
+    "t0": 15.5,
+    "t1": 17,
+    "desc": "Mouvement de caméra rapide vers la gauche avec flou de bougé : on découvre le mur intérieur gris de l'entrepôt ; une autre silhouette (t-shirt bordeaux) passe au bord droit."
+   },
+   {
+    "t0": 17,
+    "t1": 23.5,
+    "desc": "Nouveau cadre : mur et porte métallique intérieure à gauche, sol vide ; à droite dans l'ouverture, la machine suspendue à la grue (chaîne, sangles) descend lentement vers le sol de l'entrepôt, film plastique étalé par terre ; cabine jaune visible en fond à droite. À partir de ~20 s, un homme en t-shirt bordeaux au premier plan droit, coupé (pas de visage)."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 3,
+    "why": "Image la plus lisible de la livraison : machine au crochet + ouvrier kaki qui la guide + camion-grue jaune, tout dans l'encadrement de la porte (effet cadre dans le cadre).",
+    "framing": "Sujet dans le tiers haut-centre du cadre (porte), sol vide en bas : recadrage serré possible sur le haut de l'image (zone ~y 180-560 sur 1024)."
+   },
+   {
+    "t": 13,
+    "why": "Silhouette en contre-jour au premier plan qui regarde la charge entrer : plan 'arrivée de la marchandise dans le magasin' avec profondeur.",
+    "framing": "Silhouette à droite, machine au centre-gauche dans la porte."
+   },
+   {
+    "t": 21,
+    "why": "La machine entre et se pose à l'intérieur de l'entrepôt : fin de parcours de la marchandise.",
+    "framing": "Machine à droite-centre, mur vide à gauche ; recadrage centré à droite."
+   }
+  ],
+  "people": "Ouvrier en uniforme kaki (visage de profil, plan moyen, pas en gros plan) ; opérateur de grue en t-shirt crème (plan moyen, lointain) ; silhouettes au premier plan droit en contre-jour, visages non lisibles ; homme en t-shirt bordeaux coupé au premier plan droit en fin de clip (pas de visage). Aucun gros plan de visage, aucun enfant, rien de sensible repéré.",
+  "brands_text": "Aucune marque, plaque ou texte lisible. La cabine jaune du camion-grue est visible mais sans plaque dans le champ.",
+  "story_role": "Fin du déchargement / livraison : la marchandise (machine) entre dans l'entrepôt ou le magasin du client à Douala. Peut servir de plan de conclusion du parcours 'Guangzhou → Douala → chez le client'.",
+  "audio_note": "Ambiance continue (moteur/hydraulique de la grue, rue, voix lointaines), niveau stable vers -20 dBFS, pas de pic marqué. Non transcrit."
+ },
+ {
+  "id": "v29",
+  "summary": "Sur le plateau du camion-grue garé contre le conteneur ouvert, des manutentionnaires préparent une machine emballée de blanc et rouge et y accrochent le crochet de la grue, pendant qu'un ouvrier en kaki dégage des cartons et du bois à l'avant du plateau.",
+  "orientation_note": "Portrait 576x1024, droit tel qu'affiché. Horizon légèrement penché par moments pendant les panoramiques, sans gravité.",
+  "quality": "Résolution faible (WhatsApp). Lumière de jour couverte, exposition correcte (ciel un peu brûlé). Caméra à l'épaule, assez nette sur les plans fixes ; flou de bougé pendant les panoramiques 2,5-5 s et 7,5-9,5 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2.5,
+    "desc": "Plan à hauteur de trottoir : plateau jaune et rouge rouillé du camion-grue en diagonale, grosse roue en bas à gauche, bordure de trottoir au premier plan bas ; flèche noire de la grue en haut. À droite, bord du conteneur ouvert (intérieur sombre) : homme en short rouge et t-shirt gris + ouvrier en kaki penchés sur une machine emballée de plastique blanc à étiquettes rouges ; homme en maillot rose debout derrière, au bord du conteneur. Badauds devant une boutique bleu turquoise en fond."
+   },
+   {
+    "t0": 2.5,
+    "t1": 4,
+    "desc": "L'ouvrier en kaki se redresse et marche/saute vers la gauche sur le plateau ; la caméra commence à le suivre en panoramique vers la gauche."
+   },
+   {
+    "t0": 4,
+    "t1": 5,
+    "desc": "Panoramique gauche le long du plateau : l'ouvrier kaki (gauche) se penche pour ramasser des débris ; badauds alignés devant la boutique bleue (dont un homme en t-shirt bleu, un en blanc) ; homme en short rouge au bord droit."
+   },
+   {
+    "t0": 5,
+    "t1": 7.5,
+    "desc": "Avant du camion : base de la grue et leviers de commande jaunes, homme en t-shirt crème et jean debout sur le marchepied à gauche, main sur les commandes ; à droite l'ouvrier kaki empile cartons et planches de bois ; immeuble beige/jaune à bandes rouges et parasol orange en fond."
+   },
+   {
+    "t0": 7.5,
+    "t1": 9.5,
+    "desc": "Panoramique retour vers la droite le long du plateau : jambe de l'ouvrier kaki à gauche, homme en short rouge marchant vers l'arrière du camion à droite ; badauds devant la boutique bleue."
+   },
+   {
+    "t0": 9.5,
+    "t1": 11.87,
+    "desc": "Retour au cadre initial : homme en short rouge debout au centre face à la machine ; à droite, homme en maillot rose accroupi accroche le crochet et les sangles de la grue à la machine (panneau de commande blanc et rouge visible) ; homme en t-shirt à motifs debout dans le conteneur, bras croisés ; ouvrier kaki à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 11,
+    "why": "Geste clé : accrochage de la machine au crochet de la grue devant le conteneur ouvert, avec plusieurs ouvriers dans le cadre.",
+    "framing": "Action dans le tiers droit-centre (machine + homme en rose accroupi), conteneur sur le bord droit."
+   },
+   {
+    "t": 1,
+    "why": "Déchargement en cours au pied du conteneur : trois hommes penchés sur le colis emballé, roue et plateau donnent l'échelle du camion.",
+    "framing": "Groupe en haut à droite, roue en bas à gauche ; recadrer sur la moitié haute."
+   },
+   {
+    "t": 6.5,
+    "why": "Opérateur aux commandes de la grue + ouvrier qui range : plan 'équipe au travail', décor de rue de Douala.",
+    "framing": "Opérateur à gauche (plan moyen), ouvrier au bord droit."
+   }
+  ],
+  "people": "5-6 manutentionnaires : homme en short rouge et t-shirt gris (visage peu visible, souvent penché) ; ouvrier en uniforme kaki (visage de profil, plan moyen) ; homme en maillot rose (visage visible, plan moyen) ; homme en t-shirt à motifs debout dans le conteneur (visage visible, plan moyen) ; opérateur de grue en t-shirt crème (visage de profil, plan moyen, ~6-7 s). Badauds lointains devant la boutique. Pas de gros plan de visage, pas d'enfant seul, personne visiblement contrariée.",
+  "brands_text": "Maillot rose de l'homme près du conteneur : maillot de football type Real Madrid avec texte de sponsor sur la poitrine (illisible à cette résolution dans ce clip, mieux visible dans v30). Manche noire à trois bandes blanches (style Adidas) sur le t-shirt de l'homme en short rouge (~1 s). Aucune plaque ni numéro de téléphone lisible.",
+  "story_role": "Déchargement : sortie de la marchandise du conteneur et préparation au levage par la grue (avant le levage de v31 et l'entrée en entrepôt de v28). Plans 'équipe au travail'.",
+  "audio_note": "Ambiance continue (rue, voix, moteur), niveau stable vers -16 dBFS, pas de pic marqué. Non transcrit."
+ },
+ {
+  "id": "v30",
+  "summary": "Plan très court (2 s) au pied du camion-grue et du conteneur ouvert : un homme en short rouge, penché sur le plateau, défait l'emballage de la machine pendant que d'autres hommes attendent dans l'ouverture du conteneur et qu'un jeune en t-shirt rouge s'appuie au plateau.",
+  "orientation_note": "Portrait 720x1280, droit tel qu'affiché.",
+  "quality": "Meilleure définition que les autres (720x1280). Net, bien exposé (ciel blanc couvert), léger bougé à la main ; plan quasi fixe avec une petite dérive vers la droite.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2.13,
+    "desc": "Plan quasi fixe à hauteur de trottoir, léger glissement vers la droite. Plateau jaune rouillé en diagonale, grosse roue en bas à gauche, bordure de trottoir en béton au premier plan bas. Au centre, homme en short rouge et t-shirt gris, de dos et penché, manipule le plastique autour de la machine ; à droite, dans l'ouverture du conteneur (intérieur sombre) : homme en maillot rose debout, homme en t-shirt à motifs derrière lui, homme en débardeur violet accroupi ; machine verte visible au fond du conteneur à droite ; au premier plan droit, jeune homme en t-shirt rouge et pantalon noir, appuyé des deux mains sur le bord du plateau, de profil. Badauds devant une boutique au fond à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 1.9,
+    "why": "Image la plus nette de la série : conteneur ouvert + équipe qui attend + déchargement sur le plateau, composition lisible.",
+    "framing": "Conteneur et groupe dans le tiers droit, plateau au centre, roue en bas à gauche."
+   },
+   {
+    "t": 0.2,
+    "why": "On voit mieux l'intérieur du conteneur (machine verte au fond à droite), utile comme plan 'conteneur ouvert / marchandise'.",
+    "framing": "Conteneur et machine verte au bord droit, en haut."
+   }
+  ],
+  "people": "Homme en short rouge (de dos, sans visage) ; homme en maillot rose (visage visible, plan moyen) ; homme en t-shirt à motifs (visage partiellement visible) ; homme en débardeur violet accroupi (profil) ; jeune en t-shirt rouge au premier plan droit (profil, visage peu visible), qui semble assez jeune (adolescent ?) — à vérifier, il n'est pas seul (entouré d'adultes). Badauds lointains. Pas de gros plan de visage.",
+  "brands_text": "Maillot rose = maillot de football Real Madrid (écusson du club visible sur la poitrine, sponsor 'Emirates / Fly Better' partiellement lisible), homme debout dans le conteneur, haut-droite, toute la durée. Aucune plaque ni numéro de téléphone lisible.",
+  "story_role": "Ouverture/déchargement du conteneur : l'équipe au pied du conteneur ouvert. Trop court pour un plan seul, utilisable en insert rapide (≈1-2 s) dans une séquence rythmée.",
+  "audio_note": "Ambiance de rue/voix, niveau stable vers -18 dBFS, pas de pic marqué. Non transcrit."
+ },
+ {
+  "id": "v31",
+  "summary": "La grue du camion soulève la machine en inox (coins rouges, panneau de commande) du plateau ; l'ouvrier en uniforme kaki la stabilise à la main sous la flèche noire, devant un immeuble beige à bandes rouges, pendant qu'une spectatrice filme avec son téléphone.",
+  "orientation_note": "Portrait 576x1024, droit tel qu'affiché. Légère inclinaison pendant la marche du cadreur (1-8 s), cadre droit ensuite.",
+  "quality": "Résolution faible (WhatsApp). Lumière de jour couverte, exposition correcte, ciel blanc. De 0 à 8 s, caméra en mouvement (le cadreur marche le long du camion) avec flou de bougé par moments ; de 8 à 20 s, plan large quasi fixe, net correct, petits tremblements de main.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.5,
+    "desc": "Plateau du camion-grue vu de côté, roue au centre-bas : l'ouvrier en kaki marche de gauche à droite sur le plateau ; à droite, la machine est accrochée au crochet (chaîne qui descend de la flèche noire en haut), film plastique au sol ; badauds devant la boutique bleue en fond."
+   },
+   {
+    "t0": 1.5,
+    "t1": 4,
+    "desc": "Le cadreur avance vers l'avant du camion (glissement vers la gauche) : l'ouvrier kaki debout au centre du plateau tient un objet plat (morceau de carton ?) ; à gauche, tas de planches et cartons ; parasol orange et badauds en fond ; à droite, la machine commence à se soulever dans son plastique (~3,5 s)."
+   },
+   {
+    "t0": 4,
+    "t1": 5,
+    "desc": "Cadre en mouvement, immeuble beige/jaune en fond : l'ouvrier passe derrière la machine qui monte, plastique au premier plan."
+   },
+   {
+    "t0": 5,
+    "t1": 7.5,
+    "desc": "Plan rapproché en légère contre-plongée : la machine en inox à coins rouges et panneau de commande, suspendue au crochet, monte au centre du cadre devant l'ouvrier kaki qui la retient d'une main ; immeuble beige à bandes rouges et boutique bleue en fond, badauds à gauche et à droite. Caméra qui suit, un peu bougée."
+   },
+   {
+    "t0": 7.5,
+    "t1": 8,
+    "desc": "Le cadreur recule/se décale vers la droite : transition floue vers le plan large."
+   },
+   {
+    "t0": 8,
+    "t1": 14,
+    "desc": "Plan large du camion-grue entier en légère contre-plongée depuis le trottoir : flèche noire en haut, machine suspendue au crochet au centre-droite, ouvrier kaki debout à droite sur le plateau qui la tient ; opérateur en t-shirt crème aux commandes à gauche ; cabine blanche d'un autre camion derrière la grue à gauche ; immeuble beige à bandes rouges et rideaux métalliques en fond ; badauds sous l'auvent. La charge se balance légèrement."
+   },
+   {
+    "t0": 14,
+    "t1": 16.3,
+    "desc": "Même plan large ; au premier plan gauche entre une spectatrice en haut blanc qui filme la scène avec son smartphone (main + écran visibles, ~14-15,5 s), puis ses tresses blondes/brunes passent au premier plan bas (~15,5-16,3 s), masquant le bas du cadre."
+   },
+   {
+    "t0": 16.3,
+    "t1": 20.17,
+    "desc": "Retour au plan large dégagé : la machine suspendue tourne légèrement, l'ouvrier kaki la stabilise de la main droite et regarde vers la caméra/le haut ; opérateur à gauche ; cadre quasi fixe."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 6.5,
+    "why": "Le moment le plus spectaculaire : la machine décolle du plateau au premier plan, l'ouvrier la guide, contre-plongée sur la rue de Douala.",
+    "framing": "Machine au centre-haut, ouvrier juste derrière (centre), bord droit = ciel et boutique bleue."
+   },
+   {
+    "t": 12,
+    "why": "Plan large lisible qui raconte tout : camion-grue, flèche, charge suspendue, ouvrier et opérateur, décor urbain.",
+    "framing": "Machine centre-droite, ouvrier bord droit, opérateur bord gauche ; laisser la flèche en haut."
+   },
+   {
+    "t": 15,
+    "why": "Une spectatrice filme avec son téléphone au premier plan : plan 'foule qui filme / événement' en profondeur.",
+    "framing": "Téléphone et main au premier plan gauche, scène de levage à droite-centre."
+   },
+   {
+    "t": 19,
+    "why": "Fin stable : ouvrier qui stabilise la charge, regard vers la caméra ; bon plan de sortie.",
+    "framing": "Ouvrier bord droit (plan moyen, debout), machine centre-droite."
+   }
+  ],
+  "people": "Ouvrier en uniforme kaki (personnage principal, visage visible de face/profil en plan moyen, surtout 6-7 s et 16-20 s) ; opérateur de grue en t-shirt crème (de dos/profil, petit dans le cadre) ; badauds lointains devant les boutiques ; spectatrice au premier plan gauche 14-16,3 s (de dos/trois-quarts arrière, visage non lisible, tresses blondes, smartphone dont l'écran affiche la scène filmée). Pas de gros plan de visage, pas d'enfant seul, rien de sensible repéré.",
+  "brands_text": "Aucune marque, plaque ou numéro de téléphone lisible. Cabine blanche d'un camion à gauche derrière la grue (8-20 s) : pas de plaque visible dans le champ. L'écran du téléphone de la spectatrice (~15 s) montre la même scène, sans texte lisible.",
+  "story_role": "Déchargement à la grue : levage de la machine depuis le plateau du camion (suite de v29, avant l'entrée en entrepôt de v28). Contient aussi un plan 'foule qui filme' (14-16 s) et un plan large d'établissement de la rue de Douala.",
+  "audio_note": "Ambiance continue (moteur/hydraulique de la grue probable, rue, voix), niveau stable entre -16 et -21 dBFS, pas de pic marqué. Non transcrit."
+ },
+ {
+  "id": "v32",
+  "summary": "Dans une rue de Douala, un manutentionnaire en polo rayé porte des cales en bois le long d'un camion-grue jaune. Un jeune homme en t-shirt rouge tient une sangle à cliquet orange, et un ouvrier manœuvre la grue depuis le plateau.",
+  "orientation_note": "Vertical 576x1024 (rotation -90 appliquée par ffmpeg), image droite et sans inclinaison notable.",
+  "quality": "Netteté correcte pour du WhatsApp. Lumière de jour nuageuse et homogène. Tenue à la main, avec un tremblement modéré et des panoramiques un peu brusques vers 3,5–5 s et 9,5–10,5 s. Résolution faible (576 px de large) mais utilisable en vertical.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 3,
+    "desc": "Plan de dos : un homme en polo rayé beige/vert et short beige, au centre-gauche, des cales de bois à la main, marche sur le trottoir le long d'un camion-grue jaune (droite du cadre). Le bras hydraulique de la grue est en haut au centre, un objet gris à feux/bouchons rouges pend ou est posé près du camion (nature incertaine : machine ou caisse). Un ouvrier en t-shirt blanc est sur le plateau. Au fond : rue, berline grise garée à gauche, immeuble à balcons rouges à droite. Caméra qui suit légèrement."
+   },
+   {
+    "t0": 3,
+    "t1": 5,
+    "desc": "L'homme se retourne et repart vers la gauche le long du trottoir. La caméra panote vers la gauche et dévoile une guérite bleu et blanc et le bras de grue en diagonale en haut à droite. La cabine jaune du camion et l'ouvrier sur le plateau sont à droite. Une sangle orange entre dans le coin bas gauche."
+   },
+   {
+    "t0": 5,
+    "t1": 8,
+    "desc": "Le manutentionnaire, au centre, porte les cales vers l'objet déposé au pied de la guérite (une bâche plastique transparente est au sol à droite). À gauche, une main et une sangle orange tenue par une personne hors champ (haut rouge/rose) pendent au premier plan. La caméra panote un peu."
+   },
+   {
+    "t0": 8,
+    "t1": 9.5,
+    "desc": "Plan moyen : à gauche, un jeune homme en t-shirt rouge et blanc, visage visible et regard vers la caméra, tient une sangle à cliquet orange. Devant lui, une autre personne (short gris, claquettes) est coupée par le cadre. Au centre, le manutentionnaire se penche avec ses cales près de l'objet gris/rouge posé au sol. En arrière-plan : la guérite bleu-blanc, le bras de grue, une berline grise et une moto au loin à droite."
+   },
+   {
+    "t0": 9.5,
+    "t1": 10.5,
+    "desc": "Panoramique rapide vers la droite qui quitte le groupe et revient vers le camion. Léger flou de bougé."
+   },
+   {
+    "t0": 10.5,
+    "t1": 12.9,
+    "desc": "Plan large : le camion-grue jaune à droite, avec un ouvrier (t-shirt blanc, de dos/profil) debout sur le plateau aux commandes de la grue. Le bras de grue traverse le cadre en diagonale en haut. Le manutentionnaire en polo rayé se tient au bord gauche du cadre près de l'objet déposé (élément rouge visible). Ciel nuageux, câbles électriques. La berline grise est garée au fond au centre."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 1,
+    "why": "Image d'ambiance de l'arrivée : camion-grue jaune, bras hydraulique et ouvrier qui porte les cales, rue de Douala en fond.",
+    "framing": "Ouvrier au centre-gauche, camion et grue à droite, bras de grue en haut au centre ; recadrage vertical natif."
+   },
+   {
+    "t": 3.5,
+    "why": "Ouvrier de dos face au camion-grue, avec l'ouvrier sur le plateau qui manœuvre : action de déchargement lisible.",
+    "framing": "Ouvrier au centre-bas, grue et camion dans le tiers droit."
+   },
+   {
+    "t": 9,
+    "why": "Jeune homme qui tient la sangle à cliquet orange (matériel d'arrimage), couleur forte. À utiliser seulement si l'accord de la personne filmée est acquis.",
+    "framing": "Jeune homme au tiers gauche, sangle orange au centre-gauche, manutentionnaire au centre."
+   },
+   {
+    "t": 11,
+    "why": "Plan large propre : camion-grue, bras de grue en diagonale et ouvrier aux commandes. Le plus stable du clip.",
+    "framing": "Camion et ouvrier dans la moitié droite, bras de grue en diagonale du haut gauche vers la droite."
+   }
+  ],
+  "people": "Un manutentionnaire en polo rayé et short beige, filmé surtout de dos ou de profil, visage peu visible. Un ouvrier en t-shirt blanc sur le plateau du camion, de dos/profil, lointain. De 8 à 9,5 s, un jeune homme en t-shirt rouge/blanc est cadré de face en plan moyen (gros plan relatif) et regarde la caméra : il a l'air jeune, possiblement adolescent (non certain), donc accord à vérifier ou floutage. Une autre personne est coupée au bord gauche (bras, short gris, claquettes). Quelques passants lointains dans la rue (silhouette noire au fond vers 0–1 s, motard vers 8,5 s). Rien de choquant : personne torse nu, personne visiblement contrariée.",
+  "brands_text": "Une berline grise garée au fond (silhouette de type Peugeot 208, logo non lisible) montre une plaque visible tout le clip (0–12,9 s, centre-gauche puis centre). Elle est partiellement lisible sur l'image pleine (« LT 683… » possible) mais illisible au zoom : flouter par prudence. La sangle orange porte un texte imprimé illisible. On ne lit aucune marque sur le camion-grue jaune.",
+  "audio_note": "Ambiance de rue continue, à niveau régulier (environ -18 dB RMS) et sans pic marquant. Probablement des voix et la grue en fond (transcription faite par un autre process).",
+  "story_role": "Arrivée et déchargement à Douala : le camion-grue livre et dépose une marchandise lourde dans la rue, un ouvrier apporte des cales et un autre tient les sangles d'arrimage. Plans d'établissement du lieu (rue de Douala, guérite bleu-blanc). Possiblement le même objet métallique gris/rouge que dans v33 (non certain)."
+ },
+ {
+  "id": "v33",
+  "summary": "Dans un local en béton, un homme en polo vert fluo et calot blanc/noir retire la bâche plastique et le papier bulle d'un bloc métallique (ressemble à un moule industriel en acier percé, dessus orange) posé sur des cales en bois, sous le regard d'une cliente qui filme avec son téléphone.",
+  "orientation_note": "Vertical 720x1280 (rotation -90 appliquée), image droite. Caméra plongeante vers le sol.",
+  "quality": "Bonne netteté (720p), lumière intérieure diffuse un peu terne. Bougé modéré, et la fin (3,5–4,9 s) part en mouvement : un homme traverse le premier plan et la caméra se baisse. Clip très court (4,9 s).",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.2,
+    "desc": "Plongée sur le bloc métallique gris percé de trous, dessus orange-rouge, enveloppé de film plastique et posé sur des cales en bois au sol. En haut à gauche, un bras en vert fluo soulève la bâche transparente, et une autre main au premier plan gauche tient un smartphone qui filme la scène (écran visible). En haut au centre-droite, une femme en t-shirt noir/vert tient un téléphone et un sac à main, visage hors champ."
+   },
+   {
+    "t0": 1.2,
+    "t1": 2.2,
+    "desc": "L'homme en polo vert fluo et calot à motifs blanc/noir, en haut à gauche, profil visible, se penche et tire la bâche plastique pour découvrir le bloc. La femme (tresses rouges, lunettes, t-shirt noir à imprimé vert) est en haut à droite, téléphone en main, visage visible. Le bloc découvert au centre-droite, la cale en bois visible."
+   },
+   {
+    "t0": 2.2,
+    "t1": 3.2,
+    "desc": "L'homme en vert (à gauche, visage de profil en haut du cadre) se redresse. La femme à droite se penche vers le bloc. La bâche est à moitié retirée et couvre encore le bloc au centre."
+   },
+   {
+    "t0": 3.2,
+    "t1": 4.93,
+    "desc": "L'homme en vert passe devant la caméra vers la droite (ventre et jambes en jean bleu foncé, claquettes). La caméra s'abaisse : le bloc, à moitié recouvert de plastique, reste au centre-gauche sur ses cales. Au premier plan bas gauche, les pieds d'une femme en sandales noires à boucles dorées et un téléphone violet. Une bouteille d'eau est contre le mur au fond à gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Déballage : on soulève la bâche sur la marchandise lourde pendant qu'une main filme avec un smartphone (l'idée « le client filme sa réception »).",
+    "framing": "Bloc métallique au centre-bas, smartphone en haut à gauche, cliente en haut au centre-droite."
+   },
+   {
+    "t": 1.5,
+    "why": "Geste le plus clair du déballage : l'homme tire la bâche et la cliente regarde, téléphone en main.",
+    "framing": "Homme en vert en haut à gauche (profil), cliente en haut à droite, bloc au centre-droite ; recadrage vertical possible en gardant le haut du cadre."
+   }
+  ],
+  "people": "Un homme en polo vert fluo à bande grise et calot blanc/noir (manutentionnaire ou client), visage visible de profil en plan rapproché à 1,2–2,8 s. Une femme (tresses rouges, lunettes, t-shirt noir à imprimé vert, sac à main, téléphone), visage visible en plan moyen à 1,2–2,5 s (cliente probable). Une main hors champ tient un smartphone qui filme (0–1,5 s). Une autre femme, dont on ne voit que les pieds en sandales et un téléphone violet (3,5–4,9 s). Pas d'enfant, personne torse nu, personne contrariée.",
+  "brands_text": "Le t-shirt de la femme porte « REVENGE » (marque streetwear) avec un sous-texte illisible : lisible partiellement à 0–0,5 s, haut centre-droite. Le polo vert porte un texte partiel (« …ver » dans le dos/l'épaule, « CSP 10 ? » sur la poitrine vers 3 s) qui n'est pas lisible avec certitude. L'écran du smartphone (0–1,5 s, haut gauche) montre la scène filmée, sans texte. Pas de plaque.",
+  "audio_note": "Ambiance intérieure, à niveau régulier (environ -18 dB). Probablement des voix et le froissement de la bâche plastique.",
+  "story_role": "Remise au client et déballage : la marchandise lourde (moule/bloc métallique) est découverte devant la cliente, qui filme avec son téléphone. Elle sert pour le moment « le client reçoit et vérifie sa marchandise ». Suite probable de v32 (objet déposé par la grue), non confirmé."
+ },
+ {
+  "id": "v34",
+  "summary": "Visite caméra à la main dans l'entrepôt de Douala : ballots verts filmés étiquetés à la main (nom + téléphone client), sacs jaunes, cartons, piles de paquets bleus sous film, puis caisses en bois et cartons sous une mezzanine sombre.",
+  "orientation_note": "Vertical 576x1024 (rotation -90 appliquée), image droite. Caméra souvent penchée vers le bas, avec une légère inclinaison dans les panoramiques.",
+  "quality": "Netteté moyenne, souvent floue de bougé dans les panoramiques (5–6 s et 9–10,5 s surtout). Lumière intérieure faible et grise. Sous la mezzanine (9,5–15,3 s), image sombre et bruitée. Résolution faible.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 3.8,
+    "desc": "Plan sur un coin de l'entrepôt : au premier plan bas gauche, un gros ballot vert sous film plastique porte une étiquette manuscrite (nom, numéro +237, DOUALA-CMR) ; un sac jaune est posé dessus en diagonale. Au-dessus, des cartons kraft et un carton à bande rouge. À droite, une caisse en bois vitrée et, au fond à droite, de hautes piles de paquets bleus et blancs sous film. Lent mouvement vers la droite et la gauche, sac plastique froissé au sol au premier plan."
+   },
+   {
+    "t0": 3.8,
+    "t1": 5.2,
+    "desc": "La caméra glisse vers la gauche et s'approche : le sac jaune occupe le tiers central, avec des cartons ouverts et du papier bulle au-dessus. Le second ballot vert, en bas, porte une autre étiquette manuscrite à l'envers (« TITALEM LUCAS ? Tel… »). Une poutre en béton est en haut à gauche."
+   },
+   {
+    "t0": 5.2,
+    "t1": 6,
+    "desc": "Panoramique rapide vers la gauche, flou : sacs jaunes en gros plan."
+   },
+   {
+    "t0": 6,
+    "t1": 8.8,
+    "desc": "Coin gauche de l'entrepôt : une rangée de sacs jaunes au sol au premier plan, un carton kraft à bande rouge posé dessus au centre-gauche, des panneaux blancs emballés contre le mur et un tube bleu dressé au centre. Un cadre de fenêtre en bois au fond à droite. Murs en béton brut."
+   },
+   {
+    "t0": 8.8,
+    "t1": 9.8,
+    "desc": "Panoramique rapide vers la gauche/le bas, flou : pilier gris et coin de mur. Plan de transition inutilisable."
+   },
+   {
+    "t0": 9.8,
+    "t1": 11,
+    "desc": "Sous la mezzanine, sombre : des caisses à claire-voie en bois avec des vitrages/panneaux, des cartons longs empilés et un câble au sol au premier plan. La caméra avance vers la droite."
+   },
+   {
+    "t0": 11,
+    "t1": 15.28,
+    "desc": "Plan sur un empilement sous la mezzanine : au centre-droite, une palette en bois avec cartons et un ballot kraft à ruban rouge au sommet. À gauche, deux longs cartons debout (type meubles ou TV). À gauche du mur, un tableau électrique ouvert d'où pendent des fils. Câble au sol au premier plan. Légère dérive vers la gauche, image sombre."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 2.5,
+    "why": "Plan le plus parlant de « marchandises arrivées et étiquetées au nom des clients » : ballot vert, sac jaune, cartons et piles de paquets au fond. Attention : nom et téléphone client lisibles, à flouter.",
+    "framing": "Ballot vert en bas à gauche (étiquette au centre-bas), piles bleues dans le tiers droit, haut du cadre libre."
+   },
+   {
+    "t": 7,
+    "why": "Plan calme et propre du stock : sacs jaunes, carton à ruban rouge, sans texte sensible.",
+    "framing": "Sacs jaunes en bas sur toute la largeur, carton rouge au centre-gauche, tube bleu au centre."
+   },
+   {
+    "t": 11.5,
+    "why": "Caisses en bois et cartons qui attendent sous la mezzanine : bon plan de stock prêt à remettre, même si l'image est sombre.",
+    "framing": "Empilement au centre, caisses en bois en bas, cartons à droite."
+   }
+  ],
+  "people": "Aucune personne visible.",
+  "brands_text": "SENSIBLE, à flouter : étiquette manuscrite sur un ballot vert, « MBANKEU AR / +237 6550 69908 (lecture approximative) / DOUALA-CMR », soit le nom et le numéro de téléphone d'un client. Lisible à 0–3,8 s, en bas à gauche/centre-bas (à l'envers à 0–1 s, à l'endroit à 2–3 s), et de nouveau partiellement à 4–5 s (bas droite). Seconde étiquette manuscrite sur l'autre ballot vert, « TITALEM (?) LUCAS / Tel 6?? 79 … », à l'envers, partiellement lisible à 4–5,2 s (bas gauche). Les cartons portent de petits textes et pictos chinois illisibles. Une caisse en bois porte un texte partiel « UND… » (marque probable, illisible au-delà) à 12–15 s, en bas à droite. Un petit autocollant blanc est sur un long carton. Pas de plaque. Le tableau électrique à fils pendants (11–15,3 s, gauche) n'est pas valorisant pour l'image.",
+  "audio_note": "Ambiance intérieure à niveau bas et régulier (environ -23 dB). Pas d'événement fort évident.",
+  "story_role": "Les colis arrivés et stockés à Douala avant remise : ballots identifiés au nom des clients et piles de marchandises (preuve de l'arrivée et du tri). Inserts ou plans de coupe pour « vos marchandises sont arrivées »."
+ },
+ {
+  "id": "v35",
+  "summary": "Visite de l'entrepôt de Douala en panoramique : chaise de bureau devant des palettes de paquets bleus et blancs sous film, cartons « 15x96 », palettes vides, ballots verts et sacs jaunes, puis vue large de la mezzanine avec caisses et cartons stockés dessous.",
+  "orientation_note": "Vertical 576x1024 (rotation -90 appliquée), image droite. Légère inclinaison dans certains passages du panoramique.",
+  "quality": "Netteté moyenne, filé de bougé à chaque changement de direction (3–3,5 s, 9 s, 13,5–14,5 s). Lumière intérieure grise un peu sous-exposée. Fin (14,5–17,9 s) plus stable. Résolution faible.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.8,
+    "desc": "Une chaise de bureau noire et grise au centre, devant un mur de paquets bleus et blancs sous film plastique sur palette (gauche). À droite, une caisse en bois vitrée posée sur une caisse en contreplaqué munie d'une étiquette blanche. Bouteille d'eau sur les paquets. Bâche jaune au sol."
+   },
+   {
+    "t0": 1.8,
+    "t1": 3,
+    "desc": "La caméra s'avance et cadre le mur de paquets : piles bleu foncé sous film en haut, packs blancs en bas sur bâche jaune. Lent glissement vers la droite."
+   },
+   {
+    "t0": 3,
+    "t1": 5,
+    "desc": "Panoramique vers la droite : des cartons kraft identiques empilés au premier plan (marqués « 15x96 », pastille jaune, pictos), et d'autres piles de paquets bleus en hauteur derrière. Léger flou au début."
+   },
+   {
+    "t0": 5,
+    "t1": 8,
+    "desc": "Plan de côté sur de hautes piles de paquets bleus et blancs sous film. Palettes vides au sol au centre-bas, cartons « 15x96 » au bord droit. Mouvement vers la gauche."
+   },
+   {
+    "t0": 8,
+    "t1": 9.5,
+    "desc": "Autre empilement de paquets blancs/bleus sur palettes au centre. À gauche, une caisse en bois vitrée et un bac à claire-voie. La caméra panote vers la gauche."
+   },
+   {
+    "t0": 9.5,
+    "t1": 12,
+    "desc": "Coin des colis clients : cartons kraft empilés, carton à bande rouge, caisse en bois vitrée en bas à droite, ballot vert en bas à gauche (début d'étiquette manuscrite « MB… » visible) et carton rouge à motif. Poutre en béton en haut à gauche."
+   },
+   {
+    "t0": 12,
+    "t1": 13.6,
+    "desc": "Plan sur les ballots verts filmés au premier plan, avec les deux étiquettes manuscrites lisibles (nom et téléphone des clients). Sac jaune à gauche, petit carton rouge, cartons kraft et carton à ruban rouge à droite, caisse vitrée en bas à droite."
+   },
+   {
+    "t0": 13.6,
+    "t1": 14.5,
+    "desc": "Panoramique rapide vers la droite et le haut, flou : on découvre la mezzanine."
+   },
+   {
+    "t0": 14.5,
+    "t1": 17.89,
+    "desc": "Plan large plus stable : façade de la mezzanine en contreplaqué percée de deux ouvertures noires (haut). Dessous, une rangée de caisses en bois, de cartons et de caisses à claire-voie au fond (tiers central). Grand sol en béton avec quelques papiers et un sac plastique au premier plan. Le sac jaune et le ballot vert entrent au bord droit, un tuyau/poteau vertical est à droite."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 2.5,
+    "why": "Mur de marchandises sur palette (paquets bleus et blancs sous film) : volume impressionnant, image de « stock arrivé ».",
+    "framing": "Mur plein cadre, packs blancs en bas sur bâche jaune ; idéal en vertical."
+   },
+   {
+    "t": 7,
+    "why": "Hautes piles de paquets et palettes vides : profondeur, sensation d'entrepôt rempli.",
+    "framing": "Piles au centre et à gauche, palette vide au centre-bas, cartons au bord droit."
+   },
+   {
+    "t": 16,
+    "why": "Plan large stable de l'entrepôt avec la mezzanine et les colis rangés dessous : bon plan d'établissement du lieu.",
+    "framing": "Mezzanine dans le tiers haut, colis dans le tiers central, sol en bas ; ballot vert et sac jaune au bord droit (à recadrer si besoin)."
+   },
+   {
+    "t": 0.5,
+    "why": "Chaise de bureau devant les palettes : détail « bureau dans l'entrepôt », plan stable au début.",
+    "framing": "Chaise au centre, piles à gauche, caisse en bois à droite."
+   }
+  ],
+  "people": "Aucune personne visible.",
+  "brands_text": "SENSIBLE, à flouter : étiquettes manuscrites des ballots verts, lisibles à 12–13,6 s en bas à gauche et au centre-bas. La première porte « MBANKEU AR +237 655069908 (approx.) DOUALA-CMR », soit le nom et le téléphone d'un client ; la seconde « TITALEM (?) LUCAS… », avec nom et téléphone partiel. Début d'étiquette « MB… » à 9,5–11 s (bas gauche). Les cartons kraft portent « 15x96 » (dimension produit) avec pastille jaune à 3–8 s, à droite/en bas : pas une marque. Les packs bleus et blancs sous film ont des logos imprimés illisibles. Une étiquette blanche est sur la caisse en contreplaqué (0–1,8 s, droite), illisible. Pas de plaque.",
+  "audio_note": "Ambiance intérieure à niveau régulier (environ -21 dB). Pas d'événement fort évident.",
+  "story_role": "Établissement de l'entrepôt de Douala et du volume de marchandises arrivées : palettes, colis clients étiquetés et zone de stockage sous mezzanine. Il sert pour « la marchandise est arrivée, en sécurité, prête à être remise »."
+ },
+ {
+  "id": "v36",
+  "summary": "Un ouvrier, debout à l'arrière d'un camion-plateau à grue jaune et rouge, tire une machine agricole verte hors d'un conteneur ouvert ; la caméra part en panoramique jusqu'au grutier, sous le regard de passants abrités sous des parasols, puis revient sur le conteneur.",
+  "orientation_note": "Image droite, vertical 9:16 (576x1024 après rotation). Les panoramiques de 5 à 7,5 s et de 11,5 à 13,5 s penchent un peu ; tout le reste est d'aplomb.",
+  "quality": "Netteté correcte pour une vidéo WhatsApp en 576x1024. Ciel couvert : le fond est un peu brûlé, l'intérieur du conteneur et le dessous du plateau sont sombres. Tenue à la main assez stable ; panoramiques lents mais un peu saccadés. Utilisable.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 4.5,
+    "desc": "Plan quasi fixe, en contre-plongée légère. L'arrière du plateau jaune et rouge, très usé, occupe le bas et le centre de l'image ; les portes ouvertes du conteneur (rouge foncé, cadre turquoise) sont à droite et le bras noir de la grue barre le haut du cadre. Au centre, un ouvrier (t-shirt et short beiges, tongs) penché tire une machine verte coincée dans l'ouverture du conteneur (cadre vert, disque jaune). Au fond, une baraque bleu ciel. À partir de 4 s, deux badauds (chemise blanche, t-shirt bleu) apparaissent à gauche, loin."
+   },
+   {
+    "t0": 4.5,
+    "t1": 7.5,
+    "desc": "Panoramique vers la gauche le long du plateau vide. Il révèle la rue : un immeuble beige à bandes rouges sur plusieurs étages, des parasols de vendeurs et des passants qui regardent. Les roues du camion apparaissent en bas à gauche."
+   },
+   {
+    "t0": 7.5,
+    "t1": 11.5,
+    "desc": "Cadre sur l'avant du camion-grue. À gauche, un ouvrier (t-shirt beige, pantalon noir) debout sur le châssis derrière la cabine manœuvre les commandes de la grue ; le bras de grue monte en diagonale. Sur le plateau, débris de bois et de carton près de la cabine. Une foule clairsemée sous des parasols multicolores au pied de l'immeuble. Vers 8,5-9,5 s, un vêtement rouge passe au premier plan en bas à gauche."
+   },
+   {
+    "t0": 11.5,
+    "t1": 13.5,
+    "desc": "Panoramique retour vers la droite le long du plateau. Les passants sous les parasols défilent au fond ; l'ouvrier remonte sur le plateau à droite."
+   },
+   {
+    "t0": 13.5,
+    "t1": 17.33,
+    "desc": "Retour sur l'arrière du camion et la porte du conteneur, à droite. L'ouvrier, au centre-gauche, tire la machine verte, qui sort davantage : on voit nettement ses lames rouges et bleues et son cadre vert à la porte (15-17 s). Une étiquette blanche illisible est collée sur la porte du conteneur, en haut à droite."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 2,
+    "why": "Geste clé du déchargement : l'ouvrier tire la machine verte hors du conteneur ouvert. Image lisible et stable.",
+    "framing": "Ouvrier au centre ; machine et porte du conteneur au tiers droit ; bras de grue en haut."
+   },
+   {
+    "t": 16,
+    "why": "La machine sort du conteneur avec ses lames rouges et bleues bien visibles : le moment le plus parlant pour « la marchandise arrive ».",
+    "framing": "Machine au centre-droit, à la porte ; ouvrier au centre-gauche ; recadrage serré possible sur la porte."
+   },
+   {
+    "t": 7.5,
+    "why": "Plan d'ambiance : la rue de Douala, l'immeuble et la foule sous les parasols qui regarde le camion.",
+    "framing": "Immeuble en haut, parasols et foule au milieu, plateau et roue en bas."
+   },
+   {
+    "t": 9,
+    "why": "Le grutier aux commandes, avec le bras de grue en diagonale.",
+    "framing": "Grutier au tiers gauche, bras de grue de la gauche vers le haut à droite."
+   }
+  ],
+  "people": "Un ouvrier en beige filmé en pied sur le plateau, visage de profil et de loin (pas de gros plan). Un grutier en t-shirt beige et pantalon noir, de loin. Des badauds lointains (chemise blanche, t-shirt bleu, gens sous les parasols) et des personnes assises au pied de l'immeuble. Aucun visage en gros plan, aucun enfant isolé, rien de sensible.",
+  "brands_text": "Étiquette blanche collée sur la porte du conteneur, en haut à droite, vers 14-17 s : illisible même en image pleine taille. Pas de plaque d'immatriculation visible. Pas d'autre marque lisible ; les tags et fresques sur les murs des baraques ne sont pas du texte lisible.",
+  "story_role": "Déchargement à l'arrivée : la marchandise (une machine agricole verte, probablement une fraise rotative ou rotavator pour tracteur) sort du conteneur sur le camion-grue. Le plan d'ambiance (7,5 s) peut servir d'établissement du lieu à Douala.",
+  "audio_note": "Ambiance de rue continue, niveau soutenu et régulier, sans pic évident à l'analyse des niveaux. Pas transcrit ici."
+ },
+ {
+  "id": "v37",
+  "summary": "La machine agricole verte pend au crochet de la grue au-dessus du plateau du camion ; la caméra part à gauche jusqu'au grutier aux commandes, puis revient sur la machine suspendue.",
+  "orientation_note": "Image droite, vertical 9:16 (720x1280 après rotation). Pas d'inclinaison notable.",
+  "quality": "Bonne netteté (720x1280), lumière couverte homogène. Tenue à la main correcte ; le panoramique aller-retour est assez rapide (1-4 s). Très utilisable.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan large. La machine verte (fraise rotative, attelage en A avec boîtier noir) pend au crochet et à la chaîne de la grue, au centre de l'image, juste au-dessus du plateau jaune et rouge. Le bras de grue noir est en haut à gauche. À droite, un ouvrier (t-shirt et short beiges, tongs) debout sur le plateau tient la machine. Au fond, l'immeuble beige à bandes rouges. Une femme en haut jaune regarde, petite, au fond à gauche. Une grosse roue du camion en bas à gauche."
+   },
+   {
+    "t0": 1,
+    "t1": 3.5,
+    "desc": "Panoramique vers la gauche. La machine glisse vers le bord droit de l'image et l'on découvre la base de la grue, les débris de bois sur le plateau et la cabine blanche au fond. De 2,5 à 3,5 s, le grutier (t-shirt beige, pantalon noir) est debout à gauche aux commandes."
+   },
+   {
+    "t0": 3.5,
+    "t1": 7.23,
+    "desc": "Panoramique retour vers la droite et stabilisation. La machine verte suspendue est au centre-droit, entière et nette ; le bras de grue en diagonale en haut, le plateau et la roue en bas. Un parasol bleu et un ouvrier en bleu au fond à gauche, entre les débris."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.2,
+    "why": "La machine suspendue au crochet au-dessus du plateau, avec l'ouvrier qui la tient : image claire de la manutention.",
+    "framing": "Machine au centre, ouvrier au tiers droit, bras de grue en haut."
+   },
+   {
+    "t": 5,
+    "why": "Plan net et stable de la machine verte en l'air, avec la chaîne et le bras de grue : très bon insert produit.",
+    "framing": "Machine au centre-droit, crochet et bras au-dessus ; recadrage carré possible sur la machine."
+   },
+   {
+    "t": 3.2,
+    "why": "Le grutier aux commandes : montre l'opération et les moyens mis en œuvre.",
+    "framing": "Grutier au bord gauche, plateau en diagonale, machine coupée au bord droit."
+   }
+  ],
+  "people": "Un ouvrier en beige sur le plateau (0-1 s), visage de profil à distance moyenne, pas de gros plan. Le grutier (2,5-3,5 s), de loin. Une femme en haut jaune très petite au fond à gauche. Un ouvrier en bleu au fond. Rien de sensible.",
+  "brands_text": "Aucun texte, aucune marque ni plaque lisible. Il n'y a pas de logo visible sur la machine verte.",
+  "story_role": "Déchargement : la grue lève la machine sortie du conteneur. Il fait la transition entre « sortie du conteneur » (v36) et « livraison au client » (v38, v39).",
+  "audio_note": "Ambiance de rue et moteur ou hydraulique probable, niveau régulier, pas de pic évident. Pas transcrit."
+ },
+ {
+  "id": "v38",
+  "summary": "Filmé du trottoir, derrière des jeunes spectateurs : la grue fait pivoter la machine verte au-dessus de la rue, puis plan sur la machine seule, guidée à la main par un ouvrier.",
+  "orientation_note": "Image droite, vertical 9:16 (576x1024 après rotation), en contre-plongée vers la grue. Légère inclinaison pendant le déplacement de 2 à 4 s.",
+  "quality": "Netteté moyenne à correcte (576x1024, compression WhatsApp). Ciel couvert très présent, le haut de l'image est clair. Tenue à la main instable de 1,5 à 5 s, quand le caméraman se déplace entre les spectateurs ; plus stable de 5,5 à 10,87 s.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1.5,
+    "desc": "Par-dessus l'épaule des spectateurs. Au premier plan, deux jeunes hommes de dos : l'un avec un sac à dos beige et un maillot rouge et blanc (centre-gauche), l'autre en maillot rayé rouge et bleu marine floqué « BOLOGNA » (en bas au centre). Derrière eux, au centre-droit, la machine verte est soulevée par le bras de grue vertical. Ciel nuageux avec câbles électriques, kiosque bleu et blanc à gauche, immeuble à bandes rouges à droite."
+   },
+   {
+    "t0": 1.5,
+    "t1": 2,
+    "desc": "Le jeune au sac à dos tourne la tête vers la droite : son visage est de profil ou de trois-quarts, en plan rapproché. La main d'un ouvrier touche la machine à droite."
+   },
+   {
+    "t0": 2,
+    "t1": 4,
+    "desc": "La caméra avance vers la droite entre les spectateurs. À 2,5-3 s, le visage d'un jeune homme apparaît en très gros plan, coupé, au bord gauche (main tendue au premier plan) ; il semble jeune, peut-être mineur, sans certitude. La machine suspendue se recentre ; le trottoir dallé descend en diagonale en bas à droite ; un bras d'ouvrier la guide à droite."
+   },
+   {
+    "t0": 4,
+    "t1": 5.5,
+    "desc": "Le jeune en maillot rouge et blanc (trois bandes sur l'épaule) est en amorce au bord gauche, de profil. La machine pivote au centre-droit ; une personne en noir se tient sous la machine, au fond."
+   },
+   {
+    "t0": 5.5,
+    "t1": 10.87,
+    "desc": "Plan sur la machine seule, suspendue au centre par la chaîne au bras de grue, en contre-plongée. Elle tourne lentement sur elle-même. À droite, les bras d'un ouvrier en chemise beige la poussent et la guident (disque jaune visible). Le kiosque bleu et blanc est à gauche, le trottoir en bas, la cabine du camion et des immeubles derrière. Plan le plus stable du clip."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 1,
+    "why": "La foule regarde la machine qui s'élève : spectateurs de dos au premier plan, machine en l'air derrière. Plan très efficace pour la curiosité du quartier.",
+    "framing": "Spectateurs en bas et à gauche, machine au centre-droit en haut ; attention au flocage « BOLOGNA » en bas au centre."
+   },
+   {
+    "t": 9.5,
+    "why": "La machine verte en l'air, nette et stable, guidée à la main par l'ouvrier : spectaculaire et lisible.",
+    "framing": "Machine au centre, chaîne et bras de grue en haut, mains de l'ouvrier au tiers droit."
+   },
+   {
+    "t": 6.5,
+    "why": "Variante du plan sur la machine suspendue, pendant qu'elle tourne.",
+    "framing": "Machine au centre, ouvrier en amorce à droite."
+   }
+  ],
+  "people": "Plusieurs jeunes hommes au premier plan, surtout de dos. Visage reconnaissable de trois-quarts du jeune au sac à dos, en plan rapproché, à 1,5-2 s. Très gros plan coupé du visage d'un jeune homme au bord gauche à 2,5-3 s, qui semble jeune (peut-être mineur, sans certitude) : à éviter ou à flouter. Les bras et le buste d'un ouvrier en beige de 5,5 à 10,87 s, sans visage. Personne n'a l'air contrarié.",
+  "brands_text": "Flocage « BOLOGNA » (en partie caché, se lit « BO…GNA ») dans le dos d'un maillot de foot rayé rouge et bleu marine, au premier plan en bas au centre, de 0 à 2 s. Le maillot rouge et blanc du jeune au sac à dos porte trois bandes sur l'épaule, de style Adidas (aucun logo lisible), de 0 à 5 s, à gauche. Pas de plaque, pas d'autre texte lisible.",
+  "story_role": "Spectacle et curiosité du quartier : la foule regarde la machine qui s'envole (0-4 s). Il sert aussi à la manutention et à la livraison : la machine passe au-dessus du trottoir vers le client (5,5-10,87 s).",
+  "audio_note": "Brouhaha de rue et voix des spectateurs probables, niveau soutenu, pas de pic évident. Pas transcrit."
+ },
+ {
+  "id": "v39",
+  "summary": "La grue amène la machine verte suspendue devant l'entrée d'une boutique, sur le trottoir ; un homme en polo rayé s'en approche et un homme en polo bleu et jaune à casquette guide la manœuvre du bras.",
+  "orientation_note": "Image droite, vertical 9:16 (720x1280 après rotation). Pas d'inclinaison notable ; léger recadrage vers 4 s.",
+  "quality": "Bonne netteté (720x1280), lumière couverte. Plan quasi fixe à la main, un peu de dérive de 3,5 à 4,5 s. Très utilisable.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan large, tourné sur le trottoir. La machine verte pend sous le bras de grue gris (qui barre le haut de l'image), au tiers gauche, devant l'entrée sombre d'une boutique. Au centre, un homme en polo à rayures beiges et short beige, en tongs, marche de dos vers la machine. À droite, la cabine jaune du camion, avec un ouvrier en t-shirt beige debout sur le camion. Au fond, la rue, des passants et une enseigne de boutique."
+   },
+   {
+    "t0": 1,
+    "t1": 3.5,
+    "desc": "Même cadre. À droite, derrière l'homme en polo rayé, apparaît un homme en polo tie-dye bleu, jaune et blanc avec une casquette : bras tendu vers la cabine, il fait signe au grutier. La machine avance lentement vers l'entrée de la boutique, à gauche. Voiture blanche au fond."
+   },
+   {
+    "t0": 3.5,
+    "t1": 6.47,
+    "desc": "Léger recadrage : la caméra recule un peu. La machine, plus basse, est à gauche devant l'entrée, au niveau du sol de la boutique ; on voit le kiosque bleu et blanc derrière. L'homme en polo rayé, au centre et de dos, attend la machine. L'homme en tie-dye, à droite, continue de guider ; voiture blanche et passants derrière lui."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 2.5,
+    "why": "Le cœur de la livraison : la machine arrive devant la boutique, un homme l'attend et un autre guide le grutier du bras. Toute l'action se lit en un plan.",
+    "framing": "Machine au tiers gauche, homme au polo rayé au centre, guide en tie-dye au tiers droit, bras de grue en haut."
+   },
+   {
+    "t": 5,
+    "why": "La machine est presque posée devant l'entrée : bonne fin de séquence (« livré »).",
+    "framing": "Machine à gauche, homme de dos au centre, guide à droite."
+   },
+   {
+    "t": 0.5,
+    "why": "Plan d'ouverture : on voit à la fois le camion, la machine en l'air et l'homme qui s'avance.",
+    "framing": "Machine à gauche, homme au centre, cabine du camion et ouvrier à droite."
+   }
+  ],
+  "people": "Un homme en polo rayé et short beige, de dos tout le clip, sans visage. Un homme en polo tie-dye bleu et jaune à casquette, de face à distance moyenne : visage visible mais pas en gros plan (1-6,47 s). Peut-être le client ou le gérant de la boutique, sans certitude. Un ouvrier sur le camion, à droite (0-1 s). Quelques passants lointains, dont une personne en rouge. Rien de sensible.",
+  "brands_text": "Enseigne de boutique au fond, au centre-droit, de 0 à 5 s : texte flou qui ressemble à « AL-BARKA » ou « EL-BARKA », avec des images de pains ou de gâteaux. Lecture incertaine, image très compressée. Une voiture blanche au fond, sans plaque lisible. Une petite étiquette jaune sur le bras de grue, illisible.",
+  "story_role": "Livraison au client : la machine sortie du conteneur est déposée devant la boutique ou l'entrepôt de son destinataire. Bonne fin pour la séquence de déchargement.",
+  "audio_note": "Ambiance de rue, voix probables (instructions au grutier), niveau régulier, pas de pic évident. Pas transcrit."
+ },
+ {
+  "id": "v40",
+  "summary": "Dans l'embrasure d'un entrepôt donnant sur une rue animée, une fraise rotative agricole verte (outil de tracteur), suspendue au crochet d'une grue, est guidée à la main par deux manutentionnaires jusqu'à l'intérieur.",
+  "orientation_note": "Droit, portrait 576x1024 (rotation -90 appliquée). Aucun basculement.",
+  "quality": "Résolution faible (576x1024, compression WhatsApp), image un peu molle. Fort contre-jour : rue claire, presque surexposée, à travers la porte, intérieur sombre. Tremblé modéré à main levée, et un panoramique fluide vers la droite à 7,5–8,5 s. Utilisable en plan de coupe, pas en plein écran prolongé.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 3.5,
+    "desc": "Caméra à l'intérieur de l'entrepôt, cadrée vers la grande porte ouverte sur la rue. Au centre, la fraise rotative verte pend au crochet noir d'une grue (flèche et câble en haut au centre) et se balance. À gauche, de dos, un homme en maillot vert n°23 la retient à deux mains. À droite, un homme en chemise et short beige la pousse depuis le seuil. En fond : un camion-grue jaune avec un gyrophare orange sur la cabine, des passants (un homme en polo bleu et blanc), une façade claire à liserés rouges. Caméra quasi fixe, léger flottement."
+   },
+   {
+    "t0": 3.5,
+    "t1": 7.5,
+    "desc": "La machine entre dans l'entrepôt et remplit le centre du cadre, plus proche. L'opérateur recule un peu et cadre plus bas, sol de béton poussiéreux visible. Du maillot vert, on ne voit plus que l'avant-bras et la main, à gauche. L'homme beige pousse à droite. Vers 4,5–7 s, des sacs blancs empilés au bord gauche. Le camion jaune reste visible derrière à travers la porte."
+   },
+   {
+    "t0": 7.5,
+    "t1": 8.5,
+    "desc": "Panoramique vers la droite qui suit l'homme beige. La machine glisse vers la gauche du cadre et un mur, ou panneau de porte, noir entre à droite."
+   },
+   {
+    "t0": 8.5,
+    "t1": 11.3,
+    "desc": "Nouveau cadre : la machine verte occupe la gauche, coupée par le bord. Au centre-droit, l'homme beige, penché, la pousse et la stabilise des deux mains. Une moto est garée au bord droit. Grand panneau noir à droite, sol poussiéreux sur toute la moitié basse. En fond, par la porte : camion-grue jaune et passants. La machine continue de tanguer doucement au crochet."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Le plan qui raconte tout : crochet de grue, machine verte suspendue, deux manutentionnaires, camion-grue jaune dans la rue derrière.",
+    "framing": "Machine au centre-bas, crochet en haut au centre, maillot vert bord gauche, homme beige à droite, camion jaune au centre-haut en fond"
+   },
+   {
+    "t": 3,
+    "why": "Machine entière, bien lisible, au centre, en plein mouvement d'entrée. Les deux hommes l'encadrent.",
+    "framing": "Machine centre-bas, porte et rue en haut, hommes aux bords gauche et droit"
+   },
+   {
+    "t": 7.5,
+    "why": "La machine franchit le seuil et l'homme beige pousse, de face à 3/4. Effort visible.",
+    "framing": "Machine centre-gauche, homme beige centre-droit, sol en bas"
+   },
+   {
+    "t": 10,
+    "why": "La machine est à l'intérieur, stabilisée à la main. Peut servir de fin de séquence « livré chez le client ».",
+    "framing": "Machine à gauche, homme au centre-droit, moto bord droit"
+   }
+  ],
+  "people": "Deux manutentionnaires. 1) Homme en maillot vert n°23, coiffé d'un bonnet tressé, vu de dos ou de profil au bord gauche (0–3,5 s), puis seulement son bras. 2) Homme en chemise et short beige, en sandales : visage visible de 3/4 ou de profil à distance moyenne (0,5 s, 3 s, 7,5 s, 9–11 s), jamais en gros plan, l'air concentré sur l'effort. Passants lointains dans la rue (homme en polo bleu et blanc, homme en blanc), petits et peu identifiables. Rien de sensible : pas d'enfant, pas de torse nu en gros plan, personne de visiblement contrarié.",
+  "brands_text": "Aucun texte tiers lisible. Le maillot vert « 23 » porte un texte au-dessus et au-dessous du numéro, illisible même en recadrage. Camion-grue jaune : aucune marque ni plaque lisible (cabine de face, 0–3,5 s, en fond). La façade de la rue a un bandeau rouge sans texte lisible.",
+  "story_role": "Livraison finale chez le client : une machine agricole lourde arrive à la grue dans son entrepôt ou sa boutique. Illustre « vos marchandises lourdes livrées jusqu'à la porte ». Le lieu n'est peut-être pas la rue du conteneur (entrepôt sur une rue commerçante).",
+  "audio_note": "Niveau constant autour de -20 dB : ambiance de rue et d'entrepôt, voix probables. Pas de pic marquant."
+ },
+ {
+  "id": "v41",
+  "summary": "Vue d'ensemble, depuis le trottoir derrière la foule : un conteneur bleu MAERSK, portes ouvertes sur sa remorque, un homme en rouge à l'intérieur près de machines rouges, une dizaine d'hommes à l'arrière, et des écoliers à cartable au premier plan.",
+  "orientation_note": "Droit, portrait 720x1280 (rotation -90 appliquée).",
+  "quality": "Bonne netteté pour du WhatsApp 720p. Ciel couvert, lumière plate, exposition correcte, intérieur du conteneur sombre. Léger tremblé et petite dérive vers l'avant et la droite. Très court (2,8 s).",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 2,
+    "desc": "Plan large à main levée, hauteur d'adulte, derrière la foule. En haut au centre, le conteneur bleu ouvert vu de 3/4 arrière, « MAERSK » lisible sur le flanc droit. À l'intérieur, un homme en t-shirt rouge, debout près de machines rouges et noires. Autour de l'arrière, une dizaine d'hommes de dos, certains appuyés sur un plateau ou une rampe (maillot violet n°15, polo gris, homme en tenue ndop bleu et blanc). Au premier plan bas, de dos : des écoliers en uniforme vert ou rose avec cartables (un rouge à imprimé de personnage au centre-bas, un rose à droite), un homme en chemise à carreaux avec un sac noir bord gauche, un homme en maillot vert fluo « M. Stadelmann 7823 Team CSET » bord droit. Ciel gris et fils électriques sur le tiers haut."
+   },
+   {
+    "t0": 2,
+    "t1": 2.8,
+    "desc": "Même plan, la caméra avance et dérive légèrement à droite. Le conteneur se recentre. En bas à droite, deux écoliers se tiennent la main (enfant en vert et enfant au cartable rose), de dos. Le groupe d'hommes se resserre vers la remorque."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Plan d'installation le plus lisible : conteneur MAERSK ouvert, homme en rouge à l'intérieur, foule autour, contexte de quartier.",
+    "framing": "Conteneur centre-haut, foule au tiers central, enfants et cartables au tiers bas"
+   },
+   {
+    "t": 2.4,
+    "why": "Les écoliers se tiennent la main devant le conteneur : moment de vie de quartier, à utiliser seulement si la présence d'enfants est acceptée.",
+    "framing": "Conteneur centré en haut, mains jointes des enfants en bas à droite"
+   }
+  ],
+  "people": "Foule d'une quinzaine de personnes, toutes vues de dos ou presque : visages non identifiables. ENFANTS : au moins 4 écoliers en uniforme (vert, rose) avec cartables au premier plan, de dos et visages invisibles. Ils ne sont pas seuls (adultes tout autour), mais ce sont des mineurs bien visibles : à valider avant publication. Homme en t-shirt rouge dans le conteneur, petit et lointain. Rien de choquant.",
+  "brands_text": "« MAERSK » lisible sur le flanc droit du conteneur, en blanc sur bleu, centre-droit, pendant tout le clip (0–2,8 s). Maillot vert fluo bord droit : « M. Stadelmann », « 7823 », « Team CSET » (lecture partielle, le nom est coupé à droite), 0–2,8 s. Maillot violet façon Toronto Raptors, inscription « CAPT… » et numéro (centre-gauche, 0–2,8 s). Cartable rouge centre-bas avec un imprimé de personnage sous licence, probablement Miraculous Ladybug (incertain), 0–2,8 s. Aucune plaque lisible.",
+  "story_role": "Arrivée du conteneur et curiosité du quartier : établit le lieu (rue de Douala, ciel couvert, fils électriques) et la foule qui se presse à l'ouverture. Bon plan d'ouverture de séquence « le conteneur est arrivé ».",
+  "audio_note": "Ambiance de rue et de foule autour de -24 dB, rien de marquant."
+ },
+ {
+  "id": "v42",
+  "summary": "Vue depuis l'arrière de la foule, derrière un homme en tenue ndop bleu et blanc accoudé au plateau d'un camion : le conteneur ouvert au fond, des manutentionnaires à l'intérieur, de jeunes spectateurs à droite.",
+  "orientation_note": "Droit, portrait 720x1280 (rotation -90 appliquée).",
+  "quality": "Net, exposition correcte. Ciel couvert lumineux sur le tiers haut, intérieur du conteneur très sombre, ouvriers lisibles. Léger tremblé à main levée.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Caméra basse, derrière un homme en gilet ndop bleu et blanc (motifs traditionnels camerounais) et bonnet noir à cauri, accoudé au rebord rouillé d'un plateau de camion : il occupe tout le bas centre-droit, de dos. Le plateau incliné, brun, mène aux portes ouvertes du conteneur au centre. Dans le conteneur, trois ouvriers : un en maillot gris n°22 et short rouge, un en t-shirt rouge, un en beige. À droite, deux jeunes spectateurs de profil regardent vers le conteneur (un adolescent au centre, un jeune homme en polo gris), avec un homme en casquette grise derrière. Immeuble beige à bandes rouges, poteau électrique et paraboles au bord droit. Ciel gris et fils électriques en haut. Pièce métallique rouillée en amorce au bord gauche."
+   },
+   {
+    "t0": 1,
+    "t1": 3.63,
+    "desc": "L'opérateur se décale et remonte un peu. La tête de l'homme en ndop monte dans le cadre et masque les spectateurs du centre-droit. Dans le conteneur, les ouvriers se penchent et s'activent vers la droite, sur la marchandise, le n°22 de dos. Le cadre reste globalement le même (conteneur au centre, ndop au premier plan en bas)."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.3,
+    "why": "Composition en profondeur : spectateur en ndop au premier plan, conteneur ouvert au centre, ouvriers à l'intérieur, jeunes curieux de profil. Raconte « tout le quartier regarde ».",
+    "framing": "Conteneur au centre, dos de l'homme en ndop bas centre-droit, spectateurs centre-droit, ciel en haut"
+   },
+   {
+    "t": 3.2,
+    "why": "Ouvriers en action dans le conteneur, n°22 et t-shirt rouge bien visibles. Le tissu ndop au premier plan donne la touche camerounaise.",
+    "framing": "Ouvriers au centre du cadre dans l'ouverture, ndop bas droite"
+   }
+  ],
+  "people": "Homme en tenue ndop, de dos (pas de visage). Deux jeunes, dont un adolescent apparemment, visages visibles de profil à distance moyenne vers 0–1 s, expressions neutres et attentives, pas en gros plan. Ouvriers dans le conteneur, petits, de dos. Une femme au loin à droite, minuscule. Rien de sensible, mais l'adolescent de profil est reconnaissable s'il est recadré.",
+  "brands_text": "Aucune marque ni plaque lisible. Le maillot gris « 22 » porte un nom au-dessus du numéro, illisible à cette distance. Le flanc MAERSK du conteneur n'est pas visible dans ce clip.",
+  "story_role": "Ouverture et début du déchargement vus par les spectateurs : ambiance de quartier, identité camerounaise (tissu ndop au premier plan). S'enchaîne naturellement entre v41 (plan large) et v43 (plus près).",
+  "audio_note": "Pic sonore entre environ 0,5 et 1,0 s (environ -15 dB contre -25 dB le reste du temps) : voix ou exclamation probable, non vérifié. Le reste est plus calme."
+ },
+ {
+  "id": "v43",
+  "summary": "Plus près des portes du conteneur : les ouvriers entrent vers une machine rouge à siège noir pendant qu'un spectateur en tenue ndop sourit au premier plan.",
+  "orientation_note": "Droit, portrait 720x1280 (rotation -90 appliquée).",
+  "quality": "Bonne netteté sur le premier plan et sur les ouvriers à l'entrée. Le fond du conteneur est sombre mais la machine rouge reste lisible. Mouvement à main levée vers la droite et vers l'avant entre 0,5 et 2 s, léger tremblé. Ciel blanc surexposé sur une fine bande en haut.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan moyen sur l'ouverture du conteneur, qui remplit les 2/3 hauts. À gauche dans le conteneur, un homme chauve en t-shirt gris à manches noires et bandes blanches, short rouge. Au centre, un homme en t-shirt rouge tend le bras vers la droite, vers une machine rouge à siège noir, au fond à droite (type mini-tracteur ou engin agricole, à confirmer). Au bord droit, un carton porté à l'épaule ou sur la tête passe dans le cadre. Premier plan bas gauche : l'homme en ndop bleu et blanc, bonnet noir, souriant, visage de 3/4 bien visible. Bas droite : un jeune à dreadlocks en maillot bleu à col tricolore, de dos, et un homme en bonnet gris, de dos."
+   },
+   {
+    "t0": 1,
+    "t1": 2,
+    "desc": "La caméra glisse vers la droite et s'approche. Le carton sort du cadre. L'homme en gris, n°22 au dos, avance dans le conteneur vers la machine. La machine rouge à siège noir est bien visible au centre-droit, avec des sangles orange. L'homme en ndop sourit toujours au bord gauche."
+   },
+   {
+    "t0": 2,
+    "t1": 3.73,
+    "desc": "Le n°22 en short rouge s'enfonce dans le conteneur, mains à la ceinture, et se place au centre-droit devant la machine. L'homme en t-shirt rouge est au fond à gauche. Au premier plan, l'homme en ndop baisse la tête (visage moins visible), le maillot bleu à dreadlocks reste à droite. Cadre stable."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.4,
+    "why": "Sourire franc du spectateur en ndop au premier plan, avec les ouvriers et la machine derrière : émotion et joie de l'arrivée.",
+    "framing": "Visage souriant bas gauche (3/4), ouvriers au centre, machine rouge centre-droit"
+   },
+   {
+    "t": 2,
+    "why": "La machine rouge à siège est la plus lisible. Le n°22 entre la chercher et le spectateur sourit encore : bon plan « on sort la marchandise ».",
+    "framing": "Machine centre-droit dans l'ouverture, ouvrier n°22 centre-gauche, ndop bas gauche"
+   }
+  ],
+  "people": "GROS PLAN DE VISAGE : l'homme en tenue ndop (bonnet noir), visage de 3/4 net et souriant au premier plan à 0–2 s, identifiable et positif. Jeune à dreadlocks en maillot bleu et homme en bonnet gris : de dos. Ouvriers (gris n°22, t-shirt rouge) : de dos ou de profil, visage peu visible. Pas d'enfant, pas de torse nu, personne de contrarié.",
+  "brands_text": "Maillot bleu à col bleu-blanc-rouge, bas droite, 0–3,7 s : ressemble au maillot de l'équipe de France, mais aucun logo lisible. T-shirt gris à manches noires à trois bandes blanches sur l'épaule (style adidas), 0–1 s. Au dos, « 22 » et un nom illisible (2–3,7 s). Carton bord droit (0–1 s) : un losange dessiné, pas de texte lisible. Pas de plaque ni de logo de marque lisible sur la machine rouge.",
+  "story_role": "Déchargement : les ouvriers entrent dans le conteneur pour sortir les machines rouges. Le sourire du spectateur en ndop apporte la note de joie ou de fierté. Peut aussi servir de « révélation de la marchandise ».",
+  "audio_note": "Plus calme que les autres clips (autour de -33 dB), un peu plus fort vers 1,5 s. Rien d'évident."
+ },
+ {
+  "id": "v44",
+  "summary": "Au ras de l'arrière de la remorque : un ouvrier en rouge, dans le conteneur, passe des paquets sous film à des jeunes qui les emportent à pied. Une voiture blanche apparaît au fond du conteneur à la fin.",
+  "orientation_note": "Droit, portrait 720x1280 (rotation -90 appliquée).",
+  "quality": "Net, exposition correcte en lumière couverte, intérieur du conteneur noir. Léger tremblé à main levée et petite descente du cadre vers 2,5 s. Bon plan d'action.",
+  "shots": [
+   {
+    "t0": 0,
+    "t1": 1,
+    "desc": "Plan moyen fixe à main levée, face à l'arrière ouvert du conteneur sur sa remorque (pare-chocs à bandes rouges et blanches, roues, câbles qui pendent). Au sol, rue pavée et terre avec des déchets. Immeubles à droite. Accroupi sur le bord du conteneur, l'homme en t-shirt rouge passe une pile de paquets blancs sous film bleu et blanc à un jeune en t-shirt bleu, centre, qui les prend dans les bras. Au premier plan gauche, de dos, un jeune en maillot violet n°15. Des rouleaux longs emballés dans un film blanc imprimé sont posés en travers de l'arrière de la remorque."
+   },
+   {
+    "t0": 1,
+    "t1": 1.5,
+    "desc": "Le porteur en bleu pivote et part vers la gauche avec sa pile. Le maillot violet, au bord gauche, montre « CAPT… 15 ». Dans le conteneur, l'homme en rouge se penche vers d'autres paquets."
+   },
+   {
+    "t0": 1.5,
+    "t1": 3.5,
+    "desc": "Un jeune en maillot de foot rouge et bleu marine et short noir, en claquettes, traverse le cadre de gauche à droite jusqu'à l'arrière de la remorque, profil visible vers 2,5 s. Au-dessus, l'homme en rouge ramasse un paquet bleu. Vers 2,5 s, la caméra descend un peu et montre plus de sol."
+   },
+   {
+    "t0": 3.5,
+    "t1": 4,
+    "desc": "Le jeune en rouge et bleu sort à droite. L'homme en rouge pose des paquets au bord du conteneur, centre-gauche. Le maillot violet reste en amorce au bord gauche."
+   },
+   {
+    "t0": 4,
+    "t1": 5.13,
+    "desc": "Un homme en t-shirt gris arrive à gauche et tend la main vers le bord de la remorque pour la suite de la chaîne. L'homme en rouge, accroupi, pousse les paquets vers lui. Au fond du conteneur apparaît une voiture blanche à hayon, vue de l'arrière (plastique de protection à côté), avec un homme en chemise verte debout derrière. Plaque orange de la remorque partiellement visible sous le pare-chocs, au centre-bas gauche."
+   }
+  ],
+  "best_moments": [
+   {
+    "t": 0.5,
+    "why": "Passage de main en main : le paquet passe du conteneur au porteur. Geste clair, au centre.",
+    "framing": "Homme en rouge au centre dans l'ouverture, porteur bleu au centre, maillot violet en amorce à gauche"
+   },
+   {
+    "t": 4.7,
+    "why": "On voit à la fois les colis déchargés et une voiture au fond du conteneur : fait le lien avec les voitures livrées.",
+    "framing": "Ouvrier rouge accroupi au centre, voiture blanche au fond centre-droit, homme gris bas gauche"
+   },
+   {
+    "t": 2.5,
+    "why": "Le jeune en maillot rouge et bleu traverse : mouvement dans le plan, bon point de coupe.",
+    "framing": "Jeune au centre-gauche en pied, ouvrier dans le conteneur au centre-haut"
+   }
+  ],
+  "people": "Homme en t-shirt rouge, ouvrier dans le conteneur : visage de profil, plongé, distance moyenne. Jeune en t-shirt bleu (porteur) : profil partiel. Jeune en maillot violet n°15, de dos, en amorce à gauche. Jeune en maillot rouge et bleu marine (2–3,5 s), qui paraît jeune, peut-être adolescent (incertain) : profil visible à distance moyenne, pas un gros plan. Homme en t-shirt gris (4–5 s), de dos ou de profil. Homme en chemise verte au fond, petit. Pas d'enfant seul, pas de torse nu, personne de contrarié.",
+  "brands_text": "Maillot violet façon Toronto Raptors, inscription « CAPT… » (on lit à peu près « CAPTFR ») et « 15 » bien lisibles à 1,0 s, bord gauche, présent tout le clip. Plaque orange de la remorque sous le pare-chocs, centre-bas gauche : début lisible « SD 3… », le reste illisible, visible surtout à 4–5,1 s. À flouter par prudence. Voiture blanche au fond du conteneur, 4,5–5,1 s : logo de coffre ovale probablement Toyota, petit et incertain (citadine type Yaris ou Vitz, non confirmé). Maillot de foot rouge et bleu marine, 2–3,5 s : logo d'équipementier et texte de poitrine partiellement visibles, non identifiés. Rouleaux emballés en film blanc avec motif ou texte imprimé, illisible. Paquets sous film bleu et blanc : pas de marque lisible.",
+  "story_role": "Déchargement des colis à la main, en chaîne, du conteneur vers la rue. La voiture visible au fond fait la transition vers « les voitures arrivent aussi ».",
+  "audio_note": "Ambiance constante autour de -21 dB (rue, voix), sans pic particulier."
+ }
+]

@@ -1,0 +1,8 @@
+out/DEPOSE_RECU_share.mp4: 19.233 s · 1080×1920 · 577 frames · 25.67 MiB · 11.19 Mb/s
+   audio 19.233 s · High L4.1 · bt709/bt709/bt709 tv
+out/DEPOSE_RECU_whatsapp.mp4: 19.233 s · 720×1280 · 577 frames · 7.14 MiB · 3.12 Mb/s
+   audio 19.233 s · High L3.1 · bt709/bt709/bt709 tv
+  narrator: 18/18 words = 100.0 % · real voice: 9/10 words = 90.0 %  →  PASS (≥ 90 % each)
+  sound normalisations used: d+ouala → douala
+  narrator: 18/18 words = 100.0 % · real voice: 9/10 words = 90.0 %  →  PASS (≥ 90 % each)
+  sound normalisations used: d+ouala → douala

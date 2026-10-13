@@ -1,0 +1,42 @@
+{
+ "N1": {
+  "file": "N1.wav",
+  "syl": 6,
+  "marked": 2.083,
+  "sps_marked": 2.880461,
+  "span30": 2.03,
+  "sps30": 2.96,
+  "span40": 2.07,
+  "sps40": 2.9
+ },
+ "N2": {
+  "file": "N2.wav",
+  "syl": 8,
+  "marked": 2.588,
+  "sps_marked": 3.09119,
+  "span30": 2.52,
+  "sps30": 3.17,
+  "span40": 2.59,
+  "sps40": 3.09
+ },
+ "NCa": {
+  "file": "N5a.wav",
+  "syl": 6,
+  "marked": 1.919,
+  "sps_marked": 3.126628,
+  "span30": 1.91,
+  "sps30": 3.14,
+  "span40": 1.92,
+  "sps40": 3.12
+ },
+ "NCb": {
+  "file": "NC2b.wav",
+  "syl": 4,
+  "marked": 1.283,
+  "sps_marked": 3.117693,
+  "span30": 1.26,
+  "sps30": 3.17,
+  "span40": 1.28,
+  "sps40": 3.12
+ }
+}

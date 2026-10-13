@@ -1,0 +1,373 @@
+{
+ "RV1-A": {
+  "clip": "v1",
+  "in": 8.85,
+  "out": 11.05,
+  "dur": 2.2,
+  "text": "Nous disons comme ça : merci déjà…",
+  "words": [
+   {
+    "w": "Nous",
+    "s": 0.212,
+    "e": 0.4
+   },
+   {
+    "w": "disons",
+    "s": 0.4,
+    "e": 0.602
+   },
+   {
+    "w": "comme",
+    "s": 0.63,
+    "e": 0.793
+   },
+   {
+    "w": "ça :",
+    "s": 0.793,
+    "e": 0.965
+   },
+   {
+    "w": "merci",
+    "s": 0.965,
+    "e": 1.505,
+    "vowel": 1.05,
+    "syl": [
+     0.965,
+     1.265
+    ]
+   },
+   {
+    "w": "déjà…",
+    "s": 1.565,
+    "e": 1.97,
+    "pre": 1.505
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -44.16,
+   "out": -46.122
+  },
+  "speech": [
+   0.212,
+   1.97
+  ],
+  "notes": [
+   "starts abruptly on a click at 9.060 (edit of the original WhatsApp montage, cut at 9.07): /n/ murmur 9.062-9.165, vowel from 9.165",
+   "fast; /d/ flapped (shallow dip 9.25), /i/ 9.27-9.35, /zɔ̃/ 9.36-9.45 (±25 ms)",
+   "/k/ closure 9.455-9.478, burst 9.480; /m/ 9.600-9.643",
+   "/s/ frication 9.643-9.705 (the dip SERIE §4/§8 took for « merci »), /a/ 9.705-9.815",
+   "/m/ murmur 9.815-9.900, /ɛ/ 9.900-10.050, /ʁs/ 10.050-10.205, /i/ 10.205-10.355",
+   "/d/ voice bar 10.355-10.415, release 10.415; /ʒ/ 10.500-10.595; /a/ to 10.820"
+  ]
+ },
+ "RV1-B": {
+  "clip": "v1",
+  "in": 11.55,
+  "out": 13.7,
+  "dur": 2.15,
+  "text": "…aux clients qui nous ont fait confiance.",
+  "words": [
+   {
+    "w": "…aux",
+    "s": 0.272,
+    "e": 0.375
+   },
+   {
+    "w": "clients",
+    "s": 0.428,
+    "e": 0.76,
+    "vowel": 0.44,
+    "syl": [
+     0.428
+    ]
+   },
+   {
+    "w": "qui",
+    "s": 0.795,
+    "e": 0.875
+   },
+   {
+    "w": "nous",
+    "s": 0.875,
+    "e": 1.033
+   },
+   {
+    "w": "ont",
+    "s": 1.033,
+    "e": 1.155
+   },
+   {
+    "w": "fait",
+    "s": 1.165,
+    "e": 1.325
+   },
+   {
+    "w": "confiance.",
+    "s": 1.395,
+    "e": 1.94,
+    "syl": [
+     1.395,
+     1.55
+    ]
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -54.207,
+   "out": -55.29
+  },
+  "speech": [
+   0.272,
+   1.94
+  ],
+  "notes": [
+   "a faint inhale 11.68-11.80 precedes it",
+   "/k/ closure 11.925-11.977, burst 11.978",
+   "/k/ closure 12.310-12.344, burst 12.345",
+   "liaison /z/ at 12.583 (shallow dip)",
+   "/f/ 12.715-12.785",
+   "/k/ closure 12.875-12.944, burst 12.945; /f/ of « -fiance » 13.100-13.155 (SERIE §4 marked it 13.14 as the word onset); final /s/ 13.420-13.490"
+  ]
+ },
+ "RV2": {
+  "clip": "v2",
+  "in": 3.65,
+  "out": 7.35,
+  "dur": 3.7,
+  "text": "Voilà, ce véhicule doit être chargé dans le conteneur.",
+  "words": [
+   {
+    "w": "Voilà,",
+    "s": 0.31,
+    "e": 0.685
+   },
+   {
+    "w": "ce",
+    "s": 1.27,
+    "e": 1.405
+   },
+   {
+    "w": "véhicule",
+    "s": 1.408,
+    "e": 1.75
+   },
+   {
+    "w": "doit",
+    "s": 1.775,
+    "e": 1.925
+   },
+   {
+    "w": "être",
+    "s": 1.965,
+    "e": 2.07
+   },
+   {
+    "w": "chargé",
+    "s": 2.072,
+    "e": 2.625
+   },
+   {
+    "w": "dans",
+    "s": 2.78,
+    "e": 2.898
+   },
+   {
+    "w": "le",
+    "s": 2.898,
+    "e": 2.99
+   },
+   {
+    "w": "conteneur.",
+    "s": 3.01,
+    "e": 3.485
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -46.712,
+   "out": -41.537
+  },
+  "speech": [
+   0.31,
+   3.485
+  ],
+  "notes": [
+   "before it, 3.66-3.95: background tonal hum only (also present after 4.35), no speech",
+   "/s/ frication from 4.915-4.92 (gradual), /ə/ 4.975-5.055",
+   "/k/ burst 5.290; /l/ 5.36-5.40",
+   "liaison /t/: closure 5.578-5.614, burst 5.615",
+   "/ʃ/ 5.722-5.832, /ʒ/ 6.000-6.060",
+   "6.28-6.43 weak voicing ≈ 25 dB under the voice (hesitation), /d/ release 6.430"
+  ]
+ },
+ "RV3": {
+  "clip": "v2",
+  "in": 14.45,
+  "out": 18.62,
+  "dur": 4.17,
+  "text": "Voilà, directement déposé, directement reçu.",
+  "words": [
+   {
+    "w": "Voilà,",
+    "s": 0.15,
+    "e": 0.51
+   },
+   {
+    "w": "directement",
+    "s": 1.187,
+    "e": 1.75
+   },
+   {
+    "w": "déposé,",
+    "s": 1.79,
+    "e": 2.35,
+    "pre": 1.75,
+    "vowel": 1.795,
+    "syl": [
+     1.79,
+     1.91,
+     2.05
+    ]
+   },
+   {
+    "w": "directement",
+    "s": 3.145,
+    "e": 3.605
+   },
+   {
+    "w": "reçu.",
+    "s": 3.605,
+    "e": 4.05,
+    "vowel": 3.83,
+    "syl": [
+     3.605,
+     3.73
+    ]
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -44.552,
+   "out": -51.749
+  },
+  "speech": [
+   0.15,
+   4.05
+  ],
+  "notes": [
+   "/v/ 14.600-14.640, vowel from 14.640",
+   "/d/ voice bar 16.200-16.238, release 16.240; /p/ closure 16.315-16.355 (SERIE §4 16.34 / §8 16.36 = the 2nd syllable « -po- », not the word onset); /z/ 16.500-16.575; /e/ 16.575-16.780; a faint creak 16.81-16.87",
+   "a click (≈ -47 dB) at 17.500 before it and another inside it at 17.750 (stem artefacts)",
+   "/ʁ/ 18.055-18.090, /ə/ 18.090-18.170, /s/ 18.180-18.280 (SERIE §4 18.26 / §8 18.28 = the vowel of « -çu »), /y/ 18.280-18.500"
+  ]
+ },
+ "RV4": {
+  "clip": "v2",
+  "in": 18.8,
+  "out": 22.75,
+  "dur": 3.95,
+  "text": "Voilà, c'est fort, Bonzini Trading, faites-nous confiance.",
+  "words": [
+   {
+    "w": "Voilà,",
+    "s": 0.425,
+    "e": 0.685
+   },
+   {
+    "w": "c'est",
+    "s": 0.685,
+    "e": 0.855
+   },
+   {
+    "w": "fort,",
+    "s": 0.86,
+    "e": 1.265,
+    "vowel": 0.89,
+    "syl": [
+     0.86
+    ]
+   },
+   {
+    "w": "Bonzini",
+    "s": 1.325,
+    "e": 1.7,
+    "pre": 1.27,
+    "vowel": 1.33,
+    "syl": [
+     1.325,
+     1.475,
+     1.59
+    ]
+   },
+   {
+    "w": "Trading,",
+    "s": 1.735,
+    "e": 2.13
+   },
+   {
+    "w": "faites-nous",
+    "s": 2.865,
+    "e": 3.155
+   },
+   {
+    "w": "confiance.",
+    "s": 3.193,
+    "e": 3.845,
+    "syl": [
+     3.193,
+     3.355
+    ]
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -61.88,
+   "out": -29.111
+  },
+  "speech": [
+   0.425,
+   3.845
+  ],
+  "notes": [
+   "a faint voice 18.835-19.210 (≈ 20 dB under the speaker, unintelligible; ASR guesses « y'a quoi ? ») is inside the segment before it",
+   "/s/ from 19.485 overlaps the decay of « Voilà »",
+   "/f/ 19.660-19.690, vowel from 19.690",
+   "/b/ voice bar 20.070-20.120 straight after « fort », release 20.125; /z/ 20.270-20.320",
+   "said « Trèding » (ASR: « Traini »); /t/ burst 20.535, /d/ 20.700-20.735",
+   "/f/ 21.665-21.700. Before it, 21.455-21.610, a faint vowel-like sound ≈ 18 dB under the voice (hesitation or bystander; ASR alone: nothing reliable) — SERIE §4 21.47 marked that sound, not « faites »",
+   "/k/ burst 21.993; /f/ 22.155-22.190; final /s/ 22.440-22.645 (SERIE §4 « fin 22.57 » is mid-/s/). A faint voice starts again at 22.665 (ASR on what follows: « …revoir »), 33 dB under: out 22.75 takes its first 85 ms"
+  ]
+ },
+ "RV5": {
+  "clip": "v1",
+  "in": 87.95,
+  "out": 88.75,
+  "dur": 0.8,
+  "text": "C'est fort !",
+  "words": [
+   {
+    "w": "C'est",
+    "s": 0.05,
+    "e": 0.245
+   },
+   {
+    "w": "fort !",
+    "s": 0.25,
+    "e": 0.65,
+    "vowel": 0.295,
+    "syl": [
+     0.25
+    ]
+   }
+  ],
+  "cuts_db_re_peak": {
+   "in": -72.02,
+   "out": -43.719
+  },
+  "speech": [
+   0.05,
+   0.65
+  ],
+  "notes": [
+   "/s/ frication 88.000-88.100 (SERIE §4 88.10 = the vowel), /ɛ/ 88.100-88.195",
+   "/f/ 88.200-88.245, vowel from 88.245, voiced decay to 88.600 (then room tail ≥ 40 dB down)"
+  ]
+ },
+ "_doc": "Real-voice segments of SERIE.md §4: word times relative to the segment in (source seconds - in). s = audible onset of the first phone (stop: release burst; fricative: frication; nasal: murmur; vowel: voicing), e = end of the last phone. pre = start of a voiced-stop voice bar before s; vowel = first vowel onset; syl = syllable onsets (last = stressed syllable). Measured by hand on 1-ms spectrograms of work/vN_vocals.wav (voice/check/rvz_*.png), ±10-20 ms; ASR (faster-whisper large-v3) gives the words and their order. Subtitle spelling of SERIE.md (« Bonzini Trading »)."
+}

@@ -1,0 +1,746 @@
+{
+ "N1": {
+  "file": "N1.wav",
+  "text": "Là-bas, en Chine, on charge.",
+  "tts_text": "Là-bas, en Chine, on charge.",
+  "dur": 2.083,
+  "syl": 6,
+  "rate": 2.88,
+  "stretch": 1.0,
+  "on": 0.03,
+  "off": 2.113,
+  "wav_dur": 2.143,
+  "window": [
+   0.2,
+   2.3
+  ],
+  "window_len": 2.1,
+  "fits": true,
+  "film": "film 1 (+ film 2)",
+  "source": "N1_s2.wav",
+  "stretch_method": null,
+  "note": "natural phrasing « Là-bas, | en Chine, | on charge. », no stretch",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Là -bas, en Chine, on charge.",
+  "syl_serie": 6,
+  "rate_serie_count": 2.88,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "N2": {
+  "file": "N2.wav",
+  "text": "Ici, à Douala, on reçoit.",
+  "tts_text": "Ici, à Douala, on reçoit.",
+  "dur": 2.588,
+  "syl": 8,
+  "rate": 3.09,
+  "stretch": 1.17,
+  "on": 0.03,
+  "off": 2.618,
+  "wav_dur": 2.648,
+  "window": [
+   2.95,
+   5.95
+  ],
+  "window_len": 3.0,
+  "fits": true,
+  "film": "film 1 (+ film 2)",
+  "source": "N2_s10.wav",
+  "stretch_method": "rb_crisp",
+  "note": "pb .25 take whose « Douala » survives the phone filter at every stretch tried (×1.13/1.14/1.15): large-v3 « Douala », the weak listener « D'Ouala » (same sounds [dwala]); the « Dou-a-la » / « Douwala » spellings did no better · review 2: ×1,17 (≤ 3,2 syl/s on the energy at −30 dB)",
+  "align": {
+   "method": "nuclei-dp",
+   "nuclei": 8,
+   "counts": [
+    2,
+    1,
+    2,
+    1,
+    2
+   ],
+   "cost": 1.12,
+   "pauses": [
+    [
+     0.456,
+     0.948
+    ],
+    [
+     1.586,
+     2.076
+    ]
+   ]
+  },
+  "asr_final": "Ici, à Douala, on reçoit."
+ },
+ "N3a": {
+  "file": "N3a.wav",
+  "text": "Un conteneur part.",
+  "tts_text": "Un conteneur part.",
+  "dur": 1.735,
+  "syl": 5,
+  "rate": 2.88,
+  "stretch": 1.21,
+  "on": 0.03,
+  "off": 1.765,
+  "wav_dur": 1.795,
+  "window": [
+   6.75,
+   8.5
+  ],
+  "window_len": 1.75,
+  "fits": true,
+  "film": "film 1",
+  "source": "N3a_s61.wav",
+  "stretch_method": "rb_crisp",
+  "note": "run 6 (pb .25, temp .3); the 0.2 s before « part » is the /p/ closure held · review 2: ×1,17 (audible rate ≤ 3,2 syl/s measured on the energy too), window 6,75–8,45",
+  "align": {
+   "method": "nuclei-dp",
+   "nuclei": 5,
+   "counts": [
+    1,
+    3,
+    1
+   ],
+   "cost": 5.08,
+   "pauses": [
+    [
+     0.308,
+     0.396
+    ],
+    [
+     0.582,
+     0.668
+    ],
+    [
+     0.968,
+     1.306
+    ],
+    [
+     1.628,
+     1.764
+    ]
+   ]
+  },
+  "asr_final": "Un conteneur part."
+ },
+ "N3b": {
+  "file": "N3b.wav",
+  "text": "Un autre arrive.",
+  "tts_text": "Un autre arrive.",
+  "dur": 1.267,
+  "syl": 4,
+  "rate": 3.16,
+  "stretch": 1.04,
+  "on": 0.04,
+  "off": 1.307,
+  "wav_dur": 1.352,
+  "window": [
+   8.8,
+   10.4
+  ],
+  "window_len": 1.6,
+  "fits": true,
+  "film": "film 1",
+  "source": "N3b_s99.wav",
+  "stretch_method": "rb_crisp",
+  "note": "run 10 (pb .5); « Un autre | arrive. »",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Un autre arrive.",
+  "syl_serie": 5,
+  "rate_serie_count": 3.95,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "N4": {
+  "file": "N4.wav",
+  "text": "Ici, une autre voiture arrive.",
+  "tts_text": "Ici, une autre voiture arrive.",
+  "dur": 2.874,
+  "syl": 9,
+  "rate": 3.13,
+  "stretch": 1.16,
+  "on": 0.03,
+  "off": 2.904,
+  "wav_dur": 2.934,
+  "window": [
+   15.2,
+   18.4
+  ],
+  "window_len": 3.2,
+  "fits": true,
+  "film": "film 1",
+  "source": "N4_s65.wav",
+  "stretch_method": "rb_crisp",
+  "note": "run 6; 9 syllables (« autre » keeps its schwa before « voiture »): the comma pause after « Ici, » lengthened by 0.15 s (0.43 → 0.58 s raw) to stay ≤ 3.2 syl/s at ×1.14 · review 2: ×1,16 (≤ 3,2 syl/s on the energy at −30 dB)",
+  "align": {
+   "method": "nuclei-dp",
+   "nuclei": 8,
+   "counts": [
+    2,
+    1,
+    2,
+    2,
+    1
+   ],
+   "cost": 2.63,
+   "pauses": [
+    [
+     0.46,
+     1.154
+    ],
+    [
+     2.256,
+     2.366
+    ]
+   ]
+  },
+  "asr_final": "Ici, une autre voiture arrive."
+ },
+ "N5a": {
+  "file": "N5a.wav",
+  "text": "Tes colis sont en Chine ?",
+  "tts_text": "Regarde bien. Tes colis sont en Chine ?",
+  "dur": 1.919,
+  "syl": 6,
+  "rate": 3.13,
+  "stretch": 1.13,
+  "on": 0.03,
+  "off": 1.949,
+  "wav_dur": 1.989,
+  "window": [
+   32.45,
+   34.4
+  ],
+  "window_len": 1.95,
+  "fits": true,
+  "film": "film 1 (film 2: 15.00–16.95; film 3 colis)",
+  "source": "N5a_sLN5a-73.wav (split from the two-sentence take LN5a)",
+  "stretch_method": "rb_crisp",
+  "note": "lead-in take (« Regarde bien. » cut off): « Tes » not held, the question rises on « Chine » (+5.4 st)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Tes colis sont en Chine ?",
+  "syl_serie": 6,
+  "rate_serie_count": 3.13,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "N5b": {
+  "file": "N5b.wav",
+  "text": "Écris : colis.",
+  "tts_text": "Tes colis sont en Chine ? Écris : colis.",
+  "dur": 1.331,
+  "syl": 4,
+  "rate": 3.01,
+  "stretch": 1.06,
+  "on": 0.03,
+  "off": 1.361,
+  "wav_dur": 1.391,
+  "window": [
+   34.75,
+   36.15
+  ],
+  "window_len": 1.4,
+  "fits": true,
+  "film": "film 1 (film 3 colis)",
+  "source": "N5b_sPN5-72.wav (split from the two-sentence take PN5)",
+  "stretch_method": "rb_crisp",
+  "note": "second half of « Tes colis sont en Chine ? Écris : colis. »; a 0.5 s beat before the keyword",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Écrit, colis",
+  "syl_serie": 4,
+  "rate_serie_count": 3.01,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NC2b": {
+  "file": "NC2b.wav",
+  "text": "Réponds : colis.",
+  "tts_text": "Tes colis sont en Chine ? Réponds : colis.",
+  "dur": 1.283,
+  "syl": 4,
+  "rate": 3.12,
+  "stretch": 1.098,
+  "on": 0.03,
+  "off": 1.313,
+  "wav_dur": 1.343,
+  "window": [
+   17.3,
+   18.7
+  ],
+  "window_len": 1.4,
+  "fits": true,
+  "film": "film 2",
+  "source": "NC2b_sPNC2-1.wav (split from the two-sentence take PNC2)",
+  "stretch_method": "rb_crisp",
+  "note": "second half of « Tes colis sont en Chine ? Réponds : colis. » (NC2b_sPNC2-4 was heard « coulie » through the phone filter)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Réponds, colis.",
+  "syl_serie": 4,
+  "rate_serie_count": 3.12,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NA": {
+  "file": "NA.wav",
+  "text": "Ils filment quoi ?",
+  "tts_text": "Ils filment quoi ?",
+  "dur": 1.261,
+  "syl": 4,
+  "rate": 3.17,
+  "stretch": 1.121,
+  "on": 0.04,
+  "off": 1.301,
+  "wav_dur": 1.341,
+  "window": [
+   0.15,
+   1.45
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 3",
+  "source": "NA_s70.wav",
+  "stretch_method": "rb_crisp",
+  "note": "every take holds « Ils » (0.35–0.55 s; here 0.43 s, the shortest of the fitting takes); rises on « quoi » (+4.3 st)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Euh, ils filment quoi ?",
+  "syl_serie": 4,
+  "rate_serie_count": 3.17,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NB": {
+  "file": "NB.wav",
+  "text": "Une voiture sort du conteneur !",
+  "tts_text": "Une voiture sort du conteneur !",
+  "dur": 2.55,
+  "syl": 8,
+  "rate": 3.14,
+  "stretch": 1.15,
+  "on": 0.03,
+  "off": 2.58,
+  "wav_dur": 2.625,
+  "window": [
+   2.1,
+   4.95
+  ],
+  "window_len": 2.85,
+  "fits": true,
+  "film": "film 3",
+  "source": "NB_s82.wav",
+  "stretch_method": "rb_crisp",
+  "note": "run 8 (padding_between 1): « Une voiture | sort du conteneur ! », the beat after the subject lengthened by 0.05 s; ×1.15 (the limit)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Une voiture sort du conteneur.",
+  "syl_serie": 9,
+  "rate_serie_count": 3.53,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NC": {
+  "file": "NC.wav",
+  "text": "Et les téléphones sortent aussi !",
+  "tts_text": "Regarde bien. Et les téléphones sortent aussi !",
+  "dur": 2.536,
+  "syl": 8,
+  "rate": 3.16,
+  "stretch": 1.139,
+  "on": 0.04,
+  "off": 2.576,
+  "wav_dur": 2.631,
+  "window": [
+   7.95,
+   10.8
+  ],
+  "window_len": 2.85,
+  "fits": true,
+  "film": "film 3",
+  "source": "NC_sLNC-94.wav (split from the two-sentence take LNC)",
+  "stretch_method": "rb_crisp",
+  "note": "lead-in take (pb .5): « Et » / « les » not held (they are 0.5–0.75 s in the plain takes)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Et les téléphones sortent aussi.",
+  "syl_serie": 9,
+  "rate_serie_count": 3.55,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NDa": {
+  "file": "NDa.wav",
+  "text": "Une voiture à faire venir ?",
+  "tts_text": "Une voiture à faire venir ?",
+  "dur": 2.223,
+  "syl": 7,
+  "rate": 3.15,
+  "stretch": 1.142,
+  "on": 0.04,
+  "off": 2.263,
+  "wav_dur": 2.358,
+  "window": [
+   15.0,
+   17.85
+  ],
+  "window_len": 2.85,
+  "fits": true,
+  "film": "film 3",
+  "source": "NDa_s8.wav",
+  "stretch_method": "rb_crisp",
+  "note": "pb .25; final rise on « venir » (slope +38 st/s)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Une voiture à faire venir.",
+  "syl_serie": 9,
+  "rate_serie_count": 4.05,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NDb": {
+  "file": "NDb.wav",
+  "text": "Écris : voiture.",
+  "tts_text": "Écris : voiture.",
+  "dur": 1.29,
+  "syl": 4,
+  "rate": 3.1,
+  "stretch": 1.012,
+  "on": 0.03,
+  "off": 1.32,
+  "wav_dur": 1.35,
+  "window": [
+   18.25,
+   19.55
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 3",
+  "source": "NDb_s16.wav",
+  "stretch_method": "rb_crisp",
+  "note": "",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Écrit, voiture",
+  "syl_serie": 4,
+  "rate_serie_count": 3.1,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NDw": {
+  "file": "NDw.wav",
+  "text": "Réponds : voiture.",
+  "tts_text": "Réponds : voiture.",
+  "dur": 1.289,
+  "syl": 4,
+  "rate": 3.1,
+  "stretch": 1.0,
+  "on": 0.03,
+  "off": 1.319,
+  "wav_dur": 1.349,
+  "window": [
+   18.25,
+   19.55
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 3 wa",
+  "source": "NDw_s2.wav",
+  "stretch_method": null,
+  "note": "",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Réponds, voiture.",
+  "syl_serie": 4,
+  "rate_serie_count": 3.1,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "H": {
+  "file": "H.wav",
+  "text": "Elle va où, cette machine ?",
+  "tts_text": "Elle va où, cette machine ?",
+  "dur": 1.915,
+  "syl": 6,
+  "rate": 3.13,
+  "stretch": 1.067,
+  "on": 0.03,
+  "off": 1.945,
+  "wav_dur": 1.98,
+  "window": [
+   0.05,
+   2.25
+  ],
+  "window_len": 2.2,
+  "fits": true,
+  "film": "film 4",
+  "source": "H_s4.wav",
+  "stretch_method": "rb_crisp",
+  "note": "rise on « machine » (+3.5 st)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Elle va où, cette machine ?",
+  "syl_serie": 7,
+  "rate_serie_count": 3.65,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "S1": {
+  "file": "S1.wav",
+  "text": "Elle sort du conteneur.",
+  "tts_text": "Elle sort du conteneur.",
+  "dur": 1.893,
+  "syl": 6,
+  "rate": 3.17,
+  "stretch": 1.123,
+  "on": 0.035,
+  "off": 1.928,
+  "wav_dur": 2.008,
+  "window": [
+   2.4,
+   4.35
+  ],
+  "window_len": 1.95,
+  "fits": true,
+  "film": "film 4",
+  "source": "S1_s65.wav",
+  "stretch_method": "rb_crisp",
+  "note": "run 6",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Elle sort du conteneur.",
+  "syl_serie": 6,
+  "rate_serie_count": 3.17,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "S2": {
+  "file": "S2.wav",
+  "text": "La grue la soulève.",
+  "tts_text": "La grue la soulève.",
+  "dur": 1.588,
+  "syl": 5,
+  "rate": 3.15,
+  "stretch": 1.142,
+  "on": 0.035,
+  "off": 1.623,
+  "wav_dur": 1.683,
+  "window": [
+   4.75,
+   6.35
+  ],
+  "window_len": 1.6,
+  "fits": true,
+  "film": "film 4",
+  "source": "S2_s8.wav",
+  "stretch_method": "rb_crisp",
+  "note": "no break between « la » and « soulève » (S2_s9 had one)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "La grue la soulève.",
+  "syl_serie": 5,
+  "rate_serie_count": 3.15,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "S3": {
+  "file": "S3.wav",
+  "text": "Elle passe au-dessus de la rue.",
+  "tts_text": "Elle passe au-dessus de la rue.",
+  "dur": 2.709,
+  "syl": 8,
+  "rate": 2.95,
+  "stretch": 1.14,
+  "on": 0.03,
+  "off": 2.739,
+  "wav_dur": 2.769,
+  "window": [
+   6.9,
+   9.75
+  ],
+  "window_len": 2.85,
+  "fits": true,
+  "film": "film 4",
+  "source": "S3_s1.wav",
+  "stretch_method": "rb_crisp",
+  "note": "slow step: « Elle | passe | au-dessus de la rue. » · prod_f4 sync: ×1,14 (audible rate ≤ 3,2 syl/s on the energy, −30 dB: 3,16)",
+  "align": {
+   "method": "nuclei-dp",
+   "nuclei": 7,
+   "counts": [
+    1,
+    1,
+    2,
+    1,
+    1,
+    1
+   ],
+   "cost": 2.28,
+   "pauses": [
+    [
+     0.336,
+     0.452
+    ],
+    [
+     0.9,
+     1.208
+    ],
+    [
+     2.58,
+     2.65
+    ]
+   ]
+  },
+  "asr_final": "Elle passe au -dessus de la rue."
+ },
+ "S4": {
+  "file": "S4.wav",
+  "text": "Elle arrive devant la boutique.",
+  "tts_text": "Elle arrive devant la boutique.",
+  "dur": 2.7,
+  "syl": 8,
+  "rate": 2.96,
+  "stretch": 1.12,
+  "on": 0.03,
+  "off": 2.73,
+  "wav_dur": 2.76,
+  "window": [
+   10.15,
+   12.9
+  ],
+  "window_len": 2.75,
+  "fits": true,
+  "film": "film 4",
+  "source": "S4_s10.wav",
+  "stretch_method": "rb_crisp",
+  "note": "« Elle arrive devant la | boutique. »: every take pauses before « boutique » (S4_s8 was heard « bouteille » through the phone filter) · prod_f4 sync: ×1,12 (energy −30 dB: 3,16), window 10,15–12,90",
+  "align": {
+   "method": "nuclei-dp",
+   "nuclei": 6,
+   "counts": [
+    1,
+    1,
+    1,
+    1,
+    2
+   ],
+   "cost": 3.4,
+   "pauses": [
+    [
+     1.358,
+     1.742
+    ],
+    [
+     2.416,
+     2.552
+    ],
+    [
+     2.574,
+     2.73
+    ]
+   ]
+  },
+  "asr_final": "Elle arrive devant la boutique."
+ },
+ "S5": {
+  "file": "S5.wav",
+  "text": "Et elle entre.",
+  "tts_text": "Regarde bien. Et elle entre.",
+  "dur": 1.097,
+  "syl": 3,
+  "rate": 2.74,
+  "stretch": 1.0,
+  "on": 0.03,
+  "off": 1.127,
+  "wav_dur": 1.157,
+  "window": [
+   13.4,
+   14.7
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 4",
+  "source": "S5_sLS5-74.wav (split from the two-sentence take LS5)",
+  "stretch_method": null,
+  "note": "lead-in take: « Et » not held (0.6 s in S5_s2)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Et elle entre.",
+  "syl_serie": 4,
+  "rate_serie_count": 3.65,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NEa": {
+  "file": "NEa.wav",
+  "text": "Une machine à faire venir ?",
+  "tts_text": "Une machine à faire venir ? Écris : machine.",
+  "dur": 2.212,
+  "syl": 7,
+  "rate": 3.16,
+  "stretch": 1.083,
+  "on": 0.035,
+  "off": 2.247,
+  "wav_dur": 2.307,
+  "window": [
+   19.45,
+   22.3
+  ],
+  "window_len": 2.85,
+  "fits": true,
+  "film": "film 4",
+  "source": "NEa_sPNE-70.wav (split from the two-sentence take PNE)",
+  "stretch_method": "rb_crisp",
+  "note": "first half of « Une machine à faire venir ? Écris : machine. »; strong final rise (slope +60 st/s), beat after « machine »",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Une machine à faire venir.",
+  "syl_serie": 9,
+  "rate_serie_count": 4.07,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NEb": {
+  "file": "NEb.wav",
+  "text": "Écris : machine.",
+  "tts_text": "Écris : machine.",
+  "dur": 1.274,
+  "syl": 4,
+  "rate": 3.14,
+  "stretch": 1.049,
+  "on": 0.03,
+  "off": 1.304,
+  "wav_dur": 1.339,
+  "window": [
+   22.7,
+   24.0
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 4",
+  "source": "NEb_s9.wav",
+  "stretch_method": "rb_crisp",
+  "note": "",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Écrit, machine",
+  "syl_serie": 4,
+  "rate_serie_count": 3.14,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ },
+ "NEw": {
+  "file": "NEw.wav",
+  "text": "Réponds : machine.",
+  "tts_text": "Une machine à faire venir ? Réponds : machine.",
+  "dur": 1.264,
+  "syl": 4,
+  "rate": 3.16,
+  "stretch": 1.066,
+  "on": 0.035,
+  "off": 1.299,
+  "wav_dur": 1.344,
+  "window": [
+   22.7,
+   24.0
+  ],
+  "window_len": 1.3,
+  "fits": true,
+  "film": "film 4 wa",
+  "source": "NEw_sPNEw-2.wav (split from the two-sentence take PNEw)",
+  "stretch_method": "rb_crisp",
+  "note": "second half of « Une machine à faire venir ? Réponds : machine. » (the single-line takes start on the first sample: « R » clipped)",
+  "align": "marked by eye on the 2-ms spectrogram + F1-band / broadband / >3 kHz envelopes (check/z1-8.png); word = from its first consonant (stop: release) to the end of its last phone; pauses belong to no word",
+  "asr_final": "Réponds machine.",
+  "syl_serie": 4,
+  "rate_serie_count": 3.16,
+  "sr": 48000,
+  "peak_dbfs": -3.0
+ }
+}

@@ -1,0 +1,72 @@
+{
+ "N1": {
+  "file": "N1.wav",
+  "syl": 6,
+  "marked": 2.083,
+  "sps_marked": 2.880461,
+  "span30": 2.03,
+  "sps30": 2.96,
+  "span40": 2.07,
+  "sps40": 2.9
+ },
+ "N2": {
+  "file": "N2.wav",
+  "syl": 8,
+  "marked": 2.588,
+  "sps_marked": 3.09119,
+  "span30": 2.52,
+  "sps30": 3.17,
+  "span40": 2.59,
+  "sps40": 3.09
+ },
+ "N3a": {
+  "file": "N3a.wav",
+  "syl": 5,
+  "marked": 1.735,
+  "sps_marked": 2.881844,
+  "span30": 1.57,
+  "sps30": 3.18,
+  "span40": 1.66,
+  "sps40": 3.01
+ },
+ "N3b": {
+  "file": "N3b.wav",
+  "syl": 4,
+  "marked": 1.267,
+  "sps_marked": 3.157064,
+  "span30": 1.27,
+  "sps30": 3.15,
+  "span40": 1.29,
+  "sps40": 3.1
+ },
+ "N4": {
+  "file": "N4.wav",
+  "syl": 9,
+  "marked": 2.874,
+  "sps_marked": 3.131524,
+  "span30": 2.85,
+  "sps30": 3.16,
+  "span40": 2.87,
+  "sps40": 3.14
+ },
+ "N5a": {
+  "file": "N5a.wav",
+  "syl": 6,
+  "marked": 1.919,
+  "sps_marked": 3.126628,
+  "span30": 1.91,
+  "sps30": 3.14,
+  "span40": 1.92,
+  "sps40": 3.12
+ },
+ "N5b": {
+  "file": "N5b.wav",
+  "syl": 4,
+  "marked": 1.331,
+  "sps_marked": 3.005259,
+  "span30": 1.28,
+  "sps30": 3.12,
+  "span40": 1.29,
+  "sps40": 3.1
+ }
+}

@@ -1,0 +1,16 @@
+QA — prod_f1 · variant main · T.end 36.7 s · N 1101 frames · 19 shots
+  ok    picture: 19 shots — crops inside the sources, must-hide regions out of frame or covered, transitions linked
+  ok    stickers: 0 mask pixel (dilated 8 px) in 6174 crop windows of v1–v3 (every sub-sample at --mb 6) — source extents: G1 x 188–464 y 319–541 · G2 x 188–464 y 395–545 · CG x 188–464 y 287–570 · G3 x 0–464 y 212–688 · G4 x 0–464 y 192–668 · G6 x 0–464 y 212–688 · G7 x 188–464 y 306–594 · G8 x 188–464 y 328–612 · G9 x 188–464 y 395–545 · G10 x 188–464 y 326–614 · PN x -0–464 y 25–262
+  ok    blurs: 10 gaussian hides baked (v1 g7_sim/g7_u/g7_30a/g8_en/card_plate/g9_so · v17 v17_liujo · v2 v2_hub/v2_hub2 · v7 v7_toyota)
+  ok    frames: all 1568 footage frames the render needs (--mb 6) are on disk (v1 481 · v31 184 · v24 144 · v2 97 · v7 233 · v25 85 · v17 74 · v40 150 · v38 56 · v3 64)
+  ok    voices: RV2 speech 11.310–14.485 · RV1A speech 19.212–20.970 · RV1B speech 21.472–23.140 · RV3 speech 23.900–27.800 · RV4 speech 28.725–32.145 — no overlap
+  ok    type: 22 text boxes inside the safe zones (y ≥ 150, ≤ 1540, x ≤ 960 for y 900–1560); violet only with Bonzini
+  ok    type: at most 3 text blocks + the mention at once (at 27.500)
+  ok    hygiene: no Math.random, no ctx.filter in the scenes
+  ok    contract: browser path (window.TIMING / CLIPS) = node path — N 1101, 13 T, 45 A, 19 shots
+  ok    narrator: N1 0.20–2.28 2.88 syl/s (N1.wav) · N2 2.95–5.49 3.16 syl/s (N2.wav) · N3a 6.80–8.41 3.11 syl/s (N3a.wav) · N3b 8.80–10.07 3.16 syl/s (N3b.wav) · N4 15.20–18.02 3.20 syl/s (N4.wav) · N5a 32.45–34.37 3.13 syl/s (N5a.wav) · N5b 34.72–36.05 3.01 syl/s (N5b.wav) — ≤ 3,2 syl/s, in budget, no overlap
+  ok    outputs: audio/mix.wav built on this very score (score_cues.json = the live T, A, voices, narrator, ambience, cues, music)
+  ok    outputs: audio/mix.wav = 36.7000 s = T.end, 48 kHz stereo 24-bit
+  ok    outputs: -14.02 LUFS, TP -1.3 dBTP, real voice untouched true
+  ok    outputs: listen test (phone band 300–3400 Hz, faster-whisper small): narrator 100 % · real voice 90.6 %
+PASSED (0 warning(s))

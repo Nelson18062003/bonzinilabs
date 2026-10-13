@@ -1,0 +1,9 @@
+out/LA-BAS_ICI_share.mp4: 36.700 s · 1080×1920 · 1101 frames · 26.12 MiB · 5.97 Mb/s
+   audio 36.700 s · High L4.1 · bt709/bt709/bt709 tv
+out/LA-BAS_ICI_whatsapp.mp4: 36.700 s · 720×1280 · 1101 frames · 13.33 MiB · 3.05 Mb/s
+   audio 36.700 s · High L3.1 · bt709/bt709/bt709 tv
+  narrator: 28/29 words = 96.6 % · real voice: 29/32 words = 90.6 %  →  PASS (≥ 90 % each)
+  sound normalisations used: d+ouala → douala · N3a: part ≡ par
+  narrator: 29/29 words = 100.0 % · real voice: 29/32 words = 90.6 %  →  PASS (≥ 90 % each)
+  sound normalisations used: d+ouala → douala · N3a: part ≡ par
+done
