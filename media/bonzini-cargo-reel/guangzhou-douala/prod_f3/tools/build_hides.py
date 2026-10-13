@@ -14,7 +14,7 @@ for f in sorted(glob.glob(os.path.join(P, 'work', 'h_*.json'))):
     # the interval reaches half a frame beyond the first / last key (keys are rounded to 1e-4 s: the boundary frame
     # would fall outside); outside the keys the box holds (00_edl.js / prep_clips.py clamp)
     e = {'name': name, 't0': round(d['keys'][0][0] - 1 / 60, 4), 't1': round(d['keys'][-1][0] + 1 / 60, 4), 'keys': d['keys'], 'shape': d.get('shape', 'rect'), 'why': d.get('why', '')}
-    for k in ('margin', 'feather', 'sigma', 'sigma_keys', 'keep_dark'):   # film 3 review: keep_dark = occlusion-aware (prep_clips.py)                 # per-hide overrides (a tight box: margin 4 / feather 6)
+    for k in ('margin', 'feather', 'sigma', 'sigma_keys', 'margin_keys', 'feather_keys', 'keep_dark'):   # film 3 review: keep_dark = occlusion-aware (prep_clips.py)                 # per-hide overrides (a tight box: margin 4 / feather 6)
         if k in d: e[k] = d[k]
     out['hide'].setdefault(d['clip'], []).append(e)
 for clip, L in out['hide'].items():

@@ -148,6 +148,11 @@ def blur_frame(path, clip, f, k):
         sg, fe, mg = h.get('sigma', HP.get('sigma', 18)) * k, h.get('feather', HP.get('feather', 8)) * k, h.get('margin', HP.get('margin', 10)) * k
         if h.get('sigma_keys'):                            # film 3 review: σ keyed on SOURCE time [[s, σ]…] (linear, held outside)
             sk = h['sigma_keys']; sg = float(np.interp(s, [q[0] for q in sk], [q[1] for q in sk])) * k
+        for kk_, nm_ in (('margin_keys', 'mg'), ('feather_keys', 'fe')):   # film 3 review 4: margin / feather keyed the same way
+            if h.get(kk_):                                 # (v7_toyota grows from v7_toyota_a's tight ellipse: no pop at r 4,00)
+                q_ = h[kk_]; v_ = float(np.interp(s, [q[0] for q in q_], [q[1] for q in q_])) * k
+                if nm_ == 'mg': mg = v_
+                else: fe = v_
         x, y, w, hh = [v * k for v in box_at(h, s)]
         X0, Y0 = int(max(0, x - mg - 3 * sg)), int(max(0, y - mg - 3 * sg)); X1, Y1 = int(min(W_, x + w + mg + 3 * sg)), int(min(H_, y + hh + mg + 3 * sg))
         if X1 - X0 < 2 or Y1 - Y0 < 2: continue

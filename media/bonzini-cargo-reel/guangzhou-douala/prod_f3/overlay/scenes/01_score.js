@@ -336,7 +336,7 @@ if (HIDES && HIDES.hide) for (const clip in HIDES.hide) for (const h of HIDES.hi
   const o = { name: h.name, t0: h.t0, t1: h.t1, keys: h.keys, kind: 'gauss', shape: h.shape, why: h.why };
   // film 3 review: σ and keep_dark now reach prep_clips.py (the score dropped them: v7_toyota_a was baked at the default σ 18,
   // a flat grey disc on the jumping man's head, although work/h_v7_toyota_a.json asked σ 7)
-  for (const k of ['margin', 'feather', 'sigma', 'sigma_keys', 'keep_dark']) if (h[k] !== undefined) o[k] = h[k];
+  for (const k of ['margin', 'feather', 'sigma', 'sigma_keys', 'margin_keys', 'feather_keys', 'keep_dark']) if (h[k] !== undefined) o[k] = h[k];
   (HIDE[clip] = HIDE[clip] || []).push(o);
   (MUST_HIDE[clip] = MUST_HIDE[clip] || []).push({ t0: h.t0, t1: h.t1, keys: h.keys, why: h.why });
 }

@@ -116,6 +116,30 @@ filment≡filme; NDb ecri≡ecrit when used). Strong listener (large-v3, informa
 in the 3 variants (`out/qa_VOITURE_TELEPHONES_<v>.txt`, WAIVER and NORM entries listed). Sheets `out/…_sheet_360(_dim50).jpg`
 (decoded from the share mp4), covers = frame 0 (identical in the 3 variants), full-size beats `out/look3/`. Frame folders deleted.
 
+Review 4 (13/10/2026, 2 minor findings, picture only — the mixes are review 3's, untouched):
+- **Toyota blur pop at f 77 → 78 (minor)**: Review 3 ramped only σ into `v7_toyota`; margin (1 → 10) and feather (3 → 8)
+  still jumped at r 4,00 (disc ≈ 70 → 145 px on screen in one frame). New per-hide `margin_keys` / `feather_keys` (SOURCE
+  time, linear, held outside — like `sigma_keys`; `tools/prep_clips.py`, copied by `tools/build_hides.py` and the score):
+  `v7_toyota` ramps margin 1 → 10 and feather 3 → 8 in smoothstep over r 4,00–4,40 (f 78–90, P2's last 12 frames), so the
+  patch starts at v7_toyota_a's size and grows with the car; r ≥ 4,40 (P3–P5, the freeze) is byte-identical to review 3.
+  Checked: baked frames r 3,97–4,47 at ×8 (emblem never visible, no edge of the oval), render f 74–93 at native size and
+  decoded from the share mp4.
+- **adidas stripe ends under the v7_stripes_a patch (minor)**: confirmed on the source — the three stripes reach 4–6 px below
+  the box at r 5,1–7,0 (and, paler, in the feather at r 4,07–4,37). `work/h_v7_stripes_a.json`: box extended DOWNWARD only
+  (y unchanged): h +4 at r 3,97, +12 at r 4,07–4,30 (53 → 65), +20 from r 4,80 to the end 8,10 (61 → 81; held to the end so
+  nothing shrinks at r 7,0). The added strip covers the dark sleeve / arm only (no face). Checked: baked frames r 3,87–8,17
+  every 3rd frame at ×4 (no tick left), render f 96–149 native, f 104–122 from the share mp4. After r 8,12 the shoulder is
+  out of the crop (x > 453).
+- Seen, not changed: a small red-outlined badge on the white-shirt man's pouch (f ≈ 76–117, x ≈ 770–850, y ≈ 1500–1590) —
+  ≈ 20 × 30 px, no letter or mark legible at full size; not a readable print (unchanged since review 3, unflagged).
+
+Results (13/10/2026, review 4): re-rendered main 606 frames + wa / colis 440–605 (0–439 hard-linked; f 440 / 445 byte-identical
+across variants). 20,200 s / 606 frames, audio 20,200 s, in all 6 files — share 25,64 MiB (1080×1920 High@4.1), WhatsApp
+5,67–5,68 MiB (720×1280 High@3.1), BT.709 tv; −14,0 LUFS, AAC TP −1,8 to −2,0 dBTP. Listen (phone band): small = narrator
+100 %, real voice 5/7 = only RV4 « Bonzini » / « Trading » missed (waiver) on the 3 mixes, the 6 AAC (f32) and their pcm_s16
+decodes; large-v3 the same, 9/9. `node tools/qa.js` PASSED, 0 warning, in the 3 variants. Sheets, covers regenerated;
+`out/look3/beats_r4_fixes.jpg` = the fixed frames full size. Frame folders deleted. `out/mux.log` = this round.
+
 # prod_f1 — film 1 « LÀ-BAS, ON CHARGE. ICI, ON REÇOIT. » (36,80 s) + film 2 « DÉPOSÉ. REÇU. » (variant `cut`, 19,35 s)
 The engine below, with this production's score (`overlay/scenes/01_score.js`, SERIE.md §3–§5.2) and module contract
 (`MODULES.md`: 20_duplex.js, 40_map.js; stand-ins in 50_compose.js). Production-specific tools:
