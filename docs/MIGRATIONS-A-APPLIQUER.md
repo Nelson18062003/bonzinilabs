@@ -48,9 +48,11 @@
 - `air_package_add_parcel` : même corps que le 05/10, plus un refus — « Le dépôt RC-… est en cours de saisie :
   terminez-le d'abord ». La règle n'existait que dans les listes ; la douchette et Mola emballaient quand même un
   colis que son réceptionnaire saisissait encore.
+- `air_package_add_parcel` et `air_package_seal` : les poids de leurs refus s'écrivent avec une virgule (« Le paquet
+  passerait à 35,8 kg », « Le paquet pèse 32,4 kg »), comme le reste de l'app.
 - Aucune table, aucune donnée modifiée ; droits et étiquettes `@mola` inchangés.
 - Testée sur Postgres 16 (schéma cargo réel des migrations, matrice des droits réelle) : passée deux fois dans une
-  transaction, 21 contrôles, et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net
+  transaction, 27 contrôles, et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net
   sans les documents cargo du 12/10.
 
 **Comment pousser :** coller `migrations/20261013_consolidated.sql` (APRÈS `migrations/20261012_consolidated.sql` :

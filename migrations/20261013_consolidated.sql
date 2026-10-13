@@ -4,7 +4,9 @@
 --     (`quote_engaged`) : l'app réception n'ouvre plus la correction d'un colis
 --     que le serveur refuserait ;
 --   · air_package_add_parcel refuse un colis dont le dépôt est encore en
---     saisie (la douchette et Mola comme les listes).
+--     saisie (la douchette et Mola comme les listes) ;
+--   · les poids des refus d'ajout et de fermeture d'un paquet s'écrivent avec
+--     une virgule (« 35,8 kg »).
 -- Projet Supabase : fmhsohrgbznqmcvqktjw · à coller d'un bloc dans le SQL Editor.
 -- ============================================================================
 --
@@ -23,11 +25,11 @@
 --
 -- Vérifié sur Postgres 16 (schéma cargo réel des migrations du dépôt, matrice
 -- des droits réelle) : ce fichier passé deux fois dans UNE transaction, puis
--- 21 contrôles (devis encaissé, envoyé, brouillon, absent ; transmis par
+-- 27 contrôles (devis encaissé, envoyé, brouillon, absent ; transmis par
 -- reception_get_deposit et par la liste des colis à emballer ; refus serveur
 -- inchangé ; dépôt en saisie refusé pour tous, accepté une fois terminé ;
--- supprimé, entrepôt, déjà dedans inchangés ; droits et étiquettes @mola
--- intacts) et les 79 contrôles des paquets du 05/10 repassés (un seul change de
+-- supprimé, entrepôt, déjà dedans inchangés ; poids des refus avec une
+-- virgule, fermeture juste acceptée ; droits et étiquettes @mola intacts) et les 79 contrôles des paquets du 05/10 repassés (un seul change de
 -- message : le colis du dépôt en saisie est refusé pour la saisie avant le
 -- client manquant).
 --
@@ -65,7 +67,8 @@ BEGIN
       ('public.reception_quote_engaged(uuid)',     'réception, contrôle total, 02/10'),
       ('public.parcel_code(text)',                 'paquets avion, 05/10'),
       ('public.air_package_json(uuid,boolean)',    'paquets avion, 05/10'),
-      ('public.air_package_add_parcel(uuid,text)', 'paquets avion, 05/10')
+      ('public.air_package_add_parcel(uuid,text)', 'paquets avion, 05/10'),
+      ('public.air_package_seal(uuid,numeric,numeric,numeric,numeric)', 'paquets avion, 05/10')
     ) AS f(sig, origin)
     WHERE to_regprocedure(f.sig) IS NULL
   LOOP
@@ -83,7 +86,7 @@ $pre$;
 -- SECTION 1 — 20261013100000_reception_guards.sql
 -- ############################################################################
 -- ============================================================================
--- RÉCEPTION — DEUX GARDES QUE L'ÉCRAN NE POUVAIT PAS TENIR SEUL (13/10/2026)
+-- RÉCEPTION — DEUX GARDES QUE L'ÉCRAN NE POUVAIT PAS TENIR SEUL, ET DES POIDS À LA FRANÇAISE (13/10/2026)
 --
 -- Relecture de la navigation de l'app réception (/r) :
 --
@@ -104,6 +107,10 @@ $pre$;
 --      20261005170000_air_packages.sql, plus ce refus. Le dépôt reste lu sans
 --      verrou, comme avant : le verrouiller après le colis inverserait l'ordre
 --      de reception_update_parcel (dépôt puis colis) et risquerait un interblocage.
+--      Le poids du refus « passerait à … kg » s'écrit avec une virgule.
+--
+--   3. air_package_seal : même corps, les poids de ses refus avec une virgule
+--      (« Le paquet pèse 32,4 kg », plus « 32.4 kg »).
 --
 -- Aucune table, aucune donnée modifiée. Idempotent. Droits et étiquettes
 -- Mola inchangés (réécrits à l'identique par sûreté). Après : /gen-types.
@@ -246,7 +253,7 @@ BEGIN
   SELECT COALESCE(sum(weight_kg), 0) INTO v_net FROM public.parcels WHERE air_package_id = v_k.id;
   IF v_net + v_p.weight_kg > v_k.max_weight_kg THEN
     RETURN jsonb_build_object('success', false, 'error',
-      'Le paquet passerait à ' || trim(to_char(v_net + v_p.weight_kg, 'FM999990.0')) || ' kg : ' || trim(to_char(v_k.max_weight_kg, 'FM990')) || ' kg au plus. Commencez un autre paquet.',
+      'Le paquet passerait à ' || replace(trim(to_char(v_net + v_p.weight_kg, 'FM999990.0')), '.', ',') || ' kg : ' || trim(to_char(v_k.max_weight_kg, 'FM990')) || ' kg au plus. Commencez un autre paquet.',
       'over', true);
   END IF;
 
@@ -262,5 +269,63 @@ REVOKE ALL ON FUNCTION public.air_package_add_parcel(UUID, TEXT) FROM PUBLIC, an
 GRANT EXECUTE ON FUNCTION public.air_package_add_parcel(UUID, TEXT) TO authenticated, service_role;
 COMMENT ON FUNCTION public.air_package_add_parcel(uuid, text) IS
   '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Mettre un colis avion (RC-…) dans un paquet ouvert"}';
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 3. Fermer un paquet : même corps que 20261005170000, les poids des refus
+--    écrits à la française (« 32,4 kg », plus « 32.4 kg »).
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.air_package_seal(
+  p_package_id UUID,
+  p_gross_weight_kg NUMERIC,
+  p_length_cm NUMERIC DEFAULT NULL,
+  p_width_cm NUMERIC DEFAULT NULL,
+  p_height_cm NUMERIC DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE v_uid UUID := auth.uid(); v_k public.air_packages; v_net NUMERIC; v_n INTEGER;
+BEGIN
+  IF NOT public.admin_has_permission(v_uid, 'canReceiveParcels') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  SELECT * INTO v_k FROM public.air_packages WHERE id = p_package_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Paquet introuvable'); END IF;
+  IF v_k.status <> 'open' THEN RETURN jsonb_build_object('success', false, 'error', 'Ce paquet est déjà fermé'); END IF;
+  SELECT count(*), COALESCE(sum(weight_kg), 0) INTO v_n, v_net FROM public.parcels WHERE air_package_id = v_k.id;
+  IF v_n = 0 THEN RETURN jsonb_build_object('success', false, 'error', 'Le paquet est vide'); END IF;
+  IF p_gross_weight_kg IS NULL OR p_gross_weight_kg <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Indiquez le poids pesé du paquet');
+  END IF;
+  IF p_gross_weight_kg > v_k.max_weight_kg THEN
+    RETURN jsonb_build_object('success', false, 'error',
+      'Le paquet pèse ' || replace(trim(to_char(p_gross_weight_kg, 'FM999990.0')), '.', ',') || ' kg : ' || trim(to_char(v_k.max_weight_kg, 'FM990')) || ' kg au plus. Retirez un colis.');
+  END IF;
+  IF p_gross_weight_kg < v_net - 0.5 THEN
+    RETURN jsonb_build_object('success', false, 'error',
+      'Le poids pesé (' || replace(trim(to_char(p_gross_weight_kg, 'FM999990.0')), '.', ',') || ' kg) est inférieur à celui des colis (' || replace(trim(to_char(v_net, 'FM999990.0')), '.', ',') || ' kg) : vérifiez la pesée');
+  END IF;
+  IF (p_length_cm IS NOT NULL AND (p_length_cm <= 0 OR p_length_cm > 400))
+     OR (p_width_cm IS NOT NULL AND (p_width_cm <= 0 OR p_width_cm > 400))
+     OR (p_height_cm IS NOT NULL AND (p_height_cm <= 0 OR p_height_cm > 400)) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Dimensions invalides');
+  END IF;
+  UPDATE public.air_packages
+     SET status = 'sealed', gross_weight_kg = p_gross_weight_kg,
+         length_cm = p_length_cm, width_cm = p_width_cm, height_cm = p_height_cm,
+         sealed_at = now(), sealed_by = v_uid, updated_at = now()
+   WHERE id = v_k.id;
+  INSERT INTO public.admin_audit_logs (admin_user_id, action_type, target_type, target_id, details)
+  VALUES (v_uid, 'air_package_seal', 'air_package', v_k.id,
+          jsonb_build_object('description', 'Paquet ' || v_k.package_no || ' fermé : ' || v_n || ' colis, ' || p_gross_weight_kg || ' kg', 'package_no', v_k.package_no, 'parcels', v_n, 'gross_weight_kg', p_gross_weight_kg, 'net_weight_kg', v_net));
+  RETURN jsonb_build_object('success', true, 'package', public.air_package_json(v_k.id, true));
+END;
+$fn$;
+REVOKE ALL ON FUNCTION public.air_package_seal(UUID, NUMERIC, NUMERIC, NUMERIC, NUMERIC) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.air_package_seal(UUID, NUMERIC, NUMERIC, NUMERIC, NUMERIC) TO authenticated, service_role;
+COMMENT ON FUNCTION public.air_package_seal(uuid, numeric, numeric, numeric, numeric) IS
+  '@mola:{"expose":true,"kind":"write","permission":"canReceiveParcels","confirm":true,"danger":false,"label":"Fermer un paquet avion : poids pesé (32 kg au plus) et dimensions"}';
 
 NOTIFY pgrst, 'reload schema';

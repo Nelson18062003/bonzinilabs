@@ -20,6 +20,7 @@ import { Camera, ImagePlus, Minus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getCurrentLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, RECEPTION_CONDITIONS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind, type ReceptionCondition } from '@/lib/reception';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -39,6 +40,8 @@ const num = (s: string): number | null => {
   const v = parseFloat(s.replace(',', '.'));
   return Number.isFinite(v) && v >= 0 ? v : null;
 };
+/** Une mesure déjà enregistrée, écrite comme on la tape ici (« 12,1 » en français, « 12.1 » ailleurs). */
+const field = (v: number | null | undefined): string => (v == null ? '' : v.toLocaleString(getCurrentLocale(), { useGrouping: false, maximumFractionDigits: 3 }));
 
 /** Une photo prise, pas encore envoyée : son aperçu local (useFilePreviews), et la retirer. */
 function NewPhoto({ url, cover, coverLabel, removeLabel, onRemove }: { url: string | null; cover: boolean; coverLabel: string; removeLabel: string; onRemove: () => void }) {
@@ -108,10 +111,10 @@ export function ReceptionParcel() {
   useEffect(() => {
     if (!editing || loaded === editing.id) return;
     setKind(editing.kind);
-    setWeight(editing.weight_kg != null ? String(editing.weight_kg) : '');
-    setLength(editing.length_cm != null ? String(editing.length_cm) : '');
-    setWidth(editing.width_cm != null ? String(editing.width_cm) : '');
-    setHeight(editing.height_cm != null ? String(editing.height_cm) : '');
+    setWeight(field(editing.weight_kg));
+    setLength(field(editing.length_cm));
+    setWidth(field(editing.width_cm));
+    setHeight(field(editing.height_cm));
     setDescription(editing.description ?? '');
     setWaybill(editing.courier_waybill ?? '');
     setShowWaybill(!!editing.courier_waybill);

@@ -66,7 +66,7 @@ export function ReceptionBroughtBy() {
           <Holder size="sm" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
           <span className={cn('min-w-0 flex-1 break-words', TYPE.bodyStrong, TEXT.strong)}>
             {clientId ? clientName : t('rc_unknown_client')}
-            {clientCode && <span className={cn('ml-2 font-normal tabular-nums', TEXT.muted)}>{clientCode}</span>}
+            {clientCode && <span className={cn('ml-2 whitespace-nowrap font-normal tabular-nums', TEXT.muted)}>{clientCode}</span>}
           </span>
           {location && <LocationMark location={location} size={24} />}
           <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</span>

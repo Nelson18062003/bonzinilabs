@@ -2,10 +2,14 @@
 // Le bureau et l'entrepôt de Bonzini à Guangzhou : Kevin Nkolo (réceptionnaire, téléphone, /r)
 // reçoit, pèse et étiquette les colis, puis les regroupe en paquets avion de 32 kg (PQ-…) ;
 // au bureau, Grace Ebogo (ops, ordinateur) chiffre le fret du dépôt et l'encaisse.
-import { useContext, useMemo, type ComponentType, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, type ComponentType, type ReactNode } from 'react';
 import type { JourneyEntry } from './types';
 import { AdminAuthContext, ROLE_PERMISSIONS } from '@/contexts/AdminAuthContext';
-import { ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionPackTodo, ReceptionNewClient } from '@/mobile/screens/reception';
+import {
+  ReceptionHome, ReceptionDeposit, ReceptionDone, ReceptionPackages, ReceptionPackage, ReceptionPackTodo, ReceptionNewClient,
+  ReceptionIdentify, ReceptionSearch, ReceptionBroughtBy, ReceptionSupplier, ReceptionParcel, ReceptionPending, ReceptionClients, ReceptionClientCard,
+} from '@/mobile/screens/reception';
+import { installNativeSiteApi } from '@/lib/nativeBridge';
 import { ReceptionShell } from '@/mobile/components/reception/ReceptionRouteWrapper';
 import { DesktopCargoReception } from '@/desktop/screens/cargo';
 import { DesktopAppShell } from '@/desktop/components/layout/DesktopAppShell';
@@ -51,6 +55,16 @@ function DeskReception() {
   );
 }
 
+/**
+ * Dans l'app BONZINI HQ : la caméra est native (le bouton « Ouvrir le scanner »).
+ * Le harnais installe le pont du site pour rendre un scan comme l'app le ferait
+ * (window.__bonziniHQ.deliverScan) — l'init de la capture simule la WebView.
+ */
+const inApp = (Screen: ComponentType): ComponentType => function InApp() {
+  useEffect(() => installNativeSiteApi({ navigate: () => {}, logout: async () => {}, setSession: async () => ({ success: true }) }), []);
+  return <Screen />;
+};
+
 const Home = reception(ReceptionHome, true);
 const Deposit = reception(ReceptionDeposit, false);
 const DoneWithBar = reception(ReceptionDone, true);
@@ -58,6 +72,15 @@ const Packages = reception(ReceptionPackages, true);
 const Package = reception(ReceptionPackage, false);
 const NewClient = reception(ReceptionNewClient, false);
 const PackTodo = reception(ReceptionPackTodo, false);
+const Identify = reception(inApp(ReceptionIdentify), false);
+const Search = reception(ReceptionSearch, false);
+const BroughtBy = reception(ReceptionBroughtBy, false);
+const Supplier = reception(ReceptionSupplier, false);
+const Parcel = reception(ReceptionParcel, false);
+const Pending = reception(ReceptionPending, true);
+const Clients = reception(ReceptionClients, true);
+const ClientCard = reception(ReceptionClientCard, true);
+const DoneNoClient = reception(ReceptionDone, true);
 
 export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.home': { Comp: Home, route: '/r', wrap: 'lang' },
@@ -68,6 +91,23 @@ export const SCREENS: Record<string, JourneyEntry> = {
   'j.guangzhou.deposit-other': { Comp: Deposit, route: '/r/deposit/depLi', path: '/r/deposit/:depositId', wrap: 'lang' },
   'j.guangzhou.deposit-quote': { Comp: Deposit, route: '/r/deposit/depQ', path: '/r/deposit/:depositId', wrap: 'lang' },
   'j.guangzhou.packages': { Comp: Packages, route: '/r/paquets', wrap: 'lang' },
+  // La visite complète du 13/10 : nouveau dépôt (caméra de l'app, recherche, qui apporte, fournisseur,
+  // colis question par question), En attente et l'attribution refusée, Clients et la fiche client.
+  'j.guangzhou.identify': { Comp: Identify, route: '/r/new', path: '/r/new', wrap: 'lang' },
+  'j.guangzhou.assign': { Comp: Identify, route: '/r/new?assign=pend1', path: '/r/new', wrap: 'lang' },
+  'j.guangzhou.search': { Comp: Search, route: '/r/new/search?q=Mbarga', path: '/r/new/search', wrap: 'lang' },
+  'j.guangzhou.brought-by': { Comp: BroughtBy, route: '/r/new/how?client=u1&name=A%C3%AFcha%20Mbarga&code=BZ-482913', path: '/r/new/how', wrap: 'lang' },
+  'j.guangzhou.supplier': { Comp: Supplier, route: '/r/deposit/dep1/supplier', path: '/r/deposit/:depositId/supplier', wrap: 'lang' },
+  'j.guangzhou.parcel-photo': { Comp: Parcel, route: '/r/deposit/dep1/parcel', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'j.guangzhou.parcel-weight': { Comp: Parcel, route: '/r/deposit/dep1/parcel?step=weight', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'j.guangzhou.parcel-dims': { Comp: Parcel, route: '/r/deposit/dep1/parcel?step=dims', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'j.guangzhou.parcel-inside': { Comp: Parcel, route: '/r/deposit/dep1/parcel?step=inside', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'j.guangzhou.parcel-copies': { Comp: Parcel, route: '/r/deposit/dep1/parcel?step=copies', path: '/r/deposit/:depositId/parcel', wrap: 'lang' },
+  'j.guangzhou.parcel-edit': { Comp: Parcel, route: '/r/deposit/dep1c/parcel/cRC-000123-2?step=weight', path: '/r/deposit/:depositId/parcel/:parcelId', wrap: 'lang' },
+  'j.guangzhou.pending': { Comp: Pending, route: '/r/pending', wrap: 'lang' },
+  'j.guangzhou.done-no-client': { Comp: DoneNoClient, route: '/r/deposit/pend1/done', path: '/r/deposit/:depositId/done', wrap: 'lang' },
+  'j.guangzhou.clients': { Comp: Clients, route: '/r/clients', wrap: 'lang' },
+  'j.guangzhou.client-card': { Comp: ClientCard, route: '/r/clients/u1', path: '/r/clients/:userId', wrap: 'lang' },
   'j.guangzhou.package': { Comp: Package, route: '/r/paquets/pk45', path: '/r/paquets/:id', wrap: 'lang' },
   // Le réceptionnaire emballe (12/10) : les colis à emballer, et le paquet vide que Grace a ouvert depuis l'ordinateur.
   'j.guangzhou.pack-todo': { Comp: PackTodo, route: '/r/paquets/emballer', wrap: 'lang' },

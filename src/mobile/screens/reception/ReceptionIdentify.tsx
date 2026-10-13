@@ -129,7 +129,7 @@ export function ReceptionIdentify() {
           {scanner.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{t('scanning')}</div>}
           {byCode.isPending && !found && <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[17px] font-semibold text-white">{t('rc_looking_up')}</div>}
           {found && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#14AE5C]/90 px-6 text-center text-white">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#14AE5C] px-6 text-center text-white">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20"><Check className="h-9 w-9" strokeWidth={3} /></span>
               <span className="text-[15px] font-semibold opacity-90">{t('rc_client_found')}</span>
               <span className="text-[22px] font-bold leading-tight">{clientFullName(found)}</span>

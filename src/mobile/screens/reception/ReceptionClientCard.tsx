@@ -85,7 +85,7 @@ export function ReceptionClientCard() {
           ) : (
             <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
               {deposits.map((d) => (
-                <DepositRow key={d.id} deposit={d} onClick={() => navigate(`/r/deposit/${d.id}`)} />
+                <DepositRow key={d.id} deposit={d} byNumber onClick={() => navigate(`/r/deposit/${d.id}`)} />
               ))}
             </Card>
           )}

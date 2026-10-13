@@ -241,7 +241,7 @@ export const RPC = {
       const other = packedIn(p);
       if (other.package_no) return { success: false, error: `Le colis ${no} est déjà dans le paquet ${other.package_no}` };
       const next = Math.round((made(m).net_weight_kg + p.weight_kg) * 10) / 10;
-      if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1)} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
+      if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1).replace(".", ",")} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
       m.parcels = [...m.parcels, pkParcel(p, d)];
       return { success: true, already: false, parcel_no: no, weight_kg: p.weight_kg, client: d.client, package: made(m) };
     }
@@ -249,7 +249,7 @@ export const RPC = {
     if (!p) return { success: false, error: `Colis ${no} introuvable` };
     if (pk45Parcels.some((x) => x.parcel_no === no)) return { success: true, already: true, parcel_no: no, package: pk45 };
     const next = Math.round((pk45.net_weight_kg + p.weight_kg) * 10) / 10;
-    if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1)} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
+    if (next > 32) return { success: false, error: `Le paquet passerait à ${next.toFixed(1).replace(".", ",")} kg : 32 kg au plus. Commencez un autre paquet.`, over: true };
     return { success: false, error: `Le colis ${no} est déjà dans le paquet PQ-000044` };
   },
   air_package_seal: (b) => { state.sealed = true; return { success: true, package: { ...pk45Sealed, gross_weight_kg: b?.p_gross_weight_kg ?? 28.1, length_cm: b?.p_length_cm ?? null, width_cm: b?.p_width_cm ?? null, height_cm: b?.p_height_cm ?? null } }; },
@@ -305,6 +305,10 @@ export const RPC = {
   ] },
   reception_overview: { success: true, by_receptionist: [{ received_by: 'demo', name: 'Kevin Nkolo', deposits: 5, parcels: 15, weight_kg: 104.8, cbm: 0.62, pending: 1, incomplete: 0 }], deposits: [dep1c, dep2, dep3, dep4, pend1].map(withQuote) },
   reception_search_clients: { success: true, clients: [aicha] },
+  // La visite du 13/10 : le QR d'Aïcha, ses dépôts, et l'attribution que Li Wei vient de faire avant Kevin.
+  reception_client_by_code: (b) => ([aicha, samuel, nadia].find((c) => c.customer_code === b?.p_code) ? { success: true, client: [aicha, samuel, nadia].find((c) => c.customer_code === b?.p_code) } : { success: false, error: 'unknown_code', code: b?.p_code }),
+  reception_client_deposits: (b) => ({ success: true, deposits: [dep1c, dep2].filter((d) => d.client?.user_id === (b?.p_user_id ?? 'u1')).map(withPackages) }),
+  reception_assign_client: { success: false, error: 'Ce dépôt est déjà attribué' },
   warehouse_day: { success: true, day: '2026-10-05', stats: { to_checkin: 0, waiting: 0, missing: 0, delivered_today: 0 }, arrivals: [], waiting_by_client: [], releases_today: [] },
   cargo_pricing_get: pricing,
   cargo_quote_get: (b) => ({ success: true, quote: QUOTES[b?.p_deposit_id] ?? null }),
@@ -397,6 +401,25 @@ const noPlace = async (page) => {
   await setup(page);
   await page.addInitScript(() => { try { localStorage.removeItem('bonzini-reception-location'); } catch { /* privé */ } });
 };
+/** Dans l'app BONZINI HQ (la WebView) : la caméra est native, le site montre « Ouvrir le scanner ». */
+const inHQ = async (page) => {
+  await setup(page);
+  await page.addInitScript(() => { window.ReactNativeWebView = { postMessage() {} }; });
+};
+/** La caméra native rend un code, comme l'app le fait (window.__bonziniHQ.deliverScan). */
+const nativeScan = (code, ms) => async (page) => {
+  await fontsReady(page);
+  await page.evaluate((c) => window.__bonziniHQ?.deliverScan(c), code);
+  await page.waitForTimeout(ms);
+};
+/** Une question du colis, la réponse tapée (poids, dimensions…). */
+const typeIn = (...values) => async (page) => {
+  await fontsReady(page);
+  const inputs = page.locator('main input:not([type=file]), input[inputmode="decimal"]');
+  for (let i = 0; i < values.length; i += 1) await inputs.nth(i).fill(values[i]);
+  await page.waitForTimeout(300);
+};
+
 /** « Colis à emballer » : tous les colis d'Aïcha cochés d'un geste (sa case de client). */
 async function pickAicha(page) {
   await fontsReady(page);
@@ -699,6 +722,26 @@ export const SCREENS = [
   // 15c. Le dépôt en cours d'un collègue : en lecture, avec qui le saisit.
   { key: 'j.guangzhou.deposit-other', name: '15c-depot-dun-collegue', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', before: fontsReady },
   // 15e. Terminé, devis déjà chez le client : la fiche le dit, toucher un colis ouvre ses photos.
+  // ── La visite complète (13/10) ──
+  // Nouveau dépôt, dans l'app BONZINI HQ : la caméra native, puis « Client trouvé ».
+  { key: 'j.guangzhou.identify', name: '20-nouveau-depot-camera', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.identify', name: '20b-client-trouve', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x844', fullPage: false, before: nativeScan('BZ-482913', 120) },
+  { key: 'j.guangzhou.search', name: '21-chercher-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.brought-by', name: '22-qui-apporte', role: 'receptionist', init: setup, wait: 1200, viewport: '390x1000', before: fontsReady },
+  { key: 'j.guangzhou.supplier', name: '22b-fournisseur', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  { key: 'j.guangzhou.parcel-photo', name: '24-colis-1-photos', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-weight', name: '24b-colis-2-poids', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: typeIn('8,4') },
+  { key: 'j.guangzhou.parcel-dims', name: '24c-colis-3-dimensions', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: typeIn('60', '40', '40') },
+  { key: 'j.guangzhou.parcel-inside', name: '24d-colis-4-contenu', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-copies', name: '24e-colis-5-identiques', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.parcel-edit', name: '24f-corriger-un-colis', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  // En attente : le colis du coursier sans client ; l'attribution, refusée (Li Wei l'a fait avant) : des sorties.
+  { key: 'j.guangzhou.pending', name: '25-en-attente', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.assign', name: '25b-attribution-refusee', role: 'receptionist', init: inHQ, wait: 1200, viewport: '390x1000', fullPage: false, before: nativeScan('BZ-207781', 1800) },
+  { key: 'j.guangzhou.done-no-client', name: '25c-depot-termine-sans-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', fullPage: false, before: fontsReady },
+  // Clients : la liste, et la fiche (étiquette du client, ses dépôts, « Nouveau dépôt pour lui »).
+  { key: 'j.guangzhou.clients', name: '26-clients', role: 'receptionist', init: setup, wait: 1500, viewport: '390x844', fullPage: false, before: fontsReady },
+  { key: 'j.guangzhou.client-card', name: '26b-fiche-client', role: 'receptionist', init: setup, wait: 1800, viewport: '390x1300', fullPage: false, before: fontsReady },
   { key: 'j.guangzhou.deposit-quote', name: '15e-depot-devis-chez-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
   // 15d. Retirer un colis demande confirmation.
   { key: 'j.guangzhou.deposit', name: '15d-retirer-un-colis-confirmation', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
