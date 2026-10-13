@@ -15,6 +15,20 @@
 
 ## En attente
 
+> **13/10/2026 — UN seul fichier pour les lots 14 et 15 : `migrations/20261013_consolidated.sql`.** Il contient, dans
+> l'ordre, un contrôle des prérequis (s'arrête net, sans rien modifier, s'il en manque un), `20261012140000` (colis
+> avion à emballer, « ouvert par ») puis `20261013100000` (devis engagé, dépôt en saisie refusé, poids à la virgule).
+> Il remplace `migrations/20261012b_consolidated.sql`, retiré (jamais passé en production). Ensuite :
+> 1. `npx supabase migration repair --status applied 20261012140000 20261013100000`
+> 2. `/gen-types`
+> 3. déployer le site, puis `cd hq-app && npm run update:production` (onglet Paquets et sa pastille dans l'app).
+>
+> **État vérifié en production le 13/10/2026 (lecture seule).** En place : paquets avion (05/10), commerciaux,
+> évolution des ventes (08/10), documents cargo (12/10). Absents : `20261012140000` et `20261013100000` (ce fichier).
+> Le registre des migrations s'arrête pourtant à `20261004090000` : les fichiers du 05/10 au 12/10 ont été collés sans
+> `migration repair`. À faire une fois, sans rien recoller :
+> `npx supabase migration repair --status applied 20261005120000 20261005150000 20261005160000 20261005170000 20261006100000 20261006120000 20261007100000 20261008100000 20261012100000`
+
 > **Les deux migrations du 06/10, celle du 07/10 ET celle du 08/10 se collent en UN fichier :
 > `migrations/20261006_consolidated.sql`** (à coller APRÈS `migrations/20261005_consolidated.sql`). Il contient, dans
 > l'ordre, un contrôle des prérequis (s'arrête net, sans rien modifier, s'il en manque un), `20261006100000` (sites,
@@ -38,7 +52,7 @@
 > 07/10, l'ancien site ne connaît pas non plus le statut « À vérifier » qu'une saisie peut désormais produire : autre
 > raison de ne pas laisser d'intervalle.
 
-### `20261013100000_reception_guards.sql` → `migrations/20261013_consolidated.sql`
+### `20261013100000_reception_guards.sql` → `migrations/20261013_consolidated.sql` (section 2)
 **PR :** Réception : navigation repensée (relecture) — deux gardes que l'écran ne pouvait pas tenir seul
 **Contenu :**
 - `reception_deposit_json` (aide interne) : même corps que le 12/10, plus `quote_engaged` — la raison si le devis du
@@ -55,17 +69,15 @@
   transaction, 27 contrôles, et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net
   sans les documents cargo du 12/10.
 
-**Comment pousser :** coller `migrations/20261013_consolidated.sql` (APRÈS `migrations/20261012_consolidated.sql` :
-`reception_deposit_json` lit l'état à la réception de chaque colis), puis
-`npx supabase migration repair --status applied 20261013100000`, puis `/gen-types`. **Ordre :** libre par rapport au
-site ; sans le SQL, l'écran ouvre la correction comme avant et le serveur la refuse avec sa raison.
+**Comment pousser :** voir le bandeau du 13/10 ci-dessus (un seul fichier pour les deux migrations). **Ordre :** libre
+par rapport au site ; sans le SQL, l'écran ouvre la correction comme avant et le serveur la refuse avec sa raison.
 
-### `20261012140000_air_package_packable.sql` → `migrations/20261012b_consolidated.sql`
+### `20261012140000_air_package_packable.sql` → `migrations/20261013_consolidated.sql` (section 1)
 **PR :** Cargo : le réceptionnaire fait ses paquets avion sur son téléphone (colis à emballer, mise en paquet, ajout au toucher)
 **Contenu :**
 - `air_package_packable(p_limit int default 300)` (lecture, `@mola` exposée, `canReceiveParcels` ou `canViewCargo`) :
   les dépôts du **bureau** qui ont encore au moins un colis à emballer (ni dans un paquet, ni chargé, ni pointé, ni
-  remis ; dépôt supprimé exclu, dépôt en cours compris), au format de `reception_deposit_json`, du plus récent au plus
+  remis ; dépôt supprimé exclu, dépôt en cours compris — ses colis sont « à compléter »), au format de `reception_deposit_json`, du plus récent au plus
   ancien ; `total` et `truncated` ; et deux compteurs légers, `ready_count` (dépôt terminé, attribué, colis pesé de
   32 kg au plus) et `to_fix_count` (dépôt en cours, sans client ou colis pas pesé) — `p_limit = 0` ne renvoie que
   les compteurs (la pastille de l'onglet Paquets, site et app HQ). Le réceptionnaire n'a pas `canViewCargo` :
@@ -78,9 +90,7 @@ site ; sans le SQL, l'écran ouvre la correction comme avant et le serveur la re
   emballés), et les 79 contrôles des paquets du 05/10 repassés ; le consolidé de même, et refus net sans les paquets
   avion.
 
-**Comment pousser :** coller `migrations/20261012b_consolidated.sql` (après les paquets avion du 05/10 ; indépendant
-de `migrations/20261012_consolidated.sql`), puis `npx supabase migration repair --status applied 20261012140000`,
-puis `/gen-types`. **Ordre :** sans le SQL, le nouveau site reste utilisable — la liste « Colis à emballer » dit
+**Comment pousser :** voir le bandeau du 13/10 ci-dessus (un seul fichier pour les deux migrations). **Ordre :** sans le SQL, le nouveau site reste utilisable — la liste « Colis à emballer » dit
 qu'elle n'est pas encore disponible, l'onglet Paquets s'ouvre sans pastille, la douchette marche déjà. **L'app BONZINI
 HQ** (onglet Paquets natif) : `cd hq-app && npm run update:production`.
 

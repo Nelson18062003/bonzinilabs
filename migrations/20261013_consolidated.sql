@@ -1,46 +1,49 @@
 -- ============================================================================
--- MIGRATION CONSOLIDÉE · 13/10/2026 · RÉCEPTION — DEUX GARDES SERVEUR
---   · reception_deposit_json dit si le devis du dépôt est engagé
---     (`quote_engaged`) : l'app réception n'ouvre plus la correction d'un colis
---     que le serveur refuserait ;
---   · air_package_add_parcel refuse un colis dont le dépôt est encore en
---     saisie (la douchette et Mola comme les listes) ;
---   · les poids des refus d'ajout et de fermeture d'un paquet s'écrivent avec
---     une virgule (« 35,8 kg »).
+-- MIGRATION CONSOLIDÉE · 13/10/2026 · CARGO — LA RÉCEPTION FAIT SES PAQUETS AVION
+-- (lots 14 et 15 : branche claude/adoring-gauss-jk2r0d)
+--
 -- Projet Supabase : fmhsohrgbznqmcvqktjw · à coller d'un bloc dans le SQL Editor.
+-- UN seul fichier, à coller UNE fois. Il remplace migrations/20261012b_consolidated.sql
+-- (jamais passé en production) : rien d'autre n'est à coller pour cette branche.
 -- ============================================================================
 --
--- À coller APRÈS migrations/20261012_consolidated.sql (documents cargo : l'état
--- de chaque colis à la réception, que reception_deposit_json lit) et après les
--- paquets avion du 05/10. Indépendant de migrations/20261012b_consolidated.sql.
--- Le contrôle des prérequis ci-dessous s'arrête net s'il en manque un, sans
--- rien modifier.
+-- État vérifié en production le 13/10/2026 (lecture seule) : les paquets avion
+-- (05/10) et les documents cargo (12/10) sont en place ; aucune des deux
+-- migrations ci-dessous ne l'est.
 --
--- Contenu :
---   0. Contrôle des prérequis.
---   1. Copie conforme de
---        ← supabase/migrations/20261013100000_reception_guards.sql
---      (qui reste la source pour `npx supabase db push --linked`).
---   Aucune table, aucune donnée modifiée. Idempotent : rejouable sans dégât.
+-- Contenu, dans l'ordre d'exécution :
+--   0. Contrôle des prérequis : s'arrête net, SANS RIEN MODIFIER, s'il manque
+--      une table, une colonne ou une fonction des 05/10 et 12/10.
+--   1. 20261012140000_air_package_packable — les colis avion du bureau qui
+--      attendent un paquet de 32 kg, lisibles par le réceptionnaire
+--      (air_package_packable, canReceiveParcels ou canViewCargo, compteurs pour
+--      la pastille de l'onglet Paquets) ; chaque paquet dit qui l'a ouvert.
+--   2. 20261013100000_reception_guards — le dépôt dit si son devis est engagé
+--      (quote_engaged : l'app n'ouvre plus une correction que le serveur
+--      refuserait) ; air_package_add_parcel refuse le colis d'un dépôt encore
+--      en saisie (douchette et Mola compris) ; les poids des refus d'ajout et
+--      de fermeture d'un paquet avec une virgule (« 35,8 kg »).
+--   Chaque section est la copie conforme de son fichier supabase/migrations/
+--   (qui reste la source pour `npx supabase db push --linked`).
+--
+-- Aucune table créée, aucune donnée modifiée : uniquement des fonctions
+-- (CREATE OR REPLACE), leurs droits et leurs étiquettes @mola. Idempotent :
+-- rejouable sans dégât, y compris si une ancienne version de l'une des deux
+-- sections a déjà été collée.
 --
 -- Vérifié sur Postgres 16 (schéma cargo réel des migrations du dépôt, matrice
 -- des droits réelle) : ce fichier passé deux fois dans UNE transaction, puis
--- 27 contrôles (devis encaissé, envoyé, brouillon, absent ; transmis par
--- reception_get_deposit et par la liste des colis à emballer ; refus serveur
--- inchangé ; dépôt en saisie refusé pour tous, accepté une fois terminé ;
--- supprimé, entrepôt, déjà dedans inchangés ; poids des refus avec une
--- virgule, fermeture juste acceptée ; droits et étiquettes @mola intacts) et les 79 contrôles des paquets du 05/10 repassés (un seul change de
--- message : le colis du dépôt en saisie est refusé pour la saisie avant le
--- client manquant).
+-- les 31 contrôles de la section 1 et les 27 de la section 2, et les 79
+-- contrôles des paquets du 05/10 repassés.
 --
 -- Après passage :
---   npx supabase migration repair --status applied 20261013100000
+--   npx supabase migration repair --status applied 20261012140000 20261013100000
 --   /gen-types
 -- ============================================================================
 
 
 -- ############################################################################
--- SECTION 0 — Prérequis
+-- SECTION 0 — Prérequis (rien n'est modifié s'il en manque un)
 -- ############################################################################
 DO $pre$
 DECLARE
@@ -48,11 +51,28 @@ DECLARE
   r         RECORD;
 BEGIN
   FOR r IN
+    SELECT t.tbl, t.origin FROM (VALUES
+      ('parcel_deposits', 'réception des colis, 20/09'),
+      ('parcels',         'réception des colis, 20/09'),
+      ('parcel_quotes',   'devis du fret, 21/09'),
+      ('air_shipments',   'expéditions aériennes, 21/09'),
+      ('air_packages',    'paquets avion, 05/10'),
+      ('user_roles',      'équipe')
+    ) AS t(tbl, origin)
+    WHERE to_regclass('public.' || t.tbl) IS NULL
+  LOOP
+    v_missing := array_append(v_missing, 'table public.' || r.tbl || ' (' || r.origin || ')');
+  END LOOP;
+
+  FOR r IN
     SELECT c.tbl, c.col, c.origin FROM (VALUES
       ('parcels',         'air_package_id',      'paquets avion, 05/10'),
+      ('parcels',         'checked_in_at',       'Douala, 21/09'),
       ('parcels',         'reception_condition', 'documents cargo, 12/10'),
       ('parcel_deposits', 'supplier_kind',       'fournisseurs, 22/09'),
-      ('parcel_quotes',   'invoice_no',          'encaissements des devis, 21/09')
+      ('parcel_quotes',   'invoice_no',          'encaissements des devis, 21/09'),
+      ('air_packages',    'created_by',          'paquets avion, 05/10'),
+      ('user_roles',      'first_name',          'équipe')
     ) AS c(tbl, col, origin)
     WHERE NOT EXISTS (SELECT 1 FROM information_schema.columns ic
                        WHERE ic.table_schema = 'public' AND ic.table_name = c.tbl AND ic.column_name = c.col)
@@ -64,6 +84,7 @@ BEGIN
     SELECT f.sig, f.origin FROM (VALUES
       ('public.admin_has_permission(uuid,text)',   'droits par rôle'),
       ('public.reception_client_card(uuid)',       'réception des colis'),
+      ('public.reception_deposit_json(uuid)',      'réception des colis'),
       ('public.reception_quote_engaged(uuid)',     'réception, contrôle total, 02/10'),
       ('public.parcel_code(text)',                 'paquets avion, 05/10'),
       ('public.air_package_json(uuid,boolean)',    'paquets avion, 05/10'),
@@ -83,7 +104,153 @@ $pre$;
 
 
 -- ############################################################################
--- SECTION 1 — 20261013100000_reception_guards.sql
+-- SECTION 1 — 20261012140000_air_package_packable.sql
+--   Les colis avion qui attendent un paquet (liste + compteurs de la pastille),
+--   et « ouvert par » sur chaque paquet.
+-- ############################################################################
+-- ============================================================================
+-- LES PAQUETS AVION SUR LE TÉLÉPHONE DU RÉCEPTIONNAIRE (12/10/2026)
+--
+-- Le réceptionnaire du bureau (Guangzhou, avion) crée déjà ses paquets de
+-- 32 kg et y scanne les colis. Ce qui lui manquait : SAVOIR ce qui attend un
+-- paquet. La liste de la console (reception_board) exige canViewCargo, qu'il
+-- n'a pas — il n'avait donc que la douchette, colis par colis, de mémoire.
+--
+--   1. air_package_packable() : les dépôts du BUREAU qui ont encore au moins un
+--      colis à emballer (ni dans un paquet, ni chargé, ni parti), au même
+--      format que la console (reception_deposit_json). L'écran en tire les
+--      colis prêts et ceux à compléter (sans client, pas pesé, dépôt en cours
+--      de saisie) avec les mêmes règles que air_package_add_parcel, qui
+--      revérifie chaque colis. Et deux compteurs légers pour la pastille de
+--      l'onglet Paquets (p_limit = 0 : les compteurs seuls, sans les dépôts).
+--      Lecture : canReceiveParcels (la réception) ou canViewCargo (le cargo).
+--   2. air_package_json dit QUI a ouvert le paquet (created_by,
+--      created_by_name) : un paquet préparé depuis l'ordinateur se reconnaît
+--      sur le téléphone, et inversement.
+--
+-- Aucune table, aucune donnée modifiée. Idempotent. Suppose passée
+-- 20261005170000_air_packages.sql. Après : /gen-types.
+-- ============================================================================
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 1. Un paquet au format JSON : la fiche, ses poids, son expédition, ses colis
+--    — et désormais qui l'a ouvert. Même corps que 20261005170000, plus
+--    created_by / created_by_name.
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.air_package_json(p_package_id UUID, p_with_parcels BOOLEAN DEFAULT true)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+  SELECT jsonb_build_object(
+    'id', k.id, 'package_no', k.package_no, 'status', k.status,
+    'air_shipment_id', k.air_shipment_id, 'awb_number', a.awb_number, 'air_status', a.status, 'etd', a.etd, 'flight_no', a.flight_no,
+    'max_weight_kg', k.max_weight_kg, 'gross_weight_kg', k.gross_weight_kg,
+    'length_cm', k.length_cm, 'width_cm', k.width_cm, 'height_cm', k.height_cm, 'notes', k.notes,
+    'net_weight_kg', (SELECT COALESCE(sum(p.weight_kg), 0) FROM public.parcels p WHERE p.air_package_id = k.id),
+    'parcel_count',  (SELECT count(*) FROM public.parcels p WHERE p.air_package_id = k.id),
+    'client_count',  (SELECT count(DISTINCT d.client_user_id) FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id WHERE p.air_package_id = k.id),
+    'checked_count', (SELECT count(*) FROM public.parcels p WHERE p.air_package_id = k.id AND p.checked_in_at IS NOT NULL),
+    'missing_count', (SELECT count(*) FROM public.parcels p WHERE p.air_package_id = k.id AND p.condition = 'missing'),
+    'sealed_at', k.sealed_at, 'handed_over_at', k.handed_over_at,
+    'refused_at', k.refused_at, 'refusal_reason', k.refusal_reason, 'refused_air_shipment_id', k.refused_air_shipment_id,
+    'received_at', k.received_at, 'opened_at', k.opened_at, 'created_at', k.created_at, 'updated_at', k.updated_at,
+    'created_by', k.created_by,
+    -- Une personne a parfois deux lignes de rôle : un seul nom, le même à chaque lecture.
+    'created_by_name', (SELECT NULLIF(TRIM(COALESCE(ur.first_name, '') || ' ' || COALESCE(ur.last_name, '')), '')
+                          FROM public.user_roles ur WHERE ur.user_id = k.created_by
+                         ORDER BY NULLIF(TRIM(COALESCE(ur.first_name, '') || ' ' || COALESCE(ur.last_name, '')), '') NULLS LAST
+                         LIMIT 1),
+    'parcels', CASE WHEN p_with_parcels THEN COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', p.id, 'seq', p.seq, 'parcel_no', p.parcel_no, 'kind', p.kind, 'weight_kg', p.weight_kg, 'cbm', p.cbm,
+        'description', p.description, 'status', p.status, 'photo_path', p.photo_path,
+        'checked_in_at', p.checked_in_at, 'warehouse_location', p.warehouse_location, 'condition', p.condition, 'delivered_at', p.delivered_at,
+        'deposit_no', d.deposit_no, 'deposit_id', d.id,
+        'client', public.reception_client_card(d.client_user_id)
+      ) ORDER BY d.client_user_id, d.opened_at, p.seq)
+      FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+      WHERE p.air_package_id = k.id), '[]'::jsonb) ELSE NULL END
+  )
+  FROM public.air_packages k LEFT JOIN public.air_shipments a ON a.id = k.air_shipment_id
+  WHERE k.id = p_package_id;
+$fn$;
+REVOKE ALL ON FUNCTION public.air_package_json(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
+COMMENT ON FUNCTION public.air_package_json(uuid, boolean) IS
+  '@mola:{"expose":false,"kind":"read","permission":"canViewCargo","label":"Sérialiser un paquet avion (helper interne)"}';
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 2. Ce qui attend un paquet : les dépôts du bureau qui ont encore un colis à
+--    emballer, du plus récent au plus ancien. Un dépôt en cours de saisie en
+--    fait partie (ses colis sont « à compléter » : on le termine d'abord —
+--    air_package_add_parcel le refuse depuis 20261013100000), un dépôt
+--    supprimé non.
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.air_package_packable(p_limit INTEGER DEFAULT 300)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $fn$
+DECLARE
+  v_uid   UUID := auth.uid();
+  v_limit INTEGER := GREATEST(0, LEAST(COALESCE(p_limit, 300), 1000));
+  v_total INTEGER;
+  v_rows  JSONB;
+  v_ready INTEGER;
+  v_fix   INTEGER;
+BEGIN
+  IF NOT (public.admin_has_permission(v_uid, 'canReceiveParcels') OR public.admin_has_permission(v_uid, 'canViewCargo')) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+
+  WITH picked AS (
+    SELECT d.id, COALESCE(d.closed_at, d.opened_at) AS at
+      FROM public.parcel_deposits d
+     WHERE d.location = 'office' AND d.status <> 'cancelled'
+       AND EXISTS (SELECT 1 FROM public.parcels p
+                    WHERE p.deposit_id = d.id AND p.air_package_id IS NULL
+                      AND p.shipment_id IS NULL AND p.air_shipment_id IS NULL
+                      AND p.status IN ('received','stored')
+                      AND p.checked_in_at IS NULL AND p.delivered_at IS NULL)
+  ), page AS (
+    SELECT id, at FROM picked ORDER BY at DESC LIMIT v_limit
+  )
+  SELECT (SELECT count(*) FROM picked),
+         COALESCE((SELECT jsonb_agg(public.reception_deposit_json(pg.id) ORDER BY pg.at DESC) FROM page pg), '[]'::jsonb)
+    INTO v_total, v_rows;
+
+  -- Les compteurs, colis par colis, mêmes règles que l'écran (packRefusal) : prêts = dépôt terminé,
+  -- attribué, colis pesé de 32 kg au plus ; à compléter = dépôt en cours, sans client ou colis pas
+  -- pesé. Un colis de plus de 32 kg part seul : il n'est ni l'un ni l'autre.
+  SELECT count(*) FILTER (WHERE d.status <> 'open' AND d.client_user_id IS NOT NULL AND p.weight_kg > 0 AND p.weight_kg <= 32),
+         count(*) FILTER (WHERE d.status = 'open' OR d.client_user_id IS NULL OR p.weight_kg IS NULL OR p.weight_kg <= 0)
+    INTO v_ready, v_fix
+    FROM public.parcels p JOIN public.parcel_deposits d ON d.id = p.deposit_id
+   WHERE d.location = 'office' AND d.status <> 'cancelled' AND p.air_package_id IS NULL
+     AND p.shipment_id IS NULL AND p.air_shipment_id IS NULL AND p.status IN ('received','stored')
+     AND p.checked_in_at IS NULL AND p.delivered_at IS NULL;
+
+  RETURN jsonb_build_object('success', true, 'total', COALESCE(v_total, 0),
+                            'truncated', COALESCE(v_total, 0) > v_limit, 'deposits', v_rows,
+                            'ready_count', COALESCE(v_ready, 0), 'to_fix_count', COALESCE(v_fix, 0));
+END;
+$fn$;
+REVOKE ALL ON FUNCTION public.air_package_packable(INTEGER) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.air_package_packable(INTEGER) TO authenticated, service_role;
+COMMENT ON FUNCTION public.air_package_packable(integer) IS
+  '@mola:{"expose":true,"kind":"read","permission":"canReceiveParcels","confirm":false,"danger":false,"label":"Les colis avion du bureau qui attendent un paquet de 32 kg (par dépôt : prêts, sans client, pas pesés)"}';
+
+NOTIFY pgrst, 'reload schema';
+
+
+-- ############################################################################
+-- SECTION 2 — 20261013100000_reception_guards.sql
+--   Devis engagé dans le dépôt ; pas de colis d'un dépôt en saisie dans un
+--   paquet ; poids des refus avec une virgule.
 -- ############################################################################
 -- ============================================================================
 -- RÉCEPTION — DEUX GARDES QUE L'ÉCRAN NE POUVAIT PAS TENIR SEUL, ET DES POIDS À LA FRANÇAISE (13/10/2026)
