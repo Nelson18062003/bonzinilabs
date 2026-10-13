@@ -33,7 +33,7 @@ export function ReceptionDone() {
   const [internalOpen, setInternalOpen] = useState(false);
 
   // Chargement et erreur : un en-tête avec sa flèche, jamais un sablier sans fin.
-  if (isLoading || error || !deposit) {
+  if (!deposit) { // une relecture ratée en arrière-plan garde l'écran déjà affiché
     return <DepositLoadState title={t('rc_done_title')} onBack={() => back('/r')} isLoading={isLoading} error={error} onRetry={() => void refetch()} />;
   }
 

@@ -55,7 +55,7 @@ export function ReceptionSupplier() {
   const exit = () => (editing ? goBack(depositPath) : navigate(depositPath, { replace: true }));
 
   // Chargement et erreur gardent l'en-tête et sa flèche : jamais un sablier sans fin.
-  if (isLoading || error || !deposit) {
+  if (!deposit) { // une relecture ratée en arrière-plan garde le formulaire
     return (
       <DepositLoadState title={editing ? t('rc_sup_edit') : t('rc_new_deposit')} onBack={() => goBack(depositPath)} isLoading={isLoading} error={error} onRetry={() => void refetch()} />
     );

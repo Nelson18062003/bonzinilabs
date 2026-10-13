@@ -58,8 +58,9 @@ export function ReceptionDeposit() {
 
   const leave = () => back('/r');
 
-  // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie.
-  if (isLoading || error || !deposit) {
+  // Chargement et erreur gardent l'en-tête et sa flèche : jamais d'écran sans sortie. Une relecture
+  // ratée en arrière-plan (retour d'appli, réseau faible) garde la fiche déjà affichée.
+  if (!deposit) {
     return <DepositLoadState title={t('rc_deposits')} onBack={leave} isLoading={isLoading} error={error} onRetry={() => void refetch()} />;
   }
 

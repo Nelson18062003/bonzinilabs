@@ -9,7 +9,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Search, UserPlus } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, initials, type ReceptionClient } from '@/lib/reception';
@@ -46,11 +45,7 @@ export function ReceptionSearch() {
       } catch {
         return; // le hook a dit le refus ; la liste reste là
       }
-      toast.success(t('rc_assigned'), {
-        description: clientFullName(client),
-        action: flow.fromDeposit ? undefined : { label: t('rc_see_deposit'), onClick: () => navigate(`/r/deposit/${assignId}`) },
-      });
-      flow.leave(); // ne part pas si l'écran a été quitté pendant l'envoi
+      flow.assigned(clientFullName(client));
       return;
     }
     navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });

@@ -698,8 +698,9 @@ export const SCREENS = [
   { key: 'j.guangzhou.deposit-closed', name: '15b-depot-termine-sa-fiche', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
   // 15c. Le dépôt en cours d'un collègue : en lecture, avec qui le saisit.
   { key: 'j.guangzhou.deposit-other', name: '15c-depot-dun-collegue', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', before: fontsReady },
-  // 15d. Retirer un colis demande confirmation.
+  // 15e. Terminé, devis déjà chez le client : la fiche le dit, toucher un colis ouvre ses photos.
   { key: 'j.guangzhou.deposit-quote', name: '15e-depot-devis-chez-le-client', role: 'receptionist', init: setup, wait: 1500, viewport: '390x1000', before: fontsReady },
+  // 15d. Retirer un colis demande confirmation.
   { key: 'j.guangzhou.deposit', name: '15d-retirer-un-colis-confirmation', role: 'receptionist', init: setup, wait: 1500, viewport: '390x900', fullPage: false,
     before: async (page) => { await fontsReady(page); await page.getByRole('button', { name: 'Retirer' }).first().click(); await page.waitForTimeout(700); } },
   // 9. Au bureau : le devis de fret du dépôt RC-000123 (au kilo, avion), envoyé, payé en partie…

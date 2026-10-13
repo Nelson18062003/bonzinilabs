@@ -68,8 +68,7 @@ export function ReceptionNewClient() {
         setRefused((e as Error).message); // le hook l'a dit ; ici, les sorties
         return;
       }
-      toast.success(t('rc_assigned'), { description: c.fullName });
-      flow.leave(); // ne part pas si l'écran a été quitté pendant l'envoi
+      flow.assigned(c.fullName);
     };
     return (
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>

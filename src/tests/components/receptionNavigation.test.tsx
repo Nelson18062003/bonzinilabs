@@ -347,6 +347,21 @@ describe('corriger un colis', () => {
   });
 });
 
+describe('une relecture ratée en arrière-plan', () => {
+  it('garde le formulaire de correction déjà rempli (retour de l’appareil photo, réseau faible)', () => {
+    m.depError = new Error('Réseau indisponible'); // react-query garde les données et pose l'erreur
+    mount('/r/deposit/d1/parcel/p1?step=weight', <ReceptionParcel />, '/r/deposit/:depositId/parcel/:parcelId');
+    expect(screen.queryByText('Réseau indisponible')).toBeNull();
+    expect(screen.getByRole('button', { name: /Suivant|Passer/ })).toBeInTheDocument();
+  });
+
+  it('garde la fiche du dépôt', () => {
+    m.depError = new Error('Réseau indisponible');
+    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    expect(screen.getByRole('button', { name: /Ajouter un colis/ })).toBeInTheDocument();
+  });
+});
+
 describe('colis à emballer : où le compléter', () => {
   function Fix({ d }: { d: Deposit }) {
     const fix = usePackFix()({ parcel: { id: 'p1' }, deposit: d, reason: 'no_weight' });

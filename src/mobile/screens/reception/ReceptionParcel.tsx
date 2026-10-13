@@ -186,7 +186,8 @@ export function ReceptionParcel() {
   // Corriger un colis : le formulaire attend ce que le colis porte déjà. Pendant
   // le chargement (sinon une saisie serait écrasée à l'arrivée des données) ou
   // après un échec (sinon « Enregistrer » ne ferait rien), l'en-tête et sa flèche.
-  if (parcelId && (depositLoading || depositError || !deposit)) {
+  // Une relecture ratée en arrière-plan (retour de l'appareil photo) garde le formulaire.
+  if (parcelId && !deposit) {
     return <DepositLoadState title={t('rc_parcel')} onBack={exit} isLoading={depositLoading} error={depositError} onRetry={() => void refetch()} />;
   }
 

@@ -73,12 +73,7 @@ export function ReceptionIdentify() {
         lockRef.current = false;
         return;
       }
-      toast.success(t('rc_assigned'), {
-        description: clientFullName(client),
-        // Partie de la fiche du dépôt, l'attribution y revient : pas de « Voir le dépôt » en double.
-        action: flow.fromDeposit ? undefined : { label: t('rc_see_deposit'), onClick: () => navigate(`/r/deposit/${assignId}`) },
-      });
-      flow.leave();
+      flow.assigned(clientFullName(client));
       return;
     }
     navigate(`/r/new/how?client=${client.user_id}&name=${encodeURIComponent(clientFullName(client))}&code=${client.customer_code}`, { replace: true });
