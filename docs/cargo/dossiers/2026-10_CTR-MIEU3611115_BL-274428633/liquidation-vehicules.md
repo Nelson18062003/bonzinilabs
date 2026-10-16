@@ -6,6 +6,12 @@
 >
 > ⚠️ Données d'entreprise. Dépôt privé, ne pas diffuser.
 
+> 🔒 **RÉFÉRENCE FIGÉE le 16/10/2026**, à comparer à la liquidation de la déclarante.
+> Ne pas modifier ces chiffres. Moteur utilisé : version du commit `6ab528c` (29/09/2026).
+> Les totaux sont verrouillés par un test (`src/tests/lib/customs/mieu3611115.test.ts`) :
+> si le moteur change un jour, le test le signale. Copie PDF :
+> `pdf/Liquidation_Bonzini_vehicules_2026-10-16.pdf`.
+
 ## Bases
 
 | | Yaris 2009 | RAV4 2014 | Haval H6 2016 |
@@ -65,3 +71,24 @@ CIA 0,2 % · PRO 0,05 % (de V) · DEV = (V + DDI + DAC + TVA) × 5 % · forfaits
 - **Hors calcul** : honoraires de la déclarante, frais du port et du terminal KCT, frais
   locaux Maersk, surestaries (à partir du 16/10), transport vers Douala, effets personnels,
   immatriculation au Cameroun.
+
+## Comparaison avec la liquidation de Cynthia (à remplir à réception)
+
+| Ligne | Yaris : Bonzini (A) | Yaris : Cynthia | RAV4 : Bonzini (A) | RAV4 : Cynthia | Haval : Bonzini (A) | Haval : Cynthia |
+|---|---|---|---|---|---|---|
+| Valeur imposable | 2 567 652 | | 6 959 505 | | 4 789 202 | |
+| Taux d'accises retenu | 25 % | | 12,5 % | | 0 % | |
+| DDI | 770 296 | | 2 087 852 | | 1 436 761 | |
+| DAC | 834 487 | | 1 130 920 | | 0 | |
+| DEA | 25 677 | | 69 595 | | 47 892 | |
+| TVA | 734 670 | | 1 793 378 | | 1 097 925 | |
+| CAC | 73 468 | | 179 338 | | 109 792 | |
+| TCI + CCI + CIA + PRO | 32 096 | | 86 994 | | 59 865 | |
+| DEV | 245 355 | | 598 583 | | 366 194 | |
+| Forfaits | 10 000 | | 10 000 | | 10 000 | |
+| Précompte | 0 | | 0 | | 0 | |
+| **Total DAU** | **2 726 049** | | **5 956 660** | | **3 128 429** | |
+
+**Ce qu'il faudra regarder en premier en cas d'écart** : la valeur imposable retenue, le taux
+d'accises (ancien barème ou Code 2026), le précompte (0 %, 2 % ou 10 %), la présence d'un
+droit de 1 % « ordures » (CGI art. C 81), et les forfaits.
