@@ -54,6 +54,19 @@ d'accès de « Mes équipes » donne la bonne page selon le rôle
 | Un paiement cash a été scanné | super admin, opérations | la fiche du paiement |
 | Un client écrit au support | la messagerie | la conversation |
 | Un vol / un conteneur arrive à Douala | l'entrepôt de Douala | « Pointer » |
+| Un commercial saisit le numéro d'un client Bonzini | la direction (`canManageSales`) | « À vérifier » |
+| Conteneur en retard, ou qui arrive sous 7 jours (règles de la cloche) | super admin, opérations (`canManageCargo`) | le conteneur, ou la liste s'il y en a plusieurs |
+| Chaque matin à 10 h (Guangzhou) : colis avion prêts à emballer | les réceptionnaires | « À emballer » |
+| Chaque soir à 17 h 30 (Guangzhou) : dépôts restés sans client | les réceptionnaires | « En attente » |
+| Son prospect devient client · premier dépôt validé ou premier paiement d'un de ses clients · objectif du mois atteint | le commercial concerné | sa fiche prospect, ses clients, son accueil |
+
+**Chacun choisit** (20/10/2026) : dans « Moi », section « Ce que je reçois »,
+un interrupteur par type, limité à ceux de son rôle (`staff_push_prefs_get`,
+`staff_push_set_pref`). Le choix vaut pour tous ses téléphones ; le serveur
+filtre à l'envoi (`send_staff_push_k`). Les rappels calculés ne partent
+qu'une fois (`staff_push_log`). Migration :
+`supabase/migrations/20261020120000_staff_push_by_role.sql`, tâches pg_cron
+`staff-push-*`.
 
 La personne qui fait l'action n'est pas prévenue de sa propre action. À la
 déconnexion, le téléphone ne reçoit plus rien. **À faire une fois** : appliquer
