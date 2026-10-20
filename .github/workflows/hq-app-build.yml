@@ -1,0 +1,88 @@
+name: BONZINI HQ — nouvelle version sur les stores
+
+# Compile une nouvelle version de l'app mobile sur les serveurs d'Expo (EAS
+# Build) et, si demandé, l'envoie directement à Apple (App Store Connect) et
+# à Google (Play Console). Uniquement à la main : onglet Actions →
+# « Run workflow ».
+#
+# À utiliser quand la partie NATIVE change (bibliothèque, icône, nom,
+# permissions, app.json) — le workflow « mise à jour de l'app » le signale.
+# Pensez alors à monter `version` dans hq-app/app.json (1.0.0 → 1.0.1) : les
+# mises à jour sans store ne visent que les téléphones de la même version.
+#
+# Après l'envoi : Apple revérifie l'app (1 à 3 jours), puis on publie depuis
+# App Store Connect. La compilation tourne chez Expo (--no-wait) : ce job
+# se termine en quelques minutes, le suivi est sur expo.dev.
+#
+# Secret requis : EXPO_TOKEN. Les certificats Apple et la clé App Store
+# Connect sont déjà stockés chez Expo. Pour Google, l'envoi automatique
+# demandera une clé de compte de service Play (à ajouter le moment venu).
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Quel téléphone ?"
+        type: choice
+        options: [ios, android, all]
+        default: ios
+      submit:
+        description: "Envoyer directement à Apple / Google après la compilation"
+        type: boolean
+        default: true
+
+concurrency:
+  group: hq-app-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hq-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Vérifier la clé Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Secret EXPO_TOKEN manquant : GitHub → Settings → Secrets and variables → Actions → New repository secret."
+            exit 1
+          fi
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hq-app/package-lock.json
+
+      - name: EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Dépendances
+        run: npm ci --no-audit --no-fund
+
+      - name: Vérification TypeScript
+        run: npm run typecheck
+
+      - name: Compiler (et envoyer)
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          SUBMIT: ${{ inputs.submit }}
+        run: |
+          args="--platform $PLATFORM --profile production --non-interactive --no-wait"
+          if [ "$SUBMIT" = "true" ]; then args="$args --auto-submit"; fi
+          eas build $args
+          {
+            echo "### 🛠️ Compilation lancée chez Expo ($PLATFORM)"
+            echo "Suivi : https://expo.dev/accounts/bonzinilabss-team/projects/bonzini-hq/builds"
+            if [ "$SUBMIT" = "true" ]; then echo "Envoi automatique au(x) store(s) à la fin de la compilation."; fi
+          } >> "$GITHUB_STEP_SUMMARY"

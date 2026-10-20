@@ -1,0 +1,117 @@
+name: BONZINI HQ — mise à jour de l'app (sans store)
+
+# Envoie le nouveau code de l'app mobile (hq-app/) aux téléphones déjà
+# installés, sans repasser par Apple ni Google (EAS Update, canal production).
+#  - automatiquement à chaque merge sur main qui touche hq-app/ ;
+#  - à la main depuis l'onglet Actions (« Run workflow »).
+# Les écrans du site n'ont besoin de rien : l'app les affiche en direct.
+#
+# Garde-fou : si le merge change une bibliothèque native ou la config de
+# l'app (package.json, package-lock.json, app.json, eas.json), une mise à
+# jour sans store ferait planter les téléphones. Elle n'est alors PAS
+# envoyée : il faut une nouvelle version sur les stores (workflow
+# « BONZINI HQ — nouvelle version sur les stores »).
+#
+# Secret requis : EXPO_TOKEN (expo.dev → Account settings → Access tokens).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hq-app/**'
+      - '.github/workflows/hq-app-update.yml'
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Ce que contient la mise à jour (visible dans Expo)"
+        required: false
+        default: ''
+
+concurrency:
+  group: hq-app-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hq-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Vérifier la clé Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Secret EXPO_TOKEN manquant : GitHub → Settings → Secrets and variables → Actions → New repository secret."
+            exit 1
+          fi
+
+      - name: Changement natif ? (il faudrait alors une nouvelle version sur les stores)
+        id: guard
+        env:
+          BEFORE: ${{ github.event.before }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          native=""
+          if [ "$EVENT" = "push" ]; then
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+              BEFORE="HEAD~1"
+            fi
+            native=$(git diff --name-only "$BEFORE" HEAD -- package.json package-lock.json app.json eas.json)
+          fi
+          if [ -n "$native" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Mise à jour NON envoyée : la partie native a changé ($native). Lancez « BONZINI HQ — nouvelle version sur les stores »."
+            {
+              echo "### ⚠️ Mise à jour sans store non envoyée"
+              echo "Ces fichiers ont changé : \`$native\`."
+              echo "Une mise à jour sans store ferait planter les téléphones déjà installés."
+              echo "→ Onglet **Actions** → **BONZINI HQ — nouvelle version sur les stores** → **Run workflow**."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Node
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: hq-app/package-lock.json
+
+      - name: EAS
+        if: steps.guard.outputs.skip != 'true'
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Dépendances
+        if: steps.guard.outputs.skip != 'true'
+        run: npm ci --no-audit --no-fund
+
+      - name: Vérification TypeScript
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run typecheck
+
+      - name: Envoyer la mise à jour aux téléphones (iPhone + Android)
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          INPUT_MESSAGE: ${{ inputs.message }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          msg="${INPUT_MESSAGE:-$COMMIT_MESSAGE}"
+          msg="$(printf '%s' "${msg:-Mise à jour}" | head -n 1 | cut -c1-200)"
+          eas update --channel production --environment production --message "$msg" --non-interactive
+          {
+            echo "### ✅ Mise à jour envoyée"
+            echo "« $msg »"
+            echo "Les téléphones la téléchargent à l'ouverture de l'app et l'appliquent à l'ouverture suivante (ou tout de suite depuis « Moi »)."
+          } >> "$GITHUB_STEP_SUMMARY"

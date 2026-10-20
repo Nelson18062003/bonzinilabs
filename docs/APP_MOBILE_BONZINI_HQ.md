@@ -238,6 +238,26 @@ Comme vos comptes sont au nom d'une **société** (BONZINILABS LTD), l'app peut
 
 Avant chaque compilation : `npm run typecheck && npm run doctor`.
 
+### Depuis GitHub, sans ouvrir Expo (20/10/2026)
+
+Deux workflows dans l'onglet **Actions** du dépôt font tout ça à votre place
+(ils commandent Expo, qui livre aux téléphones) :
+
+| Workflow | Quand | Ce qu'il fait |
+|---|---|---|
+| **BONZINI HQ — mise à jour de l'app (sans store)** (`hq-app-update.yml`) | **Tout seul à chaque merge sur `main` qui touche `hq-app/`**, ou à la main (« Run workflow ») | Vérifie le code puis envoie la mise à jour à **tous les iPhone et Android** déjà installés. Refuse de l'envoyer si la partie native a changé (`package.json`, `package-lock.json`, `app.json`, `eas.json`) et le dit dans le résumé. |
+| **BONZINI HQ — nouvelle version sur les stores** (`hq-app-build.yml`) | À la main seulement | Compile chez Expo (iOS, Android ou les deux) et, si la case est cochée, envoie à Apple / Google. Montez d'abord `version` dans `hq-app/app.json`. |
+
+Réglage unique : le secret **`EXPO_TOKEN`** (expo.dev → Account settings →
+Access tokens → Create) dans GitHub → Settings → Secrets and variables →
+Actions → New repository secret. Pour l'envoi automatique à Google Play, il
+faudra en plus la clé du compte de service Play, enregistrée chez Expo.
+
+Incident qui a motivé ces workflows : le rôle `commercial` (05/10) est arrivé
+après le build 1.0.0 (5) du 03/10, et aucune mise à jour sans store n'avait
+été publiée. Les commerciaux se connectaient, mais l'app ne connaissait pas
+leur rôle et affichait « La connexion n'a pas abouti ».
+
 ---
 
 ## 7. Étapes suivantes proposées
