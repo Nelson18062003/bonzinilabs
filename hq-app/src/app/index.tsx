@@ -146,6 +146,13 @@ export default function Main() {
           if (loginTimer.current) clearTimeout(loginTimer.current);
           setLoginBusy(false);
           setLoginError(null);
+        } else if (u && loginTimer.current) {
+          // Connecté, mais rôle inconnu de cette version (ex. un rôle ajouté
+          // après le build) : le dire tout de suite plutôt qu'une panne réseau.
+          clearTimeout(loginTimer.current);
+          loginTimer.current = null;
+          setLoginBusy(false);
+          setLoginError('Ce compte n’a pas accès à cette version de l’app. Mettez BONZINI HQ à jour ou contactez votre responsable.');
         }
         setUser(staff);
         return;
