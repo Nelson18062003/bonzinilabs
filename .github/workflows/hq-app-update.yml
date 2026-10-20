@@ -109,7 +109,10 @@ jobs:
         run: |
           msg="${INPUT_MESSAGE:-$COMMIT_MESSAGE}"
           msg="$(printf '%s' "${msg:-Mise à jour}" | head -n 1 | cut -c1-200)"
-          eas update --channel production --environment production --message "$msg" --non-interactive
+          # Une plateforme à la fois : « all » inclurait le web, que l'app ne fournit pas.
+          for platform in ios android; do
+            eas update --channel production --environment production --platform "$platform" --message "$msg" --non-interactive
+          done
           {
             echo "### ✅ Mise à jour envoyée"
             echo "« $msg »"
