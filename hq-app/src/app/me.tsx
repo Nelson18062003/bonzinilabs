@@ -15,6 +15,7 @@ import { canLock } from '../LockScreen';
 import { lockWanted, setLockWanted } from '../lockPref';
 import { pushState, registerForPush, unregisterPush, type PushState } from '../push';
 import { applyUpdate, fetchUpdate, onUpdateReady, runningLabel, updateReady, updatesOn } from '../updates';
+import { PushPrefs } from '../PushPrefs';
 import { C } from '../theme';
 
 export default function Me() {
@@ -115,6 +116,13 @@ export default function Me() {
           </Pressable>
         </View>
 
+        {push === 'ok' && (
+          <>
+            <Text style={styles.section}>Ce que je reçois</Text>
+            <PushPrefs />
+          </>
+        )}
+
         {isAdminSpace && (
           <>
             <Text style={styles.section}>Mon compte</Text>
@@ -167,7 +175,7 @@ export default function Me() {
 }
 
 const PUSH_HINT: Record<PushState | 'pending', string> = {
-  ok: 'Activées : dépôts, paiements, messages, arrivées',
+  ok: 'Activées sur ce téléphone — choisissez ci-dessous ce que vous recevez',
   denied: 'Refusées — toucher pour les autoriser dans les réglages',
   unavailable: 'Pas encore disponibles sur ce téléphone — toucher pour réessayer',
   pending: 'Vérification…',

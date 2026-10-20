@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -67,6 +67,108 @@ export type Database = {
           target_type?: string
         }
         Relationships: []
+      }
+      air_packages: {
+        Row: {
+          air_shipment_id: string | null
+          created_at: string
+          created_by: string | null
+          gross_weight_kg: number | null
+          handed_over_at: string | null
+          handed_over_by: string | null
+          height_cm: number | null
+          id: string
+          length_cm: number | null
+          max_weight_kg: number
+          notes: string | null
+          opened_at: string | null
+          opened_by: string | null
+          package_no: string | null
+          received_at: string | null
+          received_by: string | null
+          refusal_reason: string | null
+          refused_air_shipment_id: string | null
+          refused_at: string | null
+          refused_by: string | null
+          sealed_at: string | null
+          sealed_by: string | null
+          seq: number
+          status: string
+          updated_at: string
+          width_cm: number | null
+        }
+        Insert: {
+          air_shipment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          gross_weight_kg?: number | null
+          handed_over_at?: string | null
+          handed_over_by?: string | null
+          height_cm?: number | null
+          id?: string
+          length_cm?: number | null
+          max_weight_kg?: number
+          notes?: string | null
+          opened_at?: string | null
+          opened_by?: string | null
+          package_no?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          refusal_reason?: string | null
+          refused_air_shipment_id?: string | null
+          refused_at?: string | null
+          refused_by?: string | null
+          sealed_at?: string | null
+          sealed_by?: string | null
+          seq?: number
+          status?: string
+          updated_at?: string
+          width_cm?: number | null
+        }
+        Update: {
+          air_shipment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          gross_weight_kg?: number | null
+          handed_over_at?: string | null
+          handed_over_by?: string | null
+          height_cm?: number | null
+          id?: string
+          length_cm?: number | null
+          max_weight_kg?: number
+          notes?: string | null
+          opened_at?: string | null
+          opened_by?: string | null
+          package_no?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          refusal_reason?: string | null
+          refused_air_shipment_id?: string | null
+          refused_at?: string | null
+          refused_by?: string | null
+          sealed_at?: string | null
+          sealed_by?: string | null
+          seq?: number
+          status?: string
+          updated_at?: string
+          width_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "air_packages_air_shipment_id_fkey"
+            columns: ["air_shipment_id"]
+            isOneToOne: false
+            referencedRelation: "air_shipments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "air_packages_refused_air_shipment_id_fkey"
+            columns: ["refused_air_shipment_id"]
+            isOneToOne: false
+            referencedRelation: "air_shipments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       air_shipments: {
         Row: {
@@ -1677,7 +1779,15 @@ export type Database = {
           target?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "commercial_objectives_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "client_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customs_audits: {
         Row: {
@@ -2684,6 +2794,21 @@ export type Database = {
         }
         Relationships: []
       }
+      parcel_invoice_counter: {
+        Row: {
+          id: boolean
+          last_no: number
+        }
+        Insert: {
+          id?: boolean
+          last_no: number
+        }
+        Update: {
+          id?: boolean
+          last_no?: number
+        }
+        Relationships: []
+      }
       parcel_photos: {
         Row: {
           created_at: string
@@ -2953,6 +3078,7 @@ export type Database = {
       }
       parcels: {
         Row: {
+          air_package_id: string | null
           air_shipment_id: string | null
           cbm: number | null
           checked_in_at: string | null
@@ -2970,6 +3096,8 @@ export type Database = {
           length_cm: number | null
           parcel_no: string
           photo_path: string | null
+          reception_condition: string | null
+          reception_condition_note: string | null
           release_id: string | null
           seq: number
           shipment_id: string | null
@@ -2980,6 +3108,7 @@ export type Database = {
           width_cm: number | null
         }
         Insert: {
+          air_package_id?: string | null
           air_shipment_id?: string | null
           cbm?: number | null
           checked_in_at?: string | null
@@ -2997,6 +3126,8 @@ export type Database = {
           length_cm?: number | null
           parcel_no: string
           photo_path?: string | null
+          reception_condition?: string | null
+          reception_condition_note?: string | null
           release_id?: string | null
           seq: number
           shipment_id?: string | null
@@ -3007,6 +3138,7 @@ export type Database = {
           width_cm?: number | null
         }
         Update: {
+          air_package_id?: string | null
           air_shipment_id?: string | null
           cbm?: number | null
           checked_in_at?: string | null
@@ -3024,6 +3156,8 @@ export type Database = {
           length_cm?: number | null
           parcel_no?: string
           photo_path?: string | null
+          reception_condition?: string | null
+          reception_condition_note?: string | null
           release_id?: string | null
           seq?: number
           shipment_id?: string | null
@@ -3034,6 +3168,13 @@ export type Database = {
           width_cm?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "parcels_air_package_id_fkey"
+            columns: ["air_package_id"]
+            isOneToOne: false
+            referencedRelation: "air_packages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "parcels_air_shipment_id_fkey"
             columns: ["air_shipment_id"]
@@ -3571,7 +3712,15 @@ export type Database = {
           status_changed_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prospects_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "client_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rate_adjustments: {
         Row: {
@@ -3987,6 +4136,45 @@ export type Database = {
           id?: string
           last_seen_at?: string
           platform?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_push_log: {
+        Row: {
+          kind: string
+          ref: string
+          sent_at: string
+        }
+        Insert: {
+          kind: string
+          ref: string
+          sent_at?: string
+        }
+        Update: {
+          kind?: string
+          ref?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
+      staff_push_prefs: {
+        Row: {
+          enabled: boolean
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          enabled?: boolean
+          kind: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          enabled?: boolean
+          kind?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -4497,7 +4685,15 @@ export type Database = {
           site_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "staff_sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_adjustments: {
         Row: {
@@ -4680,13 +4876,118 @@ export type Database = {
       }
     }
     Functions: {
+      _air_package_can_read: { Args: never; Returns: boolean }
+      _air_package_can_ship: { Args: never; Returns: boolean }
+      _birth_date_error: { Args: { p_date: string }; Returns: string }
+      _client_commercial_user: { Args: { p_user_id: string }; Returns: string }
+      _client_erasable_data: { Args: { p_user_id: string }; Returns: Json }
+      _client_prospect_blockers: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
+      _client_prospect_warnings: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
+      _commercial_card: {
+        Args: {
+          p_from: string
+          p_month: string
+          p_source_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      _commercial_metrics: {
+        Args: { p_from: string; p_source_ids: string[]; p_to: string }
+        Returns: {
+          active_clients: number
+          air_kg: number
+          air_parcels: number
+          clients: number
+          deposits_count: number
+          deposits_xaf: number
+          new_clients: number
+          payments_count: number
+          payments_xaf: number
+          prospects_due: number
+          prospects_new: number
+          prospects_open: number
+          prospects_won: number
+          sea_cbm: number
+          sea_parcels: number
+          source_id: string
+        }[]
+      }
       _create_client_and_wallet: {
         Args: { p_email: string; p_id: string; p_meta: Json }
         Returns: undefined
       }
+      _email_error: { Args: { p_email: string }; Returns: string }
       _enqueue_welcome: {
         Args: { p_first: string; p_user_id: string }
         Returns: undefined
+      }
+      _phone_e164: { Args: { p_phone: string }; Returns: string }
+      _phone_is_client: { Args: { p_e164: string }; Returns: boolean }
+      _prospect_claim_clients: {
+        Args: {
+          p_numbers: string[]
+          p_prospect_id: string
+          p_source_id: string
+        }
+        Returns: number
+      }
+      _prospect_client_matches: {
+        Args: { p_numbers: string[]; p_source_id: string }
+        Returns: {
+          client_user_id: string
+          matched_phone: string
+        }[]
+      }
+      _prospect_lock_numbers: {
+        Args: { p_numbers: string[] }
+        Returns: undefined
+      }
+      _prospect_number_conflict: {
+        Args: { p_e164: string; p_except?: string; p_source_id: string }
+        Returns: string
+      }
+      _prospect_numbers_error: {
+        Args: { p_except?: string; p_numbers: string[]; p_source_id: string }
+        Returns: string
+      }
+      _prospect_numbers_refusal: {
+        Args: {
+          p_client_ok: boolean
+          p_except: string
+          p_numbers: string[]
+          p_source_id: string
+        }
+        Returns: string
+      }
+      _prospect_phone_list: {
+        Args: { p_phones: Json; p_primary: string }
+        Returns: Json
+      }
+      _prospect_release_if_unclaimed: {
+        Args: { p_notify?: boolean; p_prospect_id: string }
+        Returns: string
+      }
+      _sales_month: {
+        Args: { p_month: string }
+        Returns: {
+          from_at: string
+          month: string
+          to_at: string
+        }[]
+      }
+      _sales_scope: { Args: { p_source_id: string }; Returns: string }
+      _sales_scope_error: { Args: never; Returns: Json }
+      _staff_push_kind: { Args: { p_permission: string }; Returns: string }
+      _staff_push_once: {
+        Args: { p_kind: string; p_ref: string }
+        Returns: boolean
       }
       add_cargo_shipment: {
         Args: {
@@ -4874,6 +5175,56 @@ export type Database = {
         }
         Returns: Json
       }
+      air_package_add_parcel: {
+        Args: { p_code: string; p_package_id: string }
+        Returns: Json
+      }
+      air_package_assign: {
+        Args: { p_air_id: string; p_package_ids: string[] }
+        Returns: Json
+      }
+      air_package_code: { Args: { p_text: string }; Returns: string }
+      air_package_create: { Args: { p_notes?: string }; Returns: Json }
+      air_package_delete: { Args: { p_package_id: string }; Returns: Json }
+      air_package_get: {
+        Args: { p_code?: string; p_package_id?: string }
+        Returns: Json
+      }
+      air_package_json: {
+        Args: { p_package_id: string; p_with_parcels?: boolean }
+        Returns: Json
+      }
+      air_package_list: {
+        Args: { p_air_id?: string; p_scope?: string }
+        Returns: Json
+      }
+      air_package_open: { Args: { p_package_id: string }; Returns: Json }
+      air_package_packable: { Args: { p_limit?: number }; Returns: Json }
+      air_package_receive: { Args: { p_code: string }; Returns: Json }
+      air_package_refuse: {
+        Args: { p_package_id: string; p_reason: string }
+        Returns: Json
+      }
+      air_package_remove_parcel: {
+        Args: { p_parcel_id: string }
+        Returns: Json
+      }
+      air_package_reopen: { Args: { p_package_id: string }; Returns: Json }
+      air_package_scan_departure: {
+        Args: { p_air_id: string; p_code: string }
+        Returns: Json
+      }
+      air_package_seal: {
+        Args: {
+          p_gross_weight_kg: number
+          p_height_cm?: number
+          p_length_cm?: number
+          p_package_id: string
+          p_width_cm?: number
+        }
+        Returns: Json
+      }
+      air_package_unassign: { Args: { p_package_id: string }; Returns: Json }
       assign_chat_conversation: {
         Args: { p_admin_user_role_id: string; p_conversation_id: string }
         Returns: undefined
@@ -4977,6 +5328,11 @@ export type Database = {
         Args: { p_parcel_ids: string[]; p_shipment_id: string }
         Returns: Json
       }
+      cargo_mark_shipment_arrived: {
+        Args: { p_arrived_at?: string; p_note?: string; p_shipment_id: string }
+        Returns: Json
+      }
+      cargo_next_invoice_no: { Args: never; Returns: string }
       cargo_notify_client: {
         Args: {
           p_message: string
@@ -5065,7 +5421,13 @@ export type Database = {
         Returns: Json
       }
       cargo_shipment_parcels: { Args: { p_shipment_id: string }; Returns: Json }
+      cargo_status_override_token: { Args: never; Returns: string }
+      cargo_status_rank: { Args: { p_status: string }; Returns: number }
       cargo_unload_parcel: { Args: { p_parcel_id: string }; Returns: Json }
+      cargo_unmark_shipment_arrived: {
+        Args: { p_reason: string; p_shipment_id: string }
+        Returns: Json
+      }
       chat_avg_response_seconds_today: { Args: never; Returns: number }
       check_wallet_reconciliation: {
         Args: { p_user_id: string }
@@ -5141,6 +5503,14 @@ export type Database = {
       close_chat_conversation: {
         Args: { p_conversation_id: string }
         Returns: undefined
+      }
+      commercial_clients: {
+        Args: { p_month?: string; p_source_id?: string }
+        Returns: Json
+      }
+      commercial_dashboard: {
+        Args: { p_month?: string; p_source_id?: string }
+        Returns: Json
       }
       complete_client_onboarding: {
         Args: {
@@ -5281,6 +5651,7 @@ export type Database = {
         }
         Returns: Json
       }
+      current_commercial_source_id: { Args: never; Returns: string }
       customs_active_broker: {
         Args: { p_user_id: string }
         Returns: {
@@ -5573,6 +5944,7 @@ export type Database = {
           scope: string
         }[]
       }
+      parcel_code: { Args: { p_text: string }; Returns: string }
       parcel_status_for_air: { Args: { p_status: string }; Returns: string }
       parcel_status_for_shipment: {
         Args: { p_shipment_status: string }
@@ -5584,8 +5956,37 @@ export type Database = {
         Returns: Json
       }
       prospect_claims_pending: { Args: never; Returns: Json }
+      prospect_create: {
+        Args: {
+          p_birth_date?: string
+          p_city?: string
+          p_company?: string
+          p_email?: string
+          p_first_name: string
+          p_gender?: string
+          p_help_needed?: string
+          p_interests?: string[]
+          p_last_name?: string
+          p_next_action_at?: string
+          p_notes?: string
+          p_pain_points?: string
+          p_phone: string
+          p_phones?: Json
+          p_source_id?: string
+        }
+        Returns: Json
+      }
+      prospect_link_client: {
+        Args: { p_id: string; p_user_id: string }
+        Returns: Json
+      }
+      prospect_lookup_phone: { Args: { p_phone: string }; Returns: Json }
       prospect_phone_check: {
         Args: { p_exclude_prospect_id?: string; p_phone: string }
+        Returns: Json
+      }
+      prospect_reassign: {
+        Args: { p_id: string; p_source_id: string }
         Returns: Json
       }
       prospect_resolve_claim: {
@@ -5594,6 +5995,32 @@ export type Database = {
           p_decision: string
           p_note?: string
           p_prospect_id: string
+        }
+        Returns: Json
+      }
+      prospect_set_status: {
+        Args: { p_id: string; p_reason?: string; p_status: string }
+        Returns: Json
+      }
+      prospect_update: {
+        Args: {
+          p_birth_date?: string
+          p_city?: string
+          p_clear_birth_date?: boolean
+          p_clear_next_action?: boolean
+          p_company?: string
+          p_email?: string
+          p_first_name?: string
+          p_gender?: string
+          p_help_needed?: string
+          p_id: string
+          p_interests?: string[]
+          p_last_name?: string
+          p_next_action_at?: string
+          p_notes?: string
+          p_pain_points?: string
+          p_phone?: string
+          p_phones?: Json
         }
         Returns: Json
       }
@@ -5720,10 +6147,11 @@ export type Database = {
       }
       reception_search_clients: { Args: { p_query: string }; Returns: Json }
       reception_set_client_origin: {
-        Args: {
-          p_location: string
-          p_user_id: string
-        }
+        Args: { p_location: string; p_user_id: string }
+        Returns: Json
+      }
+      reception_set_parcel_condition: {
+        Args: { p_condition: string; p_note?: string; p_parcel_id: string }
         Returns: Json
       }
       reception_set_parcel_cover: {
@@ -5849,6 +6277,10 @@ export type Database = {
       run_profile_reminders: { Args: never; Returns: undefined }
       run_sms_deposit_reminders: { Args: never; Returns: undefined }
       run_sms_drainer: { Args: never; Returns: undefined }
+      run_staff_push_cargo: { Args: never; Returns: number }
+      run_staff_push_objectives: { Args: never; Returns: number }
+      run_staff_push_reception: { Args: { p_what: string }; Returns: number }
+      sales_overview: { Args: { p_month?: string }; Returns: Json }
       sales_series: {
         Args: {
           p_from: string
@@ -5882,6 +6314,18 @@ export type Database = {
         }
         Returns: number
       }
+      send_staff_push_k: {
+        Args: {
+          p_body: string
+          p_exclude?: string
+          p_kind: string
+          p_path: string
+          p_permission: string
+          p_roles?: string[]
+          p_title: string
+        }
+        Returns: number
+      }
       send_staff_push_user: {
         Args: {
           p_body: string
@@ -5891,8 +6335,27 @@ export type Database = {
         }
         Returns: number
       }
+      send_staff_push_user_k: {
+        Args: {
+          p_body: string
+          p_kind: string
+          p_path: string
+          p_title: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       set_client_source: {
         Args: { p_source_id: string; p_user_id: string }
+        Returns: Json
+      }
+      set_commercial_objective: {
+        Args: {
+          p_metric: string
+          p_month: string
+          p_source_id: string
+          p_target: number
+        }
         Returns: Json
       }
       set_counterparty_settlement_rate: {
@@ -5927,15 +6390,37 @@ export type Database = {
       }
       staff_push_amount: { Args: { p: number }; Returns: string }
       staff_push_client_name: { Args: { p_user_id: string }; Returns: string }
+      staff_push_prefs_get: { Args: never; Returns: Json }
+      staff_push_set_pref: {
+        Args: { p_enabled: boolean; p_kind: string }
+        Returns: Json
+      }
+      staff_push_wants: {
+        Args: { p_kind: string; p_user_id: string }
+        Returns: boolean
+      }
       start_deposit_review: { Args: { p_deposit_id: string }; Returns: Json }
       submit_deposit_proof: { Args: { p_deposit_id: string }; Returns: Json }
-      team_create_site: {
+      team_create_member: {
         Args: {
-          p_country_iso?: string
-          p_label: string
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone?: string
+          p_role: string
+          p_source_id?: string
         }
         Returns: Json
       }
+      team_create_site: {
+        Args: { p_country_iso?: string; p_label: string }
+        Returns: Json
+      }
+      team_link_commercial: {
+        Args: { p_source_id?: string; p_user_id: string }
+        Returns: Json
+      }
+      team_members: { Args: never; Returns: Json }
       team_set_member_profile: {
         Args: {
           p_clear_site?: boolean
@@ -5946,6 +6431,16 @@ export type Database = {
         Returns: Json
       }
       team_sites: { Args: never; Returns: Json }
+      team_update_member: {
+        Args: {
+          p_first_name?: string
+          p_last_name?: string
+          p_phone?: string
+          p_role?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       toggle_admin_status: {
         Args: { p_disabled: boolean; p_target_user_id: string }
         Returns: Json
