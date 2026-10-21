@@ -26,9 +26,6 @@ interface HQ {
   web: RefObject<WebHandle | null>;
   scan: ScanSource | null;
   setScan: (s: ScanSource | null) => void;
-  /** L'écran natif affiché par-dessus le site (accueil), ou null = le site. */
-  nativeTab: 'home' | null;
-  setNativeTab: (t: 'home' | null) => void;
 }
 
 const Ctx = createContext<HQ | null>(null);
@@ -37,9 +34,8 @@ export function HQProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<StaffUser | null | undefined>(undefined);
   const [route, setRoute] = useState('');
   const [scan, setScan] = useState<ScanSource | null>(null);
-  const [nativeTab, setNativeTab] = useState<'home' | null>(null);
   const web = useRef<WebHandle | null>(null);
-  const value = useMemo(() => ({ user, setUser, route, setRoute, web, scan, setScan, nativeTab, setNativeTab }), [user, route, scan, nativeTab]);
+  const value = useMemo(() => ({ user, setUser, route, setRoute, web, scan, setScan }), [user, route, scan]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

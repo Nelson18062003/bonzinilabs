@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Analyses et graphiques</title>
+<link rel="stylesheet" href="../kit2.css">
+<style>
+/* Lot 09 · Analyses et graphiques — mêmes jetons que kit2.css.
+   Graphiques : encre #2C2C2C (série), gris #B3B3B3 (comparaison), grille #EEEEEE,
+   étiquettes 14 px #5A5A5A. Ni dégradé, ni ombre, ni couleur de marque. */
+.ch { padding: 0 20px }
+.ch svg { display: block; overflow: visible }
+.ch svg text, .tile svg text { font: 500 14px "DM Sans"; fill: #5A5A5A; font-variant-numeric: tabular-nums }
+.kpi { padding: 18px 20px 0 }
+.kpi .lab { font: 500 16px "DM Sans"; color: var(--muted) }
+.kpi .num { font: 700 40px/1.1 "DM Sans"; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; white-space: nowrap }
+.kpi .num small { font-size: 20px; font-weight: 600; color: var(--muted); letter-spacing: 0 }
+.kpi .dl { font: 500 16px "DM Sans"; color: var(--body); margin-top: 8px; display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums }
+.kpi .dl .tag { margin-top: 0 }
+.chips.tight { padding-top: 12px }
+.chip svg { width: 16px; height: 16px }
+.chip.out { background: #fff; border: 1px solid var(--line) }
+.seg3 { grid-template-columns: repeat(3, 1fr) }
+.leg { display: flex; gap: 18px; padding: 10px 20px 0; font: 500 15px "DM Sans"; color: var(--body) }
+.leg i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 7px }
+.leg i.box { width: 12px; height: 12px; border: 1.5px solid var(--ink); border-radius: 2px; background: #fff; vertical-align: -1px }
+.bub { position: absolute; background: var(--ink); color: #F5F5F5; border-radius: 8px; padding: 8px 12px; font: 500 14px/1.35 "DM Sans"; white-space: nowrap; z-index: 2; font-variant-numeric: tabular-nums }
+.bub b { display: block; font: 700 17px/1.3 "DM Sans" }
+.bub .g { color: #B3B3B3 }
+.box .kv { font-variant-numeric: tabular-nums }
+.kv .tag { margin-top: 0 }
+/* lignes à barre horizontale */
+.hrow { padding: 12px 0; border-bottom: 1px solid var(--line) }
+.hrow:last-child { border-bottom: 0 }
+.hrow .top2 { display: flex; align-items: center; gap: 12px }
+.hrow .logo, .hrow .av { width: 40px; height: 40px }
+.hrow .logo svg { width: 22px; height: 22px }
+.hrow .rn { font-size: 17px }
+.hrow .ra b { font-size: 16px }
+.hrow .ra span { font: 500 15px "DM Sans"; color: var(--muted); display: block; margin-top: 2px; font-variant-numeric: tabular-nums }
+.track { height: 8px; border-radius: 4px; background: #EEEEEE; margin: 10px 0 0 52px; overflow: hidden }
+.track i { display: block; height: 100%; border-radius: 4px; background: var(--ink) }
+.track.full { margin-left: 0 }
+.tightl .hrow { padding: 9px 0 } .tightl .track { margin-top: 7px }
+.rank { width: 22px; font: 600 15px "DM Sans"; color: var(--muted); flex: none; text-align: center; font-variant-numeric: tabular-nums }
+/* tuiles « tous les graphiques » */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 10px; height: 92px; display: flex; flex-direction: column; justify-content: space-between }
+.tile .tn { font: 500 15px/1.2 "DM Sans"; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tile .tv { font: 700 18px/1.2 "DM Sans"; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em }
+.alert { margin: 14px 20px 0; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; font: 600 16px "DM Sans" }
+.alert .tag { margin: 0 }
+.alert span.t { flex: 1 }
+.mrow { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line) }
+.mrow:last-child { border-bottom: 0 }
+.mrow .av svg { width: 22px; height: 22px }
+.mrow .rn { font-size: 17px }
+.sw { width: 51px; height: 31px; border-radius: 16px; background: var(--ink); position: relative; flex: none }
+.sw::after { content: ""; position: absolute; top: 2px; left: 22px; width: 27px; height: 27px; border-radius: 14px; background: #fff }
+.sw.off { background: #D9D9D9 } .sw.off::after { left: 2px }
+.pgrid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px }
+.pgrid .chip { height: 40px; font-size: 15px }
+.glab { font: 600 14px "DM Sans"; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 14px }
+.line2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); margin-top: 14px; font: 600 17px "DM Sans" }
+/* calendrier */
+.dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 20px 0 }
+.dates div { border: 1px solid var(--field); border-radius: 8px; padding: 9px 14px; font: 600 17px "DM Sans" }
+.dates div span { display: block; font: 500 14px "DM Sans"; color: var(--muted) }
+.dates div.on { border: 2px solid var(--ink); padding: 8px 13px }
+.mon { font: 600 18px "DM Sans"; padding: 20px 20px 8px; display: flex; justify-content: space-between; align-items: center }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 14px; row-gap: 4px }
+.cal span { height: 46px; display: grid; place-items: center; font: 500 17px "DM Sans"; position: relative; font-variant-numeric: tabular-nums }
+.cal .h { height: 30px; font: 600 14px "DM Sans"; color: var(--muted) }
+.cal .in { background: var(--soft) }
+.cal .a, .cal .b { color: #F5F5F5; font-weight: 700 }
+.cal .a::before, .cal .b::before { content: ""; position: absolute; inset: 1px 4px; border-radius: 23px; background: var(--ink); z-index: 0 }
+.cal .a { background: linear-gradient(90deg, #fff 50%, var(--soft) 50%) }
+.cal .b { background: linear-gradient(90deg, var(--soft) 50%, #fff 50%) }
+.cal span em { position: relative; z-index: 1; font-style: normal }
+.cal .today em { text-decoration: underline; text-underline-offset: 4px; font-weight: 700 }
+.cal .fut { color: #B3B3B3 }
+.fmts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px }
+.fmt { border: 1px solid var(--line); border-radius: 8px; height: 96px; display: grid; justify-items: center; align-content: center; gap: 6px; font: 600 16px "DM Sans" }
+.fmt span { font: 500 14px "DM Sans"; color: var(--muted) }
+.fmt.on { border: 2px solid var(--ink) }
+.fmt svg { width: 28px; height: 28px }
+.prev { margin: 16px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 16px 16px 14px }
+.prev .brand { display: flex; justify-content: space-between; align-items: center; font: 700 17px "DM Sans" }
+.prev .brand span { font: 500 14px "DM Sans"; color: var(--muted) }
+.prev .ql { font: 500 15px "DM Sans"; color: var(--muted); margin-top: 16px }
+.prev .qv { font: 700 32px/1.1 "DM Sans"; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums }
+.prev .qv small { font-size: 17px; color: var(--muted) }
+.prev .foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); font: 500 15px "DM Sans"; color: var(--body); display: flex; gap: 8px; align-items: center }
+.prev .foot .tag { margin: 0 }
+.prev svg text { font: 500 14px "DM Sans"; fill: #5A5A5A }
+.twin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px }
+.twin .btn { font-size: 17px }
+.mini { margin: 16px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px 12px }
+.mini .hd { display: flex; justify-content: space-between; align-items: baseline }
+.mini .hd span { font: 500 16px "DM Sans"; color: var(--muted) }
+.mini .hd a { font: 600 16px "DM Sans"; color: var(--strong); text-decoration: underline; text-underline-offset: 3px }
+.mini .v { font: 700 26px/1.15 "DM Sans"; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums }
+.mini .v small { font-size: 16px; color: var(--muted); font-weight: 600 }
+.mini svg text { font: 500 14px "DM Sans"; fill: #5A5A5A }
+.flag { width: 40px; height: 40px; border-radius: 20px; overflow: hidden; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08) }
+.flag svg { width: 40px; height: 40px; display: block }
+.split { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px; margin: 14px 20px 0 }
+.split i { display: block; height: 100% }
+.sl { display: flex; justify-content: space-between; padding: 8px 20px 0; font: 500 15px "DM Sans"; color: var(--body); font-variant-numeric: tabular-nums }
+.sl b { font-weight: 700 }
+.ttl { font: 600 20px "DM Sans"; padding: 22px 20px 4px }
+.tdot { width: 10px; height: 10px; border-radius: 5px; display: inline-block; background: var(--ink); margin-right: 6px }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit2.js"></script>
+<script>
+/* ---------------------------------------------------------------- outils */
+const SP = ' ';
+const fmt = (n) => { const s = Math.round(Math.abs(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, SP); return (n < 0 ? '−' : '') + s; };
+const sfmt = (n) => (n > 0 ? '+' : '') + fmt(n);
+const pc = (x, d = 0) => (x * 100).toFixed(d).replace('.', ',') + SP + '%';
+const spc = (x, d = 0) => (x > 0 ? '+' : x < 0 ? '−' : '') + pc(Math.abs(x), d);
+const dec = (x, d = 2) => x.toFixed(d).replace('.', ',');
+let seed = 11; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+const svgI = (d, c = '#1E1E1E', w = 2.1) => `<svg viewBox="0 0 24 24"><path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ic = {
+  cal: (c) => svgI('M4.5 6h15v14h-15zM4.5 10h15M9 4v4M15 4v4', c),
+  swap: (c) => svgI('M7 7h13l-3.5-3.5M17 17H4l3.5 3.5', c),
+  step: (c) => svgI('M4 20h16M7 16.5v-4M12 16.5V7.5M17 16.5v-6', c, 2.3),
+  list: (c) => svgI('M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', c, 2.3),
+  down: (c) => svgI('M12 4v11M7 10.5l5 5 5-5M5 20h14', c),
+  share: (c) => svgI('M12 15V4M7.5 8.5 12 4l4.5 4.5M6 12v7.5h12V12', c),
+  pin: (c) => svgI('M9 4h6l-1 6 3 3H7l3-3zM12 13v7', c),
+  table: (c) => svgI('M4 5h16v14H4zM4 10h16M4 14.5h16M10 5v14', c),
+  doc: (c) => svgI('M6 3.5h8l4 4v13H6zM14 3.5v4h4M9 13h6M9 16.5h6', c),
+  img: (c) => svgI('M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM4 16l4.5-4.5 4 4 2.5-2.5L20 18M15.5 8.5h.01', c),
+  copy: (c) => svgI('M8 8h11v11H8zM5 15V5h10', c),
+  chev: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dn: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  close: '<svg width="26" height="26" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="#1E1E1E" stroke-width="2.3" stroke-linecap="round"/></svg>',
+  alert: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17.2h.01" fill="none" stroke="#682D03" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+const navb = (t, right = I.dots) => `<div class="nav">${I.back}<div class="t">${t}</div>${right}</div>`;
+const end = '<div class="home-ind"></div>';
+const mrow = (icon, t, s = '', right = '') => `<div class="mrow"><div class="av">${icon}</div><div class="rm"><div class="rn">${t}</div>${s ? `<div class="rs">${s}</div>` : ''}</div>${right}</div>`;
+const per = (lab = '30 derniers jours', cmp = true) => `<div class="chips tight"><span class="chip out">${ic.cal('#1E1E1E')}${lab}${ic.dn}</span>${cmp ? `<span class="chip on">${ic.swap('#F5F5F5')}Comparer</span>` : ''}</div>`;
+const kpi = (lab, num, unit, dl) => `<div class="kpi"><div class="lab">${lab}</div><div class="num">${num}${unit ? ` <small>${unit}</small>` : ''}</div>${dl ? `<div class="dl">${dl}</div>` : ''}</div>`;
+const up = (x) => `<span class="tag ${x >= 0 ? 't-ok' : 't-bad'}">${spc(x)}</span>`;
+const caisse = `<div class="av"><svg width="22" height="22" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2" fill="none" stroke="#1E1E1E" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="#1E1E1E" stroke-width="2"/></svg></div>`;
+const bankSoft = `<div class="av"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+const ini = (n) => `<div class="av">${n.split(/[\s-]/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('')}</div>`;
+
+/* ---------------------------------------------------------------- données
+   Période : 30 derniers jours, du mar. 22 sept. au mer. 21 oct. 2026 (aujourd'hui, 9:41).
+   Paiement médian ¥ 7 493 · dépôt médian 1 000 000 XAF · 1 000 000 XAF = ¥ 10 838. */
+const RATE = 10838 / 1e6;
+const PAY = 412680000, PAY_N = 348, PAY_PREV = 368460000, PAY_PREV_N = 325;
+const DEP = 389450000, DEP_N = 296, DEP_PREV = 352900000;
+const NET = DEP - PAY;
+const DAYS = []; { const mo = ['sept.', 'oct.']; for (let i = 0; i < 30; i++) { const d = 22 + i; DAYS.push(d <= 30 ? { d, m: 0 } : { d: d - 30, m: 1 }); } DAYS.forEach((x) => x.lab = `${x.d} ${mo[x.m]}`); }
+const WD = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+const wd = (i) => (1 + i) % 7; // 22 sept. 2026 = mardi
+const W7 = [1.25, 1.1, 1.05, 1.0, 1.15, 0.55, 0.12];
+function series(total, s, trend, today = 0.32) {
+  seed = s; const w = DAYS.map((_, i) => W7[wd(i)] * (trend[0] + (trend[1] - trend[0]) * i / 29) * (0.82 + 0.36 * rnd()) * (i === 29 ? today : 1));
+  const sum = w.reduce((a, b) => a + b, 0); const v = w.map((x) => Math.round(x * total / sum / 10000) * 10000);
+  const diff = total - v.reduce((a, b) => a + b, 0); let k = v.indexOf(Math.max(...v)); v[k] += diff; return v;
+}
+const payD = series(PAY, 7, [0.9, 1.12]);
+const prevD = series(PAY_PREV, 23, [0.95, 1.05], 1);
+const payN = (() => { const c = payD.map((v) => Math.max(0, Math.round(v / PAY * PAY_N))); const d = PAY_N - c.reduce((a, b) => a + b, 0); c[c.indexOf(Math.max(...c))] += d; return c; })();
+const peakI = payD.indexOf(Math.max(...payD));
+const cum = (a) => { let s = 0; return a.map((x) => (s += x)); };
+const payC = cum(payD), prevC = cum(prevD);
+// semaines (seaux de la période)
+const WK = [{ lab: '22 sept.', a: 0, b: 5 }, { lab: '28 sept.', a: 6, b: 12 }, { lab: '5 oct.', a: 13, b: 19 }, { lab: '12 oct.', a: 20, b: 26 }, { lab: '19 oct.', a: 27, b: 29 }];
+const depW = [70200000, 89400000, 99800000, 92700000, 37350000];
+const payW = WK.map((w) => payD.slice(w.a, w.b + 1).reduce((x, y) => x + y, 0));
+const netW = depW.map((d, i) => d - payW[i]);
+// croissance 12 semaines (paiements) : S40–S42 viennent des jours ; S43 en cours
+const g12 = (() => { const s39 = payW[0] + Math.round(payD[6] * 0.93 / 10000) * 10000; const base = [0.70, 0.74, 0.73, 0.79, 0.83, 0.81, 0.88]; seed = 5; const early = base.map((b) => Math.round(s39 * b * (0.97 + 0.06 * rnd()) / 10000) * 10000); return [...early, s39, payW[1], payW[2], payW[3], payW[4]]; })();
+const gLab = ['S32', 'S33', 'S34', 'S35', 'S36', 'S37', 'S38', 'S39', 'S40', 'S41', 'S42', 'S43'];
+// clients
+const CLI_END = 1248, CLI_NEW = 46, CLI_PREV_NEW = 39, CLI_START = CLI_END - CLI_NEW;
+const cliNew = (() => { seed = 3; const w = DAYS.map((_, i) => W7[wd(i)] * (0.6 + rnd()) * (i === 29 ? 0.3 : 1)); const s = w.reduce((a, b) => a + b, 0); const v = w.map((x) => Math.floor(x * CLI_NEW / s)); let d = CLI_NEW - v.reduce((a, b) => a + b, 0); let j = 0; while (d > 0) { const k = [6, 13, 20, 27, 8, 15, 22, 1, 10, 17, 24][j++ % 11]; v[k]++; d--; } return v; })();
+const cliC = cum(cliNew).map((x) => CLI_START + x);
+const cliPeak = cliNew.indexOf(Math.max(...cliNew));
+const m12 = [28, 31, 26, 35, 38, 41, 44, 39, 47, 52, 49, 31];
+const mLab = ['nov.', 'déc.', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.'];
+// méthodes
+const PM = [['alipay', 'Alipay', 171260000, 162], ['wechat', 'WeChat Pay', 104820000, 101], ['bank', 'Virement', 109360000, 52], ['cash', 'Cash', 27240000, 33]];
+const DM = [['om', 'Orange Money', 118300000, 104, 'Transfert 88 · Retrait 16'], ['bank', 'Virement bancaire', 104600000, 38, ''], ['mtn', 'MTN MoMo', 86150000, 81, 'Transfert 69 · Retrait 12'], ['bankc', 'Cash en banque', 31200000, 21, ''], ['agency', 'Cash agence Bonzini', 27800000, 26, ''], ['wave', 'Wave', 21400000, 26, '']];
+// panier
+const HB = [['Moins de ¥' + SP + '2' + SP + '000', 31], ['¥' + SP + '2' + SP + '000 à 5' + SP + '000', 72], ['¥' + SP + '5' + SP + '000 à 10' + SP + '000', 104], ['¥' + SP + '10' + SP + '000 à 20' + SP + '000', 79], ['¥' + SP + '20' + SP + '000 à 50' + SP + '000', 46], ['Plus de ¥' + SP + '50' + SP + '000', 16]];
+const AVG = PAY / PAY_N, AVG_PREV = PAY_PREV / PAY_PREV_N;
+// délais de validation des dépôts
+const DL = [['Moins de 15 min', 68], ['15 à 30 min', 75], ['30 min à 1 h', 66], ['1 à 2 h', 43], ['2 à 6 h', 30], ['Plus de 6 h', 14]];
+// équipe : dépôts validés (Σ 296), rejetés (Σ 9), paiements (Σ 348)
+const TEAM = [['Nelson', 'Super admin', 92, 3, 112, 228], ['Clarisse Mbala', 'Opérations', 118, 4, 78, 219], ['Hervé Nana', 'Opérations', 74, 2, 52, 138], ['Linda Wu', 'Bureau Guangzhou', 0, 0, 74, 82], ['Grâce Atangana', 'Trésorière', 12, 0, 0, 47], ['Patrick Essomba', 'Agent cash', 0, 0, 32, 36]];
+const TEAM_T = TEAM.reduce((a, r) => a + r[5], 0);
+// top clients
+const TOP = [['Samuel Nkoulou', 38420000, 24], ['Jean-Paul Mbarga', 31870000, 19], ['Fatou Ndiaye', 27150000, 31], ['Ibrahim Touré', 22600000, 12], ['Aïcha Diallo', 19340000, 27], ['Rosine Tchoua', 15980000, 14], ['Aminatou Bello', 12410000, 9], ['Moussa Abakar', 11250000, 8], ['Brigitte Owona', 9870000, 11], ['Paul Biyong', 8640000, 6]];
+// pays (Σ 1 248)
+const PAYS = [['cm', 'Cameroun', 812], ['ga', 'Gabon', 164], ['td', 'Tchad', 96], ['cg', 'Congo', 71], ['gq', 'Guinée équatoriale', 38], ['x', 'Autres pays', 29], ['?', 'Non renseigné', 38]];
+
+/* ---------------------------------------------------------------- graphiques SVG */
+const GRID = '#EEEEEE', INK = '#2C2C2C', GREY = '#B3B3B3';
+const halo = 'paint-order="stroke" stroke="#fff" stroke-width="5" stroke-linejoin="round"';
+// barres verticales. open = index « en cours » (contour), sel = index touché (les autres s'effacent)
+function vbars({ v, W = 353, H = 190, max, grid = [], xl = [], sel = -1, open = -1, gap = 3, glab = true, top = 24 }) {
+  const n = v.length, bw = (W - gap * (n - 1)) / n, mn = Math.min(0, ...v), rng = max - mn, y0 = top + H * (max / rng);
+  const Y = (x) => top + H * ((max - x) / rng);
+  let s = `<svg width="${W}" height="${top + H + 30}" viewBox="0 0 ${W} ${top + H + 30}">`;
+  grid.forEach((g) => { s += `<line x1="0" x2="${W}" y1="${Y(g)}" y2="${Y(g)}" stroke="${GRID}"/>`; if (glab) s += `<text x="0" y="${Y(g) - 7}" ${halo}>${fmt(g)}</text>`; });
+  v.forEach((x, i) => {
+    const h = Math.abs(Y(x) - y0), yy = x >= 0 ? Y(x) : y0, xx = i * (bw + gap), r = Math.min(4, bw / 2.5);
+    if (i === open) s += `<rect x="${xx + .75}" y="${yy + .75}" width="${bw - 1.5}" height="${Math.max(0, h - 1.5)}" rx="${r}" fill="#fff" stroke="${INK}" stroke-width="1.5"/>`;
+    else s += `<rect x="${xx}" y="${yy}" width="${bw}" height="${h}" rx="${r}" fill="${sel >= 0 && i !== sel ? '#D9D9D9' : INK}"/>`;
+  });
+  s += `<line x1="0" x2="${W}" y1="${y0}" y2="${y0}" stroke="#D9D9D9"/>`;
+  xl.forEach(([i, t, a]) => { const cx = i * (bw + gap) + bw / 2; s += `<text x="${a === 'start' ? i * (bw + gap) : a === 'end' ? i * (bw + gap) + bw : cx}" y="${top + H + 24}" text-anchor="${a || 'middle'}">${t}</text>`; });
+  return s + '</svg>';
+}
+const barX = (i, n, W = 353, gap = 3) => { const bw = (W - gap * (n - 1)) / n; return i * (bw + gap) + bw / 2; };
+const barY = (x, max, H = 190, top = 24) => top + H * (max - x) / max;
+// courbes
+function lines({ ser, W = 353, H = 180, min, max, grid = [], xl = [], cross = -1, top = 24, dots = true }) {
+  const n = ser[0].v.length, X = (i) => 4 + i * (W - 8) / (n - 1), Y = (x) => top + H * (max - x) / (max - min);
+  let s = `<svg width="${W}" height="${top + H + 30}" viewBox="0 0 ${W} ${top + H + 30}">`;
+  grid.forEach((g) => { s += `<line x1="0" x2="${W}" y1="${Y(g)}" y2="${Y(g)}" stroke="${GRID}"/><text x="0" y="${Y(g) - 7}" ${halo}>${Number.isInteger(g) ? fmt(g) : String(g).replace('.', ',')}</text>`; });
+  s += `<line x1="0" x2="${W}" y1="${top + H}" y2="${top + H}" stroke="#D9D9D9"/>`;
+  if (cross >= 0) s += `<line x1="${X(cross)}" x2="${X(cross)}" y1="${top - 6}" y2="${top + H}" stroke="${INK}" stroke-width="1" stroke-dasharray="3 3"/>`;
+  [...ser].reverse().forEach((o) => { s += `<polyline points="${o.v.map((x, i) => `${X(i).toFixed(1)},${Y(x).toFixed(1)}`).join(' ')}" fill="none" stroke="${o.c}" stroke-width="${o.w || 2.5}" stroke-linejoin="round" stroke-linecap="round"/>`; });
+  if (cross >= 0 && dots) ser.forEach((o) => { s += `<circle cx="${X(cross)}" cy="${Y(o.v[cross])}" r="5.5" fill="${o.c}" stroke="#fff" stroke-width="2.5"/>`; });
+  xl.forEach(([i, t, a]) => { s += `<text x="${a === 'start' ? 0 : a === 'end' ? W : X(i)}" y="${top + H + 24}" text-anchor="${a || 'middle'}">${t}</text>`; });
+  return s + '</svg>';
+}
+const lineXY = (i, n, x, min, max, W = 353, H = 180, top = 24) => [4 + i * (W - 8) / (n - 1), top + H * (max - x) / (max - min)];
+// petits graphiques des tuiles
+const spBars = (v, opt = {}) => { const W = opt.W || 136, H = 28, n = v.length, g = opt.gap ?? 2, bw = (W - g * (n - 1)) / n, mx = Math.max(...v.map(Math.abs)), mn = Math.min(0, ...v), rng = mx - mn || 1, y0 = H * mx / rng;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${v.map((x, i) => { const h = Math.max(1.5, Math.abs(x) / rng * H); return `<rect x="${i * (bw + g)}" y="${x >= 0 ? y0 - h : y0}" width="${bw}" height="${h}" rx="1.5" fill="${opt.open === i ? '#fff' : INK}" ${opt.open === i ? `stroke="${INK}" stroke-width="1"` : ''}/>`; }).join('')}${mn < 0 ? `<line x1="0" x2="${W}" y1="${y0}" y2="${y0}" stroke="#D9D9D9"/>` : ''}</svg>`; };
+const spLine = (v) => { const W = 136, H = 28, mn = Math.min(...v), mx = Math.max(...v); return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${v.map((x, i) => `${(i * W / (v.length - 1)).toFixed(1)},${(2 + (H - 4) * (mx - x) / (mx - mn)).toFixed(1)}`).join(' ')}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/></svg>`; };
+const spSplit = (parts) => `<svg width="136" height="28" viewBox="0 0 136 28">${(() => { let x = 0; const t = parts.reduce((a, b) => a + b[0], 0); return parts.map(([p, c]) => { const w = p / t * (136 - 2 * (parts.length - 1)); const r = `<rect x="${x}" y="9" width="${w}" height="10" rx="2" fill="${c}"/>`; x += w + 2; return r; }).join(''); })()}</svg>`;
+const hrow = (left, name, sub, amt, sub2, frac) => `<div class="hrow"><div class="top2">${left}<div class="rm"><div class="rn">${name}</div>${sub ? `<div class="rs">${sub}</div>` : ''}</div><div class="ra"><b>${amt}</b>${sub2 ? `<span>${sub2}</span>` : ''}</div></div><div class="track"><i style="width:${(frac * 100).toFixed(1)}%"></i></div></div>`;
+
+/* ---------------------------------------------------------------- drapeaux (pastilles) */
+const FLAG = {
+  cm: '<svg viewBox="0 0 30 30"><rect width="10" height="30" fill="#007A5E"/><rect x="10" width="10" height="30" fill="#CE1126"/><rect x="20" width="10" height="30" fill="#FCD116"/><path d="M15 11.2l1 3h3.1l-2.5 1.8.9 3-2.5-1.8-2.5 1.8.9-3-2.5-1.8H14z" fill="#FCD116"/></svg>',
+  ga: '<svg viewBox="0 0 30 30"><rect width="30" height="10" fill="#009E60"/><rect y="10" width="30" height="10" fill="#FCD116"/><rect y="20" width="30" height="10" fill="#3A75C4"/></svg>',
+  td: '<svg viewBox="0 0 30 30"><rect width="10" height="30" fill="#002664"/><rect x="10" width="10" height="30" fill="#FECB00"/><rect x="20" width="10" height="30" fill="#C60C30"/></svg>',
+  cg: '<svg viewBox="0 0 30 30"><path d="M0 0h20L0 30z" fill="#009543"/><path d="M20 0h10L10 30H0z" fill="#FBDE4A"/><path d="M30 0v30H10z" fill="#DC241F"/></svg>',
+  gq: '<svg viewBox="0 0 30 30"><rect width="30" height="10" fill="#3E9A00"/><rect y="10" width="30" height="10" fill="#fff"/><rect y="20" width="30" height="10" fill="#E32118"/><path d="M0 0l11 15L0 30z" fill="#0073CE"/></svg>',
+};
+const flag = (k) => FLAG[k] ? `<div class="flag">${FLAG[k]}</div>` : `<div class="av" style="width:40px;height:40px">${k === '?' ? '?' : '+5'}</div>`;
+const mlogo = (k) => k === 'bankc' ? bankSoft : k === 'agency' ? caisse : meth(k);
+
+/* ================================================================ écrans */
+
+// ---------- 01 · Analyses (accueil du module)
+const homeMax = 24000000;
+const analysesHome = `${navb('Analyses')}
+  <div class="seg" style="margin-top:12px"><span class="on">Activité</span><span>Trésorerie</span></div>
+  ${per()}
+  ${kpi('Paiements exécutés', fmt(PAY), 'XAF', `${up(PAY / PAY_PREV - 1)} vs 30 jours précédents`)}
+  <div class="ch" style="margin-top:8px">${vbars({ v: payD, H: 120, top: 10, max: homeMax, grid: [], xl: [[0, '22 sept.', 'start'], [9, '1 oct.'], [19, '11 oct.'], [29, "Auj.", 'end']], open: 29 })}</div>
+  <div class="box" style="margin-top:12px">
+    <div class="kv">Dépôts validés<b>${fmt(DEP)} XAF</b></div>
+    <div class="kv">Flux net<b>${fmt(NET)} XAF</b></div>
+    <div class="kv">Clients actifs<b>214</b></div>
+  </div>
+  <div class="alert">${ic.alert}<span class="t">3 dépôts en revue depuis 48 h</span>${ic.chev}</div>`;
+add('Analyses · Activité', `${sbar()}<div class="body">${analysesHome}</div>${end}`);
+
+// ---------- 02 · Tous les graphiques (même écran, plus bas)
+const tile = (n, v, g) => `<div class="tile"><div><div class="tn">${n}</div><div class="tv">${v}</div></div>${g}</div>`;
+add('Analyses · tous les graphiques', `${sbar()}<div class="body">${navb('Analyses')}
+  <div class="lbl" style="padding-top:16px">Argent</div>
+  <div class="tiles">
+    ${tile('Paiements', fmt(PAY), spBars(payD, { gap: 1.5, open: 29 }))}
+    ${tile('Dépôts', fmt(DEP), spBars(depW, { gap: 6, open: 4 }))}
+    ${tile('Flux net', fmt(NET), spBars(netW, { gap: 6 }))}
+    ${tile('Par méthode', 'Alipay ' + pc(PM[0][2] / PAY), spSplit(PM.map((m, i) => [m[2], i === 0 ? INK : i === 1 ? '#5A5A5A' : i === 2 ? '#949494' : '#D9D9D9'])))}
+    ${tile('Panier moyen', '¥' + SP + fmt(AVG * RATE), spBars(HB.map((h) => h[1]), { gap: 4 }))}
+    ${tile('Argent des clients', fmt(186420000), spSplit([[38, INK], [62, '#D9D9D9']]))}
+  </div>
+  <div class="lbl" style="padding-top:18px">Clients et équipe</div>
+  <div class="tiles">
+    ${tile('Parc de clients', fmt(CLI_END), spLine(cliC))}
+    ${tile('Clients actifs', '214', spBars([1248, 246, 214].map((x) => Math.sqrt(x)), { gap: 6 }))}
+    ${tile('Top clients', 'Samuel N.', spBars(TOP.map((t) => t[1]), { gap: 4 }))}
+    ${tile('Pays', 'Cameroun ' + pc(812 / 1248), spSplit(PAYS.map((p, i) => [p[2], i === 0 ? INK : i < 3 ? '#949494' : '#D9D9D9'])))}
+    ${tile('Délai de validation', '38 min', spBars(DL.map((d) => d[1]), { gap: 4 }))}
+    ${tile('Croissance', spc(g12[10] / g12[9] - 1) + ' · S42', spBars(g12, { gap: 2, open: 11 }))}
+  </div>
+</div>${end}`);
+
+// ---------- 03 · Paiements exécutés, un point touché
+{
+  const max = 25000000, x = barX(peakI, 30), y = barY(payD[peakI], max);
+  const d = DAYS[peakI];
+  add('Paiements · toucher une barre', `${sbar()}<div class="body">${navb('Paiements exécutés')}
+    ${per()}
+    ${kpi('Total de la période', fmt(PAY), 'XAF', `${up(PAY / PAY_PREV - 1)} vs 30 jours précédents`)}
+    <div class="ch" style="margin-top:58px;position:relative">
+      <div class="bub" style="left:${Math.min(353 - 196, Math.max(0, x - 98)) + 20}px;top:${y - 78}px;transform:translateX(-20px)"><span class="g">${WD[wd(peakI)]} ${d.lab}</span><b>${fmt(payD[peakI])} XAF</b>${payN[peakI]} paiements</div>
+      ${vbars({ v: payD, H: 200, max, grid: [20000000], xl: [[0, '22 sept.', 'start'], [9, '1 oct.'], [19, '11 oct.'], [29, '21 oct.', 'end']], sel: peakI })}
+    </div>
+    <div class="box" style="margin-top:14px">
+      <div class="kv">Paiements<b>${PAY_N}</b></div>
+      <div class="kv">Ticket moyen<b>${fmt(AVG)} XAF</b></div>
+      <div class="kv">Meilleur jour<b>${WD[wd(peakI)]} ${d.lab}</b></div>
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 04 · Le détail de la barre : les opérations du jour
+{
+  const d = DAYS[peakI];
+  const rows = [['alipay', 'Samuel Nkoulou', 'Guangzhou Hengtai Trading', 41250, '14:52'], ['wechat', 'Aïcha Diallo', 'Chen Xiaoli', 9210, '14:31'], ['alipay', 'Fatou Ndiaye', 'Yiwu Jinsheng Textile', 7493, '13:08'], ['bank', 'Jean-Paul Mbarga', 'Foshan Meida Furniture', 58900, '11:46'], ['cash', 'Ibrahim Touré', 'Retrait au bureau', 23060, '10:20'], ['alipay', 'Rosine Tchoua', 'Yiwu Jinsheng Textile', 14380, '09:12']];
+  add('Détail d\'une barre · les paiements du jour', `${sbar()}<div class="body">${navb(`${WD[wd(peakI)].replace('.', '')}. ${d.lab}`.replace('..', '.'), I.search.replace('#5A5A5A', '#1E1E1E').replace('#5A5A5A', '#1E1E1E'))}
+    ${kpi('Paiements exécutés', fmt(payD[peakI]), 'XAF', `<span>${payN[peakI]} paiements · ¥${SP}${fmt(payD[peakI] * RATE)}</span>`)}
+    <div class="chips"><span class="chip on">Tous ${payN[peakI]}</span><span class="chip">Alipay</span><span class="chip">WeChat</span><span class="chip">Virement</span></div>
+    <div class="list" style="margin-top:6px">${rows.map(([m, c, s, a, h]) => `<div class="row">${meth(m)}<div class="rm"><div class="rn">${c}</div><div class="rs">${s} · ${h}</div></div><div class="ra"><b>¥${SP}${fmt(a)}</b><span class="tag t-ok">Payé</span></div></div>`).join('')}</div>
+  </div>${end}`);
+}
+
+// ---------- 05 · Comparer à la période précédente (courbe encre / gris, point touché)
+{
+  const max = 450000000, ci = 17, [cx, cy] = lineXY(ci, 30, payC[ci], 0, max, 353, 220);
+  add('Comparer · période vs précédente', `${sbar()}<div class="body">${navb('Comparer')}
+    <div class="chips tight"><span class="chip on">Paiements</span><span class="chip">Dépôts</span><span class="chip">Clients</span></div>
+    ${kpi('Paiements cumulés · 30 jours', spc(PAY / PAY_PREV - 1), '', `<span>${fmt(PAY)} contre ${fmt(PAY_PREV)} XAF</span>`)}
+    <div class="leg"><span><i style="background:${INK}"></i>22 sept. → 21 oct.</span><span><i style="background:${GREY}"></i>23 août → 21 sept.</span></div>
+    <div class="ch" style="margin-top:62px;position:relative">
+      <div class="bub" style="left:${cx - 92}px;top:${cy - 104}px"><span class="g">Jour 18 · 9 oct.</span><b>${fmt(payC[ci])}</b><span class="g">${fmt(prevC[ci])} · 10 sept.</span></div>
+      ${lines({ ser: [{ v: payC, c: INK, w: 2.5 }, { v: prevC, c: GREY, w: 2.5 }], H: 220, min: 0, max, grid: [200000000, 400000000], xl: [[0, 'Jour 1', 'start'], [14, 'Jour 15'], [29, 'Jour 30', 'end']], cross: ci })}
+    </div>
+    <div class="box" style="margin-top:12px">
+      <div class="kv">Paiements<b>${PAY_N} <span style="color:#5A5A5A;font-weight:500">/ ${PAY_PREV_N}</span></b></div>
+      <div class="kv">Ticket moyen<b>${fmt(AVG)} <span style="color:#5A5A5A;font-weight:500">/ ${fmt(AVG_PREV)}</span></b></div>
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 06 · Dépôts validés (par semaine)
+{
+  const max = 120000000;
+  add('Dépôts validés · par semaine', `${sbar()}<div class="body">${navb('Dépôts validés')}
+    ${per()}
+    ${kpi('Total de la période', fmt(DEP), 'XAF', `${up(DEP / DEP_PREV - 1)} vs 30 jours précédents`)}
+    <div class="seg seg3" style="margin-top:16px"><span>Jour</span><span class="on">Semaine</span><span>Mois</span></div>
+    <div class="ch" style="margin-top:6px">${vbars({ v: depW, H: 200, max, gap: 18, grid: [100000000], xl: WK.map((w, i) => [i, w.lab]), open: 4 })}</div>
+    <div class="leg" style="padding-top:2px"><span><i class="box"></i>Semaine en cours</span></div>
+    <div class="box" style="margin-top:12px">
+      <div class="kv">Dépôts<b>${DEP_N}</b></div>
+      <div class="kv">Dépôt moyen<b>${fmt(DEP / DEP_N)} XAF</b></div>
+      <div class="kv">Dépôt médian<b>1${SP}000${SP}000 XAF</b></div>
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 07 · Flux net (entrées − sorties), barres de part et d'autre de zéro
+{
+  const mx = Math.max(...netW.map(Math.abs));
+  const max = 9000000;
+  add('Flux net · par semaine', `${sbar()}<div class="body">${navb('Flux net')}
+    ${per()}
+    ${kpi('Dépôts − paiements', fmt(NET), 'XAF', `<span>Plus de sorties que d'entrées</span>`)}
+    <div class="ch" style="margin-top:8px">${(() => { let s = vbars({ v: netW, H: 190, max, gap: 18, grid: [], xl: [], open: 4 }); return s.replace('</svg>', `<text x="353" y="14" text-anchor="end">Plus d'entrées</text><text x="353" y="226" text-anchor="end">Plus de sorties</text></svg>`); })()}</div>
+    <div class="box" style="margin-top:0">
+      ${WK.map((w, i) => `<div class="kv">Semaine du ${w.lab}${i === 4 ? ' <span class="tag t-neu" style="margin-left:6px">En cours</span>' : ''}<b>${sfmt(netW[i])}</b></div>`).join('')}
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 08 · Paiements par méthode
+add('Paiements par méthode', `${sbar()}<div class="body">${navb('Par méthode')}
+  <div class="seg" style="margin-top:12px"><span class="on">Paiements</span><span>Dépôts</span></div>
+  ${per('30 derniers jours', false)}
+  ${kpi('Paiements exécutés', fmt(PAY), 'XAF', `<span>${PAY_N} paiements · 4 méthodes</span>`)}
+  <div class="list" style="margin-top:10px">${PM.map(([k, n, a, c]) => hrow(meth(k), n, `${c} paiements`, fmt(a), pc(a / PAY, 1), a / PM[0][2])).join('')}</div>
+</div>${end}`);
+
+// ---------- 09 · Dépôts par méthode
+add('Dépôts par méthode', `${sbar()}<div class="body">${navb('Par méthode')}
+  <div class="seg" style="margin-top:12px"><span>Paiements</span><span class="on">Dépôts</span></div>
+  ${kpi('Dépôts validés · 30 jours', fmt(DEP), 'XAF', `<span>${DEP_N} dépôts</span>`)}
+  <div class="list" style="margin-top:6px">${DM.map(([k, n, a, c, s]) => hrow(mlogo(k), n, s || `${c} dépôts`, fmt(a), pc(a / DEP, 1), a / DM[0][2])).join('')}</div>
+</div>${end}`);
+
+// ---------- 10 · Panier moyen (répartition des paiements par montant)
+{
+  const mx = Math.max(...HB.map((h) => h[1]));
+  add('Panier moyen · répartition', `${sbar()}<div class="body">${navb('Panier moyen')}
+    ${per()}
+    ${kpi('Paiement moyen', '¥' + SP + fmt(AVG * RATE), '', `${up(AVG / AVG_PREV - 1)} <span>${fmt(AVG)} XAF</span>`)}
+    <div class="box" style="margin-top:14px"><div class="kv">Paiement médian<b>¥${SP}7${SP}493 · 691${SP}364 XAF</b></div></div>
+    <div class="ttl" style="padding-top:18px">Paiements par montant</div>
+    <div class="list">${HB.map(([l, n], i) => `<div class="hrow"><div class="top2"><div class="rm"><div class="rn" style="font-weight:${i === 2 ? 700 : 500}">${l}</div></div>${i === 2 ? '<span class="tag t-neu" style="margin:0">Médiane</span>' : ''}<div class="ra"><b>${n}</b></div></div><div class="track full"><i style="width:${(n / mx * 100).toFixed(1)}%"></i></div></div>`).join('')}</div>
+  </div>${end}`);
+}
+
+// ---------- 11 · L'argent des clients (exposition, concentration)
+add('Argent des clients · exposition', `${sbar()}<div class="body">${navb('Argent des clients')}
+  ${kpi('Soldes des portefeuilles · maintenant', fmt(186420000), 'XAF', `<span>812 clients ont un solde</span>`)}
+  <div class="split"><i style="width:38%;background:${INK}"></i><i style="width:62%;background:#D9D9D9"></i></div>
+  <div class="sl"><span><b>10 plus gros</b> · ${pc(.38)}</span><span>802 autres · ${pc(.62)}</span></div>
+  <div class="box" style="margin-top:16px">
+    <div class="kv">Solde moyen<b>${fmt(186420000 / 812)} XAF</b></div>
+    <div class="kv">Dépôts / paiements<b>${dec(DEP / PAY)}</b></div>
+    <div class="kv">Taux de validation<b>${pc(.96)}</b></div>
+  </div>
+  <div class="ttl">Plus gros soldes</div>
+  <div class="list">
+    <div class="row">${ini('Samuel Nkoulou')}<div class="rm"><div class="rn">Samuel Nkoulou</div><div class="rs">BZ-4821</div></div><div class="ra"><b>6${SP}400${SP}000</b></div></div>
+    <div class="row">${ini('Brigitte Owona')}<div class="rm"><div class="rn">Brigitte Owona</div><div class="rs">BZ-5107</div></div><div class="ra"><b>5${SP}880${SP}000</b></div></div>
+    <div class="row">${ini('Moussa Abakar')}<div class="rm"><div class="rn">Moussa Abakar</div><div class="rs">BZ-3390</div></div><div class="ra"><b>4${SP}215${SP}500</b></div></div>
+  </div>
+</div>${end}`);
+
+// ---------- 12 · Parc de clients (courbe)
+add('Parc de clients', `${sbar()}<div class="body">${navb('Clients')}
+  ${per()}
+  ${kpi('Clients au total', fmt(CLI_END), '', `${up(CLI_NEW / CLI_PREV_NEW - 1)} <span>${CLI_NEW} nouveaux · ${CLI_PREV_NEW} avant</span>`)}
+  <div class="ch" style="margin-top:10px">${lines({ ser: [{ v: cliC, c: INK }], H: 200, min: 1190, max: 1260, grid: [1250], xl: [[0, '22 sept.', 'start'], [14, '6 oct.'], [29, '21 oct.', 'end']] })}</div>
+  <div class="box" style="margin-top:14px">
+    <div class="kv">Nouveaux clients<b>${CLI_NEW}</b></div>
+    <div class="kv">Meilleur jour<b>${WD[wd(cliPeak)]} ${DAYS[cliPeak].lab} · ${cliNew[cliPeak]}</b></div>
+    <div class="kv">Période précédente<b>${CLI_PREV_NEW} nouveaux</b></div>
+  </div>
+</div>${end}`);
+
+// ---------- 13 · Clients actifs et conversion
+{
+  const st = [['Clients au total', 1248], ['Ont déposé', 246], ['Ont payé', 214]];
+  add('Clients actifs · conversion', `${sbar()}<div class="body">${navb('Clients actifs')}
+    ${per()}
+    ${kpi('Au moins un paiement exécuté', '214', 'clients', `${up(214 / 198 - 1)} <span>198 avant</span>`)}
+    <div class="box" style="margin-top:16px"><div class="kv">Dépôt → paiement<b>${pc(214 / 246)}</b></div></div>
+    <div class="list" style="margin-top:10px">${st.map(([l, n], i) => `<div class="hrow"><div class="top2"><div class="rm"><div class="rn">${l}</div>${i ? `<div class="rs">${pc(n / 1248)} des clients</div>` : ''}</div><div class="ra"><b>${fmt(n)}</b></div></div><div class="track full"><i style="width:${(n / 1248 * 100).toFixed(1)}%"></i></div></div>`).join('')}</div>
+  </div>${end}`);
+}
+
+// ---------- 14 · Top clients
+add('Top clients', `${sbar()}<div class="body">${navb('Top clients')}
+  ${per('30 derniers jours', false)}
+  ${kpi('Les 10 premiers', fmt(TOP.reduce((a, t) => a + t[1], 0)), 'XAF', `<span>${pc(TOP.reduce((a, t) => a + t[1], 0) / PAY)} des paiements</span>`)}
+  <div class="list" style="margin-top:6px">${TOP.slice(0, 6).map(([n, a, c], i) => `<div class="hrow"><div class="top2"><span class="rank">${i + 1}</span>${ini(n)}<div class="rm"><div class="rn">${n}</div><div class="rs">${c} paiements</div></div><div class="ra"><b>${fmt(a)}</b></div></div><div class="track" style="margin-left:88px"><i style="width:${(a / TOP[0][1] * 100).toFixed(1)}%"></i></div></div>`).join('')}</div>
+</div>${end}`);
+
+// ---------- 15 · Pays
+add('Clients par pays', `${sbar()}<div class="body">${navb('Pays')}
+  ${kpi('Tous les clients', fmt(1248), 'clients', `<span>5 pays + autres · ${pc(38 / 1248)} sans pays</span>`)}
+  <div class="list tightl" style="margin-top:8px">${PAYS.map(([k, n, c]) => hrow(flag(k), n, '', fmt(c), pc(c / 1248), c / 812)).join('')}</div>
+</div>${end}`);
+
+// ---------- 16 · Sources d'inscription
+add('Sources d\'inscription', `${sbar()}<div class="body">${navb('Sources')}
+  ${per()}
+  ${kpi('Nouveaux clients', String(CLI_NEW), '', `<span>Inscrits sur la période</span>`)}
+  <div class="split" style="margin-top:18px"><i style="width:61%;background:${INK}"></i><i style="width:39%;background:#949494"></i></div>
+  <div class="sl"><span><span class="tdot"></span><b>28</b> créés par l'équipe</span><span><span class="tdot" style="background:#949494"></span><b>18</b> par l'app</span></div>
+  <div class="ttl">Venus par l'app</div>
+  <div class="list">
+    ${[['Facebook', 'Publicité · import-oct', 7], ['WhatsApp', 'Lien partagé', 5], ['Google', 'Recherche', 4], ['TikTok', 'Réseau social', 2]].map(([n, s, c]) => hrow(ini(n), n, s, String(c), '', c / 7)).join('')}
+  </div>
+  <div class="list" style="margin-top:4px;border-top:1px solid #D9D9D9">${mrow(svgI('M4 21.5h16M7 18v-5M12 18V8M17 18v-8'), 'Par commercial', 'Équipe › Ventes', ic.chev)}</div>
+</div>${end}`);
+
+// ---------- 17 · Délais de traitement
+add('Délais de traitement', `${sbar()}<div class="body">${navb('Délais')}
+  <div class="seg" style="margin-top:12px"><span class="on">Dépôts</span><span>Paiements</span></div>
+  ${per('30 derniers jours', false)}
+  ${kpi('Validation d\'un dépôt · médiane', '38', 'min', `<span class="tag t-ok">8 min de moins</span> <span>46 min avant</span>`)}
+  <div class="box" style="margin-top:14px">
+    <div class="kv">9 sur 10 en moins de<b>3 h 20</b></div>
+    <div class="kv">Rejetés · en attente<b>9 · 6</b></div>
+  </div>
+  <div class="list" style="margin-top:8px">${DL.map(([l, n]) => `<div class="hrow" style="padding:10px 0"><div class="top2"><div class="rm"><div class="rn" style="font-weight:500">${l}</div></div><div class="ra"><b>${n}</b></div></div><div class="track full" style="margin-top:8px"><i style="width:${(n / 75 * 100).toFixed(1)}%"></i></div></div>`).join('')}</div>
+</div>${end}`);
+
+// ---------- 18 · Équipe : qui a traité quoi
+add('Équipe · qui a traité quoi', `${sbar()}<div class="body">${navb('Équipe')}
+  ${per('30 derniers jours', false)}
+  ${kpi('Actions de l\'équipe', fmt(TEAM_T), 'actions', `<span>296 dépôts validés · 348 paiements</span>`)}
+  <div class="list" style="margin-top:8px">${TEAM.map(([n, r, dv, dr, p, t]) => hrow(ini(n === 'Nelson' ? 'Nelson Nzié' : n), n, [dv ? `${dv} dépôts` : '', p ? `${p} paiements` : '', !dv && !p ? r : ''].filter(Boolean).join(' · '), String(t), '', t / TEAM[0][5])).join('')}</div>
+</div>${end}`);
+
+// ---------- 19 · Croissance 12 semaines (paiements)
+{
+  const max = 120000000, last = g12[10], prev = g12[9];
+  const best = Math.max(...g12.slice(0, 11)), bi = g12.indexOf(best);
+  const avg = g12.slice(0, 11).reduce((a, b) => a + b, 0) / 11;
+  const x10 = barX(10, 12, 353, 6), y10 = barY(last, max, 200);
+  add('Croissance · 12 semaines', `${sbar()}<div class="body">${navb('Croissance')}
+    <div class="seg" style="margin-top:12px"><span class="on">12 semaines</span><span>12 mois</span></div>
+    <div class="chips tight"><span class="chip on">Paiements</span><span class="chip">Dépôts</span><span class="chip">Clients</span></div>
+    ${kpi('Semaine dernière · S42', fmt(last), 'XAF', `${up(last / prev - 1)} vs S41`)}
+    <div class="ch" style="margin-top:6px;position:relative">
+      <div style="position:absolute;left:${20 + x10 - 26}px;top:${y10 - 30}px;width:52px;text-align:center"><span class="tag t-ok" style="margin:0">${spc(last / prev - 1)}</span></div>
+      ${vbars({ v: g12, H: 200, max, gap: 6, grid: [100000000], xl: [[0, 'S32'], [3, 'S35'], [6, 'S38'], [9, 'S41'], [11, 'S43']], open: 11 })}
+    </div>
+    <div class="leg" style="padding-top:2px"><span><i class="box"></i>Semaine en cours</span></div>
+    <div class="box" style="margin-top:12px">
+      <div class="kv">Moyenne par semaine<b>${fmt(Math.round(avg / 10000) * 10000)}</b></div>
+      <div class="kv">Meilleure semaine<b>${gLab[bi]} · ${fmt(best)}</b></div>
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 20 · Croissance 12 mois (clients)
+{
+  const max = 60, last = m12[10], prev = m12[9];
+  const avg = m12.slice(0, 11).reduce((a, b) => a + b, 0) / 11, best = Math.max(...m12.slice(0, 11));
+  const xi = barX(10, 12, 353, 6), yi = barY(last, max, 200);
+  add('Croissance · 12 mois (clients)', `${sbar()}<div class="body">${navb('Croissance')}
+    <div class="seg" style="margin-top:12px"><span>12 semaines</span><span class="on">12 mois</span></div>
+    <div class="chips tight"><span class="chip">Paiements</span><span class="chip">Dépôts</span><span class="chip on">Clients</span></div>
+    ${kpi('Septembre · nouveaux clients', String(last), '', `${up(last / prev - 1)} vs août`)}
+    <div class="ch" style="margin-top:6px;position:relative">
+      <div style="position:absolute;left:${20 + xi - 26}px;top:${yi - 30}px;width:52px;text-align:center"><span class="tag t-bad" style="margin:0">${spc(last / prev - 1)}</span></div>
+      ${(() => { let s = vbars({ v: m12, H: 200, max, gap: 6, grid: [40], xl: [[0, 'nov.'], [3, 'févr.'], [6, 'mai'], [9, 'août'], [11, 'oct.']], open: 11 }); return s; })()}
+    </div>
+    <div class="leg" style="padding-top:2px"><span><i class="box"></i>Mois en cours</span></div>
+    <div class="box" style="margin-top:12px">
+      <div class="kv">Moyenne par mois<b>${Math.round(avg)}</b></div>
+      <div class="kv">Meilleur mois<b>Août · ${best}</b></div>
+    </div>
+  </div>${end}`);
+}
+
+// ---------- 21 · Trésorerie : bénéfice et coût du stock
+{
+  seed = 9; const wac = []; let w = 596.4; for (let i = 0; i < 30; i++) { w += (rnd() - 0.42) * 0.55; wac.push(+w.toFixed(2)); }
+  add('Analyses · Trésorerie', `${sbar()}<div class="body">${navb('Analyses')}
+    <div class="seg" style="margin-top:12px"><span>Activité</span><span class="on">Trésorerie</span></div>
+    ${per('30 derniers jours', false)}
+    ${kpi('Bénéfice de la période', fmt(2617300), 'XAF', `<span>Marge 1,92 XAF par ¥ livré</span>`)}
+    <div class="chips"><span class="chip on">Coût du stock</span><span class="chip">Achat</span><span class="chip">Vente</span></div>
+    <div class="ch" style="margin-top:4px">${lines({ ser: [{ v: wac, c: INK }], H: 150, min: Math.floor(Math.min(...wac)) - 1, max: Math.ceil(Math.max(...wac)) + 1, grid: [600], xl: [[0, '22 sept.', 'start'], [29, '21 oct.', 'end']] })}</div>
+    <div class="box" style="margin-top:8px">
+      <div class="kv">Taux de revient<b>90,35 XAF / ¥</b></div>
+      <div class="kv">Taux client<b>92,27 XAF / ¥</b></div>
+      <div class="kv">USDT achetés · vendus<b>214${SP}600 · 205${SP}300</b></div>
+    </div>
+    <div class="list">${mrow(svgI('M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 20c.8-3.4 3.3-5.3 6.5-5.3S15.2 16.6 16 20'), 'Meilleurs fournisseurs', 'et acheteurs de CNY', ic.chev)}</div>
+  </div>${end}`);
+}
+
+// ---------- 22 · Menu « … » d'un graphique
+{
+  const max = 25000000;
+  const payScreen = `${navb('Paiements exécutés')}${per()}${kpi('Total de la période', fmt(PAY), 'XAF', `${up(PAY / PAY_PREV - 1)} vs 30 jours précédents`)}
+    <div class="ch" style="margin-top:20px">${vbars({ v: payD, H: 200, max, grid: [20000000], xl: [[0, '22 sept.', 'start'], [9, '1 oct.'], [19, '11 oct.'], [29, '21 oct.', 'end']], open: 29 })}</div>`;
+  add('Graphique · menu « … »', `${sbar()}<div class="body">${payScreen}
+    <div class="scrim"></div>
+    <div class="sheet"><div class="grab"></div>
+      ${mrow(ic.cal('#1E1E1E'), 'Période', '30 derniers jours', ic.chev)}
+      ${mrow(ic.swap('#1E1E1E'), 'Comparer', 'À la période précédente', '<span class="sw"></span>')}
+      ${mrow(ic.step('#1E1E1E'), 'Pas', 'Jour · Semaine · Mois', ic.chev)}
+      ${mrow(ic.list('#1E1E1E'), 'Voir les 348 paiements')}
+      ${mrow(ic.table('#1E1E1E'), 'Voir en tableau')}
+      ${mrow(ic.down('#1E1E1E'), 'Exporter', 'CSV, PDF ou image')}
+      ${mrow(ic.pin('#1E1E1E'), 'Épingler à l\'accueil')}
+    </div>
+  </div><div class="home-ind" style="z-index:9"></div>`);
+
+  // ---------- 25 · Exporter (feuille)
+  window.__payScreen = payScreen;
+}
+
+// ---------- 23 · Choisir la période (feuille)
+add('Choisir la période', `${sbar()}<div class="body">${analysesHome}
+  <div class="scrim"></div>
+  <div class="sheet" style="padding-bottom:30px"><div class="grab"></div>
+    <h3>Période</h3>
+    <div class="glab">Jour et semaine</div>
+    <div class="pgrid"><span class="chip">Aujourd'hui</span><span class="chip">Hier</span><span class="chip">7 derniers jours</span><span class="chip">Cette semaine</span></div>
+    <div class="glab">Mois et plus</div>
+    <div class="pgrid"><span class="chip on">30 derniers jours</span><span class="chip">Ce mois</span><span class="chip">Mois dernier</span><span class="chip">90 jours</span><span class="chip">Cette année</span><span class="chip">Tout</span></div>
+    <div class="line2" style="margin-top:16px"><span style="display:flex;gap:10px;align-items:center">${ic.cal('#1E1E1E').replace('<svg ', '<svg width="22" height="22" ')}Personnalisé</span>${ic.chev}</div>
+    <div class="line2" style="margin-top:0"><span>Comparer à la période précédente</span><span class="sw"></span></div>
+    <div class="seg seg3" style="margin:4px 0 16px"><span>Jour</span><span class="on">Semaine</span><span>Mois</span></div>
+    <div class="btn">Appliquer</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// ---------- 24 · Période personnalisée (calendrier)
+{
+  // octobre 2026 : le 1er est un jeudi
+  let c = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="h">${d}</span>`).join('') + '<span></span><span></span><span></span>';
+  for (let d = 1; d <= 31; d++) { const cls = d === 5 ? 'a' : d === 18 ? 'b' : d > 5 && d < 18 ? 'in' : ''; c += `<span class="${cls}${d === 21 ? ' today' : ''}${d > 21 ? ' fut' : ''}"><em>${d}</em></span>`; }
+  let n = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="h">${d}</span>`).join('');
+  add('Période personnalisée · calendrier', `${sbar()}<div class="body"><div class="nav">${ic.close}<div class="t" style="margin-left:6px">Période personnalisée</div></div>
+    <div class="dates"><div><span>Du</span>lun. 5 oct.</div><div class="on"><span>Au</span>dim. 18 oct.</div></div>
+    <div class="mon"><span>Octobre 2026</span><span style="display:flex;gap:18px">${I.back.replace('width="28" height="28"', 'width="24" height="24"')}<span style="transform:scaleX(-1);display:inline-flex;opacity:.35">${I.back.replace('width="28" height="28"', 'width="24" height="24"')}</span></span></div>
+    <div class="cal">${c}</div>
+    <div class="chips" style="padding-top:22px"><span class="chip">Semaine dernière</span><span class="chip">Mois dernier</span></div>
+    <div class="dock"><div class="btn">Appliquer · 14 jours</div></div>
+  </div>${end}`);
+}
+
+// ---------- 25 · Exporter
+add('Exporter · CSV, PDF ou image', `${sbar()}<div class="body">${window.__payScreen}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Exporter</h3>
+    <p>Paiements exécutés · 30 derniers jours</p>
+    <div class="fmts">
+      <div class="fmt on">${ic.table('#1E1E1E')}CSV<span>Tableur</span></div>
+      <div class="fmt">${ic.doc('#1E1E1E')}PDF<span>Rapport</span></div>
+      <div class="fmt">${ic.img('#1E1E1E')}Image<span>PNG</span></div>
+    </div>
+    <div class="seg" style="margin:14px 0 0"><span class="on">Ce graphique</span><span>Toutes les analyses</span></div>
+    <div class="box" style="margin:12px 0 16px">
+      <div class="kv">Lignes<b>30 jours · 348 paiements</b></div>
+      <div class="kv">Fichier<b>paiements_22-09_21-10.csv</b></div>
+    </div>
+    <div class="btn">Exporter en CSV</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// ---------- 26 · Partager l'image du graphique
+{
+  const max = 25000000;
+  add('Partager l\'image', `${sbar()}<div class="body"><div class="nav">${ic.close}<div class="t" style="margin-left:6px">Partager</div></div>
+    <div class="prev">
+      <div class="brand">Bonzini Labs<span>21 oct. 2026</span></div>
+      <div class="ql">Paiements exécutés · 30 derniers jours</div>
+      <div class="qv">${fmt(PAY)} <small>XAF</small></div>
+      <div style="margin-top:14px">${vbars({ v: payD, W: 319, H: 130, top: 6, max, grid: [], xl: [[0, '22 sept.', 'start'], [29, '21 oct.', 'end']], open: 29, gap: 2.5 })}</div>
+      <div class="foot">${up(PAY / PAY_PREV - 1)} vs 30 jours précédents</div>
+    </div>
+    <div class="seg" style="margin-top:16px"><span class="on">Clair</span><span>Sombre</span></div>
+    <div class="dock"><div class="btn">Partager l'image</div><div class="twin"><div class="btn soft">Copier</div><div class="btn soft">Enregistrer</div></div></div>
+  </div>${end}`);
+}
+
+// ---------- 27 · Accueil admin, avec le mini-graphe de la semaine
+{
+  const last7 = payD.slice(23, 30), tot7 = last7.reduce((a, b) => a + b, 0);
+  const lab7 = DAYS.slice(23, 30).map((_, k) => ['J', 'V', 'S', 'D', 'L', 'M', 'M'][k]);
+  const mini = (() => { const W = 319, H = 64, g = 14, bw = (W - g * 6) / 7, mx = 22000000; let s = `<svg width="${W}" height="${H + 26}" viewBox="0 0 ${W} ${H + 26}">`; last7.forEach((v, i) => { const h = Math.max(2, v / mx * H), x = i * (bw + g); s += i === 6 ? `<rect x="${x + .75}" y="${H - h + .75}" width="${bw - 1.5}" height="${h - 1.5}" rx="4" fill="#fff" stroke="${INK}" stroke-width="1.5"/>` : `<rect x="${x}" y="${H - h}" width="${bw}" height="${h}" rx="4" fill="${INK}"/>`; s += `<text x="${x + bw / 2}" y="${H + 21}" text-anchor="middle">${lab7[i]}</text>`; }); return s + `<line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#D9D9D9"/></svg>`; })();
+  add('Accueil · le mini-graphe de la semaine', `${sbar()}<div class="body">
+    <div class="top"><div class="hello">Bonjour Nelson</div><div style="display:flex;gap:10px"><div class="icbtn" style="overflow:hidden;padding:0"><img src="../mola-mascot.png" style="width:100%;height:100%;border-radius:22px"></div><div class="icbtn">${I.bell}<span class="dot"></span></div></div></div>
+    <div class="hero"><div class="lab">À payer aujourd'hui</div><div class="num">¥ 261${SP}680</div><div class="sub"><span><b>5</b> paiements</span><span><b>2</b> dépôts à valider</span></div></div>
+    <div class="acts">
+      <div class="act"><div class="r ink">${I.pay('#F5F5F5')}</div>Paiement</div>
+      <div class="act"><div class="r">${I.dep('#1E1E1E')}</div>Dépôt</div>
+      <div class="act"><div class="r">${I.scan('#1E1E1E')}</div>Scanner</div>
+      <div class="act"><div class="r">${I.user('#1E1E1E')}</div>Client</div>
+    </div>
+    <div class="mini">
+      <div class="hd"><span>Paiements · 7 jours</span><a>Analyses</a></div>
+      <div class="v">${fmt(tot7)} <small>XAF</small></div>
+      <div style="margin-top:12px">${mini}</div>
+    </div>
+    <div class="h2" style="padding-top:18px"><b>À payer</b><a>Tout voir</a></div>
+    <div class="list"><div class="row">${meth('bank')}<div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">Virement · il y a 14 h</div></div><div class="ra"><b>¥ 58${SP}900</b><span class="tag t-todo">À payer</span></div></div></div>
+  </div>${tabs('home')}${end}`);
+}
+
+render();
+</script></body></html>

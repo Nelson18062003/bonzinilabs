@@ -3,8 +3,8 @@
 //
 //   · Le site vit dans UNE WebView toujours montée ; la barre d'onglets
 //     NATIVE (par rôle) y navigue sans rechargement.
-//   · L'accueil natif (administration) se pose par-dessus quand son onglet
-//     est choisi.
+//   · L'accueil est une page du site (/m, refonte v2) ; « Moi » s'ouvre
+//     depuis la carte en tête de « Plus » (message open-me).
 //   · Connexion NATIVE : la session obtenue est confiée au site, qui la garde
 //     et la rafraîchit ; le site renvoie qui est connecté et chaque jeton.
 //   · Scanner natif : ouvert par l'onglet central ou par un écran du site.
@@ -23,7 +23,6 @@ import { HQWebView } from '../HQWebView';
 import { LockScreen, canLock } from '../LockScreen';
 import { OfflineScreen } from '../OfflineScreen';
 import { LoginScreen } from '../LoginScreen';
-import { HomeScreen } from '../HomeScreen';
 import { TabBar } from '../TabBar';
 import { useBadges } from '../badges';
 import { RELOCK_AFTER_MS } from '../config';
@@ -48,7 +47,7 @@ function isDark(color: string): boolean {
 }
 
 export default function Main() {
-  const { user, setUser, route, setRoute, web, setScan, nativeTab, setNativeTab } = useHQ();
+  const { user, setUser, route, setRoute, web, setScan } = useHQ();
   const [background, setBackground] = useState('#FFFFFF');
   const [offline, setOffline] = useState(false);
   const [lockEnabled, setLockEnabled] = useState<boolean | null>(null);
@@ -113,7 +112,6 @@ export default function Main() {
   }), [offline, web]);
 
   const tabs = useMemo(() => (user ? tabsFor(user.role) : []), [user]);
-  const hasHome = tabs.some((t) => t.native === 'home');
   // Le lieu de réception du téléphone (dit par le site) : la pastille « Paquets » ne compte qu'au bureau.
   const [receptionLocation, setReceptionLocation] = useState<ReceptionLocation>(null);
   const badges = useBadges(user?.role ?? null, route, receptionLocation);
@@ -136,6 +134,9 @@ export default function Main() {
         return;
       case 'scan-close':
         setScan(null);
+        return;
+      case 'open-me':
+        router.push('/me');
         return;
       case 'auth': {
         hideSplash();
@@ -160,18 +161,14 @@ export default function Main() {
     }
   }, [hideSplash, setRoute, setScan, setUser]);
 
-  // Nouvelle personne connectée : son espace, et l'accueil natif si son rôle en a un.
+  // Nouvelle personne connectée : son espace.
   useEffect(() => {
     const id = user?.id ?? null;
     if (id === prevUserId.current) return;
     prevUserId.current = id;
-    if (!user) {
-      setNativeTab(null);
-      return;
-    }
-    setNativeTab(tabsFor(user.role).some((t) => t.native === 'home') ? 'home' : null);
+    if (!user) return;
     if (!route || LOGIN_PATHS.some((p) => route.startsWith(p))) web.current?.navigate(staffHome(user.role));
-  }, [user, route, setNativeTab, web]);
+  }, [user, route, web]);
 
   // Connexion native réussie : la session est confiée au site, qui confirme par « auth ».
   const onSession = useCallback((session: Session) => {
@@ -188,9 +185,8 @@ export default function Main() {
   }, [web]);
 
   const open = useCallback((path: string) => {
-    setNativeTab(null);
     web.current?.navigate(path);
-  }, [setNativeTab, web]);
+  }, [web]);
 
   // Notifications : ce téléphone est enregistré pour la personne connectée…
   const pushFor = useRef<string | null>(null);
@@ -226,30 +222,22 @@ export default function Main() {
   }, [user, route, linkTick, open]);
 
   const onTab = useCallback((t: Tab) => {
-    if (t.native === 'home') setNativeTab('home');
-    else if (t.native === 'scan') {
+    if (t.native === 'scan') {
       setScan({ from: 'tab' });
       router.push('/scanner');
-    } else if (t.native === 'me') router.push('/me');
-    else if (t.path) open(t.path);
-  }, [open, setNativeTab, setScan]);
+    } else if (t.path) open(t.path);
+  }, [open, setScan]);
 
-  const activeKey = nativeTab === 'home' ? 'home' : tabForPath(tabs, route)?.key ?? null;
-  const onBackAtRoot = useCallback(() => {
-    if (hasHome && nativeTab !== 'home') {
-      setNativeTab('home');
-      return true;
-    }
-    return false;
-  }, [hasHome, nativeTab, setNativeTab]);
+  const activeKey = tabForPath(tabs, route)?.key ?? null;
+  const onBackAtRoot = useCallback(() => false, []);
 
   const showLogin = user === null;
   const dark = isDark(background);
 
   return (
     <View style={styles.root}>
-      <StatusBar style={showLogin || locked || covered ? 'light' : nativeTab === 'home' ? 'dark' : dark ? 'light' : 'dark'} />
-      <SafeAreaView style={[styles.root, { backgroundColor: nativeTab === 'home' ? C.canvas : background }]} edges={['top', 'left', 'right']}>
+      <StatusBar style={showLogin || locked || covered ? 'light' : dark ? 'light' : 'dark'} />
+      <SafeAreaView style={[styles.root, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
         <View style={styles.root}>
           <HQWebView
             ref={web}
@@ -258,11 +246,6 @@ export default function Main() {
             onSiteMessage={onSiteMessage}
             onBackAtRoot={onBackAtRoot}
           />
-          {user && nativeTab === 'home' && (
-            <View style={StyleSheet.absoluteFill}>
-              <HomeScreen user={user} onOpen={open} />
-            </View>
-          )}
         </View>
       </SafeAreaView>
       {user && tabs.length > 0 && <TabBar tabs={tabs} activeKey={activeKey} onPress={onTab} badges={badges} />}

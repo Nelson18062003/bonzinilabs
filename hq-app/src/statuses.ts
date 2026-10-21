@@ -11,7 +11,7 @@ export const CASH_PENDING = ['cash_pending', 'cash_scanned'];
 /** Les onglets qui portent une pastille, par rôle (clés de tabs.ts). */
 export const BADGE_TABS = {
   admin: ['ops'],
-  receptionist: ['pending', 'packages'],
+  receptionist: ['today', 'packages'],
   warehouse_agent: ['checkin', 'handover'],
   cash_agent: ['payments'],
 } as const;

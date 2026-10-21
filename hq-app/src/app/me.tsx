@@ -19,7 +19,7 @@ import { PushPrefs } from '../PushPrefs';
 import { C } from '../theme';
 
 export default function Me() {
-  const { user, web, setNativeTab } = useHQ();
+  const { user, web } = useHQ();
   const [lockOn, setLockOn] = useState(true);
   const [lockPossible, setLockPossible] = useState(false);
   const [push, setPush] = useState<PushState | null>(pushState());
@@ -40,7 +40,6 @@ export default function Me() {
   const isAdminSpace = staffHome(user.role) === '/m';
 
   const openSite = (path: string) => {
-    setNativeTab(null);
     web.current?.navigate(path);
     router.back();
   };

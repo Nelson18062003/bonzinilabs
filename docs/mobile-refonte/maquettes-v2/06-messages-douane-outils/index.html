@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../kit2.css">
+<style>
+@font-face { font-family: "Noto Sans SC"; font-weight: 400; src: url(../noto-sans-sc-chinese-simplified-400-normal.woff2) format("woff2") }
+@font-face { font-family: "Noto Sans SC"; font-weight: 700; src: url(../noto-sans-sc-chinese-simplified-700-normal.woff2) format("woff2") }
+/* Lot 06 — mêmes jetons que kit2.css (blanc, filet #D9D9D9, rayon 8, un seul noir, couleur = statut) */
+.chips.tight { gap: 6px }
+.chips.tight .chip { padding: 0 10px }
+.cnt { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--ink); color: #F5F5F5; font: 700 14px "DM Sans"; margin-top: 6px }
+.rt { font: 500 14px "DM Sans"; color: var(--muted) }
+.row.unread .rs { color: var(--strong); font-weight: 600 }
+.r3 { margin-top: 6px }
+.r3 .tag { margin-top: 0 }
+.chev { flex: none }
+/* en-tête de conversation */
+.cnav { height: 64px; display: flex; align-items: center; gap: 10px; padding: 0 16px 0 10px; border-bottom: 1px solid var(--line) }
+.cnav .av { width: 40px; height: 40px; font-size: 15px }
+.cnav .who2 { flex: 1; min-width: 0 }
+.cnav .who2 b { display: block; font: 600 17px "DM Sans" }
+.cnav .who2 span { font: 400 14px "DM Sans"; color: var(--muted) }
+.cnav .mav { width: 40px; height: 40px; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); flex: none }
+.cnav .mav img { width: 100%; height: 100% }
+/* fil de messages */
+.thread { padding: 10px 14px 0; display: flex; flex-direction: column; gap: 8px }
+.dayc { align-self: center; font: 600 14px "DM Sans"; color: var(--muted); background: var(--soft); border-radius: 8px; padding: 6px 10px; margin: 4px 0 }
+.bub { max-width: 80%; padding: 10px 12px 8px; border-radius: 12px; font: 400 16px/1.35 "DM Sans" }
+.bub .tm { display: block; text-align: right; font: 500 14px "DM Sans"; margin-top: 4px }
+.in { align-self: flex-start; background: var(--soft); color: var(--strong); border-bottom-left-radius: 4px }
+.in .tm { color: var(--muted) }
+.out { align-self: flex-end; background: var(--ink); color: #F5F5F5; border-bottom-right-radius: 4px }
+.out .tm { color: #CFCFCF }
+.imgb { padding: 6px; width: 232px }
+.rcpt { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 12px 12px 10px }
+.rcpt img { height: 26px; display: block }
+.rcpt .ok { font: 600 15px "DM Sans"; color: #02542D; margin-top: 10px }
+.rcpt .amt2 { font: 700 26px "DM Sans"; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums }
+.rcpt .ln { display: flex; justify-content: space-between; font: 400 14px "DM Sans"; color: var(--muted); margin-top: 6px }
+.rcpt .ln b { font-weight: 600; color: var(--body) }
+/* champ de saisie */
+.composer { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 10px 12px 36px; border-top: 1px solid var(--line); background: #fff }
+.rb { width: 44px; height: 44px; border-radius: 22px; background: var(--soft); display: grid; place-items: center; flex: none }
+.rb.ink { background: var(--ink) }
+.infield { flex: 1; height: 44px; border: 1px solid var(--field); border-radius: 22px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; font: 400 17px "DM Sans"; color: var(--faint) }
+/* feuilles */
+.srow { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.srow:last-child { border-bottom: 0 }
+.srow .rb { width: 44px; height: 44px }
+.srow .rm .rn { font-size: 17px }
+.sval { font: 500 16px "DM Sans"; color: var(--muted); flex: none }
+.warn { display: flex; gap: 10px; align-items: center; margin-top: 14px; padding: 12px 14px; border-radius: 8px; background: #FDD3D0; color: #900B09; font: 600 16px "DM Sans" }
+/* douane */
+.pic { width: 44px; height: 44px; border-radius: 22px; background: var(--soft); display: grid; place-items: center; flex: none }
+.pic svg { width: 28px; height: 28px }
+.photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 16px 20px 0 }
+.ph { height: 108px; border-radius: 8px; background: var(--soft); display: grid; place-items: center; position: relative; overflow: hidden }
+.ph svg { width: 70px; height: 70px }
+.ph .more { position: absolute; right: 6px; bottom: 6px; background: var(--ink); color: #F5F5F5; font: 600 14px "DM Sans"; padding: 3px 7px; border-radius: 6px }
+.lab2 { background: #fff; border: 1px solid #BDBDBD; border-radius: 4px; padding: 6px 8px; font: 700 14px/1.25 "DM Sans"; color: var(--body); text-align: center; transform: rotate(-4deg) }
+.ptitle { padding: 16px 20px 0 }
+.ptitle b { font: 600 20px/1.25 "DM Sans"; display: block }
+.ptitle span { font: 400 15px "DM Sans"; color: var(--muted); display: block; margin-top: 4px }
+.code { padding: 14px 16px; border-bottom: 1px solid var(--line) }
+.code .l { font: 500 15px "DM Sans"; color: var(--muted) }
+.code .c { font: 700 34px/1.1 "DM Sans"; letter-spacing: -.01em; margin-top: 4px; font-variant-numeric: tabular-nums }
+.code .d { font: 400 15px "DM Sans"; color: var(--body); margin-top: 4px }
+.seg3 { grid-template-columns: repeat(3, 1fr) }
+.seg3 span { border-left: 1px solid var(--line) }
+.seg3 span:first-child { border-left: 0 }
+.tfield { margin: 0 20px; height: 52px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; padding: 0 14px; font: 400 17px "DM Sans"; color: var(--faint) }
+.prod { display: flex; align-items: center; gap: 12px; margin: 14px 20px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px }
+.prod b { font: 600 17px "DM Sans"; display: block }
+.prod span { font: 400 15px "DM Sans"; color: var(--muted) }
+.prod .chg { font: 600 15px "DM Sans"; color: var(--strong); text-decoration: underline; text-underline-offset: 3px; flex: none }
+.amt.tight { padding-top: 22px }
+.amt.tight .big { font-size: 52px }
+.amt.tight .cur { margin-top: 14px }
+.amt.tight .conv { margin-top: 12px }
+.keys.tk { bottom: 100px; row-gap: 0 }
+.keys.tk div { height: 54px }
+.kv.tot { font: 600 17px "DM Sans"; color: var(--strong) }
+.kv.tot b { font: 700 18px "DM Sans" }
+/* Mola */
+.mrow { display: flex; gap: 8px; align-items: flex-end; align-self: flex-start; max-width: 92% }
+.mrow .mi { width: 32px; height: 32px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); flex: none }
+.mrow .mi img { width: 100%; height: 100% }
+.mrow .bub { max-width: none }
+.acard { border: 1px solid var(--line); border-radius: 8px; margin-top: 8px; background: #fff }
+.acard .ah { padding: 14px 16px 12px; border-bottom: 1px solid var(--line) }
+.acard .ah .k { font: 600 14px "DM Sans"; color: var(--muted); text-transform: uppercase; letter-spacing: .05em }
+.acard .ah b { display: block; font: 700 20px/1.25 "DM Sans"; margin-top: 4px }
+.acard .kv { padding: 12px 16px }
+.acard .btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; padding: 12px 16px 14px }
+.acard .btn { height: 48px; font-size: 17px }
+/* justificatifs */
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; padding: 16px 20px 0 }
+.thumb { height: 136px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 9px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; background: #fff }
+.thumb .tl { height: 18px; display: flex; align-items: center }
+.thumb .tl img { height: 18px; max-width: 80px; object-fit: contain }
+.thumb .bar { height: 5px; border-radius: 3px; background: #E6E6E6 }
+.thumb .ta { font: 700 15px "DM Sans"; margin-top: auto; font-variant-numeric: tabular-nums; letter-spacing: -.01em }
+.gcap { margin-top: 6px }
+.gcap b { display: block; font: 600 15px "DM Sans"; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.gcap span { font: 400 14px "DM Sans"; color: var(--muted) }
+/* coordonnées */
+.blogo { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--line); background: #fff; display: grid; place-items: center; overflow: hidden; flex: none }
+.blogo img { width: 100%; height: 100%; object-fit: contain; padding: 6px }
+.cpy { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--line); display: grid; place-items: center; flex: none }
+.rib { font-variant-numeric: tabular-nums; letter-spacing: -.01em }
+/* réglages */
+.langs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 20px }
+.lg { border: 1px solid var(--line); border-radius: 8px; height: 92px; display: grid; justify-items: center; align-content: center; gap: 6px; font: 600 16px "DM Sans" }
+.lg.on { border: 2px solid var(--ink) }
+.lg .g { font: 700 24px "DM Sans" }
+.zh { font-family: "Noto Sans SC", "DM Sans", sans-serif }
+.plain .row { padding: 16px 0 }
+/* cash */
+.chk { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); font: 500 16px "DM Sans"; color: var(--strong) }
+.chk:last-child { border-bottom: 0 }
+.cb { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); display: grid; place-items: center; flex: none }
+.sig { margin: 0 20px; height: 128px; border: 1px solid var(--field); border-radius: 8px; position: relative }
+.sig .ln2 { position: absolute; left: 16px; right: 16px; bottom: 30px; border-top: 1px dashed var(--field) }
+.sig .er { position: absolute; right: 12px; top: 10px; font: 600 15px "DM Sans"; text-decoration: underline; text-underline-offset: 3px }
+.sig .nm { position: absolute; left: 16px; bottom: 8px; font: 400 14px "DM Sans"; color: var(--muted) }
+.fiche.tight { padding-top: 16px }
+.fiche.tight .big { margin-top: 0 }
+.tag .ic2 { vertical-align: -3px; margin-right: 4px }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit2.js"></script>
+<script>
+const M = '../mola-mascot.png';
+const J = {
+  quick: (c = '#1E1E1E') => `<svg width="22" height="22" viewBox="0 0 24 24"><path d="M13.5 3 5 13.5h6.2L10.5 21 19 10.5h-6.2z" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  send: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 19V5.5M6 11l6-6 6 6" fill="none" stroke="#F5F5F5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  sendOff: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 19V5.5M6 11l6-6 6 6" fill="none" stroke="#757575" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  plus: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#1E1E1E" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  cam: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="#5A5A5A" stroke-width="2"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="#5A5A5A" stroke-width="2"/></svg>',
+  chev: '<svg class="chev" width="20" height="20" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="#757575" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  card: '<svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="#1E1E1E" stroke-width="2"/><circle cx="9" cy="11" r="2.2" fill="none" stroke="#1E1E1E" stroke-width="2"/><path d="M5.8 16c.6-1.5 1.8-2.2 3.2-2.2s2.6.7 3.2 2.2M14.5 10h3.5M14.5 13.5h3.5" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>',
+  assign: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6" fill="none" stroke="#1E1E1E" stroke-width="2"/><path d="M3.5 20c.8-3.6 3.3-5.5 6.5-5.5 1.3 0 2.5.3 3.5.9M17.5 14v6M14.5 17h6" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>',
+  closeC: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#1E1E1E" stroke-width="2"/><path d="m8.2 12.3 2.6 2.6 5-5.3" fill="none" stroke="#1E1E1E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  clip: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="m19 11.5-7.2 7.2a4.5 4.5 0 0 1-6.4-6.4l7.6-7.6a3 3 0 0 1 4.3 4.3l-7.4 7.4a1.5 1.5 0 0 1-2.1-2.1l6.8-6.8" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn: '<svg width="22" height="22" viewBox="0 0 24 24" style="flex:none"><path d="M12 4 21 19.5H3z" fill="none" stroke="#900B09" stroke-width="2.1" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2v.1" stroke="#900B09" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  tick: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="#F5F5F5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  tickG: '<svg class="ic2" width="16" height="16" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="#02542D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dticks: '<svg width="18" height="12" viewBox="0 0 20 12" style="vertical-align:-1px;margin-left:4px"><path d="m1 6.5 3.5 3.5L11 2.5M8 9.5l.5.5L15 2.5" fill="none" stroke="#CFCFCF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  share: '<svg width="20" height="20" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 13v6a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6" fill="none" stroke="#1E1E1E" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  copyL: '<svg width="20" height="20" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="#1E1E1E" stroke-width="2.1"/><path d="M16 5a1 1 0 0 0-1-1H6a2 2 0 0 0-2 2v9a1 1 0 0 0 1 1" fill="none" stroke="#1E1E1E" stroke-width="2.1"/></svg>',
+  filter: '<svg width="16" height="16" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="#303030" stroke-width="2.2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="#303030" stroke-width="2.2" stroke-linecap="round"/></svg>',
+};
+// dessins des produits (photos envoyées par le client)
+const P = {
+  shoe: (c = '#303030') => `<svg viewBox="0 0 48 48"><path d="M4 33.5c.6-6.6 2-12.6 4.2-17l8.3 4.2c2.6 2 5.6 3.3 9.5 4.3l11.5 3c4 1.1 6.5 3 6.5 5.5v4H4z" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/><path d="M4 33.5h40M16.5 21.5l3-3.4M20.8 23.6l3-3.4M25 25l2.6-3.2" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  sole: (c = '#303030') => `<svg viewBox="0 0 48 48"><path d="M18 5c6 0 10 5 10 12 0 5-2 7-2 11s3 6 3 10c0 3.5-2.6 5.5-6 5.5s-6.5-2.3-7-7c-.6-5 .3-8-.6-12.5C14.4 18 12 15 12.5 11 13 7.5 15 5 18 5z" fill="none" stroke="${c}" stroke-width="2.2"/><path d="M15 12h10M14.5 17h11M16 23h9M18 33h8M18.5 38h7" stroke="${c}" stroke-width="2" stroke-linecap="round"/></svg>`,
+  wax: (c = '#303030') => `<svg viewBox="0 0 48 48"><path d="M8 14h32v7H8zM8 21h32v7H8zM8 28h32v7H8z" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 17.5c2-2 4 2 6 0s4 2 6 0 4 2 6 0 4 2 6 0M12 31.5c2-2 4 2 6 0s4 2 6 0 4 2 6 0 4 2 6 0" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  chair: (c = '#303030') => `<svg viewBox="0 0 48 48"><path d="M14 6h20v19H14zM10 25h28v5H10zM13 30v13M35 30v13" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  phone: (c = '#303030') => `<svg viewBox="0 0 48 48"><rect x="13" y="5" width="22" height="38" rx="4" fill="none" stroke="${c}" stroke-width="2.2"/><circle cx="19" cy="11" r="2.4" fill="none" stroke="${c}" stroke-width="2"/></svg>`,
+};
+const pic = (k) => `<div class="pic">${P[k]()}</div>`;
+const nav = (t, right = I.dots) => `<div class="nav">${I.back}<div class="t">${t}</div>${right}</div>`;
+const sheetEnd = '</div></div><div class="home-ind" style="z-index:9"></div>';
+
+const convNav = `<div class="cnav">${I.back}<div class="av">FN</div><div class="who2"><b>Fatou Ndiaye</b><span>BZ-4821 · à Nelson</span></div>${I.dots}</div>`;
+const convThread = `<div class="thread">
+    <div class="dayc">Aujourd'hui</div>
+    <div class="bub in">J'ai déposé 500&nbsp;000 ce matin par Orange Money<span class="tm">09:12</span></div>
+    <div class="bub in imgb"><div class="rcpt"><img src="../orange-money.png"><div class="ok">Paiement réussi</div><div class="amt2">500 000 FCFA</div><div class="ln">Vers<b>Bonzini Labs</b></div><div class="ln">Réf.<b>PP2610.0912.A88</b></div></div><span class="tm" style="padding:0 4px 2px">09:13</span></div>
+    <div class="bub out">Merci Fatou, je vérifie et je crédite votre compte.<span class="tm">09:20${J.dticks}</span></div>
+    <div class="bub in">Le paiement à Hengtai peut partir aujourd'hui ?<span class="tm">09:24</span></div>
+  </div>`;
+const composer = `<div class="composer"><div class="rb">${J.quick()}</div><div class="infield">Message${J.cam}</div><div class="rb ink">${J.send}</div></div>`;
+
+// 1 · Messages clients
+add('Messages clients', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Messages clients</div><div class="icbtn">${I.dots}</div></div>
+  <div class="chips tight"><span class="chip on">Ouvertes</span><span class="chip">À moi 3</span><span class="chip">À prendre 2</span><span class="chip">Fermées</span></div>
+  <div class="list" style="margin-top:6px">
+    <div class="row unread"><div class="av">FN</div><div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">Le paiement à Hengtai peut partir…</div><div class="r3"><span class="tag t-neu">Nelson</span></div></div><div class="ra"><span class="rt">09:24</span><br><span class="cnt">2</span></div></div>
+    <div class="row unread"><div class="av">IT</div><div class="rm"><div class="rn">Ibrahim Touré</div><div class="rs">Photo</div><div class="r3"><span class="tag t-todo">À prendre</span></div></div><div class="ra"><span class="rt">08:51</span><br><span class="cnt">1</span></div></div>
+    <div class="row unread"><div class="av">AD</div><div class="rm"><div class="rn">Aïcha Diallo</div><div class="rs">Mon colis est arrivé à Douala ?</div><div class="r3"><span class="tag t-todo">À prendre</span></div></div><div class="ra"><span class="rt">08:30</span><br><span class="cnt">3</span></div></div>
+    <div class="row"><div class="av">SN</div><div class="rm"><div class="rn">Samuel Nkoulou</div><div class="rs">Vous : C'est noté, merci.</div><div class="r3"><span class="tag t-neu">Christelle</span></div></div><div class="ra"><span class="rt">Hier</span></div></div>
+    <div class="row"><div class="av">RT</div><div class="rm"><div class="rn">Rosine Tchoua</div><div class="rs">Vous : Le taux du jour est ¥ 10 838</div><div class="r3"><span class="tag t-neu">Nelson</span></div></div><div class="ra"><span class="rt">Hier</span></div></div>
+  </div>
+</div>${tabs('more', 'admin', { ops: 5, more: 6 })}<div class="home-ind"></div>`);
+
+// 2 · Conversation
+add('Conversation', `${sbar()}<div class="body">
+  ${convNav}
+  ${convThread}
+  ${composer}
+</div><div class="home-ind"></div>`);
+
+// 3 · Réponses types (feuille)
+add('Réponses types', `${sbar()}<div class="body">
+  ${convNav}${convThread}${composer}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Réponses types</h3>
+    <div style="margin-top:8px">
+      <div class="srow"><div class="rm"><div class="rn">Dépôt reçu</div><div class="rs">Bonjour Fatou, votre dépôt est bien reçu…</div></div></div>
+      <div class="srow"><div class="rm"><div class="rn">Dépôt crédité</div><div class="rs">Fatou, votre compte est crédité de…</div></div></div>
+      <div class="srow"><div class="rm"><div class="rn">Paiement envoyé</div><div class="rs">Votre fournisseur a reçu ¥… Preuve jointe.</div></div></div>
+      <div class="srow"><div class="rm"><div class="rn">Taux du jour</div><div class="rs">1 000 000 XAF = ¥ 10 838 aujourd'hui.</div></div></div>
+      <div class="srow"><div class="rm"><div class="rn">Info fournisseur</div><div class="rs">Envoyez-nous le QR Alipay ou WeChat de…</div></div></div>
+    </div>
+    <div class="btn soft" style="margin-top:14px">Gérer les réponses</div>
+  ${sheetEnd}`);
+
+// 4 · Conversation · menu …
+add('Conversation · menu …', `${sbar()}<div class="body">
+  ${convNav}${convThread}${composer}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Fatou Ndiaye</h3><p>BZ-4821 · ouverte depuis 09:12</p>
+    <div style="margin-top:10px">
+      <div class="srow"><div class="rb">${J.card}</div><div class="rm"><div class="rn">Fiche client</div></div>${J.chev}</div>
+      <div class="srow"><div class="rb">${J.assign}</div><div class="rm"><div class="rn">Assigner</div></div><span class="sval">Nelson</span>${J.chev}</div>
+      <div class="srow"><div class="rb">${J.clip}</div><div class="rm"><div class="rn">Envoyer un fichier</div></div>${J.chev}</div>
+      <div class="srow"><div class="rb">${J.closeC}</div><div class="rm"><div class="rn">Clore la conversation</div></div>${J.chev}</div>
+    </div>
+  ${sheetEnd}`);
+
+// 5 · Clore (confirmation)
+add('Clore · confirmation', `${sbar()}<div class="body">
+  ${convNav}${convThread}${composer}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Clore la conversation ?</h3><p>Elle se rouvre si Fatou écrit.</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Client<b>Fatou Ndiaye</b></div>
+      <div class="kv">Assignée à<b>Nelson</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Clore</div>
+    <div class="btn soft" style="margin-top:10px">Garder ouverte</div>
+  ${sheetEnd}`);
+
+// 6 · Douane · À signer
+add('Douane · À signer', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Bonjour Maître Eyenga</div></div>
+  <div class="hero"><div class="lab">À signer</div><div class="num">4 <small>classements</small></div><div class="sub"><span><b>2</b> déclarations à relire</span></div></div>
+  <div class="acts">
+    <div class="act"><div class="r ink">${I.sign.replace('viewBox', 'style="color:#F5F5F5" viewBox')}</div>Signer</div>
+    <div class="act"><div class="r">${'<svg viewBox="0 0 24 24"><path d="M6 3.5h8.5L19 8v12.5H6z M14 3.5V8h5M9 12.5h7M9 16.5h5" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>'}</div>DAU</div>
+    <div class="act"><div class="r">${'<svg viewBox="0 0 24 24"><path d="M12 4a6 6 0 0 0-6 6v4.5L4.5 17h15L18 14.5V10a6 6 0 0 0-6-6zM10 20h4" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>'}</div>Veille</div>
+    <div class="act"><div class="r">${'<svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.3" fill="none" stroke="#1E1E1E" stroke-width="2"/><circle cx="18" cy="6" r="2.3" fill="none" stroke="#1E1E1E" stroke-width="2"/><path d="M8.3 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.7" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>'}</div>Routes</div>
+  </div>
+  <div class="h2"><b>Classements</b><a>Signés</a></div>
+  <div class="list">
+    <div class="row">${pic('shoe')}<div class="rm"><div class="rn">Chaussures de sport</div><div class="rs">Aïcha Diallo · 6404.11</div></div><div class="ra"><span class="rt">2 h</span><br><span class="tag t-todo">À vous</span></div></div>
+    <div class="row">${pic('wax')}<div class="rm"><div class="rn">Tissu wax 100 % coton</div><div class="rs">Rosine Tchoua · 5208.52</div></div><div class="ra"><span class="rt">5 h</span><br><span class="tag t-todo">À prendre</span></div></div>
+    <div class="row">${pic('chair')}<div class="rm"><div class="rn">Chaises de salon</div><div class="rs">Samuel Nkoulou · 9401.61</div></div><div class="ra"><span class="rt">1 j</span><br><span class="tag t-todo">À prendre</span></div></div>
+  </div>
+</div>${tabs('sign', 'customs', { sign: 4 })}<div class="home-ind"></div>`);
+
+// 7 · Revue d'un classement
+const reviewBody = `${nav('Classement')}
+  <div class="photos">
+    <div class="ph">${P.shoe()}</div>
+    <div class="ph">${P.sole()}</div>
+    <div class="ph"><div class="lab2" style="margin-bottom:22px">TEXTILE<br>RUBBER</div><span class="more">+2</span></div>
+  </div>
+  <div class="ptitle"><b>Chaussures de sport homme</b><span>Aïcha Diallo · BZ-5107 · il y a 2 h</span></div>
+  <div class="box" style="margin-top:14px">
+    <div class="code"><div class="l">Code proposé</div><div class="c">6404.11.00</div><div class="d">Chaussures de sport, dessus textile</div></div>
+    <div class="kv">Droit · TVA<b>30 % · 19,25 %</b></div>
+  </div>
+  <div class="seg seg3" style="margin-top:16px"><span class="on">Valider</span><span>Changer</span><span>Demander</span></div>
+  <div class="tfield" style="margin-top:12px">Observation (facultatif)</div>`;
+add('Revue d\'un classement', `${sbar()}<div class="body">
+  ${reviewBody}
+  <div class="dock"><div class="btn">Signer le classement</div></div>
+</div><div class="home-ind"></div>`);
+
+// 8 · Signer (confirmation)
+add('Signer · confirmation', `${sbar()}<div class="body">
+  ${reviewBody}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Signer 6404.11.00 ?</h3><p>Chaussures de sport · Aïcha Diallo</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Décision<b>Code validé</b></div>
+      <div class="kv">Code final<b>6404.11.00</b></div>
+      <div class="kv">Client prévenu<b>Oui</b></div>
+    </div>
+    <div class="warn">${J.warn}Engage votre agrément CAD</div>
+    <div class="btn" style="margin-top:16px">Signer</div>
+  ${sheetEnd}`);
+
+// 9 · Signé
+add('Signé', `${sbar()}<div class="body">
+  <div style="padding-top:150px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Signé</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">6404.11.00 · Chaussures de sport</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:4px">Aïcha est prévenue.</div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn">Suivant · Tissu wax</div><div class="btn soft" style="margin-top:10px">Retour à la file</div></div>
+</div><div class="home-ind"></div>`);
+
+// 10 · Simulateur · montant
+add('Simulateur · le montant', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Simulateur</div><div class="icbtn">${I.dots}</div></div>
+  <div class="prod">${pic('shoe')}<div style="flex:1;min-width:0"><b>Chaussures de sport</b><span>6404.11.00 · Mer · CAF</span></div><span class="chg">Changer</span></div>
+  <div class="amt tight">
+    <div class="big">¥ 48 000</div>
+    <div><span class="cur"><span class="on">¥ RMB</span><span>USD</span><span>XAF</span></span></div>
+    <div class="conv">= 4 428 861 XAF</div>
+  </div>
+  <div class="keys tk">${['1','2','3','4','5','6','7','8','9',',','0',''].map((k) => `<div>${k || I.del}</div>`).join('')}</div>
+  <div class="dock" style="padding-bottom:16px;border:0"><div class="btn">Calculer</div></div>
+</div>${tabs('calc', 'customs', { sign: 4 })}<div class="home-ind"></div>`);
+
+// 11 · Simulateur · résultat
+add('Simulateur · le résultat', `${sbar()}<div class="body">
+  ${nav('Résultat')}
+  <div class="fiche">${pic('shoe').replace('class="pic"', 'class="pic" style="width:56px;height:56px;border-radius:28px;margin:0 auto"')}<div class="big" style="font-size:44px">2 829 702</div><div class="sub">XAF à payer à la douane</div></div>
+  <div class="box">
+    <div class="kv">Valeur CAF<b>5 100 861</b></div>
+    <div class="kv">Droit de douane 30 %<b>1 530 258</b></div>
+    <div class="kv">TVA 19,25 %<b>1 276 490</b></div>
+    <div class="kv">Redevance 0,45 %<b>22 954</b></div>
+  </div>
+  <div class="list" style="margin-top:6px">
+    <div class="row"><div class="rm"><div class="rn">1 avis sur ce code</div><div class="rs">Contrôle renforcé · Douala</div></div><span class="tag t-todo" style="margin:0">À lire</span>${J.chev}</div>
+  </div>
+  <div class="dock"><div class="btn">Partager</div><div class="btn soft" style="margin-top:10px">Comparer avec un autre code</div></div>
+</div><div class="home-ind"></div>`);
+
+// 12 · Mola
+add('Mola', `${sbar()}<div class="body">
+  <div class="cnav">${I.back}<div class="mav"><img src="${M}"></div><div class="who2"><b>Mola</b><span>Directeur des opérations</span></div>${I.dots}</div>
+  <div class="thread" style="padding-top:14px">
+    <div class="bub out">Fatou Ndiaye a déposé 500&nbsp;000 par Orange Money, crédite-la<span class="tm">09:31</span></div>
+    <div class="mrow"><div class="mi"><img src="${M}"></div><div class="bub in">J'ai trouvé son dépôt <span style="white-space:nowrap">BZ-DP-2610-0388</span>, avec le reçu Orange Money. Je prépare le crédit.</div></div>
+    <div class="acard" style="margin-left:40px">
+      <div class="ah"><div class="k">À confirmer</div><b>Créditer 500 000 XAF à Fatou Ndiaye</b></div>
+      <div class="kv">Solde avant<b>1 213 450 XAF</b></div>
+      <div class="kv">Solde après<b>1 713 450 XAF</b></div>
+      <div class="kv">Dépôt<b>BZ-DP-2610-0388</b></div>
+      <div class="btns"><div class="btn soft">Annuler</div><div class="btn">Confirmer</div></div>
+    </div>
+  </div>
+  <div class="composer"><div class="rb">${J.plus}</div><div class="infield">Écrire à Mola</div><div class="rb">${J.sendOff}</div></div>
+</div><div class="home-ind"></div>`);
+
+// 13 · Journal
+add('Journal', `${sbar()}<div class="body">
+  ${nav('Journal')}
+  <div class="chips tight"><span class="chip on">Tous</span><span class="chip">Dépôts</span><span class="chip">Paiements</span><span class="chip">Clients</span></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    <div class="row"><div class="av">NE</div><div class="rm"><div class="rn">Dépôt validé</div><div class="rs">Nelson · Fatou Ndiaye</div></div><span class="rt">10:42</span>${J.chev}</div>
+    <div class="row"><div class="av">CH</div><div class="rm"><div class="rn">Paiement payé</div><div class="rs">Christelle · BZ-PY-2610-0416</div></div><span class="rt">10:31</span>${J.chev}</div>
+    <div class="row"><div class="av">NE</div><div class="rm"><div class="rn">Taux modifié</div><div class="rs">Nelson · 1 M XAF = ¥ 10 838</div></div><span class="rt">08:05</span>${J.chev}</div>
+  </div>
+  <div class="day">Hier</div>
+  <div class="list">
+    <div class="row"><div class="av">BR</div><div class="rm"><div class="rn">Client modifié</div><div class="rs">Brice · Samuel Nkoulou</div></div><span class="rt">17:20</span>${J.chev}</div>
+    <div class="row"><div class="av">CH</div><div class="rm"><div class="rn">Paiement refusé</div><div class="rs">Christelle · BZ-PY-2610-0398</div></div><span class="rt">15:02</span>${J.chev}</div>
+    <div class="row"><div class="av">NE</div><div class="rm"><div class="rn">Découvert autorisé</div><div class="rs">Nelson · Ibrahim Touré · 2 M</div></div><span class="rt">11:47</span>${J.chev}</div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 14 · Justificatifs
+const th = (logo, amt, name, sub) => `<div><div class="thumb"><div class="tl">${logo}</div><div class="bar" style="width:80%"></div><div class="bar" style="width:60%"></div><div class="bar" style="width:70%"></div><div class="bar" style="width:45%"></div><div class="bar" style="width:75%"></div><div class="ta">${amt}</div></div><div class="gcap"><b>${name}</b><span>${sub}</span></div></div>`;
+const L = {
+  om: '<img src="../orange-money.png">',
+  mtn: '<span style="background:#FFCB05;font:800 14px \'DM Sans\';padding:1px 6px;border-radius:4px">MTN</span>',
+  wave: '<img src="../wave.png" style="border-radius:9px">',
+  eco: '<img src="../ecobank.png">',
+  uba: '<img src="../uba.png">',
+  afr: '<img src="../afriland.png">',
+};
+add('Justificatifs', `${sbar()}<div class="body">
+  ${nav('Justificatifs')}
+  <div class="seg"><span class="on">Dépôts</span><span>Paiements</span></div>
+  <div class="grid3">
+    ${th(L.om, '500 000', 'Fatou N.', "Aujourd'hui")}
+    ${th(L.mtn, '320 000', 'Aïcha D.', "Aujourd'hui")}
+    ${th(L.eco, '6 400 000', 'Samuel N.', "Aujourd'hui")}
+    ${th(L.wave, '150 000', 'Rosine T.', 'Hier')}
+    ${th(L.om, '850 000', 'Ibrahim T.', 'Hier')}
+    ${th(L.uba, '2 000 000', 'Jean-Paul M.', 'Hier')}
+    ${th(L.afr, '1 250 000', 'Aminatou B.', '19 oct.')}
+    ${th(L.mtn, '75 000', 'Fatou N.', '19 oct.')}
+    ${th(L.om, '400 000', 'Aïcha D.', '18 oct.')}
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 15 · Coordonnées de paiement
+const bank = (img, name, rib, style = '') => `<div class="row"><div class="blogo" style="${style}"><img src="../${img}"></div><div class="rm"><div class="rn">${name}</div><div class="rs rib">${rib}</div></div><div class="cpy">${J.copyL}</div></div>`;
+add('Coordonnées de paiement', `${sbar()}<div class="body">
+  ${nav('Coordonnées de paiement')}
+  <div class="seg"><span class="on">Banques</span><span>Mobile Money</span></div>
+  <div class="box" style="margin-top:14px"><div class="kv">Titulaire<b>NORTON GAUSS BONZINI SARL</b></div></div>
+  <div class="list" style="margin-top:4px">
+    ${bank('ecobank.png', 'Ecobank', '10029 26001 00012345678 41')}
+    ${bank('afriland.png', 'Afriland First Bank', '10005 00001 01234567801 32')}
+    ${bank('uba.png', 'UBA Cameroun', '10033 05201 01001234567 86')}
+    ${bank('cca.png', 'CCA Bank', '10039 10010 12345678901 05', 'background:#6B2A8C;border-color:#6B2A8C')}
+  </div>
+  <div class="dock"><div class="btn">Partager en PDF</div><div class="btn soft" style="margin-top:10px">Partager en image</div></div>
+</div><div class="home-ind"></div>`);
+
+// 16 · Réglages
+add('Réglages', `${sbar()}<div class="body">
+  ${nav('Réglages', '')}
+  <div class="lbl">Langue</div>
+  <div class="langs">
+    <div class="lg on"><span class="g">FR</span>Français</div>
+    <div class="lg"><span class="g">EN</span>English</div>
+    <div class="lg zh"><span class="g zh">中</span>中文</div>
+  </div>
+  <div class="lbl">Thème</div>
+  <div class="seg seg3" style="margin-top:0"><span class="on">Clair</span><span>Sombre</span><span>Auto</span></div>
+  <div class="lbl">Compte</div>
+  <div class="list plain">
+    <div class="row"><div class="rm"><div class="rn">Mon mot de passe</div></div>${J.chev}</div>
+  </div>
+  <div class="lbl">Entreprise</div>
+  <div class="list plain">
+    <div class="row"><div class="rm"><div class="rn">Adresses en Chine</div></div>${J.chev}</div>
+    <div class="row"><div class="rm"><div class="rn">Tarifs cargo</div></div>${J.chev}</div>
+    <div class="row"><div class="rm"><div class="rn">Version</div></div><span class="sval">3.2.0 (418)</span></div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 17 · Agent cash · À remettre
+add('Cash · À remettre', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Bonjour Liang</div></div>
+  <div class="hero"><div class="lab">À remettre aujourd'hui</div><div class="num">¥ 41 360</div><div class="sub"><span><b>3</b> paiements</span><span><b>2</b> remis</span></div></div>
+  <div class="seg" style="margin-top:18px"><span class="on">À remettre</span><span>Remis</span></div>
+  <div class="list" style="margin-top:6px">
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Chen Xiaoli</div><div class="rs">Client Ibrahim Touré</div></div><div class="ra"><b>¥ 23 060</b><span class="tag t-neu">QR lu</span></div></div>
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Wang Lei</div><div class="rs">Client Jean-Paul Mbarga</div></div><div class="ra"><b>¥ 12 500</b><span class="tag t-todo">À remettre</span></div></div>
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Aminatou Bello</div><div class="rs">Retrait par la cliente</div></div><div class="ra"><b>¥ 5 800</b><span class="tag t-todo">À remettre</span></div></div>
+  </div>
+</div>${tabs('ops', 'cash', { ops: 3 })}<div class="home-ind"></div>`);
+
+// 18 · Agent cash · confirmer la remise
+add('Cash · confirmer la remise', `${sbar()}<div class="body">
+  ${nav('Remise cash', '')}
+  <div class="fiche tight"><div class="big">¥ 23 060</div><span class="tag t-ok">${J.tickG}QR vérifié</span></div>
+  <div class="box" style="margin-top:16px">
+    <div class="kv">Nom déclaré<b>Chen Xiaoli</b></div>
+    <div class="kv">Client<b>Ibrahim Touré</b></div>
+    <div class="kv">Référence<b>BZ-PY-2610-0409</b></div>
+  </div>
+  <div class="box" style="margin-top:12px">
+    <div class="chk"><span class="cb">${J.tick}</span>Pièce d'identité vérifiée</div>
+    <div class="chk"><span class="cb">${J.tick}</span>Espèces remises en main propre</div>
+  </div>
+  <div class="lbl" style="padding-top:16px">Signature</div>
+  <div class="sig"><svg width="250" height="80" viewBox="0 0 250 80" style="position:absolute;left:30px;top:14px"><path d="M8 58c10-22 18-40 26-40 9 0-6 38 4 38 8 0 12-26 22-26 7 0 2 20 10 20s10-14 18-14c6 0 4 10 10 10 9 0 16-22 28-22 8 0-4 26 6 26 12 0 22-16 36-16 10 0 16 6 30 4" fill="none" stroke="#1E1E1E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="ln2"></div><span class="er">Effacer</span><span class="nm">Chen Xiaoli</span></div>
+  <div class="dock"><div class="btn">Confirmer la remise</div></div>
+</div><div class="home-ind"></div>`);
+
+render();
+</script></body></html>

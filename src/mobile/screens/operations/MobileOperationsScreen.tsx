@@ -11,7 +11,7 @@
  * deux onglets, /m/ops ouvre sur Dépôts.
  */
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowDownToLine, ArrowUpFromLine, FileDown, Layers, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
@@ -22,11 +22,6 @@ import { MobilePaymentsScreen } from '@/mobile/screens/payments/MobilePaymentsSc
 import { BottomSheet, Holder, IconButton, ListRow, Segmented } from '@/mobile/designKit';
 
 export type OpsTab = 'deposits' | 'payments';
-
-/** L'ancien Accueil : il redirige vers Opérations. */
-export function MobileHome() {
-  return <Navigate to="/m/ops" replace />;
-}
 
 export function MobileOperationsScreen({ tab = 'deposits' }: { tab?: OpsTab }) {
   const navigate = useNavigate();

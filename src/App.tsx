@@ -65,7 +65,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
 const AdminAuthCallback = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.AdminAuthCallback })));
-const MobileHome = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileHome })));
+const MobileHome = lazy(() => import("./mobile/screens/home/MobileHomeV2").then(m => ({ default: m.MobileHomeV2 })));
 const MobileOperationsScreen = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileOperationsScreen })));
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
@@ -218,6 +218,10 @@ const CommercialProspects = lazy(() => import("./components/sales/CommercialPros
 const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
 const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
 const CommercialLogin = lazy(() => import("./components/sales/CommercialLogin").then(m => ({ default: m.CommercialLogin })));
+const ReceptionMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.ReceptionMore })));
+const WarehouseMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.WarehouseMore })));
+const AgentCashMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.AgentCashMore })));
+const CommercialMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.CommercialMore })));
 const CommercialPassword = lazy(() => import("./components/sales/CommercialPassword").then(m => ({ default: m.CommercialPassword })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
@@ -437,6 +441,7 @@ const App = () => (
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
                 <Route path="/a" element={<AgentCashRouteWrapper><AgentCashPayments /></AgentCashRouteWrapper>} />
+                <Route path="/a/plus" element={<AgentCashRouteWrapper><AgentCashMore /></AgentCashRouteWrapper>} />
                 <Route path="/a/scan" element={<AgentCashRouteWrapper><AgentCashScanner /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
@@ -456,6 +461,7 @@ const App = () => (
                 <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper><ReceptionDone /></ReceptionRouteWrapper>} />
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
+                <Route path="/r/plus" element={<ReceptionRouteWrapper><ReceptionMore /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper><ReceptionClientCard /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets" element={<ReceptionRouteWrapper><ReceptionPackages /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets/emballer" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackTodo /></ReceptionRouteWrapper>} />
@@ -468,6 +474,7 @@ const App = () => (
                 <Route path="/w/arrivees/:kind/:id/colis/:parcelId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinParcel /></WarehouseRouteWrapper>} />
                 <Route path="/w/arrivees/:kind/:id/bilan" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinDone /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise" element={<WarehouseRouteWrapper><WarehousePickup /></WarehouseRouteWrapper>} />
+                <Route path="/w/plus" element={<WarehouseRouteWrapper><WarehouseMore /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/liste" element={<WarehouseRouteWrapper><WarehouseWaiting /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePickupClient /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code/encaisser" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePay /></WarehouseRouteWrapper>} />
@@ -481,6 +488,7 @@ const App = () => (
                 <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
+                <Route path="/v/plus" element={<CommercialRouteWrapper><CommercialMore /></CommercialRouteWrapper>} />
                 <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false} bare><CommercialPassword /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}

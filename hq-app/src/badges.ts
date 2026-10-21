@@ -2,7 +2,7 @@
 // Les pastilles des onglets natifs : ce qui attend la personne, par rôle.
 // Mêmes sources que les barres du site :
 //   · admin    → « Opérations » : lib/actionable.ts (dépôts + paiements à traiter)
-//   · réception → « En attente » : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
+//   · réception → « Aujourd'hui » (les dépôts en attente) : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
 //     seulement (le lieu de ce téléphone, dit par le site) — comme ReceptionTabBar : à l'entrepôt, l'onglet
 //     n'a rien à faire, la pastille ne doit rien annoncer
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)
@@ -49,7 +49,7 @@ export async function fetchBadges(role: StaffRole, location: ReceptionLocation =
   switch (role) {
     case 'receptionist': {
       const [day, packages] = await Promise.all([rpc('reception_my_day'), location === 'office' ? packableCount() : 0]);
-      return { pending: Number(day?.pending ?? 0), packages };
+      return { today: Number(day?.pending ?? 0), packages };
     }
     case 'warehouse_agent': {
       const day = await rpc('warehouse_day');

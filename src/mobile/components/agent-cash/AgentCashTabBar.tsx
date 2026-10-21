@@ -1,5 +1,5 @@
 import { LiquidTabBar } from '@/components/navigation/LiquidTabBar';
-import { Banknote, ScanLine } from 'lucide-react';
+import { Banknote, MoreHorizontal, ScanLine } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TabItem } from '@/components/navigation/types';
 
@@ -9,6 +9,7 @@ export function AgentCashTabBar({ className }: { className?: string }) {
   const items: TabItem[] = [
     { to: '/a', icon: Banknote, label: t('tab_payments'), end: true },
     { to: '/a/scan', icon: ScanLine, label: t('scanner') },
+    { to: '/a/plus', icon: MoreHorizontal, label: 'Plus' },
   ];
 
   return <LiquidTabBar items={items} className={className} />;
