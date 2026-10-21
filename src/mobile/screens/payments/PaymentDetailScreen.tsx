@@ -636,7 +636,7 @@ export function PaymentDetailScreen() {
                 const x = Number(v) || 0;
                 if (x > 0 && frate > 0) setFixRmb(String(rmbForXaf(x, frate)));
               }}
-              className={cn('min-w-0 flex-1 bg-transparent text-[20px] font-semibold tabular-nums outline-none', TEXT.strong)}
+              className={cn('min-w-0 flex-1 bg-transparent !text-[20px] font-semibold tabular-nums outline-none', TEXT.strong)}
             />
             <span className={cn('text-[15px] font-semibold', TEXT.muted)}>XAF</span>
           </label>
@@ -647,7 +647,7 @@ export function PaymentDetailScreen() {
               aria-label="Reçu (¥)"
               value={fixRmb}
               onChange={(e) => setFixRmb(e.target.value.replace(/[^0-9.,]/g, ''))}
-              className={cn('min-w-0 flex-1 bg-transparent text-[20px] font-semibold tabular-nums outline-none', TEXT.strong)}
+              className={cn('min-w-0 flex-1 bg-transparent !text-[20px] font-semibold tabular-nums outline-none', TEXT.strong)}
             />
           </label>
         </div>
@@ -663,7 +663,7 @@ export function PaymentDetailScreen() {
               const r = Number(v) || 0;
               if (r > 0 && fx > 0) setFixRmb(String(rmbForXaf(fx, r)));
             }}
-            className={cn('min-w-0 flex-1 bg-transparent text-[17px] font-semibold tabular-nums outline-none', TEXT.strong)}
+            className={cn('min-w-0 flex-1 bg-transparent !text-[17px] font-semibold tabular-nums outline-none', TEXT.strong)}
           />
           {frate === rateInt && <span className={cn('shrink-0 text-[15px] font-semibold', TEXT.muted)}>actuel</span>}
         </label>

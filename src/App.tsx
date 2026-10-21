@@ -73,10 +73,10 @@ const DesktopAnalyticsDashboard = lazy(() => import("./desktop/screens/analytics
 const DesktopDepositsScreen = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopDepositsScreen })));
 const DesktopNewDeposit = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopNewDeposit })));
 const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.DepositDetailScreen })));
-const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileNewDepositV2 })));
+const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.NewDepositScreen })));
 const DesktopPaymentsScreen = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopPaymentsScreen })));
 const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.PaymentDetailScreen })));
-const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
+const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.NewPaymentScreen })));
 const DesktopNewPayment = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopNewPayment })));
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
 const BulkPaymentCreate = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentCreate })));

@@ -5,3 +5,4 @@ export { MobileBeneficiaryEdit } from './MobileBeneficiaryEdit';
 export { BulkPaymentCreate } from './BulkPaymentCreate';
 export { BulkPaymentDetail } from './BulkPaymentDetail';
 export { PaymentDetailScreen } from './PaymentDetailScreen';
+export { NewPaymentScreen } from './NewPaymentScreen';

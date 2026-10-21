@@ -38,6 +38,19 @@ export function useOpsPaymentCounts(enabled = true) {
   });
 }
 
+/** Les soldes de tous les clients, une lecture (repris de l'assistant de paiement v1). */
+export function useWalletsMap() {
+  return useQuery({
+    queryKey: ['all-wallets-for-new-payment'],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf, overdraft_limit_xaf');
+      if (error) throw error;
+      return new Map((data ?? []).map((w) => [w.user_id, { balance: Number(w.balance_xaf) || 0, overdraft: Number(w.overdraft_limit_xaf) || 0 }]));
+    },
+  });
+}
+
 export interface BatchProgress { total: number; paid: number; closed: number; nextId: string | null; nextRmb: number | null }
 
 /** L'avancement de chaque lot : lignes, payées, et la prochaine à payer. */

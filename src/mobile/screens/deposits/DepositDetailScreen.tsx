@@ -347,7 +347,7 @@ export function DepositDetailScreen() {
                 value={confirmed ? n0(Number(confirmed)) : ''}
                 onChange={(e) => setConfirmed(e.target.value.replace(/[^0-9]/g, ''))}
                 onBlur={() => setEditAmount(false)}
-                className={cn('h-14 min-w-0 flex-1 bg-transparent text-[26px] font-bold tabular-nums outline-none', TEXT.strong)}
+                className={cn('h-14 min-w-0 flex-1 bg-transparent !text-[26px] font-bold tabular-nums outline-none', TEXT.strong)}
               />
               <span className={cn('text-[18px] font-semibold', TEXT.muted)}>XAF</span>
             </div>
