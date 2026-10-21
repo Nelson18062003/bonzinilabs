@@ -230,6 +230,8 @@ function respond(url) {
   // Module Taux : les écritures répondent « succès » (écran de succès, feuilles qui se ferment).
   if (url.includes('/rpc/create_daily_rates')) return { success: true, rate_id: 'r-new' };
   if (url.includes('/rpc/update_daily_rate') || url.includes('/rpc/delete_daily_rate') || url.includes('/rpc/update_rate_adjustment') || url.includes('/rpc/mark_suggestion_applied')) return { success: true };
+  // Analyses (écran Équipe) : le journal des actions de l'équipe.
+  if (url.includes('/admin_audit_logs')) return auditLogs;
   return [];
 }
 
@@ -255,3 +257,16 @@ export function headCount(url) {
   }
   return 0;
 }
+
+// Analyses mobile (écran Équipe) — actions de l'équipe sur 30 jours, inventées.
+const auditLogs = (() => {
+  const team = [['a1', 46, 58, 2], ['a2', 61, 34, 1], ['a3', 30, 21, 0], ['a4', 0, 28, 0], ['a5', 9, 0, 1]];
+  const out = [];
+  let k = 0;
+  for (const [id, dep, pay, rej] of team) {
+    for (let i = 0; i < dep; i++) out.push({ admin_user_id: id, action_type: 'validate_deposit', created_at: ago((k++ * 7.3) % 700) });
+    for (let i = 0; i < pay; i++) out.push({ admin_user_id: id, action_type: 'process_payment', created_at: ago((k++ * 5.1) % 700) });
+    for (let i = 0; i < rej; i++) out.push({ admin_user_id: id, action_type: 'reject_deposit', created_at: ago((k++ * 3.7) % 700) });
+  }
+  return out;
+})();
