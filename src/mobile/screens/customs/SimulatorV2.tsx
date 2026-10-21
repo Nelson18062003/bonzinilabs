@@ -312,7 +312,7 @@ function ResultStep({
         <div className="flex justify-center"><IconCircle icon={Package} size="lg" /></div>
         <div className={cn('mt-4 text-center text-[52px] font-bold leading-none tracking-[-0.03em] tabular-nums', TEXT.strong)}>{nb(sim.dau.total)}</div>
         <p className={cn('mt-2 text-center text-[17px]', TEXT.muted)}>XAF à payer à la douane</p>
-        <p className={cn('mt-1 text-center text-[16px] tabular-nums', TEXT.muted)}>{formatHs(line.code)} · {lineTitle(nom, line, 'fr')}</p>
+        <p className={cn('mt-1 line-clamp-2 text-center text-[16px] tabular-nums', TEXT.muted)}>{formatHs(line.code)} · {lineTitle(nom, line, 'fr')}</p>
         <KVBox rows={rows} className="mt-6" />
 
         {hits.length > 0 && (
