@@ -79,8 +79,12 @@ const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(
 const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.NewPaymentScreen })));
 const DesktopNewPayment = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopNewPayment })));
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
+const EditSupplierScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.EditSupplierScreen })));
 const BulkPaymentCreate = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentCreate })));
 const BulkPaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentDetail })));
+const BatchListScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchListScreen })));
+const BatchDetailScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchDetailScreen })));
+const BatchCreateScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchCreateScreen })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
 // Sur desktop, la création s'ouvre PAR-DESSUS la liste (la liste reste
@@ -340,10 +344,11 @@ const App = () => (
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobileOperationsScreen tab="payments" /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewPayment />}><MobileNewPayment /></AdminRouteWrapper>} />
-                <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BulkPaymentCreate /></AdminRouteWrapper>} />
-                <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BulkPaymentDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batches" element={<AdminRouteWrapper showTabBar={false}><BatchListScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BatchCreateScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BatchDetailScreen /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
-                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper desktop={<MobileBeneficiaryEdit desktop />}><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileBeneficiaryEdit desktop />}><EditSupplierScreen /></AdminRouteWrapper>} />
                 <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
