@@ -315,8 +315,69 @@ const chatStats = (days) => ({
   response_buckets: { under_1min: 120, one_to_five: 260, five_to_fifteen: 140, over_fifteen: 64 },
 });
 
+const cCard = (c) => ({ user_id: c.user_id, first_name: c.first_name, last_name: c.last_name, company_name: null, customer_code: outilsClients.find((x) => x.user_id === c.user_id)?.customer_code ?? null });
+const cAicha = cCard(clients[3]);
+const cRosine = { user_id: 'u8', first_name: 'Rosine', last_name: 'Tchoua', company_name: null, customer_code: 'BZ-2604' };
+const cSamuel = { user_id: 'u9', first_name: 'Samuel', last_name: 'Nkoulou', company_name: null, customer_code: 'BZ-3318' };
+const customsQueue = {
+  success: true, is_broker: true,
+  classifications: [
+    { id: 'cl1', ref: 'CL-0412', product_name: 'Chaussures de sport', proposed_code: '640411', status: 'in_review', submitted_at: ago(2), claimed_by: 'screenshot-admin', mine: true, client: cAicha },
+    { id: 'cl2', ref: 'CL-0415', product_name: 'Tissu wax 100 % coton', proposed_code: '520852', status: 'submitted', submitted_at: ago(5), claimed_by: null, mine: false, client: cRosine },
+    { id: 'cl3', ref: 'CL-0418', product_name: 'Chaises de salon', proposed_code: '940161', status: 'submitted', submitted_at: ago(26), claimed_by: null, mine: false, client: cSamuel },
+  ],
+  audits: [
+    { id: 'au1', ref: 'AU-0087', dau_number: '118452', overpaid_xaf: 1284000, claim_deadline: null, status: 'in_review', submitted_at: ago(9), claimed_by: 'screenshot-admin', mine: true, client: cSamuel },
+    { id: 'au2', ref: 'AU-0091', dau_number: '119007', overpaid_xaf: 420000, claim_deadline: null, status: 'submitted', submitted_at: ago(30), claimed_by: null, mine: false, client: cCard(clients[2]) },
+  ],
+  recent: [
+    { kind: 'classification', id: 'cl0', ref: 'CL-0398', label: 'Panneaux solaires', status: 'approved', final_code: '854143', amount_xaf: null, reviewed_at: ago(30) },
+    { kind: 'audit', id: 'au0', ref: 'AU-0080', label: 'DAU 117320', status: 'approved', final_code: null, amount_xaf: 650000, reviewed_at: ago(50) },
+  ],
+};
+const customsClassification = {
+  id: 'cl1', ref: 'CL-0412', client_user_id: 'u4', product_name: 'Chaussures de sport homme', description: null,
+  facts: {}, photo_paths: ['u4/cl1/1.jpg', 'u4/cl1/2.jpg', 'u4/cl1/3.jpg', 'u4/cl1/4.jpg', 'u4/cl1/5.jpg'], candidates: [],
+  proposed_code: '640411', status: 'in_review', submitted_at: ago(2), final_code: null, broker_note: null, claimed_by: 'screenshot-admin',
+  reviewed_by: null, reviewed_at: null, broker_company: null, broker_license_no: null, created_at: ago(3), updated_at: ago(2), client: cAicha,
+  messages: [
+    { id: 'cm1', author: 'client', body: 'Baskets homme, dessus en textile, semelle caoutchouc.', payload: null, created_at: ago(3) },
+    { id: 'cm2', author: 'assistant', body: 'Le dessus en textile et la semelle en caoutchouc mènent à la position 6404.', created_at: ago(2.9), payload: { type: 'proposal', candidates: [
+      { code: '640411', title: 'Chaussures de sport, dessus textile', heading: 'Chaussures à dessus en matières textiles', rate_min: 30, rate_max: 30, confidence: 0.86, reasoning: 'Dessus textile, semelle caoutchouc, usage sportif.', rules: ['RGI 1', 'RGI 6'] },
+      { code: '640419', title: 'Autres chaussures, dessus textile', heading: 'Chaussures à dessus en matières textiles', rate_min: 30, rate_max: 30, confidence: 0.32, reasoning: 'Si l’usage sportif n’est pas établi.', rules: ['RGI 1'] },
+    ], missing_facts: ['usage sportif'] } },
+  ],
+};
+const customsAudit = {
+  id: 'au1', ref: 'AU-0087', client_user_id: 'u9', dau_number: '118452', customs_office: 'Douala Port', registered_on: '2026-10-04', paid_on: '2026-10-06',
+  file_paths: ['u9/au1/dau-118452.pdf', 'u9/au1/facture.pdf', 'u9/au1/bl.pdf'], status: 'in_review', extraction: null, findings: [], total_paid_xaf: 9850000,
+  overpaid_xaf: 1284000, recoverable_xaf: null, claim_deadline: null, ai_model: null, error: null, submitted_at: ago(9), broker_note: null,
+  claimed_by: 'screenshot-admin', reviewed_by: null, reviewed_at: null, broker_company: null, broker_license_no: null, created_at: ago(30), updated_at: ago(9), client: cSamuel,
+};
+const iso = (days) => new Date(now - days * 86400_000).toISOString().slice(0, 10);
+const notice = (o) => ({ advice: null, status: 'in_force', ends_on: null, delay_days: null, hs_specs: [], places: [], source_label: null, source_url: null, confidence: 'marche', published: true, published_at: ago(48), created_at: ago(48), updated_at: ago(48), ...o });
+const customsNotices = [
+  notice({ id: 'nt1', slug: 'port-douala-sature', kind: 'disruption', title: 'Port de Douala saturé', summary: 'Attente au mouillage de 3 à 5 jours, quais pleins.', severity: 'high', starts_on: iso(7), delay_days: 4, places: ['CMDLA'], source_label: 'PAD', advice: 'Prévoir la franchise' }),
+  notice({ id: 'nt2', slug: 'greve-corridor-tchad', kind: 'disruption', title: 'Grève Douala – N’Djamena', summary: 'Camionneurs en grève sur le corridor.', severity: 'medium', starts_on: iso(3), delay_days: 2, places: ['CM-TD'] }),
+  notice({ id: 'nt3', slug: 'escale-lome', kind: 'disruption', title: 'Escale de Lomé allongée', summary: 'Les services passant par Lomé ajoutent un jour.', severity: 'low', starts_on: iso(2), delay_days: 1, places: ['TGLFW'], published: false, published_at: null }),
+  notice({ id: 'nt4', slug: 'tec-2026-textiles', kind: 'regulation', title: 'TEC 2026 : textiles à 30 %', summary: 'Le droit sur les tissus de coton passe à 30 %.', severity: 'medium', starts_on: iso(20), hs_specs: ['5208', '6404'], confidence: 'officiel', source_label: 'Loi de finances 2026' }),
+  notice({ id: 'nt5', slug: 'controle-chaussures', kind: 'regulation', title: 'Contrôle renforcé · chaussures', summary: 'Contrôle physique systématique à Douala pour le chapitre 64.', severity: 'medium', starts_on: iso(10), hs_specs: ['64'], places: ['CMDLA'], source_label: 'DGD' }),
+  notice({ id: 'nt6', slug: 'greve-dockers-ancienne', kind: 'disruption', title: 'Grève des dockers', summary: 'Terminée.', severity: 'medium', starts_on: iso(60), ends_on: iso(55), delay_days: 3, places: ['CMDLA'] }),
+];
+const observedTransit = { window_months: 18, min_count: 3, lanes: [
+  { mode: 'sea', lane: 'CNNSA>CMKBI', n: 23, median: 41, p25: 38, p75: 46, promised_median: 38, late_share: 0.3 },
+  { mode: 'sea', lane: 'CNNSA>CMDLA', n: 12, median: 44, p25: 40, p75: 49, promised_median: 39, late_share: 0.4 },
+  { mode: 'air', lane: 'CAN>DLA', n: 31, median: 6, p25: 5, p75: 8, promised_median: 5, late_share: 0.2 },
+] };
+
 function respondOutils(url) {
   const q = decodeURIComponent(url);
+  if (q.includes('/rpc/customs_review_queue')) return customsQueue;
+  if (q.includes('/rpc/customs_classification_get')) return { success: true, classification: customsClassification };
+  if (q.includes('/rpc/customs_audit_get')) return { success: true, audit: customsAudit };
+  if (q.includes('/rpc/logistics_observed_transit')) return observedTransit;
+  if (q.includes('/rest/v1/customs_notices')) return customsNotices;
+  if (q.includes('/storage/v1/object/sign/customs-documents')) return [...customsAudit.file_paths, 'u4/cl1/4.jpg', 'u4/cl1/5.jpg'].map((path) => ({ path, signedURL: `/object/fake/customs/${path.split('/').pop()}?sig=1`, error: null }));
   if (q.includes('/rpc/get_chat_admin_stats')) { const m = q.match(/"p_period_days":(\d+)/); return chatStats(m ? Number(m[1]) : 7); }
   if (q.includes('/rpc/search_chat_conversations')) return [{ conversation_id: 'cv1', snippet: 'Le paiement à Hengtai peut partir aujourd’hui ?' }];
   if (q.includes('/rpc/mark_conversation_read_admin') || q.includes('/rpc/claim_chat_conversation') || q.includes('/rpc/assign_chat_conversation')) return null;
