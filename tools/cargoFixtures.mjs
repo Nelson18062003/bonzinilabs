@@ -115,7 +115,7 @@ const AIRS = [
 ];
 
 // ── Entrepôt de Douala ────────────────────────────────────────────────────
-const whParcel = (p, cl, depNo, extra = {}) => ({ ...p, deposit_id: `dep-${depNo}`, deposit_no: depNo, location: 'warehouse', client: cl, container_number: 'MIEU3611115', shipment_id: '2', status: 'arrived', quote_id: `q-${depNo}`, quote_status: 'paid', quote_no: `DV-${depNo.slice(3)}`, quote_total_xaf: 148000, quote_paid_xaf: 148000, invoice_no: null, ...extra });
+const whParcel = (p, cl, depNo, extra = {}) => ({ ...p, deposit_id: `dp${depNo.slice(-3)}`, deposit_no: depNo, location: 'warehouse', client: cl, container_number: 'MIEU3611115', shipment_id: '2', status: 'arrived', quote_id: `q-${depNo}`, quote_status: 'paid', quote_no: `DV-${depNo.slice(3)}`, quote_total_xaf: 148000, quote_paid_xaf: 148000, invoice_no: null, ...extra });
 const ARRIVAL_PARCELS = (() => {
   const list = [
     whParcel(parcel('RC-000418', 1, 'Chaussures', 18.2, [60, 45, 40]), C.fatou, 'RC-000418'),
@@ -165,6 +165,9 @@ const QUOTE = {
   payments: [],
 };
 
+const IBRAHIM_READY = ARRIVAL_PARCELS.slice(5, 10).map((p, i) => ({ ...p, client: C.ibrahim, deposit_id: 'dp409', deposit_no: 'RC-000409', parcel_no: `RC-000409-0${i + 1}`, seq: i + 1, quote_id: 'q409', quote_status: 'sent', quote_no: 'DV-000409', quote_total_xaf: 86000, quote_paid_xaf: 0, checked_in_at: at(0, 9), condition: 'ok', warehouse_location: ['C1', 'C1', 'C2', 'C2', 'C2'][i] }));
+const QUOTE_IB = { ...QUOTE, id: 'q409', quote_no: 'DV-000409', deposit_id: 'dp409', deposit_no: 'RC-000409', total_xaf: 86000, amount_paid_xaf: 0, balance_xaf: 86000, client: C.ibrahim, lines: [] };
+
 const ACCOUNTS = [
   { id: 'acc1', name: 'Simon Djiani', code: 'DJIANI', contact_name: 'Simon Djiani', contact_phone: '+237 699 21 44 10', notes: null, is_active: true, client_count: 12, parcels_waiting: 46, created_at: at(-90) },
   { id: 'acc2', name: 'Gauss Import', code: 'GAUSS', contact_name: null, contact_phone: null, notes: null, is_active: true, client_count: 8, parcels_waiting: 31, created_at: at(-80) },
@@ -209,10 +212,11 @@ export function respondCargo(url, body) {
     case 'cargo_air_loadable_parcels': return ok({ parcels: [{ ...D418, parcels: D418.parcels.slice(0, 2) }, { ...D416, parcels: D416.parcels.slice(0, 2) }].flatMap((d) => d.parcels.map((p) => ({ ...p, deposit_id: d.id, deposit_no: d.deposit_no, location: 'office', client: d.client }))) });
     case 'warehouse_day': return WH_DAY;
     case 'warehouse_arrival_parcels': return ok(a.p_kind === 'air' ? { kind: 'air', id: a.p_id ?? 'a4', label: 'ET 605', sub: 'LTA 071-4479 2210', packages: AIR_PACKAGES.slice(3, 7).map((p) => ({ ...p, status: 'received', received_at: at(-1, 15) })), parcels: ARRIVAL_PARCELS.slice(0, 12).map((p) => ({ ...p, air_shipment_id: 'a4', awb_number: '071-44792210', container_number: null })) } : { kind: 'sea', id: '2', label: 'MIEU 3611115', sub: 'Groupage · Maersk', packages: [], parcels: ARRIVAL_PARCELS });
-    case 'warehouse_client_parcels': return ok({ client: C.fatou, ready: FATOU_READY, not_ready: [], quotes: [{ id: 'q418', quote_no: 'DV-000418', deposit_id: 'dp418', deposit_no: 'RC-000418', status: 'paid', total_xaf: 148000, amount_paid_xaf: 148000, balance_xaf: 0, invoice_no: null }], releases: [] });
+    case 'warehouse_client_parcels': if (a.p_code === 'BZ-2291') return ok({ client: C.ibrahim, ready: IBRAHIM_READY, not_ready: ARRIVAL_PARCELS.slice(8, 9), quotes: [{ id: 'q409', quote_no: 'DV-000409', deposit_id: 'dp409', deposit_no: 'RC-000409', status: 'sent', total_xaf: 86000, amount_paid_xaf: 0, balance_xaf: 86000, invoice_no: null }], releases: [] });
+      return ok({ client: C.fatou, ready: FATOU_READY, not_ready: [], quotes: [{ id: 'q418', quote_no: 'DV-000418', deposit_id: 'dp418', deposit_no: 'RC-000418', status: 'paid', total_xaf: 148000, amount_paid_xaf: 148000, balance_xaf: 0, invoice_no: null }], releases: [] });
     case 'warehouse_release_get': return ok({ release: RELEASE });
     case 'warehouse_find_parcel': return ok({ parcel: ARRIVAL_PARCELS[1] });
-    case 'cargo_quote_get': return ok({ quote: QUOTE });
+    case 'cargo_quote_get': return ok({ quote: a.p_deposit_id === 'dp409' ? QUOTE_IB : QUOTE });
     case 'cargo_quote_ensure': return ok({ quote: QUOTE });
     case 'cargo_pricing_get': return ok({ air_per_kg_xaf: 7500, sea_per_cbm_xaf: 165000, currency: 'XAF', updated_at: at(-30) });
     case 'cargo_account_list': return ok({ accounts: a.p_include_inactive ? [...ACCOUNTS, { ...ACCOUNTS[3], id: 'acc5', name: 'Ancien compte', code: 'OLD', is_active: false }] : ACCOUNTS });

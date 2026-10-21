@@ -180,6 +180,25 @@ export function CarrierCircle({ carrier, size = 44, className }: { carrier: stri
   }
 }
 
+/* ── useLongPress ─────────────────────────────────────────────────────────
+ * L'appui long (550 ms) d'une ligne : ouvre ses gestes rares, sans voler le
+ * toucher simple. À poser sur l'élément (`{...longPress}`). */
+export function useLongPress(onLong: () => void, ms = 550) {
+  const timer = React.useRef<number | null>(null);
+  const fired = React.useRef(false);
+  const clear = () => { if (timer.current != null) { window.clearTimeout(timer.current); timer.current = null; } };
+  return {
+    fired,
+    handlers: {
+      onPointerDown: () => { fired.current = false; clear(); timer.current = window.setTimeout(() => { fired.current = true; onLong(); }, ms); },
+      onPointerUp: clear,
+      onPointerLeave: clear,
+      onPointerCancel: clear,
+      onContextMenu: (e: React.MouseEvent) => { e.preventDefault(); },
+    },
+  };
+}
+
 /* ── TopIcon ──────────────────────────────────────────────────────────────
  * Une icône nue dans l'en-tête d'un écran (loupe, scan, « + »), au format
  * de MoreButton. */

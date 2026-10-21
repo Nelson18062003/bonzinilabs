@@ -10,8 +10,7 @@ import { getCurrentLocale } from '@/i18n';
 import { DESTINATION_THEME } from '@/lib/customerCode';
 import { ICON_PATHS } from '@/lib/shippingLabelCanvas';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Holder, ScreenError, ScreenLoader, StatusPill, type Tone } from '@/mobile/designKit';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { SURFACE, TEXT, TYPE, Holder, ScreenError, ScreenLoader, ScreenTop, StatusPill, type Tone } from '@/mobile/designKit';
 import { useParcelPhotoUrl } from '@/hooks/useReception';
 import { clientFullName, formatCbm, formatDims, formatKg, initials, isParcelIncomplete, listDate, type BroughtBy, type Deposit, type Parcel, type ParcelKind, type ReceptionLocation } from '@/lib/reception';
 
@@ -166,7 +165,7 @@ export function DepositLoadState({ title, onBack, isLoading, error, onRetry }: {
   const { t } = useTranslation('agent');
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={title} showBack onBack={onBack} />
+      <ScreenTop title={title} onBack={onBack} />
       {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} retryLabel={t('rc_retry')} description={(error as Error | null)?.message ?? t('rc_deposit_not_found')} onRetry={onRetry} />}
     </div>
   );
