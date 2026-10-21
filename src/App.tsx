@@ -100,6 +100,7 @@ const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m 
 const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
 const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesMarketScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
+const OpsProofsScreen = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.ProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
 const TeamScreen = lazy(() => import("./components/team/TeamScreen").then(m => ({ default: m.TeamScreen })));
@@ -358,7 +359,7 @@ const App = () => (
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><OpsProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 {/* Mes équipes (remplace « Administrateurs ») : les anciens liens y mènent. */}

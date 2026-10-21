@@ -10,6 +10,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { CACHE_CONFIG } from '@/lib/constants';
+import { signStored } from '@/lib/signedUrls';
 import type { Enums } from '@/integrations/supabase/types';
 
 type PayStatus = Enums<'payment_status'>;
@@ -47,6 +48,67 @@ export function useWalletsMap() {
       const { data, error } = await supabaseAdmin.from('wallets').select('user_id, balance_xaf, overdraft_limit_xaf');
       if (error) throw error;
       return new Map((data ?? []).map((w) => [w.user_id, { balance: Number(w.balance_xaf) || 0, overdraft: Number(w.overdraft_limit_xaf) || 0 }]));
+    },
+  });
+}
+
+export interface PaymentProofFeedItem {
+  id: string;
+  payment_id: string;
+  file_name: string;
+  file_type: string | null;
+  uploaded_by_type: string;
+  created_at: string;
+  signedUrl: string | null;
+  amount_rmb: number;
+  method: string;
+  clientName: string;
+}
+
+/**
+ * Justificatifs des PAIEMENTS (manquaient des deux côtés) : les 100 pièces
+ * les plus récentes, avec le paiement, le client et une URL signée — même
+ * forme que useAdminProofs pour les dépôts.
+ */
+export function usePaymentProofsFeed(enabled = true) {
+  return useQuery({
+    queryKey: ['ops-payment-proofs-feed'],
+    enabled,
+    staleTime: 50 * 60_000,
+    gcTime: 60 * 60_000,
+    queryFn: async (): Promise<PaymentProofFeedItem[]> => {
+      const { data: proofs, error } = await supabaseAdmin
+        .from('payment_proofs')
+        .select('id, payment_id, file_url, file_name, file_type, uploaded_by_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const rows = proofs ?? [];
+      const payIds = [...new Set(rows.map((p) => p.payment_id))];
+      const { data: pays } = payIds.length
+        ? await supabaseAdmin.from('payments').select('id, amount_rmb, method, user_id').in('id', payIds)
+        : { data: [] as { id: string; amount_rmb: number; method: string; user_id: string }[] };
+      const payMap = new Map((pays ?? []).map((p) => [p.id, p]));
+      const userIds = [...new Set((pays ?? []).map((p) => p.user_id))];
+      const { data: clients } = userIds.length
+        ? await supabaseAdmin.from('clients').select('user_id, first_name, last_name').in('user_id', userIds)
+        : { data: [] as { user_id: string; first_name: string | null; last_name: string | null }[] };
+      const clientMap = new Map((clients ?? []).map((c) => [c.user_id, `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim()]));
+      return Promise.all(rows.map(async (p) => {
+        const pay = payMap.get(p.payment_id);
+        return {
+          id: p.id,
+          payment_id: p.payment_id,
+          file_name: p.file_name,
+          file_type: p.file_type,
+          uploaded_by_type: p.uploaded_by_type,
+          created_at: p.created_at,
+          signedUrl: await signStored(supabaseAdmin.storage, p.file_url),
+          amount_rmb: Number(pay?.amount_rmb) || 0,
+          method: pay?.method ?? 'alipay',
+          clientName: (pay && clientMap.get(pay.user_id)) || 'Client',
+        };
+      }));
     },
   });
 }
