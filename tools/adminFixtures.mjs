@@ -227,6 +227,8 @@ function respond(url) {
     if (url.includes('order=effective_at.asc')) return [...dailyRates].reverse();
     return dailyRates;
   }
+  const tr = treasuryRespond(url);
+  if (tr !== undefined) return tr;
   return [];
 }
 
@@ -251,4 +253,31 @@ export function headCount(url) {
     return 5872;
   }
   return 0;
+}
+
+// ── Trésorerie (refonte mobile v2) ─────────────────────────────────────────
+// Les hooks de la trésorerie sont substitués par src/__screenshot__/mockTreasury.ts.
+// Restent les lectures directes de l'écran mobile : le bénéfice semaine par
+// semaine (get_treasury_dashboard, une fois par semaine) et le nom de qui a
+// annulé. Le corps d'une RPC n'arrive pas jusqu'ici : les appels d'une même
+// page reçoivent chacun leur bénéfice, dans l'ordre.
+const trWeekly = [212400, 248900, 190300, 305100, 242700, 312000, 340000, 155000];
+let trDashN = 0;
+let trDashT = 0;
+function treasuryRespond(url) {
+  if (url.includes('/rpc/get_treasury_dashboard')) {
+    const t = Date.now();
+    if (t - trDashT > 1500) trDashN = 0;
+    trDashT = t;
+    const benefit = trWeekly[trDashN++ % trWeekly.length];
+    return {
+      success: true, period: { from: ago(168), to: ago(0) }, balances: [], totals_by_currency: {},
+      purchases: { count: 2, total_xaf: 2_540_000, total_usdt: 4_000, weighted_avg_rate_xaf_per_usdt: 635 },
+      sales: { count: 1, total_usdt: 1_800, total_cny: 12_996, weighted_avg_rate_cny_per_usdt: 7.22 },
+      client_rate: { count: 9, total_xaf: 2_100_000, total_cny: 22_800, weighted_avg_rate_xaf_per_cny: 92.1 },
+      wac_usdt_current: 638.42, stock_usdt: 8_420.5, is_stock_usdt_negative: false, spread_chain_xaf: 0, spread_client_xaf: 0,
+      benefit_total_xaf: benefit, capital_immobilized_current_xaf: 11_620_000, taux_de_revient_xaf_per_cny: 88.24,
+    };
+  }
+  return undefined;
 }

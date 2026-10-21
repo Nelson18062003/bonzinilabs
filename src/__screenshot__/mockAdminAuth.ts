@@ -30,7 +30,8 @@ function mockRole(): string {
   const fromUrl = urlParam('role');
   if (fromUrl) return fromUrl;
   try {
-    return localStorage.getItem('screenshot-role') === 'cash_agent' ? 'cash_agent' : 'super_admin';
+    // Tout rôle posé par ROLE=… (treasurer, receptionist…) ; super admin par défaut.
+    return localStorage.getItem('screenshot-role') || 'super_admin';
   } catch {
     return 'super_admin';
   }
