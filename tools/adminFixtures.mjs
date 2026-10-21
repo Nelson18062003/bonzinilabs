@@ -176,6 +176,8 @@ const notifications = [
 ];
 
 function respond(url) {
+  // Module Messages · Douane · Mola · Outils (refonte v2) : voir respondOutils, en fin de fichier.
+  { const extra = respondOutils(url); if (extra !== undefined) return extra; }
   if (url.includes('/rpc/get_deposit_stats')) return stats;
   if (url.includes('/storage/v1/object/sign')) {
     // Echo the object path so the GET interception can tell QR from proof.
@@ -251,4 +253,94 @@ export function headCount(url) {
     return 5872;
   }
   return 0;
+}
+
+// ─── Module Messages clients · Douane · Mola · Outils (refonte v2) ─────────
+// Tables propres au module, et ce que les tables partagées doivent porter
+// pour lui (les clients avec leur `id` et leur code, les admins du support).
+const outilsClients = clients.map((c, i) => ({ ...c, id: `c${i + 1}`, customer_code: ['BZ-3107', 'BZ-2290', 'BZ-1874', 'BZ-5107', 'BZ-4821', 'BZ-6033', 'BZ-7712'][i] }));
+const supportAdmins = [
+  { id: 'ur1', user_id: 'screenshot-admin', first_name: 'Nelson', last_name: 'Kamdem', role: 'super_admin', is_disabled: false },
+  { id: 'ur2', user_id: 'adm-2', first_name: 'Christelle', last_name: 'Fotso', role: 'support', is_disabled: false },
+  { id: 'ur3', user_id: 'adm-3', first_name: 'Mireille', last_name: 'Ekambi', role: 'customer_success', is_disabled: false },
+];
+const minutesAgo = (m) => new Date(now - m * 60_000).toISOString();
+const today = (h, m) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
+const chatConversations = [
+  { id: 'cv1', client_id: 'c5', subject: 'Paiement Hengtai', assigned_admin_id: 'ur1', status: 'open', last_message_at: today(9, 24), last_client_message_at: today(9, 24), last_admin_message_at: today(9, 20), unread_count_client: 0, unread_count_admin: 2, created_at: today(9, 12), updated_at: today(9, 24) },
+  { id: 'cv2', client_id: 'c6', subject: null, assigned_admin_id: null, status: 'open', last_message_at: today(8, 51), last_client_message_at: today(8, 51), last_admin_message_at: null, unread_count_client: 0, unread_count_admin: 1, created_at: today(8, 51), updated_at: today(8, 51) },
+  { id: 'cv3', client_id: 'c4', subject: 'Colis Douala', assigned_admin_id: null, status: 'open', last_message_at: today(8, 30), last_client_message_at: today(8, 30), last_admin_message_at: null, unread_count_client: 0, unread_count_admin: 3, created_at: today(8, 10), updated_at: today(8, 30) },
+  { id: 'cv4', client_id: 'c3', subject: null, assigned_admin_id: 'ur2', status: 'open', last_message_at: ago(20), last_client_message_at: ago(21), last_admin_message_at: ago(20), unread_count_client: 0, unread_count_admin: 0, created_at: ago(30), updated_at: ago(20) },
+  { id: 'cv5', client_id: 'c7', subject: null, assigned_admin_id: 'ur1', status: 'open', last_message_at: ago(22), last_client_message_at: ago(23), last_admin_message_at: ago(22), unread_count_client: 0, unread_count_admin: 0, created_at: ago(26), updated_at: ago(22) },
+  { id: 'cv6', client_id: 'c1', subject: null, assigned_admin_id: 'ur2', status: 'closed', last_message_at: ago(70), last_client_message_at: ago(71), last_admin_message_at: ago(70), unread_count_client: 0, unread_count_admin: 0, created_at: ago(80), updated_at: ago(70) },
+];
+const msg = (id, conv, who, content, at, extra = {}) => ({ id, conversation_id: conv, sender_type: who, sender_id: who === 'admin' ? 'screenshot-admin' : 'client', content, media_url: null, media_type: null, media_duration_seconds: null, media_size_bytes: null, media_filename: null, media_waveform_peaks: null, reply_to_message_id: null, read_at: who === 'admin' ? at : null, created_at: at, ...extra });
+const chatMessages = [
+  msg('m1', 'cv1', 'client', "J'ai déposé 500 000 ce matin par Orange Money", today(9, 12)),
+  msg('m2', 'cv1', 'client', null, today(9, 13), { media_url: 'chat-media/cv1/recu-om.png', media_type: 'image' }),
+  msg('m3', 'cv1', 'admin', 'Merci Fatou, je vérifie et je crédite votre compte.', today(9, 20)),
+  msg('m4', 'cv1', 'client', "Le paiement à Hengtai peut partir aujourd'hui ?", today(9, 24)),
+  msg('m5', 'cv2', 'client', null, today(8, 51), { media_url: 'chat-media/cv2/photo.jpg', media_type: 'image' }),
+  msg('m6', 'cv3', 'client', 'Mon colis est arrivé à Douala ?', today(8, 30)),
+  msg('m7', 'cv4', 'admin', "C'est noté, merci.", ago(20)),
+  msg('m8', 'cv5', 'admin', 'Le taux du jour est ¥ 10 838', ago(22)),
+  msg('m9', 'cv6', 'admin', 'Votre fournisseur a reçu le paiement.', ago(70)),
+];
+const cannedResponses = [
+  { id: 'cr1', label: 'Dépôt reçu', content: 'Bonjour {{client_first_name}}, votre dépôt est bien reçu. Nous le vérifions et vous prévenons dès qu’il est crédité.', variables: [], sort_order: 1, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr2', label: 'Dépôt crédité', content: '{{client_first_name}}, votre compte est crédité de votre dépôt. Vous pouvez payer votre fournisseur.', variables: [], sort_order: 2, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr3', label: 'Paiement envoyé', content: 'Votre fournisseur a reçu ¥… Preuve jointe.', variables: [], sort_order: 3, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr4', label: 'Taux du jour', content: "1 000 000 XAF = ¥ 10 838 aujourd'hui.", variables: [], sort_order: 4, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr5', label: 'Info fournisseur', content: 'Envoyez-nous le QR Alipay ou WeChat de votre fournisseur, avec son nom.', variables: [], sort_order: 5, created_by: null, created_at: ago(400), updated_at: ago(400) },
+];
+const quickReplies = [
+  { id: 'qr1', label: 'Comment ça marche ?', content: "Pouvez-vous m'expliquer comment fonctionne le paiement de mes fournisseurs ?", sort_order: 1, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr2', label: 'Mon paiement est en retard', content: 'Mon paiement semble en retard, pouvez-vous vérifier ?', sort_order: 2, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr3', label: 'Question sur les taux', content: "J'ai une question sur les taux de change.", sort_order: 3, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr4', label: 'Autre question', content: "Bonjour, j'ai une question :", sort_order: 4, active: false, created_at: ago(400), updated_at: ago(400) },
+];
+const dayIso = (back) => { const d = new Date(now - back * 86400_000); return d.toISOString().slice(0, 10); };
+const chatStats = (days) => ({
+  period_days: days, open_conversations: 14, closed_conversations: 61, unassigned_open: 2, total_messages: 1286, client_messages: 702, admin_messages: 584,
+  avg_response_seconds_global: 372, median_response_seconds_global: 184,
+  per_admin: [
+    { admin_user_id: 'adm-3', first_name: 'Mireille', last_name: 'Ekambi', replies_count: 412, avg_response_seconds: 130 },
+    { admin_user_id: 'screenshot-admin', first_name: 'Nelson', last_name: 'Kamdem', replies_count: 108, avg_response_seconds: 420 },
+    { admin_user_id: 'adm-2', first_name: 'Christelle', last_name: 'Fotso', replies_count: 64, avg_response_seconds: 610 },
+  ],
+  daily_volume: Array.from({ length: days }, (_, i) => {
+    const k = (i * 37) % 11;
+    return { day: dayIso(days - 1 - i), client_count: 48 + k * 9, admin_count: 30 + ((k * 5) % 7) * 6 };
+  }),
+  response_buckets: { under_1min: 120, one_to_five: 260, five_to_fifteen: 140, over_fifteen: 64 },
+});
+
+function respondOutils(url) {
+  const q = decodeURIComponent(url);
+  if (q.includes('/rpc/get_chat_admin_stats')) { const m = q.match(/"p_period_days":(\d+)/); return chatStats(m ? Number(m[1]) : 7); }
+  if (q.includes('/rpc/search_chat_conversations')) return [{ conversation_id: 'cv1', snippet: 'Le paiement à Hengtai peut partir aujourd’hui ?' }];
+  if (q.includes('/rpc/mark_conversation_read_admin') || q.includes('/rpc/claim_chat_conversation') || q.includes('/rpc/assign_chat_conversation')) return null;
+  if (q.includes('/rest/v1/chat_conversations')) {
+    const m = q.match(/[?&]id=eq\.([^&]+)/);
+    if (m) return chatConversations.filter((c) => c.id === m[1]);
+    const st = q.match(/[?&]status=eq\.([a-z]+)/);
+    return st ? chatConversations.filter((c) => c.status === st[1]) : chatConversations;
+  }
+  if (q.includes('/rest/v1/chat_messages')) {
+    const one = q.match(/conversation_id=eq\.([^&]+)/);
+    if (one) return chatMessages.filter((m) => m.conversation_id === one[1]);
+    return [...chatMessages].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  if (q.includes('/rest/v1/chat_message_reactions')) return [];
+  if (q.includes('/rest/v1/chat_canned_responses')) return cannedResponses;
+  if (q.includes('/rest/v1/chat_client_quick_replies')) return quickReplies;
+  if (q.includes('/rest/v1/user_roles') && q.includes('first_name')) return supportAdmins;
+  if (q.includes('/rest/v1/clients') && /[?&]id=(eq|in)\./.test(q)) {
+    const one = q.match(/[?&]id=eq\.([^&]+)/);
+    if (one) return outilsClients.filter((c) => c.id === one[1]);
+    const many = q.match(/[?&]id=in\.\(([^)]*)\)/);
+    const ids = many ? many[1].split(',').map((x) => x.replace(/"/g, '')) : [];
+    return outilsClients.filter((c) => ids.includes(c.id));
+  }
+  return undefined;
 }
