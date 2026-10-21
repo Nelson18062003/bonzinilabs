@@ -53,7 +53,7 @@ export function ReceptionPackTodo() {
   const toFix = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason !== 'too_heavy'), [data]);
   const alone = useMemo(() => (data?.blocked ?? []).filter((b) => b.reason === 'too_heavy'), [data]);
 
-  const head = (label: string) => <CapsLabel className="pt-5">{label}</CapsLabel>;
+  const head = (label: string) => <CapsLabel as="h2" className="pt-5">{label}</CapsLabel>;
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
       <ScreenTop

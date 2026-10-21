@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import type { AirPackage, AirPackageParcel } from '@/lib/airPackage';
 import type { Deposit, Parcel } from '@/lib/reception';
@@ -120,7 +121,10 @@ function Where() {
 }
 
 function mount(path: string) {
+  // Refonte v2 : « Mettre sur un vol » (ShipSheet) lit les expéditions avion — un client de requêtes neuf.
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
+    <QueryClientProvider client={qc}>
     <LanguageProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
@@ -130,7 +134,8 @@ function mount(path: string) {
           <Route path="*" element={<Where />} />
         </Routes>
       </MemoryRouter>
-    </LanguageProvider>,
+    </LanguageProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -150,7 +155,10 @@ describe('la liste des paquets du bureau', () => {
       pkg({ id: 'd', package_no: 'PQ-000013', status: 'sealed', air_shipment_id: 'air1', awb_number: '07112345675', flight_no: 'ET 607', gross_weight_kg: 29 }),
     ];
     mount('/r/paquets');
-    for (const title of ['En cours', 'Refusés à l\'aéroport', 'Fermés, prêts à partir', 'Affectés à une expédition']) expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
+    // Refonte v2 (04/13) : les fermés en premier ; « Tous » montre les autres, rangés.
+    expect(screen.getByText('Fermés · prêts')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tous' }));
+    for (const title of ['En cours', 'Refusés à l\'aéroport', 'Affectés à une expédition']) expect(screen.getAllByText(title).length).toBeGreaterThan(0);
     expect(screen.getByText('Motif : Batterie au lithium')).toBeInTheDocument();
     expect(screen.getByText(/LTA 071-12345675 · Vol ET 607/)).toBeInTheDocument();
     // Sur la ligne du paquet, et sur « Continuer PQ-000010 » (le paquet en cours) en tête.
@@ -191,8 +199,8 @@ describe("la fiche d'un paquet", () => {
     m.one = pkg({ parcels: [parcel({})], parcel_count: 1, net_weight_kg: 7 });
     m.add.mockResolvedValue({ already: false, parcel_no: 'RC-000124-02', weight_kg: 3.5, client, package: m.one });
     mount('/r/paquets/k1');
-    expect(screen.getByText('BZ-482913')).toBeInTheDocument();
-    expect(screen.getByText('reste 25 kg')).toBeInTheDocument();
+    expect(screen.getByText('Jean Mballa · 7 kg')).toBeInTheDocument();
+    expect(screen.getByText(/reste 25 kg/)).toBeInTheDocument();
     scan('RC-000124-02');
     expect(await screen.findByRole('status')).toHaveTextContent('RC-000124-02 ajouté (3,5 kg) · BZ-482913 · Jean Mballa');
     expect(m.add).toHaveBeenCalledWith('RC-000124-02');
@@ -211,7 +219,7 @@ describe("la fiche d'un paquet", () => {
   it('fermer exige un poids pesé de 32 kg au plus', async () => {
     m.one = pkg({ parcels: [parcel({ weight_kg: 12 })], parcel_count: 1, net_weight_kg: 12 });
     mount('/r/paquets/k1');
-    fireEvent.click(screen.getByRole('button', { name: /^Fermer le paquet$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Fermer le paquet \(pesée\)$/ }));
     const input = await screen.findByLabelText('Poids pesé (kg)');
     fireEvent.change(input, { target: { value: '33' } });
     expect(screen.getByText('Plus de 32 kg : retirez un colis')).toBeInTheDocument();
@@ -227,8 +235,10 @@ describe("la fiche d'un paquet", () => {
     m.one = pkg({ status: 'sealed', gross_weight_kg: 12.4, parcels: [parcel({})], parcel_count: 1 });
     const { unmount } = mount('/r/paquets/k1');
     expect(screen.getByRole('button', { name: /Imprimer l'étiquette/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Fermer le paquet/ })).toBeNull();
+    // Refonte v2 (10/48) : « Rouvrir » est dans « … ».
+    fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
     expect(screen.getByRole('button', { name: /Rouvrir/ })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Fermer le paquet$/ })).toBeNull();
     expect(screen.queryByRole('textbox', { name: /Scannez/ })).toBeNull();
     unmount();
 
@@ -286,6 +296,7 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
       pkg({ id: 'b', package_no: 'PQ-000011', created_by: 'me', created_by_name: 'Kevin Nkolo' }),
     ];
     mount('/r/paquets');
+    fireEvent.click(screen.getByRole('button', { name: 'Tous' })); // refonte v2 : les paquets en cours sous « Tous »
     expect(screen.getByText('ouvert par Grace Ebogo')).toBeInTheDocument();
     expect(screen.queryByText('ouvert par Kevin Nkolo')).toBeNull();
   });
@@ -300,10 +311,10 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     mount('/r/paquets/emballer');
     // Le colis sans poids attend, avec quoi faire.
     expect(screen.getByText('pas pesé : pesez-le')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Mettre en paquet$/ })).toBeDisabled();
-    fireEvent.click(screen.getByRole('checkbox', { name: /BZ-482913/ }));
-    expect(screen.getByText('2 colis · 29 kg')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet$/ }));
+    // Refonte v2 (10/39) : rien de coché, le bouton le dit et attend ; coché, il porte le compte et les kilos.
+    expect(screen.getByRole('button', { name: /Touchez les colis/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: /Jean Mballa/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet · 2 colis · 29 kg$/ }));
 
     const sheet = screen.getAllByRole('dialog').at(-1)!;
     // PQ-000009 (reste 22 kg) est proposé : le colis de 20 kg y va, celui de 9 kg dans un nouveau paquet.
@@ -323,8 +334,8 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     m.list = [pkg({ id: 'k9', package_no: 'PQ-000009', net_weight_kg: 10, parcel_count: 1 })];
     m.pack.mockResolvedValue({ packages: [{ id: 'k10', package_no: 'PQ-000010', created: true, dropped: false, added: ['RC-000301-01', 'RC-000301-02'], refused: [], error: null }] });
     mount('/r/paquets/emballer');
-    fireEvent.click(screen.getByRole('checkbox', { name: /BZ-482913/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet$/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Jean Mballa/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Mettre en paquet · / }));
     const sheet = screen.getAllByRole('dialog').at(-1)!;
     fireEvent.click(within(sheet).getByRole('radio', { name: /Nouveau paquet/ }));
     fireEvent.click(within(sheet).getByRole('button', { name: /Mettre 2 colis en paquet/ }));
@@ -351,7 +362,7 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     m.packable = { ...packableParcels([theirs, unassigned, heavy]), truncated: false };
     mount('/r/paquets/emballer');
     expect(screen.queryByRole('button', { name: /RC-000304-01/ })).toBeNull();
-    expect(screen.getByText('reçu par Li Wei, qui peut le compléter')).toBeInTheDocument();
+    expect(screen.getByText(/reçu par Li Wei, qui peut le compléter/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Sans paquet (plus de 32 kg)' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /RC-000306-01/ })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /RC-000305-01/ }));
@@ -364,7 +375,7 @@ describe('le réceptionnaire fait ses paquets (12/10)', () => {
     m.add.mockResolvedValue({ already: false, parcel_no: 'RC-000301-02', weight_kg: 9, client, package: m.one });
     mount('/r/paquets/k1');
     // Reste 12 kg : 9 et 6 kg tiennent, 20 kg non. Le client déjà dedans passe en tête.
-    expect(screen.getByText('client déjà dans ce paquet')).toBeInTheDocument();
+    expect(screen.getByText(/client déjà dans ce paquet/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter RC-000301-01' })).toBeNull();
     expect(screen.getByText(/1 autre colis prêt ne tient plus \(reste 12 kg\)/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter RC-000301-02' }));

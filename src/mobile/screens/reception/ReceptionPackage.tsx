@@ -13,6 +13,7 @@
 // les colis avec « Retirer » ; « Fermer le paquet (pesée) » en bas ; le rare
 // (étiquette, rouvrir, supprimer, paquet suivant) dans « … ».
 // ============================================================
+import { getCurrentLocale } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
@@ -133,7 +134,7 @@ function PackageScreen({ id }: { id: string }) {
         {/* Le poids en grand : ce que pèsent les colis sur 32 kg. */}
         <div className="text-center">
           <p className={cn('text-[48px] font-bold leading-none tracking-[-0.03em] tabular-nums', TEXT.strong)}>
-            {g.net.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}<span className={cn('ml-1.5 text-[22px] font-semibold tracking-normal', TEXT.muted)}>kg</span>
+            {g.net.toLocaleString(getCurrentLocale(), { maximumFractionDigits: 1 })}<span className={cn('ml-1.5 text-[22px] font-semibold tracking-normal', TEXT.muted)}>kg</span>
           </p>
           <p className={cn('mt-2 text-[16px] tabular-nums', TEXT.muted)}>
             {ti('rc_v2_out_of', { max: formatKg(g.max) })} · {labels.parcels(pkg.parcel_count)} · {open ? tx.left(g) : st.label}
@@ -187,7 +188,7 @@ function PackageScreen({ id }: { id: string }) {
                 parcel={p}
                 title={<span className="inline-flex items-center gap-1.5 tabular-nums">{p.parcel_no === lastAdded && <Check className="h-4 w-4 shrink-0 text-[#009951]" aria-hidden="true" />}{p.parcel_no}</span>}
                 subtitle={`${client ? clientFullName(client) : t('rc_unknown_client')} · ${formatKg(p.weight_kg)}`}
-                right={open ? <RowButton link disabled={remove.isPending} onClick={() => remove.mutate(p.id)}>{t('rc_remove')}</RowButton> : <span className={cn('shrink-0 text-[17px] font-bold tabular-nums', TEXT.strong)}>{formatKg(p.weight_kg)}</span>}
+                right={open ? <RowButton link disabled={remove.isPending} onClick={() => remove.mutate(p.id)} ariaLabel={`${t('rc_remove')} ${p.parcel_no}`}>{t('rc_remove')}</RowButton> : <span className={cn('shrink-0 text-[17px] font-bold tabular-nums', TEXT.strong)}>{formatKg(p.weight_kg)}</span>}
               />
             ))}
           </div>
@@ -349,7 +350,7 @@ function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: str
               parcel={it.parcel}
               subtitle={`${it.parcel.parcel_no} · ${formatKg(it.parcel.weight_kg)}`}
               title={it.parcel.description || labels.kind(it.parcel.kind as ParcelKind)}
-              right={<RowButton disabled={pending !== null} onClick={() => void onAdd(it)}>{pending === it.parcel.id ? '…' : t('rc_pk_ready_add')}</RowButton>}
+              right={<RowButton disabled={pending !== null} onClick={() => void onAdd(it)} ariaLabel={`${t('rc_pk_ready_add')} ${it.parcel.parcel_no}`}>{pending === it.parcel.id ? '…' : t('rc_pk_ready_add')}</RowButton>}
             />
           ))}
         </div>

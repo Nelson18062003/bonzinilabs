@@ -12,6 +12,7 @@
 // L'app BONZINI HQ ouvre /r/paquets?code=PQ-… après un scan natif : on
 // retrouve le paquet et on va droit à sa fiche.
 // ============================================================
+import { getCurrentLocale } from '@/i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Package, Plus, ScanLine, Tag as TagIcon } from 'lucide-react';
@@ -20,13 +21,13 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { packageKg, packageQueue, parsePackageCode, waitingCount, weightGauge, type AirPackage, type PackageQueue } from '@/lib/airPackage';
+import { packageKg, packageQueue, parsePackageCode, sumParcelKg, waitingCount, weightGauge, type AirPackage, type PackageQueue } from '@/lib/airPackage';
 import { useAirPackages, useCreateAirPackage, useFindAirPackage, usePackableParcels } from '@/hooks/useAirPackages';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
-import { BigButton, DayLabel, EmptyLine, FOCUS_RING, IconCircle, ItemList, ItemRow, RoundButton, ScreenLoader, SectionHead, SURFACE, TabTop, TEXT, TONE_PILL, TYPE } from '@/mobile/designKit';
+import { BigButton, DayLabel, EmptyLine, FOCUS_RING, IconCircle, ItemList, ItemRow, RoundButton, ScreenLoader, SectionHead, SURFACE, TabTop, TEXT, TONE_PILL, TONE_TEXT, TYPE } from '@/mobile/designKit';
 import { InkProgress } from '@/mobile/components/cargo/v2';
 import { ShipSheet } from '@/mobile/components/cargo/ShipSheet';
-import { usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
+import { useOpenedBy, usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
 import { useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
 
@@ -35,6 +36,35 @@ const PARCEL_LABEL = /RC[^0-9]{0,3}\d{6}/i;
 
 type GroupKey = Exclude<PackageQueue, 'gone'>;
 const GROUPS: GroupKey[] = ['open', 'refused', 'ready', 'assigned'];
+
+/**
+ * Une ligne de paquet : son poids, ses colis, ses clients ; et ce qu'il faut
+ * en savoir — ce qui reste (en cours), qui l'a ouvert (un collègue), le
+ * motif d'un refus, l'expédition qui l'emporte.
+ */
+function PackageLine({ pkg: p, onClick }: { pkg: AirPackage; onClick: () => void }) {
+  const { t } = useTranslation('agent');
+  const tx = usePackageText();
+  const openedBy = useOpenedBy(p);
+  const st = tx.status(p.status);
+  const extra = p.status === 'refused' && p.refusal_reason ? t('rc_pk_refusal', { reason: p.refusal_reason }) : tx.expedition(p);
+  return (
+    <ItemRow
+      leading={<IconCircle icon={p.status === 'open' ? Package : TagIcon} />}
+      title={p.package_no}
+      subtitle={(
+        <>
+          {formatKg(packageKg(p))} · {t('rc_n_parcels', { count: p.parcel_count })} · {tx.clients(p.client_count)}
+          {p.status === 'open' && <> · <span>{tx.left(weightGauge(p))}</span></>}
+          {openedBy && <span className="block truncate">{openedBy}</span>}
+          {extra && <span className="block truncate">{extra}</span>}
+        </>
+      )}
+      tag={{ tone: st.tone === 'info' ? 'neutral' : st.tone, label: st.label }}
+      onClick={onClick}
+    />
+  );
+}
 
 export function ReceptionPackages() {
   const navigate = useNavigate();
@@ -114,21 +144,10 @@ export function ReceptionPackages() {
   };
 
   const ready = groups.find((g) => g.key === 'ready')?.items ?? [];
-  const others = groups.filter((g) => g.key !== 'ready' && g.key !== 'open');
+  // « Tous » : les autres paquets du bureau — en cours (les miens et ceux des collègues), refusés, affectés.
+  const others = groups.filter((g) => g.key !== 'ready');
   const g = current ? weightGauge(current) : null;
-  const row = (p: AirPackage) => {
-    const st = tx.status(p.status);
-    return (
-      <ItemRow
-        key={p.id}
-        leading={<IconCircle icon={p.status === 'open' ? Package : TagIcon} />}
-        title={p.package_no}
-        subtitle={`${formatKg(packageKg(p))} · ${ti('rc_n_parcels', { count: p.parcel_count })} · ${tx.clients(p.client_count)}`}
-        tag={{ tone: st.tone === 'info' ? 'neutral' : st.tone, label: st.label }}
-        onClick={() => navigate(`/r/paquets/${p.id}`)}
-      />
-    );
-  };
+  const row = (p: AirPackage) => <PackageLine key={p.id} pkg={p} onClick={() => navigate(`/r/paquets/${p.id}`)} />;
 
   return (
     <div className={cn('min-h-[100dvh] pb-6', SURFACE.canvas)}>
@@ -148,10 +167,10 @@ export function ReceptionPackages() {
           {/* Le carton en cours : ce qu'il pèse sur ses 32 kg. Un toucher, et on le remplit. */}
           {current && g && (
             <div className="px-5 pt-3.5">
-              <button type="button" onClick={() => navigate(`/r/paquets/${current.id}`)} className={cn('block w-full rounded-lg border border-[#D9D9D9] px-[18px] pb-4 pt-[18px] text-left active:bg-[#F5F5F5] dark:border-[#444444] dark:active:bg-[#383838]', FOCUS_RING)}>
+              <button type="button" onClick={() => navigate(`/r/paquets/${current.id}`)} aria-label={g.tone === 'full' ? ti('rc_pk_continue_no', { no: current.package_no }) : ti('rc_pk_continue', { no: current.package_no, left: formatKg(g.left) })} className={cn('block w-full rounded-lg border border-[#D9D9D9] px-[18px] pb-4 pt-[18px] text-left active:bg-[#F5F5F5] dark:border-[#444444] dark:active:bg-[#383838]', FOCUS_RING)}>
                 <span className={cn('block text-[16px] font-medium tabular-nums', TEXT.muted)}>{current.package_no} · {t('rc_pk_st_open').toLowerCase()}</span>
                 <span className={cn('mt-1.5 block text-[40px] font-bold leading-[1.1] tracking-[-0.02em] tabular-nums', TEXT.strong)}>
-                  {g.net.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
+                  {g.net.toLocaleString(getCurrentLocale(), { maximumFractionDigits: 1 })}
                   <span className={cn('ml-1.5 text-[20px] font-semibold', TEXT.muted)}>/ {g.max} kg</span>
                 </span>
                 <InkProgress className="mt-3" value={g.net} max={g.max} label={t('rc_pk_net')} />
@@ -165,7 +184,18 @@ export function ReceptionPackages() {
           )}
           <ItemList className="pt-2">
             {todo.data && count && count.total > 0 && (
-              <ItemRow leading={<IconCircle icon={Package} />} title={ti('rc_pk_todo_count', { count: count.total })} subtitle={t('rc_v2_pick_and_pack')} onClick={() => navigate('/r/paquets/emballer')} chevron />
+              <ItemRow
+                leading={<IconCircle icon={Package} />}
+                title={ti('rc_pk_todo_count', { count: count.total })}
+                subtitle={count.ready > 0 || count.toFix > 0 ? (
+                  <>
+                    {count.ready > 0 && `${formatKg(sumParcelKg(todo.data.ready))} · ${tx.clients(new Set(todo.data.ready.map((it) => it.deposit.client?.user_id)).size)}`}
+                    {count.toFix > 0 && <span className={TONE_TEXT.pending}>{count.ready > 0 ? ' · ' : ''}{ti('rc_pk_todo_blocked_count', { count: count.toFix })}</span>}
+                  </>
+                ) : t('rc_v2_pick_and_pack')}
+                onClick={() => navigate('/r/paquets/emballer')}
+                chevron
+              />
             )}
             <ItemRow leading={<IconCircle icon={Plus} />} title={t('rc_pk_new')} onClick={create.isPending ? undefined : onCreate} chevron />
           </ItemList>
