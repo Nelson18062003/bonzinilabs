@@ -127,7 +127,7 @@ function QuickReplyEditor({ initial, all, onDone }: { initial: ChatClientQuickRe
           <TextInput id="qr-label" value={label} maxLength={40} onChange={(e) => setLabel(e.target.value)} className={BIG_FIELD} />
         </FieldBlock>
         <FieldBlock label="Texte envoyé" htmlFor="qr-content">
-          <TextArea id="qr-content" value={content} rows={3} maxLength={500} onChange={(e) => setContent(e.target.value)} className="px-4 py-3.5 text-[17px] leading-relaxed" />
+          <TextArea id="qr-content" value={content} rows={3} maxLength={500} onChange={(e) => setContent(e.target.value)} className="px-4 py-3.5 !text-[17px] leading-relaxed" />
         </FieldBlock>
         <div className={cn('flex items-center justify-between gap-4 border-y py-2', SURFACE.divider)}>
           <span className={cn('text-[17px] font-semibold', TEXT.strong)}>Montrée aux clients</span>

@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Building2, Mail, Warehouse } from 'lucide-react';
 import { TextArea } from '@/components/form';
 import { SURFACE, TEXT, Card, SectionTitle, FormField, TextInput, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
+import { ShippingV2 } from './CompanyV2';
 
 type Section = 'company' | 'warehouse' | 'office';
 
@@ -90,7 +91,12 @@ function LocationFields({
   );
 }
 
+/** Téléphone : la v2 (ShippingV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileShippingSettings({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileShippingSettings desktop /> : <ShippingV2 />;
+}
+
+function LegacyMobileShippingSettings({ desktop = false }: { desktop?: boolean } = {}) {
   const { hasPermission } = useAdminAuth();
   const canEdit = hasPermission('canManageUsers');
   const { data, isLoading, isPlaceholderData } = useAdminShippingSettings();

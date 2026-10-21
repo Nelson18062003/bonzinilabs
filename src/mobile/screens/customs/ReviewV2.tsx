@@ -221,7 +221,7 @@ function Review({ c, onDone }: { c: Classification; onDone: (d: { code: string |
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={decision === 'needs_info' ? 'Votre question au client' : decision === 'changed' ? 'Pourquoi ce code (obligatoire)' : 'Observation (facultatif)'}
-              className="px-4 py-3.5 text-[17px]"
+              className="px-4 py-3.5 !text-[17px]"
             />
             {noteError && <p className="text-[15px] font-medium text-[#900B09] dark:text-[#FCB3AD]">{noteError}</p>}
           </div>

@@ -151,7 +151,7 @@ function Audit({ a, onDone }: { a: AuditRecord; onDone: (d: { first: string; amo
                   value={digits ? nb(Number(digits)) : ''}
                   onChange={(e) => setAmount(e.target.value.replace(/\D/g, '').slice(0, 15))}
                   placeholder="0"
-                  className={cn('min-w-0 flex-1 bg-transparent text-[32px] font-bold tabular-nums outline-none placeholder:text-[#B3B3B3]', TEXT.strong)}
+                  className={cn('min-w-0 flex-1 bg-transparent !text-[32px] font-bold tabular-nums outline-none placeholder:text-[#B3B3B3]', TEXT.strong)}
                 />
                 <span className={cn('shrink-0 text-[20px] font-semibold', TEXT.muted)}>XAF</span>
               </div>
@@ -165,7 +165,7 @@ function Audit({ a, onDone }: { a: AuditRecord; onDone: (d: { first: string; amo
             </div>
             <div className="space-y-2 pt-2">
               <label htmlFor="au-note"><CapsLabel>Votre avis au client</CapsLabel></label>
-              <TextArea id="au-note" rows={3} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="La démarche, le délai, les pièces" className="px-4 py-3.5 text-[17px] leading-relaxed" />
+              <TextArea id="au-note" rows={3} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="La démarche, le délai, les pièces" className="px-4 py-3.5 !text-[17px] leading-relaxed" />
               {noteError && <p className="text-[15px] font-medium text-[#900B09]">{noteError}</p>}
             </div>
           </>

@@ -252,6 +252,7 @@ export function headCount(url) {
     if (url.includes('status=in.')) return 5;
     return 5872;
   }
+  if (url.includes('/webauthn_credentials')) return 2; // Moi › Clés d'accès (refonte v2)
   return 0;
 }
 
@@ -370,8 +371,23 @@ const observedTransit = { window_months: 18, min_count: 3, lanes: [
   { mode: 'air', lane: 'CAN>DLA', n: 31, median: 6, p25: 5, p75: 8, promised_median: 5, late_share: 0.2 },
 ] };
 
+const macroSnapshot = { id: 1, captured_at: minutesAgo(12), oil_brent: 82.4, oil_wti: 78.15, dxy: 104.2, eur_usd: 1.0862, cny_usd: 7.1204, btc_usd: 67420, eth_usd: 3120,
+  news_headlines: [{ title: 'Le yuan se stabilise avant la réunion de la PBoC', source: 'Google News (Reuters)', published_at: ago(3), link: 'https://example.com/a' }],
+  news_by_source: null, trump_posts_recent: null, expert_mentions: null };
+const ratePrediction = { id: 'rp1', created_at: ago(2), current_rate: 7.1204, predicted_rate: 7.118, direction: 'down', confidence: 0.72, key_drivers: ['DXY'], reasoning: 'Le dollar recule légèrement ; la PBoC garde un fixing stable.', scenarios: null, action_recommended: 'Garder le taux', actual_rate: null, error_abs: null };
+const passkeys = [
+  { id: 'pk1', device_label: 'iPhone de Nelson', backed_up: true, created_at: '2026-09-03T08:00:00Z', last_used_at: ago(1) },
+  { id: 'pk2', device_label: 'MacBook Air', backed_up: true, created_at: '2026-08-12T08:00:00Z', last_used_at: ago(50) },
+];
+
 function respondOutils(url) {
   const q = decodeURIComponent(url);
+  if (q.includes('/rpc/cargo_pricing_get')) return { success: true, air_per_kg_xaf: 8500, sea_per_cbm_xaf: 165000, currency: 'XAF', updated_at: ago(200) };
+  if (q.includes('/rest/v1/macro_snapshots')) return [macroSnapshot];
+  if (q.includes('/rest/v1/rate_predictions')) return [ratePrediction];
+  if (q.includes('/rest/v1/briefs_log')) return [{ id: 'b1', sent_at: ago(5), brief_type: 'morning', message_text: 'Brief du matin : USD/CNY 7,12, Brent 82,4 $.', telegram_sent: true, telegram_error: null }];
+  if (q.includes('/rest/v1/trump_posts')) return [];
+  if (q.includes('/rest/v1/webauthn_credentials')) return passkeys;
   if (q.includes('/rpc/customs_review_queue')) return customsQueue;
   if (q.includes('/rpc/customs_classification_get')) return { success: true, classification: customsClassification };
   if (q.includes('/rpc/customs_audit_get')) return { success: true, audit: customsAudit };

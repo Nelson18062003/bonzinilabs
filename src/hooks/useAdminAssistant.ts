@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { uid } from '@/lib/uid';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
@@ -219,21 +220,25 @@ export function useAdminAssistant() {
     setMessages([]);
   }, []);
 
-  // Reprend la dernière conversation de l'admin (transcript + actions encore en attente).
-  const loadHistory = useCallback(async () => {
+  // Reprend une conversation de l'admin — la dernière, ou celle choisie dans
+  // l'historique (transcript + actions encore en attente).
+  const loadHistory = useCallback(async (conversationId?: string) => {
     try {
       const { data: { session } } = await supabaseAdmin.auth.getSession();
       const userId = session?.user?.id;
       if (!userId) return;
-      const { data: conv } = await supabaseAdmin
+      let base = supabaseAdmin
         .from('assistant_conversations')
         .select('id')
-        .eq('admin_user_id', userId)
+        .eq('admin_user_id', userId);
+      if (conversationId) base = base.eq('id', conversationId);
+      const { data: conv } = await base
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (!conv) return;
       conversationIdRef.current = conv.id;
+      if (conversationId) setMessages([]);
 
       const { data: msgs } = await supabaseAdmin
         .from('assistant_messages')
@@ -272,4 +277,52 @@ export function useAdminAssistant() {
   }, []);
 
   return { messages, isLoading, sendMessage, confirmProposal, cancelProposal, reset, loadHistory };
+}
+
+export interface AssistantConversationItem {
+  id: string;
+  title: string | null;
+  updated_at: string;
+  /** Les actions proposées dans la conversation, la plus récente d'abord. */
+  actions: { status: string; title: string; created_at: string }[];
+}
+
+/**
+ * L'historique de Mola (refonte v2, maquette 10/63) : les conversations de
+ * l'admin connecté, avec les actions qu'il y a confirmées ou annulées.
+ * Lecture seule, session `supabaseAdmin` ; les lignes des autres admins
+ * restent filtrées par `admin_user_id` (et par la RLS).
+ */
+export function useAssistantConversations(enabled = true) {
+  return useQuery({
+    queryKey: ['assistant-conversations'],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async (): Promise<AssistantConversationItem[]> => {
+      const { data: { session } } = await supabaseAdmin.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) return [];
+      const { data: convs, error } = await supabaseAdmin
+        .from('assistant_conversations')
+        .select('id, title, updated_at')
+        .eq('admin_user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      const list = convs ?? [];
+      if (list.length === 0) return [];
+      const { data: acts } = await supabaseAdmin
+        .from('assistant_pending_actions')
+        .select('conversation_id, status, summary, created_at')
+        .in('conversation_id', list.map((c) => c.id))
+        .order('created_at', { ascending: false });
+      const byConv = new Map<string, AssistantConversationItem['actions']>();
+      for (const a of acts ?? []) {
+        if (!a.conversation_id) continue;
+        const title = ((a.summary ?? {}) as { title?: string }).title ?? '';
+        byConv.set(a.conversation_id, [...(byConv.get(a.conversation_id) ?? []), { status: a.status, title, created_at: a.created_at }]);
+      }
+      return list.map((c) => ({ id: c.id, title: c.title, updated_at: c.updated_at, actions: byConv.get(c.id) ?? [] }));
+    },
+  });
 }

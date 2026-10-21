@@ -267,7 +267,7 @@ export function ConversationV2() {
               disabled={busy}
               onChange={(e) => { setText(e.target.value); if (e.target.value) notifyTyping(); else notifyStop(); }}
               onInput={(e) => { const el = e.currentTarget; el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 120)}px`; }}
-              className={cn('max-h-[120px] min-w-0 flex-1 resize-none bg-transparent py-[15px] text-[17px] leading-[1.35] outline-none placeholder:text-[#757575]', TEXT.strong)}
+              className={cn('max-h-[120px] min-w-0 flex-1 resize-none bg-transparent py-[15px] !text-[17px] leading-[1.35] outline-none placeholder:text-[#757575]', TEXT.strong)}
             />
             <button type="button" onClick={() => photoRef.current?.click()} disabled={busy} aria-label="Envoyer une photo" className={cn('mb-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:opacity-40', FOCUS_RING, TEXT.muted)}>
               <Camera className="h-6 w-6" strokeWidth={1.9} />

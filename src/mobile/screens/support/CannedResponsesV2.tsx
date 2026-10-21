@@ -155,7 +155,7 @@ function CannedEditor({ initial, onDone }: { initial: ChatCannedResponse | null;
           <TextInput id="cr-label" value={label} maxLength={60} onChange={(e) => setLabel(e.target.value)} className={BIG_FIELD} />
         </FieldBlock>
         <FieldBlock label="Texte" htmlFor="cr-content">
-          <TextArea id="cr-content" value={content} rows={4} maxLength={2000} onChange={(e) => setContent(e.target.value)} className="px-4 py-3.5 text-[17px] leading-relaxed" />
+          <TextArea id="cr-content" value={content} rows={4} maxLength={2000} onChange={(e) => setContent(e.target.value)} className="px-4 py-3.5 !text-[17px] leading-relaxed" />
         </FieldBlock>
         <div className="flex flex-wrap gap-2.5">
           {TEMPLATE_VARIABLES.map((v) => (

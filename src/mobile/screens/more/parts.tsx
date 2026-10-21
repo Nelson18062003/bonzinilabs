@@ -77,7 +77,7 @@ export function FieldBlock({
 }
 
 /** La classe des grands champs de la v2 (56 px, 17 px). */
-export const BIG_FIELD = 'h-14 px-4 text-[17px]';
+export const BIG_FIELD = 'h-14 px-4 !text-[17px]';
 
 /**
  * Une ligne de réglage : icône, libellé, valeur ou tag, chevron. Une ligne
@@ -174,7 +174,7 @@ export function CheckLine({ ok, children }: { ok: boolean; children: React.React
 /** La ligne rouge d'un engagement (« Engage votre agrément CAD »). */
 export function RedNotice({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center gap-3 rounded-lg bg-[#FDD3D0] px-4 py-3.5 text-[17px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]', className)}>
+    <div className={cn('flex items-center gap-3 rounded-lg bg-[#FDD3D0] px-4 py-3.5 !text-[17px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]', className)}>
       <AlertTriangle className="h-5 w-5 shrink-0" strokeWidth={2.25} />
       <span className="min-w-0">{children}</span>
     </div>

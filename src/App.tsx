@@ -119,6 +119,8 @@ const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m =
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
 const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
+const MobileMeScreen = lazy(() => import("./mobile/screens/more/MeScreen").then(m => ({ default: m.MeScreen })));
+const MobileStaffSearch = lazy(() => import("./mobile/screens/search/StaffSearchScreen").then(m => ({ default: m.StaffSearchScreen })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
@@ -361,7 +363,7 @@ const App = () => (
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
-                <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
+                <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
@@ -380,13 +382,15 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<Navigate to="/m/equipe/nouveau" replace />} />
                 <Route path="/m/more/admins/:adminId" element={<LegacyAdminRedirect />} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/payment-details" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
                 <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
-                <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/passkeys" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileMeScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile/edit" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/recherche" element={<AdminRouteWrapper showTabBar={false}><MobileStaffSearch /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
                 <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />

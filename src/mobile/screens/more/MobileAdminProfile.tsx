@@ -8,13 +8,19 @@ import { supabaseAdmin } from '@/integrations/supabase/client';
 import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { validateUploadFile, cn } from '@/lib/utils';
 import { SURFACE, TEXT, FormField, TextInput, PrimaryPill } from '@/mobile/designKit';
+import { ProfileEditV2 } from './AccountV2';
 
 /**
  * Profil admin éditable par soi-même : nom, prénom, photo de profil.
  * - Photo → bucket Storage 'avatars' (dossier = user_id) → URL publique.
  * - Enregistrement via la RPC update_my_admin_profile (SECURITY DEFINER).
  */
+/** Téléphone : la v2 (ProfileEditV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileAdminProfile({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileAdminProfile desktop /> : <ProfileEditV2 />;
+}
+
+function LegacyMobileAdminProfile({ desktop = false }: { desktop?: boolean } = {}) {
   const navigate = useNavigate();
   const { currentUser, profile, refreshProfile } = useAdminAuth();
   const fileRef = useRef<HTMLInputElement>(null);

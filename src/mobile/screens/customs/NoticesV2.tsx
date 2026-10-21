@@ -337,7 +337,7 @@ function NoticeEditorV2({ notice, onDone }: { notice: Notice | null; onDone: () 
           <TextInput id="nt-codes" inputMode="numeric" value={specs} placeholder="tous" className={BIG_FIELD} onChange={(e) => setSpecs(e.target.value)} />
         </FieldBlock>
         <FieldBlock label="Ce qui se passe" htmlFor="nt-summary" error={tried ? errors.summary : null}>
-          <TextArea id="nt-summary" rows={3} maxLength={600} value={d.summary} onChange={(e) => set('summary', e.target.value)} className="px-4 py-3.5 text-[17px]" />
+          <TextArea id="nt-summary" rows={3} maxLength={600} value={d.summary} onChange={(e) => set('summary', e.target.value)} className="px-4 py-3.5 !text-[17px]" />
         </FieldBlock>
         {!extras ? (
           <button type="button" onClick={() => setExtras(true)} className={cn('flex h-11 items-center gap-2.5 rounded text-[17px] font-semibold', FOCUS_RING, TEXT.strong)}>
@@ -346,7 +346,7 @@ function NoticeEditorV2({ notice, onDone }: { notice: Notice | null; onDone: () 
         ) : (
           <div className="space-y-6">
             <FieldBlock label="À faire" htmlFor="nt-advice">
-              <TextArea id="nt-advice" rows={2} maxLength={1000} value={d.advice ?? ''} onChange={(e) => set('advice', e.target.value)} className="px-4 py-3.5 text-[17px]" />
+              <TextArea id="nt-advice" rows={2} maxLength={1000} value={d.advice ?? ''} onChange={(e) => set('advice', e.target.value)} className="px-4 py-3.5 !text-[17px]" />
             </FieldBlock>
             <FieldBlock label="Fin" htmlFor="nt-end" error={tried ? errors.dates : null}>
               <TextInput id="nt-end" type="date" className={BIG_FIELD} value={d.ends_on ?? ''} onChange={(e) => set('ends_on', e.target.value || null)} />
