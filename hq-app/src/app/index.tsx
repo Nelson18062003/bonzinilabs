@@ -136,7 +136,8 @@ export default function Main() {
         setScan(null);
         return;
       case 'open-me':
-        router.push('/me');
+        // Jamais par-dessus le verrou, et un seul écran Moi à la fois.
+        if (user && !(lockEnabled && locked)) router.navigate('/me');
         return;
       case 'auth': {
         hideSplash();
@@ -159,7 +160,7 @@ export default function Main() {
         return;
       }
     }
-  }, [hideSplash, setRoute, setScan, setUser]);
+  }, [hideSplash, lockEnabled, locked, setRoute, setScan, setUser, user]);
 
   // Nouvelle personne connectée : son espace.
   useEffect(() => {
@@ -229,7 +230,6 @@ export default function Main() {
   }, [open, setScan]);
 
   const activeKey = tabForPath(tabs, route)?.key ?? null;
-  const onBackAtRoot = useCallback(() => false, []);
 
   const showLogin = user === null;
   const dark = isDark(background);
@@ -244,7 +244,6 @@ export default function Main() {
             onFirstLoad={() => {}}
             onNetworkError={() => setOffline(true)}
             onSiteMessage={onSiteMessage}
-            onBackAtRoot={onBackAtRoot}
           />
         </View>
       </SafeAreaView>

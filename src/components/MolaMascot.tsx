@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
  * Pour changer la mascotte : remplace simplement le fichier image, rien d'autre.
  */
 const MASCOT_SRC = '/assets/mola-mascot.webp';
+/** La version 160 px, pour les ronds de 44 à 64 (Accueil, Plus). */
+const MASCOT_SMALL_SRC = '/assets/mola-mascot-160.webp';
 
 interface MolaMascotProps {
   /** Classes de taille/forme (ex. "h-20 w-20"). */
@@ -23,14 +25,16 @@ interface MolaMascotProps {
   alt?: string;
   /** Animation « respiration » (ex. pendant que Mola réfléchit). */
   breathing?: boolean;
+  /** Le fichier 160 px (ronds de l'Accueil et de Plus). */
+  small?: boolean;
 }
 
-export function MolaMascot({ className, fallback = null, alt = 'Mola', breathing = false }: MolaMascotProps) {
+export function MolaMascot({ className, fallback = null, alt = 'Mola', breathing = false, small = false }: MolaMascotProps) {
   const [failed, setFailed] = useState(false);
   if (failed) return <>{fallback}</>;
   return (
     <img
-      src={MASCOT_SRC}
+      src={small ? MASCOT_SMALL_SRC : MASCOT_SRC}
       alt={alt}
       className={cn('object-contain', breathing && 'mola-breathe', className)}
       onError={() => setFailed(true)}

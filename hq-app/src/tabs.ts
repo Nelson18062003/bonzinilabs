@@ -31,6 +31,9 @@ const plus = (path: string, match: string[] = [path]): Tab => ({ key: 'more', la
 // Refonte v2 (21/10/2026, maquette 01-navigation/10) : Moi n'est plus un
 // onglet, il est en tête de « Plus » pour TOUS les rôles ; l'équipe retrouve
 // un Accueil du site (le chiffre du jour, les ronds, la liste) et l'onglet Cargo.
+// Le scanner de l'équipe n'est plus un onglet : c'est un rond de l'Accueil
+// (/m/clients/scan), qui ouvre la caméra native par le pont (scan-open).
+// Le terrain (réception, Douala, agent cash) garde son onglet Scanner.
 export function tabsFor(role: StaffRole): Tab[] {
   switch (role) {
     case 'cash_agent':
@@ -41,12 +44,12 @@ export function tabsFor(role: StaffRole): Tab[] {
       ];
     case 'receptionist':
       return [
-        { key: 'today', label: "Aujourd'hui", icon: 'today', path: '/r', exact: true, match: ['/r', '/r/deposit', '/r/new', '/r/pending'] },
+        { key: 'today', label: "Aujourd'hui", icon: 'today', path: '/r', exact: true, match: ['/r', '/r/deposit', '/r/new'] },
         // Les paquets avion de 32 kg (le bureau) : les colis à emballer, les paquets en cours.
         { key: 'packages', label: 'Paquets', icon: 'cube', path: '/r/paquets', match: ['/r/paquets'] },
         SCAN,
         { key: 'clients', label: 'Clients', icon: 'people', path: '/r/clients', match: ['/r/clients'] },
-        plus('/r/plus'),
+        plus('/r/plus', ['/r/plus', '/r/pending']),
       ];
     case 'warehouse_agent':
       return [

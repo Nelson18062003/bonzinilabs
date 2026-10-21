@@ -8,23 +8,23 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  BarChart3, Banknote, FileText, History, Landmark, LogOut, MessageCircle, Newspaper, Route, Settings, TrendingUp, UsersRound, Wallet,
+  BarChart3, Banknote, FileText, History, Landmark, MessageCircle, Newspaper, Route, Settings, TrendingUp, UsersRound, Wallet,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
-import { isNativeApp } from '@/lib/nativeApp';
-import { ModuleGrid, TabTop, ConfirmSheet, ItemList, ItemRow, IconCircle, useSheet, type ModuleTile } from '@/mobile/designKit';
+import { MolaMascot } from '@/components/MolaMascot';
+import { ItemList, ModuleGrid, TabTop, type ModuleTile } from '@/mobile/designKit';
+import { LogoutRow } from './LogoutRow';
 import { ProfileCard } from './ProfileCard';
 
 export function MobileMoreScreen() {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
-  const { currentUser, hasPermission, canManageUsers, logout } = useAdminAuth();
+  const { currentUser, hasPermission, canManageUsers } = useAdminAuth();
   const role = currentUser?.role;
   const canChat = hasPermission('canAccessSupportChat');
   const { data: convs } = useAdminConversations();
   const unread = canChat ? (convs ?? []).reduce((sum, c) => sum + (c.unread_count_admin || 0), 0) : 0;
-  const leave = useSheet();
 
   const tiles = useMemo<ModuleTile[]>(() => {
     const go = (path: string) => () => navigate(path);
@@ -38,13 +38,14 @@ export function MobileMoreScreen() {
     const list: (ModuleTile & { show: boolean })[] = [
       { key: 'treasury', label: 'Trésorerie', icon: Wallet, onClick: go('/m/more/treasury'), show: hasPermission('canViewTreasury') && role !== 'treasurer' },
       { key: 'rates', label: 'Taux du jour', icon: TrendingUp, onClick: go('/m/more/rates'), show: hasPermission('canManageRates') },
-      { key: 'analytics', label: 'Analyses', icon: BarChart3, onClick: go('/m/dashboard'), show: role !== 'treasurer' || hasPermission('canViewTreasury') },
+      // Comme avant la refonte : les analyses sont ouvertes à toute l'équipe (la route n'a pas de garde).
+      { key: 'analytics', label: 'Analyses', icon: BarChart3, onClick: go('/m/dashboard'), show: true },
       { key: 'support', label: 'Messages clients', icon: MessageCircle, onClick: go('/m/support'), badge: unread, show: canChat },
       { key: 'customs', label: 'Douane', icon: Landmark, onClick: go('/m/douane'), show: hasPermission('canViewCustoms') },
       {
         key: 'mola',
         label: 'Mola',
-        visual: <img src="/assets/mola-mascot-160.webp" alt="" className="h-full w-full object-cover" />,
+        visual: <MolaMascot small alt="" className="h-full w-full object-cover" />,
         onClick: go('/m/assistant'),
         show: role !== 'treasurer',
       },
@@ -58,25 +59,16 @@ export function MobileMoreScreen() {
     return list.filter((x) => x.show);
   }, [canChat, canManageUsers, hasPermission, navigate, role, unread]);
 
-  const doLogout = async () => {
-    await logout();
-    navigate('/m/login');
-  };
-
   return (
     <div className="flex min-h-full flex-col pb-6">
       <TabTop title={t('more', { defaultValue: 'Plus' })} />
       <div className="px-5 pt-2">
-        <ProfileCard />
+        <ProfileCard webPath="/m/more/profile" />
       </div>
       <ModuleGrid tiles={tiles} className="pt-7" />
-      {/* Dans l'app, la déconnexion est dans Moi (écran natif). */}
-      {!isNativeApp() && (
-        <ItemList className="mt-8">
-          <ItemRow leading={<IconCircle icon={LogOut} tone="danger" />} title="Se déconnecter" onClick={leave.show} />
-        </ItemList>
-      )}
-      <ConfirmSheet open={leave.open} onClose={leave.hide} title="Se déconnecter ?" confirmLabel="Se déconnecter" onConfirm={doLogout} />
+      <ItemList className="mt-8">
+        <LogoutRow loginPath="/m/login" />
+      </ItemList>
     </div>
   );
 }

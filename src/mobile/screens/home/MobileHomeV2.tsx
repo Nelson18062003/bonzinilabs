@@ -16,14 +16,13 @@ import { formatYuan } from '@/lib/formatters';
 import { whenSentence } from '@/lib/plainTime';
 import {
   ActionCircles, EmptyLine, HeroFigure, ItemList, ItemRow, MethodCircle, PAYMENT_METHOD, RoundButton, SectionHead, TabTop,
-  type CircleAction, type MethodKey, type Tone,
+  toMethodKey, type CircleAction, type Tone,
 } from '@/mobile/designKit';
 import { TreasurerHome } from '@/mobile/screens/treasury/TreasurerHome';
+import { MolaMascot } from '@/components/MolaMascot';
 
 /** En 40 px, l'espace fine des milliers disparaît : une espace insécable la remplace. */
 const wide = (s: string) => s.replace(/\u202F/g, '\u00A0');
-
-const METHOD_OF: Record<string, MethodKey> = { alipay: 'alipay', wechat: 'wechat', bank_transfer: 'virement', cash: 'cash' };
 
 function payTag(p: HomePayment): { tone: Tone; label: string } {
   if (p.status === 'processing') return { tone: 'neutral', label: 'En cours' };
@@ -43,7 +42,7 @@ function TeamHome() {
   const { data: counts } = useAdminActionableCounts();
   const { data: notifCount } = useAdminNotificationCount();
   const canPay = hasPermission('canViewPayments');
-  const { data: toPay } = useHomeToPay(3);
+  const { data: toPay, isLoading, isError, refetch } = useHomeToPay({ userId: currentUser?.id, enabled: canPay });
 
   const actions: CircleAction[] = [];
   if (hasPermission('canProcessPayments')) actions.push({ label: 'Paiement', icon: ArrowUpRight, onClick: () => navigate('/m/payments/new') });
@@ -53,7 +52,8 @@ function TeamHome() {
     actions.push({ label: 'Client', icon: UserRound, onClick: () => navigate('/m/clients') });
   }
 
-  const payments = counts?.payments ?? 0;
+  // Le nombre vient de la même lecture que le total (sinon ¥ et « N paiements » peuvent se contredire).
+  const payments = toPay?.count ?? counts?.payments ?? 0;
   const deposits = counts?.deposits ?? 0;
 
   return (
@@ -63,7 +63,7 @@ function TeamHome() {
         right={
           <>
             <RoundButton ariaLabel="Mola" onClick={() => navigate('/m/assistant')}>
-              <img src="/assets/mola-mascot-160.webp" alt="" className="h-full w-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              <MolaMascot small alt="" className="h-full w-full object-cover" />
             </RoundButton>
             <RoundButton icon={Bell} ariaLabel="Notifications" dot={(notifCount ?? 0) > 0} onClick={() => navigate('/m/more/notifications')} />
           </>
@@ -73,8 +73,8 @@ function TeamHome() {
       {canPay && (
         <div className="px-5 pt-3.5">
           <HeroFigure
-            label="À payer aujourd'hui"
-            value={<>¥&nbsp;{wide(formatYuan(toPay?.total ?? 0))}</>}
+            label="À payer"
+            value={isLoading ? '—' : <>¥&nbsp;{wide(formatYuan(toPay?.total ?? 0))}</>}
             sub={[
               <><b className="font-bold">{payments}</b> paiement{payments > 1 ? 's' : ''}</>,
               <><b className="font-bold">{deposits}</b> dépôt{deposits > 1 ? 's' : ''} à valider</>,
@@ -89,12 +89,14 @@ function TeamHome() {
       {canPay && (
         <>
           <SectionHead title="À payer" link={{ label: 'Tout voir', onClick: () => navigate('/m/payments') }} />
-          {toPay && toPay.list.length === 0 ? (
+          {isError ? (
+            <EmptyLine action={{ label: 'Réessayer', onClick: () => void refetch() }}>La liste n'a pas pu être chargée.</EmptyLine>
+          ) : toPay && toPay.list.length === 0 ? (
             <EmptyLine>Rien à payer pour l'instant.</EmptyLine>
           ) : (
             <ItemList>
               {(toPay?.list ?? []).map((p) => {
-                const m = METHOD_OF[p.method] ?? 'virement';
+                const m = toMethodKey(p.method);
                 return (
                   <ItemRow
                     key={p.id}
@@ -112,13 +114,17 @@ function TeamHome() {
         </>
       )}
 
-      {!canPay && deposits > 0 && (
+      {!canPay && hasPermission('canViewDeposits') && (
         <>
           <SectionHead title="À valider" link={{ label: 'Tout voir', onClick: () => navigate('/m/deposits') }} />
           <EmptyLine action={{ label: 'Ouvrir les dépôts', onClick: () => navigate('/m/deposits') }}>
-            {deposits} dépôt{deposits > 1 ? 's' : ''} à valider.
+            {deposits > 0 ? `${deposits} dépôt${deposits > 1 ? 's' : ''} à valider.` : 'Aucun dépôt à valider.'}
           </EmptyLine>
         </>
+      )}
+
+      {!canPay && !hasPermission('canViewDeposits') && (
+        <EmptyLine action={{ label: 'Ouvrir Plus', onClick: () => navigate('/m/more') }}>Vos outils sont dans Plus.</EmptyLine>
       )}
     </div>
   );

@@ -45,9 +45,10 @@ export function BarChart({
   const W = 340;
   const H = height;
   const n = Math.max(data.length, 1);
-  const max = Math.max(...data.map((d) => Math.abs(d.value)), 1);
-  const gap = n > 20 ? 3 : n > 10 ? 6 : 10;
-  const bw = (W - gap * (n - 1)) / n;
+  const values = data.map((d) => (Number.isFinite(d.value) ? d.value : 0));
+  const max = Math.max(...values.map((v) => Math.abs(v)), 1);
+  const gap = n > 60 ? 1 : n > 20 ? 3 : n > 10 ? 6 : 10;
+  const bw = Math.max((W - gap * (n - 1)) / n, 1);
   const zero = signed ? H / 2 : H;
   const scale = (signed ? H / 2 - 6 : H - 6) / max;
   const sel = selected ?? null;
@@ -56,9 +57,11 @@ export function BarChart({
       <svg viewBox={`0 0 ${W} ${H}`} className="block w-full" style={{ height }} role="img" aria-label={ariaLabel}>
         {signed && <line x1={0} x2={W} y1={zero} y2={zero} stroke={GREY} strokeWidth={1} />}
         {data.map((d, i) => {
-          const h = Math.max(Math.abs(d.value) * scale, d.value === 0 ? 0 : 3);
+          // Sans ligne de zéro, une valeur négative ne descend pas sous l'axe : elle s'aplatit.
+          const v = signed ? values[i] : Math.max(values[i], 0);
+          const h = Math.max(Math.abs(v) * scale, v === 0 ? 0 : 3);
           const x = i * (bw + gap);
-          const y = d.value >= 0 ? zero - h : zero;
+          const y = v >= 0 ? zero - h : zero;
           const dim = sel != null && sel !== i;
           return (
             <g key={i} onClick={() => onSelect?.(sel === i ? null : i)} style={{ cursor: onSelect ? 'pointer' : undefined }}>
@@ -69,7 +72,7 @@ export function BarChart({
                 width={Math.max(bw - (d.current ? 2 : 0), 1)}
                 height={Math.max(h - (d.current ? 2 : 0), 1)}
                 rx={Math.min(4, bw / 2)}
-                fill={d.current ? '#FFFFFF' : d.value < 0 ? GREY : INK}
+                fill={d.current ? '#FFFFFF' : v < 0 ? GREY : INK}
                 stroke={d.current ? INK : 'none'}
                 strokeWidth={d.current ? 2 : 0}
                 opacity={dim ? 0.25 : 1}
@@ -80,7 +83,7 @@ export function BarChart({
       </svg>
       {sel != null && data[sel] && (
         <div
-          className="pointer-events-none absolute -top-2 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[#2C2C2C] px-3 py-2 text-[14px] font-semibold text-[#F5F5F5]"
+          className={cn('pointer-events-none absolute -top-2 -translate-y-full whitespace-nowrap rounded-lg bg-[#2C2C2C] px-3 py-2 text-[14px] font-semibold text-[#F5F5F5]', edgeShift(((sel * (bw + gap) + bw / 2) / W) * 100))}
           style={{ left: `${((sel * (bw + gap) + bw / 2) / W) * 100}%` }}
         >
           <div className="font-medium opacity-80">{data[sel].label}</div>
@@ -90,6 +93,11 @@ export function BarChart({
       {xLabels && <AxisLabels count={n} labels={xLabels} />}
     </div>
   );
+}
+
+/** Une bulle centrée sur son point, sauf aux bords où elle s'aligne pour ne pas sortir. */
+function edgeShift(pct: number): string {
+  return pct < 15 ? '-translate-x-[15%]' : pct > 85 ? '-translate-x-[85%]' : '-translate-x-1/2';
 }
 
 function AxisLabels({ count, labels }: { count: number; labels: Record<number, string> }) {
@@ -137,13 +145,16 @@ export function LineChart({
 }) {
   const W = 300;
   const H = height;
-  const all = series.flatMap((s) => s.values).concat(yTicks ?? []);
+  const all = series.flatMap((s) => s.values).concat(yTicks ?? []).filter(Number.isFinite);
+  const n = Math.max(...series.map((s) => s.values.length), 2);
+  if (all.length === 0) return <div className={className} style={{ height }} role="img" aria-label={ariaLabel} />;
   const lo = Math.min(...all);
   const hi = Math.max(...all);
-  const span = hi - lo || 1;
-  const n = Math.max(...series.map((s) => s.values.length), 2);
+  const flat = hi === lo;
+  const span = flat ? 1 : hi - lo;
   const px = (i: number) => (i / (n - 1)) * W;
-  const py = (v: number) => H - 8 - ((v - lo) / span) * (H - 16);
+  // Toutes les valeurs égales : la ligne au milieu, pas collée en bas.
+  const py = (v: number) => (!Number.isFinite(v) ? H / 2 : flat ? H / 2 : H - 8 - ((v - lo) / span) * (H - 16));
   const path = (s: LineSeries) =>
     s.values
       .map((v, i) => {
@@ -151,8 +162,8 @@ export function LineChart({
         return s.step ? `H${px(i)}V${py(v)}` : `L${px(i)},${py(v)}`;
       })
       .join('');
-  const main = series[0]?.values ?? [];
-  const minIdx = main.length ? main.indexOf(Math.min(...main)) : -1;
+  const main = (series[0]?.values ?? []).map((v) => (Number.isFinite(v) ? v : Infinity));
+  const minIdx = main.length && main.some(Number.isFinite) ? main.indexOf(Math.min(...main)) : -1;
   const sel = selected ?? null;
   const fmt = formatY ?? ((v: number) => v.toLocaleString('fr-FR'));
   return (
@@ -168,8 +179,8 @@ export function LineChart({
           onClick={(e) => {
             if (!onSelect) return;
             const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
-            const i = Math.round(((e.clientX - r.left) / r.width) * (n - 1));
-            onSelect(sel === i ? null : Math.max(0, Math.min(n - 1, i)));
+            const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left) / r.width) * (n - 1))));
+            onSelect(sel === i ? null : i);
           }}
         >
           {(yTicks ?? []).map((t) => (
@@ -209,7 +220,7 @@ export function LineChart({
         )}
         {sel != null && (
           <div
-            className="absolute -top-2 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-[#2C2C2C] px-3 py-2 text-[14px] font-semibold text-[#F5F5F5]"
+            className={cn('absolute -top-2 -translate-y-full whitespace-nowrap rounded-lg bg-[#2C2C2C] px-3 py-2 text-[14px] font-semibold text-[#F5F5F5]', edgeShift((sel / (n - 1)) * 100))}
             style={{ left: `${(sel / (n - 1)) * 100}%` }}
           >
             {series.map((s, k) => (

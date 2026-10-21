@@ -2,7 +2,7 @@
 // Les pastilles des onglets natifs : ce qui attend la personne, par rôle.
 // Mêmes sources que les barres du site :
 //   · admin    → « Opérations » : lib/actionable.ts (dépôts + paiements à traiter)
-//   · réception → « Aujourd'hui » (les dépôts en attente) : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
+//   · réception → « Aujourd'hui » (les dépôts en attente, comme ReceptionTabBar) : reception_my_day.pending ; « Paquets » : air_package_packable, AU BUREAU
 //     seulement (le lieu de ce téléphone, dit par le site) — comme ReceptionTabBar : à l'entrepôt, l'onglet
 //     n'a rien à faire, la pastille ne doit rien annoncer
 //   · Douala   → « Pointer » / « Remettre » : warehouse_day (WarehouseTabBar)

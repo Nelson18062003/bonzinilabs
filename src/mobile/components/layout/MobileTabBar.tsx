@@ -108,7 +108,7 @@ export function MobileTabBar({ className }: { className?: string }) {
               to={e.to}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 outline-none',
+                'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2C2C2C] dark:focus-visible:ring-[#E3E3E3]',
                 active ? 'text-[#1E1E1E] dark:text-[#F5F5F5]' : 'text-[#5A5A5A] dark:text-[#CDCDCD]',
               )}
             >

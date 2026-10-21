@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { authenticateWithPasskey } from '@/lib/passkey';
@@ -772,10 +772,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const permissions = currentUser ? ROLE_PERMISSIONS[currentUser.role] : null;
 
-  const hasPermission = (permission: keyof RolePermission): boolean => {
+  // Stable tant que le rôle ne change pas : les barres et les grilles qui en dépendent ne se recalculent pas à chaque rendu.
+  const hasPermission = useCallback((permission: keyof RolePermission): boolean => {
     if (!permissions) return false;
     return permissions[permission] === true;
-  };
+  }, [permissions]);
 
   // Log admin actions to audit log table
   const logAction = async (

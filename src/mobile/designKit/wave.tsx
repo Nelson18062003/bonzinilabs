@@ -12,11 +12,11 @@
  */
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Delete, MoreHorizontal, Search } from 'lucide-react';
+import { Building2, Check, ChevronLeft, ChevronRight, Delete, MoreHorizontal, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { BottomSheet, Holder } from './components';
+import { BottomSheet, Holder, initialsOf } from './components';
 import { FOCUS_RING, SURFACE, TEXT, TONE_PILL, type Tone } from './tokens';
-import { LOGO_PATH, PAYMENT_METHOD, type MethodKey } from './methods';
+import { LOGO_PATH, PAYMENT_METHOD, toMethodKey, type MethodKey } from './methods';
 import type { PadKey } from './helpers';
 
 /* ── ScreenTop ────────────────────────────────────────────────────────────
@@ -313,8 +313,7 @@ export function ItemList({ children, className }: { children: React.ReactNode; c
 
 /** Les initiales en rond de 44 (fond #F5F5F5). */
 export function Initials({ name, size = 44, className }: { name: string; size?: number; className?: string }) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const ini = parts.length === 0 ? '?' : parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const ini = initialsOf(name);
   return (
     <span
       className={cn('flex shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]', className)}
@@ -327,12 +326,10 @@ export function Initials({ name, size = 44, className }: { name: string; size?: 
 
 /* ── MethodCircle ─────────────────────────────────────────────────────────
  * Le vrai logo d'une méthode de PAIEMENT, en rond à sa couleur de marque. */
-const BANK_GLYPH = 'M12 2.5 2.5 7.2V9h19V7.2zM4.5 10.5v7h2v-7zm4.75 0v7h2v-7zm4.5 0v7h2v-7zm4.75 0v7h2v-7zM2.5 19v2.5h19V19z';
-
 export function MethodCircle({ method, size = 44, className }: { method: MethodKey | string; size?: number; className?: string }) {
-  const key = (method === 'bank_transfer' || method === 'bank' ? 'virement' : method === 'cash_pickup' ? 'cash' : method) as MethodKey;
-  const meta = PAYMENT_METHOD[key] ?? { label: String(method), color: '#5A5A5A' };
-  const glyph = key === 'alipay' ? LOGO_PATH.alipay : key === 'wechat' ? LOGO_PATH.wechat : key === 'virement' ? BANK_GLYPH : null;
+  const key = toMethodKey(method);
+  const meta = PAYMENT_METHOD[key];
+  const glyph = key === 'alipay' ? LOGO_PATH.alipay : key === 'wechat' ? LOGO_PATH.wechat : null;
   return (
     <span
       role="img"
@@ -342,6 +339,8 @@ export function MethodCircle({ method, size = 44, className }: { method: MethodK
     >
       {glyph ? (
         <svg viewBox="0 0 24 24" style={{ width: size * 0.55, height: size * 0.55 }} aria-hidden><path d={glyph} fill="currentColor" /></svg>
+      ) : key === 'virement' ? (
+        <Building2 style={{ width: size * 0.5, height: size * 0.5 }} aria-hidden />
       ) : (
         <span className="font-bold leading-none" style={{ fontSize: Math.round(size * 0.48) }}>¥</span>
       )}
@@ -391,23 +390,24 @@ export function SearchBox({
  * Le segment à filet de la v2 (Paiements / Dépôts, Activité / Trésorerie) :
  * une boîte, la part choisie en noir. Pour 2 à 4 parts. */
 export function BoxSegmented<T extends string>({
-  options, value, onChange, className,
+  options, value, onChange, className, ariaLabel,
 }: {
   options: ReadonlyArray<{ value: T; label: React.ReactNode; count?: number | null }>;
   value: T;
   onChange: (v: T) => void;
   className?: string;
+  ariaLabel?: string;
 }) {
   return (
-    <div role="tablist" className={cn('grid overflow-hidden rounded-lg border', SURFACE.divider, className)} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+    <div role="radiogroup" aria-label={ariaLabel} className={cn('grid overflow-hidden rounded-lg border', SURFACE.divider, className)} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
       {options.map((o, i) => {
         const on = o.value === value;
         return (
           <button
             key={o.value}
             type="button"
-            role="tab"
-            aria-selected={on}
+            role="radio"
+            aria-checked={on}
             onClick={() => onChange(o.value)}
             className={cn(
               'flex min-h-[46px] flex-col items-center justify-center px-1 py-1.5 text-[16px] font-semibold leading-tight',
@@ -690,6 +690,7 @@ export function AmountDisplay({
               key={u.value}
               type="button"
               onClick={() => onUnit?.(u.value)}
+              aria-pressed={u.value === unit}
               className={cn('px-[18px] py-2 text-[16px] font-semibold', FOCUS_RING, u.value === unit ? 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : TEXT.strong)}
             >
               {u.label}

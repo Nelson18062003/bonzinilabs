@@ -14,6 +14,17 @@ export const PAYMENT_METHOD: Record<MethodKey, { label: string; cn: string; colo
   cash: { label: 'Cash', cn: '现金', color: '#E0322B' },
 };
 
+/** Méthode telle qu'enregistrée en base (`bank_transfer`…) → clé du kit. */
+export function toMethodKey(method: string | null | undefined): MethodKey {
+  switch (method) {
+    case 'alipay': return 'alipay';
+    case 'wechat': return 'wechat';
+    case 'cash':
+    case 'cash_pickup': return 'cash';
+    default: return 'virement';
+  }
+}
+
 /** Official brand glyphs (simple-icons). Use inside <svg viewBox="0 0 24 24">. */
 export const LOGO_PATH = {
   alipay:
