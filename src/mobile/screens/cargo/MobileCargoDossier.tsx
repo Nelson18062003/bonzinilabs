@@ -1,253 +1,249 @@
 /**
- * Mobile admin — le dossier d'un conteneur, pour quelqu'un qui ne veut pas
- * déchiffrer (05-simplicite.md).
+ * Mobile admin — le dossier d'un conteneur (refonte v2, maquettes 04/02,
+ * 04/03, 04/04, 10/34, 10/35).
  *
- * En-tête : le client, le numéro de boîte, l'état, puis UNE phrase —
- * « Arrive à Kribi le 11 octobre, dans 28 jours. » et le retard s'il y en a.
+ * En tête : le trajet (départ → arrivée, le navire, la barre d'avancement),
+ * l'arrivée retenue avec son retard, et trois tags qui se touchent : Télex et
+ * Fret (feuille de confirmation), BESC (la douane). Puis quatre onglets :
+ *   · Suivi — les escales, la position, l'arrivée retenue, puis la douane ;
+ *   · Documents — le classeur, puis les intervenants ;
+ *   · Colis — les clients du groupage, les lots, le chargement ;
+ *   · Coûts — les coûts justifiés et le coût à quai.
+ * Ce qui est rare (corriger l'arrivée, la position, les escales, le navire,
+ * marquer arrivé, l'avis d'expédition, la note, retirer) est dans « … ».
  *
- * Ensuite une liste de sections repliées, dans l'ordre des questions, avec
- * un titre en français et un sous-titre qui dit l'essentiel sans ouvrir.
- * Une section ouverte à la fois ; l'adresse suit (/m/cargo/:id/:section)
- * pour que Retour et les liens marchent. Plus d'onglets.
- *
- * Rien sous 16 px, texte foncé, aucune coupure.
+ * L'adresse suit l'onglet (/m/cargo/:id/:onglet) ; les anciennes adresses
+ * (sections du mobile, onglets de l'ordinateur) restent valables.
  */
 import { toast } from 'sonner';
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, Copy, ExternalLink, Map as MapIcon, Ship, Undo2 } from 'lucide-react';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import {
+  Boxes, CalendarCheck, ExternalLink, FileText, Flag, Landmark, Map as MapIcon, MapPin, NotebookPen, RefreshCw, Route, Ship, Trash2, Undo2, Users,
+} from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoDocuments, useCargoEvents, useCargoShipment, useCargoVesselPositions, useUpdateCargoShipment } from '@/hooks/useCargo';
+import {
+  useCargoEvents, useCargoShipment, useCargoVesselPositions, useRemoveCargoShipment, useRequestCargoSync, useUpdateCargoShipment,
+} from '@/hooks/useCargo';
 import { useShipmentParcels } from '@/hooks/useReception';
 import { deliverSeaNoticePdf } from '@/lib/shippingNoticePdf';
-import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
-import { DossierActions, TabChargement, TabClient, TabCouts, TabDocuments, TabDouane, TabIntervenants } from '@/components/cargo/dossier';
+import { clientFullName, formatCbm } from '@/lib/reception';
+import { TabChargement, TabClient, TabDouane, TabIntervenants } from '@/components/cargo/dossier';
+import { DossierDocs } from './DossierDocs';
+import { DossierCosts } from './DossierCosts';
+import { dedupeEvents } from '@/components/cargo/dossier/TabSuivi';
+import { CallsDialog, EtaDialog, MarkArrivedDialog, PositionDialog, UnmarkArrivedDialog } from '@/components/cargo/dossier/VoyageDialogs';
 import { MobileNotes } from './MobileNotes';
 import { MobileNavireSheet } from './MobileNavire';
-import { CargoJourney } from '@/components/cargo/CargoJourney';
-import { MarkArrivedDialog, UnmarkArrivedDialog } from '@/components/cargo/dossier/VoyageDialogs';
 import { groupVessels } from '@/lib/cargo/vessels';
-import { nextSteps } from '@/lib/cargo/todo';
+import { agoSentence, customsSentence } from '@/lib/cargo/plain';
 import {
-  arrivalSentence, contentSentence, customsSentence, delaySentence, departureSentence, journeySentence,
-  moneySentence, papersSentence, todoSentence, whereSentence,
-} from '@/lib/cargo/plain';
-import { CARRIER_LABEL, fmtUsd, hasArrived, liveVesselUrl, statusMeta, timelineFromEvents } from '@/lib/cargo/model';
-import type { CargoEvent } from '@/lib/cargo/model';
-import { fmtDayLong } from '@/lib/cargo/plain';
-import type { CargoDocument, CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
-import { cn } from '@/lib/utils';
+  CARRIER_LABEL, arrivalPort, bestEta, bestEtd, etaSlipDays, fmtDay, fmtUsd, fromDate, hasArrived, liveVesselUrl, positionAge,
+  timelineFromEvents, voyageProgress,
+} from '@/lib/cargo/model';
+import type { CargoShipment, CargoVesselPosition } from '@/lib/cargo/model';
+import { callDate, callStates, voyageCalls, type CallState, type RouteCall } from '@/lib/cargo/voyage';
 import { copyToClipboard } from '@/lib/clipboard';
-import { TEXT, TYPE, SURFACE, Button, ScreenError, ScreenLoader, StatusPill } from '@/mobile/designKit';
+import { cn } from '@/lib/utils';
+import {
+  ActionSheet, BottomSheet, ConfirmSheet, Dock, BigButton, Initials, ItemList, ItemRow, KVBox, MoreButton, ScreenError,
+  ScreenLoader, ScreenTop, Tag, TEXT, EmptyLine, useSheet, IconCircle, type SheetAction,
+} from '@/mobile/designKit';
+import { CapsLabel, FitSegmented, StateCircle } from '@/mobile/components/cargo/v2';
+import { boxNo } from './fleet';
 
-type SectionKey = 'afaire' | 'ou' | 'trajet' | 'argent' | 'papiers' | 'douane' | 'dedans' | 'chargement' | 'client' | 'intervenants' | 'couts' | 'notes';
-const KEYS: SectionKey[] = ['afaire', 'ou', 'trajet', 'argent', 'papiers', 'douane', 'dedans', 'chargement', 'client', 'intervenants', 'couts', 'notes'];
-/** Les adresses des onglets desktop restent valables : on les traduit. */
-const ALIAS: Record<string, SectionKey> = { apercu: 'afaire', suivi: 'trajet', documents: 'papiers' };
-const DEFAULT: SectionKey = 'afaire';
-const path = (id: string, k: SectionKey) => (k === DEFAULT ? `/m/cargo/${id}` : `/m/cargo/${id}/${k}`);
+type TabKey = 'suivi' | 'documents' | 'colis' | 'couts';
+const TABS: ReadonlyArray<{ value: TabKey; label: string }> = [
+  { value: 'suivi', label: 'Suivi' },
+  { value: 'documents', label: 'Documents' },
+  { value: 'colis', label: 'Colis' },
+  { value: 'couts', label: 'Coûts' },
+];
+/** Les adresses d'avant (sections du mobile, onglets de l'ordinateur) mènent au bon onglet. */
+const ALIAS: Record<string, TabKey> = {
+  suivi: 'suivi', apercu: 'suivi', afaire: 'suivi', ou: 'suivi', trajet: 'suivi', argent: 'suivi', douane: 'suivi', notes: 'suivi',
+  documents: 'documents', papiers: 'documents', intervenants: 'documents',
+  colis: 'colis', dedans: 'colis', chargement: 'colis', client: 'colis',
+  couts: 'couts',
+};
+const tabPath = (id: string, t: TabKey) => (t === 'suivi' ? `/m/cargo/${id}` : `/m/cargo/${id}/${t}`);
 
-/** Une phrase, en 16 px, avec les mots qui comptent en gras. */
-function Line({ children, strong, tone, className }: { children: React.ReactNode; strong?: boolean; tone?: 'warn' | 'bad' | 'good'; className?: string }) {
+/* ── L'en-tête du voyage ─────────────────────────────────────────────── */
+function VoyageHead({ s, onTag }: { s: CargoShipment; onTag: (t: 'telex' | 'fret' | 'besc') => void }) {
+  const etd = bestEtd(s);
+  const eta = bestEta(s);
+  const slip = etaSlipDays(s);
+  const promised = fromDate(s.eta_promised);
+  const prog = voyageProgress(s);
+  const pct = hasArrived(s.status) ? 100 : prog?.pct ?? (s.etd_actual ? 50 : 0);
+  const besc = !!s.besc_number;
+  const tagBtn = 'rounded-md active:opacity-70';
   return (
-    <p className={cn('text-[16px] leading-relaxed', strong ? cn('font-semibold', TEXT.strong) : TEXT.body,
-      tone === 'warn' && 'font-semibold text-[#975102] dark:text-[#E8B931]',
-      tone === 'bad' && 'font-semibold text-[#C00F0C] dark:text-[#EC221F]',
-      tone === 'good' && 'font-semibold text-[#009951] dark:text-[#14AE5C]', className)}>
-      {children}
-    </p>
-  );
-}
-
-/** La section qui règle chaque chose à faire : on y va d'un tap. */
-const TODO_SECTION: Record<string, SectionKey> = { freight: 'argent', telex: 'douane', bl: 'papiers', invoice: 'papiers', besc: 'douane', vessel: 'ou', client: 'client' };
-
-function Todo({ s, docs, onGo }: { s: CargoShipment; docs?: CargoDocument[]; onGo: (k: SectionKey) => void }) {
-  const items = nextSteps(s, docs);
-  if (items.length === 0) return <Line>Rien à faire : ce conteneur est livré.</Line>;
-  return (
-    <ul className="space-y-1">
-      {items.map((t) => {
-        const target = t.level === 'done' ? null : TODO_SECTION[t.id] ?? null;
-        const inner = (
-          <>
-            {t.level === 'done'
-              ? <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-[#009951] dark:text-[#14AE5C]" />
-              : <Circle className={cn('mt-0.5 h-6 w-6 shrink-0', t.level === 'now' ? 'text-[#C00F0C] dark:text-[#EC221F]' : 'text-[#B3B3B3]')} />}
-            <span className="min-w-0 flex-1">
-              <span className={cn('block text-[16px] leading-snug', t.level === 'done' ? cn('line-through', TEXT.muted) : cn('font-semibold', TEXT.strong))}>{t.label}</span>
-              {t.detail && t.level !== 'done' && <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{t.detail}</span>}
-            </span>
-            {target && <ChevronRight className={cn('mt-0.5 h-6 w-6 shrink-0', TEXT.muted)} />}
-          </>
-        );
-        return (
-          <li key={t.id}>
-            {target ? (
-              <button type="button" onClick={() => onGo(target)} className="flex w-full items-start gap-3 rounded-lg py-2 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]">
-                {inner}
-              </button>
-            ) : (
-              <div className="flex items-start gap-3 py-2">{inner}</div>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function Where({ s, pos, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; canManage: boolean }) {
-  const navigate = useNavigate();
-  const [vesselOpen, setVesselOpen] = useState(false);
-  const live = liveVesselUrl(s.vessel_imo);
-  const noVessel = !s.vessel_name && !s.vessel_imo;
-  return (
-    <div className="space-y-3">
-      <Line strong>{whereSentence(s, pos)}</Line>
-      {s.vessel_name && <Line>Sur le navire <b>{s.vessel_name}</b>{s.voyage ? `, voyage ${s.voyage}` : ''}.</Line>}
-      {pos?.speed_kn != null && <Line>Il avance à {pos.speed_kn} nœuds.</Line>}
-      {noVessel && (
-        <Line className={TEXT.muted}>
-          {s.status === 'UNKNOWN'
-            ? 'Si vous connaissez le navire (sur le site de l’armateur), renseignez-le : la boîte apparaîtra sur la carte.'
-            : 'Le navire n’est pas encore connu.'}
-        </Line>
-      )}
-      {canManage && (
-        <Button variant={noVessel ? 'primary' : 'subtle'} className="w-full" onClick={() => setVesselOpen(true)}>
-          <Ship />
-          {noVessel ? 'Renseigner le navire' : 'Modifier le navire'}
-        </Button>
-      )}
-      {pos && s.vessel_imo && (
-        <Button variant="neutral" className="w-full" onClick={() => navigate(`/m/cargo/map?vessel=${encodeURIComponent(s.vessel_imo!)}`)}>
-          <MapIcon />
-          Voir sur la carte
-        </Button>
-      )}
-      {live && (
-        <a href={live} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-transparent text-[16px] font-medium text-[#303030] active:bg-[#F5F5F5] dark:text-[#E3E3E3] dark:active:bg-[#383838]">
-          Voir la position en direct sur MarineTraffic <ExternalLink className="h-4 w-4" />
-        </a>
-      )}
-      {canManage && <MobileNavireSheet shipment={s} open={vesselOpen} onClose={() => setVesselOpen(false)} />}
-    </div>
-  );
-}
-
-function Journey({ s, pos, events, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; events: CargoEvent[]; canManage: boolean }) {
-  const [dialog, setDialog] = useState<'arrived' | 'unarrived' | null>(null);
-  const arrived = hasArrived(s.status);
-  const canMark = canManage && !arrived && (s.status === 'AT_SEA' || !!s.etd_actual);
-  // Les jalons de l'armateur, les plus récents d'abord, en phrases : « Navire parti de Nansha le 15 août ».
-  const items = timelineFromEvents(events).filter((e) => e.classifier === 'ACT').reverse().slice(0, 4);
-  const planned = timelineFromEvents(events).filter((e) => e.classifier !== 'ACT');
-  return (
-    <div className="space-y-4">
-      <Line>{departureSentence(s)}.</Line>
-      <Line strong>{arrivalSentence(s)}.</Line>
-      {delaySentence(s) && <Line tone="warn">{delaySentence(s)}.</Line>}
-      <div className="admin-theme pt-1"><CargoJourney shipment={s} position={pos} /></div>
-      {s.status === 'ARRIVED' && <Line tone="good">Les colis du conteneur sont pointables à Douala.</Line>}
-      {canMark && (
-        <>
-          <Line className={TEXT.muted}>Si l'armateur ne signale pas l'arrivée, marquez-la ici : sinon Douala ne peut pas pointer les colis.</Line>
-          <Button variant="subtle" className="w-full" onClick={() => setDialog('arrived')}>
-            <CheckCircle2 />
-            Marquer le conteneur arrivé
-          </Button>
-        </>
-      )}
-      {canManage && s.status === 'ARRIVED' && (
-        <Button variant="neutral" className="w-full" onClick={() => setDialog('unarrived')}>
-          <Undo2 />
-          Annuler l'arrivée
-        </Button>
-      )}
-      {dialog === 'arrived' && <div className="admin-theme"><MarkArrivedDialog shipment={s} onClose={() => setDialog(null)} /></div>}
-      {dialog === 'unarrived' && <div className="admin-theme"><UnmarkArrivedDialog shipment={s} onClose={() => setDialog(null)} /></div>}
-      {items.length > 0 && (
-        <div className={cn('space-y-2 border-t pt-4', SURFACE.divider)}>
-          <p className={cn('text-[16px] font-semibold', TEXT.strong)}>Ce que l'armateur a dit</p>
-          <ul className="space-y-1">
-            {items.map((e) => (
-              <li key={e.id} className={cn('text-[16px] leading-relaxed', TEXT.body)}>
-                {e.label}{e.location ? ` à ${e.location}` : ''}, le {fmtDayLong(new Date(e.time))}.
-              </li>
-            ))}
-            {planned.length > 0 && (
-              <li className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
-                Prévu : {planned.map((e) => `${e.label.toLowerCase()}${e.location ? ` à ${e.location}` : ''} le ${fmtDayLong(new Date(e.time))}`).join(' ; ')}.
-              </li>
-            )}
-          </ul>
+    <div className="px-5 pt-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className={cn('truncate text-[24px] font-bold leading-tight', TEXT.strong)}>{s.pol_name ?? 'Départ'}</p>
+          <p className={cn('text-[16px]', TEXT.muted)}>{s.etd_actual ? `parti le ${fmtDay(etd)}` : etd ? `départ prévu ${fmtDay(etd)}` : 'pas encore parti'}</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-function Money({ s, canManage }: { s: CargoShipment; canManage: boolean }) {
-  const update = useUpdateCargoShipment();
-  const flip = (patch: { freight_paid?: boolean; telex_released?: boolean }) => update.mutate({ id: s.id, patch });
-  return (
-    <div className="space-y-3">
-      <Line>Le fret dû au transitaire : <b>{fmtUsd(s.freight_usd)}</b>.</Line>
-      <Line tone={s.freight_paid ? 'good' : 'bad'}>{s.freight_paid ? 'Fret payé.' : 'Fret pas encore payé.'}</Line>
-      {canManage && (
-        <Button variant={s.freight_paid ? 'subtle' : 'primary'} className="w-full" loading={update.isPending} onClick={() => flip({ freight_paid: !s.freight_paid })}>
-          {s.freight_paid ? 'Le fret n\'est pas payé, finalement' : 'Le fret est payé'}
-        </Button>
-      )}
-      <Line tone={s.telex_released ? 'good' : 'bad'}>{s.telex_released ? 'Télex reçu : le conteneur peut sortir du port.' : 'Télex pas encore reçu : sans lui, le conteneur reste au port.'}</Line>
-      {canManage && (
-        <Button variant={s.telex_released ? 'subtle' : s.freight_paid ? 'primary' : 'neutral'} className="w-full" loading={update.isPending} onClick={() => flip({ telex_released: !s.telex_released })}>
-          {s.telex_released ? 'Le télex n\'est pas reçu, finalement' : 'Le télex est reçu'}
-        </Button>
-      )}
-      <Line>Le télex est envoyé par l'armateur une fois le fret payé. Les coûts réels se notent dans « Les coûts ».</Line>
-    </div>
-  );
-}
-
-function Inside({ s, onOpen3D, canManage }: { s: CargoShipment; onOpen3D: () => void; canManage: boolean }) {
-  const navigate = useNavigate();
-  const { data: loaded } = useShipmentParcels(s.id);
-  const parcels = loaded ?? [];
-  const kg = parcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0);
-  const cbm = parcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0);
-  const deposits = [...new Set(parcels.map((p) => p.deposit_no))];
-  return (
-    <div className="space-y-3">
-      <Line strong>{contentSentence(s)}.</Line>
-      <Line>Boîte de type <b>{s.container_iso === '45G1' ? "40 pieds High Cube" : s.container_iso ?? 'inconnu'}</b>.</Line>
-      {/* Les colis reçus à l'entrepôt et chargés ici : ils suivent la boîte. */}
-      {parcels.length > 0 ? (
-        <div className={cn('rounded-lg p-3', SURFACE.inset)}>
-          <Line strong>{parcels.length} colis reçus à l'entrepôt sont dans cette boîte — {formatKg(kg)}, {formatCbm(cbm)}.</Line>
-          <Line>{deposits.length > 1 ? `${deposits.length} dépôts` : `Dépôt ${deposits[0]}`}{parcels[0]?.client ? ` · ${clientFullName(parcels[0].client)}` : ''}.</Line>
-          <ul className="mt-2 space-y-1">
-            {parcels.slice(0, 5).map((p) => (
-              <li key={p.id} className={cn('flex items-baseline gap-2 text-[16px]', TEXT.strong)}>
-                <span className={cn('shrink-0 tabular-nums', TEXT.muted)}>{p.parcel_no}</span>
-                <span className="min-w-0 flex-1 truncate">{p.description ?? p.kind}</span>
-                <span className={cn('shrink-0 tabular-nums', TEXT.muted)}>{formatKg(p.weight_kg)}</span>
-              </li>
-            ))}
-            {parcels.length > 5 && <li className={cn('text-[16px]', TEXT.muted)}>… et {parcels.length - 5} autres</li>}
-          </ul>
+        <div className="min-w-0 text-right">
+          <p className={cn('truncate text-[24px] font-bold leading-tight', TEXT.strong)}>{arrivalPort(s)}</p>
+          <p className={cn('truncate text-[16px] uppercase', TEXT.muted)}>{s.vessel_name ?? CARRIER_LABEL[s.carrier] ?? s.carrier}</p>
         </div>
-      ) : (
-        <Line>Aucun colis reçu à l'entrepôt n'a encore été chargé dans cette boîte.</Line>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {canManage && <Button variant="primary" onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</Button>}
-        {parcels.length > 0 && <Button variant="neutral" onClick={() => void deliverSeaNoticePdf(s, parcels).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message))}>Avis d’expédition (PDF)</Button>}
-        <Button variant="neutral" onClick={onOpen3D}>Voir le chargement en 3D</Button>
+      </div>
+      {/* La ligne du voyage : le navire avance de gauche à droite. */}
+      <div className="relative mt-4 h-9" aria-hidden>
+        <div className="absolute inset-x-1.5 top-1/2 h-[3px] -translate-y-1/2 bg-[#D9D9D9] dark:bg-[#444444]" />
+        <div className="absolute left-1.5 top-1/2 h-[3px] -translate-y-1/2 bg-[#2C2C2C] dark:bg-[#E3E3E3]" style={{ width: `calc(${pct}% - 12px)` }} />
+        <span className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-[#2C2C2C] dark:bg-[#E3E3E3]" />
+        <span className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[3px] border-[#D9D9D9] bg-white dark:border-[#444444] dark:bg-[#1E1E1E]" />
+        {pct > 0 && pct < 100 && (
+          <span className="absolute top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]" style={{ left: `${pct}%` }}>
+            <Ship className="h-5 w-5" />
+          </span>
+        )}
+      </div>
+      <p className={cn('mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[17px]', TEXT.body)}>
+        {hasArrived(s.status) ? 'Arrivé le' : 'Arrive le'} <b className={cn('font-bold', TEXT.strong)}>{fmtDay(eta.date)}</b>
+        {slip > 0 && <Tag tone="danger">+{slip} j</Tag>}
+        {slip > 0 && promised && <span className={TEXT.muted}>promis le {promised.getDate()}</span>}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className={tagBtn} onClick={() => onTag('telex')}><Tag tone={s.telex_released ? 'success' : 'pending'} className="py-2 text-[15px]">{s.telex_released ? 'Télex reçu' : 'Télex attendu'}</Tag></button>
+        <button type="button" className={tagBtn} onClick={() => onTag('fret')}><Tag tone={s.freight_paid ? 'success' : 'pending'} className="py-2 text-[15px]">{s.freight_paid ? 'Fret réglé' : 'Fret à régler'}</Tag></button>
+        {(s.pod_unlocode === 'CMKBI' || s.pod_unlocode === 'CMDLA') && (
+          <button type="button" className={tagBtn} onClick={() => onTag('besc')}><Tag tone={besc ? 'success' : 'pending'} className="py-2 text-[15px]">{besc ? 'BESC fait' : 'BESC à faire'}</Tag></button>
+        )}
       </div>
     </div>
+  );
+}
+
+/* ── Onglet Suivi ────────────────────────────────────────────────────── */
+const callKind = (i: number, n: number) => (i === 0 ? 'Départ' : i === n - 1 ? 'Arrivée' : 'Escale');
+function callLine(c: RouteCall, state: CallState, i: number, n: number, s: CargoShipment): string {
+  const kind = callKind(i, n);
+  if (state === 'done') return `${kind} · ${fmtDay(callDate(i === 0 ? c.atd : c.ata ?? c.atd))}`;
+  if (state === 'here') return `${kind} · depuis le ${fmtDay(callDate(c.ata))}`;
+  if (i === n - 1) return `${kind} · ${bestEta(s).source === 'manual' ? 'relevée' : bestEta(s).source === 'promised' ? 'promise' : 'armateur'}`;
+  return `${kind}${c.eta ? ` · prévu le ${fmtDay(callDate(c.eta))}` : ''}`;
+}
+
+function SuiviTab({ s, pos, onPosition, onEta, onJournal, onDouane, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; onPosition: () => void; onEta: () => void; onJournal: () => void; onDouane: () => void; canManage: boolean }) {
+  const calls = voyageCalls(s);
+  const states = callStates(calls);
+  const eta = bestEta(s);
+  const etaSrc = eta.source === 'manual' ? 'équipe' : eta.source === 'promised' ? 'promise' : 'armateur';
+  return (
+    <>
+      <ItemList className="pt-2">
+        {calls.map((c, i) => {
+          const st = states[i];
+          const last = i === calls.length - 1;
+          const lead = st === 'done' ? <StateCircle state="done" /> : st === 'here' ? <StateCircle state="here" icon={Ship} /> : last ? <IconCircle icon={Flag} /> : <StateCircle state="todo" />;
+          const right = st === 'done' ? { tag: { tone: 'success' as const, label: 'Fait' } } : st === 'here' ? { tag: { tone: 'pending' as const, label: 'Ici' } } : st === 'after' ? { tag: { tone: 'neutral' as const, label: 'Après' } } : last ? { amount: fmtDay(eta.date) } : { amount: c.eta ? fmtDay(callDate(c.eta)) : undefined };
+          return (
+            <ItemRow key={c.id} leading={lead} title={c.name} subtitle={callLine(c, st, i, calls.length, s)} {...right} onClick={onJournal} />
+          );
+        })}
+      </ItemList>
+      <div className="px-5 pt-4">
+        <KVBox
+          rows={[
+            { label: 'Position', value: pos ? `${pos.note ?? (s.status === 'AT_SEA' ? 'En mer' : '—')} · ${positionAge(pos)}` : 'Inconnue', onClick: onPosition },
+            { label: 'Arrivée retenue', value: `${fmtDay(eta.date)} · ${etaSrc}`, onClick: canManage ? onEta : onJournal },
+          ]}
+        />
+      </div>
+      <ItemList className="pt-3">
+        <ItemRow leading={<IconCircle icon={Landmark} />} title="Douane et arrivée" subtitle={customsSentence(s)} onClick={onDouane} chevron />
+      </ItemList>
+    </>
+  );
+}
+
+/* ── Onglet Colis ────────────────────────────────────────────────────── */
+function ColisTab({ s, canManage, onSheet }: { s: CargoShipment; canManage: boolean; onSheet: (k: 'lots' | '3d') => void }) {
+  const navigate = useNavigate();
+  const { data: loaded } = useShipmentParcels(s.id);
+  const groups = useMemo(() => {
+    const by = new Map<string, { name: string; deposits: Set<string>; parcels: number; cbm: number }>();
+    for (const p of loaded ?? []) {
+      const key = p.client?.user_id ?? 'none';
+      const g = by.get(key) ?? { name: p.client ? clientFullName(p.client) : 'Sans client', deposits: new Set<string>(), parcels: 0, cbm: 0 };
+      g.deposits.add(p.deposit_no); g.parcels += 1; g.cbm += Number(p.cbm ?? 0);
+      by.set(key, g);
+    }
+    return [...by.values()].sort((a, b) => b.cbm - a.cbm);
+  }, [loaded]);
+  const parcels = loaded?.length ?? 0;
+  const cbm = groups.reduce((a, g) => a + g.cbm, 0);
+  return (
+    <>
+      <div className="px-5 pt-5"><CapsLabel>{groups.length} client{groups.length > 1 ? 's' : ''} · {parcels} colis · {formatCbm(cbm)}</CapsLabel></div>
+      {groups.length === 0 ? (
+        <EmptyLine>Aucun colis reçu dans cette boîte.</EmptyLine>
+      ) : (
+        <ItemList>
+          {groups.map((g) => (
+            <ItemRow
+              key={g.name}
+              leading={<Initials name={g.name} />}
+              title={g.name}
+              subtitle={`${[...g.deposits].slice(0, 2).join(', ')}${g.deposits.size > 2 ? '…' : ''} · ${g.parcels} colis`}
+              amount={formatCbm(g.cbm)}
+              right={<span className={cn('-ml-2 w-12 shrink-0 text-right text-[15px] tabular-nums', TEXT.muted)}>{cbm > 0 ? `${Math.round((g.cbm / cbm) * 100)} %` : ''}</span>}
+            />
+          ))}
+        </ItemList>
+      )}
+      <ItemList className="pt-3">
+        <ItemRow leading={<IconCircle icon={Users} />} title="Lots et groupage" subtitle="Propriétaires, part du fret, rattacher" onClick={() => onSheet('lots')} chevron />
+        <ItemRow leading={<IconCircle icon={Boxes} />} title="Chargement en 3D" subtitle="Lots, remplissage, sortir un colis" onClick={() => onSheet('3d')} chevron />
+      </ItemList>
+    </>
+  );
+}
+
+/* ── Le journal de l'armateur (toucher une escale) ───────────────────── */
+function JournalSheet({ s, open, onClose }: { s: CargoShipment; open: boolean; onClose: () => void }) {
+  const { data: events } = useCargoEvents(open ? s.id : null);
+  const { kept, etaHistory } = useMemo(() => dedupeEvents(events ?? []), [events]);
+  const items = useMemo(() => timelineFromEvents(kept).reverse(), [kept]);
+  return (
+    <BottomSheet open={open} onClose={onClose} title="Le voyage">
+      {s.last_event_label && <KVBox rows={[{ label: 'Dernier mouvement', value: `${s.last_event_label}${s.last_event_at ? ` · ${fmtDay(new Date(s.last_event_at))}` : ''}` }]} />}
+      <CapsLabel className="mt-5">Jalons de l'armateur</CapsLabel>
+      {items.length === 0 ? <p className={cn('py-4 text-[16px]', TEXT.muted)}>Aucun jalon reçu.</p> : (
+        <div>
+          {items.map((e) => (
+            <ItemRow key={e.id} leading={<StateCircle state={e.classifier === 'ACT' ? 'done' : 'todo'} />} title={e.label} subtitle={`${e.location ?? '—'} · ${fmtDay(new Date(e.time))}`} tag={e.classifier === 'ACT' ? undefined : { tone: 'neutral', label: 'Prévu' }} />
+          ))}
+        </div>
+      )}
+      {etaHistory.length > 1 && (
+        <>
+          <CapsLabel className="mt-5">Estimations successives</CapsLabel>
+          <KVBox className="mt-2" rows={etaHistory.map((e) => ({ label: `Reçue le ${fmtDay(new Date(e.created_at))}`, value: fmtDay(new Date(e.event_time)) }))} />
+        </>
+      )}
+    </BottomSheet>
+  );
+}
+
+function PositionSheet({ s, pos, open, onClose, onUpdate, canManage }: { s: CargoShipment; pos: CargoVesselPosition | null; open: boolean; onClose: () => void; onUpdate: () => void; canManage: boolean }) {
+  const navigate = useNavigate();
+  const live = liveVesselUrl(s.vessel_imo);
+  return (
+    <ActionSheet
+      open={open}
+      onClose={onClose}
+      title={pos ? `${pos.note ?? s.vessel_name ?? 'Position'} · ${positionAge(pos)}` : 'Position inconnue'}
+      actions={[
+        { label: 'Voir en direct', hint: 'MarineTraffic', icon: ExternalLink, onClick: () => { if (live) window.open(live, '_blank', 'noopener,noreferrer'); }, hidden: !live },
+        { label: 'Voir sur la carte', icon: MapIcon, onClick: () => navigate(`/m/cargo/map?vessel=${encodeURIComponent(s.vessel_imo ?? '')}`), hidden: !pos || !s.vessel_imo },
+        { label: 'Mettre à jour la position', icon: MapPin, onClick: onUpdate, hidden: !canManage },
+      ]}
+    />
   );
 }
 
@@ -255,44 +251,51 @@ export function MobileCargoDossier() {
   const { hasPermission } = useAdminAuth();
   const navigate = useNavigate();
   const { shipmentId, tab: raw } = useParams<{ shipmentId: string; tab?: string }>();
-  const open: SectionKey = raw ? (KEYS.includes(raw as SectionKey) ? (raw as SectionKey) : ALIAS[raw] ?? DEFAULT) : DEFAULT;
+  const tab: TabKey = raw ? ALIAS[raw] ?? 'suivi' : 'suivi';
   const canManage = hasPermission('canManageCargo');
   const { data: s, isLoading, error } = useCargoShipment(shipmentId ?? null);
-  const { data: docs } = useCargoDocuments(shipmentId ?? null);
   const { data: positions } = useCargoVesselPositions();
-  const { data: events } = useCargoEvents(shipmentId ?? null);
+  const { data: loaded } = useShipmentParcels(shipmentId ?? null);
+  const update = useUpdateCargoShipment();
+  const remove = useRemoveCargoShipment();
+  const sync = useRequestCargoSync();
   const pos = useMemo(() => (s ? groupVessels([s], positions ?? [])[0]?.position ?? null : null), [s, positions]);
+  const more = useSheet();
+  const [dialog, setDialog] = useState<'eta' | 'position' | 'calls' | 'arrived' | 'unarrived' | 'vessel' | 'notes' | 'remove' | 'journal' | 'where' | 'telex' | 'fret' | 'douane' | 'parties' | 'lots' | '3d' | null>(null);
+  const close = () => setDialog(null);
 
   if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
   if (!shipmentId) return <Navigate to="/m/cargo" replace />;
-  if (raw && !KEYS.includes(raw as SectionKey) && !ALIAS[raw]) return <Navigate to={path(shipmentId, DEFAULT)} replace />;
 
-  const go = (k: SectionKey) => navigate(path(shipmentId, open === k ? DEFAULT : k), { replace: true });
+  const goTab = (t: TabKey) => navigate(tabPath(shipmentId, t), { replace: true });
+  const onTag = (t: 'telex' | 'fret' | 'besc') => {
+    if (t === 'besc') { setDialog('douane'); return; }
+    if (canManage) setDialog(t);
+  };
+  const notice = () => {
+    if (!s) return;
+    void deliverSeaNoticePdf(s, loaded ?? []).then((o) => { if (o === 'downloaded') toast.success('Avis d’expédition téléchargé'); }).catch((e: Error) => toast.error(e.message));
+  };
 
-  const sections: { key: SectionKey; title: string; summary: (s: CargoShipment) => string; body: (s: CargoShipment) => React.ReactNode }[] = s ? [
-    { key: 'afaire', title: 'À faire', summary: (x) => todoSentence(x, docs), body: (x) => <Todo s={x} docs={docs} onGo={go} /> },
-    { key: 'ou', title: 'Où est le conteneur', summary: (x) => whereSentence(x, pos), body: (x) => <Where s={x} pos={pos} canManage={canManage} /> },
-    { key: 'trajet', title: 'Le trajet', summary: (x) => journeySentence(x), body: (x) => <Journey s={x} pos={pos} events={events ?? []} canManage={canManage} /> },
-    { key: 'argent', title: "L'argent", summary: (x) => moneySentence(x), body: (x) => <Money s={x} canManage={canManage} /> },
-    // Les modules refaits le 03-04/10/2026 (classeur, douane étape par étape, coûts justifiés, clients du groupage,
-    // intervenants) servent le téléphone ET l'ordinateur : une seule version, qui se replie sur petit écran.
-    { key: 'papiers', title: 'Les documents', summary: () => papersSentence(docs), body: (x) => <TabDocuments shipment={x} canManage={canManage} /> },
-    { key: 'douane', title: 'La douane, étape par étape', summary: (x) => customsSentence(x), body: (x) => <TabDouane shipment={x} canManage={canManage} /> },
-    { key: 'dedans', title: "Ce qu'il y a dedans", summary: (x) => contentSentence(x), body: (x) => <Inside s={x} onOpen3D={() => go('chargement')} canManage={canManage} /> },
-    { key: 'chargement', title: 'Le chargement en 3D', summary: () => 'Les véhicules et les colis dans la boîte, lot par lot', body: (x) => <TabChargement shipment={x} canManage={canManage} /> },
-    { key: 'client', title: 'Les clients du groupage', summary: () => 'À qui est chaque lot, et sa part du fret', body: (x) => <TabClient shipment={x} canManage={canManage} /> },
-    { key: 'intervenants', title: 'Les intervenants', summary: () => 'Transitaire, chargeur, déclarante, armateur…', body: (x) => <TabIntervenants shipment={x} canManage={canManage} /> },
-    { key: 'couts', title: 'Les coûts', summary: () => 'Ce que la boîte a vraiment coûté, avec les reçus', body: (x) => <TabCouts shipment={x} canManage={canManage} /> },
-    { key: 'notes', title: 'Les notes', summary: (x) => x.notes ? x.notes : 'Rien de noté pour l’instant', body: (x) => <MobileNotes shipment={x} canManage={canManage} /> },
+  const actions: SheetAction[] = s ? [
+    { label: 'Rafraîchir', hint: s.last_synced_at ? `Armateur interrogé ${agoSentence(s.last_synced_at)}` : 'Interroger l’armateur', icon: RefreshCw, onClick: () => sync.mutate() },
+    { label: 'Corriger l’arrivée', icon: CalendarCheck, onClick: () => setDialog('eta'), hidden: !canManage },
+    { label: 'Mettre à jour la position', icon: MapPin, onClick: () => setDialog('position'), hidden: !canManage },
+    { label: 'Modifier les escales', icon: Route, onClick: () => setDialog('calls'), hidden: !canManage },
+    { label: 'Navire et voyage', hint: s.vessel_name ? `${s.vessel_name}${s.voyage ? ` · ${s.voyage}` : ''}` : 'À renseigner', icon: Ship, onClick: () => setDialog('vessel'), hidden: !canManage },
+    { label: 'Marquer arrivé', icon: Flag, onClick: () => setDialog('arrived'), hidden: !canManage || hasArrived(s.status) || !(s.status === 'AT_SEA' || !!s.etd_actual) },
+    { label: 'Annuler l’arrivée', icon: Undo2, onClick: () => setDialog('unarrived'), hidden: !canManage || s.status !== 'ARRIVED' },
+    { label: 'Avis d’expédition (PDF)', icon: FileText, onClick: notice, disabled: (loaded?.length ?? 0) === 0 },
+    { label: 'Note interne', hint: s.notes ? s.notes.slice(0, 40) : undefined, icon: NotebookPen, onClick: () => setDialog('notes') },
+    { label: 'Retirer de la flotte', icon: Trash2, danger: true, onClick: () => setDialog('remove'), hidden: !canManage },
   ] : [];
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader
-        title={s ? `Conteneur de ${s.client_label}` : 'Conteneur'}
-        showBack
+    <div className="flex min-h-full flex-col pb-8">
+      <ScreenTop
+        title={s ? <button type="button" onClick={() => copyToClipboard(s.container_number, 'Numéro de conteneur')} className="max-w-full truncate text-left tabular-nums">{boxNo(s.container_number)}</button> : 'Conteneur'}
         backTo="/m/cargo"
-        rightElement={s ? <DossierActions shipment={s} compact onRemoved={() => navigate('/m/cargo')} /> : undefined}
+        right={s ? <MoreButton onClick={more.show} /> : undefined}
       />
 
       {isLoading && <ScreenLoader />}
@@ -301,51 +304,76 @@ export function MobileCargoDossier() {
 
       {s && (
         <>
-          {/* L'identité et la décision, en une phrase. */}
-          <div className={cn('space-y-2 border-b px-4 py-4', SURFACE.divider)}>
-            {/* Les deux numéros qu'on recopie dans WhatsApp ou au transitaire : un tap les copie. */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <button type="button" onClick={() => copyToClipboard(s.container_number, 'Numéro de conteneur')} aria-label={`Copier le numéro ${s.container_number}`}
-                className={cn('-ml-1 inline-flex min-h-11 items-center gap-2 rounded-lg px-1 tabular-nums active:bg-[#F5F5F5] dark:active:bg-[#383838]', TYPE.lead, TEXT.strong)}>
-                {s.container_number}
-                <Copy className={cn('h-5 w-5', TEXT.muted)} />
-              </button>
-              <StatusPill tone={statusMeta(s.status).tone} label={statusMeta(s.status).label} />
-            </div>
-            <p className={cn('text-[16px] leading-relaxed', TEXT.muted)}>
-              {CARRIER_LABEL[s.carrier] ?? s.carrier}, bill of lading{' '}
-              <button type="button" onClick={() => copyToClipboard(s.bl_number, 'Bill of lading')} aria-label={`Copier le bill of lading ${s.bl_number}`}
-                className={cn('-my-2 inline-flex min-h-11 items-center gap-1 rounded-md px-1 tabular-nums underline decoration-[#B3B3B3] underline-offset-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', TEXT.strong)}>
-                {s.bl_number}
-              </button>.
-            </p>
-            <p className={cn('text-[18px] font-semibold leading-snug', TEXT.strong)}>{arrivalSentence(s)}.</p>
-            {delaySentence(s) && <p className="text-[16px] font-semibold leading-snug text-[#975102] dark:text-[#E8B931]">{delaySentence(s)}.</p>}
+          <VoyageHead s={s} onTag={onTag} />
+          <div className="px-5 pt-4">
+            <FitSegmented<TabKey> ariaLabel="Parties du dossier" options={TABS} value={tab} onChange={goTab} />
           </div>
 
-          {/* Les sections, repliées, une ouverte à la fois. */}
-          <div className="px-4 pb-8">
-            {sections.map((sec) => {
-              const isOpen = open === sec.key;
-              return (
-                <section key={sec.key} className={cn('border-b', SURFACE.divider)}>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    onClick={() => go(sec.key)}
-                    className="flex w-full items-center gap-3 py-4 text-left"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block', TYPE.lead, TEXT.strong)}>{sec.title}</span>
-                      {!isOpen && <span className={cn('mt-0.5 block text-[16px] leading-snug', TEXT.muted)}>{sec.summary(s)}</span>}
-                    </span>
-                    <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, isOpen && 'rotate-180')} />
-                  </button>
-                  {isOpen && <div className="pb-5">{sec.body(s)}</div>}
-                </section>
-              );
-            })}
-          </div>
+          {tab === 'suivi' && <SuiviTab s={s} pos={pos} canManage={canManage} onPosition={() => setDialog('where')} onEta={() => setDialog('eta')} onJournal={() => setDialog('journal')} onDouane={() => setDialog('douane')} />}
+          {tab === 'documents' && (
+            <>
+              <DossierDocs s={s} canManage={canManage} />
+              <ItemList className="pt-1">
+                <ItemRow leading={<IconCircle icon={Users} />} title="Intervenants" subtitle="Transitaire, déclarante, destinataire" onClick={() => setDialog('parties')} chevron />
+              </ItemList>
+            </>
+          )}
+          {tab === 'colis' && <ColisTab s={s} canManage={canManage} onSheet={(k) => setDialog(k)} />}
+          {tab === 'couts' && <DossierCosts s={s} canManage={canManage} />}
+
+          <BottomSheet open={dialog === 'douane'} onClose={close} title="Douane et arrivée"><TabDouane shipment={s} canManage={canManage} /></BottomSheet>
+          <BottomSheet open={dialog === 'parties'} onClose={close} title="Intervenants"><TabIntervenants shipment={s} canManage={canManage} /></BottomSheet>
+          <BottomSheet open={dialog === 'lots'} onClose={close} title="Lots et groupage"><TabClient shipment={s} canManage={canManage} /></BottomSheet>
+          <BottomSheet open={dialog === '3d'} onClose={close} title="Chargement"><TabChargement shipment={s} canManage={canManage} /></BottomSheet>
+
+          {tab === 'colis' && canManage && (
+            <Dock><BigButton onClick={() => navigate(`/m/cargo/${s.id}/charger-colis`)}>Charger des colis reçus</BigButton></Dock>
+          )}
+
+          <ActionSheet open={more.open} onClose={more.hide} title={boxNo(s.container_number)} actions={actions} />
+          <JournalSheet s={s} open={dialog === 'journal'} onClose={close} />
+          <PositionSheet s={s} pos={pos} open={dialog === 'where'} onClose={close} canManage={canManage} onUpdate={() => setDialog('position')} />
+          {canManage && <MobileNavireSheet shipment={s} open={dialog === 'vessel'} onClose={close} />}
+          <BottomSheet open={dialog === 'notes'} onClose={close} title="Note interne">
+            <MobileNotes shipment={s} canManage={canManage} />
+          </BottomSheet>
+          <ConfirmSheet
+            open={dialog === 'fret'}
+            onClose={close}
+            title={s.freight_paid ? 'Le fret n’est pas réglé ?' : 'Le fret est réglé ?'}
+            subtitle={`Au transitaire · ${boxNo(s.container_number)}`}
+            rows={[{ label: 'Fret', value: fmtUsd(s.freight_usd) }, { label: 'État', before: s.freight_paid ? 'Réglé' : 'À régler', value: s.freight_paid ? 'À régler' : 'Réglé' }]}
+            confirmLabel={s.freight_paid ? 'Marquer non réglé' : 'Marquer réglé'}
+            loading={update.isPending}
+            onConfirm={() => update.mutate({ id: s.id, patch: { freight_paid: !s.freight_paid } }, { onSuccess: close })}
+          />
+          <ConfirmSheet
+            open={dialog === 'telex'}
+            onClose={close}
+            title={s.telex_released ? 'Le télex n’est pas reçu ?' : 'Le télex est reçu ?'}
+            subtitle={`Sans lui, le conteneur reste au port`}
+            rows={[{ label: 'Télex release', before: s.telex_released ? 'Reçu' : 'Attendu', value: s.telex_released ? 'Attendu' : 'Reçu' }]}
+            confirmLabel={s.telex_released ? 'Marquer non reçu' : 'Marquer reçu'}
+            loading={update.isPending}
+            onConfirm={() => update.mutate({ id: s.id, patch: { telex_released: !s.telex_released } }, { onSuccess: close })}
+          />
+          <ConfirmSheet
+            open={dialog === 'remove'}
+            danger
+            onClose={close}
+            title="Retirer ce conteneur ?"
+            subtitle={`${boxNo(s.container_number)} · ${s.client_label}`}
+            rows={[{ label: 'Jalons, documents, coûts', value: 'Retirés' }]}
+            confirmLabel="Retirer de la flotte"
+            cancelLabel="Garder"
+            loading={remove.isPending}
+            onConfirm={() => remove.mutate(s.id, { onSuccess: () => { close(); navigate('/m/cargo'); } })}
+          />
+          {dialog === 'eta' && <div className="admin-theme"><EtaDialog shipment={s} onClose={close} /></div>}
+          {dialog === 'position' && <div className="admin-theme"><PositionDialog shipment={s} position={pos} onClose={close} /></div>}
+          {dialog === 'calls' && <div className="admin-theme"><CallsDialog shipment={s} onClose={close} /></div>}
+          {dialog === 'arrived' && <div className="admin-theme"><MarkArrivedDialog shipment={s} onClose={close} /></div>}
+          {dialog === 'unarrived' && <div className="admin-theme"><UnmarkArrivedDialog shipment={s} onClose={close} /></div>}
         </>
       )}
     </div>

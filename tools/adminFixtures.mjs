@@ -1,5 +1,6 @@
 // Shared REST/RPC/storage fixtures for the admin screenshot runners.
 // Used by shoot-admin-before.mjs (real screens) and shoot-admin.mjs (redesign mockups).
+import { respondCargo } from './cargoFixtures.mjs';
 const now = Date.now();
 const ago = (h) => new Date(now - h * 3600_000).toISOString();
 
@@ -175,7 +176,7 @@ const notifications = [
   { id: 'n4', user_id: 'u5', type: 'payment_completed', title: 'Fournisseur payé', message: 'Le règlement BZ-PY-2026-1180 de ¥ 12 000 est arrivé chez votre fournisseur.', metadata: { payment_id: 'p1', reference: 'BZ-PY-2026-1180' }, is_read: true, created_at: ago(300) },
 ];
 
-function respond(url) {
+function respond(url, body) {
   if (url.includes('/rpc/get_deposit_stats')) return stats;
   if (url.includes('/storage/v1/object/sign')) {
     // Echo the object path so the GET interception can tell QR from proof.
@@ -227,6 +228,9 @@ function respond(url) {
     if (url.includes('order=effective_at.asc')) return [...dailyRates].reverse();
     return dailyRates;
   }
+  // Cargo · Réception · Entrepôt (tools/cargoFixtures.mjs).
+  const cargo = respondCargo(url, body);
+  if (cargo !== undefined) return cargo;
   return [];
 }
 
