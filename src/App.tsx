@@ -97,8 +97,16 @@ const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
 const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
-const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
-const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesMarketScreen })));
+const MobileRatesScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesScreen })));
+const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesMarketScreen })));
+const MobileRatesPublishScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesPublishScreen })));
+const MobileRatesCountriesScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesCountriesScreen })));
+const MobileRatesCountryScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesCountryScreen })));
+const MobileRatesSettingsScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesSettingsScreen })));
+const MobileRatesHistoryScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesHistoryScreen })));
+const MobileRatesSimulatorScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesSimulatorScreen })));
+const MobileRatesQuoteScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesQuoteScreen })));
+const MobileRatesFlyerScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesFlyerScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
@@ -357,7 +365,15 @@ const App = () => (
                 <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/market" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/publish" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesPublishScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/countries" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesCountriesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/countries/:key" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesCountryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/settings" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="settings" />}><MobileRatesSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/history" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="history" />}><MobileRatesHistoryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/simulator" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesSimulatorScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/quote" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesQuoteScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/flyer" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesFlyerScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
