@@ -1,5 +1,6 @@
 // Shared REST/RPC/storage fixtures for the admin screenshot runners.
 // Used by shoot-admin-before.mjs (real screens) and shoot-admin.mjs (redesign mockups).
+import { respondCargo } from './cargoFixtures.mjs';
 const now = Date.now();
 const ago = (h) => new Date(now - h * 3600_000).toISOString();
 
@@ -219,7 +220,7 @@ function respondOps(url) {
   return undefined;
 }
 
-function respond(url) {
+function respond(url, body) {
   const ops = respondOps(url);
   if (ops !== undefined) return ops;
   // Module Messages · Douane · Mola · Outils (refonte v2) : voir respondOutils, en fin de fichier.
@@ -283,6 +284,9 @@ function respond(url) {
   const tr = treasuryRespond(url);
   if (tr !== undefined) return tr;
   { const b = respondModuleB(url); if (b !== undefined) return b; }
+  // Cargo · Réception · Entrepôt (tools/cargoFixtures.mjs).
+  const cargo = respondCargo(url, body);
+  if (cargo !== undefined) return cargo;
   return [];
 }
 

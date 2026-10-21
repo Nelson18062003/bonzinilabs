@@ -11,12 +11,17 @@
 // en grand, ceux qui manquent en rouge, un scan PQ-… les reçoit un par un.
 // Puis chaque paquet s'ouvre (?paquet=PQ-…) et ses colis se pointent comme
 // avant, « Tout pointer » compris. Les colis hors paquet restent en dessous.
+//
+// Refonte v2 (maquette 04/15) : la progression en barre, la douchette, les
+// puces Tous · À pointer · Manquants, une ligne par colis (photo prise à
+// Guangzhou à droite). Toucher = pointé en bon état ; appui long (ou la
+// photo) = sa fiche (abîmé, place, manquant). « Tout pointer », la place de
+// rangement et « Déclarer les manquants » sont dans « … ».
 // ============================================================
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCheck, ClipboardCheck, MapPin, PackageOpen, PackageX } from 'lucide-react';
+import { CheckCheck, MapPin, PackageX } from 'lucide-react';
 import { toast } from 'sonner';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCheckinMany, useCheckinParcel, useFindParcel, useFlagMissingMany, useSetArrivalPackage, useWarehouseArrival } from '@/hooks/useWarehouse';
 import { useOpenAirPackage, useReceiveAirPackage } from '@/hooks/useAirPackages';
 import { fmtKg1, type AirPackage } from '@/lib/airPackage';
@@ -26,11 +31,14 @@ import {
   packagesProgress, parcelsByPackage, parseWarehouseScan, type WarehouseParcel,
 } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, BottomSheet, Card, FormField, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill, TextInput } from '@/mobile/designKit';
-import { formatDateTime } from '@/mobile/components/reception/bits';
-import { BottomBar, ClientHead, ParcelLine } from '@/mobile/components/warehouse/bits';
-import { PackageChip, PackageMark, PackageRow, PackagesCounter, PackagesVerdict, ScanNotice } from '@/mobile/components/warehouse/packages';
+import {
+  ActionSheet, BigButton, BottomSheet, ConfirmSheet, Dock, EmptyLine, MoreButton, ScreenLoader, ScreenTop, SURFACE, TEXT, TYPE, Tag, TextInput, useSheet,
+} from '@/mobile/designKit';
+import { ParcelThumb, formatDateTime } from '@/mobile/components/reception/bits';
+import { clientFullName } from '@/lib/reception';
+import { PackageRow, PackagesCounter, PackagesVerdict, ScanNotice } from '@/mobile/components/warehouse/packages';
 import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
+import { ChipRow, InkProgress, StateCircle, useLongPress } from '@/mobile/components/cargo/v2';
 
 const PLACE_KEY = 'bonzini-warehouse-place';
 const readPlace = () => { try { return sessionStorage.getItem(PLACE_KEY) ?? ''; } catch { return ''; } };
@@ -38,24 +46,37 @@ const readPlace = () => { try { return sessionStorage.getItem(PLACE_KEY) ?? ''; 
 /** Ce que l'écran des arrivées passe quand il a reçu un paquet par le lien /w/arrivees?paquet=… */
 type LinkState = { packageScan?: ScanResult } | null;
 
-/** Le grand compteur des colis pointés, avec ce qui reste, abîmé, manquant. */
-function CheckinCounter({ sum, label = 'Pointés' }: { sum: ReturnType<typeof checkinSummary>; label?: string }) {
+type Filter = 'all' | 'todo' | 'missing';
+
+/** Une ligne du pointage : toucher = pointé en bon état ; appui long ou photo = sa fiche. */
+function CheckRow({ p, onTap, onOpen, canTap }: { p: WarehouseParcel; onTap: () => void; onOpen: () => void; canTap: boolean }) {
+  const long = useLongPress(onOpen);
+  const missing = p.condition === 'missing' && !p.checked_in_at;
+  const damaged = p.condition === 'damaged';
+  const seen = !!p.checked_in_at || !!p.delivered_at;
+  const who = p.client ? clientFullName(p.client) : 'Client à attribuer';
+  const detail = damaged && p.condition_note ? p.condition_note : seen && p.warehouse_location ? `Rangée ${p.warehouse_location}` : p.description || p.kind;
   return (
-    <>
-      <div className="flex items-end justify-between gap-3">
-        <span>
-          <span className={cn('block', TYPE.small, TEXT.muted)}>{label}</span>
-          <span className={cn('block text-[32px] font-semibold leading-tight tabular-nums', TEXT.strong)}>{sum.seen} <span className={cn('text-[18px] font-normal', TEXT.muted)}>/ {sum.total}</span></span>
+    <div className={cn('flex w-full items-center gap-3 border-b py-3.5 last:border-b-0', SURFACE.divider, p.delivered_at && 'opacity-60')}>
+      <button
+        type="button"
+        disabled={!!p.delivered_at}
+        onClick={() => { if (long.fired.current) return; if (canTap) onTap(); else onOpen(); }}
+        {...long.handlers}
+        className="flex min-w-0 flex-1 select-none items-center gap-3.5 text-left active:opacity-70"
+      >
+        <StateCircle state={missing ? 'alert' : damaged ? 'warn' : seen ? 'done' : 'todo'} />
+        <span className="min-w-0 flex-1">
+          <span className={cn('block truncate text-[17px] font-semibold tabular-nums', TEXT.strong)}>{p.parcel_no}</span>
+          <span className={cn('block truncate text-[15px]', TEXT.muted)}>{who} · {detail}</span>
         </span>
-        <span className={cn('text-right tabular-nums', TYPE.small, TEXT.muted)}>
-          {sum.pending > 0 ? <span className="block font-semibold text-[#975102] dark:text-[#E8B931]">{sum.pending} à pointer</span> : <span className="block font-semibold text-[#009951] dark:text-[#14AE5C]">Tout est pointé</span>}
-          {sum.damaged > 0 && <span className="block">{sum.damaged} abîmé{sum.damaged > 1 ? 's' : ''}</span>}
-          {sum.missing > 0 && <span className="block font-semibold text-[#C00F0C] dark:text-[#EC221F]">{sum.missing} manquant{sum.missing > 1 ? 's' : ''}</span>}
-          {sum.delivered > 0 && <span className="block">{sum.delivered} déjà remis</span>}
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#E6E6E6] dark:bg-[#444444]"><div className="h-full rounded-full bg-[#14AE5C] transition-all" style={{ width: `${sum.total ? Math.round((sum.seen / sum.total) * 100) : 0}%` }} /></div>
-    </>
+      </button>
+      {missing ? <Tag tone="danger">Manquant</Tag>
+        : damaged ? <Tag tone="pending">Abîmé</Tag>
+        : p.delivered_at ? <Tag tone="neutral">Remis</Tag>
+        : seen ? <Tag tone="success">Pointé</Tag>
+        : <button type="button" onClick={onOpen} aria-label={`Fiche de ${p.parcel_no}`} className="shrink-0 rounded-lg active:opacity-70"><ParcelThumb path={p.photo_path} size="h-[52px] w-[52px]" /></button>}
+    </div>
   );
 }
 
@@ -79,6 +100,8 @@ export function WarehouseCheckin() {
   const [allOpen, setAllOpen] = useState(false);
   const [lostOpen, setLostOpen] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>('all');
+  const more = useSheet();
   // Un paquet reçu par le lien du scanner (/w/arrivees?paquet=…) : on montre ce qu'il en est, une fois.
   const [notice, setNotice] = useState<ScanResult | null>(() => (location.state as LinkState)?.packageScan ?? null);
 
@@ -154,172 +177,163 @@ export function WarehouseCheckin() {
   };
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
-  if (error || !data) return <ScreenError description={(error as Error | null)?.message ?? 'Arrivée introuvable'} onRetry={() => void refetch()} />;
+  if (error || !data) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <ScreenTop title="Pointer" backTo="/w/arrivees" />
+        <EmptyLine action={{ label: 'Réessayer', onClick: () => void refetch() }}>{(error as Error | null)?.message ?? 'Arrivée introuvable'}</EmptyLine>
+      </div>
+    );
+  }
 
-  const placeButton = (
-    <button type="button" onClick={() => { setPlaceDraft(place); setPlaceOpen(true); }} className={cn('flex h-10 w-full items-center gap-2 text-left', TYPE.small, TEXT.muted)}>
-      <MapPin className="h-4 w-4 shrink-0" />
-      <span className="flex-1">{place ? <>Les colis pointés vont en <b className={TEXT.strong}>{place}</b></> : 'Où rangez-vous les colis ? (facultatif)'}</span>
-      <span className={cn('font-semibold', TEXT.strong)}>{place ? 'Changer' : 'Indiquer'}</span>
-    </button>
+  const flat = groups.flatMap((g) => g.parcels);
+  const missingList = flat.filter((p) => p.condition === 'missing' && !p.checked_in_at);
+  const shown = filter === 'todo' ? flat.filter(isPending) : filter === 'missing' ? missingList : flat;
+  const chips = (
+    <ChipRow<Filter>
+      className="-mx-5"
+      options={[
+        { value: 'all', label: 'Tous', count: flat.length },
+        { value: 'todo', label: 'À pointer', count: pending.length },
+        { value: 'missing', label: 'Manquants', count: missingList.length },
+      ]}
+      value={filter}
+      onChange={setFilter}
+    />
   );
-  const parcelGroups = groups.map((g) => (
-    <Card key={g.client?.user_id ?? 'none'} className="py-0">
-      <div className="py-3"><ClientHead client={g.client} size="md" sub={`${g.client?.customer_code ? `${g.client.customer_code} · ` : ''}${nParcels(g.parcels.length)}`} /></div>
-      {g.parcels.map((p) => (
-        <ParcelLine key={p.id} parcel={p} onTap={canTap ? () => tap(p) : undefined} onOpen={() => open(p)} disabled={!!p.delivered_at}
-          badge={p.package_no ? <PackageChip no={p.package_no} /> : undefined} />
-      ))}
-    </Card>
-  ));
-  const sheets = (
-    <>
-      <BottomSheet open={placeOpen} onClose={() => setPlaceOpen(false)} title="Où rangez-vous les colis ?">
-        <div className="space-y-4">
-          <p className={cn(TYPE.body, TEXT.muted)}>Une étagère, une zone : « B3 », « zone fragile ». Elle sera notée sur chaque colis pointé après.</p>
-          <FormField label="Place dans l'entrepôt" htmlFor="wh-place"><TextInput id="wh-place" value={placeDraft} onChange={(e) => setPlaceDraft(e.target.value)} placeholder="B3" autoFocus className="h-14 text-[18px]" /></FormField>
-          <PrimaryPill onClick={() => { savePlace(placeDraft.trim()); setPlaceOpen(false); }} className="h-14 w-full text-[17px]">{placeDraft.trim() ? `Ranger en ${placeDraft.trim()}` : 'Sans place'}</PrimaryPill>
-        </div>
-      </BottomSheet>
-
-      <BottomSheet open={allOpen} onClose={() => setAllOpen(false)} title={`Tout pointer (${pending.length})`}>
-        <div className="space-y-4">
-          <p className={cn(TYPE.body, TEXT.strong)}>
-            {focus ? `Les ${nParcels(pending.length)} restants du paquet ${focus.package_no} sont tous là, en bon état ?`
-              : hasPackages ? `Les ${nParcels(pending.length)} hors paquet restants sont tous là, en bon état ?`
-              : `Les ${nParcels(pending.length)} restants sont tous là, en bon état ?`}
-          </p>
-          <p className={cn(TYPE.body, TEXT.muted)}>Si un colis est abîmé ou manque, pointez-le d'abord depuis sa fiche.</p>
-          <PrimaryPill onClick={() => { checkinMany.mutate({ parcelIds: pending.map((p) => p.id), location: place || undefined }, { onSuccess: () => { setAllOpen(false); toast.success(`${nParcels(pending.length)} pointés`); } }); }} loading={checkinMany.isPending} className="h-14 w-full text-[17px]"><CheckCheck /> Oui, tout pointer</PrimaryPill>
-          <SoftPill onClick={() => setAllOpen(false)} className="h-12 w-full text-[16px]">Non, je vérifie</SoftPill>
-        </div>
-      </BottomSheet>
-    </>
+  const rows = shown.length === 0 ? <EmptyLine>{filter === 'todo' ? 'Tout est pointé.' : filter === 'missing' ? 'Aucun manquant.' : 'Aucun colis.'}</EmptyLine> : (
+    <div>
+      {shown.map((p) => <CheckRow key={p.id} p={p} canTap={canTap && isPending(p)} onTap={() => tap(p)} onOpen={() => open(p)} />)}
+    </div>
   );
+  const placeSheet = (
+    <BottomSheet open={placeOpen} onClose={() => setPlaceOpen(false)} title="Où rangez-vous les colis ?">
+      <div className="space-y-4">
+        <TextInput value={placeDraft} onChange={(e) => setPlaceDraft(e.target.value)} placeholder="B3" aria-label="Place dans l'entrepôt" autoFocus className="h-14 text-[18px]" />
+        <BigButton onClick={() => { savePlace(placeDraft.trim()); setPlaceOpen(false); }}>{placeDraft.trim() ? `Ranger en ${placeDraft.trim()}` : 'Sans place'}</BigButton>
+      </div>
+    </BottomSheet>
+  );
+  const allSheet = (
+    <ConfirmSheet
+      open={allOpen}
+      onClose={() => setAllOpen(false)}
+      title={`Tout pointer (${pending.length}) ?`}
+      subtitle={focus ? `Paquet ${focus.package_no} · tous là, en bon état` : hasPackages ? 'Hors paquet · tous là, en bon état' : 'Tous là, en bon état'}
+      rows={[{ label: 'Colis', value: nParcels(pending.length) }, ...(place ? [{ label: 'Rangée', value: place }] : [])]}
+      confirmLabel="Oui, tout pointer"
+      cancelLabel="Non, je vérifie"
+      loading={checkinMany.isPending}
+      onConfirm={() => checkinMany.mutate({ parcelIds: pending.map((p) => p.id), location: place || undefined }, { onSuccess: () => { setAllOpen(false); toast.success(`${nParcels(pending.length)} pointés`); } })}
+    />
+  );
+  const placeAction = { label: 'Où ranger', hint: place ? `Rangée ${place}` : 'Facultatif', icon: MapPin, onClick: () => { setPlaceDraft(place); setPlaceOpen(true); } };
 
   /* ── Un paquet, ouvert (ou à ouvrir) : ses colis ─────────────────────── */
   if (focus && focusStage) {
     const meta = PACKAGE_STAGE_META[focusStage];
     return (
-      <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-        <MobileHeader title={focus.package_no} subtitle={data.label} showBack backTo={base} />
-        <div className="space-y-5 px-4 pb-44 pt-4">
-          <Card className="space-y-3">
-            <div className="flex items-center gap-3">
-              <PackageMark stage={focusStage} size={48} />
-              <span className="min-w-0 flex-1">
-                <span className={cn('block tabular-nums', TYPE.title, TEXT.strong)}>{focus.package_no}</span>
-                <span className={cn('block tabular-nums', TYPE.small, TEXT.muted)}>{[nParcels(scope.length), Number(focus.net_weight_kg) > 0 ? fmtKg1(focus.net_weight_kg) : null].filter(Boolean).join(' · ')}</span>
-              </span>
-              <StatusPill tone={meta.tone} label={meta.label} />
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <ScreenTop title={focus.package_no} backTo={base} step={focusStage === 'opened' ? `${sum.seen}/${sum.total}` : undefined} right={<MoreButton onClick={more.show} />} />
+        <div className="space-y-4 px-5 pb-6 pt-4">
+          {focusStage === 'opened' ? (
+            <>
+              <InkProgress value={sum.seen} max={sum.total} label="Colis pointés" />
+              <ParcelScanBox onScan={onScan} placeholder="Scanner ou saisir RC-…" />
+            </>
+          ) : (
+            <div className="space-y-2 text-center">
+              <Tag tone={meta.tone}>{meta.label}</Tag>
+              <p className={cn('text-[16px]', TEXT.muted)}>
+                {focusStage === 'received' ? `Reçu${focus.received_at ? ` le ${formatDateTime(focus.received_at)}` : ''} · ${nParcels(scope.length)}` : `Pas reçu · ${nParcels(scope.length)}${Number(focus.net_weight_kg) > 0 ? ` · ${fmtKg1(focus.net_weight_kg)}` : ''}`}
+              </p>
             </div>
-            {focusStage === 'opened' ? (
-              <>
-                <CheckinCounter sum={sum} label="Colis pointés dans ce paquet" />
-                <ParcelScanBox onScan={onScan} placeholder="Scannez un carton ou tapez son numéro" />
-                {placeButton}
-              </>
-            ) : focusStage === 'received' ? (
-              <p className={cn(TYPE.body, TEXT.body)}>Reçu{focus.received_at ? ` le ${formatDateTime(focus.received_at)}` : ''}. Ouvrez-le, puis pointez chacun de ses colis.</p>
-            ) : (
-              <div className="space-y-1 rounded-lg border-2 border-[#EC221F] bg-[#FEE9E7] p-3 dark:bg-[#900B09]/30" role="alert">
-                <p className={cn(TYPE.bodyStrong, 'text-[#900B09] dark:text-[#FDD3D0]')}>Ce paquet n'a pas été reçu</p>
-                <p className={cn(TYPE.small, 'text-[#900B09] dark:text-[#FDD3D0]')}>Il est là mais son étiquette ne se lit pas ? Ouvrez-le quand même. Refusé au départ ou perdu ? Déclarez ses colis manquants.</p>
-              </div>
-            )}
-            {notice && <ScanNotice result={notice} />}
-          </Card>
-
-          <p className={cn(TYPE.body, TEXT.muted)}>
-            {focusStage === 'opened' ? 'Scannez chaque carton du paquet, ou touchez un colis présent pour le pointer. Un souci ? Ouvrez sa fiche avec la flèche.' : `Dans ce paquet : ${nParcels(scope.length)}. Ils se pointent une fois le paquet ouvert.`}
-          </p>
-          {parcelGroups}
-
-          {focusStage === 'expected' && pending.length > 0 && (
-            <SoftPill onClick={() => setLostOpen(true)} className="h-12 w-full text-[16px] text-[#900B09] dark:text-[#FDD3D0]"><PackageX /> Il n'est pas arrivé : déclarer ses {pending.length} colis manquants</SoftPill>
           )}
+          {notice && <ScanNotice result={notice} />}
+          {chips}
+          {rows}
         </div>
 
-        <BottomBar>
-          {focusStage === 'opened' && pending.length > 0 && (
-            <SoftPill onClick={() => setAllOpen(true)} className="h-12 w-full text-[16px]"><CheckCheck /> Tout pointer ce paquet ({pending.length})</SoftPill>
-          )}
-          {focusStage !== 'opened' && (
-            <PrimaryPill onClick={() => openPackage(focus)} loading={openPkg.isPending} className="h-14 w-full text-[17px]"><PackageOpen /> Ouvrir le paquet</PrimaryPill>
-          )}
+        <Dock>
           {focusStage === 'opened'
-            ? <PrimaryPill onClick={() => navigate(base)} className="h-14 w-full text-[17px]">Retour aux paquets</PrimaryPill>
-            : <SoftPill onClick={() => navigate(base)} className="h-12 w-full text-[16px]">Retour aux paquets</SoftPill>}
-        </BottomBar>
+            ? <BigButton onClick={() => navigate(base)}>Retour aux paquets</BigButton>
+            : <BigButton onClick={() => openPackage(focus)} loading={openPkg.isPending}>Ouvrir le paquet</BigButton>}
+        </Dock>
 
-        {sheets}
-        <BottomSheet open={lostOpen} onClose={() => setLostOpen(false)} title={`Déclarer ${pending.length} manquant${pending.length > 1 ? 's' : ''}`}>
-          <div className="space-y-4">
-            <p className={cn(TYPE.body, TEXT.strong)}>Le paquet {focus.package_no} n'est pas arrivé : {pending.map((p) => p.parcel_no).join(', ')}.</p>
-            <p className={cn(TYPE.body, TEXT.muted)}>L'équipe le verra et cherchera avec Guangzhou. S'il arrive plus tard, scannez-le : ses colis se pointeront.</p>
-            <PrimaryPill onClick={() => flagMany.mutate({ parcelIds: pending.map((p) => p.id), note: `Paquet ${focus.package_no} non reçu à Douala` }, { onSuccess: (r) => { setLostOpen(false); toast.success(`${nParcels(r.flagged)} déclarés manquants`); } })} loading={flagMany.isPending} className="h-14 w-full bg-[#C00F0C] text-[17px] text-white dark:bg-[#EC221F] dark:text-white"><PackageX /> Oui, manquants</PrimaryPill>
-            <SoftPill onClick={() => setLostOpen(false)} className="h-12 w-full text-[16px]">Annuler</SoftPill>
-          </div>
-        </BottomSheet>
+        <ActionSheet
+          open={more.open}
+          onClose={more.hide}
+          title={focus.package_no}
+          actions={[
+            { label: `Tout pointer ce paquet (${pending.length})`, icon: CheckCheck, onClick: () => setAllOpen(true), hidden: focusStage !== 'opened' || pending.length === 0 },
+            placeAction,
+            { label: `Déclarer ses ${pending.length} colis manquants`, icon: PackageX, danger: true, onClick: () => setLostOpen(true), hidden: focusStage !== 'expected' || pending.length === 0 },
+          ]}
+        />
+        {placeSheet}
+        {allSheet}
+        <ConfirmSheet
+          open={lostOpen}
+          danger
+          onClose={() => setLostOpen(false)}
+          title={`Déclarer ${pending.length} manquant${pending.length > 1 ? 's' : ''} ?`}
+          subtitle={`Paquet ${focus.package_no} non reçu`}
+          rows={[{ label: 'Colis', value: pending.map((p) => p.parcel_no).slice(0, 3).join(', ') + (pending.length > 3 ? '…' : '') }]}
+          confirmLabel="Oui, manquants"
+          loading={flagMany.isPending}
+          onConfirm={() => flagMany.mutate({ parcelIds: pending.map((p) => p.id), note: `Paquet ${focus.package_no} non reçu à Douala` }, { onSuccess: (r) => { setLostOpen(false); toast.success(`${nParcels(r.flagged)} déclarés manquants`); } })}
+        />
       </div>
     );
   }
 
   /* ── L'arrivée : les paquets d'abord (avion), puis les colis ─────────── */
   return (
-    <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-      <MobileHeader title={data.label} subtitle={data.sub ?? undefined} showBack backTo="/w/arrivees" />
-      <div className="space-y-5 px-4 pb-44 pt-4">
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={data.label} backTo="/w/arrivees" step={`${sum.seen}/${sum.total}`} right={<MoreButton onClick={more.show} />} />
+      <div className="space-y-4 px-5 pb-6 pt-4">
+        <InkProgress value={sum.seen} max={sum.total} label="Colis pointés" />
+        <ParcelScanBox onScan={onScan} placeholder={hasPackages ? 'Scanner un paquet (PQ-…) ou RC-…' : 'Scanner ou saisir RC-…'} />
+        {notice && <ScanNotice result={notice} />}
+
         {hasPackages && (
           <>
-            <Card className="space-y-3">
-              <PackagesCounter progress={progress} />
-              <ParcelScanBox onScan={onScan} placeholder="Scannez un paquet (PQ-…) ou un carton" />
-              {notice && <ScanNotice result={notice} />}
-            </Card>
+            <PackagesCounter progress={progress} />
             <PackagesVerdict progress={progress} onShow={showPackage} />
-            <section>
-              <h2 className={cn('mb-1', TYPE.lead, TEXT.strong)}>Les paquets</h2>
-              <p className={cn('mb-3', TYPE.body, TEXT.muted)}>Ouvrez chaque paquet reçu, puis pointez ses colis.</p>
-              <Card className="py-0">
-                {packages.map((k) => {
-                  const s = checkinSummary(split.byPackage.get(k.id) ?? []);
-                  return <PackageRow key={k.id} pkg={k} count={s} onShow={() => showPackage(k.package_no)} onOpen={() => openPackage(k)} opening={openingId === k.id} />;
-                })}
-              </Card>
-            </section>
+            <div>
+              {packages.map((k) => {
+                const c = checkinSummary(split.byPackage.get(k.id) ?? []);
+                return <PackageRow key={k.id} pkg={k} count={c} onShow={() => showPackage(k.package_no)} onOpen={() => openPackage(k)} opening={openingId === k.id} />;
+              })}
+            </div>
           </>
         )}
 
-        <Card className="space-y-3">
-          <CheckinCounter sum={sum} label={hasPackages ? 'Colis pointés (tous paquets)' : 'Pointés'} />
-          {!hasPackages && <ParcelScanBox onScan={onScan} placeholder="Scannez un carton ou tapez son numéro" />}
-          {!hasPackages && notice && <ScanNotice result={notice} />}
-          {placeButton}
-        </Card>
-
-        {hasPackages ? (
-          split.loose.length > 0 && (
-            <div>
-              <h2 className={cn('mb-1', TYPE.lead, TEXT.strong)}>Colis hors paquet</h2>
-              <p className={cn(TYPE.body, TEXT.muted)}>Ils ont voyagé seuls : touchez un colis présent pour le pointer.</p>
-            </div>
-          )
-        ) : (
-          <p className={cn(TYPE.body, TEXT.muted)}>Scannez l'étiquette Bonzini de chaque carton, ou touchez un colis présent pour le pointer. Un souci ? Ouvrez sa fiche avec la flèche.</p>
+        {(!hasPackages || split.loose.length > 0) && (
+          <>
+            {hasPackages && <p className={cn('pt-2', TYPE.lead, TEXT.strong)}>Colis hors paquet</p>}
+            {chips}
+            {rows}
+          </>
         )}
-
-        {parcelGroups}
       </div>
 
-      <BottomBar>
-        {pending.length > 0 && (
-          <SoftPill onClick={() => setAllOpen(true)} className="h-12 w-full text-[16px]"><CheckCheck /> {hasPackages ? `Tout pointer hors paquet (${pending.length})` : `Tout pointer (${pending.length})`}</SoftPill>
-        )}
-        <PrimaryPill onClick={() => navigate(`${base}/bilan`)} className="h-14 w-full text-[17px]"><ClipboardCheck /> Terminer le pointage</PrimaryPill>
-      </BottomBar>
+      <Dock>
+        <BigButton onClick={() => navigate(`${base}/bilan`)}>Terminer le pointage</BigButton>
+      </Dock>
 
-      {sheets}
+      <ActionSheet
+        open={more.open}
+        onClose={more.hide}
+        title={data.label}
+        actions={[
+          { label: hasPackages ? `Tout pointer hors paquet (${pending.length})` : `Tout pointer (${pending.length})`, icon: CheckCheck, onClick: () => setAllOpen(true), hidden: pending.length === 0 },
+          placeAction,
+          { label: 'Déclarer les manquants', hint: 'Au bilan du pointage', icon: PackageX, onClick: () => navigate(`${base}/bilan`) },
+        ]}
+      />
+      {placeSheet}
+      {allSheet}
     </div>
   );
 }

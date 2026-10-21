@@ -11,7 +11,8 @@ import type { AirPackage } from '@/lib/airPackage';
 import { fmtKg1 } from '@/lib/airPackage';
 import { PACKAGE_STAGE_META, nParcels, packageStage, type PackageStage, type PackagesProgress } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TONE_PILL, TYPE, Button, StatusPill, type Tone } from '@/mobile/designKit';
+import { SURFACE, TEXT, TONE_PILL, TYPE, Tag, type Tone } from '@/mobile/designKit';
+import { RowButton } from '@/mobile/components/cargo/v2';
 
 type Progress = PackagesProgress;
 /** Ce qu'on sait du pointage des colis d'un paquet (checkinSummary). */
@@ -33,9 +34,9 @@ export function PackageMark({ stage, size = 44 }: { stage: PackageStage; size?: 
   const Icon = stage === 'opened' ? PackageOpen : stage === 'received' ? PackageCheck : Package;
   return (
     <span aria-hidden="true" style={{ width: size, height: size }}
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-lg border-2',
+      className={cn('inline-flex shrink-0 items-center justify-center rounded-full border-2',
         stage === 'opened' ? 'border-[#14AE5C] bg-[#14AE5C] text-white'
-        : stage === 'received' ? 'border-[#2C2C2C] bg-[#2C2C2C] text-[#F5F5F5] dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]'
+        : stage === 'received' ? 'border-[#F5F5F5] bg-[#F5F5F5] text-[#1E1E1E] dark:border-[#383838] dark:bg-[#383838] dark:text-[#F5F5F5]'
         : 'border-dashed border-[#E8B931] text-[#975102] dark:text-[#E8B931]')}>
       <Icon style={{ width: Math.round(size * 0.5), height: Math.round(size * 0.5) }} />
     </span>
@@ -75,7 +76,6 @@ export function PackagesVerdict({ progress, onShow }: { progress: Progress; onSh
         <PackageCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#009951] dark:text-[#14AE5C]" />
         <span>
           <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>{progress.total > 1 ? `Les ${progress.total} paquets sont là` : 'Le paquet est là'}</span>
-          <span className={cn('block', TYPE.small, TEXT.muted)}>{progress.opened === progress.total ? 'Tous sont ouverts : finissez de pointer leurs colis.' : 'Ouvrez-les un par un et pointez leurs colis.'}</span>
         </span>
       </div>
     );
@@ -92,7 +92,6 @@ export function PackagesVerdict({ progress, onShow }: { progress: Progress; onSh
           </button>
         ))}
       </div>
-      <p className={cn(TYPE.small, 'text-[#900B09] dark:text-[#FDD3D0]')}>Scannez-les dès qu'ils arrivent. Refusé au départ ou perdu ? Touchez-le : ses colis se déclarent manquants.</p>
     </div>
   );
 }
@@ -110,7 +109,7 @@ export function PackageRow({ pkg, count, onShow, onOpen, opening }: { pkg: AirPa
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className={cn('tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{pkg.package_no}</span>
-            <StatusPill tone={meta.tone} label={meta.label} className="h-7 text-[14px]" />
+            <Tag tone={meta.tone}>{meta.label}</Tag>
           </span>
           <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{facts}</span>
           {stage === 'opened' && (
@@ -122,7 +121,7 @@ export function PackageRow({ pkg, count, onShow, onOpen, opening }: { pkg: AirPa
         </span>
       </button>
       {stage === 'received'
-        ? <Button onClick={onOpen} loading={opening} className="h-11 shrink-0 px-4"><PackageOpen /> Ouvrir</Button>
+        ? <RowButton onClick={onOpen} disabled={opening}>{opening ? '…' : 'Ouvrir'}</RowButton>
         : (
           <button type="button" onClick={onShow} aria-label={`Voir ${pkg.package_no}`} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full', SURFACE.holder)}>
             <ChevronRight className="h-5 w-5" />

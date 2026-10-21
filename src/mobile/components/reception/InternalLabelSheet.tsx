@@ -15,7 +15,8 @@ import { useParcelLabels } from '@/components/cargo/reception/useParcelLabels';
 import { canShareFiles, deliverFile, downloadFile } from '@/components/customer-code/exportShippingLabel';
 import { SURFACE, TEXT, TYPE, BottomSheet, Button, PrimaryPill } from '@/mobile/designKit';
 
-export function InternalLabelSheet({ open, onClose, deposit, settings }: { open: boolean; onClose: () => void; deposit: Deposit; settings: ShippingSettings }) {
+/** `startParcelId` : la feuille s'ouvre sur ce carton (l'étiquette d'un colis, depuis la fiche dépôt). */
+export function InternalLabelSheet({ open, onClose, deposit, settings, startParcelId }: { open: boolean; onClose: () => void; deposit: Deposit; settings: ShippingSettings; startParcelId?: string | null }) {
   const client = deposit.client;
   const parcels = deposit.parcels;
   const items = useMemo(() => parcels.map((parcel) => ({ parcel, deposit })), [parcels, deposit]);
@@ -33,7 +34,12 @@ export function InternalLabelSheet({ open, onClose, deposit, settings }: { open:
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, i, maker.ready, deposit.id]);
-  useEffect(() => { if (!open) { setI(0); setPreview(null); } }, [open]);
+  useEffect(() => {
+    if (!open) { setI(0); setPreview(null); return; }
+    const k = startParcelId ? parcels.findIndex((p) => p.id === startParcelId) : -1;
+    if (k >= 0) setI(k);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, startParcelId]);
 
   if (!client) return null;
   const parcel = parcels[i];

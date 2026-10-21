@@ -9,11 +9,15 @@
 // Les colis, rangés par client.
 // En bas : fermer (pesée, dimensions, puis l'étiquette), rouvrir, imprimer,
 // ou supprimer un paquet vide.
+// Refonte v2 (maquette 10/48) : le poids en grand, la jauge, la douchette,
+// les colis avec « Retirer » ; « Fermer le paquet (pesée) » en bas ; le rare
+// (étiquette, rouvrir, supprimer, paquet suivant) dans « … ».
 // ============================================================
+import { getCurrentLocale } from '@/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useReceptionBack } from '@/mobile/components/reception/useReceptionBack';
-import { Check, ListPlus, LockOpen, PackageCheck, PackagePlus, Plus, Printer, Trash2 } from 'lucide-react';
+import { Check, LockOpen, PackagePlus, Printer, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,13 +28,15 @@ import {
   PackageRpcError, useAddParcelToPackage, useAirPackage, useCreateAirPackage, useDeleteAirPackage,
   usePackableParcels, usePackParcels, useRemoveParcelFromPackage, useReopenAirPackage, useSealAirPackage, type SealInput,
 } from '@/hooks/useAirPackages';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
 import { PackageLabelSheet } from '@/components/cargo/packages/PackageLabelSheet';
-import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, BottomSheet, Button, Card, FormField, PrimaryPill, Row, ScreenError, ScreenLoader, SoftPill, StatusPill, TextInput } from '@/mobile/designKit';
-import { formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
-import { WeightBar } from '@/mobile/components/reception/packageBits';
-import { GAUGE_TONE, useOpenedBy, usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
+import {
+  ActionSheet, BigButton, BottomSheet, ConfirmSheet, DayLabel, Dock, EmptyLine, KVBox, MoreButton, ScreenLoader, ScreenTop, SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, Tag,
+  useSheet,
+} from '@/mobile/designKit';
+import { ParcelLine, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { CapsLabel, InkProgress, RowButton, UnitField } from '@/mobile/components/cargo/v2';
+import { useOpenedBy, usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
 
 type Sheet = 'seal' | 'label' | 'reopen' | 'delete' | null;
 
@@ -59,6 +65,7 @@ function PackageScreen({ id }: { id: string }) {
   const [over, setOver] = useState(false);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [justSealed, setJustSealed] = useState(false);
+  const more = useSheet();
 
   const groups = useMemo(() => packageClientGroups(pkg?.parcels), [pkg?.parcels]);
   const by = useOpenedBy(pkg ?? {});
@@ -67,8 +74,8 @@ function PackageScreen({ id }: { id: string }) {
   if (isLoading || error || !pkg) {
     return (
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
-        {isLoading ? <ScreenLoader /> : <ScreenError title={t('error')} description={(error as Error | null)?.message ?? t('rc_pk_not_found')} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />}
+        <ScreenTop title={t('rc_pk_title')} onBack={() => back('/r/paquets')} />
+        {isLoading ? <ScreenLoader /> : <EmptyLine action={{ label: t('rc_retry'), onClick: () => void refetch() }}>{(error as Error | null)?.message ?? t('rc_pk_not_found')}</EmptyLine>}
       </div>
     );
   }
@@ -118,127 +125,99 @@ function PackageScreen({ id }: { id: string }) {
     create.mutate(undefined, { onSuccess: (p) => { setSheet(null); navigate(`/r/paquets/${p.id}`, { replace: true }); } });
   };
 
+  const all = groups.flatMap((grp) => grp.parcels.map((p) => ({ p, client: grp.client })));
   return (
-    <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={pkg.package_no} subtitle={by ?? t('rc_pk_title')} showBack onBack={() => back('/r/paquets')} />
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={pkg.package_no} onBack={() => back('/r/paquets')} right={<MoreButton onClick={more.show} />} />
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-6 pt-5">
-        {/* La jauge : ce que pèsent les colis sur 32 kg, et ce qu'il reste. */}
-        <Card className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_pk_net')}</p>
-              <p className={cn('mt-1 whitespace-nowrap font-semibold leading-none tracking-[-0.02em] tabular-nums', TEXT.strong)}>
-                <span className="text-[40px]">{formatKg(g.net)}</span>
-                <span className={cn('ml-1 text-[20px] font-medium', TEXT.muted)}>/ {formatKg(g.max)}</span>
-              </p>
-            </div>
-            <StatusPill tone={st.tone} label={st.label} />
-          </div>
-          <WeightBar gauge={g} neutral={!open} className="h-4" />
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 tabular-nums">
-            <span className={cn(TYPE.body, TEXT.muted)}>{labels.parcels(pkg.parcel_count)} · {tx.clients(pkg.client_count)}</span>
-            {open && <span className={cn(TYPE.lead, TONE_TEXT[GAUGE_TONE[g.tone]])}>{tx.left(g)}</span>}
-          </div>
-          {pkg.gross_weight_kg != null && (
-            <div className={cn('divide-y border-t pt-1 dark:divide-[#444444]', SURFACE.divider, 'divide-[#D9D9D9]')}>
-              <Row label={t('rc_pk_gross')} value={formatKg(pkg.gross_weight_kg)} />
-              {pkg.length_cm != null && pkg.width_cm != null && pkg.height_cm != null && (
-                <Row label={t('rc_pk_dims')} value={`${pkg.length_cm} × ${pkg.width_cm} × ${pkg.height_cm} cm`} />
-              )}
-              {pkg.sealed_at && <Row label={t('rc_pk_sealed_on')} value={formatDateTime(pkg.sealed_at)} />}
-            </div>
-          )}
-        </Card>
+      <div className="flex-1 space-y-5 px-5 pb-6 pt-5">
+        {/* Le poids en grand : ce que pèsent les colis sur 32 kg. */}
+        <div className="text-center">
+          <p className={cn('text-[48px] font-bold leading-none tracking-[-0.03em] tabular-nums', TEXT.strong)}>
+            {g.net.toLocaleString(getCurrentLocale(), { maximumFractionDigits: 1 })}<span className={cn('ml-1.5 text-[22px] font-semibold tracking-normal', TEXT.muted)}>kg</span>
+          </p>
+          <p className={cn('mt-2 text-[16px] tabular-nums', TEXT.muted)}>
+            {ti('rc_v2_out_of', { max: formatKg(g.max) })} · {labels.parcels(pkg.parcel_count)} · {open ? tx.left(g) : st.label}
+          </p>
+          {by && <p className={cn('mt-0.5 text-[15px]', TEXT.muted)}>{by}</p>}
+        </div>
+        <InkProgress value={g.net} max={g.max} label={t('rc_pk_net')} />
+        {!open && <div className="text-center"><Tag tone={st.tone === 'info' ? 'neutral' : st.tone}>{st.label}</Tag></div>}
+        {pkg.gross_weight_kg != null && (
+          <KVBox rows={[
+            { label: t('rc_pk_gross'), value: formatKg(pkg.gross_weight_kg) },
+            ...(pkg.length_cm != null && pkg.width_cm != null && pkg.height_cm != null ? [{ label: t('rc_pk_dims'), value: `${pkg.length_cm} × ${pkg.width_cm} × ${pkg.height_cm} cm` }] : []),
+            ...(pkg.sealed_at ? [{ label: t('rc_pk_sealed_on'), value: formatDateTime(pkg.sealed_at) }] : []),
+          ]} />
+        )}
 
         {pkg.status === 'refused' && (
           <div className={cn('space-y-1 rounded-lg px-4 py-3', TONE_PILL.danger)}>
             <p className={TYPE.bodyStrong}>{t('rc_pk_st_refused')}</p>
             {pkg.refusal_reason && <p className={cn('break-words', TYPE.body)}>{ti('rc_pk_refusal', { reason: pkg.refusal_reason })}</p>}
-            <p className={TYPE.small}>{t('rc_pk_refused_hint')}</p>
           </div>
         )}
-
         {expedition && (
           <div className={cn('space-y-1 rounded-lg px-4 py-3', TONE_PILL.info)}>
             <p className={TYPE.bodyStrong}>{t('rc_pk_group_assigned')}</p>
             <p className={cn('break-words tabular-nums', TYPE.body)}>{expedition}</p>
-            <p className={TYPE.small}>{t('rc_pk_assigned_hint')}</p>
           </div>
         )}
 
         {open && (
           <div className="space-y-3">
             {/* La douchette garde le champ, sauf quand une feuille est ouverte (pesée, étiquette). */}
-            <ParcelScanBox onScan={onScan} placeholder={t('rc_pk_scan_ph')} texts={scanTexts} keepFocus={sheet === null} />
+            <ParcelScanBox onScan={onScan} placeholder={t('rc_pk_scan_ph')} texts={scanTexts} keepFocus={sheet === null && !more.open} />
             {over && (
               <div className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.pending)}>
                 <p className={TYPE.bodyStrong}>{t('rc_pk_over_hint')}</p>
-                <PrimaryPill onClick={() => setSheet('seal')} disabled={busy || pkg.parcel_count === 0} className="h-12 w-full"><PackageCheck /> {t('rc_pk_seal_and_next')}</PrimaryPill>
+                <BigButton onClick={() => setSheet('seal')} disabled={busy || pkg.parcel_count === 0}>{t('rc_pk_seal_and_next')}</BigButton>
               </div>
             )}
           </div>
         )}
 
-        {open && <ReadyToAdd pkg={pkg} onAdded={(no) => { setOver(false); setLastAdded(no); }} />}
-
-        {/* Les colis, par client. */}
-        <section className="space-y-3">
-          <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_parcels_by_client')}</h2>
-          {groups.length === 0 ? (
-            <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
-              <p className={cn(TYPE.body, TEXT.muted)}>{open ? t('rc_pk_empty_parcels') : '—'}</p>
-            </Card>
-          ) : (
-            groups.map((grp) => (
-              <Card key={grp.client?.user_id ?? '—'} className="py-0">
-                <div className={cn('flex items-start justify-between gap-3 border-b py-3', SURFACE.divider)}>
-                  <span className="min-w-0">
-                    <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{grp.client?.customer_code ?? t('rc_unknown_client')}</span>
-                    {grp.client && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{clientFullName(grp.client)}</span>}
-                  </span>
-                  <span className={cn('shrink-0 text-right tabular-nums', TYPE.smallStrong, TEXT.muted)}>{labels.parcels(grp.parcels.length)} · {formatKg(grp.kg)}</span>
-                </div>
-                {grp.parcels.map((p) => (
-                  <div key={p.id} className={cn('-mx-4 flex items-center gap-3 border-b px-4 py-3 last:border-b-0 transition-colors', SURFACE.divider, p.parcel_no === lastAdded && 'bg-[#EBFFEE] dark:bg-[#02542D]/40')}>
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('flex items-center gap-1.5 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>
-                        {p.parcel_no === lastAdded && <Check className="h-4 w-4 shrink-0 text-[#009951] dark:text-[#14AE5C]" aria-hidden="true" />}
-                        {p.parcel_no}
-                      </span>
-                      <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{p.description || labels.kind(p.kind as ParcelKind)}</span>
-                    </span>
-                    <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(p.weight_kg)}</span>
-                    {open && (
-                      <Button variant="neutral" onClick={() => remove.mutate(p.id)} disabled={remove.isPending} className="h-10 shrink-0 px-3 text-[15px]">
-                        {t('rc_remove')}
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </Card>
-            ))
-          )}
-        </section>
-      </div>
-
-      {/* Les gestes, en bas : un seul principal selon l'état. */}
-      <div className={cn('shrink-0 space-y-3 border-t px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4', SURFACE.canvas, SURFACE.divider)}>
-        {open ? (
-          pkg.parcel_count > 0 ? (
-            <PrimaryPill onClick={() => setSheet('seal')} disabled={busy} className="h-14 w-full text-[17px]"><PackageCheck /> {t('rc_pk_seal')}</PrimaryPill>
-          ) : (
-            <Button variant="dangerSubtle" onClick={() => setSheet('delete')} disabled={busy} className="h-12 w-full"><Trash2 /> {t('rc_pk_delete')}</Button>
-          )
+        {/* Les colis du paquet. */}
+        {all.length === 0 ? (
+          <EmptyLine>{open ? t('rc_pk_empty_parcels') : '—'}</EmptyLine>
         ) : (
-          <>
-            <PrimaryPill onClick={() => { setJustSealed(false); setSheet('label'); }} disabled={busy} className="h-14 w-full text-[17px]"><Printer /> {t('rc_pk_print')}</PrimaryPill>
-            {isAssignable(pkg) && (
-              <SoftPill onClick={() => setSheet('reopen')} disabled={busy} className="h-12 w-full"><LockOpen /> {t('rc_pk_reopen')}</SoftPill>
-            )}
-          </>
+          <div>
+            {all.map(({ p, client }) => (
+              <ParcelLine
+                key={p.id}
+                parcel={p}
+                title={<span className="inline-flex items-center gap-1.5 tabular-nums">{p.parcel_no === lastAdded && <Check className="h-4 w-4 shrink-0 text-[#009951]" aria-hidden="true" />}{p.parcel_no}</span>}
+                subtitle={`${client ? clientFullName(client) : t('rc_unknown_client')} · ${formatKg(p.weight_kg)}`}
+                right={open ? <RowButton link disabled={remove.isPending} onClick={() => remove.mutate(p.id)} ariaLabel={`${t('rc_remove')} ${p.parcel_no}`}>{t('rc_remove')}</RowButton> : <span className={cn('shrink-0 text-[17px] font-bold tabular-nums', TEXT.strong)}>{formatKg(p.weight_kg)}</span>}
+              />
+            ))}
+          </div>
         )}
+
+        {open && <ReadyToAdd pkg={pkg} onAdded={(no) => { setOver(false); setLastAdded(no); }} />}
       </div>
+
+      <Dock>
+        {open ? (
+          pkg.parcel_count > 0
+            ? <BigButton onClick={() => setSheet('seal')} disabled={busy}>{t('rc_v2_seal_weigh')}</BigButton>
+            : <BigButton variant="danger" onClick={() => setSheet('delete')} disabled={busy}>{t('rc_pk_delete')}</BigButton>
+        ) : (
+          <BigButton onClick={() => { setJustSealed(false); setSheet('label'); }} disabled={busy}>{t('rc_pk_print')}</BigButton>
+        )}
+      </Dock>
+
+      <ActionSheet
+        open={more.open}
+        onClose={more.hide}
+        title={pkg.package_no}
+        actions={[
+          { label: t('rc_pk_print'), icon: Printer, onClick: () => { setJustSealed(false); setSheet('label'); }, hidden: open },
+          { label: t('rc_pk_reopen'), icon: LockOpen, onClick: () => setSheet('reopen'), hidden: open || !isAssignable(pkg) },
+          { label: t('rc_pk_next_package'), icon: PackagePlus, onClick: startNext, disabled: create.isPending },
+          { label: t('rc_pk_delete'), icon: Trash2, danger: true, onClick: () => setSheet('delete'), hidden: !(open && pkg.parcel_count === 0) },
+        ]}
+      />
 
       <SealSheet open={sheet === 'seal'} onClose={() => setSheet(null)} pkg={pkg} pending={seal.isPending} onSeal={doSeal} />
 
@@ -253,25 +232,31 @@ function PackageScreen({ id }: { id: string }) {
           </div>
         ) : undefined}
         footer={justSealed ? (
-          <SoftPill onClick={startNext} disabled={create.isPending} className="h-14 w-full text-[17px]"><PackagePlus /> {t('rc_pk_next_package')}</SoftPill>
+          <BigButton variant="soft" onClick={startNext} disabled={create.isPending}>{t('rc_pk_next_package')}</BigButton>
         ) : undefined}
       />
 
-      <BottomSheet open={sheet === 'reopen'} onClose={() => setSheet(null)} title={ti('rc_pk_reopen_title', { no: pkg.package_no })}>
-        <div className="space-y-5">
-          <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pk_reopen_hint')}</p>
-          <PrimaryPill onClick={doReopen} loading={reopen.isPending} className="h-14 w-full text-[17px]"><LockOpen /> {t('rc_pk_reopen')}</PrimaryPill>
-          <SoftPill onClick={() => setSheet(null)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
-        </div>
-      </BottomSheet>
-
-      <BottomSheet open={sheet === 'delete'} onClose={() => setSheet(null)} title={t('rc_pk_delete')}>
-        <div className="space-y-5">
-          <p className={cn(TYPE.body, TEXT.muted)}>{ti('rc_pk_delete_hint', { no: pkg.package_no })}</p>
-          <PrimaryPill danger onClick={doDelete} loading={del.isPending} className="h-14 w-full text-[17px]"><Trash2 /> {t('rc_pk_delete')}</PrimaryPill>
-          <SoftPill onClick={() => setSheet(null)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
-        </div>
-      </BottomSheet>
+      <ConfirmSheet
+        open={sheet === 'reopen'}
+        onClose={() => setSheet(null)}
+        title={ti('rc_pk_reopen_title', { no: pkg.package_no })}
+        subtitle={t('rc_pk_reopen_hint')}
+        confirmLabel={t('rc_pk_reopen')}
+        cancelLabel={t('rc_cancel')}
+        loading={reopen.isPending}
+        onConfirm={doReopen}
+      />
+      <ConfirmSheet
+        open={sheet === 'delete'}
+        danger
+        onClose={() => setSheet(null)}
+        title={t('rc_pk_delete')}
+        subtitle={pkg.package_no}
+        confirmLabel={t('rc_pk_delete')}
+        cancelLabel={t('rc_cancel')}
+        loading={del.isPending}
+        onConfirm={doDelete}
+      />
     </div>
   );
 }
@@ -345,44 +330,35 @@ function ReadyToAdd({ pkg, onAdded }: { pkg: AirPackage; onAdded: (parcelNo: str
   };
 
   return (
-    <section className="space-y-3">
-      <span className="block">
-        <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_pk_ready_title')}</h2>
-        {fit > 0 && <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_pk_ready_hint')}</span>}
-      </span>
+    <section>
+      <CapsLabel>{t('rc_pk_ready_title')}</CapsLabel>
       {/* Un geste pour remplir le carton avec ce qui tient encore. */}
       {best.length > 1 && (
-        <SoftPill onClick={() => void onFillAll()} disabled={pending !== null} className="h-12 w-full">
-          <ListPlus /> {ti('rc_pk_fill_all', { count: best.length, kg: formatKg(sumParcelKg(best)) })}
-        </SoftPill>
+        <BigButton variant="soft" className="mt-3" onClick={() => void onFillAll()} disabled={pending !== null}>
+          {ti('rc_pk_fill_all', { count: best.length, kg: formatKg(sumParcelKg(best)) })}
+        </BigButton>
       )}
       {shown.map((grp) => (
-        <Card key={grp.key} className="overflow-hidden p-0">
-          <div className={cn('flex items-start justify-between gap-3 border-b px-4 py-3', SURFACE.divider, SURFACE.inset)}>
-            <span className="min-w-0">
-              <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{grp.client?.customer_code ?? t('rc_unknown_client')}</span>
-              {grp.client && <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{clientFullName(grp.client)}</span>}
-            </span>
-            {grp.inPackage && <span className={cn('shrink-0 text-right', TYPE.smallStrong, TONE_TEXT.success)}>{t('rc_pk_ready_in_package')}</span>}
-          </div>
+        <div key={grp.key}>
+          <DayLabel className="px-0">
+            {grp.client ? `${clientFullName(grp.client)} · ${grp.client.customer_code}` : t('rc_unknown_client')}
+            {grp.inPackage && <span className={cn('ml-2', TONE_TEXT.success)}>· {t('rc_pk_ready_in_package')}</span>}
+          </DayLabel>
           {grp.items.map((it) => (
-            <div key={it.parcel.id} className={cn('flex items-center gap-3 border-b px-4 py-3 last:border-b-0', SURFACE.divider)}>
-              <span className="min-w-0 flex-1">
-                <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{it.parcel.parcel_no}</span>
-                <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{it.parcel.description || labels.kind(it.parcel.kind as ParcelKind)}</span>
-              </span>
-              <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{formatKg(it.parcel.weight_kg)}</span>
-              <Button variant="primary" onClick={() => void onAdd(it)} loading={pending === it.parcel.id} disabled={pending !== null} ariaLabel={`${t('rc_pk_ready_add')} ${it.parcel.parcel_no}`} className="h-11 shrink-0 px-3 text-[15px]">
-                <Plus /> {t('rc_pk_ready_add')}
-              </Button>
-            </div>
+            <ParcelLine
+              key={it.parcel.id}
+              parcel={it.parcel}
+              subtitle={`${it.parcel.parcel_no} · ${formatKg(it.parcel.weight_kg)}`}
+              title={it.parcel.description || labels.kind(it.parcel.kind as ParcelKind)}
+              right={<RowButton disabled={pending !== null} onClick={() => void onAdd(it)} ariaLabel={`${t('rc_pk_ready_add')} ${it.parcel.parcel_no}`}>{pending === it.parcel.id ? '…' : t('rc_pk_ready_add')}</RowButton>}
+            />
           ))}
-        </Card>
+        </div>
       ))}
       {fit > READY_SHOWN && (
-        <SoftPill onClick={() => setMore((m) => !m)} className="h-11 w-full">{more ? t('rc_pk_ready_less') : ti('rc_pk_ready_more', { count: fit - READY_SHOWN })}</SoftPill>
+        <BigButton variant="soft" className="mt-3" onClick={() => setMore((m) => !m)}>{more ? t('rc_pk_ready_less') : ti('rc_pk_ready_more', { count: fit - READY_SHOWN })}</BigButton>
       )}
-      {noRoom > 0 && <p className={cn('tabular-nums', TYPE.small, TEXT.muted)}>{ti('rc_pk_ready_no_room', { count: noRoom, left: tx.left(g) })}</p>}
+      {noRoom > 0 && <p className={cn('mt-3 tabular-nums text-[15px]', TEXT.muted)}>{ti('rc_pk_ready_no_room', { count: noRoom, left: tx.left(g) })}</p>}
     </section>
   );
 }
@@ -414,40 +390,22 @@ function SealSheet({ open, onClose, pkg, pending, onSeal }: { open: boolean; onC
   return (
     <BottomSheet open={open} onClose={onClose} title={t('rc_pk_seal')}>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); submit(); }}>
-        <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pk_seal_help')}</p>
-        <FormField label={t('rc_pk_gross_label')} htmlFor="pk-gross" error={grossError} hint={ti('rc_pk_gross_hint', { kg: formatKg(g.net), max: formatKg(g.max) })}>
-          <div className="relative">
-            <TextInput
-              id="pk-gross"
-              value={gross}
-              onChange={(e) => setGross(e.target.value)}
-              inputMode="decimal"
-              enterKeyHint="done"
-              placeholder={String(Math.round(g.net * 10) / 10)}
-              className="h-20 pr-16 text-[40px] font-semibold tabular-nums"
-            />
-            <span className={cn('pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[20px] font-semibold', TEXT.muted)}>kg</span>
-          </div>
-        </FormField>
-        <FormField label={t('rc_pk_dims_label')} error={dimsError}>
-          <div className="flex items-center gap-2">
+        <div className="space-y-2">
+          <CapsLabel as="label">{t('rc_pk_gross_label')}</CapsLabel>
+          <UnitField big unit="kg" value={gross} onChange={(e) => setGross(e.target.value)} enterKeyHint="done" placeholder={String(Math.round(g.net * 10) / 10)} invalid={!!grossError && gross !== ''} aria-label={t('rc_pk_gross_label')} />
+          <p className={cn('text-[15px]', grossError && gross !== '' ? 'text-[#900B09] dark:text-[#FCB3AD]' : TEXT.muted)}>{grossError && gross !== '' ? grossError : ti('rc_pk_gross_hint', { kg: formatKg(g.net), max: formatKg(g.max) })}</p>
+        </div>
+        <div className="space-y-2">
+          <CapsLabel>{t('rc_pk_dims_label')}</CapsLabel>
+          <div className="grid grid-cols-3 gap-2.5">
             {dimLabels.map((label, i) => (
-              <span key={label} className="contents">
-                {i > 0 && <span className={cn('shrink-0 text-[18px]', TEXT.muted)} aria-hidden="true">×</span>}
-                <TextInput
-                  value={dims[i]}
-                  onChange={(e) => setDims((d) => { const n = [...d] as [string, string, string]; n[i] = e.target.value; return n; })}
-                  inputMode="decimal"
-                  placeholder={label}
-                  aria-label={label}
-                  className="h-14 min-w-0 flex-1 text-center text-[18px] font-semibold tabular-nums"
-                />
-              </span>
+              <UnitField key={label} unit="cm" value={dims[i]} onChange={(e) => setDims((d) => { const n = [...d] as [string, string, string]; n[i] = e.target.value; return n; })} placeholder="0" aria-label={label} />
             ))}
           </div>
-        </FormField>
-        <PrimaryPill type="submit" loading={pending} disabled={!valid || pending} className="h-14 w-full text-[17px]"><PackageCheck /> {t('rc_pk_seal_confirm')}</PrimaryPill>
-        <SoftPill onClick={onClose} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
+          {dimsError && <p className="text-[15px] text-[#900B09] dark:text-[#FCB3AD]">{dimsError}</p>}
+        </div>
+        <BigButton type="submit" loading={pending} disabled={!valid || pending}>{t('rc_pk_seal_confirm')}</BigButton>
+        <BigButton variant="soft" onClick={onClose}>{t('rc_cancel')}</BigButton>
       </form>
     </BottomSheet>
   );

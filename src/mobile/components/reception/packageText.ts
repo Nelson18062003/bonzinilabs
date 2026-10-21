@@ -49,7 +49,8 @@ export function usePackageText() {
 /** Les textes de la boîte de scan, dans la langue du réceptionnaire. */
 export function useScanTexts(hint: string): Partial<ScanBoxTexts> {
   const { t } = useTranslation('agent');
-  return { hint, openCamera: t('rc_scan_cam_open'), closeCamera: t('rc_scan_cam_close'), cameraStarting: t('rc_scan_cam_starting'), cameraError: t('rc_scan_cam_error') };
+  void hint; // refonte v2 : plus de phrase d'aide sous la douchette
+  return { hint: '', openCamera: t('rc_scan_cam_open'), closeCamera: t('rc_scan_cam_close'), cameraStarting: t('rc_scan_cam_starting'), cameraError: t('rc_scan_cam_error') };
 }
 
 /**
