@@ -117,7 +117,7 @@ export function shortWhen(iso: string, now = new Date()): string {
 /** « 1 213 450 » : les milliers avec une espace insécable (lisible en gros). */
 export function n0(v: number | null | undefined): string {
   const x = Math.round(Number(v) || 0);
-  const s = Math.abs(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const s = Math.abs(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
   return x < 0 ? `−${s}` : s;
 }
 
@@ -126,7 +126,7 @@ export function yuan(v: number | null | undefined): string {
   const x = Number(v) || 0;
   const int = Math.trunc(x);
   const dec = Math.round(Math.abs(x - int) * 100);
-  return `¥ ${n0(int)}${dec ? `,${String(dec).padStart(2, '0')}` : ''}`;
+  return `¥\u00A0${n0(int)}${dec ? `,${String(dec).padStart(2, '0')}` : ''}`;
 }
 
 export const fullName = (p?: { first_name?: string | null; last_name?: string | null } | null, fallback = 'Client'): string =>

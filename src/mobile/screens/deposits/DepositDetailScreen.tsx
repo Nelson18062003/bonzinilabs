@@ -339,6 +339,7 @@ export function DepositDetailScreen() {
           <div>
             <FieldLabel className="pt-0">Montant reçu</FieldLabel>
             <div className="flex items-center gap-2 rounded-lg border-2 border-[#2C2C2C] px-4 dark:border-[#E3E3E3]">
+              {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
               <input
                 autoFocus
                 inputMode="numeric"

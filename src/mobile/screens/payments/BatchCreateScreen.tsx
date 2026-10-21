@@ -280,6 +280,7 @@ export function BatchCreateScreen() {
             <FieldLabel right={<TextLink onClick={() => { patch({ custom: !editing.custom }); if (!editing.custom) setRateText(String(ePrice.rate || '')); }}>{editing.custom ? 'Taux du jour' : 'Taux perso'}</TextLink>}>Montant</FieldLabel>
             <label className="flex h-16 items-center gap-2 rounded-lg border-2 border-[#2C2C2C] px-4 dark:border-[#E3E3E3]">
               <span className={cn('text-[26px] font-bold', TEXT.strong)}>¥</span>
+              {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
               <input
                 inputMode="numeric"
                 aria-label="Montant en yuans"
@@ -293,6 +294,7 @@ export function BatchCreateScreen() {
             {editing.custom && (
               <label className={cn('mt-2 flex h-14 items-center gap-2 rounded-lg border px-4', SURFACE.field)}>
                 <span className={cn('shrink-0 text-[16px]', TEXT.muted)}>1 M XAF = ¥</span>
+                {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
                 <input inputMode="numeric" aria-label="Taux personnalisé" value={rateText} onChange={(e) => setRateText(e.target.value.replace(/\D/g, ''))} className={cn('min-w-0 flex-1 bg-transparent !text-[17px] font-semibold tabular-nums outline-none', TEXT.strong)} />
               </label>
             )}

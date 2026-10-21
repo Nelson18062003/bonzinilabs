@@ -384,6 +384,7 @@ export function NewPaymentScreen() {
       <BottomSheet open={rateSheet} onClose={() => setRateSheet(false)}>
         <h3 className={cn('text-[22px] font-semibold', TEXT.strong)}>Taux personnalisé</h3>
         <FieldLabel>1 000 000 XAF = ¥</FieldLabel>
+        {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
         <input
           autoFocus
           inputMode="numeric"

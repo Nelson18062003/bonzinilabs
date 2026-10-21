@@ -626,6 +626,7 @@ export function PaymentDetailScreen() {
         <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{payment.reference} · {client}</p>
         <div className="mt-4 grid grid-cols-2 gap-2.5">
           <label className={cn('flex h-14 items-center gap-2 rounded-lg border px-3.5', SURFACE.field)}>
+            {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
             <input
               inputMode="numeric"
               aria-label="Débité (XAF)"
@@ -642,6 +643,7 @@ export function PaymentDetailScreen() {
           </label>
           <label className={cn('flex h-14 items-center gap-2 rounded-lg border px-3.5', SURFACE.field)}>
             <span className={cn('text-[18px] font-semibold', TEXT.strong)}>¥</span>
+            {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
             <input
               inputMode="decimal"
               aria-label="Reçu (¥)"
@@ -653,6 +655,7 @@ export function PaymentDetailScreen() {
         </div>
         <label className={cn('mt-2.5 flex h-14 items-center gap-2 rounded-lg border px-3.5', SURFACE.field)}>
           <span className={cn('shrink-0 text-[16px]', TEXT.muted)}>Taux · 1 M XAF = ¥</span>
+          {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
           <input
             inputMode="numeric"
             aria-label="Taux"

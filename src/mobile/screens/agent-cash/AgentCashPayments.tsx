@@ -17,7 +17,7 @@ import {
 } from '@/mobile/designKit';
 import { yuan } from '@/mobile/screens/operations/opsLabels';
 
-const wide = (s: string) => s.replace(/ /g, ' ');
+const wide = (s: string) => s.replace(/\u202F/g, '\u00A0');
 
 export function AgentCashPayments() {
   const navigate = useNavigate();

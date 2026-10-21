@@ -189,6 +189,7 @@ export function NewDepositScreen() {
 
         <FieldLabel>Montant reçu</FieldLabel>
         <label className="flex h-[68px] items-center gap-2 rounded-lg border border-[#949494] px-4 focus-within:border-2 focus-within:border-[#2C2C2C] dark:border-[#6E6E6E] dark:focus-within:border-[#E3E3E3]">
+          {/* eslint-disable-next-line no-restricted-syntax -- saisie de montant en gros (!text-[…] ≥ 16 px : pas de zoom iOS) */}
           <input
             inputMode="numeric"
             enterKeyHint="done"
