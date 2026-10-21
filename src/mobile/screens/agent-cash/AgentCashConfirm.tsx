@@ -28,6 +28,7 @@ import {
   PrimaryPill,
   ScreenLoader,
   ScreenError,
+  TextInput,
 } from '@/mobile/designKit';
 
 export function AgentCashConfirm() {
@@ -39,6 +40,9 @@ export function AgentCashConfirm() {
 
   const [cashHanded, setCashHanded] = useState(false);
   const [signatureEmpty, setSignatureEmpty] = useState(true);
+  // L'identité que la personne qui signe DÉCLARE (pas le nom attendu).
+  const [declaredName, setDeclaredName] = useState('');
+  const [idNumber, setIdNumber] = useState('');
   const sigCanvas = useRef<SignaturePad>(null);
 
   const getBeneficiaryName = () => cashBeneficiaryName(payment);
@@ -54,19 +58,19 @@ export function AgentCashConfirm() {
     }
   };
 
-  const canConfirm = cashHanded && !signatureEmpty && !confirmMutation.isPending;
+  const canConfirm = cashHanded && !signatureEmpty && declaredName.trim().length >= 2 && !confirmMutation.isPending;
 
   const handleConfirm = async () => {
-    if (!payment || !sigCanvas.current || sigCanvas.current.isEmpty()) return;
+    if (!payment || !sigCanvas.current || sigCanvas.current.isEmpty() || declaredName.trim().length < 2) return;
 
     const signatureDataUrl = sigCanvas.current.toDataURL('image/png');
-    const signedByName = getBeneficiaryName();
 
     try {
       const result = await confirmMutation.mutateAsync({
         paymentId: payment.id,
         signatureDataUrl,
-        signedByName,
+        signedByName: declaredName,
+        signerIdNumber: idNumber,
       });
 
       if (result.success) {
@@ -198,11 +202,31 @@ export function AgentCashConfirm() {
             </SoftPill>
           </div>
 
-          {/* Beneficiary name */}
+          {/* Bénéficiaire attendu, puis l'identité DÉCLARÉE par la personne qui signe */}
           <div className={cn('text-center text-sm', TEXT.muted)}>
-            <p>{t('beneficiary_name_confirmed')}</p>
+            <p>{t('expected_beneficiary')}</p>
             <p className={cn('font-semibold', TEXT.strong)}>{getBeneficiaryName()}</p>
           </div>
+          <label className="block space-y-1.5">
+            <span className={cn('text-sm font-semibold', TEXT.strong)}>{t('signer_declared_name')}</span>
+            <TextInput
+              value={declaredName}
+              onChange={(e) => setDeclaredName(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="words"
+              spellCheck={false}
+            />
+          </label>
+          <label className="block space-y-1.5">
+            <span className={cn('text-sm font-semibold', TEXT.strong)}>{t('signer_id_number')}</span>
+            <TextInput
+              value={idNumber}
+              onChange={(e) => setIdNumber(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+          </label>
         </Card>
 
         {/* Confirm button */}

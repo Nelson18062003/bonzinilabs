@@ -9,7 +9,8 @@ import { dateLocale } from '@/lib/dateLocale';
 import { CheckCircle2, ScanLine } from 'lucide-react';
 import { CashQRCode } from '@/components/cash/CashQRCode';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import type { Payment } from '@/hooks/usePayments';
+import { cashSignatureSrc } from '@/lib/cashSignature';
+import { useMyCashToken, type Payment } from '@/hooks/usePayments';
 
 interface Props {
   payment: Payment;
@@ -17,10 +18,10 @@ interface Props {
 
 export function PaymentCashSection({ payment }: Props) {
   const { t } = useTranslation('payments');
+  const isFinalised = payment.status === 'completed' || payment.status === 'rejected' || payment.status === 'cancelled_by_admin';
+  const { data: cashToken } = useMyCashToken(payment.id, payment.method === 'cash' && !isFinalised);
 
   if (payment.method !== 'cash') return null;
-
-  const isFinalised = payment.status === 'completed' || payment.status === 'rejected' || payment.status === 'cancelled_by_admin';
 
   return (
     <>
@@ -28,6 +29,7 @@ export function PaymentCashSection({ payment }: Props) {
       {!isFinalised && (
         <CashQRCode
           paymentId={payment.id}
+          token={cashToken ?? null}
           paymentReference={payment.reference}
           amountRMB={payment.amount_rmb}
           beneficiaryName={payment.beneficiary_name || 'Client'}
@@ -72,7 +74,7 @@ export function PaymentCashSection({ payment }: Props) {
                   {t('detail.beneficiarySignature')}
                 </p>
                 <img
-                  src={payment.cash_signature_url}
+                  src={cashSignatureSrc(payment.cash_signature_url) ?? undefined}
                   alt={t('detail.beneficiarySignature')}
                   className="w-full max-w-xs h-auto rounded"
                   style={{ maxHeight: '120px', objectFit: 'contain' }}

@@ -50,18 +50,35 @@ describe('BONZINI HQ ↔ site', () => {
     }
   });
 
-  it('lit les QR de paiement cash comme le site', () => {
+  it('lit les QR de paiement cash comme le site (le jeton du client est obligatoire)', () => {
     const id = '0f8fad5b-d9cb-469f-a165-70867728950e';
-    for (const s of [JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id, v: 1 }), `https://bonzinilabs.com/pay?paymentId=${id}`]) {
-      expect(cashPaymentId(s)).toBe(parseCashQRCode(s).isValid ? parseCashQRCode(s).paymentId : null);
+    const t = 'a'.repeat(64);
+    const samples = [
+      JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id, t, v: 2 }),
+      `https://bonzinilabs.com/pay?paymentId=${id}&t=${t}`,
+      // Refusés : sans jeton (ancien QR, identifiant copié, fiche admin), jeton trop court, UUID nu.
+      JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id, v: 1 }),
+      JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id, t: 'abc', v: 2 }),
+      `https://bonzinilabs.com/pay?paymentId=${id}`,
+      id,
+    ];
+    for (const s of samples) {
+      expect(cashPaymentId(s), s).toBe(parseCashQRCode(s).isValid ? parseCashQRCode(s).paymentId : null);
     }
+    expect(cashPaymentId(samples[0])).toBe(id);
+    for (const s of samples.slice(2)) expect(cashPaymentId(s), s).toBeNull();
   });
 
   it('oriente un scan selon le rôle', () => {
-    const cash = JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: '0f8fad5b-d9cb-469f-a165-70867728950e', v: 1 });
-    expect(routeScan('cash_agent', cash)).toEqual({ kind: 'open', path: '/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1' });
-    expect(routeScan('ops', cash)).toEqual({ kind: 'open', path: '/m/payments/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1' });
-    expect(staffPath('/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1')).not.toBeNull();
+    const cash = JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: '0f8fad5b-d9cb-469f-a165-70867728950e', t: 'b'.repeat(64), v: 2 });
+    const qr = `?qr=${encodeURIComponent(cash)}`;
+    expect(routeScan('cash_agent', cash)).toEqual({ kind: 'open', path: `/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e${qr}` });
+    expect(routeScan('ops', cash)).toEqual({ kind: 'open', path: `/m/payments/0f8fad5b-d9cb-469f-a165-70867728950e${qr}` });
+    // La page reçoit le contenu lu, et l'app accepte ce lien.
+    expect(staffPath(`/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e${qr}`)).not.toBeNull();
+    expect(parseCashQRCode(new URLSearchParams(qr).get('qr')).isValid).toBe(true);
+    // Un ancien QR sans jeton n'ouvre plus la remise.
+    expect(routeScan('cash_agent', JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: '0f8fad5b-d9cb-469f-a165-70867728950e', v: 1 })).kind).not.toBe('open');
     expect(routeScan('receptionist', 'https://bonzinilabs.com/c/BZ-482913')).toEqual({ kind: 'deliver', path: '/r/new', text: 'BZ-482913' });
     expect(routeScan('receptionist', 'SF1234567890')).toEqual({ kind: 'deliver', path: '/r/new', text: 'SF1234567890' });
     expect(routeScan('warehouse_agent', 'BZ-482913')).toEqual({ kind: 'deliver', path: '/w/remise', text: 'BZ-482913' });

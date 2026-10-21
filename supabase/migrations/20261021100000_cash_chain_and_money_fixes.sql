@@ -1,53 +1,59 @@
 -- ============================================================================
--- Chaîne cash réelle, agent cash isolé, annulation de dépôt exacte (21/10/2026)
+-- Chaîne cash réelle, agent cash isolé, argent vérifié côté serveur (21/10/2026)
 --
--- Toutes les fonctions ci-dessous sont redéfinies À PARTIR DE LEUR DÉFINITION
--- EN PRODUCTION (pg_get_functiondef du 21/10/2026), en ne changeant que ce
--- qui est décrit ici. Idempotente (CREATE OR REPLACE, CREATE OR REPLACE
--- TRIGGER, mêmes signatures), sans aucune suppression.
+-- Les fonctions existantes sont redéfinies À PARTIR DE LEUR DÉFINITION EN
+-- PRODUCTION (pg_get_functiondef du 21/10/2026), en ne changeant que ce qui
+-- est décrit ici. Idempotente (CREATE … IF NOT EXISTS, CREATE OR REPLACE,
+-- CREATE OR REPLACE TRIGGER, ALTER POLICY), sans aucune suppression.
 --
 -- 1. cancel_deposit reprenait `amount_xaf` (le montant DÉCLARÉ) au lieu du
---    montant réellement CRÉDITÉ par validate_deposit, qui crédite
---    COALESCE(p_confirmed_amount, amount_xaf) et ne garde confirmed_amount_xaf
---    que s'il diffère du déclaré. L'annulation reprend désormais exactement
+--    montant réellement CRÉDITÉ par validate_deposit. Il reprend désormais
 --    l'écriture DEPOSIT_VALIDATED du grand livre (à défaut :
 --    COALESCE(confirmed_amount_xaf, amount_xaf)). Verrous, plancher de
---    découvert (security.md), audit et timeline inchangés ; l'audit garde le
---    déclaré et ajoute le montant repris.
+--    découvert, audit et timeline inchangés. Étiquette Mola : canManageUsers
+--    (c'est la garde réelle : super admin).
 --
--- 2. Agent cash isolé. Nouvelle permission `canHandleCash` (super_admin, ops,
---    cash_agent) : scanner le QR du client et faire signer la remise.
---    cash_agent PERD `canProcessPayments` (il pouvait traiter des paiements
---    Alipay / virement par appel direct). Miroir dans ROLE_PERMISSIONS
---    (src/contexts/AdminAuthContext.tsx) et dans la passerelle Mola.
---    scan_cash_payment et confirm_cash_payment exigent canHandleCash.
---    Les notifications « cash à remettre » visent canHandleCash, et le
---    réglage « Paiements » de l'écran Moi reste proposé à l'agent cash.
---    is_cash_agent (politiques RLS des paiements) ignore désormais un compte
---    désactivé.
+-- 2. Agent cash isolé. Permission `canHandleCash` (super_admin, ops,
+--    cash_agent) ; cash_agent PERD `canProcessPayments`. Miroir dans
+--    ROLE_PERMISSIONS et dans la passerelle Mola. is_cash_agent ignore un
+--    compte désactivé.
 --
--- 3. La chaîne cash devient réelle (décision : scan du QR ET signature du
---    bénéficiaire OBLIGATOIRES). Constat en production : 27 paiements cash
---    effectués en 90 jours, 0 scanné, 0 signé — ils naissaient en
---    ready_for_payment et process_payment les terminait sans rien.
---      · create_admin_payment, create_payment (client) et
---        create_payment_batch créent un paiement cash en `cash_pending`
---        (le trigger staff_push_on_payment prévient alors l'agent cash) ;
---      · process_payment refuse start_processing / complete pour un paiement
---        cash (le refus reste possible) ;
---      · scan_cash_payment : cash_pending (et, par sécurité, les anciens
---        ready_for_payment / processing) → cash_scanned ;
---      · confirm_cash_payment : UNIQUEMENT depuis cash_scanned, avec une
---        signature stockée dans le bucket cash-signatures et le nom du
---        signataire, puis completed ;
---      · garde-fou : un trigger refuse qu'un appel DIRECT à l'API (rôles
---        anon / authenticated, hors RPC) fasse passer un paiement cash en
---        cash_scanned ou completed, ou change la méthode d'un paiement.
+-- 3. Chaîne cash réelle (décision : scan du QR ET signature OBLIGATOIRES).
+--    Constat : 27 paiements cash effectués en 90 jours, 0 scanné, 0 signé.
+--      · un paiement cash naît en `cash_pending` (create_admin_payment,
+--        create_payment, create_payment_batch) avec un JETON SECRET
+--        (payment_cash_tokens, ≥ 128 bits) que seul le client propriétaire
+--        peut lire : son QR porte {id, t: jeton}. L'UUID seul ne suffit plus
+--        (les écrans du staff l'affichaient) ;
+--      · process_payment refuse start_processing / complete sur le cash ;
+--      · scan_cash_payment(id, jeton) : cash_pending → cash_scanned, jeton
+--        exact et montant réellement réservé au grand livre ;
+--      · confirm_cash_payment(id, chemin, nom déclaré, pièce) : seulement
+--        depuis cash_scanned, avec un fichier du bucket cash-signatures
+--        déposé par l'appelant sous « <id>/ » après le scan ;
+--      · les anciennes signatures de ces deux RPC refusent ; aucune n'est
+--        exposée à Mola (la caméra et la signature sont devant le client) ;
+--      · garde-fou (trigger) : un appel DIRECT de l'API ne crée, ne supprime
+--        ni ne fait avancer aucun paiement, et ne change que les
+--        coordonnées du bénéficiaire. La politique d'INSERT client est
+--        fermée (WITH CHECK false) ;
+--      · les paiements cash restés en ready_for_payment / processing passent
+--        en cash_pending, et chaque cash ouvert reçoit son jeton ;
+--      · le client est prévenu (« retrait disponible ») dès la création.
 --
--- Après application : /gen-types (aucune signature ne change).
+-- 4. L'argent vérifié côté serveur :
+--      · create_payment (app client) recalcule le ¥ au taux publié (pays du
+--        client, tranche du montant), refuse au-delà de 1 ¥ d'écart, garde
+--        le taux du serveur, jamais « perso », vérifie que le bénéficiaire
+--        est au client ; nouvelle signature avec les champs bénéficiaire
+--        étendus (l'ancienne reste, en enveloppe) ;
+--      · create_admin_payment et create_payment_batch refusent un taux ou un
+--        montant ¥ nul ou négatif (plus de COALESCE à 0).
+--
+-- Après application : /gen-types (nouvelles surcharges de create_payment,
+-- scan_cash_payment, confirm_cash_payment ; table payment_cash_tokens ;
+-- colonne payments.cash_signer_id_number).
 -- ============================================================================
-
-
 -- ────────────────────────────────────────────────────────────────────────────
 -- 1. cancel_deposit : reprendre exactement ce qui a été crédité
 -- ────────────────────────────────────────────────────────────────────────────
@@ -167,7 +173,7 @@ END;
 $function$;
 
 comment on function public.cancel_deposit(uuid) is
-  '@mola:{"expose":true,"kind":"write","permission":"canProcessDeposits","confirm":true,"danger":true,"label":"Annuler un dépôt","resolve":{"p_deposit_id":"deposit"}}';
+  '@mola:{"expose":true,"kind":"write","permission":"canManageUsers","confirm":true,"danger":true,"label":"Annuler un dépôt (super admin)","resolve":{"p_deposit_id":"deposit"}}';
 
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -243,6 +249,138 @@ comment on function public.is_cash_agent(uuid) is
   '@mola:{"expose":false,"kind":"read","permission":"canHandleCash","confirm":false,"danger":false,"label":"Est-ce un agent cash actif ? (interne, politiques RLS)"}';
 
 
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 2b. Fondations de la chaîne cash
+--     · le jeton secret du QR (payment_cash_tokens), lisible par le SEUL
+--       client propriétaire du paiement : le QR n'est plus l'UUID du
+--       paiement (que les écrans du staff affichaient) ;
+--     · la pièce d'identité déclarée par le signataire ;
+--     · deux aides internes : la somme encore réservée au grand livre pour
+--       un paiement, et la clé « pays » du taux d'un client.
+-- ────────────────────────────────────────────────────────────────────────────
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS cash_signer_id_number text;
+
+COMMENT ON COLUMN public.payments.cash_signer_id_number IS
+  'Numéro de pièce d''identité DÉCLARÉ par la personne qui signe la remise du cash (facultatif).';
+
+CREATE TABLE IF NOT EXISTS public.payment_cash_tokens (
+  payment_id uuid PRIMARY KEY REFERENCES public.payments(id) ON DELETE CASCADE,
+  token text NOT NULL CHECK (length(token) >= 32),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.payment_cash_tokens IS
+  'Secret du QR d''un paiement cash (≥ 128 bits). Lu par le client propriétaire pour dessiner son QR ; aucune politique staff : seul scan_cash_payment (SECURITY DEFINER) le compare.';
+
+ALTER TABLE public.payment_cash_tokens ENABLE ROW LEVEL SECURITY;
+
+DO $do$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'payment_cash_tokens'
+       AND policyname = 'Owner reads own cash token'
+  ) THEN
+    CREATE POLICY "Owner reads own cash token" ON public.payment_cash_tokens
+      FOR SELECT TO authenticated
+      USING (EXISTS (SELECT 1 FROM public.payments p
+                      WHERE p.id = payment_cash_tokens.payment_id
+                        AND p.user_id = auth.uid()));
+  END IF;
+END
+$do$;
+
+REVOKE ALL ON public.payment_cash_tokens FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.payment_cash_tokens TO authenticated;
+
+-- Le jeton naît avec le paiement cash, quelle que soit la RPC qui le crée.
+CREATE OR REPLACE FUNCTION public.payments_issue_cash_token()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NEW.method = 'cash' THEN
+    INSERT INTO public.payment_cash_tokens (payment_id, token)
+    VALUES (NEW.id, replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''))
+    ON CONFLICT (payment_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+comment on function public.payments_issue_cash_token() is
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":false,"danger":false,"label":"Jeton secret du QR cash, posé à la création (trigger interne)"}';
+
+REVOKE EXECUTE ON FUNCTION public.payments_issue_cash_token() FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE TRIGGER payments_issue_cash_token
+  AFTER INSERT ON public.payments
+  FOR EACH ROW EXECUTE FUNCTION public.payments_issue_cash_token();
+
+-- Ce que le paiement détient ENCORE sur le portefeuille, d'après le grand
+-- livre : réservation (PAYMENT_RESERVED) + corrections (ADMIN_DEBIT /
+-- ADMIN_CREDIT d'admin_correct_payment) − remboursement.
+CREATE OR REPLACE FUNCTION public._payment_debit_held(p_payment_id uuid)
+ RETURNS bigint
+ LANGUAGE sql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  SELECT COALESCE(SUM(CASE le.entry_type::text
+                        WHEN 'PAYMENT_RESERVED' THEN le.amount_xaf
+                        WHEN 'ADMIN_DEBIT' THEN le.amount_xaf
+                        WHEN 'ADMIN_CREDIT' THEN -le.amount_xaf
+                        WHEN 'PAYMENT_CANCELLED_REFUNDED' THEN -le.amount_xaf
+                        ELSE 0 END), 0)::bigint
+    FROM public.ledger_entries le
+   WHERE le.reference_type = 'payment'
+     AND le.reference_id = p_payment_id
+$function$;
+
+comment on function public._payment_debit_held(uuid) is
+  '@mola:{"expose":false,"kind":"read","permission":"canHandleCash","confirm":false,"danger":false,"label":"Montant encore réservé au grand livre pour un paiement (interne)"}';
+
+REVOKE EXECUTE ON FUNCTION public._payment_debit_held(uuid) FROM PUBLIC, anon, authenticated;
+
+-- La clé « pays » du taux d'un client : MÊME règle que
+-- clientCountryToRateKey (src/components/payment-form/paymentRateLogic.ts).
+-- La liste d'alias est vérifiée contre le TypeScript par
+-- src/tests/security/cashChain.test.ts. Tout le reste vaut la référence.
+CREATE OR REPLACE FUNCTION public._rate_country_key(p_country text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+  WITH raw AS (
+    SELECT lower(btrim(COALESCE(p_country, ''))) AS r
+  ), norm AS (
+    SELECT r,
+           btrim(regexp_replace(replace(translate(btrim(split_part(r, '/', 1)),
+             'àáâäãåçèéêëìíîïñòóôöõùúûüýÿ', 'aaaaaaceeeeiiiinooooouuuuyy'), '.', ''), '\s+', ' ', 'g')) AS n
+      FROM raw
+  )
+  SELECT COALESCE(
+    (SELECT r FROM norm WHERE r IN ('cameroun', 'gabon', 'tchad', 'rca', 'congo', 'guinee')),
+    (SELECT a.key FROM norm, (VALUES
+        ('cm', 'cameroun'), ('cameroun', 'cameroun'), ('cameroon', 'cameroun'),
+        ('ga', 'gabon'), ('gabon', 'gabon'),
+        ('td', 'tchad'), ('tchad', 'tchad'), ('chad', 'tchad'),
+        ('cf', 'rca'), ('rca', 'rca'), ('centrafrique', 'rca'), ('republique centrafricaine', 'rca'),
+        ('cg', 'congo'), ('congo', 'congo'), ('congo brazzaville', 'congo'),
+        ('gq', 'guinee'), ('guinee equatoriale', 'guinee')
+      ) AS a(alias, key)
+      WHERE a.alias = norm.n),
+    'cameroun')
+$function$;
+
+comment on function public._rate_country_key(text) is
+  '@mola:{"expose":false,"kind":"read","permission":"canViewClients","confirm":false,"danger":false,"label":"Clé pays du taux d''un client (interne, miroir de clientCountryToRateKey)"}';
+
 -- ────────────────────────────────────────────────────────────────────────────
 -- 3a. Création : un paiement cash naît en cash_pending
 -- ────────────────────────────────────────────────────────────────────────────
@@ -271,6 +409,14 @@ BEGIN
 
   IF p_amount_xaf IS NULL OR p_amount_xaf <= 0 THEN
     RETURN jsonb_build_object('success', false, 'error', 'Le montant doit être positif');
+  END IF;
+
+  -- Jamais de taux ni de montant ¥ nul ou négatif (plus de taux de secours).
+  IF p_amount_rmb IS NULL OR p_amount_rmb <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Le montant en ¥ doit être positif');
+  END IF;
+  IF p_exchange_rate IS NULL OR p_exchange_rate <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Taux invalide : le taux du jour doit être chargé');
   END IF;
 
   SELECT * INTO v_wallet FROM public.wallets WHERE user_id = p_user_id FOR UPDATE;
@@ -416,7 +562,19 @@ comment on function public.create_admin_payment(uuid, bigint, numeric, numeric, 
   '@mola:{"expose":true,"kind":"write","permission":"canProcessPayments","confirm":true,"danger":true,"label":"Créer un paiement fournisseur","resolve":{"p_user_id":"client"},"tool":"create_payment"}';
 
 
-CREATE OR REPLACE FUNCTION public.create_payment(p_amount_xaf bigint, p_amount_rmb numeric, p_exchange_rate numeric, p_method payment_method, p_beneficiary_name text DEFAULT NULL::text, p_beneficiary_phone text DEFAULT NULL::text, p_beneficiary_email text DEFAULT NULL::text, p_beneficiary_qr_code_url text DEFAULT NULL::text, p_beneficiary_bank_name text DEFAULT NULL::text, p_beneficiary_bank_account text DEFAULT NULL::text, p_beneficiary_notes text DEFAULT NULL::text, p_cash_beneficiary_type text DEFAULT NULL::text, p_cash_beneficiary_first_name text DEFAULT NULL::text, p_cash_beneficiary_last_name text DEFAULT NULL::text, p_cash_beneficiary_phone text DEFAULT NULL::text, p_beneficiary_id uuid DEFAULT NULL::uuid, p_beneficiary_details jsonb DEFAULT NULL::jsonb, p_rate_is_custom boolean DEFAULT false)
+
+-- Paiement créé par le CLIENT (app client). Le serveur ne croit plus le
+-- client sur le prix : il recalcule le ¥ dû au taux publié, avec l'écart du
+-- pays du client et la tranche du montant — la règle de computePaymentValues
+-- (src/components/payment-form/paymentRateLogic.ts) — et refuse au-delà de
+-- 1 ¥ d'écart. Le taux enregistré est celui du serveur ; jamais « perso ».
+-- Les champs bénéficiaire étendus (identifiant, type, complément bancaire)
+-- passent ici : un paiement cash naît en cash_pending, où la mise à jour
+-- directe qui les écrivait n'est plus permise.
+-- Nouvelle surcharge : ses trois derniers paramètres n'ont PAS de défaut,
+-- pour que PostgREST ne la confonde jamais avec l'ancienne signature
+-- (gardée en enveloppe pour le site déjà déployé).
+CREATE OR REPLACE FUNCTION public.create_payment(p_amount_xaf bigint, p_amount_rmb numeric, p_exchange_rate numeric, p_method payment_method, p_beneficiary_name text, p_beneficiary_phone text, p_beneficiary_email text, p_beneficiary_qr_code_url text, p_beneficiary_bank_name text, p_beneficiary_bank_account text, p_beneficiary_notes text, p_cash_beneficiary_type text, p_cash_beneficiary_first_name text, p_cash_beneficiary_last_name text, p_cash_beneficiary_phone text, p_beneficiary_id uuid, p_beneficiary_details jsonb, p_rate_is_custom boolean, p_beneficiary_bank_extra text, p_beneficiary_identifier text, p_beneficiary_identifier_type text)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -430,6 +588,16 @@ DECLARE
   v_reference TEXT;
   v_status payment_status;
   v_has_beneficiary_info BOOLEAN;
+  v_rates RECORD;
+  v_base NUMERIC;
+  v_country TEXT;
+  v_c NUMERIC;
+  v_t_xaf NUMERIC;
+  v_t_prelim NUMERIC;
+  v_prelim BIGINT;
+  v_final_xaf NUMERIC;
+  v_final_prelim NUMERIC;
+  v_final NUMERIC;
 BEGIN
   v_user_id := auth.uid();
 
@@ -437,8 +605,66 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Non authentifié');
   END IF;
 
-  IF p_amount_xaf <= 0 THEN
+  IF p_amount_xaf IS NULL OR p_amount_xaf <= 0 THEN
     RETURN jsonb_build_object('success', false, 'error', 'Le montant doit être positif');
+  END IF;
+
+  IF p_amount_rmb IS NULL OR p_amount_rmb <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Le montant en ¥ doit être positif');
+  END IF;
+
+  IF p_beneficiary_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.beneficiaries b WHERE b.id = p_beneficiary_id AND b.client_id = v_user_id
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Bénéficiaire introuvable');
+  END IF;
+
+  -- ── Le prix, recalculé au taux publié ──
+  SELECT * INTO v_rates FROM public.daily_rates WHERE is_active = TRUE LIMIT 1;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Taux du jour indisponible : réessayez dans un instant');
+  END IF;
+
+  v_base := CASE p_method::text
+    WHEN 'cash' THEN v_rates.rate_cash
+    WHEN 'alipay' THEN v_rates.rate_alipay
+    WHEN 'wechat' THEN v_rates.rate_wechat
+    WHEN 'bank_transfer' THEN v_rates.rate_virement
+    ELSE NULL END;
+  IF v_base IS NULL OR v_base <= 0 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Taux du jour indisponible pour ce mode de paiement');
+  END IF;
+
+  SELECT c.country INTO v_country FROM public.clients c WHERE c.user_id = v_user_id;
+  SELECT COALESCE((SELECT ra.percentage FROM public.rate_adjustments ra
+                    WHERE ra.type = 'country' AND ra.key = public._rate_country_key(v_country) LIMIT 1), 0) / 100.0
+    INTO v_c;
+
+  -- Tranche du montant XAF (saisie en XAF) …
+  SELECT COALESCE((SELECT ra.percentage FROM public.rate_adjustments ra
+                    WHERE ra.type = 'tier'
+                      AND ra.key = CASE WHEN p_amount_xaf >= 1000000 THEN 't3' WHEN p_amount_xaf >= 400000 THEN 't2' ELSE 't1' END
+                    LIMIT 1), 0) / 100.0
+    INTO v_t_xaf;
+  v_final_xaf := round(v_base * (1 + v_c) * (1 + v_t_xaf), 2);
+
+  -- … ou tranche estimée depuis le ¥ (saisie en ¥), comme l'app.
+  v_prelim := round(p_amount_rmb / (v_base * (1 + v_c) / 1000000.0));
+  SELECT COALESCE((SELECT ra.percentage FROM public.rate_adjustments ra
+                    WHERE ra.type = 'tier'
+                      AND ra.key = CASE WHEN v_prelim >= 1000000 THEN 't3' WHEN v_prelim >= 400000 THEN 't2' ELSE 't1' END
+                    LIMIT 1), 0) / 100.0
+    INTO v_t_prelim;
+  v_final_prelim := round(v_base * (1 + v_c) * (1 + v_t_prelim), 2);
+
+  IF abs(p_amount_rmb - p_amount_xaf * v_final_xaf / 1000000.0) <= 1 THEN
+    v_final := v_final_xaf;
+  ELSIF abs(p_amount_rmb - p_amount_xaf * v_final_prelim / 1000000.0) <= 1 THEN
+    v_final := v_final_prelim;
+  ELSE
+    RETURN jsonb_build_object('success', false, 'error',
+      'Le montant en ¥ ne correspond pas au taux du jour : actualisez la page et réessayez',
+      'expected_rmb', round(p_amount_xaf * v_final_xaf / 1000000.0, 2));
   END IF;
 
   SELECT * INTO v_wallet FROM public.wallets WHERE user_id = v_user_id FOR UPDATE;
@@ -475,16 +701,18 @@ BEGIN
     user_id, reference, amount_xaf, amount_rmb, exchange_rate, method, status,
     beneficiary_name, beneficiary_phone, beneficiary_email, beneficiary_qr_code_url,
     beneficiary_bank_name, beneficiary_bank_account, beneficiary_notes,
+    beneficiary_bank_extra, beneficiary_identifier, beneficiary_identifier_type,
     cash_beneficiary_type, cash_beneficiary_first_name, cash_beneficiary_last_name, cash_beneficiary_phone,
     balance_before, balance_after,
     beneficiary_id, beneficiary_details, rate_is_custom
   ) VALUES (
-    v_user_id, v_reference, p_amount_xaf, p_amount_rmb, p_exchange_rate, p_method, v_status,
+    v_user_id, v_reference, p_amount_xaf, p_amount_rmb, round(v_final), p_method, v_status,
     p_beneficiary_name, p_beneficiary_phone, p_beneficiary_email, p_beneficiary_qr_code_url,
     p_beneficiary_bank_name, p_beneficiary_bank_account, p_beneficiary_notes,
+    NULLIF(p_beneficiary_bank_extra, ''), NULLIF(p_beneficiary_identifier, ''), NULLIF(p_beneficiary_identifier_type, ''),
     p_cash_beneficiary_type, p_cash_beneficiary_first_name, p_cash_beneficiary_last_name, p_cash_beneficiary_phone,
     v_wallet.balance_xaf, v_new_balance,
-    p_beneficiary_id, p_beneficiary_details, p_rate_is_custom
+    p_beneficiary_id, p_beneficiary_details, false
   ) RETURNING id INTO v_payment_id;
 
   UPDATE public.wallets
@@ -501,7 +729,8 @@ BEGIN
     jsonb_build_object(
       'method', p_method::text,
       'amount_rmb', p_amount_rmb,
-      'exchange_rate', p_exchange_rate
+      'exchange_rate', round(v_final),
+      'client_exchange_rate', p_exchange_rate
     )
   );
 
@@ -542,8 +771,29 @@ END;
 $function$;
 
 -- RPC de l'app CLIENT (auth.uid() = le client) : pas une action du staff.
-comment on function public.create_payment(bigint, numeric, numeric, payment_method, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb, boolean) is
+comment on function public.create_payment(bigint, numeric, numeric, payment_method, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb, boolean, text, text, text) is
   '@mola:{"expose":false,"kind":"write","permission":"canProcessPayments","confirm":true,"danger":true,"label":"Créer un paiement depuis l''app client (le client lui-même, jamais le staff)"}';
+
+-- L'ancienne signature (site déjà déployé) : même chemin, mêmes contrôles.
+CREATE OR REPLACE FUNCTION public.create_payment(p_amount_xaf bigint, p_amount_rmb numeric, p_exchange_rate numeric, p_method payment_method, p_beneficiary_name text DEFAULT NULL::text, p_beneficiary_phone text DEFAULT NULL::text, p_beneficiary_email text DEFAULT NULL::text, p_beneficiary_qr_code_url text DEFAULT NULL::text, p_beneficiary_bank_name text DEFAULT NULL::text, p_beneficiary_bank_account text DEFAULT NULL::text, p_beneficiary_notes text DEFAULT NULL::text, p_cash_beneficiary_type text DEFAULT NULL::text, p_cash_beneficiary_first_name text DEFAULT NULL::text, p_cash_beneficiary_last_name text DEFAULT NULL::text, p_cash_beneficiary_phone text DEFAULT NULL::text, p_beneficiary_id uuid DEFAULT NULL::uuid, p_beneficiary_details jsonb DEFAULT NULL::jsonb, p_rate_is_custom boolean DEFAULT false)
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO 'public'
+AS $function$
+  SELECT public.create_payment(
+    p_amount_xaf => p_amount_xaf, p_amount_rmb => p_amount_rmb, p_exchange_rate => p_exchange_rate, p_method => p_method,
+    p_beneficiary_name => p_beneficiary_name, p_beneficiary_phone => p_beneficiary_phone,
+    p_beneficiary_email => p_beneficiary_email, p_beneficiary_qr_code_url => p_beneficiary_qr_code_url,
+    p_beneficiary_bank_name => p_beneficiary_bank_name, p_beneficiary_bank_account => p_beneficiary_bank_account,
+    p_beneficiary_notes => p_beneficiary_notes,
+    p_cash_beneficiary_type => p_cash_beneficiary_type, p_cash_beneficiary_first_name => p_cash_beneficiary_first_name,
+    p_cash_beneficiary_last_name => p_cash_beneficiary_last_name, p_cash_beneficiary_phone => p_cash_beneficiary_phone,
+    p_beneficiary_id => p_beneficiary_id, p_beneficiary_details => p_beneficiary_details, p_rate_is_custom => false,
+    p_beneficiary_bank_extra => NULL::text, p_beneficiary_identifier => NULL::text, p_beneficiary_identifier_type => NULL::text)
+$function$;
+
+comment on function public.create_payment(bigint, numeric, numeric, payment_method, text, text, text, text, text, text, text, text, text, text, text, uuid, jsonb, boolean) is
+  '@mola:{"expose":false,"kind":"write","permission":"canProcessPayments","confirm":true,"danger":true,"label":"Créer un paiement depuis l''app client — ancienne signature, enveloppe de la nouvelle"}';
 
 
 CREATE OR REPLACE FUNCTION public.create_payment_batch(p_user_id uuid, p_lines jsonb, p_note text DEFAULT NULL::text)
@@ -605,6 +855,9 @@ BEGIN
     END IF;
     IF v_amount_rmb <= 0 THEN
       RETURN jsonb_build_object('success', false, 'error', 'Chaque ligne doit avoir un montant RMB positif');
+    END IF;
+    IF COALESCE(NULLIF(v_line->>'exchange_rate', '')::numeric, 0) <= 0 THEN
+      RETURN jsonb_build_object('success', false, 'error', 'Chaque ligne doit avoir un taux positif (taux du jour chargé)');
     END IF;
     IF NOT (COALESCE(v_line->>'method','') IN ('alipay','wechat','bank_transfer','cash')) THEN
       RETURN jsonb_build_object('success', false, 'error', 'Méthode de paiement invalide');
@@ -673,7 +926,7 @@ BEGIN
       rate_is_custom, balance_before, balance_after, client_visible_comment
     ) VALUES (
       p_user_id, v_batch_id, v_payment_reference, v_amount_xaf, v_amount_rmb,
-      COALESCE(NULLIF(v_line->>'exchange_rate','')::numeric, 0), v_method, v_status,
+      (v_line->>'exchange_rate')::numeric, v_method, v_status,
       NULLIF(v_line->>'beneficiary_name',''), NULLIF(v_line->>'beneficiary_phone',''),
       NULLIF(v_line->>'beneficiary_email',''), NULLIF(v_line->>'beneficiary_qr_code_url',''),
       NULLIF(v_line->>'beneficiary_bank_name',''), NULLIF(v_line->>'beneficiary_bank_account',''),
@@ -701,7 +954,7 @@ BEGIN
       jsonb_build_object(
         'method', v_method::text,
         'amount_rmb', v_amount_rmb,
-        'exchange_rate', COALESCE(NULLIF(v_line->>'exchange_rate','')::numeric, 0),
+        'exchange_rate', (v_line->>'exchange_rate')::numeric,
         'admin_created', true,
         'batch_id', v_batch_id,
         'batch_reference', v_batch_reference,
@@ -983,9 +1236,13 @@ comment on function public.process_payment(uuid, text, text) is
 
 
 -- ────────────────────────────────────────────────────────────────────────────
--- 3c. scan_cash_payment : cash_pending (ou ancien ready/processing) → cash_scanned
+-- 3c. scan_cash_payment(p_payment_id, p_qr_token) : cash_pending → cash_scanned
+--     Le QR du client porte un SECRET (payment_cash_tokens) que seul le
+--     client peut lire : le scan prouve que son téléphone (ou son QR
+--     imprimé) est là. L'ancienne signature, sans jeton, refuse.
+--     Exposée à Mola : NON — un agent IA n'a pas de caméra devant le client.
 -- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.scan_cash_payment(p_payment_id uuid)
+CREATE OR REPLACE FUNCTION public.scan_cash_payment(p_payment_id uuid, p_qr_token text)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -993,6 +1250,7 @@ CREATE OR REPLACE FUNCTION public.scan_cash_payment(p_payment_id uuid)
 AS $function$
 DECLARE
   v_payment payments%ROWTYPE;
+  v_token   text;
 BEGIN
   IF NOT public.admin_has_permission(auth.uid(), 'canHandleCash') THEN
     RETURN json_build_object('success', false, 'error', 'Accès non autorisé');
@@ -1022,10 +1280,20 @@ BEGIN
       'Ce QR a déjà été scanné : faites signer le bénéficiaire', 'status', 'cash_scanned');
   END IF;
 
-  -- cash_pending ; ready_for_payment / processing : paiements cash créés
-  -- avant le 21/10/2026, quand le cash passait encore par process_payment.
-  IF v_payment.status NOT IN ('cash_pending', 'ready_for_payment', 'processing') THEN
+  IF v_payment.status <> 'cash_pending' THEN
     RETURN json_build_object('success', false, 'error', 'Ce paiement cash n''est pas prêt à être remis');
+  END IF;
+
+  SELECT t.token INTO v_token FROM public.payment_cash_tokens t WHERE t.payment_id = p_payment_id;
+  IF v_token IS NULL OR p_qr_token IS NULL OR btrim(p_qr_token) <> v_token THEN
+    RETURN json_build_object('success', false, 'error',
+      'QR invalide : scannez le QR affiché dans l''app du client');
+  END IF;
+
+  -- Le montant à remettre doit être réservé sur le portefeuille du client.
+  IF public._payment_debit_held(p_payment_id) <> v_payment.amount_xaf THEN
+    RETURN json_build_object('success', false, 'error',
+      'Montant non réservé au grand livre : remise impossible, prévenez la direction');
   END IF;
 
   UPDATE payments
@@ -1046,14 +1314,38 @@ BEGIN
 END;
 $function$;
 
+comment on function public.scan_cash_payment(uuid, text) is
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":true,"danger":false,"label":"Scanner le QR d''un paiement cash (au bureau, devant le client — jamais par Mola)","resolve":{"p_payment_id":"payment"}}';
+
+CREATE OR REPLACE FUNCTION public.scan_cash_payment(p_payment_id uuid)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.admin_has_permission(auth.uid(), 'canHandleCash') THEN
+    RETURN json_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN json_build_object('success', false, 'error',
+    'Mettez l''application à jour : le scan exige le QR complet du client');
+END;
+$function$;
+
 comment on function public.scan_cash_payment(uuid) is
-  '@mola:{"expose":true,"kind":"write","permission":"canHandleCash","confirm":true,"danger":false,"label":"Scanner un paiement cash","resolve":{"p_payment_id":"payment"}}';
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":true,"danger":false,"label":"Ancienne signature du scan cash, sans jeton : refuse toujours"}';
 
 
 -- ────────────────────────────────────────────────────────────────────────────
--- 3d. confirm_cash_payment : seulement après le scan, avec la signature
+-- 3d. confirm_cash_payment(p_payment_id, p_signature_path, p_signed_by_name,
+--     p_signer_id_number) : seulement après le scan, avec la signature
+--     déposée PAR CETTE PERSONNE dans le bucket cash-signatures, sous
+--     « <id du paiement>/ », après le scan. Le nom est celui que le
+--     signataire DÉCLARE. L'ancienne signature (URL publique) refuse.
+--     Exposée à Mola : NON — la signature se prend sur l'écran, devant le
+--     bénéficiaire.
 -- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.confirm_cash_payment(p_payment_id uuid, p_signature_url text, p_signed_by_name text)
+CREATE OR REPLACE FUNCTION public.confirm_cash_payment(p_payment_id uuid, p_signature_path text, p_signed_by_name text, p_signer_id_number text)
  RETURNS json
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -1062,8 +1354,9 @@ AS $function$
 DECLARE
   v_payment payments%ROWTYPE;
   v_wallet  wallets%ROWTYPE;
-  v_signature_url text := NULLIF(btrim(COALESCE(p_signature_url, '')), '');
-  v_signed_by     text := NULLIF(btrim(COALESCE(p_signed_by_name, '')), '');
+  v_path      text := NULLIF(btrim(COALESCE(p_signature_path, '')), '');
+  v_signed_by text := NULLIF(btrim(COALESCE(p_signed_by_name, '')), '');
+  v_id_number text := NULLIF(btrim(COALESCE(p_signer_id_number, '')), '');
 BEGIN
   IF NOT public.admin_has_permission(auth.uid(), 'canHandleCash') THEN
     RETURN json_build_object('success', false, 'error', 'Accès non autorisé');
@@ -1089,18 +1382,32 @@ BEGIN
   END IF;
 
   -- Scan du QR du client OBLIGATOIRE avant la remise.
-  IF v_payment.status <> 'cash_scanned' THEN
+  IF v_payment.status <> 'cash_scanned' OR v_payment.cash_scanned_at IS NULL THEN
     RETURN json_build_object('success', false, 'error',
       'Scannez d''abord le QR du client : la remise se confirme seulement après le scan');
   END IF;
 
-  -- Signature du bénéficiaire OBLIGATOIRE, stockée dans le bucket prévu.
-  IF v_signature_url IS NULL OR position('/cash-signatures/' in v_signature_url) = 0 THEN
+  IF v_signed_by IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Le nom déclaré par la personne qui signe est obligatoire');
+  END IF;
+
+  -- Signature du bénéficiaire OBLIGATOIRE : un vrai fichier, déposé par
+  -- l'appelant, pour CE paiement, après le scan.
+  IF v_path IS NULL
+     OR left(v_path, length(p_payment_id::text) + 1) <> p_payment_id::text || '/'
+     OR NOT EXISTS (
+       SELECT 1 FROM storage.objects o
+        WHERE o.bucket_id = 'cash-signatures'
+          AND o.name = v_path
+          AND COALESCE(o.owner_id, o.owner::text) = auth.uid()::text
+          AND o.created_at >= v_payment.cash_scanned_at
+     ) THEN
     RETURN json_build_object('success', false, 'error', 'La signature du bénéficiaire est obligatoire');
   END IF;
 
-  IF v_signed_by IS NULL THEN
-    RETURN json_build_object('success', false, 'error', 'Le nom du bénéficiaire qui signe est obligatoire');
+  IF public._payment_debit_held(p_payment_id) <> v_payment.amount_xaf THEN
+    RETURN json_build_object('success', false, 'error',
+      'Montant non réservé au grand livre : remise impossible, prévenez la direction');
   END IF;
 
   SELECT * INTO v_wallet FROM wallets WHERE user_id = v_payment.user_id FOR UPDATE;
@@ -1108,9 +1415,10 @@ BEGIN
   UPDATE payments
   SET
     status                   = 'completed',
-    cash_signature_url       = v_signature_url,
+    cash_signature_url       = v_path,
     cash_signature_timestamp = now(),
     cash_signed_by_name      = v_signed_by,
+    cash_signer_id_number    = v_id_number,
     cash_paid_at             = now(),
     cash_paid_by             = auth.uid(),
     processed_at             = now(),
@@ -1136,58 +1444,125 @@ BEGIN
       jsonb_build_object(
         'method',         'cash',
         'amount_rmb',     v_payment.amount_rmb,
-        'cash_signed_by', v_signed_by
+        'cash_signed_by', v_signed_by,
+        'cash_signer_id_number', v_id_number
       )
     );
   END IF;
 
   INSERT INTO payment_timeline_events (payment_id, event_type, description, performed_by)
-  VALUES (p_payment_id, 'cash_paid', 'Paiement cash effectué - Signature enregistrée', auth.uid());
+  VALUES (p_payment_id, 'cash_paid', 'Paiement cash effectué - Signé par ' || v_signed_by, auth.uid());
 
   RETURN json_build_object('success', true);
 END;
 $function$;
 
+comment on function public.confirm_cash_payment(uuid, text, text, text) is
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":true,"danger":true,"label":"Confirmer la remise d''un paiement cash (après scan, signature prise à l''écran — jamais par Mola)","resolve":{"p_payment_id":"payment"}}';
+
+CREATE OR REPLACE FUNCTION public.confirm_cash_payment(p_payment_id uuid, p_signature_url text, p_signed_by_name text)
+ RETURNS json
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  IF NOT public.admin_has_permission(auth.uid(), 'canHandleCash') THEN
+    RETURN json_build_object('success', false, 'error', 'Accès non autorisé');
+  END IF;
+  RETURN json_build_object('success', false, 'error',
+    'Mettez l''application à jour : la remise exige la signature déposée et le nom déclaré');
+END;
+$function$;
+
 comment on function public.confirm_cash_payment(uuid, text, text) is
-  '@mola:{"expose":true,"kind":"write","permission":"canHandleCash","confirm":true,"danger":false,"label":"Confirmer un paiement cash (après scan, avec la signature du bénéficiaire)","resolve":{"p_payment_id":"payment"}}';
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":true,"danger":false,"label":"Ancienne signature de la confirmation cash : refuse toujours"}';
 
 
 -- ────────────────────────────────────────────────────────────────────────────
--- 3e. Garde-fou : hors RPC, personne ne fait avancer un paiement cash
---     (les politiques UPDATE « Admins… » et « Cash agents… » ouvrent les
---     colonnes de payments à un appel direct de l'API). Dans une RPC
---     SECURITY DEFINER, current_user est le propriétaire : non concerné.
+-- 3e. Garde-fou : hors RPC, un appel direct de l'API (rôles anon /
+--     authenticated) ne crée, ne supprime ni ne fait avancer AUCUN
+--     paiement, et ne touche qu'aux coordonnées du bénéficiaire.
+--     Les politiques « Admins can update/delete payments » (is_admin),
+--     « Cash agents can update cash payments » et « Users can update own
+--     payments beneficiary info » ouvrent des lignes entières : ce trigger
+--     ferme les colonnes. Dans une RPC SECURITY DEFINER, current_user est
+--     le propriétaire de la fonction : non concerné ; service_role non plus.
+--
+--     Colonnes qu'un appel direct PEUT encore modifier (les écrans les
+--     écrivent ainsi aujourd'hui, src/hooks/useAdminPayments.ts et
+--     src/hooks/usePayments.ts) :
+--       beneficiary_name, beneficiary_phone, beneficiary_email,
+--       beneficiary_qr_code_url, beneficiary_bank_name,
+--       beneficiary_bank_account, beneficiary_bank_extra, beneficiary_notes,
+--       beneficiary_identifier, beneficiary_identifier_type,
+--       beneficiary_id, beneficiary_details, updated_at.
+--     Tout le reste (statut, montants, taux, rate_is_custom, client,
+--     méthode, soldes, référence, lot, traitement, commentaires, cash_*) :
+--     refusé s'il change — y compris la sortie d'un statut clos.
 -- ────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.guard_cash_payment_status()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public'
 AS $function$
+DECLARE
+  c_direct_ok CONSTANT text[] := ARRAY[
+    'beneficiary_name', 'beneficiary_phone', 'beneficiary_email',
+    'beneficiary_qr_code_url', 'beneficiary_bank_name', 'beneficiary_bank_account',
+    'beneficiary_bank_extra', 'beneficiary_notes', 'beneficiary_identifier',
+    'beneficiary_identifier_type', 'beneficiary_id', 'beneficiary_details', 'updated_at'
+  ];
 BEGIN
-  IF current_user IN ('anon', 'authenticated') THEN
-    IF NEW.method IS DISTINCT FROM OLD.method THEN
-      RAISE EXCEPTION 'La méthode d''un paiement ne se change pas directement'
-        USING ERRCODE = '42501';
+  IF current_user NOT IN ('anon', 'authenticated') THEN
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
     END IF;
-    IF NEW.method = 'cash'
-       AND NEW.status IS DISTINCT FROM OLD.status
-       AND NEW.status IN ('cash_scanned', 'completed') THEN
-      RAISE EXCEPTION 'Un paiement cash se valide seulement par le scan du QR du client puis la signature du bénéficiaire'
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    RAISE EXCEPTION 'Un paiement se crée seulement par les RPC de création (le solde est réservé au grand livre)'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Un paiement ne se supprime pas : annulez-le (remboursement au grand livre)'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF OLD.status IN ('completed', 'rejected', 'cancelled_by_admin') THEN
+      RAISE EXCEPTION 'Un paiement clos (%) ne se rouvre pas', OLD.status USING ERRCODE = '42501';
+    END IF;
+    IF OLD.method = 'cash' OR NEW.method = 'cash' THEN
+      RAISE EXCEPTION 'Un paiement cash avance seulement par le scan du QR du client puis la signature du bénéficiaire'
         USING ERRCODE = '42501';
     END IF;
   END IF;
+
+  IF (to_jsonb(NEW) - c_direct_ok) IS DISTINCT FROM (to_jsonb(OLD) - c_direct_ok) THEN
+    RAISE EXCEPTION 'Seules les coordonnées du bénéficiaire se modifient directement ; le reste passe par les RPC'
+      USING ERRCODE = '42501';
+  END IF;
+
   RETURN NEW;
 END;
 $function$;
 
 comment on function public.guard_cash_payment_status() is
-  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":false,"danger":false,"label":"Garde-fou interne (trigger) de la chaîne cash"}';
+  '@mola:{"expose":false,"kind":"write","permission":"canHandleCash","confirm":false,"danger":false,"label":"Garde-fou interne (trigger) : hors RPC, seules les coordonnées du bénéficiaire d''un paiement changent"}';
 
 REVOKE EXECUTE ON FUNCTION public.guard_cash_payment_status() FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE TRIGGER payments_cash_chain_guard
-  BEFORE UPDATE OF status, method ON public.payments
+  BEFORE INSERT OR UPDATE OR DELETE ON public.payments
   FOR EACH ROW EXECUTE FUNCTION public.guard_cash_payment_status();
+
+-- Un client n'insère plus de paiement à la main (aucun écran ne le fait :
+-- tout passe par create_payment, qui réserve le solde).
+ALTER POLICY "Users can create own payments" ON public.payments
+  WITH CHECK (false);
 
 
 -- ────────────────────────────────────────────────────────────────────────────
@@ -1294,3 +1669,40 @@ $function$;
 
 comment on function public.staff_push_prefs_get() is
   '@mola:{"expose":false,"kind":"read","permission":"canViewLogs","confirm":false,"danger":false,"label":"Mes types de notifications sur l''app BONZINI HQ (réglage personnel du téléphone)"}';
+
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 5. Le client est prévenu dès la création d'un paiement cash
+--    (notify_cash_payment_ready ne partait qu'au PASSAGE en cash_pending,
+--    or un paiement cash naît désormais dans ce statut).
+-- ────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE TRIGGER on_cash_payment_created
+  AFTER INSERT ON public.payments
+  FOR EACH ROW WHEN (NEW.status = 'cash_pending'::payment_status)
+  EXECUTE FUNCTION public.notify_cash_payment_ready();
+
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- 6. Reprise des paiements cash ouverts
+--    · ceux restés en ready_for_payment / processing (l'ancien chemin)
+--      passent en cash_pending : scan_cash_payment n'accepte plus que lui ;
+--    · chaque paiement cash ouvert reçoit son jeton de QR.
+--    Rejouable : la seconde fois, il n'y a plus rien à reprendre.
+-- ────────────────────────────────────────────────────────────────────────────
+WITH moved AS (
+  UPDATE public.payments
+     SET status = 'cash_pending', updated_at = now()
+   WHERE method = 'cash'
+     AND status IN ('ready_for_payment', 'processing')
+  RETURNING id
+)
+INSERT INTO public.payment_timeline_events (payment_id, event_type, description)
+SELECT id, 'cash_pending', 'Remise cash : scan du QR du client puis signature du bénéficiaire (reprise du 21/10/2026)'
+  FROM moved;
+
+INSERT INTO public.payment_cash_tokens (payment_id, token)
+SELECT p.id, replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
+  FROM public.payments p
+ WHERE p.method = 'cash'
+   AND p.status NOT IN ('completed', 'rejected', 'cancelled_by_admin')
+ON CONFLICT (payment_id) DO NOTHING;

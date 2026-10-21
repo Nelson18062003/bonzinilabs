@@ -45,6 +45,7 @@ import {
 import { getBeneficiaryNaturalKey} from '@/lib/beneficiaries/spec';
 import { useMyWallet } from '@/hooks/useWallet';
 import { useClientRates } from '@/hooks/useDailyRates';
+import { RateUnavailableNotice } from '@/mobile/components/payments/RateUnavailableNotice';
 import { useMyProfile } from '@/hooks/useProfile';
 import { useCreatePayment } from '@/hooks/usePayments';
 import {
@@ -63,7 +64,7 @@ const NewPaymentPage = () => {
 
   // ── Data hooks ─────────────────────────────────────────────
   const { data: wallet, isLoading: walletLoading } = useMyWallet();
-  const { data: clientRatesData } = useClientRates();
+  const { data: clientRatesData, isLoading: ratesLoading, isFetching: ratesFetching, refetch: refetchRates } = useClientRates();
   const { data: profile } = useMyProfile();
   const createPayment = useCreatePayment();
   const createBeneficiary = useCreateBeneficiary();
@@ -234,7 +235,8 @@ const NewPaymentPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!selectedMethod || !computed.isValidAmount || !computed.hasEnoughBalance) return;
+    // Jamais de taux de secours : sans taux publié, rien ne part (le serveur recalcule de toute façon).
+    if (!selectedMethod || !computed.rateAvailable || !computed.isValidAmount || !computed.hasEnoughBalance) return;
 
     try {
       let beneficiaryId: string | undefined = selectedBeneficiary?.id;
@@ -387,7 +389,7 @@ const NewPaymentPage = () => {
       case 'amount':
         return {
           label: t('form.continue'),
-          disabled: !stepValidations.amount.success,
+          disabled: !computed.rateAvailable || !stepValidations.amount.success,
           onClick: () => setStep('beneficiary'),
           isSubmit: false,
         };
@@ -406,7 +408,7 @@ const NewPaymentPage = () => {
       case 'confirm':
         return {
           label: createPayment.isPending ? t('form.submitting') : t('form.submit'),
-          disabled: createPayment.isPending,
+          disabled: createPayment.isPending || !computed.rateAvailable,
           onClick: handleSubmit,
           isSubmit: true,
         };
@@ -472,6 +474,21 @@ const NewPaymentPage = () => {
             selectedMethod={selectedMethod}
             onSelect={setSelectedMethod}
             methodRates={methodRates}
+          />
+        )}
+
+        {(step === 'amount' || step === 'confirm') && !computed.rateAvailable && (
+          <RateUnavailableNotice
+            className="mb-4"
+            loading={ratesLoading}
+            retrying={ratesFetching}
+            onRetry={() => { void refetchRates(); }}
+            texts={{
+              loading: t('form.rateUnavailable.loading'),
+              title: t('form.rateUnavailable.title'),
+              message: t('form.rateUnavailable.message'),
+              retry: t('form.rateUnavailable.retry'),
+            }}
           />
         )}
 

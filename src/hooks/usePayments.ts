@@ -195,6 +195,30 @@ export function usePaymentTimeline(paymentId: string | undefined) {
   });
 }
 
+/**
+ * Le jeton secret du QR d'un paiement cash (table payment_cash_tokens) :
+ * lisible par le SEUL client propriétaire (RLS). Sans lui, le scan au
+ * bureau est refusé.
+ */
+export function useMyCashToken(paymentId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['my-cash-token', paymentId],
+    queryFn: async (): Promise<string | null> => {
+      if (!paymentId) return null;
+      const { data, error } = await supabase
+        .from('payment_cash_tokens')
+        .select('token')
+        .eq('payment_id', paymentId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.token ?? null;
+    },
+    enabled: !!paymentId && enabled,
+    staleTime: Infinity,
+    retry: 2,
+  });
+}
+
 export function usePaymentProofs(paymentId: string | undefined) {
   return useQuery({
     queryKey: ['payment-proofs', paymentId],
@@ -246,11 +270,16 @@ export function useCreatePayment() {
         p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
         p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
         p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
-        // Passés à la RPC elle-même : un paiement cash naît en `cash_pending`,
-        // statut où la mise à jour directe ci-dessous n'est plus permise (RLS).
+        // Tout passe par la RPC (nouvelle signature, 21 paramètres) : un
+        // paiement cash naît en `cash_pending`, où une mise à jour directe
+        // n'est plus permise. Le serveur recalcule le ¥ et le taux, et
+        // ignore « taux perso » (jamais côté client).
         p_beneficiary_id: data.beneficiary_id || null,
         p_beneficiary_details: (data.beneficiary_details ?? null) as Json,
-        p_rate_is_custom: data.rate_is_custom ?? false,
+        p_rate_is_custom: false,
+        p_beneficiary_bank_extra: data.beneficiary_bank_extra || null,
+        p_beneficiary_identifier: data.beneficiary_identifier || null,
+        p_beneficiary_identifier_type: data.beneficiary_identifier_type || null,
       }));
 
       if (error) throw error;
@@ -259,30 +288,6 @@ export function useCreatePayment() {
 
       if (!response.success) {
         throw new Error(response.error || i18n.t('hooks.createPayment.error', { ns: 'common', defaultValue: 'Erreur lors de la création du paiement' }));
-      }
-
-      // Update beneficiary system fields separately (migration pending)
-      const hasExtendedFields = !!(
-        data.beneficiary_id ||
-        data.beneficiary_details ||
-        data.rate_is_custom ||
-        data.beneficiary_identifier ||
-        data.beneficiary_identifier_type ||
-        data.beneficiary_bank_extra
-      );
-
-      if (response.payment_id && hasExtendedFields) {
-        await supabase
-          .from('payments')
-          .update({
-            beneficiary_id: data.beneficiary_id || null,
-            beneficiary_details: (data.beneficiary_details ?? null) as Json,
-            rate_is_custom: data.rate_is_custom ?? false,
-            beneficiary_identifier: data.beneficiary_identifier || null,
-            beneficiary_identifier_type: data.beneficiary_identifier_type || null,
-            beneficiary_bank_extra: data.beneficiary_bank_extra || null,
-          })
-          .eq('id', response.payment_id);
       }
 
       return response;

@@ -185,7 +185,13 @@
     "balanceAfterPayment": "付款后余额",
     "minMaxCaption": "上限为您的可用余额。",
     "all": "全部",
-    "rateAppliedTitle": "适用今日汇率"
+    "rateAppliedTitle": "适用今日汇率",
+    "rateUnavailable": {
+      "loading": "正在读取今日汇率…",
+      "title": "今日汇率暂不可用",
+      "message": "您的付款需等待公布的汇率。请稍后重试。",
+      "retry": "重试"
+    }
   },
   "detail": {
     "title": "付款详情",

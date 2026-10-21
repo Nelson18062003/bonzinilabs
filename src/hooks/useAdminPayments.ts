@@ -71,6 +71,11 @@ export function useAdminCreatePayment() {
         p_beneficiary_notes: data.beneficiary_notes || undefined,
         p_client_visible_comment: data.client_visible_comment || undefined,
         p_desired_date: data.desired_date?.toISOString() || undefined,
+        // Passés à la RPC : la mise à jour directe qui suit ne doit plus
+        // changer rate_is_custom (garde-fou payments_cash_chain_guard).
+        p_beneficiary_id: data.beneficiary_id || undefined,
+        p_beneficiary_details: (data.beneficiary_details ?? undefined) as Json | undefined,
+        p_rate_is_custom: data.rate_is_custom ?? false,
       });
 
       if (error) throw error;
@@ -103,7 +108,6 @@ export function useAdminCreatePayment() {
           .update({
             beneficiary_id: data.beneficiary_id || null,
             beneficiary_details: (data.beneficiary_details ?? null) as Json,
-            rate_is_custom: data.rate_is_custom ?? false,
             beneficiary_identifier: data.beneficiary_identifier || null,
             beneficiary_identifier_type: data.beneficiary_identifier_type || null,
             beneficiary_bank_extra: data.beneficiary_bank_extra || null,

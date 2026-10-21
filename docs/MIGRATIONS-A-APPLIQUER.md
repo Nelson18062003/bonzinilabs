@@ -16,14 +16,31 @@
 ## En attente
 
 > **21/10/2026 — `supabase/migrations/20261021100000_cash_chain_and_money_fixes.sql`** (prérequis : `20261020120000`,
-> déjà en production). Chaîne cash réelle (paiement cash créé en `cash_pending`, scan du QR puis signature
-> obligatoires, `process_payment` refuse le cash), permission `canHandleCash` (l'agent cash perd `canProcessPayments`),
-> `cancel_deposit` reprend le montant réellement crédité. À livrer **ensemble**, sinon l'ancien site propose
-> « Commencer » sur un cash que le serveur refuse :
+> déjà en production). Chaîne cash réelle : paiement cash créé en `cash_pending` avec un **jeton secret** dans son QR
+> (`payment_cash_tokens`, lisible par le seul client), scan (jeton exact, montant réservé au grand livre) puis signature
+> (fichier déposé dans `cash-signatures`, nom DÉCLARÉ du signataire) obligatoires ; `process_payment` refuse le cash ;
+> garde-fou : hors RPC, l'API ne crée/supprime/fait avancer aucun paiement et ne change que les coordonnées du
+> bénéficiaire ; `create_payment` (client) recalcule le ¥ au taux publié ; permission `canHandleCash` (l'agent cash perd
+> `canProcessPayments`) ; `cancel_deposit` reprend le montant réellement crédité. **Ordre de livraison** (dans la foulée,
+> sans pause : entre 1 et 2, les QR de l'ancien site n'ont pas de jeton et le scan est refusé) :
 > 1. coller le fichier dans l'éditeur SQL, puis `npx supabase migration repair --status applied 20261021100000` ;
-> 2. déployer le site **et** la fonction `admin-assistant` (sa matrice de permissions connaît `canHandleCash`) ;
-> 3. `cd hq-app && npm run update:production` (le scanner natif ouvre la fiche avec `?scanned=1`) ;
-> 4. `/gen-types` (aucune signature ne change).
+> 2. déployer le site (app client : QR avec jeton, taux bloquant ; staff : scan/signature) ;
+> 3. déployer la fonction `admin-assistant` (sa matrice connaît `canHandleCash`) ;
+> 4. `cd hq-app && npm run update:production` (le scanner natif ouvre la fiche avec `?qr=…`) ;
+> 5. `/gen-types` (nouvelles surcharges `create_payment` / `scan_cash_payment` / `confirm_cash_payment`, table
+>    `payment_cash_tokens`, colonne `payments.cash_signer_id_number` — `types.ts` a été complété à la main en attendant).
+>
+> À vérifier après application (non lu en production, faute d'accès) : `storage.objects` a bien `owner_id` et `owner`
+> (lus par `confirm_cash_payment`) ; une remise cash de bout en bout (création, QR client, scan, signature).
+>
+> **Suites à donner (non traitées ici) :**
+> - **M5** : `is_admin()` inclut `cash_agent` → l'agent cash LIT toutes les lignes que les politiques `is_admin` ouvrent
+>   (paiements de toutes méthodes, etc.). Le garde-fou empêche d'écrire, pas de lire.
+> - **L4** (revue de sécurité du 21/10/2026) : reporté à la demande, à reprendre depuis le rapport de revue.
+> - Bucket `cash-signatures` public : les signatures sont lisibles par quiconque a l'URL. Le passer en privé et servir
+>   des URL signées (`cashSignatureSrc`, `src/lib/cashSignature.ts`, est le point unique à adapter).
+> - Politiques UPDATE/DELETE `is_admin` sur `payments` : le trigger `payments_cash_chain_guard` les borne ; les remplacer
+>   à terme par des RPC dédiées (les écrans écrivent encore les coordonnées du bénéficiaire en direct).
 
 > **13/10/2026 — UN seul fichier pour les lots 14 et 15 : `migrations/20261013_consolidated.sql`.** Il contient, dans
 > l'ordre, un contrôle des prérequis (s'arrête net, sans rien modifier, s'il en manque un), `20261012140000` (colis

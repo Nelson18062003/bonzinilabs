@@ -40,7 +40,6 @@ import {
   useAdminCorrectPayment,
 } from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
-import { useAgentScanCashPayment } from '@/hooks/useAgentCashActions';
 import {
   PAYMENT_STATUS_CONFIG,
   PAYMENT_METHOD_LABELS,
@@ -87,8 +86,8 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
 import { whenSentence, sinceSentence } from '@/lib/plainTime';
-import { AdminCashScan, AdminCashSign, useInvalidateCashPayment } from '@/components/cash/AdminCashHandover';
-import { CashQRCode } from '@/components/cash/CashQRCode';
+import { AdminCashScan, AdminCashSign } from '@/components/cash/AdminCashHandover';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -177,8 +176,6 @@ export function MobilePaymentDetail() {
   const cancelPayment              = useCancelPayment();
   const correctPayment             = useAdminCorrectPayment();
   const deletePaymentProof         = useDeletePaymentProof();
-  const scanCash                   = useAgentScanCashPayment();
-  const refreshCashPayment         = useInvalidateCashPayment(paymentId ?? '');
 
   // ── Derived proof lists ───────────────────────────────────
   const clientProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type !== 'admin') ?? [], [proofs]);
@@ -520,26 +517,14 @@ export function MobilePaymentDetail() {
     }, { replace: true });
   }, [wantsInstruction, isLoading, canSendInstruction, setSearchParams]);
 
-  // « ?scanned=1 » : le scanner natif de l'app BONZINI HQ vient de lire le QR
-  // de CE paiement cash. Le scan est enregistré (scan_cash_payment) si la
-  // personne remet le cash, puis le paramètre s'efface.
-  const wantsScan = searchParams.get('scanned') === '1';
+  // « ?qr=… » : le scanner natif de l'app BONZINI HQ a lu le QR du client.
+  // Rien n'est envoyé au serveur ici : la fiche ouvre l'étape « scan » et
+  // c'est le geste « Enregistrer le scan » qui appelle scan_cash_payment.
+  const scannedQr = searchParams.get('qr');
   const mayHandleCash = hasPermission('canHandleCash');
   useEffect(() => {
-    if (!wantsScan || isLoading) return;
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete('scanned');
-      return next;
-    }, { replace: true });
-    if (!payment || payment.method !== 'cash' || cashHandoverStep(payment.status) !== 'scan' || !mayHandleCash) return;
-    scanCash.mutateAsync(payment.id).then((result) => {
-      if (result.success) toast.success('QR du client scanné');
-      else toast.error(result.error || 'Scan refusé');
-      refreshCashPayment();
-    }).catch(() => { /* toast par le hook */ });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- une seule fois, à l'arrivée du scan
-  }, [wantsScan, isLoading]);
+    if (scannedQr && mayHandleCash) setCashFlow('scan');
+  }, [scannedQr, mayHandleCash]);
 
   // Quand le paiement change de statut sous nos pieds, on ferme l'édition.
   useEffect(() => {
@@ -706,10 +691,7 @@ export function MobilePaymentDetail() {
           </Card>
         </section>
 
-        {/* ── QR Code cash ─────────────────────────────────── */}
-        {isCash && !isLocked && (
-          <CashQRCode paymentId={payment.id} paymentReference={payment.reference} amountRMB={payment.amount_rmb} beneficiaryName={cashBeneficiaryName} />
-        )}
+        {/* Pas de QR cash ici : il porte le secret du CLIENT, que le staff ne voit pas. */}
 
         {/* ── Le bénéficiaire ──────────────────────────────── */}
         <section>
@@ -923,7 +905,7 @@ export function MobilePaymentDetail() {
             <Card className="space-y-3">
               {extra.cash_signature_url ? (
                 <>
-                  <img src={extra.cash_signature_url} alt="Signature" className={cn('max-h-[120px] w-full rounded-lg bg-white object-contain', SURFACE.shadow)} />
+                  <img src={cashSignatureSrc(extra.cash_signature_url) ?? undefined} alt="Signature" className={cn('max-h-[120px] w-full rounded-lg bg-white object-contain', SURFACE.shadow)} />
                   <Line>
                     {extra.cash_paid_at ? `Signé le ${when(extra.cash_paid_at)}` : 'Signature enregistrée'}
                     {extra.cash_signed_by_name && <>, par {extra.cash_signed_by_name}</>}.
@@ -934,8 +916,16 @@ export function MobilePaymentDetail() {
                   )}
                 </>
               ) : cashFlow === 'scan' && cashStep === 'scan' && mayHandleCash ? (
-                <AdminCashScan paymentId={payment.id} onDone={() => setCashFlow('sign')} onCancel={() => setCashFlow(null)} />
-              ) : cashFlow === 'sign' && cashStep !== null && mayHandleCash ? (
+                <AdminCashScan
+                  paymentId={payment.id}
+                  prefilledQr={scannedQr}
+                  onDone={() => setCashFlow('sign')}
+                  onCancel={() => {
+                    setCashFlow(null);
+                    if (scannedQr) setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('qr'); return next; }, { replace: true });
+                  }}
+                />
+              ) : cashFlow === 'sign' && cashStep === 'sign' && mayHandleCash ? (
                 <AdminCashSign paymentId={payment.id} beneficiaryName={cashBeneficiaryName} onDone={() => setCashFlow(null)} onCancel={() => setCashFlow(null)} />
               ) : cashStep === 'scan' ? (
                 <>

@@ -26,17 +26,16 @@ export function paymentMainAction(
 
 /**
  * Où en est la remise d'un paiement cash — miroir des RPC :
- *   - `scan` : le QR du client doit être scanné (`cash_pending`, ou un ancien
- *     paiement cash resté en `ready_for_payment` / `processing`) ;
+ *   - `scan` : le QR du client doit être scanné (`cash_pending` seulement ;
+ *     les anciens cash en ready_for_payment / processing y ont été remis
+ *     par la migration 20261021100000) ;
  *   - `sign` : QR scanné, le bénéficiaire signe à la remise (`cash_scanned`) ;
  *   - `null` : rien à faire (clos, ou pas encore prêt).
  */
 export type CashHandoverStep = 'scan' | 'sign' | null;
 
-export const CASH_TO_SCAN_STATUSES = ['cash_pending', 'ready_for_payment', 'processing'] as const;
-
 export function cashHandoverStep(status: PaymentStatus | string): CashHandoverStep {
-  if ((CASH_TO_SCAN_STATUSES as readonly string[]).includes(status)) return 'scan';
+  if (status === 'cash_pending') return 'scan';
   if (status === 'cash_scanned') return 'sign';
   return null;
 }

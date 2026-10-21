@@ -24,6 +24,7 @@ import { useCancelPayment, useAdminUpdateBeneficiaryInfo, useDeletePaymentProof,
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
 import { AdminCashScan, AdminCashSign } from '@/components/cash/AdminCashHandover';
 import { cashHandoverStep } from '@/lib/paymentActions';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD } from '@/lib/clipboardFiles';
 import {
   PAYMENT_STATUS_CONFIG,
@@ -69,11 +70,9 @@ import {
   DANGER_SOFT_PILL,
 } from '@/desktop/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
-import { QRCodeSVG } from 'qrcode.react';
 import { copyNodePng, captureNodePng, triggerDownload } from '@/lib/nodeImage';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
 import { PaymentReceiptPDF, type PaymentReceiptData } from '@/lib/pdf/templates/PaymentReceiptPDF';
-import { captureQrDataUrl } from '@/components/payment-detail/paymentReceiptHelpers';
 import { PaymentInstructionDialog } from './PaymentInstructionDialog';
 import { canSendPaymentInstruction, instructionEntryFromPayment, type PaymentInstructionEntry } from '@/lib/paymentInstruction';
 import {
@@ -526,8 +525,8 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
         beneficiary_bank_name: payment.beneficiary_bank_name,
         beneficiary_bank_account: payment.beneficiary_bank_account,
         beneficiary_qr_code_url: payment.beneficiary_qr_code_url,
-        cashPaymentQrDataUrl: payment.method === 'cash' ? await captureQrDataUrl(payment.id) : null,
-        cash_signature_url: cash.cash_signature_url,
+        cashPaymentQrDataUrl: null,
+        cash_signature_url: cashSignatureSrc(cash.cash_signature_url),
         cash_signed_by_name: cash.cash_signed_by_name,
         cash_signature_timestamp: cash.cash_signature_timestamp,
         adminProofs: adminProofs.map((p) => ({
@@ -593,8 +592,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const hasBeneficiaryInfo = !!(payment.beneficiary_name || payment.beneficiary_bank_account || payment.beneficiary_qr_code_url || payment.beneficiary_phone || payment.beneficiary_email || identifier);
 
   // QR de la fiche : QR bénéficiaire (Alipay/WeChat), sinon QR cash actif.
-  const showCashQr = isCash && !['completed', 'rejected', 'cancelled_by_admin'].includes(payment.status);
-  const ficheHasQr = !!payment.beneficiary_qr_code_url || showCashQr;
+  // Seul le QR du FOURNISSEUR s'affiche ici : le QR cash porte le secret du
+  // CLIENT, que le staff ne voit jamais (il le scanne au bureau).
+  const ficheHasQr = !!payment.beneficiary_qr_code_url;
 
   /* L'instruction destinée au partenaire chinois — le même objet que celui
      que l'export du lot construit, pour que les deux chemins produisent le
@@ -813,7 +813,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             {ficheHasQr && (
               <div className="shrink-0">
                 <div className="rounded-xl bg-white p-1.5" style={{ border: `1px solid rgba(0,0,0,0.10)` }}>
-                  {payment.beneficiary_qr_code_url ? (
+                  {payment.beneficiary_qr_code_url && (
                     <button type="button" onClick={() => setLightbox(payment.beneficiary_qr_code_url!)} aria-label="Agrandir le QR">
                       <img
                         src={payment.beneficiary_qr_code_url}
@@ -822,18 +822,10 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                         className="block h-[132px] w-[132px] bg-white object-contain"
                       />
                     </button>
-                  ) : (
-                    <QRCodeSVG
-                      id={`qr-${payment.id}`}
-                      value={JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: payment.id, v: 1 })}
-                      size={132}
-                      level="M"
-                      includeMargin={false}
-                    />
                   )}
                 </div>
                 <div className="mt-1 text-center text-[9.5px] font-bold uppercase tracking-wider" style={{ color: FICHE.muted }}>
-                  {payment.beneficiary_qr_code_url ? 'Scanner pour payer' : 'QR agent cash'}
+                  Scanner pour payer
                 </div>
               </div>
             )}
@@ -908,7 +900,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
             {(payment as { cash_signature_url?: string | null }).cash_signature_url ? (
               <div className={cn('rounded-2xl p-3', SURFACE.canvas)}>
                 <img
-                  src={(payment as { cash_signature_url?: string | null }).cash_signature_url!}
+                  src={cashSignatureSrc((payment as { cash_signature_url?: string | null }).cash_signature_url) ?? undefined}
                   alt="Signature du bénéficiaire"
                   className="max-h-[90px] w-full rounded-xl bg-white object-contain"
                 />
@@ -1348,7 +1340,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           </div>
           {cashFlow === 'scan' && cashStep === 'scan' ? (
             <AdminCashScan paymentId={paymentId} onDone={() => setCashFlow('sign')} onCancel={() => setCashFlow(null)} />
-          ) : cashFlow === 'sign' && cashStep !== null ? (
+          ) : cashFlow === 'sign' && cashStep === 'sign' ? (
             <AdminCashSign paymentId={paymentId} beneficiaryName={cashBeneficiaryName} onDone={() => setCashFlow(null)} onCancel={() => setCashFlow(null)} />
           ) : null}
         </div>

@@ -9,7 +9,8 @@
 //   handleManualSearch.
 // Dans l'app BONZINI HQ : c'est la caméra NATIVE qui lit (même pont que
 // useQrScanner) ; un bouton la rouvre. Un QR lu (ou saisi) ouvre la fiche
-// avec « ?scanned=1 » : c'est ce qui y autorise « Procéder au paiement ».
+// avec le contenu lu (« ?qr=… », qui porte le jeton secret du client) : c'est
+// ce qui y autorise « Procéder au paiement ». L'identifiant seul ne suffit pas.
 // ============================================================
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -56,7 +57,7 @@ export function AgentCashScanner() {
       // Stop scanner before navigating
       safeStopScanner(scannerRef.current);
       if (native) closeNativeScanner();
-      navigate(`/a/payment/${paymentId}?scanned=1`);
+      navigate(`/a/payment/${paymentId}?qr=${encodeURIComponent(decodedText.trim())}`);
     } else {
       toast.error(t('invalid_qr'));
     }
@@ -128,7 +129,7 @@ export function AgentCashScanner() {
 
     const { paymentId, isValid } = parseCashQRCode(input);
     if (isValid && paymentId) {
-      navigate(`/a/payment/${paymentId}?scanned=1`);
+      navigate(`/a/payment/${paymentId}?qr=${encodeURIComponent(input)}`);
     } else {
       toast.error(t('invalid_qr'));
     }

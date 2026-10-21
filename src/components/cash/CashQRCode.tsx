@@ -1,14 +1,18 @@
+// Le QR que le CLIENT présente au bureau. Il porte le jeton secret du
+// paiement (payment_cash_tokens, lisible par le seul client) : l'UUID seul
+// ne suffit plus au scan. Jamais affiché sur les écrans du staff.
 import { QRCodeSVG } from 'qrcode.react';
-import { Download, Copy, Check } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { Download, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { cashQrPayload } from '@/hooks/useCashPayment';
 import { formatCurrencyRMB } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT } from '@/mobile/designKit';
 
 interface CashQRCodeProps {
   paymentId: string;
+  /** Le jeton secret du paiement ; `null` tant qu'il se charge. */
+  token: string | null;
   paymentReference: string;
   amountRMB: number;
   beneficiaryName: string;
@@ -18,6 +22,7 @@ interface CashQRCodeProps {
 
 export function CashQRCode({
   paymentId,
+  token,
   paymentReference,
   amountRMB,
   beneficiaryName,
@@ -25,15 +30,8 @@ export function CashQRCode({
   size = 240,
 }: CashQRCodeProps) {
   const { t } = useTranslation('payments');
-  const [copied, setCopied] = useState(false);
-
-  // QR Code payload kept intentionally SMALL for reliable scanning.
-  // The backend fetches all details from the payment ID.
-  const qrData = JSON.stringify({
-    type: 'BONZINI_CASH_PAYMENT',
-    id: paymentId,
-    v: 1,
-  });
+  // Petit contenu pour un scan fiable : l'identifiant et le jeton.
+  const qrData = token ? cashQrPayload(paymentId, token) : null;
 
   const handleDownload = () => {
     const svgElement = document.getElementById(`qr-${paymentId}`);
@@ -58,17 +56,6 @@ export function CashQRCode({
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  const handleCopyId = async () => {
-    try {
-      await navigator.clipboard.writeText(paymentId);
-      setCopied(true);
-      toast.success(t('cashQr.idCopied'));
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error(t('cashQr.copyFailed'));
-    }
-  };
-
   return (
     <div className={cn('flex flex-col items-center gap-4 rounded-[22px] p-6', SURFACE.card, SURFACE.shadow)}>
       <div className="mb-2 text-center">
@@ -78,13 +65,19 @@ export function CashQRCode({
 
       {/* QR island — always white for reliable scanning. */}
       <div className="rounded-xl border border-black/10 bg-white p-4">
-        <QRCodeSVG
-          id={`qr-${paymentId}`}
-          value={qrData}
-          size={size}
-          level="M"
-          includeMargin
-        />
+        {qrData ? (
+          <QRCodeSVG
+            id={`qr-${paymentId}`}
+            value={qrData}
+            size={size}
+            level="M"
+            includeMargin
+          />
+        ) : (
+          <div className="flex items-center justify-center text-black/40" style={{ width: size, height: size }} role="status">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        )}
       </div>
 
       <div className="text-center">
@@ -96,25 +89,7 @@ export function CashQRCode({
         </p>
       </div>
 
-      {/* Copyable ID */}
-      <div className={cn('w-full rounded-xl p-3', SURFACE.holder)}>
-        <p className={cn('mb-2 text-center text-xs', TEXT.muted)}>{t('cashQr.paymentId')}</p>
-        <div className="flex items-center gap-2">
-          <code className={cn('flex-1 truncate rounded-lg p-2 font-mono text-xs', SURFACE.card, TEXT.strong)}>
-            {paymentId}
-          </code>
-          <button
-            type="button"
-            onClick={handleCopyId}
-            aria-label={t('cashQr.paymentId')}
-            className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition active:scale-95', SURFACE.card, SURFACE.shadow)}
-          >
-            {copied ? <Check className="h-4 w-4 text-[#2E7D52]" /> : <Copy className={cn('h-4 w-4', TEXT.muted)} />}
-          </button>
-        </div>
-      </div>
-
-      {showDownload && (
+      {showDownload && qrData && (
         <button
           type="button"
           onClick={handleDownload}

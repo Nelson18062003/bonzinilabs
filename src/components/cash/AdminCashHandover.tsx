@@ -1,11 +1,13 @@
 // ============================================================
 // La remise d'un paiement cash depuis la fiche admin (mobile et PC) —
 // même chaîne que l'agent cash, sans raccourci :
-//   1. scanner le QR que le client présente (caméra du site, ou caméra
-//      native dans l'app BONZINI HQ, ou douchette / contenu collé) ;
-//      le QR doit être CELUI de ce paiement → scan_cash_payment ;
-//   2. cocher « cash remis », faire signer le BÉNÉFICIAIRE, dont le nom
-//      est enregistré comme signataire → confirm_cash_payment.
+//   1. scanner le QR que le CLIENT présente dans son app (caméra du site,
+//      caméra native de l'app BONZINI HQ, ou douchette). Le QR porte le
+//      jeton secret du client : sans lui, scan_cash_payment refuse. Le QR
+//      doit être celui de CE paiement ;
+//   2. cocher « cash remis », faire signer, et saisir le nom que la
+//      personne qui signe DÉCLARE (et sa pièce, si elle la montre) →
+//      confirm_cash_payment.
 // Réservé à `canHandleCash` (le serveur le vérifie de toute façon).
 // ============================================================
 import { useCallback, useRef, useState } from 'react';
@@ -34,35 +36,51 @@ export function useInvalidateCashPayment(paymentId: string) {
 
 const CAMERA_ERRORS: Record<string, string> = {
   denied: 'Caméra refusée : autorisez-la dans le navigateur, ou utilisez la douchette.',
-  none: 'Aucune caméra sur cet appareil : utilisez la douchette ou collez le contenu du QR.',
+  none: 'Aucune caméra sur cet appareil : utilisez la douchette.',
   https: 'Caméra bloquée : le site doit être ouvert en HTTPS.',
-  error: 'La caméra ne s’ouvre pas : utilisez la douchette ou collez le contenu du QR.',
+  error: 'La caméra ne s’ouvre pas : utilisez la douchette.',
 };
 
-/** Étape 1 — scanner le QR du client. `onDone` après un scan accepté par le serveur. */
-export function AdminCashScan({ paymentId, onDone, onCancel }: { paymentId: string; onDone: () => void; onCancel: () => void }) {
+/**
+ * Étape 1 — scanner le QR du client. `onDone` après un scan accepté par le serveur.
+ * `prefilledQr` : le contenu déjà lu par le scanner natif de l'app (« ?qr=… ») ;
+ * il n'est envoyé qu'au geste « Enregistrer le scan ».
+ */
+export function AdminCashScan({
+  paymentId,
+  prefilledQr,
+  onDone,
+  onCancel,
+}: {
+  paymentId: string;
+  prefilledQr?: string | null;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
   const scan = useAgentScanCashPayment();
   const invalidate = useInvalidateCashPayment(paymentId);
   const [manual, setManual] = useState('');
   const [mismatch, setMismatch] = useState(false);
   const busy = useRef(false);
+  const prefilled = prefilledQr ? parseCashQRCode(prefilledQr) : null;
+  const prefilledOk = !!prefilled?.isValid && prefilled.paymentId === paymentId.toLowerCase();
 
   const handleText = useCallback(
     async (text: string) => {
       if (busy.current) return;
-      const { paymentId: scanned, isValid } = parseCashQRCode(text);
+      const { paymentId: scanned, token, isValid } = parseCashQRCode(text);
       if (!isValid) {
-        toast.error('QR illisible : ce n’est pas un QR de paiement cash Bonzini');
+        toast.error('QR refusé : scannez le QR affiché dans l’app du client (l’identifiant seul ne suffit pas)');
         return;
       }
-      if (scanned !== paymentId) {
+      if (scanned !== paymentId.toLowerCase()) {
         setMismatch(true);
         return;
       }
       busy.current = true;
       setMismatch(false);
       try {
-        const result = await scan.mutateAsync(paymentId);
+        const result = await scan.mutateAsync({ paymentId, token });
         if (result.success) {
           toast.success('QR du client scanné');
           invalidate();
@@ -80,7 +98,23 @@ export function AdminCashScan({ paymentId, onDone, onCancel }: { paymentId: stri
     [paymentId, scan, invalidate, onDone],
   );
 
-  const { starting, error } = useQrScanner('admin-cash-qr-reader', (t) => { void handleText(t); });
+  const { starting, error } = useQrScanner('admin-cash-qr-reader', (t) => { void handleText(t); }, !prefilledOk);
+
+  if (prefilledOk && prefilledQr) {
+    return (
+      <div className="space-y-3">
+        <p className="flex items-center gap-2 rounded-xl bg-black/[0.04] px-3.5 py-3 text-[15px] dark:bg-white/[0.06]">
+          <ScanLine className="h-4 w-4 shrink-0" /> QR du client lu par le scanner.
+        </p>
+        <Button type="button" className="w-full" onClick={() => void handleText(prefilledQr)} disabled={scan.isPending}>
+          Enregistrer le scan
+        </Button>
+        <Button type="button" variant="outline" className="w-full" onClick={onCancel} disabled={scan.isPending}>
+          Annuler
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -100,12 +134,13 @@ export function AdminCashScan({ paymentId, onDone, onCancel }: { paymentId: stri
         <div id="admin-cash-qr-reader" className={cn('w-full', error && 'hidden')} />
       </div>
 
-      {mismatch && (
+      {(mismatch || (prefilledQr && !prefilledOk)) && (
         <p role="alert" className="rounded-lg bg-[#FDD3D0] px-3 py-2 text-[14px] font-semibold text-[#900B09] dark:bg-[#900B09] dark:text-[#FDD3D0]">
-          Ce QR correspond à un AUTRE paiement. Vérifiez que le client présente bien celui-ci.
+          Ce QR n’est pas celui de ce paiement. Vérifiez que le client présente bien celui-ci.
         </p>
       )}
 
+      {/* Douchette (lecteur USB) : elle « tape » le contenu complet du QR. */}
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -116,7 +151,7 @@ export function AdminCashScan({ paymentId, onDone, onCancel }: { paymentId: stri
         <TextField
           value={manual}
           onChange={(e) => setManual(e.target.value)}
-          placeholder="Douchette ou contenu du QR"
+          placeholder="Douchette : contenu du QR"
           aria-label="Contenu du QR du client (douchette)"
           autoComplete="off"
           autoCapitalize="none"
@@ -137,7 +172,7 @@ export function AdminCashScan({ paymentId, onDone, onCancel }: { paymentId: stri
   );
 }
 
-/** Étape 2 — remettre le cash, faire signer le bénéficiaire. */
+/** Étape 2 — remettre le cash, faire signer, noter l'identité DÉCLARÉE du signataire. */
 export function AdminCashSign({
   paymentId,
   beneficiaryName,
@@ -145,7 +180,7 @@ export function AdminCashSign({
   onCancel,
 }: {
   paymentId: string;
-  /** Le BÉNÉFICIAIRE (pas l'admin) : enregistré comme signataire, comme dans l'app de l'agent cash. */
+  /** Le bénéficiaire ATTENDU (repère pour vérifier) ; le signataire déclare le sien. */
   beneficiaryName: string;
   onDone: () => void;
   onCancel: () => void;
@@ -153,11 +188,19 @@ export function AdminCashSign({
   const confirm = useAgentConfirmCashPayment();
   const invalidate = useInvalidateCashPayment(paymentId);
   const [handed, setHanded] = useState(false);
+  const [declaredName, setDeclaredName] = useState('');
+  const [idNumber, setIdNumber] = useState('');
+  const ready = handed && declaredName.trim().length >= 2;
 
   const handleSave = async (signatureDataUrl: string) => {
-    if (!handed) return;
+    if (!ready) return;
     try {
-      const result = await confirm.mutateAsync({ paymentId, signatureDataUrl, signedByName: beneficiaryName });
+      const result = await confirm.mutateAsync({
+        paymentId,
+        signatureDataUrl,
+        signedByName: declaredName,
+        signerIdNumber: idNumber,
+      });
       if (result?.success) {
         toast.success('Signature enregistrée — cash remis');
         invalidate();
@@ -173,6 +216,27 @@ export function AdminCashSign({
 
   return (
     <div className="space-y-3">
+      <p className="flex items-start gap-2 rounded-xl bg-[#F8EFD8] px-3.5 py-2.5 text-[14px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+        Bénéficiaire attendu : {beneficiaryName}. Vérifiez son identité avant de remettre les fonds.
+      </p>
+      <TextField
+        label="Nom de la personne qui signe"
+        value={declaredName}
+        onChange={(e) => setDeclaredName(e.target.value)}
+        placeholder="Tel qu’elle le déclare"
+        autoComplete="off"
+        variant="name"
+        required
+      />
+      <TextField
+        label="N° de pièce d’identité (si présentée)"
+        value={idNumber}
+        onChange={(e) => setIdNumber(e.target.value)}
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+      />
       <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-black/[0.04] px-3.5 py-3 dark:bg-white/[0.06]">
         <input
           type="checkbox"
@@ -180,16 +244,12 @@ export function AdminCashSign({
           onChange={(e) => setHanded(e.target.checked)}
           className="h-5 w-5 shrink-0 accent-current"
         />
-        <span className="text-[15px] font-medium">Cash remis à {beneficiaryName}</span>
+        <span className="text-[15px] font-medium">Cash remis à la personne qui signe</span>
       </label>
-      <p className="flex items-start gap-2 rounded-xl bg-[#F8EFD8] px-3.5 py-2.5 text-[14px] text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
-        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-        Vérifiez l’identité du bénéficiaire avant de remettre les fonds.
-      </p>
-      <SignatureCanvas onSave={handleSave} onCancel={onCancel} isLoading={confirm.isPending} disabled={!handed} />
-      {!handed && (
+      <SignatureCanvas onSave={handleSave} onCancel={onCancel} isLoading={confirm.isPending} disabled={!ready} />
+      {!ready && (
         <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <Check className="h-3.5 w-3.5" /> Cochez « Cash remis » pour confirmer.
+          <Check className="h-3.5 w-3.5" /> Saisissez le nom déclaré et cochez « Cash remis » pour confirmer.
         </p>
       )}
     </div>

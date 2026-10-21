@@ -14,6 +14,7 @@ import { formatCurrencyRMB } from '@/lib/formatters';
 import { CheckCircle2, ArrowLeft, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { SURFACE, TEXT, Holder, Amount, SoftPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
 
 export function AgentCashSuccess() {
@@ -71,7 +72,7 @@ export function AgentCashSuccess() {
                 {t('beneficiary_signature') || 'Signature du bénéficiaire'}
               </p>
               <img
-                src={payment.cash_signature_url}
+                src={cashSignatureSrc(payment.cash_signature_url) ?? undefined}
                 alt="Signature"
                 className="w-full h-auto rounded"
                 style={{ maxHeight: '100px', objectFit: 'contain' }}

@@ -4,10 +4,10 @@
 //   hero Card + Holder + Amount + StatusPill toné · infos en Row ·
 //   boutons d'action en PrimaryPill · ScreenLoader/ScreenError.
 // Chaîne cash (21/10/2026) — scan du QR du client ET signature obligatoires :
-//   · à remettre (cash_pending, ou ancien ready_for_payment / processing) :
-//     « Procéder » n'apparaît QUE si l'on arrive d'un scan (?scanned=1, posé
-//     par le scanner du site ou celui de l'app BONZINI HQ) ; sinon on
-//     demande de scanner le QR du client ;
+//   · à remettre (cash_pending) : « Procéder » n'apparaît QUE si l'on arrive
+//     d'un scan portant le QR du client (« ?qr=… », posé par le scanner du
+//     site ou celui de l'app BONZINI HQ) ; le jeton qu'il contient part au
+//     serveur au geste « Procéder ». Sinon on demande de scanner le QR ;
 //   · QR scanné (cash_scanned) : « Confirmer » mène à la signature.
 // ============================================================
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,8 +19,10 @@ import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
 import { Banknote, CheckCircle2, ScanLine } from 'lucide-react';
 import { cashHandoverStep } from '@/lib/paymentActions';
+import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { toast } from 'sonner';
 import {
   SURFACE,
@@ -40,7 +42,9 @@ export function AgentCashPaymentDetail() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const arrivedFromScan = searchParams.get('scanned') === '1';
+  const scannedQr = parseCashQRCode(searchParams.get('qr'));
+  const scannedToken = scannedQr.isValid && scannedQr.paymentId === paymentId?.toLowerCase() ? scannedQr.token : null;
+  const arrivedFromScan = !!scannedToken;
   const { t } = useLanguage();
   const { data: payment, isLoading, error } = useAgentCashPaymentDetail(paymentId);
   const scanMutation = useAgentScanCashPayment();
@@ -68,10 +72,10 @@ export function AgentCashPaymentDetail() {
 
   // Le QR vient d'être lu : on enregistre le scan, puis la signature.
   const handleProceedToPayment = async () => {
-    if (!payment) return;
+    if (!payment || !scannedToken) return;
 
     try {
-      const result = await scanMutation.mutateAsync(payment.id);
+      const result = await scanMutation.mutateAsync({ paymentId: payment.id, token: scannedToken });
       if (result.success) {
         navigate(`/a/payment/${payment.id}/confirm`);
       } else {
@@ -170,7 +174,7 @@ export function AgentCashPaymentDetail() {
                   {t('beneficiary_signature') || 'Signature du bénéficiaire'}
                 </p>
                 <img
-                  src={payment.cash_signature_url}
+                  src={cashSignatureSrc(payment.cash_signature_url) ?? undefined}
                   alt="Signature"
                   className="w-full max-w-xs h-auto rounded"
                   style={{ maxHeight: '120px', objectFit: 'contain' }}

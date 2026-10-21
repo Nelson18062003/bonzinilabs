@@ -1,146 +1,58 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabaseAdmin } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import i18n from '@/i18n';
+// ============================================================
+// Le QR d'un paiement cash — lecture.
+//
+// Depuis le 21/10/2026, le QR porte un SECRET que seul le client
+// propriétaire peut lire (table payment_cash_tokens) :
+//   {"type":"BONZINI_CASH_PAYMENT","id":"<uuid>","t":"<jeton>","v":2}
+// L'UUID du paiement seul (ancien QR, identifiant copié, fiche admin) ne
+// suffit plus : scan_cash_payment compare le jeton. Les mutations de scan
+// et de confirmation vivent dans useAgentCashActions (supabaseAdmin).
+// ============================================================
 
-interface ScanCashPaymentResult {
-  success: boolean;
-  error?: string;
-  payment?: {
-    id: string;
-    reference: string;
-    amount_rmb: number;
-    amount_xaf: number;
-    status: string;
-    method: string;
-    cash_beneficiary_type: string | null;
-    cash_beneficiary_first_name: string | null;
-    cash_beneficiary_last_name: string | null;
-    cash_beneficiary_phone: string | null;
-    beneficiary_name: string | null;
-    user_id: string;
-  };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Le jeton : 32 à 128 caractères hexadécimaux (≥ 128 bits). */
+const TOKEN_RE = /^[0-9a-f]{32,128}$/i;
+
+export interface ParsedCashQr {
+  paymentId: string;
+  token: string;
+  isValid: boolean;
 }
 
-interface ConfirmCashPaymentResult {
-  success: boolean;
-  error?: string;
+const INVALID: ParsedCashQr = { paymentId: '', token: '', isValid: false };
+
+function accept(id: unknown, token: unknown): ParsedCashQr {
+  if (typeof id !== 'string' || typeof token !== 'string') return INVALID;
+  const i = id.trim();
+  const t = token.trim();
+  return UUID_RE.test(i) && TOKEN_RE.test(t) ? { paymentId: i.toLowerCase(), token: t.toLowerCase(), isValid: true } : INVALID;
 }
 
-export function useScanCashPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (paymentId: string): Promise<ScanCashPaymentResult> => {
-      const { data, error } = await supabaseAdmin.rpc('scan_cash_payment', {
-        p_payment_id: paymentId,
-      });
-
-      if (error) throw error;
-      return data as unknown as ScanCashPaymentResult;
-    },
-    onSuccess: (result) => {
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-        toast.success(i18n.t('hooks.scanCashPayment.success', { ns: 'common', defaultValue: 'QR Code scanné avec succès' }));
-      } else {
-        toast.error(result.error || i18n.t('hooks.scanCashPayment.error', { ns: 'common', defaultValue: 'Erreur lors du scan' }));
-      }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-export function useConfirmCashPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      paymentId,
-      signatureDataUrl,
-      signedByName,
-    }: {
-      paymentId: string;
-      signatureDataUrl: string;
-      signedByName: string;
-    }): Promise<ConfirmCashPaymentResult> => {
-      // Upload signature to storage
-      const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
-      const fileName = `${paymentId}/${Date.now()}_signature.png`;
-      
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from('cash-signatures')
-        .upload(fileName, signatureBlob, { contentType: 'image/png' });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabaseAdmin.storage
-        .from('cash-signatures')
-        .getPublicUrl(fileName);
-
-      // Confirm the payment
-      const { data, error } = await supabaseAdmin.rpc('confirm_cash_payment', {
-        p_payment_id: paymentId,
-        p_signature_url: publicUrl,
-        p_signed_by_name: signedByName,
-      });
-
-      if (error) throw error;
-      return data as unknown as ConfirmCashPaymentResult;
-    },
-    onSuccess: (result, variables) => {
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-        queryClient.invalidateQueries({ queryKey: ['admin-payment', variables.paymentId] });
-        queryClient.invalidateQueries({ queryKey: ['payment-timeline', variables.paymentId] });
-        toast.success(i18n.t('hooks.confirmCashPayment.success', { ns: 'common', defaultValue: 'Paiement cash confirmé avec succès' }));
-      } else {
-        toast.error(result.error || i18n.t('hooks.confirmCashPayment.error', { ns: 'common', defaultValue: 'Erreur lors de la confirmation' }));
-      }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-}
-
-// Parse QR code data
-export function parseCashQRCode(qrData: string): { paymentId: string; isValid: boolean } {
+/** Lit le contenu d'un QR cash ; valide seulement avec l'identifiant ET le jeton. */
+export function parseCashQRCode(qrData: string | null | undefined): ParsedCashQr {
   const raw = (qrData ?? '').trim();
-  if (!raw) return { paymentId: '', isValid: false };
+  if (!raw) return INVALID;
 
-  const uuidRe = /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i;
-
-  // 1) Preferred: JSON payload
+  // 1) Le QR de l'app client (JSON).
   try {
     const parsed = JSON.parse(raw);
-    if (parsed?.type === 'BONZINI_CASH_PAYMENT' && typeof parsed?.id === 'string' && uuidRe.test(parsed.id)) {
-      return { paymentId: parsed.id, isValid: true };
-    }
+    if (parsed?.type === 'BONZINI_CASH_PAYMENT') return accept(parsed.id, parsed.t);
   } catch {
-    // ignore
+    // pas du JSON
   }
 
-  // 2) URL payloads (e.g. ...?paymentId=UUID or ...?id=UUID)
+  // 2) Une URL portant les deux (?paymentId=…&t=…).
   try {
     const url = new URL(raw);
-    const id = url.searchParams.get('paymentId') ?? url.searchParams.get('id');
-    if (id && uuidRe.test(id)) return { paymentId: id, isValid: true };
+    return accept(url.searchParams.get('paymentId') ?? url.searchParams.get('id'), url.searchParams.get('t'));
   } catch {
-    // ignore
+    // pas une URL
   }
 
-  // 3) Raw UUID (or any string containing a UUID)
-  const match = raw.match(uuidRe);
-  if (match?.[0]) return { paymentId: match[0], isValid: true };
+  return INVALID;
+}
 
-  // 4) Legacy/simple formats like "BONZINI_CASH_PAYMENT:UUID"
-  if (/BONZINI_CASH_PAYMENT/i.test(raw)) {
-    const m = raw.match(uuidRe);
-    if (m?.[0]) return { paymentId: m[0], isValid: true };
-  }
-
-  return { paymentId: '', isValid: false };
+/** Le contenu du QR à dessiner (app client). */
+export function cashQrPayload(paymentId: string, token: string): string {
+  return JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: paymentId, t: token, v: 2 });
 }

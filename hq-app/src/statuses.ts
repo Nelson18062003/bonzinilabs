@@ -6,7 +6,7 @@ export const DEPOSITS_TO_PROCESS = ['proof_submitted', 'admin_review'];
 /** src/lib/actionable.ts : ACTIONABLE_PAYMENT_STATUSES. */
 export const PAYMENTS_TO_PROCESS = ['ready_for_payment', 'cash_scanned', 'processing'];
 /** L'onglet « À remettre » de l'agent cash (useAgentCashPayments, statut 'pending'). */
-export const CASH_PENDING = ['processing', 'cash_scanned', 'cash_pending', 'ready_for_payment'];
+export const CASH_PENDING = ['cash_pending', 'cash_scanned'];
 
 /** Les onglets qui portent une pastille, par rôle (clés de tabs.ts). */
 export const BADGE_TABS = {

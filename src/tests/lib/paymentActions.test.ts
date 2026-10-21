@@ -22,8 +22,9 @@ describe('paymentMainAction — le bouton principal ne propose que ce que la RPC
 });
 
 describe('cashHandoverStep — la remise cash suit scan_cash_payment puis confirm_cash_payment', () => {
-  it('à scanner : cash_pending, et les anciens ready_for_payment / processing', () => {
-    for (const s of ['cash_pending', 'ready_for_payment', 'processing']) expect(cashHandoverStep(s)).toBe('scan');
+  it('à scanner : cash_pending seulement (les anciens cash ont été remis en cash_pending)', () => {
+    expect(cashHandoverStep('cash_pending')).toBe('scan');
+    for (const s of ['ready_for_payment', 'processing']) expect(cashHandoverStep(s)).toBeNull();
   });
   it('à signer : seulement après le scan', () => {
     expect(cashHandoverStep('cash_scanned')).toBe('sign');
