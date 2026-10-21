@@ -6,7 +6,7 @@
  * vrais logos (ici : les armateurs).
  *
  * À remonter dans le kit si un autre module en a besoin : CapsLabel, ChipRow,
- * InkProgress, OptionCard, UnitField, Stepper, StateCircle, CarrierCircle.
+ * InkProgress, OptionCard, UnitField, Stepper, StateCircle, CarrierCircle, TapBox.
  */
 import * as React from 'react';
 import { Check, Minus, Plus } from 'lucide-react';
@@ -213,10 +213,11 @@ export function TopIcon({ icon: Icon, onClick, ariaLabel, disabled }: { icon: Re
 /* ── RowButton ────────────────────────────────────────────────────────────
  * Le petit bouton blanc à filet au bout d'une ligne (« Attribuer »,
  * « Retirer »). `link` : souligné, sans cadre. */
-export function RowButton({ children, onClick, disabled, link }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; link?: boolean }) {
+export function RowButton({ children, onClick, disabled, link, ariaLabel }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; link?: boolean; ariaLabel?: string }) {
   return (
     <button
       type="button"
+      aria-label={ariaLabel}
       disabled={disabled}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={cn('flex h-11 shrink-0 items-center justify-center rounded-lg text-[16px] font-semibold disabled:opacity-40', FOCUS_RING, TEXT.strong, link ? 'px-1 underline underline-offset-[3px]' : cn('border px-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider))}
@@ -262,6 +263,32 @@ export function FieldFrame({ children, action, className }: { children: React.Re
         </button>
       )}
       {children}
+    </div>
+  );
+}
+
+/* ── TapBox ───────────────────────────────────────────────────────────────
+ * La boîte « étiquette / valeur » dont les lignes se touchent SANS chevron
+ * (le devis de 04/07, les lignes du devis 10/42) : la valeur reste collée à
+ * droite, comme dans KVBox. Une ligne sans `onClick` est une simple ligne. */
+export interface TapRow { label: React.ReactNode; value: React.ReactNode; onClick?: () => void; strong?: boolean }
+export function TapBox({ rows, className }: { rows: TapRow[]; className?: string }) {
+  return (
+    <div className={cn('rounded-lg border', SURFACE.divider, className)}>
+      {rows.map((r, i) => {
+        const Wrapper = r.onClick ? 'button' : 'div';
+        return (
+          <Wrapper
+            key={i}
+            type={r.onClick ? 'button' : undefined}
+            onClick={r.onClick}
+            className={cn('flex min-h-[52px] w-full items-center justify-between gap-3 border-b px-4 py-3 text-left text-[16px] last:border-b-0', SURFACE.divider, r.onClick && cn('active:bg-[#F5F5F5] dark:active:bg-[#383838]', FOCUS_RING))}
+          >
+            <span className={cn('min-w-0', r.strong ? cn('font-semibold', TEXT.strong) : TEXT.muted)}>{r.label}</span>
+            <span className={cn('shrink-0 text-right font-semibold tabular-nums', TEXT.strong)}>{r.value}</span>
+          </Wrapper>
+        );
+      })}
     </div>
   );
 }

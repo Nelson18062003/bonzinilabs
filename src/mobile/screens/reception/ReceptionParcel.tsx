@@ -10,7 +10,7 @@
 // dépôt ouvert ou fermé, tant qu'il n'est pas dans une boîte.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { Camera, ImagePlus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { MAX_PARCEL_PHOTOS, PARCEL_KINDS, RECEPTION_CONDITIONS, cbmOf, formatCbm, parcelSavedPhotos, pickParcelPhotos, type ParcelKind, type ReceptionCondition } from '@/lib/reception';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useFilePreviews } from '@/hooks/useFilePreviews';
-import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useUpdateParcel } from '@/hooks/useReception';
+import { uploadParcelPhotos, useAddParcel, useParcelPhotoUrl, useReceptionDeposit, useRemoveParcelPhoto, useSetParcelCover, useUpdateParcel } from '@/hooks/useReception';
 import { BigButton, Dock, EmptyLine, FOCUS_RING, ScreenTop, SURFACE, TEXT, TextInput } from '@/mobile/designKit';
 import { DepositLoadState, useReceptionLabels } from '@/mobile/components/reception/bits';
 import { CapsLabel, ChipRow, Stepper, UnitField } from '@/mobile/components/cargo/v2';
@@ -46,12 +46,13 @@ function NewPhoto({ url, cover, coverLabel, removeLabel, onRemove }: { url: stri
 }
 
 /** Une photo déjà enregistrée sur le colis (correction d'un colis existant). */
-function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove }: { photo: { path: string }; cover: boolean; coverLabel: string; removeLabel: string; onRemove?: () => void }) {
+function SavedPhoto({ photo, cover, coverLabel, removeLabel, onRemove, makeCoverLabel, onCover }: { photo: { path: string }; cover: boolean; coverLabel: string; removeLabel: string; onRemove?: () => void; makeCoverLabel?: string; onCover?: () => void }) {
   const { data: url } = useParcelPhotoUrl(photo.path);
   return (
     <div className={cn('relative overflow-hidden rounded-lg', SURFACE.inset)} style={{ aspectRatio: '1 / 1' }}>
       {url && <img src={url} alt="" className="h-full w-full object-cover" />}
       {cover && <span className="absolute left-2 top-2 rounded-md bg-[#1E1E1E]/85 px-2 py-0.5 text-[14px] font-semibold text-white">{coverLabel}</span>}
+      {!cover && onCover && <button type="button" onClick={onCover} className="absolute inset-x-2 bottom-2 min-h-9 rounded-md bg-white/90 px-1 text-[14px] font-semibold text-[#1E1E1E]">{makeCoverLabel}</button>}
       {onRemove && <button type="button" onClick={onRemove} aria-label={removeLabel} className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1E1E1E]"><X className="h-5 w-5" /></button>}
     </div>
   );
@@ -67,6 +68,9 @@ export function ReceptionParcel() {
   const add = useAddParcel();
   const update = useUpdateParcel();
   const removePhoto = useRemoveParcelPhoto();
+  const setCover = useSetParcelCover();
+  // Ouvert depuis Cargo › Réception (/m/…) : la fiche dépôt de l'équipe, pas celle de l'app Réception.
+  const fromCargo = useLocation().pathname.startsWith('/m/');
   const editing = deposit?.parcels.find((p) => p.id === parcelId) ?? null;
   const { currentUser, hasPermission } = useAdminAuth();
   // Les photos déjà enregistrées (correction) ; une donnée d'avant les photos multiples n'a que sa couverture.
@@ -119,7 +123,7 @@ export function ReceptionParcel() {
   const cbm = useMemo(() => cbmOf(num(length), num(width), num(height)), [length, width, height]);
   const nextSeq = (deposit?.parcels.length ?? 0) + 1;
   // Sortir : là d'où l'on vient (la fiche du dépôt, les colis à emballer…) — jamais « Dépôt terminé ».
-  const exit = () => goBack(`/r/deposit/${depositId}`);
+  const exit = () => goBack(fromCargo ? `/m/cargo/reception/${depositId}` : `/r/deposit/${depositId}`);
 
   const submit = async () => {
     if (!depositId || (parcelId && !editing)) return; // un colis introuvable ne devient jamais un nouveau colis
@@ -167,6 +171,9 @@ export function ReceptionParcel() {
   // le chargement (sinon une saisie serait écrasée à l'arrivée des données) ou
   // après un échec (sinon « Enregistrer » ne ferait rien), l'en-tête et sa flèche.
   // Une relecture ratée en arrière-plan (retour de l'appareil photo) garde le formulaire.
+  // Depuis Cargo : la même garde que la fiche dépôt de l'équipe.
+  if (fromCargo && !hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
+
   if (parcelId && !deposit) {
     return <DepositLoadState title={t('rc_parcel')} onBack={exit} isLoading={depositLoading} error={depositError} onRetry={() => void refetch()} />;
   }
@@ -184,7 +191,7 @@ export function ReceptionParcel() {
   const tile = 'relative overflow-hidden rounded-lg';
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <ScreenTop title={title} onBack={exit} step={editing ? undefined : deposit?.status === 'open' ? '3/4' : undefined} />
+      <ScreenTop title={title} onBack={exit} step={editing || fromCargo ? undefined : deposit?.status === 'open' ? '3/4' : undefined} />
 
       <div className="flex-1 space-y-6 px-5 pb-6 pt-4">
         {/* Les photos : la preuve de ce qui est arrivé. La première est la couverture. */}
@@ -195,7 +202,8 @@ export function ReceptionParcel() {
           <div className="grid grid-cols-3 gap-2.5">
             {saved.map((ph, k) => (
               <div key={ph.path} className={tile} style={{ aspectRatio: '1 / 1' }}>
-                <SavedPhoto photo={ph} cover={k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')} onRemove={canRemoveSaved && ph.id ? () => removePhoto.mutate(ph.id!) : undefined} />
+                <SavedPhoto photo={ph} cover={k === 0} coverLabel={t('rc_cover')} removeLabel={t('rc_remove_photo')} onRemove={canRemoveSaved && ph.id ? () => removePhoto.mutate(ph.id!) : undefined}
+                  makeCoverLabel={t('rc_v2_make_cover')} onCover={canRemoveSaved && ph.id ? () => setCover.mutate(ph.id!) : undefined} />
               </div>
             ))}
             {photos.map((f, k) => (

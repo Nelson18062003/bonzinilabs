@@ -10,10 +10,21 @@
 // « Reçu par », les vues Par client et Photos, le travail des
 // réceptionnaires, la langue des devis, le CSV, les comptes cargo et
 // Douala. `?vue=colis|paquets` ouvre la vue.
+// Sélection en lot (comme l'ordinateur) : appui long sur un dépôt ou un
+// colis → des cases ; la barre du bas fait les étiquettes (PDF), les
+// imprime, ou met les colis avion en paquet (200 au plus).
 // ============================================================
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarRange, Download, Globe2, Images, Languages, MapPin, Package, Plane, UserRound, Users, Warehouse } from 'lucide-react';
+import { toast } from 'sonner';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
+import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
+import { openForPrint, useParcelLabels } from '@/components/cargo/reception/useParcelLabels';
+import { downloadFile } from '@/components/customer-code/exportShippingLabel';
+import { TickBox } from '@/mobile/components/reception/packageBits';
+import { PackSheet } from '@/mobile/components/reception/PackSheet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useReceptionBoard, useReceptionStock, type BoardScope } from '@/hooks/useReception';
 import { useWarehouseDay } from '@/hooks/useWarehouse';
@@ -27,9 +38,9 @@ import {
 import { exportToCSV } from '@/lib/exportCSV';
 import { cn } from '@/lib/utils';
 import {
-  ActionSheet, BottomSheet, DayLabel, EmptyLine, IconCircle, Initials, ItemList, ItemRow, KVBox, MoreButton, ScreenLoader, ScreenTop, SearchBox, SURFACE, TEXT, type Tone,
+  ActionSheet, BigButton, BottomSheet, DayLabel, Dock, EmptyLine, IconCircle, Initials, ItemList, ItemRow, KVBox, MoreButton, ScreenLoader, ScreenTop, SearchBox, SURFACE, TEXT, type Tone,
 } from '@/mobile/designKit';
-import { ChipRow, FitSegmented, RadioRow, RowButton } from '@/mobile/components/cargo/v2';
+import { ChipRow, FitSegmented, RadioRow, RowButton, useLongPress } from '@/mobile/components/cargo/v2';
 import { ParcelThumb, formatDateTime as fmtDT, useReceptionLabels } from "@/mobile/components/reception/bits";
 import { ShipSheet } from '@/mobile/components/cargo/ShipSheet';
 
@@ -59,6 +70,19 @@ function dayKey(iso: string): string {
   const d = new Date(iso); const today = new Date(); const y = new Date(); y.setDate(today.getDate() - 1);
   const same = (a: Date, b: Date) => a.toDateString() === b.toDateString();
   return same(d, today) ? "Aujourd'hui" : same(d, y) ? 'Hier' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' });
+}
+
+/** Au plus 200 colis par lot (étiquettes, mise en paquet) — comme l'ordinateur. */
+const MAX_PICK = 200;
+
+/** Une ligne qui s'ouvre d'un toucher, et passe en sélection d'un appui long (le toucher qui suit ne l'ouvre pas). */
+function LongPress({ onLong, children }: { onLong: () => void; children: ReactNode }) {
+  const lp = useLongPress(onLong);
+  return (
+    <div {...lp.handlers} onClickCapture={(e) => { if (lp.fired.current) { lp.fired.current = false; e.stopPropagation(); e.preventDefault(); } }} className="select-none">
+      {children}
+    </div>
+  );
 }
 
 /** Ce qui compte d'un dépôt, en un tag : supprimé, en cours, à attribuer, incomplet, puis le devis. */
@@ -96,11 +120,18 @@ export function MobileCargoReception() {
   const packages = useAirPackages('all', null, view === 'packages');
   const seesDouala = hasPermission('canReleaseParcels') || hasPermission('canReceiveAtDestination');
   const douala = useWarehouseDay(seesDouala && sheet === 'douala');
+  const { data: settingsData } = useAdminShippingSettings();
+  // La sélection en lot : des colis (un dépôt sélectionné = tous ses colis).
+  const [picked, setPicked] = useState<Set<string>>(() => new Set());
+  const [packOpen, setPackOpen] = useState(false);
+  const [labelBusy, setLabelBusy] = useState<'pdf' | 'print' | null>(null);
 
   const all = useMemo(() => board.data?.deposits ?? [], [board.data]);
   const scoped = useMemo(() => all.filter((d) => (!receivedBy || d.received_by === receivedBy) && depositMatches(d, query)), [all, receivedBy, query]);
   const deposits = useMemo(() => scoped.filter((d) => depositInQueue(d, queue)).sort((a, b) => depositDate(b).localeCompare(depositDate(a))), [scoped, queue]);
   const parcelRows = useMemo(() => deposits.flatMap((d) => sortedParcels(d.parcels).filter((p) => parcelInQueue(p, d, queue)).map((p) => ({ parcel: p, deposit: d }))), [deposits, queue]);
+  const pickedItems = useMemo(() => all.flatMap((d) => d.parcels.filter((p) => picked.has(p.id)).map((p) => ({ parcel: p, deposit: d }))), [all, picked]);
+  const labelMaker = useParcelLabels(pickedItems, settingsData ?? DEFAULT_SHIPPING_SETTINGS, pickedItems.length > 0);
   const staff = useMemo(() => {
     const m = new Map<string, { id: string; name: string; deposits: number; parcels: number; kg: number; incomplete: number; pending: number }>();
     for (const d of all) {
@@ -156,6 +187,27 @@ export function MobileCargoReception() {
   };
 
   const openDeposit = (d: Deposit, p?: Parcel) => navigate(`/m/cargo/reception/${d.id}${p ? `?colis=${p.id}` : ''}`);
+  const selecting = picked.size > 0;
+  /** Cocher / décocher des colis (tous ceux d'un dépôt d'un coup). */
+  const toggle = (ids: string[]) => setPicked((cur) => {
+    const next = new Set(cur);
+    const every = ids.every((id) => next.has(id));
+    for (const id of ids) { if (every) next.delete(id); else next.add(id); }
+    if (next.size > MAX_PICK) { toast.error(`${MAX_PICK} colis au plus par lot`); return cur; }
+    return next;
+  });
+  const labelIds = pickedItems.filter((it) => labelMaker.has(it.parcel.id)).map((it) => it.parcel.id);
+  const runLabels = async (what: 'pdf' | 'print') => {
+    if (labelBusy || labelIds.length === 0) return;
+    setLabelBusy(what);
+    try {
+      const file = await labelMaker.pdfFile(labelIds, `bonzini-etiquettes-${labelIds.length}-colis.pdf`);
+      if (what === 'pdf') { downloadFile(file); toast.success(`PDF de ${labelIds.length} étiquette${labelIds.length > 1 ? 's' : ''} téléchargé`); }
+      else if (!openForPrint(file)) downloadFile(file);
+      if (labelMaker.skipped > 0) toast.warning(`${labelMaker.skipped} colis sans client : pas d'étiquette`);
+    } catch (e) { toast.error((e as Error).message); } finally { setLabelBusy(null); }
+  };
+  const canPack = hasPermission('canReceiveParcels') && pickedItems.some((it) => it.deposit.location === 'office');
   const pkRow = (k: AirPackage) => {
     const meta = packageStatusMeta(k.status);
     return (
@@ -215,14 +267,15 @@ export function MobileCargoReception() {
             {parcelRows.slice(0, 200).map(({ parcel: p, deposit: d }) => {
               const st = parcelStage(p, d.location);
               return (
-                <ItemRow
-                  key={p.id}
-                  leading={<ParcelThumb path={p.photo_path} />}
-                  title={<span className="tabular-nums">{p.parcel_no}</span>}
-                  subtitle={[p.description || labels.kind(p.kind), p.weight_kg != null ? formatKg(p.weight_kg) : 'sans poids', d.client ? clientFullName(d.client) : 'sans client'].join(' · ')}
-                  tag={{ tone: st.tone === 'info' ? 'info' : st.tone, label: st.label }}
-                  onClick={() => openDeposit(d, p)}
-                />
+                <LongPress key={p.id} onLong={() => toggle([p.id])}>
+                  <ItemRow
+                    leading={selecting ? <span className="flex h-11 w-11 shrink-0 items-center justify-center"><TickBox on={picked.has(p.id)} /></span> : <ParcelThumb path={p.photo_path} />}
+                    title={<span className="tabular-nums">{p.parcel_no}</span>}
+                    subtitle={[p.description || labels.kind(p.kind), p.weight_kg != null ? formatKg(p.weight_kg) : 'sans poids', d.client ? clientFullName(d.client) : 'sans client'].join(' · ')}
+                    tag={{ tone: st.tone === 'info' ? 'info' : st.tone, label: st.label }}
+                    onClick={() => (selecting ? toggle([p.id]) : openDeposit(d, p))}
+                  />
+                </LongPress>
               );
             })}
           </ItemList>
@@ -236,16 +289,19 @@ export function MobileCargoReception() {
                 {g.items.map((d) => {
                   const tag = depositTag(d);
                   const total = Number(d.quote_total_xaf ?? 0); const paid = Number(d.quote_paid_xaf ?? 0);
+                  const ids = d.parcels.map((p) => p.id);
+                  const n = ids.filter((id) => picked.has(id)).length;
                   return (
+                    <LongPress key={d.id} onLong={() => ids.length > 0 && toggle(ids)}>
                     <ItemRow
-                      key={d.id}
-                      leading={d.client ? <Initials name={clientFullName(d.client)} /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[18px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">?</span>}
+                      leading={selecting ? <span className="flex h-11 w-11 shrink-0 items-center justify-center"><TickBox on={n > 0 && n === ids.length} mixed={n > 0 && n < ids.length} /></span> : d.client ? <Initials name={clientFullName(d.client)} /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[18px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">?</span>}
                       title={d.client ? clientFullName(d.client) : 'Sans client'}
                       subtitle={[d.deposit_no, `${d.parcels.length} colis`, Number(d.total_weight_kg) > 0 ? formatKg(d.total_weight_kg) : null, !d.client ? d.received_by_name : null].filter(Boolean).join(' · ')}
                       amount={d.client && total > 0 ? short(paid > 0 && paid < total ? total - paid : total) : d.client ? '—' : undefined}
                       tag={tag}
-                      onClick={() => openDeposit(d)}
+                      onClick={() => (selecting ? ids.length > 0 && toggle(ids) : openDeposit(d))}
                     />
+                    </LongPress>
                   );
                 })}
               </ItemList>
@@ -338,6 +394,28 @@ export function MobileCargoReception() {
         )}
       </BottomSheet>
       <ShipSheet open={shipOpen} onClose={() => setShipOpen(false)} />
+
+      {/* La sélection en lot : étiquettes, impression, mise en paquet. */}
+      {labelMaker.nodes}
+      {selecting && view !== 'packages' && (
+        <Dock aboveTabBar>
+          <div className="flex items-center justify-between gap-3">
+            <span className={cn('text-[16px] font-semibold tabular-nums', TEXT.strong)}>{pickedItems.length} colis · {formatKg(pickedItems.reduce((s, it) => s + Number(it.parcel.weight_kg ?? 0), 0))}</span>
+            <RowButton link onClick={() => setPicked(new Set())}>Annuler</RowButton>
+          </div>
+          <BigButton onClick={() => void runLabels('pdf')} loading={labelBusy === 'pdf'} disabled={!labelMaker.ready || labelIds.length === 0 || labelBusy !== null}>Étiquettes (PDF) · {labelIds.length}</BigButton>
+          <div className={cn('grid gap-2.5', canPack ? 'grid-cols-2' : 'grid-cols-1')}>
+            <BigButton variant="soft" onClick={() => void runLabels('print')} loading={labelBusy === 'print'} disabled={!labelMaker.ready || labelIds.length === 0 || labelBusy !== null}>Imprimer</BigButton>
+            {canPack && <BigButton variant="soft" onClick={() => setPackOpen(true)}>En paquet</BigButton>}
+          </div>
+        </Dock>
+      )}
+      {selecting && <div aria-hidden style={{ height: 120 }} />}
+      {canPack && (
+        <LanguageProvider>
+          <PackSheet open={packOpen} onClose={() => setPackOpen(false)} items={pickedItems.filter((it) => it.deposit.location === 'office')} onDone={() => setPicked(new Set())} />
+        </LanguageProvider>
+      )}
     </div>
   );
 }
