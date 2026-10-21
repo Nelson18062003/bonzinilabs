@@ -1,40 +1,39 @@
 // ============================================================
-// AGENT-CASH — AgentCashPaymentDetail (fiche paiement cash)
-// Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
-//   hero Card + Holder + Amount + StatusPill toné · infos en Row ·
-//   boutons d'action en PrimaryPill · ScreenLoader/ScreenError.
-// Logique 100% préservée : useAgentCashPaymentDetail, useAgentScanCashPayment,
-//   handleProceedToPayment (scan → confirm, fallback déjà scanné), statuts
-//   (isPaid/isPending/isCashScanned), CashReceiptDownloadButton, signature.
+// AGENT-CASH — la fiche d'un retrait, v2 (maquette 02-operations/11) :
+//   le rond cash, le montant en ¥, le client et le XAF, le tag ; qui
+//   retire (le client ou un tiers) ; Créé · Référence ; UN bouton noir.
+// Chaîne cash (21/10/2026) INCHANGÉE — scan du QR du client ET signature :
+//   · à remettre (cash_pending) : « Procéder » n'apparaît QUE si l'on arrive
+//     d'un scan portant le QR du client (« ?qr=… », posé par le scanner du
+//     site ou celui de l'app BONZINI HQ) ; le jeton qu'il contient part au
+//     serveur au geste « Procéder » (scan_cash_payment). Sinon : « Scanner
+//     le QR du client » ;
+//   · QR scanné (cash_scanned) : « Confirmer la remise » mène à la signature.
 // ============================================================
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPaymentDetail } from '@/hooks/useAgentCashPayments';
 import { useAgentScanCashPayment } from '@/hooks/useAgentCashActions';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
-import { Banknote, CheckCircle2 } from 'lucide-react';
+import { formatDate } from '@/lib/formatters';
+import { cashHandoverStep } from '@/lib/paymentActions';
+import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { toast } from 'sonner';
 import {
-  SURFACE,
-  TEXT,
-  Card,
-  Holder,
-  Amount,
-  Row,
-  StatusPill,
-  PrimaryPill,
-  ScreenLoader,
-  ScreenError,
-  type Tone,
+  BigButton, BigFigure, Dock, EmptyLine, Initials, KVBox, MethodCircle, ScreenLoader, ScreenTop, Tag, TEXT, SURFACE, type KV, type Tone,
 } from '@/mobile/designKit';
+import { n0, yuan } from '@/mobile/screens/operations/opsLabels';
 
 export function AgentCashPaymentDetail() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const scannedQr = parseCashQRCode(searchParams.get('qr'));
+  const scannedToken = scannedQr.isValid && scannedQr.paymentId === paymentId?.toLowerCase() ? scannedQr.token : null;
+  const arrivedFromScan = !!scannedToken;
   const { t } = useLanguage();
   const { data: payment, isLoading, error } = useAgentCashPaymentDetail(paymentId);
   const scanMutation = useAgentScanCashPayment();
@@ -49,47 +48,33 @@ export function AgentCashPaymentDetail() {
   };
 
   const isPaid = payment?.status === 'completed';
-  const isPending = payment?.status === 'processing' || payment?.status === 'ready_for_payment';
-  const isCashScanned = payment?.status === 'cash_scanned' || payment?.status === 'cash_pending';
+  const step = payment ? cashHandoverStep(payment.status) : null;
+  const isToHandOver = step === 'scan';
+  const isCashScanned = step === 'sign';
 
-  const statusTone: Tone = isPaid ? 'success' : isCashScanned ? 'info' : 'pending';
-  const statusLabel = isPaid
-    ? t('status_paid')
-    : isCashScanned
-      ? t('status_scanned') || 'Scanné'
-      : t('status_to_pay');
+  const statusTone: Tone = isPaid ? 'success' : isCashScanned ? 'pending' : 'neutral';
+  const statusLabel = isPaid ? t('cash_done') : isCashScanned ? t('cash_qr_read') : t('cash_at_office');
 
+  // Le QR vient d'être lu : on enregistre le scan, puis la signature.
   const handleProceedToPayment = async () => {
-    if (!payment) return;
+    if (!payment || !scannedToken) return;
 
     try {
-      const result = await scanMutation.mutateAsync(payment.id);
+      const result = await scanMutation.mutateAsync({ paymentId: payment.id, token: scannedToken });
       if (result.success) {
         navigate(`/a/payment/${payment.id}/confirm`);
       } else {
-        // If scan fails because already scanned, still allow proceeding to confirm
-        const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
-        if (alreadyScanned) {
-          navigate(`/a/payment/${payment.id}/confirm`);
-        } else {
-          toast.error(result.error || t('error'));
-        }
+        toast.error(result.error || t('error'));
       }
     } catch {
-      // If RPC throws but payment is already scanned, allow continuing
-      const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
-      if (alreadyScanned) {
-        navigate(`/a/payment/${payment.id}/confirm`);
-      } else {
-        toast.error(t('error'));
-      }
+      toast.error(t('error'));
     }
   };
 
   if (isLoading) {
     return (
-      <div className={cn('min-h-screen', SURFACE.canvas)}>
-        <MobileHeader title={t('payment_details')} showBack backTo="/a" />
+      <div className="flex min-h-full flex-col">
+        <ScreenTop title={t('cash_withdrawal')} backTo="/a" />
         <ScreenLoader />
       </div>
     );
@@ -97,134 +82,89 @@ export function AgentCashPaymentDetail() {
 
   if (error || !payment) {
     return (
-      <div className={cn('min-h-screen', SURFACE.canvas)}>
-        <MobileHeader title={t('payment_details')} showBack backTo="/a" />
-        <ScreenError title={t('payment_not_found')} />
+      <div className="flex min-h-full flex-col">
+        <ScreenTop title={t('cash_withdrawal')} backTo="/a" />
+        <EmptyLine action={{ label: t('back_to_list'), onClick: () => navigate('/a') }}>{t('payment_not_found')}</EmptyLine>
       </div>
     );
   }
 
   const safeAmountRmb = typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0;
   const safeAmountXaf = typeof payment.amount_xaf === 'number' ? payment.amount_xaf : 0;
-  const beneficiaryPhone = payment.cash_beneficiary_phone || payment.beneficiary_phone;
+  const beneficiaryPhone = payment.cash_beneficiary_phone || payment.beneficiary_phone || payment.profile?.phone;
+  const byClient = payment.cash_beneficiary_type !== 'other';
+
+  const rows: KV[] = [
+    ...(payment.created_at ? [{ label: t('cash_created'), value: formatDate(payment.created_at, 'datetime') }] : []),
+    { label: t('reference'), value: payment.reference || '—' },
+    ...(isPaid && payment.cash_paid_at ? [{ label: t('already_paid_on'), value: formatDate(payment.cash_paid_at, 'datetime') }] : []),
+    ...(isPaid && payment.cash_signed_by_name ? [{ label: t('signed_by') || 'Signé par', value: payment.cash_signed_by_name }] : []),
+    ...(payment.beneficiary_email ? [{ label: t('email'), value: payment.beneficiary_email }] : []),
+  ];
 
   return (
-    <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader title={t('payment_details')} showBack backTo="/a" />
+    <div className="flex min-h-full flex-col">
+      <ScreenTop title={t('cash_withdrawal')} backTo="/a" />
 
-      <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-3 sm:space-y-4">
-        {/* Amount card */}
-        <Card className="animate-slide-up p-6 text-center" style={{ animationFillMode: 'both' }}>
-          <Holder icon={Banknote} size="lg" className="mx-auto mb-3" />
-          <Amount value={formatCurrencyRMB(safeAmountRmb)} size="xl" />
-          <p className={cn('mt-1 text-sm', TEXT.muted)}>{formatNumber(safeAmountXaf)} XAF</p>
-          <div className="mt-3 flex justify-center">
-            <StatusPill
-              tone={statusTone}
-              label={
-                <span className="inline-flex items-center gap-1.5">
-                  {isPaid ? <CheckCircle2 className="h-3.5 w-3.5" /> : null}
-                  {statusLabel}
-                </span>
-              }
+      <div className="flex flex-col items-center px-5 pt-5 text-center">
+        <MethodCircle method="cash" size={60} />
+        <BigFigure className="mt-4" value={yuan(safeAmountRmb)} center />
+        <p className={cn('mt-2 text-[17px]', TEXT.body)}>{getClientName()} · {n0(safeAmountXaf)} XAF</p>
+        <Tag tone={statusTone} className="mt-3">{statusLabel}</Tag>
+      </div>
+
+      <div className="px-5 pt-6">
+        <div className={cn('flex items-center gap-3 rounded-lg border px-3.5 py-3', SURFACE.divider)}>
+          <Initials name={getBeneficiaryName()} />
+          <span className="min-w-0 flex-1">
+            <span className={cn('block truncate text-[17px] font-semibold', TEXT.strong)}>{getBeneficiaryName()}</span>
+            <span className={cn('block truncate text-[15px]', TEXT.muted)}>
+              {byClient ? t('cash_the_client') : t('cash_third_party')}{beneficiaryPhone ? ` · ${beneficiaryPhone}` : ''}
+            </span>
+          </span>
+        </div>
+        <KVBox rows={rows} className="mt-4" />
+
+        {isPaid && payment.cash_signature_url && (
+          <div className={cn('mt-4 rounded-lg border bg-white p-3', SURFACE.divider)}>
+            <img
+              src={cashSignatureSrc(payment.cash_signature_url) ?? undefined}
+              alt={t('beneficiary_signature') || 'Signature'}
+              className="mx-auto h-auto w-full max-w-xs"
+              style={{ maxHeight: '120px', objectFit: 'contain' }}
             />
           </div>
-        </Card>
-
-        {/* Beneficiary info */}
-        <Card className="animate-slide-up" style={{ animationDelay: '60ms', animationFillMode: 'both' }}>
-          <h3 className={cn('mb-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
-            {t('beneficiary_info')}
-          </h3>
-          <Row label={t('beneficiary')} value={getBeneficiaryName()} />
-          {beneficiaryPhone && <Row label={t('phone')} value={beneficiaryPhone} />}
-          {payment.beneficiary_email && <Row label={t('email')} value={payment.beneficiary_email} />}
-        </Card>
-
-        {/* Client info */}
-        <Card className="animate-slide-up" style={{ animationDelay: '120ms', animationFillMode: 'both' }}>
-          <h3 className={cn('mb-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
-            {t('client_info')}
-          </h3>
-          <Row label={t('client')} value={getClientName()} />
-          <Row label={t('reference')} value={<span className="font-mono text-[14px]">{payment.reference || '—'}</span>} />
-          {payment.created_at && <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />}
-        </Card>
-
-        {/* Already paid info */}
-        {isPaid && payment.cash_paid_at && (
-          <Card className="animate-slide-up" style={{ animationDelay: '180ms', animationFillMode: 'both' }}>
-            <div className="mb-2 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-[#2E7D52] dark:text-[#7FCBA0]" />
-              <span className="font-semibold text-[#2E7D52] dark:text-[#7FCBA0]">{t('already_paid')}</span>
-            </div>
-            <p className={cn('text-sm', TEXT.muted)}>
-              {t('already_paid_on')} {formatDate(payment.cash_paid_at, 'datetime')}
-            </p>
-            {payment.cash_signed_by_name && (
-              <p className={cn('mt-1 text-sm', TEXT.muted)}>
-                {t('signed_by') || 'Signé par'}: {payment.cash_signed_by_name}
-              </p>
-            )}
-
-            {/* Signature image */}
-            {payment.cash_signature_url && (
-              <div className="mt-3 rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
-                <p className={cn('mb-2 text-[14px] font-medium', TEXT.muted)}>
-                  {t('beneficiary_signature') || 'Signature du bénéficiaire'}
-                </p>
-                <img
-                  src={payment.cash_signature_url}
-                  alt="Signature"
-                  className="w-full max-w-xs h-auto rounded"
-                  style={{ maxHeight: '120px', objectFit: 'contain' }}
-                />
-              </div>
-            )}
-          </Card>
         )}
-
-        {/* Action buttons */}
-        <div className="animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
-          {isPaid && (
-            <CashReceiptDownloadButton
-              payment={payment}
-              client={payment.profile ? {
-                first_name: payment.profile.first_name,
-                last_name: payment.profile.last_name,
-                phone: payment.profile.phone,
-              } : undefined}
-              className="w-full"
-              label={t('download_receipt')}
-            />
-          )}
-
-          {isPending && (
-            <PrimaryPill
-              onClick={handleProceedToPayment}
-              loading={scanMutation.isPending}
-              className="h-14 w-full text-[16px]"
-            >
-              {t('proceed_to_payment')}
-            </PrimaryPill>
-          )}
-
-          {isCashScanned && (
-            <div className="space-y-3">
-              <PrimaryPill
-                onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}
-                className="h-14 w-full text-[16px]"
-              >
-                <CheckCircle2 className="h-5 w-5" />
-                {t('confirm_payment') || 'Confirmer le paiement'}
-              </PrimaryPill>
-              <p className={cn('text-center text-[14px]', TEXT.muted)}>
-                {t('qr_already_scanned_continue') || 'QR déjà scanné — continuez vers la confirmation'}
-              </p>
-            </div>
-          )}
-        </div>
       </div>
+
+      {isPaid ? (
+        <div className="px-5 pb-8 pt-5">
+          <CashReceiptDownloadButton
+            payment={payment}
+            client={payment.profile ? {
+              first_name: payment.profile.first_name,
+              last_name: payment.profile.last_name,
+              phone: payment.profile.phone,
+            } : undefined}
+            className="h-14 w-full rounded-lg text-[17px] font-semibold"
+            label={t('cash_receipt')}
+          />
+        </div>
+      ) : (isToHandOver || isCashScanned) ? (
+        <Dock aboveTabBar>
+          {isToHandOver && arrivedFromScan && (
+            <BigButton onClick={() => void handleProceedToPayment()} loading={scanMutation.isPending}>
+              {t('proceed_to_payment')}
+            </BigButton>
+          )}
+          {isToHandOver && !arrivedFromScan && (
+            <BigButton onClick={() => navigate('/a/scan')}>{t('cash_scan_client_qr')}</BigButton>
+          )}
+          {isCashScanned && (
+            <BigButton onClick={() => navigate(`/a/payment/${payment.id}/confirm`)}>{t('cash_confirm_handover')}</BigButton>
+          )}
+        </Dock>
+      ) : null}
     </div>
   );
 }

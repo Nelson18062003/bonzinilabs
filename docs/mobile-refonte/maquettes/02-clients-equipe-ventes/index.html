@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit.css">
+<style>
+.hdr-btns { display: flex; gap: 10px }
+.tb { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 10px; font: 600 14px "DM Sans"; color: var(--t2) }
+.tb .r { display: flex; gap: 8px }
+.mini { height: 32px; padding: 0 11px; border-radius: 10px; background: #fff; display: inline-flex; align-items: center; gap: 6px; font: 600 13.5px "DM Sans"; color: #4b4560; box-shadow: 0 1px 2px rgba(23,17,31,.05); white-space: nowrap }
+.mini.on { background: var(--violet-soft); color: #5a22c9 }
+.mini svg { flex: none }
+/* fiche client */
+.idn { display: flex; align-items: center; gap: 14px; padding: 2px 20px 16px }
+.idn .av { width: 60px; height: 60px; border-radius: 30px; font-size: 21px }
+.idn h2 { font: 800 23px/1.15 "DM Sans"; letter-spacing: -.02em }
+.idn .s { font: 500 14px "DM Sans"; color: var(--t2); margin: 3px 0 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.bal { margin: 0 16px; background: #fff; border-radius: 22px; padding: 16px 18px 14px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.bal .k { font: 700 12.5px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .06em }
+.bal .v { font: 800 38px/1.1 "DM Sans"; letter-spacing: -.035em; font-variant-numeric: tabular-nums; margin-top: 4px }
+.bal .v small { font: 700 18px "DM Sans"; color: var(--t3); letter-spacing: 0; margin-left: 6px }
+.bal .od { display: flex; gap: 0; margin-top: 12px; border-top: 1px solid var(--sep); padding-top: 11px }
+.bal .od div { flex: 1; font: 500 13px "DM Sans"; color: var(--t2) }
+.bal .od div + div { border-left: 1px solid var(--sep); padding-left: 12px }
+.bal .od b { display: block; font: 700 15.5px "DM Sans"; color: var(--ink); font-variant-numeric: tabular-nums; margin-top: 1px }
+.qa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 16px 16px }
+.qa div { height: 50px; border-radius: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; font: 700 15.5px "DM Sans" }
+.qa .d { background: var(--amber-soft); color: #9a5d00 }
+.qa .p { background: var(--violet-soft); color: #5a22c9 }
+.qa .m { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(23,17,31,.06) }
+.seg.s4 { grid-template-columns: repeat(4, 1fr) } .seg.s4 div { font-size: 13.5px; letter-spacing: -.01em }
+.seg.s3 { grid-template-columns: repeat(3, 1fr) }
+.seg div em { font-style: normal; display: inline-grid; place-items: center; min-width: 19px; height: 19px; border-radius: 10px; background: var(--orange); color: #fff; font: 700 11.5px "DM Sans"; margin-left: 6px; padding: 0 5px }
+.ic2 { width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; flex: none }
+.cpt { display: flex; align-items: center; gap: 12px; padding: 4px 16px 8px; }
+/* feuille d'actions */
+.sgl { font: 700 12.5px "DM Sans"; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; padding: 12px 22px 4px }
+.sr { display: flex; align-items: center; gap: 14px; padding: 9px 22px; font: 600 16px "DM Sans"; position: relative }
+.sr .si { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none }
+.sr .sv { margin-left: auto; font: 500 14.5px "DM Sans"; color: var(--t3); display: flex; align-items: center; gap: 2px; white-space: nowrap }
+.sr.red { color: #c2261d }
+.shd { display: flex; align-items: center; gap: 12px; padding: 0 22px 8px }
+.shd .av { width: 44px; height: 44px; border-radius: 22px }
+.shd b { font: 800 19px "DM Sans"; letter-spacing: -.01em; display: block }
+.shd span { font: 500 14px "DM Sans"; color: var(--t2) }
+.sep2 { height: 8px }
+/* champs */
+.inp { background: #fff; border-radius: 16px; padding: 13px 16px; font: 500 16px "DM Sans"; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.sheet .inp { background: var(--bg); box-shadow: none }
+.inp .ph { color: var(--t3) }
+.form { background: #fff; border-radius: 18px; margin: 0 16px; box-shadow: 0 1px 2px rgba(23,17,31,.05); overflow: hidden }
+.fr { padding: 9px 16px 10px; position: relative }
+.fr + .fr::before, .frs + .fr::before, .fr + .frs::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.frs { display: grid; grid-template-columns: 1fr 1fr; position: relative }
+.frs .fr + .fr { border-left: .5px solid var(--sep) }
+.frs .fr + .fr::before { display: none }
+.fr .k { font: 600 12.5px "DM Sans"; color: var(--t2) }
+.fr .v { font: 600 16.5px "DM Sans"; margin-top: 2px; display: flex; align-items: center; gap: 8px; min-height: 22px }
+.fr .v.ph { color: #b9b4c6; font-weight: 500 }
+.fr .req { color: var(--orange) }
+.flag { width: 22px; height: 15px; border-radius: 3px; display: inline-flex; overflow: hidden; flex: none; position: relative }
+.flag i { flex: 1 } .flag .st { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fde047; font-size: 8px; line-height: 1 }
+.minseg { display: flex; background: #f0edf5; border-radius: 10px; padding: 3px; gap: 2px }
+.minseg span { padding: 5px 12px; border-radius: 8px; font: 700 14px "DM Sans"; color: #6f6981 }
+.minseg .on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(23,17,31,.1) }
+.addl { font: 600 15px "DM Sans"; color: var(--violet); padding: 12px 16px; display: flex; align-items: center; gap: 6px }
+/* ledger */
+.lr { display: flex; align-items: center; gap: 13px; padding: 12px 16px; position: relative }
+.lr + .lr::before { content: ""; position: absolute; top: 0; left: 69px; right: 0; height: .5px; background: var(--sep) }
+.lr .ra b.pos { color: #137042 }
+.lr .ra b.neg { color: var(--ink) }
+/* barres de progression */
+.gg { padding: 11px 16px; position: relative }
+.gg + .gg::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.gg .t { display: flex; justify-content: space-between; align-items: baseline; font: 600 15px "DM Sans" }
+.gg .t span { font: 600 14px "DM Sans"; color: var(--t2); font-variant-numeric: tabular-nums }
+.gg .t span b { color: var(--ink) }
+.pb { height: 7px; border-radius: 4px; background: #eeebf3; margin-top: 8px; overflow: hidden; display: flex }
+.pb i { display: block; height: 100% }
+.pb i:first-child { border-radius: 4px 0 0 4px }
+.rh { font: 600 12.5px "DM Sans"; margin-top: 6px; display: flex; justify-content: space-between; color: var(--t3) }
+.mon { display: flex; align-items: center; gap: 6px; font: 700 15px "DM Sans" }
+.mon .a { width: 30px; height: 30px; border-radius: 15px; background: #fff; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(23,17,31,.06) }
+/* étiquette */
+.lab { margin: 0 34px; border-radius: 10px; border: 1.5px solid #17111f; overflow: hidden; background: #fff; box-shadow: 0 16px 30px -16px rgba(23,17,31,.4) }
+.lab .h { background: #17111f; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; font: 800 13px "DM Sans", "Noto SC"; letter-spacing: .04em }
+.lab .b { display: flex; gap: 12px; padding: 12px; align-items: center }
+.lab .code { font: 800 36px/1 "DM Sans"; letter-spacing: -.02em }
+.lab .nm { font: 700 14px "DM Sans"; margin-top: 4px }
+.lab .ph { font: 500 12.5px "DM Sans"; color: #4b4560 }
+.lab .ad { border-top: 1.5px dashed #c9c4d4; padding: 8px 12px; font: 500 11.5px/1.45 "Noto SC", "DM Sans"; color: #3d3650 }
+.lab .sup { border-top: 1.5px solid #17111f; padding: 8px 12px; font: 600 12px/1.5 "Noto SC", "DM Sans"; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px }
+/* rôles */
+.rl2 { display: flex; align-items: center; gap: 13px; padding: 8px 16px; position: relative }
+.rl2 + .rl2::before { content: ""; position: absolute; top: 0; left: 64px; right: 0; height: .5px; background: var(--sep) }
+.rl2 .si { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; flex: none; color: #fff }
+.rl2.on { background: #faf7ff }
+.radio { width: 24px; height: 24px; border-radius: 12px; border: 2px solid #d6d1df; flex: none; margin-left: auto }
+.radio.on { border: 7px solid var(--violet) }
+.perm { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font: 500 15px "DM Sans"; position: relative }
+.perm + .perm::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.perm .y { width: 22px; height: 22px; border-radius: 11px; background: var(--green-soft); display: grid; place-items: center; flex: none }
+.perm .n { width: 22px; height: 22px; border-radius: 11px; background: #f1eff4; display: grid; place-items: center; flex: none }
+.perm.off { color: var(--t3) }
+.perm .w { margin-left: auto; font: 600 13px "DM Sans"; color: var(--t3) }
+.dang { margin: 18px 16px 0; height: 52px; border-radius: 16px; background: #fff; color: #c2261d; font: 700 16.5px "DM Sans"; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+/* ventes */
+.per { display: flex; gap: 6px; padding: 0 20px 14px }
+.per span { flex: 1; height: 34px; border-radius: 10px; background: #fff; display: grid; place-items: center; font: 600 14px "DM Sans"; color: #4b4560; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.per .on { background: var(--ink); color: #fff }
+.alert { margin: 0 16px 14px; border-radius: 18px; background: var(--orange-soft); display: flex; align-items: center; gap: 12px; padding: 12px 14px }
+.alert .ai { width: 36px; height: 36px; border-radius: 11px; background: var(--orange); display: grid; place-items: center; flex: none }
+.alert b { font: 700 15.5px "DM Sans"; color: #8f2f05; display: block }
+.alert span { font: 500 13.5px "DM Sans"; color: #b04a1a }
+.k4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px }
+.k4 .stat { padding: 13px 14px }
+.k4 .stat b { font-size: 23px }
+.k4 .stat span { font-size: 13px }
+.k4 .stat .tr { font: 700 12.5px "DM Sans"; color: #137042; margin-left: 4px }
+.k4 .stat .tr.dn { color: #c2261d }
+.k4 .stat.sel { box-shadow: 0 0 0 2px var(--ink) }
+.lg { display: flex; gap: 14px; font: 600 12.5px "DM Sans"; color: var(--t2); padding: 2px 16px 12px }
+.lg i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px }
+.src3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px 6px }
+.src3 .stat { padding: 12px 13px }
+.src3 .stat b { font-size: 22px }
+.src3 .stat span { font-size: 12.5px }
+.sx { display: flex; gap: 14px; margin-top: 5px; font: 500 13px "DM Sans"; color: var(--t2) }
+.sx b { color: var(--ink); font-weight: 700 }
+/* prospect / claim */
+.cmp { margin: 0 16px; background: #fff; border-radius: 20px; box-shadow: 0 1px 2px rgba(23,17,31,.05); overflow: hidden }
+.cmp .hd { display: flex; align-items: center; gap: 8px; padding: 12px 16px 4px; font: 700 12.5px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .06em }
+.tag { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 8px; background: #f2f0f6; font: 600 12.5px "DM Sans"; color: #4b4560; white-space: nowrap }
+.tag.or { background: var(--orange-soft); color: #c23f07 }
+.tag.vi { background: var(--violet-soft); color: #5a22c9 }
+.tag.am { background: var(--amber-soft); color: #9a5d00 }
+.tag.gr { background: var(--green-soft); color: #137042 }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 16px 14px }
+.vs { display: grid; place-items: center; margin: -6px 0; position: relative; z-index: 2 }
+.vs span { width: 34px; height: 34px; border-radius: 17px; background: var(--ink); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 4px var(--bg) }
+.phn { display: flex; align-items: center; gap: 12px; padding: 11px 16px; position: relative }
+.phn + .phn::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.phn .n { font: 600 16px "DM Sans"; font-variant-numeric: tabular-nums }
+.phn .l { font: 500 13px "DM Sans"; color: var(--t2) }
+.rb2 { width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; flex: none }
+.prog { display: flex; gap: 5px; padding: 2px 20px 18px }
+.prog i { flex: 1; height: 4px; border-radius: 2px; background: #e3dfea }
+.prog i.on { background: var(--violet) }
+.stp { padding: 0 22px 18px }
+.stp .o { font: 700 13px "DM Sans"; color: var(--violet); text-transform: uppercase; letter-spacing: .06em }
+.stp h2 { font: 800 30px/1.1 "DM Sans"; letter-spacing: -.03em; margin-top: 4px }
+.chk { display: flex; align-items: center; gap: 6px; font: 600 13.5px "DM Sans"; margin-top: 8px }
+.swp { display: flex; position: relative }
+.swp .row { flex: none; width: 361px; margin-left: -150px; background: #fff }
+.swp .act2 { display: flex; flex: none }
+.swp .act2 div { width: 75px; display: grid; place-items: center; align-content: center; gap: 4px; color: #fff; font: 700 12.5px "DM Sans" }
+.draft { margin: 0 16px 14px; background: linear-gradient(150deg, #8f55ff 0%, #6526de 100%); border-radius: 20px; padding: 14px 16px; color: #fff; display: flex; align-items: center; gap: 12px }
+.draft b { font: 700 16px "DM Sans"; display: block }
+.draft span { font: 500 13.5px "DM Sans"; opacity: .8 }
+.draft .go { margin-left: auto; height: 36px; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.2); display: grid; place-items: center; font: 700 14px "DM Sans" }
+.pwd { margin: 0 20px; background: var(--bg); border-radius: 18px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between }
+.pwd b { font: 700 26px "DM Sans"; letter-spacing: .04em; font-variant-numeric: tabular-nums }
+.btn.wa { background: #1fa855; color: #fff }
+.nb .act + .act { margin-left: 8px }
+.seg div { display: flex; align-items: center; justify-content: center }
+.seg.s4 { grid-template-columns: 1.14fr .8fr 1.24fr .78fr }
+.addl { position: relative }
+.addl::before, .addl + .fr::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.rb3 { width: 36px; height: 36px; border-radius: 18px; display: grid; place-items: center; flex: none }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit.js"></script>
+<script>
+// ---------- icônes et aides propres au lot ----------
+const sv = (d, s = 20, c = 'currentColor', w = 2.1) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const P = {
+  phone: '<path d="M5.5 3.5h3l1.6 4.2-2 1.3a11 11 0 0 0 6.9 6.9l1.3-2 4.2 1.6v3a2 2 0 0 1-2.2 2A17 17 0 0 1 3.5 5.7a2 2 0 0 1 2-2.2z"/>',
+  wa: '<path d="M4 20l1.2-4A8 8 0 1 1 8.3 19z"/><path d="M9.2 8.6c.2 2.8 3.4 6 6.2 6.2l.8-1.6-1.8-.9-.9.8c-.9-.4-2-1.5-2.4-2.4l.8-.9-.9-1.8z" stroke-width="1.4"/>',
+  msg: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V17A2.5 2.5 0 0 1 4 14.5z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  sort: '<path d="M7 4v16M3.5 16.5 7 20l3.5-3.5M17 20V4M13.5 7.5 17 4l3.5 3.5"/>',
+  filt: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  pm: '<path d="M7 4v6M4 7h6M14 17h6"/><path d="M18 5 6 19"/>',
+  od: '<path d="M12 3.5 4.5 6.5v5c0 4.6 3.1 8 7.5 9 4.4-1 7.5-4.4 7.5-9v-5z"/><path d="M9 12h6"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-4 4-6 7.5-6s6.5 2 7.5 6"/>',
+  phones: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
+  pin: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  tag: '<path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3-8.7 8.7z"/><circle cx="8" cy="8" r="1.4"/>',
+  doc: '<path d="M6 3.5h8l4.5 4.5v12.5H6z"/><path d="M14 3.5V8h4.5M9 13h6M9 16.5h6"/>',
+  swap: '<path d="M4 8h13l-3.5-3.5M20 16H7l3.5 3.5"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 5a1 1 0 0 0-1-1H6a2 2 0 0 0-2 2v9a1 1 0 0 0 1 1"/>',
+  down: '<path d="M12 4v15M6 13l6 6 6-6"/>',
+  up: '<path d="M6 18 18 6M9 6h9v9"/>',
+  box: '<path d="M12 3 20.5 7.5v9L12 21l-8.5-4.5v-9z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+  ship: '<path d="M3 15.5h18l-2.4 4.5H5.4z"/><path d="M6 15.5V10h12v5.5M9 10V6.5h6V10"/>',
+  plane: '<path d="M10.5 13.5 3.5 11l1.5-1.5 7 1 4-4.5a2 2 0 0 1 2.8 2.8l-4.5 4 1 7L14 21.5l-2.5-7"/>',
+  share: '<path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>',
+  img: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 18 5-5 4 4 2.5-2.5L20 19"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/>',
+  off: '<path d="M12 3.5v8M7 6.3a7.5 7.5 0 1 0 10 0"/>',
+  chevd: '<path d="m6 9 6 6 6-6"/>',
+  chevl: '<path d="m15 5-7 7 7 7"/>',
+  chevr: '<path d="m9 5 7 7-7 7"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  cal: '<rect x="4" y="5.5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/>',
+  mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4 7 8 6 8-6"/>',
+  pen: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14.5 7.5 3 3"/>',
+  arch: '<rect x="3.5" y="4.5" width="17" height="4.5" rx="1.2"/><path d="M5.5 9v10.5h13V9M10 13h4"/>',
+  truck: '<path d="M3 6.5h11v10H3zM14 10h4l3 3.5v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+  star: '<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.4 5.2 3.4 8.5s-1 6.1-3.4 8.5c-2.4-2.4-3.4-5.2-3.4-8.5s1-6.1 3.4-8.5z"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  warn: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.2v.1"/>',
+};
+const I = (k, s, c, w) => sv(P[k], s, c, w);
+const PAL = { vi: ['#efe8ff', '#6526de'], am: ['#fff1dd', '#b36800'], bl: ['#e7f1ff', '#1a5fd1'], gr: ['#e6f6ed', '#137042'], or: ['#fff0e8', '#c23f07'], gy: ['#eeecf2', '#4b4560'], rd: ['#fdecec', '#c2261d'], te: ['#e3f5f5', '#0f7575'] };
+const av = (ini, k, st = '') => `<div class="av" style="background:${PAL[k][0]};color:${PAL[k][1]};${st}">${ini}</div>`;
+const crow = (ini, k, name, sub, amt, meta, dot, red) => `<div class="row">${av(ini, k)}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div></div><div class="ra"><b${red ? ' style="color:#c2261d"' : ''}>${amt}</b><span>${dot ? `<span class="dotline"><i style="background:${dot}"></i>${meta}</span>` : meta}</span></div></div>`;
+const ico = (k, bg, fg, s = 20) => `<div class="ic2" style="background:${bg};color:${fg}">${I(k, s)}</div>`;
+const lrow = (k, bg, fg, t, sub, amt, after, pos) => `<div class="lr">${ico(k, bg, fg)}<div class="rm"><div class="rn">${t}</div><div class="rs">${sub}</div></div><div class="ra"><b class="${pos ? 'pos' : 'neg'}">${amt}</b><span>${after}</span></div></div>`;
+const cm = '<span class="flag"><i style="background:#007a5e"></i><i style="background:#ce1126"></i><i style="background:#fcd116"></i><span class="st">★</span></span>';
+const chk = (c = '#137042', s = 14) => I('check', s, c, 3);
+const xx = (c = '#b9b4c6', s = 12) => I('x', s, c, 2.6);
+const dots = `<div class="act">${ic.dots}</div>`;
+const sr = (k, bg, fg, label, val = '', cls = '') => `<div class="sr ${cls}"><div class="si" style="background:${bg};color:${fg}">${I(k, 19)}</div>${label}<span class="sv">${val}${cls === 'red' ? '' : ic.chev}</span></div>`;
+const gauge = (name, done, target, pct, col, rh, rhc) => `<div class="gg"><div class="t">${name}<span><b>${done}</b> / ${target}</span></div><div class="pb"><i style="width:${pct}%;background:${col}"></i></div><div class="rh"><span style="color:${rhc}">${rh}</span><span>${pct} %</span></div></div>`;
+
+// Fiche client : en-tête complet
+const CL_TOP = `
+  <div class="nb"><div class="back">${ic.back}Clients</div><div class="sp"></div>${dots}</div>
+  <div class="idn">${av('AN', 'am')}<div style="min-width:0"><h2>Awa Ngono Mballa</h2><div class="s">BZ-4821 · Ngono Négoce SARL · Douala</div>${pill('done', 'Actif')}</div></div>
+  <div class="bal"><div class="k">Solde</div><div class="v">2 450 000<small>XAF</small></div>
+    <div class="od"><div>Disponible<b>3 450 000</b></div><div>Découvert autorisé<b>1 000 000</b></div></div></div>
+  <div class="qa"><div class="d">${I('down', 19, '#b36800', 2.4)}Dépôt</div><div class="p">${I('up', 18, '#6526de', 2.4)}Paiement</div><div class="m">${I('msg', 19)}Message</div></div>`;
+// Fiche client : en-tête compact (onglets défilés)
+const CL_MINI = (tab) => `
+  <div class="nb"><div class="back">${ic.back}Clients</div><div class="t">Awa Ngono Mballa<small>2 450 000 XAF · BZ-4821</small></div><div class="sp"></div>${dots}</div>
+  <div class="seg s4" style="margin-top:6px">${['Opérations', 'Relevé', 'Bénéficiaires', 'Colis'].map((t) => `<div class="${t === tab ? 'on' : ''}">${t}</div>`).join('')}</div>`;
+
+const CLIENT_ROWS = `
+    ${crow('AN', 'am', 'Awa Ngono Mballa', 'BZ-4821 · 677 41 22 90', '2 450 000', 'il y a 12 min', '#1c9a57')}
+    ${crow('EF', 'vi', 'Établissements Fotso &amp; Fils', 'BZ-1197 · 699 08 31 54', '1 336 055', 'il y a 2 h', '#1c9a57')}
+    ${crow('JK', 'bl', 'Jean-Pierre Kamdem Tchoua', 'BZ-3305 · 655 82 01 77', '−420 000', 'découvert', '#d6392c', true)}
+    ${crow('KI', 'gr', 'Kengne Import SARL', 'BZ-0846 · 691 27 66 03', '8 900 000', 'hier', '#1c9a57')}
+    ${crow('ME', 'or', 'Marie-Claire Essomba Atangana', 'BZ-5012 · 670 55 19 42', '0', 'KYC à vérifier', '#f0530f')}
+    ${crow('HO', 'te', 'Hamadou Oumarou Sali', 'BZ-4410 · 696 14 80 27', '2 980 000', '3 j', '#1c9a57')}
+    ${crow('IM', 'gy', 'Ibrahim Moussa Bello', 'BZ-2210 · 677 90 45 18', '0', 'Inactif', '#b9b4c6')}`;
+
+// 1. Liste clients
+add('Clients', 'Recherche, statut avec compteurs, solde, tri', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Clients</h1><div class="hdr-btns"><div class="round">${ic.scanSm}</div><div class="round" style="background:#17111f;color:#fff">${I('plus', 22, '#fff', 2.4)}</div></div></div>
+  <div class="srch">${ic.search}Nom, téléphone ou BZ-…</div>
+  <div class="chips"><div class="chip on">Tous <small>278</small></div><div class="chip">Actifs <small>212</small></div><div class="chip">Inactifs <small>54</small></div><div class="chip">Suspendus <small>3</small></div><div class="chip">KYC <small>9</small></div></div>
+  <div class="tb"><span>278 clients</span><div class="r"><span class="mini">Solde : tous ${I('chevd', 14, '#6f6981', 2.4)}</span><span class="mini">${I('sort', 15, '#4b4560')}Récents</span></div></div>
+  <div class="card">${CLIENT_ROWS}</div>
+</div>${tabs('cli')}<div class="home-ind"></div>`);
+
+// 2. Trier et filtrer
+add('Trier et filtrer', 'Solde (dont découvert) · tri dépôts / paiements', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Clients</h1><div class="hdr-btns"><div class="round">${ic.scanSm}</div><div class="round" style="background:#17111f">${I('plus', 22, '#fff', 2.4)}</div></div></div>
+  <div class="srch">${ic.search}Nom, téléphone ou BZ-…</div>
+  <div class="chips"><div class="chip on">Tous <small>278</small></div><div class="chip">Actifs <small>212</small></div><div class="chip">Inactifs <small>54</small></div><div class="chip">Suspendus <small>3</small></div></div>
+  <div class="card">${CLIENT_ROWS}</div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:12px">Trier et filtrer</h3>
+  <div class="sgl" style="padding-top:2px">Solde</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:6px 22px 10px">
+    <div class="chip" style="background:#f2f0f6;box-shadow:none">Tous <small>278</small></div><div class="chip" style="background:#f2f0f6;box-shadow:none">Avec solde <small>168</small></div><div class="chip" style="background:#f2f0f6;box-shadow:none">Solde nul <small>98</small></div><div class="chip on">En découvert <small>12</small></div></div>
+  <div class="sgl">Trier par</div>
+  ${[['Activité récente', 0], ['Nom', 0], ['Solde', 0], ['Total des dépôts', 1], ['Total des paiements', 0], ['Ancienneté', 0]].map(([t, on]) => `<div class="sr" style="padding:12px 22px;font-weight:${on ? 700 : 500}">${t}<span class="sv" style="color:#7a3cf0;font-weight:600">${on ? `${I('down', 16, '#7a3cf0', 2.4)} Décroissant <span style="margin-left:10px">${chk('#7a3cf0', 18)}</span>` : ''}</span></div>`).join('')}
+  <div style="display:flex;gap:10px;padding:14px 16px 0"><div class="btn ghost" style="flex:0 0 140px">Réinitialiser</div><div class="btn dark">Voir 12 clients</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 3. Fiche client — Opérations
+add('Fiche client', 'Identité, solde + disponible, 3 gestes, onglets', `${sbar()}<div class="scroll">
+  ${CL_TOP}
+  <div class="seg s4"><div class="on">Opérations</div><div>Relevé</div><div>Bénéficiaires</div><div>Colis</div></div>
+  <div class="stats" style="margin-bottom:12px"><div class="stat" style="padding:12px 14px"><span>Dépôts · 31</span><b style="font-size:21px;margin-top:2px">48,2 M</b></div><div class="stat" style="padding:12px 14px"><span>Paiements · 112</span><b style="font-size:21px;margin-top:2px">45,7 M</b></div></div>
+  <div class="card">
+    ${row('ali', 'Guangzhou Hengtai Trading', 'Paiement · BZ-PY-2610-0416', '¥7 493', 'À payer', '#f0530f')}
+    ${row('mtn', 'Dépôt MTN transfert', 'BZ-DP-2610-0231', '1 000 000', 'Crédité', '#1c9a57')}
+  </div>
+</div>${tabs('cli')}<div class="home-ind"></div>`);
+
+// 4. Menu … (super admin)
+const MORE_SHEET = (full) => `${sbar()}<div class="scroll">${CL_TOP}</div>
+<div class="dim"></div>
+<div class="sheet" style="padding-top:10px"><div class="grab"></div>
+  <div class="shd">${av('AN', 'am')}<div><b>Awa Ngono Mballa</b><span>BZ-4821 · 2 450 000 XAF</span></div></div>
+  ${full ? `<div class="sgl">Argent</div>
+  ${sr('pm', '#fff4e2', '#b36800', 'Crédit / Débit')}
+  ${sr('od', '#f1eafe', '#6526de', 'Découvert', '1 000 000')}` : ''}
+  <div class="sgl">Fiche</div>
+  ${sr('user', '#eeecf2', '#4b4560', 'Identité', 'Femme · 14/03/1986')}
+  ${sr('phones', '#eeecf2', '#4b4560', 'Téléphones', '3 numéros')}
+  ${sr('flag', '#eeecf2', '#4b4560', 'Origine', 'Mireille E.')}
+  ${full ? sr('key', '#eeecf2', '#4b4560', 'Nouveau mot de passe') : ''}
+  ${full ? '' : `<div class="sgl">Documents</div>${sr('doc', '#eeecf2', '#4b4560', 'Relevé PDF')}${sr('tag', '#eeecf2', '#4b4560', 'Étiquette colis', 'BZ-4821')}`}
+  ${full ? `<div class="sgl">Compte</div>
+  ${sr('swap', '#eeecf2', '#4b4560', 'Repasser en prospect')}
+  ${sr('trash', '#fdecec', '#c2261d', 'Supprimer le client', '', 'red')}` : ''}
+</div><div class="home-ind"></div>`;
+add('Fiche client · menu …', 'Toutes les actions secondaires (super admin)', MORE_SHEET(true), 'white');
+add('Fiche client · menu … (support)', 'Mêmes gestes, filtrés par les droits', MORE_SHEET(false), 'white');
+
+// 5. Crédit / Débit
+add('Crédit / Débit', 'Avant / après, découvert compris', `${sbar()}<div class="scroll">${CL_TOP}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:14px">Crédit / Débit</h3>
+  <div class="seg" style="margin:0 16px 14px"><div>Crédit</div><div class="on">Débit</div></div>
+  <div class="fl" style="padding-bottom:10px"><div class="amtbox" style="background:var(--bg);box-shadow:none;padding:14px 16px"><div class="v" style="font-size:36px">3 000 000<small>XAF</small><span class="cursor" style="height:32px"></span></div></div></div>
+  <div class="fl" style="padding-bottom:14px"><div class="inp">Frais de transport · conteneur MIEU3611115</div><div style="font:600 12.5px 'DM Sans';color:#9a95a8;padding:6px 6px 0">${I('msg', 13, '#9a95a8')} Motif visible par le client</div></div>
+  <div class="inset" style="margin-bottom:16px"><div class="kv"><span>Solde actuel</span><b>2 450 000 XAF</b></div><div class="kv"><span>Après débit</span><b style="color:#c2261d">−550 000 XAF</b></div><div class="kv"><span>Découvert restant</span><b>450 000 / 1 000 000</b></div></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn dark">Débiter 3 000 000</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 6. Découvert
+add('Découvert autorisé', 'Plafond, préréglages, retrait', `${sbar()}<div class="scroll">${CL_TOP}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Découvert autorisé</h3><div class="lead" style="padding-bottom:14px">Awa Ngono Mballa · actuel 1 000 000 XAF</div>
+  <div style="display:flex;gap:8px;padding:0 16px 12px">${['500 000', '1 M', '2 M', '5 M'].map((t) => `<div class="chip ${t === '2 M' ? 'on' : ''}" style="flex:1;justify-content:center;${t === '2 M' ? '' : 'background:#f2f0f6;box-shadow:none'}">${t}</div>`).join('')}</div>
+  <div class="fl" style="padding-bottom:10px"><div class="amtbox" style="background:var(--bg);box-shadow:none;padding:14px 16px"><div class="v" style="font-size:36px">2 000 000<small>XAF</small></div></div></div>
+  <div class="fl" style="padding-bottom:14px"><div class="inp">Commande Foshan, dépôt attendu le 28/10</div></div>
+  <div class="inset" style="margin-bottom:12px"><div class="kv"><span>Utilisé</span><b>0 XAF</b></div><div class="kv"><span>Disponible après</span><b style="color:#1c9a57">4 450 000 XAF</b></div></div>
+  <div style="text-align:center;font:600 15.5px 'DM Sans';color:#c2261d;padding:4px 0 14px">Retirer le découvert</div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn dark">Autoriser 2 000 000</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 7. Relevé
+add('Relevé', 'Toutes les écritures, solde après, auteur', `${sbar()}<div class="scroll">
+  ${CL_MINI('Relevé')}
+  <div class="chips" style="padding-bottom:12px"><div class="chip on">Tout</div><div class="chip">Dépôts</div><div class="chip">Paiements</div><div class="chip">Crédits</div><div class="chip">Débits</div></div>
+  <div class="tb" style="padding-bottom:6px"><span class="mon">Octobre 2026 ${I('chevd', 15, '#17111f', 2.4)}</span><span class="mini" style="color:#5a22c9;background:#f1eafe">${I('doc', 16, '#5a22c9')}Relevé PDF</span></div>
+  <div class="day" style="padding-top:8px">Aujourd'hui</div>
+  <div class="card">
+    ${lrow('up', '#f1eafe', '#6526de', 'Paiement Alipay', 'Hengtai Trading · Nelson', '−691 364', 'solde 2 450 000')}
+    ${lrow('down', '#fff4e2', '#b36800', 'Dépôt MTN transfert', 'DP-2610-0231 · Nelson', '+1 000 000', 'solde 3 141 364', 1)}
+  </div>
+  <div class="day" style="padding-top:16px">Lundi 19 octobre</div>
+  <div class="card">
+    ${lrow('truck', '#eeecf2', '#4b4560', 'Transport colis', 'MIEU3611115 · 0,48 m³', '−168 000', 'solde 2 141 364')}
+    ${lrow('pm', '#e6f6ed', '#137042', 'Crédit', 'Remise · Nelson', '+25 000', 'solde 2 309 364', 1)}
+    ${lrow('up', '#f1eafe', '#6526de', 'Paiement WeChat', 'Chen Xiaoli · Rodrigue', '−92 177', 'solde 2 284 364')}
+  </div>
+  <div class="day" style="padding-top:16px">Vendredi 16 octobre</div>
+  <div class="card">
+    ${lrow('down', '#fff4e2', '#b36800', 'Dépôt banque', 'DP-1610-0198 · Nelson', '+2 000 000', 'solde 2 376 541', 1)}
+  </div>
+</div>${tabs('cli')}<div class="home-ind"></div>`);
+
+// 8. Relevé PDF
+add('Relevé PDF', 'Période + langue, puis partage', `${sbar()}<div class="scroll">
+  ${CL_MINI('Relevé')}
+  <div class="chips" style="padding-bottom:12px"><div class="chip on">Tout</div><div class="chip">Dépôts</div><div class="chip">Paiements</div><div class="chip">Crédits</div></div>
+  <div class="card">
+    ${lrow('up', '#f1eafe', '#6526de', 'Paiement Alipay', 'Hengtai Trading · Nelson', '−691 364', 'solde 2 450 000')}
+    ${lrow('down', '#fff4e2', '#b36800', 'Dépôt MTN transfert', 'DP-2610-0231 · Nelson', '+1 000 000', 'solde 3 141 364', 1)}
+  </div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:14px">Relevé PDF</h3>
+  <div class="sgl" style="padding-top:0">Période</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;padding:6px 22px 14px">${['Ce mois', 'Mois dernier', '3 mois', 'Cette année', 'Tout'].map((t) => `<div class="chip ${t === '3 mois' ? 'on' : ''}" style="${t === '3 mois' ? '' : 'background:#f2f0f6;box-shadow:none'}">${t}</div>`).join('')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 14px"><div class="inp"><div style="font:600 12px 'DM Sans';color:#6f6981">Du</div>21/07/2026</div><div class="inp"><div style="font:600 12px 'DM Sans';color:#6f6981">Au</div>21/10/2026</div></div>
+  <div class="sgl" style="padding-top:0">Langue</div>
+  <div style="padding:6px 16px 16px"><div class="minseg" style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center"><span class="on">Français</span><span>English</span><span style="font-family:'Noto SC'">中文</span></div></div>
+  <div class="inset" style="margin-bottom:16px"><div class="kv"><span>Écritures</span><b>143</b></div><div class="kv"><span>Solde au 21/10</span><b>2 450 000 XAF</b></div></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn soft" style="background:#efecf4;box-shadow:none">${I('share', 20)}</div><div class="btn dark">${I('doc', 20, '#fff')} Télécharger</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 9. Bénéficiaires
+add('Bénéficiaires', 'Recherche, modes, modifier / archiver', `${sbar()}<div class="scroll">
+  ${CL_MINI('Bénéficiaires')}
+  <div class="srch" style="margin-bottom:12px">${ic.search}Nom, compte ou téléphone</div>
+  <div class="chips" style="padding-bottom:10px"><div class="chip on">Tous <small>6</small></div><div class="chip">Alipay <small>3</small></div><div class="chip">WeChat <small>2</small></div><div class="chip">Banque <small>1</small></div></div>
+  <div class="sh" style="padding-top:6px"><h2 style="font-size:18px">6 bénéficiaires</h2><a>+ Ajouter</a></div>
+  <div class="card">
+    <div class="row">${mk('ali')}<div class="rm"><div class="rn">Guangzhou Hengtai Trading</div><div class="rs">hengtai_gz@163.com · 18 paiements</div></div>${ic.chev}</div>
+    <div class="swp"><div class="row">${mk('ali')}<div class="rm"><div class="rn">Yiwu Jinsheng Textile Co.</div><div class="rs">138 2716 4490 · 9 paiements</div></div>${ic.chev}</div><div class="act2"><div style="background:#7a3cf0">${I('pen', 20, '#fff')}Modifier</div><div style="background:#d6392c">${I('arch', 20, '#fff')}Archiver</div></div></div>
+    <div class="row">${mk('wx')}<div class="rm"><div class="rn">Chen Xiaoli</div><div class="rs">wxid_chenxl88 · 6 paiements</div></div>${ic.chev}</div>
+    <div class="row">${mk('ali')}<div class="rm"><div class="rn">Foshan Meida Furniture</div><div class="rs">meida_fs@126.com · 4 paiements</div></div>${ic.chev}</div>
+    <div class="row">${mk('wx')}<div class="rm"><div class="rn">Lin Haoran</div><div class="rs">wxid_linhr_2019 · 2 paiements</div></div>${ic.chev}</div>
+    <div class="row">${mk('bk')}<div class="rm"><div class="rn">Shantou Lianfa Toys</div><div class="rs">ICBC · 6222 0213 0045 8812 · 1 paiement</div></div>${ic.chev}</div>
+  </div>
+</div>${tabs('cli')}<div class="home-ind"></div>`);
+
+// 10. Colis
+const parc = (k, t, sub, d, st, dot) => `<div class="row">${ico(k, dot === '#1c9a57' ? '#e6f6ed' : '#fff4e2', dot === '#1c9a57' ? '#137042' : '#b36800', 21)}<div class="rm"><div class="rn">${t}</div><div class="rs">${sub}</div></div><div class="ra"><b style="font-size:15px">${d}</b><span><span class="dotline"><i style="background:${dot}"></i>${st}</span></span></div></div>`;
+add('Colis', 'Statut entrepôt, conteneur, relevé PDF, étiquette', `${sbar()}<div class="scroll">
+  ${CL_MINI('Colis')}
+  <div class="src3" style="padding-bottom:12px"><div class="stat"><b>14</b><span>colis</span></div><div class="stat"><b>286</b><span>kg</span></div><div class="stat"><b>2,41</b><span>m³</span></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 4px"><div class="mini" style="height:44px;justify-content:center;border-radius:14px;font-size:14.5px">${I('doc', 18, '#4b4560')}Relevé des colis</div><div class="mini" style="height:44px;justify-content:center;border-radius:14px;font-size:14.5px">${I('tag', 18, '#4b4560')}Étiquette</div></div>
+  <div class="lbl" style="padding-top:16px">Conteneur</div>
+  <div class="card"><div class="row">${ico('ship', '#f1eafe', '#6526de', 21)}<div class="rm"><div class="rn">MIEU3611115</div><div class="rs">8 colis · arrivée Douala 14/11</div></div><div class="ra">${pill('wait', 'En mer')}</div></div></div>
+  <div class="lbl">Réceptions à Guangzhou</div>
+  <div class="card">
+    ${parc('box', 'GZ-2610-118', '4 colis · 62 kg · 0,48 m³', '18/10', 'À Guangzhou', '#e38a0b')}
+    ${parc('plane', 'GZ-2610-097', '2 colis · 41 kg · 0,22 m³', '12/10', 'Avion · en vol', '#e38a0b')}
+    ${parc('ship', 'GZ-0910-044', '8 colis · 183 kg · 1,71 m³', '24/09', 'En mer', '#e38a0b')}
+    ${parc('box', 'GZ-0809-012', '3 colis · 48 kg · 0,39 m³', '08/09', 'Remis à Douala', '#1c9a57')}
+  </div>
+</div>${tabs('cli')}<div class="home-ind"></div>`);
+
+// 11. Étiquette colis
+add('Étiquette colis', 'Mer / Avion, bloc fournisseur, image ou PDF', `${sbar()}<div class="scroll">${CL_MINI('Colis')}<div class="src3"><div class="stat"><b>14</b><span>colis</span></div><div class="stat"><b>286</b><span>kg</span></div><div class="stat"><b>2,41</b><span>m³</span></div></div></div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:14px">Étiquette colis</h3>
+  <div class="seg" style="margin:0 16px 16px"><div class="on">${I('ship', 17)}&nbsp;Bateau</div><div>${I('plane', 17)}&nbsp;Avion</div></div>
+  <div class="lab">
+    <div class="h"><span>BONZINI LABS</span><span>海运 · SEA</span></div>
+    <div class="b"><div style="flex:1;min-width:0"><div class="code">BZ-4821</div><div class="nm">Awa Ngono Mballa</div><div class="ph">+237 677 41 22 90 · Douala</div></div><div style="width:84px;flex:none">${qr(31)}</div></div>
+    <div class="ad">收货 : 广州市白云区 Bonzini 仓库 · 唛头 BZ-4821<br>Destinataire : NORTON GAUSS BONZINI SARL · Douala</div>
+    <div class="sup"><span>供应商 Fournisseur</span><span>件数 Colis</span><span style="font-weight:700">Yiwu Jinsheng Textile Co.</span><span style="font-weight:700">___ / ___</span></div>
+  </div>
+  <div class="kv" style="padding:16px 22px 14px"><span style="color:#17111f;font-weight:600">Bloc fournisseur</span><span class="toggle"></span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn soft" style="background:#efecf4;box-shadow:none">${I('copy', 20)}</div><div class="btn soft" style="background:#efecf4;box-shadow:none;padding:0 16px">${I('doc', 20)} PDF</div><div class="btn dark">${I('share', 20, '#fff')} Envoyer l'image</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 12. Nouveau client
+add('Nouveau client', 'Identité, WhatsApp + numéros, lieu, origine', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouveau client</span><span style="width:52px"></span></div>
+  <div class="lbl" style="padding-top:4px">Identité</div>
+  <div class="form">
+    <div class="frs"><div class="fr"><div class="k">Prénom <span class="req">*</span></div><div class="v">Christelle</div></div><div class="fr"><div class="k">Nom <span class="req">*</span></div><div class="v">Mbappé Eyenga<span class="cursor" style="height:20px;vertical-align:-4px;margin-left:0"></span></div></div></div>
+    <div class="fr" style="display:flex;align-items:center;justify-content:space-between"><div class="k" style="font-size:14.5px;color:#17111f;font-weight:600">Sexe <span class="req">*</span></div><div class="minseg"><span>Homme</span><span class="on">Femme</span></div></div>
+    <div class="frs"><div class="fr"><div class="k">Naissance</div><div class="v ph">JJ/MM/AAAA</div></div><div class="fr"><div class="k">Entreprise</div><div class="v ph">Facultatif</div></div></div>
+  </div>
+  <div class="lbl">Contact</div>
+  <div class="form">
+    <div class="fr"><div class="k">WhatsApp principal <span class="req">*</span></div><div class="v">${cm} +237 <span style="font-variant-numeric:tabular-nums">694 33 18 75</span><span style="margin-left:auto">${chk('#1c9a57', 18)}</span></div></div>
+    <div class="fr"><div class="k">Boutique</div><div class="v">${cm} +237 <span style="font-variant-numeric:tabular-nums">233 42 17 08</span></div></div>
+    <div class="addl">${I('plus', 17, '#7a3cf0', 2.4)}Autre numéro</div>
+    <div class="fr"><div class="k">E-mail</div><div class="v ph">Facultatif</div></div>
+  </div>
+  <div class="lbl">Lieu et origine</div>
+  <div class="form">
+    <div class="frs"><div class="fr"><div class="k">Pays <span class="req">*</span></div><div class="v">${cm} Cameroun</div></div><div class="fr"><div class="k">Ville</div><div class="v">Douala</div></div></div>
+    <div class="fr"><div class="k">Origine</div><div class="v">Mireille Ewane Ndjock <span class="tag vi" style="height:22px">Commerciale</span><span style="margin-left:auto">${ic.chev}</span></div></div>
+  </div>
+</div>
+<div class="dock"><div class="btn dark">Créer le client</div></div><div class="home-ind"></div>`);
+
+// 13. Client créé
+add('Client créé', 'Mot de passe provisoire, envoi WhatsApp', `${sbar()}<div class="scroll" style="background:#fff">
+  <div class="modalnav"><span class="x">Fermer</span><span></span><span style="width:52px"></span></div>
+  <div style="text-align:center;padding:10px 20px 22px"><div style="width:64px;height:64px;border-radius:32px;background:#1c9a57;display:grid;place-items:center;margin:0 auto 14px">${ic.check('#fff', 30)}</div><div style="font:800 26px 'DM Sans';letter-spacing:-.02em">Client créé</div><div style="font:500 15.5px 'DM Sans';color:#6f6981;margin-top:4px">Christelle Mbappé Eyenga · BZ-5127</div></div>
+  <div class="lbl" style="padding-left:24px">Mot de passe provisoire</div>
+  <div class="pwd"><b>kT7m-pQ42</b><span class="cp" style="width:40px;height:40px;border-radius:12px;background:#fff">${ic.copy}</span></div>
+  <div class="lbl" style="padding-left:24px;padding-top:22px">Fiche</div>
+  <div class="inset"><div class="kv"><span>WhatsApp</span><b>+237 694 33 18 75</b></div><div class="kv"><span>Autres numéros</span><b>1</b></div><div class="kv"><span>Pays</span><b>Cameroun · Douala</b></div><div class="kv"><span>Origine</span><b>Mireille Ewane Ndjock</b></div></div>
+</div>
+<div class="dock" style="flex-direction:column;gap:10px;background:#fff"><div class="btn wa">${I('wa', 21, '#fff', 1.9)} Envoyer sur WhatsApp</div><div class="btn ghost">Voir la fiche</div></div><div class="home-ind"></div>`, 'white');
+
+
+// ---------- Équipe & ventes ----------
+const EV_HEAD = (on, title) => `
+  <div class="nb"><div class="back">${ic.back}Plus</div><div class="sp"></div>${on === 'Équipe' ? `<div class="act">${ic.search.replace(/currentColor/g, '#17111f')}</div><div class="act" style="background:#17111f">${I('plus', 21, '#fff', 2.4)}</div>` : dots}</div>
+  <div class="lt" style="padding-top:0"><h1>${title}</h1></div>
+  <div class="seg"><div class="${on === 'Équipe' ? 'on' : ''}">Équipe</div><div class="${on === 'Ventes' ? 'on' : ''}">Ventes<em>3</em></div></div>`;
+const mrow = (ini, k, name, sub, meta, dot, extra = '') => `<div class="row">${av(ini, k)}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div>${extra}</div><div class="ra"><span>${dot ? `<span class="dotline"><i style="background:${dot}"></i>${meta}</span>` : meta}</span></div></div>`;
+
+// 15. Équipe
+add('Équipe', 'Équipes et sites avec compteurs, dernière connexion', `${sbar()}<div class="scroll">
+  ${EV_HEAD('Équipe', 'Équipe &amp; ventes')}
+  <div class="chips" style="padding-bottom:10px"><div class="chip on">Tous <small>17</small></div><div class="chip">Bureau <small>5</small></div><div class="chip">Commerciaux <small>3</small></div><div class="chip">Guangzhou <small>4</small></div><div class="chip">Douala <small>3</small></div></div>
+  <div class="tb"><span>16 actifs · 1 désactivé</span><div class="r"><span class="mini">Tous les sites ${I('chevd', 14, '#6f6981', 2.4)}</span></div></div>
+  <div class="day">Bureau</div>
+  <div class="card">
+    ${mrow('NE', 'vi', 'Nelson <span style="font-weight:500;color:#9a95a8">· vous</span>', 'Super admin · Douala', 'en ligne', '#1c9a57')}
+    ${mrow('RM', 'bl', 'Rodrigue Mbarga Essono', 'Opérations · Douala', 'il y a 3 h', '#1c9a57')}
+    ${mrow('CT', 'gr', 'Carine Tchakounté Fogue', 'Support · Douala', 'hier', '#1c9a57')}
+    ${mrow('PF', 'am', 'Patrick Fouda Onana', 'Trésorier · Yaoundé', '6 j', '#e38a0b')}
+  </div>
+  <div class="day" style="padding-top:16px">Commerciaux</div>
+  <div class="card">
+    ${mrow('ME', 'or', 'Mireille Ewane Ndjock', 'Commerciale · Douala', 'hier', '#1c9a57')}
+    ${mrow('AT', 'te', 'Arnaud Tsafack Kenfack', 'Commercial · fiche non reliée', 'jamais', '#f0530f')}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 16. Nouvel accès — rôle
+const role = (k, bg, name, sub, on) => `<div class="rl2 ${on ? 'on' : ''}"><div class="si" style="background:${bg}">${I(k, 19, '#fff')}</div><div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div></div><span class="radio ${on ? 'on' : ''}"></span></div>`;
+add('Nouvel accès', 'Étape 1 · le rôle décide de l\'espace d\'arrivée', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouvel accès</span><span style="font:600 15px 'DM Sans';color:#9a95a8;width:52px;text-align:right">1 / 2</span></div>
+  <div class="lbl" style="padding-top:2px">Bureau</div>
+  <div class="card">
+    ${role('lock', '#17111f', 'Super admin', 'Tout, dont équipe et découvert')}
+    ${role('bolt', '#7a3cf0', 'Opérations', 'Dépôts, paiements, clients · Accueil', 1)}
+    ${role('msg', '#1a5fd1', 'Support', 'Clients, messages · Accueil')}
+    ${role('star', '#0f7575', 'Succès client', 'Clients, suivi · Accueil')}
+    ${role('od', '#b36800', 'Trésorier', 'Trésorerie, taux · Trésorerie')}
+  </div>
+  <div class="lbl">Terrain</div>
+  <div class="card">
+    ${role('box', '#e38a0b', 'Réception Guangzhou', 'Paquets, scanner · Aujourd\'hui')}
+    ${role('truck', '#4b4560', 'Entrepôt Douala', 'Pointer, remettre · Journée')}
+    ${role('flag', '#f0530f', 'Commercial', 'Prospects, ses clients · Mon mois')}
+    ${role('doc', '#3f4b5e', 'Commissionnaire', 'Douane · À signer')}
+  </div>
+</div>
+<div class="dock"><div class="btn dark">Continuer · Opérations</div></div><div class="home-ind"></div>`);
+
+// 17. Fiche membre
+const perm = (t, y, w = '') => `<div class="perm ${y ? '' : 'off'}"><span class="${y ? 'y' : 'n'}">${y ? chk('#137042', 13) : xx()}</span>${t}${w ? `<span class="w">${w}</span>` : ''}</div>`;
+add('Fiche membre', 'Rôle, droits, contact, désactiver', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Équipe</div><div class="sp"></div>${dots}</div>
+  <div class="idn" style="padding-bottom:12px">${av('RM', 'bl')}<div style="min-width:0"><h2>Rodrigue Mbarga Essono</h2><div class="s">rodrigue.mbarga@bonzinilabs.com</div><div style="display:flex;gap:6px"><span class="tag vi" style="height:26px">Opérations</span>${pill('done', 'Actif')}</div></div></div>
+  <div class="card">
+    <div class="phn"><div class="rm"><div class="n">+237 691 40 72 18</div><div class="l">Principal</div></div><div class="rb2" style="background:#e6f6ed">${I('wa', 20, '#1c9a57', 1.9)}</div><div class="rb2" style="background:#f1eafe">${I('phone', 19, '#6526de')}</div></div>
+    <div class="kv"><span>Site</span><b>Douala</b></div><div class="kv"><span>Dernière connexion</span><b>il y a 3 h</b></div><div class="kv"><span>Accès créé</span><b>02/06/2026</b></div>
+  </div>
+  <div class="lbl">Droits</div>
+  <div class="card">
+    ${perm('Dépôts', 1)}${perm('Paiements', 1)}${perm('Crédit / Débit', 1)}${perm('Voir les clients', 1)}${perm('Modifier les clients', 0)}${perm('Trésorerie et taux', 0)}${perm('Équipe et découvert', 0, 'super admin')}
+  </div>
+  <div class="dang">${I('off', 19, '#c2261d', 2.3)}Désactiver l'accès</div>
+</div><div class="home-ind"></div>`);
+
+// 18. Ventes
+const bars = () => { const d = [[3, 2, 1], [4, 2, 2], [5, 3, 1], [4, 4, 2], [6, 4, 3], [7, 5, 3]]; const m = ['mai', 'juin', 'juil.', 'août', 'sept.', 'oct.']; const col = ['#7a3cf0', '#e38a0b', '#f0530f']; let s = ''; d.forEach((v, i) => { let y = 128; const x = 22 + i * 54; v.forEach((n, j) => { const h = n * 7.4; y -= h; s += `<rect x="${x}" y="${y}" width="30" height="${h - 2}" rx="4" fill="${col[j]}" opacity="${i === 5 ? 1 : .82}"/>`; }); s += `<text x="${x + 15}" y="148" text-anchor="middle" font-family="DM Sans" font-weight="600" font-size="12" fill="#9a95a8">${m[i]}</text>`; }); return `<svg viewBox="0 0 361 156" width="100%" height="156"><path d="M10 128.5h341M10 84.5h341M10 40.5h341" stroke="#eeebf3"/>${s}</svg>`; };
+add('Ventes', 'Chiffres des commerciaux, évolution, classement', `${sbar()}<div class="scroll">
+  ${EV_HEAD('Ventes', 'Équipe &amp; ventes')}
+  <div class="alert"><div class="ai">${I('warn', 19, '#fff', 2.2)}</div><div class="rm"><b>3 fiches à vérifier</b><span>Numéros déjà clients</span></div>${ic.chev}</div>
+  <div class="per"><span>3 mois</span><span class="on">6 mois</span><span>12 mois</span><span>12 sem.</span></div>
+  <div class="k4">
+    <div class="stat sel"><span>Nouveaux clients</span><b>23<span class="tr">+6</span></b></div>
+    <div class="stat"><span>Paiements</span><b>41,8 M<span class="tr">+12 %</span></b></div>
+    <div class="stat"><span>Prospects · convertis</span><b>31 · 8<span class="tr">26 %</span></b></div>
+    <div class="stat"><span>Fret avion · bateau</span><b style="font-size:20px">312 kg · 6,4 m³</b></div>
+  </div>
+  <div class="card" style="margin-top:12px;padding-top:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 16px 2px"><b style="font:800 17px 'DM Sans'">Nouveaux clients</b><div class="minseg" style="padding:2px"><span class="on" style="font-size:12.5px;padding:4px 9px">Par commercial</span><span style="font-size:12.5px;padding:4px 9px">Équipe</span></div></div>
+    <div class="lg" style="padding-top:8px"><span><i style="background:#7a3cf0"></i>Mireille E.</span><span><i style="background:#e38a0b"></i>Sandrine A.</span><span><i style="background:#f0530f"></i>Arnaud T.</span></div>
+    ${bars()}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 19. Ventes — classement + origines (ex « Sources & commerciaux »)
+const src = (k, bg, fg, name, sub, cl, dep, pay, col) => `<div class="row" style="align-items:flex-start">${ico(k, bg, fg)}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div><div class="sx"><span>dépôts <b>${dep}</b></span><span>paiements <b>${pay}</b></span><span>colis <b>${col}</b></span></div></div><div class="ra"><b>${cl}</b><span>clients</span></div></div>`;
+add('Ventes · qui apporte quoi', 'Objectifs du mois + origine de tous les clients', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Plus</div><div class="t">Ventes</div><div class="sp"></div>${dots}</div>
+  <div class="sh" style="padding-top:8px"><h2>Objectifs d'octobre</h2><a>Tout voir</a></div>
+  <div class="card">
+    <div class="row">${av('ME', 'or')}<div class="rm"><div class="rn">Mireille Ewane Ndjock</div><div class="pb" style="margin-top:7px"><i style="width:78%;background:#1c9a57"></i></div></div><div class="ra"><b>78 %</b><span style="color:#137042">dans le rythme</span></div></div>
+    <div class="row">${av('SA', 'vi')}<div class="rm"><div class="rn">Sandrine Abena Owona</div><div class="pb" style="margin-top:7px"><i style="width:46%;background:#e38a0b"></i></div></div><div class="ra"><b>46 %</b><span style="color:#9a5d00">sous le rythme</span></div></div>
+    <div class="row">${av('AT', 'te')}<div class="rm"><div class="rn">Arnaud Tsafack Kenfack</div><div class="pb" style="margin-top:7px"><i style="width:4%;background:#d6392c"></i></div></div><div class="ra"><b>—</b><span>sans objectif</span></div></div>
+  </div>
+  <div class="sh"><h2>Origine des clients</h2><span class="mini">Ce mois ${I('chevd', 14, '#6f6981', 2.4)}</span></div>
+  <div class="src3"><div class="stat"><b>278</b><span>clients</span></div><div class="stat"><b>+23</b><span>ce mois</span></div><div class="stat"><b style="color:#c23f07">41</b><span>sans origine</span></div></div>
+  <div class="chips" style="padding:8px 20px 12px"><div class="chip on">Toutes</div><div class="chip">Commerciaux <small>3</small></div><div class="chip">Recommandation</div><div class="chip">Réseaux</div></div>
+  <div class="card">
+    ${src('flag', '#fff0e8', '#c23f07', 'Mireille Ewane Ndjock', 'Commerciale · +4 ce mois', '38', '18,2 M', '15,9 M', '96')}
+    ${src('star', '#e3f5f5', '#0f7575', 'Recommandation client', '+9 ce mois', '64', '22,7 M', '20,1 M', '141')}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 20. Commercial
+add('Page commercial', 'Objectifs du mois, contact, accès', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Ventes</div><div class="sp"></div>${dots}</div>
+  <div class="idn" style="padding-bottom:12px">${av('ME', 'or')}<div style="min-width:0"><h2>Mireille Ewane Ndjock</h2><div class="s">Fiche « Mireille E. » · Douala</div><div style="display:flex;gap:6px"><span class="tag or" style="height:26px">Commerciale</span>${pill('done', 'Accès actif')}</div></div></div>
+  <div class="qa" style="padding-top:0"><div class="m">${I('phone', 18)}Appeler</div><div class="m" style="color:#137042">${I('wa', 19, '#1c9a57', 1.9)}WhatsApp</div><div class="m">${I('lock', 18)}Son accès</div></div>
+  <div class="seg s3"><div class="on">Chiffres</div><div>Prospects<em>1</em></div><div>Clients</div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 20px 10px"><div class="mon"><span class="a">${I('chevl', 16, '#17111f', 2.4)}</span>Octobre 2026<span class="a">${I('chevr', 16, '#9a95a8', 2.4)}</span></div><span style="font:600 15px 'DM Sans';color:#7a3cf0">Modifier</span></div>
+  <div class="card">
+    ${gauge('Nouveaux clients', '4', '6', 67, '#1c9a57', 'dans le rythme', '#137042')}
+    ${gauge('Paiements', '12,4 M', '15 M XAF', 83, '#1c9a57', 'dans le rythme', '#137042')}
+    ${gauge('Fret avion', '86', '150 kg', 57, '#e38a0b', 'sous le rythme', '#9a5d00')}
+    ${gauge('Bateau', '2,1', '3 m³', 70, '#1c9a57', 'dans le rythme', '#137042')}
+    ${gauge('Prospects ajoutés', '9', '12', 75, '#1c9a57', 'dans le rythme', '#137042')}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 21. Commercial — ses prospects
+const prow = (ini, k, name, sub, meta, dot, act = '') => `<div class="row" style="align-items:flex-start">${av(ini, k)}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div>${act}</div><div class="ra"><span>${dot ? `<span class="dotline"><i style="background:${dot}"></i>${meta}</span>` : meta}</span></div></div>`;
+const sbtn = (t, c = '#4b4560', bg = '#f2f0f6') => `<span class="tag" style="height:30px;padding:0 11px;border-radius:10px;background:${bg};color:${c};font-size:13.5px;font-weight:700">${t}</span>`;
+add('Ses prospects', 'Décider, créer le compte, confier à…', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Ventes</div><div class="t">Mireille Ewane Ndjock<small>Commerciale · Douala</small></div><div class="sp"></div>${dots}</div>
+  <div class="seg s3" style="margin-top:6px"><div>Chiffres</div><div class="on">Prospects<em>1</em></div><div>Clients</div></div>
+  <div class="chips" style="padding-bottom:12px"><div class="chip on">En cours <small>7</small></div><div class="chip">À vérifier <small>1</small></div><div class="chip">Clients <small>2</small></div><div class="chip">Perdus <small>3</small></div></div>
+  <div class="card">
+    ${prow('PN', 'vi', 'Patrice Nkodo Mvondo', 'Quincaillerie · Bafoussam', 'Intéressé', '#e38a0b', `<div style="display:flex;gap:6px;margin-top:8px">${sbtn('Créer son compte client', '#5a22c9', '#f1eafe')}${sbtn('Confier à…')}</div>`)}
+    ${prow('GB', 'or', 'Grâce Biloa Mengue', 'Mode Biloa · Yaoundé', 'À vérifier', '#f0530f', `<div style="display:flex;gap:6px;margin-top:8px">${sbtn('Décider', '#fff', '#f0530f')}${sbtn('Confier à…')}</div>`)}
+    ${prow('SD', 'gr', 'Serge Djoumessi Tagne', 'Pièces auto · relance 23/10', 'Contacté', '#e38a0b')}
+    ${prow('FA', 'bl', 'Fadimatou Aboubakar', 'Cosmétiques · Garoua', 'À contacter', '#f0530f')}
+    ${prow('YN', 'te', 'Yannick Nguema Obiang', 'Électroménager · 30/10', 'Contacté', '#e38a0b')}
+    ${prow('RF', 'am', 'Rosine Fokam Tchinda', 'Tissus · Bafoussam', 'À contacter', '#f0530f')}
+    ${prow('EM', 'gy', 'Emmanuel Mbida Atangana', 'Téléphonie · Yaoundé', 'Contacté', '#e38a0b')}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 22. À vérifier
+add('À vérifier', 'Saisi par le commercial vs client reconnu', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Ventes</div><div class="t">À vérifier<small>1 sur 3</small></div><div class="sp"></div>${dots}</div>
+  <div class="cmp" style="margin-top:6px">
+    <div class="hd">${av('ME', 'or', 'width:22px;height:22px;font-size:9.5px')}Saisi par Mireille E. · 19/10</div>
+    <div class="row" style="padding-top:8px">${av('GB', 'gy')}<div class="rm"><div class="rn">Grâce Biloa Mengue</div><div class="rs">Mode Biloa · Yaoundé</div></div></div>
+    <div class="kv"><span>Numéros</span><b><span class="hl" style="background:#ffe7d6">+237 699 51 03 26</span> +2</b></div>
+    <div class="tags" style="padding-top:8px"><span class="tag">Délais fournisseurs</span><span class="tag">Taux trop chers</span><span class="tag">Aide : fret avion</span></div>
+  </div>
+  <div class="vs"><span>${I('link', 17, '#fff', 2.3)}</span></div>
+  <div class="cmp">
+    <div class="hd">Client reconnu par le numéro</div>
+    <div class="row" style="padding-top:8px">${av('MB', 'am')}<div class="rm"><div class="rn">Mode Biloa Import</div><div class="rs">BZ-3874 · <span class="hl" style="background:#ffe7d6">+237 699 51 03 26</span></div></div>${ic.chev}</div>
+    <div class="kv"><span>Origine</span><b style="color:#c23f07">non renseignée</b></div>
+    <div class="kv"><span>Dépôts · paiements</span><b>4 · 11</b></div>
+    <div class="kv"><span>Client depuis</span><b>août 2026</b></div>
+  </div>
+  <div class="fl" style="padding-top:14px"><div class="inp"><span class="ph">Note interne</span></div></div>
+  <div class="card"><div class="sr" style="padding:13px 16px;font-size:15.5px"><div class="si" style="background:#f2f0f6;color:#4b4560;width:30px;height:30px">${I('swap', 17)}</div>Confier à un autre commercial<span class="sv">${ic.chev}</span></div></div>
+</div>
+<div class="dock"><div class="btn soft" style="color:#c2261d">Refuser</div><div class="btn dark">Attribuer à Mireille</div></div><div class="home-ind"></div>`);
+
+// ---------- App commercial ----------
+// 23. Mon mois
+add('Commercial · Mon mois', 'Objectifs, à relancer, ses chiffres', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Octobre 2026</div><h1>Bonjour Mireille</h1></div><div class="round" style="background:#fff0e8;color:#c23f07;font:700 15px 'DM Sans'">ME</div></div>
+  <div class="tiles"><div class="tile pay"><div class="i">${I('plus', 22, '#fff', 2.4)}</div><b>Nouveau<br>prospect</b></div><div class="tile" style="background:linear-gradient(150deg,#ff7a3d 0%,#e8480b 100%)"><div class="i">${I('phone', 20, '#fff')}</div><b>3 à relancer</b></div></div>
+  <div class="alert" style="margin-top:12px;margin-bottom:0"><div class="ai">${I('warn', 19, '#fff', 2.2)}</div><div class="rm"><b>1 fiche à vérifier</b><span>Grâce Biloa Mengue</span></div>${ic.chev}</div>
+  <div class="sh" style="padding-top:20px"><h2>Mes objectifs</h2><div class="mon" style="font-size:14px;color:#6f6981">78 % · dans le rythme</div></div>
+  <div class="card">
+    ${gauge('Nouveaux clients', '4', '6', 67, '#1c9a57', 'dans le rythme', '#137042')}
+    ${gauge('Paiements de mes clients', '12,4 M', '15 M XAF', 83, '#1c9a57', 'dans le rythme', '#137042')}
+    ${gauge('Fret avion', '86', '150 kg', 57, '#e38a0b', 'sous le rythme', '#9a5d00')}
+  </div>
+  <div class="sh"><h2>Mes prospects</h2></div>
+  <div class="stats"><div class="stat"><b>9</b><span>ajoutés</span></div><div class="stat"><b>2</b><span>devenus clients</span></div></div>
+</div>${tabs('chart', { target: 3 }, 'commercial')}<div class="home-ind"></div>`);
+
+// 24. Prospects
+add('Commercial · Prospects', 'Brouillon, recherche, filtres par statut', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Prospects</h1><div class="round" style="background:#17111f">${I('plus', 22, '#fff', 2.4)}</div></div>
+  <div class="draft"><div>${I('pen', 22, '#fff')}</div><div><b>Rosine Fokam Tchinda</b><span>Brouillon · étape 3 sur 7</span></div><div class="go">Reprendre</div></div>
+  <div class="srch" style="margin-bottom:12px">${ic.search}Nom, entreprise, ville ou numéro</div>
+  <div class="chips" style="padding-bottom:12px"><div class="chip">Ouverts <small>7</small></div><div class="chip on">À relancer <small>3</small></div><div class="chip">À vérifier <small>1</small></div><div class="chip">Intéressés</div></div>
+  <div class="card">
+    ${prow('FA', 'bl', 'Fadimatou Aboubakar', 'Cosmétiques · Garoua', 'échue 18/10', '#d6392c')}
+    ${prow('PN', 'vi', 'Patrice Nkodo Mvondo', 'Quincaillerie · Bafoussam', 'aujourd\'hui', '#f0530f')}
+    ${prow('SD', 'gr', 'Serge Djoumessi Tagne', 'Pièces auto · Douala', 'demain', '#e38a0b', `<div style="margin-top:6px"><span class="tag am">À compléter</span></div>`)}
+  </div>
+  <div class="day" style="padding-top:18px">Plus tard</div>
+  <div class="card">
+    ${prow('YN', 'te', 'Yannick Nguema Obiang', 'Électroménager · Kribi', '30/10', '#b9b4c6')}
+    ${prow('EM', 'gy', 'Emmanuel Mbida Atangana', 'Téléphonie · Yaoundé', '04/11', '#b9b4c6')}
+  </div>
+</div>${tabs('target', { target: 3 }, 'commercial')}<div class="home-ind"></div>`);
+
+// 25. Assistant — étape 2
+add('Commercial · Nouveau prospect', 'Étape 2 sur 7 · numéros vérifiés en direct', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouveau prospect</span><span style="font:600 15px 'DM Sans';color:#9a95a8;width:52px;text-align:right">2 / 7</span></div>
+  <div class="prog">${[1, 1, 0, 0, 0, 0, 0].map((o) => `<i class="${o ? 'on' : ''}"></i>`).join('')}</div>
+  <div class="stp"><div class="o">Rosine Fokam Tchinda</div><h2>Pour la joindre</h2></div>
+  <div class="form">
+    <div class="fr"><div class="k">WhatsApp <span class="req">*</span></div><div class="v">${cm} +237 <span style="font-variant-numeric:tabular-nums">677 20 94 61</span></div><div class="chk" style="color:#137042">${chk('#1c9a57', 15)} Numéro libre</div></div>
+    <div class="fr"><div class="k">Boutique</div><div class="v">${cm} +237 <span style="font-variant-numeric:tabular-nums">699 51 03 26</span></div><div class="chk" style="color:#9a5d00">${I('warn', 15, '#e38a0b', 2.2)} Déjà client · BZ-3874 → À vérifier</div></div>
+    <div class="addl">${I('plus', 17, '#7a3cf0', 2.4)}Autre numéro</div>
+    <div class="fr"><div class="k">E-mail</div><div class="v ph">Facultatif</div></div>
+  </div>
+  <div class="lbl">Ville</div>
+  <div class="form"><div class="fr"><div class="v" style="margin:0">Bafoussam<span style="margin-left:auto">${ic.chev}</span></div></div></div>
+</div>
+<div class="dock"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn dark">Suivant</div></div><div class="home-ind"></div>`);
+
+// 26. Fiche prospect
+add('Commercial · Fiche prospect', 'Appeler / WhatsApp, statut, sections modifiables', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Prospects</div><div class="sp"></div>${dots}</div>
+  <div class="idn" style="padding-bottom:14px">${av('PN', 'vi')}<div style="min-width:0"><h2>Patrice Nkodo Mvondo</h2><div class="s">Quincaillerie Nkodo · Bafoussam</div>${pill('wait', 'Relance aujourd\'hui')}</div></div>
+  <div class="seg s3"><div>À contacter</div><div>Contacté</div><div class="on">Intéressé</div></div>
+  <div class="card">
+    <div class="phn"><div class="rm"><div class="n">+237 677 58 12 40</div><div class="l">WhatsApp</div></div><div class="rb2" style="background:#e6f6ed">${I('wa', 20, '#1c9a57', 1.9)}</div><div class="rb2" style="background:#f1eafe">${I('phone', 19, '#6526de')}</div></div>
+    <div class="phn"><div class="rm"><div class="n">+237 233 44 70 15</div><div class="l">Boutique</div></div><div class="rb2" style="background:#f1eafe">${I('phone', 19, '#6526de')}</div></div>
+  </div>
+  <div class="sh" style="padding-top:18px"><h2 style="font-size:18px">Activité</h2><a>Modifier</a></div>
+  <div class="card"><div class="kv"><span>Achète à</span><b>Foshan, Yiwu</b></div><div class="kv"><span>Volume</span><b>≈ ¥30 000 / mois</b></div><div class="kv"><span>Paie aujourd'hui</span><b>Agent à Douala</b></div></div>
+  <div class="sh" style="padding-top:18px"><h2 style="font-size:18px">Ses problèmes</h2><a>Modifier</a></div>
+  <div class="card"><div class="tags" style="padding-top:14px"><span class="tag or">Taux trop chers</span><span class="tag or">Retards de paiement</span><span class="tag">Pas de preuve</span></div></div>
+</div>
+<div class="dock"><div class="btn soft" style="color:#137042">${I('wa', 21, '#1c9a57', 1.9)}</div><div class="btn dark">${I('phone', 20, '#fff')} Appeler</div></div><div class="home-ind"></div>`);
+
+// 27. Mes clients (commercial)
+const ccl = (ini, k, name, sub, amt, meta) => `<div class="row">${av(ini, k)}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub} · <b style="color:#17111f">${amt}</b></div></div><div class="rb3" style="background:#e6f6ed">${I('wa', 18, '#1c9a57', 1.9)}</div><div class="rb3" style="background:#f1eafe">${I('phone', 17, '#6526de')}</div></div>`;
+add('Commercial · Mes clients', 'Mois, chiffres, appeler / WhatsApp', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Mes clients</h1><div class="mon" style="padding-bottom:6px"><span class="a">${I('chevl', 16, '#17111f', 2.4)}</span>Oct.<span class="a">${I('chevr', 16, '#c4c0cf', 2.4)}</span></div></div>
+  <div class="k4" style="margin-bottom:14px">
+    <div class="stat"><span>Clients · actifs</span><b>38 · 21</b></div>
+    <div class="stat"><span>Paiements</span><b>12,4 M</b></div>
+    <div class="stat"><span>Fret avion</span><b>86 kg</b></div>
+    <div class="stat"><span>Bateau</span><b>2,1 m³</b></div>
+  </div>
+  <div class="srch" style="margin-bottom:14px">${ic.search}Nom ou BZ-…</div>
+  <div class="card">
+    ${ccl('AN', 'am', 'Awa Ngono Mballa', 'BZ-4821', '3,1 M', '11 paiements')}
+    ${ccl('CM', 'gr', 'Christelle Mbappé Eyenga', 'BZ-5127 · nouvelle', '—', 'aucun')}
+    ${ccl('BN', 'bl', 'Boutique Ndongo Frères', 'BZ-3971', '1,8 M', '6 · 42 kg')}
+    ${ccl('HO', 'te', 'Hamadou Oumarou Sali', 'BZ-4410', '2,6 M', '4 · 1,2 m³')}
+    ${ccl('KI', 'gr', 'Kengne Import SARL', 'BZ-0846', '4,9 M', '')}
+    ${ccl('JK', 'vi', 'Jean-Pierre Kamdem Tchoua', 'BZ-3305', '0', '')}
+  </div>
+</div>${tabs('cli', { target: 3 }, 'commercial')}<div class="home-ind"></div>`);
+
+render();
+</script>
+</body></html>

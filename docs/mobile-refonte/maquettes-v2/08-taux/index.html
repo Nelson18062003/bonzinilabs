@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Taux</title>
+<link rel="stylesheet" href="../kit2.css">
+<style>
+/* Lot 08 · Module Taux complet — mêmes jetons que kit2.css */
+@font-face { font-family: "Noto Sans SC"; font-weight: 400; src: url(../noto-sans-sc-chinese-simplified-400-normal.woff2) format("woff2") }
+@font-face { font-family: "Noto Sans SC"; font-weight: 700; src: url(../noto-sans-sc-chinese-simplified-700-normal.woff2) format("woff2") }
+.board { width: 1800px }
+.acts .act { font-size: 15px; align-content: start }
+.mrow { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.mrow:last-child { border-bottom: 0 }
+.mrow .av svg { width: 22px; height: 22px }
+.red .rn { color: #EC221F }
+.red .av { background: #FDD3D0 }
+.link { font: 600 16px "DM Sans"; color: var(--strong); text-decoration: underline; text-underline-offset: 3px }
+.twin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.ibtn { display: flex; gap: 8px; justify-content: center; align-items: center }
+.ibtn svg { width: 20px; height: 20px }
+.stat { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px }
+.stat span { font: 500 15px "DM Sans"; color: var(--muted); display: block }
+.stat b { font: 700 22px "DM Sans"; display: block; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.01em }
+.stat em { font: 400 14px "DM Sans"; font-style: normal; color: var(--muted); display: block; margin-top: 2px }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px }
+.inbox { width: 116px; height: 48px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px; font: 700 20px "DM Sans"; font-variant-numeric: tabular-nums; flex: none }
+.inbox.on { border: 2px solid var(--ink) }
+.inbox .caret { width: 2px; height: 24px; background: var(--ink); margin-left: 2px }
+.arrow { color: var(--muted); font-weight: 500; margin: 0 4px }
+.chart { margin: 12px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 14px 12px 10px }
+.chart svg { display: block }
+.chart svg text { font: 500 14px "DM Sans"; fill: #5A5A5A; font-variant-numeric: tabular-nums }
+.chart .ct { font: 600 16px "DM Sans"; padding: 0 4px 8px; display: flex; justify-content: space-between }
+.chart .ct span { font-weight: 500; color: var(--muted) }
+.legend { display: flex; gap: 18px; padding: 10px 4px 2px; font: 500 15px "DM Sans"; color: var(--body) }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px }
+.amt .lab0 { font: 500 16px "DM Sans"; color: var(--muted); margin-bottom: 8px }
+.methods.sm .m { height: 76px; gap: 6px }
+.methods.sm .m .logo { width: 32px; height: 32px }
+.methods.sm .m .logo svg { width: 18px; height: 18px }
+.pair { position: relative; width: 44px; height: 44px; flex: none }
+.pair .logo:last-child { position: absolute; right: -6px; bottom: -4px; width: 24px; height: 24px; border-radius: 12px; box-shadow: 0 0 0 2px #fff }
+.pair .logo:last-child svg { width: 14px; height: 14px }
+.flag { width: 44px; height: 44px; border-radius: 22px; overflow: hidden; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); position: relative }
+.flag svg { width: 100%; height: 100%; display: block }
+.choice { margin: 0 20px 10px; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: flex; align-items: center; gap: 14px }
+.choice.on { border: 2px solid var(--ink); padding: 13px 15px }
+.radio { width: 24px; height: 24px; border-radius: 12px; border: 2px solid var(--field); flex: none }
+.radio.on { border: 7px solid var(--ink) }
+.pgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px }
+.pgrid span { height: 44px; border-radius: 8px; background: var(--soft); display: grid; place-items: center; font: 600 15px "DM Sans"; font-variant-numeric: tabular-nums; white-space: nowrap }
+.pgrid span.on { background: var(--ink); color: #F5F5F5 }
+.chip.fl { padding-left: 6px }
+.fiche .flag { margin: 0 auto }
+.chip.fl .flag { width: 24px; height: 24px; border-radius: 12px }
+.sec { font: 600 14px "DM Sans"; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 18px }
+.thumb { margin: 16px auto 0; position: relative; overflow: hidden; border-radius: 8px; border: 1px solid var(--line) }
+.thumb > div { position: absolute; left: 0; top: 0; transform-origin: 0 0 }
+.tip { position: absolute; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font: 500 15px "DM Sans"; color: var(--body); white-space: nowrap; font-variant-numeric: tabular-nums }
+.tip b { display: block; font: 600 15px "DM Sans"; color: var(--strong); margin-bottom: 2px }
+.tip div { display: flex; align-items: center; gap: 8px; justify-content: space-between }
+.tip i { display: inline-block; width: 12px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle }
+.apps { display: flex; justify-content: space-between; padding: 18px 0 14px; border-bottom: 1px solid var(--line) }
+.apps div { display: grid; justify-items: center; gap: 8px; font: 500 14px "DM Sans"; color: var(--body); width: 64px; text-align: center }
+.apps .ap { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center }
+.apps .ap svg { width: 34px; height: 34px }
+.kv .pen { font: 600 16px "DM Sans"; text-decoration: underline; text-underline-offset: 3px; color: var(--strong); margin-left: 8px }
+.kv b .tag { margin: 0 0 0 6px; vertical-align: 1px }
+.delta { font: 500 15px "DM Sans"; color: var(--muted); display: block; margin-top: 2px; font-variant-numeric: tabular-nums }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit2.js"></script>
+<script>
+/* ---------- utilitaires du lot ---------- */
+const fmt = (n, d = 0) => n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/ | /g, ' ');
+const svg = (d, c = '#1E1E1E', w = 2.1) => `<svg viewBox="0 0 24 24"><path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const sz = (s, n = 20) => s.replace('<svg', `<svg width="${n}" height="${n}"`);
+const ic = {
+  pen: (c) => svg('M5 19l1-4L16 5l3 3L9 18zM14 7l3 3', c),
+  trash: (c) => svg('M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13', c),
+  hist: (c) => svg('M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 8v4.5l3 2', c),
+  calc: (c) => svg('M6 3.5h12v17H6zM9 7.5h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01', c, 2.2),
+  flyer: (c) => svg('M6 3.5h12v17H6zM9 8h6M9 11.5h6M9 15h3', c),
+  market: (c) => svg('M4 18l4.5-5 3.5 3 7.5-9M15 7h4.5v4.5', c, 2.2),
+  publish: (c) => svg('M12 19V6M6.5 11.5 12 6l5.5 5.5M5 3.5h14', c, 2.2),
+  globe: (c) => svg('M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM3.5 12h17M12 3.5c2.3 2.4 3.4 5.2 3.4 8.5S14.3 18.1 12 20.5M12 3.5C9.7 5.9 8.6 8.7 8.6 12s1.1 6.1 3.4 8.5', c, 2),
+  layers: (c) => svg('M12 4 3.5 8.5 12 13l8.5-4.5zM3.5 12.5 12 17l8.5-4.5M3.5 16.5 12 21l8.5-4.5', c, 2),
+  quote: (c) => svg('M7 3.5h7.5L19 8v12.5H7zM14 3.5V8h5M10 12.5h6M10 16h4', c),
+  copy: (c) => svg('M8 8h11v11H8zM5 15V5h10', c),
+  share: (c) => svg('M12 15V4M7.5 8.5 12 4l4.5 4.5M6 12v7.5h12V12', c),
+  refresh: (c) => svg('M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4.5H15', c, 2.2),
+  filter: (c) => svg('M4 6h16M7 12h10M10 18h4', c, 2.3),
+  down: (c) => svg('M12 4v11M7 10.5l5 5 5-5M5 20h14', c),
+  pencil: (c) => svg('M4 20h4L19 9l-4-4L4 16z', c),
+};
+const chev = `<svg width="20" height="20" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const caret = `<svg width="18" height="18" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="#303030" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const navb = (t, right = '') => `<div class="nav">${I.back}<div class="t">${t}</div>${right}</div>`;
+const end = '<div class="home-ind"></div>';
+const mrow = (icon, t, s = '', cls = '') => `<div class="mrow ${cls}"><div class="av">${icon}</div><div class="rm"><div class="rn">${t}</div>${s ? `<div class="rs">${s}</div>` : ''}</div></div>`;
+const keys = `<div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', ''].map((k) => `<div>${k || I.del}</div>`).join('')}</div>`;
+const binance = (s = 44) => `<div class="logo" style="background:#1E2329;width:${s}px;height:${s}px;border-radius:${s / 2}px"><svg viewBox="0 0 24 24" style="width:${s * .58}px;height:${s * .58}px"><g fill="#F3BA2F"><path d="M12 9.6 14.4 12 12 14.4 9.6 12z"/><path d="M7.9 10.3 9.6 12l-1.7 1.7L6.2 12zM16.1 10.3l1.7 1.7-1.7 1.7-1.7-1.7z"/><path d="M12 3.6l4.3 4.3-1.7 1.7L12 7 9.4 9.6 7.7 7.9z"/><path d="M12 20.4l-4.3-4.3 1.7-1.7L12 17l2.6-2.6 1.7 1.7z"/></g></svg></div>`;
+const pair = `<div class="pair">${meth('alipay')}${meth('wechat')}</div>`;
+const WA = 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z';
+const waIcon = (c = '#F5F5F5', s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="${WA}" fill="${c}"/></svg>`;
+
+/* ---------- drapeaux (identité des pays, comme les logos) ---------- */
+const star = (cx, cy, r, c) => { let p = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .4 : r; p += `${i ? 'L' : 'M'}${(cx + rr * Math.cos(a)).toFixed(2)} ${(cy + rr * Math.sin(a)).toFixed(2)}`; } return `<path d="${p}Z" fill="${c}"/>`; };
+const FLAG = {
+  CM: `<rect width="10" height="30" fill="#007A5E"/><rect x="10" width="10" height="30" fill="#CE1126"/><rect x="20" width="10" height="30" fill="#FCD116"/>${star(15, 15, 4, '#FCD116')}`,
+  GA: `<rect width="30" height="10" fill="#009E60"/><rect y="10" width="30" height="10" fill="#FCD116"/><rect y="20" width="30" height="10" fill="#3A75C4"/>`,
+  TD: `<rect width="10" height="30" fill="#002664"/><rect x="10" width="10" height="30" fill="#FECB00"/><rect x="20" width="10" height="30" fill="#C60C30"/>`,
+  CF: `<rect width="30" height="7.5" fill="#003082"/><rect y="7.5" width="30" height="7.5" fill="#fff"/><rect y="15" width="30" height="7.5" fill="#289728"/><rect y="22.5" width="30" height="7.5" fill="#FFCE00"/><rect x="12" width="6" height="30" fill="#D21034"/>${star(6, 3.8, 2.6, '#FFCE00')}`,
+  CG: `<rect width="30" height="30" fill="#FBDE4A"/><path d="M0 0h20L0 20z" fill="#009543"/><path d="M30 30H10L30 10z" fill="#DC241F"/>`,
+  GQ: `<rect width="30" height="10" fill="#3E9A00"/><rect y="10" width="30" height="10" fill="#fff"/><rect y="20" width="30" height="10" fill="#E32118"/><path d="M0 0l11 15L0 30z" fill="#0073CE"/>`,
+  CN: `<rect width="30" height="30" fill="#EE1C25"/>${star(10, 10, 5.5, '#FFFF00')}`,
+};
+const flag = (iso, s = 44) => `<div class="flag" style="width:${s}px;height:${s}px;border-radius:${s / 2}px"><svg viewBox="0 0 30 30" preserveAspectRatio="none">${FLAG[iso]}</svg></div>`;
+const flagRect = (iso, w, h, r) => `<svg width="${w}" height="${h}" viewBox="0 0 30 30" preserveAspectRatio="none" style="border-radius:${r}px;box-shadow:0 0 0 2px #e8e4ee;flex-shrink:0;display:block">${FLAG[iso]}</svg>`;
+
+/* ---------- graphiques : encre #2C2C2C, gris #B3B3B3, grille #D9D9D9 ---------- */
+// Courbe d'une journée (marché) avec notre taux publié en marches grises.
+const dayChart = () => {
+  const W = 327, H = 168, L = 4, Rr = 66, lo = 10802, hi = 10884;
+  const t0 = 6 * 60, t1 = 10 * 60 + 20;
+  const x = (m) => L + (m - t0) / (t1 - t0) * (W - L - Rr), y = (v) => 8 + (hi - v) / (hi - lo) * (H - 16);
+  const mk = [10848, 10852, 10846, 10855, 10861, 10858, 10866, 10872, 10869, 10864, 10871, 10876, 10868, 10874];
+  const pts = mk.map((v, i) => `${x(t0 + i * 20).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const ours = `${x(t0)},${y(10812)} ${x(480)},${y(10812)} ${x(480)},${y(10838)} ${x(t1)},${y(10838)}`;
+  const grid = [10810, 10840, 10870].map((v) => `<line x1="0" x2="${W - Rr + 6}" y1="${y(v)}" y2="${y(v)}" stroke="#D9D9D9" stroke-width="1" stroke-dasharray="2 4"/><text x="${W}" y="${y(v) + 5}" text-anchor="end">${fmt(v)}</text>`).join('');
+  const lx = x(t1);
+  return `<svg width="${W}" height="${H + 26}" viewBox="0 0 ${W} ${H + 26}">${grid}
+    <polyline points="${ours}" fill="none" stroke="#B3B3B3" stroke-width="2" stroke-linejoin="round"/>
+    <polyline points="${pts}" fill="none" stroke="#2C2C2C" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${lx}" cy="${y(mk[13])}" r="5" fill="#2C2C2C" stroke="#fff" stroke-width="2"/>
+    <circle cx="${lx}" cy="${y(10838)}" r="5" fill="#B3B3B3" stroke="#fff" stroke-width="2"/>
+    ${[['06:00', 360], ['08:00', 480], ['10:00', 600]].map(([l, m]) => `<text x="${x(m)}" y="${H + 20}" text-anchor="${m === 360 ? 'start' : 'middle'}">${l}</text>`).join('')}</svg>`;
+};
+// Distribution des annonces (carnet Cameroun), un palier sélectionné à l'encre.
+const histo = () => {
+  const c = [5, 9, 14, 20, 27, 31, 38, 24, 18, 12, 8, 6, 5], b0 = 596, W = 327, H = 150, gap = 3, bw = (W - gap * (c.length - 1)) / c.length, max = 40;
+  return `<svg width="${W}" height="${H + 48}" viewBox="0 0 ${W} ${H + 48}">
+    <line x1="0" x2="${W}" y1="${H + 22}" y2="${H + 22}" stroke="#D9D9D9"/>
+    ${c.map((n, i) => { const h = n / max * (H - 6), xx = i * (bw + gap), sel = b0 + i === 602; return `<path d="M${xx} ${H + 22}V${H + 22 - h + 4}a4 4 0 0 1 4-4h${bw - 8}a4 4 0 0 1 4 4V${H + 22}z" fill="${sel ? '#2C2C2C' : '#B3B3B3'}"/>${sel ? `<text x="${xx + bw / 2}" y="${H + 22 - h - 6}" text-anchor="middle" style="font-weight:600;fill:#1E1E1E">38</text>` : ''}`; }).join('')}
+    ${[596, 599, 602, 605, 608].map((v) => { const i = v - b0; return `<text x="${v === 608 ? W : i * (bw + gap) + bw / 2}" y="${H + 44}" text-anchor="${v === 608 ? 'end' : 'middle'}">${v}</text>`; }).join('')}</svg>`;
+};
+// Historique sur 30 jours : Alipay à l'encre, Cash en gris, un point touché.
+const DAYS = []; for (let i = 0; i < 30; i++) { const d = new Date(2026, 8, 22 + i); DAYS.push(`${d.getDate()} ${['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'][d.getMonth()]}`); }
+const ALI = [10690, 10694, 10688, 10702, 10710, 10706, 10715, 10722, 10718, 10731, 10728, 10740, 10746, 10742, 10752, 10749, 10760, 10755, 10764, 10770, 10766, 10760, 10772, 10768, 10790, 10801, 10795, 10812, 10812, 10838];
+const CSH = [10540, 10542, 10538, 10548, 10555, 10552, 10556, 10562, 10560, 10568, 10566, 10572, 10578, 10575, 10580, 10578, 10585, 10583, 10590, 10594, 10592, 10590, 10600, 10598, 10610, 10625, 10620, 10640, 10640, 10650];
+const bigChart = (touch = 16) => {
+  const W = 353, H = 360, Rr = 62, lo = 10520, hi = 10860, n = ALI.length;
+  const x = (i) => 6 + i * (W - Rr - 6) / (n - 1), y = (v) => 10 + (hi - v) / (hi - lo) * (H - 20);
+  const pl = (s) => s.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const grid = [10550, 10650, 10750, 10850].map((v) => `<line x1="0" x2="${W - Rr + 6}" y1="${y(v)}" y2="${y(v)}" stroke="#D9D9D9" stroke-width="1" stroke-dasharray="2 4"/><text x="${W}" y="${y(v) + 5}" text-anchor="end">${fmt(v)}</text>`).join('');
+  const tx = x(touch);
+  return { svg: `<svg width="${W}" height="${H + 28}" viewBox="0 0 ${W} ${H + 28}">${grid}
+    <line x1="${tx}" x2="${tx}" y1="4" y2="${H}" stroke="#5A5A5A" stroke-width="1"/>
+    <polyline points="${pl(CSH)}" fill="none" stroke="#B3B3B3" stroke-width="2" stroke-linejoin="round"/>
+    <polyline points="${pl(ALI)}" fill="none" stroke="#2C2C2C" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${tx}" cy="${y(ALI[touch])}" r="5" fill="#2C2C2C" stroke="#fff" stroke-width="2"/>
+    <circle cx="${tx}" cy="${y(CSH[touch])}" r="5" fill="#B3B3B3" stroke="#fff" stroke-width="2"/>
+    <text x="${x(0)}" y="${H + 22}">${DAYS[0]}</text><text x="${x(n - 1)}" y="${H + 22}" text-anchor="end">${DAYS[n - 1]}</text></svg>`, tx, ty: y(ALI[touch]) };
+};
+
+/* ---------- l'image de cotation (RateQuoteCard, 1080 × 1080) ---------- */
+const quoteCard = ({ xaf, cny, rate, m = 'alipay', mName = 'Alipay', mCn = '支付宝', dark = true, country = '' }) => {
+  const bg = dark ? '#0D0C14' : '#F2F0F8', card = dark ? '#19172A' : '#FFFFFF', text = dark ? '#F1EEF8' : '#1A1726', muted = '#8B83A0', ym = dark ? '#5C5772' : '#C3BDD2', hair = dark ? 'rgba(255,255,255,0.10)' : 'rgba(26,23,38,0.10)', sh = dark ? '0 0 0 1px rgba(255,255,255,0.06)' : '0 18px 50px -22px rgba(40,28,80,0.28)';
+  const tile = m === 'alipay' ? `<div style="width:108px;height:108px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="70" height="70"><path d="${LOGO.alipay}" fill="#1677FF"/></svg></div>`
+    : `<div style="width:108px;height:108px;border-radius:28px;background:#07C160;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="62" height="62"><path d="${LOGO.wechat}" fill="#fff"/></svg></div>`;
+  const SC = 'font-family:"Noto Sans SC",sans-serif';
+  return `<div style="width:1080px;height:1080px;background:${bg};display:flex;flex-direction:column;padding:56px 64px;font-family:'DM Sans'">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:22px"><img src="bonzini-logo.jpg" width="92" height="92" style="border-radius:24px">
+        <div><div style="font-size:58px;font-weight:700;color:${text};letter-spacing:-1.5px;line-height:1">Bonzini</div><div style="font-size:19px;font-weight:600;color:${muted};letter-spacing:4px;margin-top:5px">PAIEMENTS VERS LA CHINE</div></div></div>
+      <div style="background:${dark ? '#F1EEF8' : '#1A1726'};color:${dark ? '#1A1726' : '#fff'};border-radius:44px;padding:16px 30px;font-size:27px;font-weight:700">Cotation</div></div>
+    <div style="border-top:2px solid ${hair};padding-top:24px;margin-top:30px;display:flex;justify-content:space-between;align-items:baseline">
+      <div style="font-size:33px;font-weight:700;color:${text}">Mercredi 21 octobre 2026</div><div style="${SC};font-size:24px;color:${muted}">报价单</div></div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:26px">
+      <div style="background:${card};border-radius:36px;padding:36px 44px;box-shadow:${sh}"><div style="font-size:27px;font-weight:600;color:${muted}">Vous payez · <span style="${SC}">您支付</span></div>
+        <div style="display:flex;align-items:flex-end;gap:14px;margin-top:8px"><span style="font-size:96px;font-weight:700;color:${text};letter-spacing:-2px;line-height:1">${xaf}</span><span style="font-size:46px;font-weight:700;color:#E8932A;margin-bottom:8px">XAF</span></div></div>
+      <div style="display:flex;align-items:center;gap:22px;padding:0 12px"><div style="width:3px;height:34px;background:${hair};margin-left:51px"></div>${tile}<div><div style="font-size:34px;font-weight:700;color:${text}">${mName}</div><div style="${SC};font-size:23px;color:${muted};margin-top:4px">${mCn}</div></div></div>
+      <div style="background:${card};border-radius:36px;padding:36px 44px;box-shadow:${sh}"><div style="font-size:27px;font-weight:600;color:${muted}">Votre fournisseur reçoit · <span style="${SC}">供应商收到</span></div>
+        <div style="display:flex;align-items:flex-end;gap:16px;margin-top:8px"><span style="font-size:62px;font-weight:700;color:${ym};margin-bottom:10px">¥</span><span style="font-size:128px;font-weight:700;color:${text};letter-spacing:-3px;line-height:1">${cny}</span></div></div>
+    </div>
+    <div style="border-top:2px solid ${hair};padding-top:26px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div style="font-size:22px;color:${muted}">Taux appliqué${country ? ' · ' + country : ''}</div><div style="font-size:34px;font-weight:700;color:${text};margin-top:4px">¥ ${rate} <span style="font-size:22px;font-weight:600;color:${muted}">/ 1 000 000 XAF</span></div></div>
+        <div style="display:flex;align-items:center;gap:16px"><div style="width:56px;height:56px;border-radius:28px;background:#25D366;display:flex;align-items:center;justify-content:center">${waIcon('#fff', 34)}</div><div><div style="font-size:30px;font-weight:700;color:${text}">+237 652 236 856</div><div style="font-size:21px;color:${muted};margin-top:2px">bonzinilabs.com</div></div></div></div>
+      <div style="font-size:19px;color:${muted};opacity:.7;margin-top:18px">Cotation valable aujourd’hui, au taux du jour. · <span style="${SC}">报价当日有效。</span></div></div>
+  </div>`;
+};
+const thumb = (inner, w, h, scale, extra = '') => `<div class="thumb" style="width:${w}px;height:${h}px;${extra}"><div style="transform:scale(${scale})">${inner}</div></div>`;
+
+/* ---------- le flyer du jour (RateFlyer, 1080 × 1350) ---------- */
+const fTile = (k, s = 40) => k === 'alipay' ? `<div style="width:${s}px;height:${s}px;border-radius:${s * .26}px;background:#1677FF;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="${s * .62}" height="${s * .62}"><path d="${LOGO.alipay}" fill="#fff"/></svg></div>`
+  : k === 'wechat' ? `<div style="width:${s}px;height:${s}px;border-radius:${s * .26}px;background:#07C160;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="${s * .62}" height="${s * .62}"><path d="${LOGO.wechat}" fill="#fff"/></svg></div>`
+  : k === 'bank' ? `<div style="width:${s}px;height:${s}px;border-radius:${s * .26}px;background:#ECE8F6;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="${s * .5}" height="${s * .5}"><path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18" fill="none" stroke="#1a1028" stroke-width="1.9" stroke-linecap="round"/></svg></div>`
+  : `<div style="width:${s}px;height:${s}px;border-radius:${s * .26}px;background:#E0322B;display:flex;align-items:center;justify-content:center;font-size:${s * .58}px;font-weight:700;color:#fff">¥</div>`;
+const flyer = ({ lang = 'fr', iso = 'CM', country = 'Cameroun', r }) => {
+  const T = lang === 'fr'
+    ? { title: 'Taux du jour', date: 'Mercredi 21 octobre 2026', time: '17h24', zone: 'heure de Guangzhou (UTC+8)', lead: 'Pour <b style="color:#1a1028;font-weight:700">1 000 000&nbsp;XAF</b>, votre fournisseur reçoit&nbsp;:', g: ['Alipay · WeChat Pay', 'Virement', 'Cash'], s: ['Paiement de 400 000 à 999 999 XAF', 'Paiement de moins de 400 000 XAF'] }
+    : { title: "Today's rate", date: 'Wednesday 21 October 2026', time: '17:24', zone: 'Guangzhou time (UTC+8)', lead: 'For <b style="color:#1a1028;font-weight:700">1,000,000&nbsp;XAF</b>, your supplier receives:', g: ['Alipay · WeChat Pay', 'Bank transfer', 'Cash'], s: ['Payment of 400,000 to 999,999 XAF', 'Payment under 400,000 XAF'] };
+  const nf = (n) => lang === 'fr' ? fmt(n) : n.toLocaleString('en-US');
+  const keysOf = [['alipay', 'wechat'], ['bank'], ['cash']];
+  const row = (gi, v, size, onRed) => `<div style="display:flex;align-items:center;gap:12px">${onRed ? '' : keysOf[gi].map((k) => fTile(k)).join('')}<div style="flex:1;font-size:${onRed ? 26 : 30}px;font-weight:700;margin-left:${onRed ? 0 : 6}px;white-space:nowrap;opacity:${onRed ? .95 : 1}">${T.g[gi]}</div><span style="font-size:${size}px;font-weight:700;letter-spacing:-1.5px;line-height:1">${nf(v)}</span><span style="font-size:${Math.round(size * .45)}px;font-weight:700;align-self:flex-end;margin-bottom:4px">¥</span></div>`;
+  return `<div style="width:1080px;height:1350px;background:#fff;display:flex;flex-direction:column;font-family:'DM Sans';color:#1a1028">
+    <div style="background:#1a1028;padding:40px 64px 38px"><div style="font-size:30px;font-weight:700;letter-spacing:.24em;color:#d6d0e0">BONZINI</div>
+      <div style="font-size:88px;font-weight:700;letter-spacing:-2px;color:#fff;line-height:1;margin-top:16px">${T.title}</div>
+      <div style="font-size:34px;font-weight:700;color:#f3a745;margin-top:14px">${T.date}</div>
+      <div style="display:flex;align-items:baseline;gap:14px;margin-top:8px"><span style="font-size:34px;font-weight:700;color:#fff">${T.time}</span><span style="font-size:26px;font-weight:600;color:#d6d0e0">${T.zone}</span></div></div>
+    <div style="display:flex;align-items:center;gap:26px;padding:36px 64px 0">${flagRect(iso, 116, 87, 14)}<div style="font-size:84px;font-weight:700;letter-spacing:-2px;line-height:1;white-space:nowrap">${country}</div>
+      <svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#6f6680" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg>${flagRect('CN', 116, 87, 14)}</div>
+    <div style="padding:22px 64px 0;font-size:36px;font-weight:600;color:#6f6680">${T.lead}</div>
+    <div style="margin:18px 40px 0;background:#f5f3f8;border-radius:32px;padding:16px 28px;display:flex;flex-direction:column;gap:10px">${[0, 1, 2].map((g) => row(g, r[g][0], 60)).join('')}</div>
+    ${[0, 1].map((b) => `<div style="margin:14px 40px 0;background:#D7261E;border-radius:32px;padding:16px 28px 18px;color:#fff">
+      <div style="display:flex;align-items:center;gap:14px"><div style="width:40px;height:40px;border-radius:20px;background:#fff;color:#D7261E;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700">!</div><div style="font-size:32px;font-weight:700">${T.s[b]}</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">${[0, 1, 2].map((g) => row(g, r[g][b + 1], 44, true)).join('')}</div></div>`).join('')}
+  </div>`;
+};
+const R_CM_NEW = [[10870, 10761, 10653], [10820, 10712, 10604], [10680, 10573, 10466]];
+const R_GA_NEW = [[10707, 10600, 10493], [10658, 10551, 10445], [10520, 10415, 10309]];
+
+/* =================================================================== */
+/* 01 · Taux du jour — l'accueil du module                              */
+/* =================================================================== */
+const home = `<div class="top"><div style="display:flex;align-items:center;gap:6px;margin-left:-10px">${I.back}<div class="hello">Taux du jour</div></div><div class="icbtn">${I.dots}</div></div>
+  <div class="hero"><div class="lab">Alipay · pour 1 000 000 XAF</div><div class="num">¥ 10 838</div>
+    <div class="sub"><span><b>+26</b> sur hier</span><span>Depuis 08:00</span></div></div>
+  <div class="acts">
+    <div class="act"><div class="r ink">${ic.publish('#F5F5F5')}</div>Publier</div>
+    <div class="act"><div class="r">${ic.calc('#1E1E1E')}</div>Simuler</div>
+    <div class="act"><div class="r">${ic.flyer('#1E1E1E')}</div>Flyer</div>
+    <div class="act"><div class="r">${ic.market('#1E1E1E')}</div>Marché</div>
+  </div>
+  <div class="h2"><b>Cameroun</b><a>6 pays</a></div>
+  <div class="list">
+    <div class="row">${pair}<div class="rm" style="margin-left:4px"><div class="rn">Alipay · WeChat</div><div class="rs">Hier 10 812</div></div><div class="ra"><b style="font-size:20px">¥ 10 838</b></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Virement</div><div class="rs">Hier 10 770</div></div><div class="ra"><b style="font-size:20px">¥ 10 790</b></div></div>
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Cash</div><div class="rs">Hier 10 640</div></div><div class="ra"><b style="font-size:20px">¥ 10 650</b></div></div>
+  </div>`;
+add('01 · Taux du jour', `${sbar()}<div class="body">${home}</div>${tabs('more', 'admin')}${end}`);
+
+/* 02 · menu « … » */
+add('02 · Taux · menu « … »', `${sbar()}<div class="body">${home}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    ${mrow(ic.globe('#1E1E1E'), 'Taux par pays', 'Cameroun et 5 pays')}
+    ${mrow(ic.layers('#1E1E1E'), 'Écarts pays et paliers')}
+    ${mrow(ic.hist('#1E1E1E'), 'Historique des taux')}
+    ${mrow(ic.quote('#1E1E1E'), 'Cotation pour un client')}
+    ${mrow(ic.copy('#1E1E1E'), 'Copier les taux en texte', 'Pour WhatsApp')}
+  </div>
+</div>${tabs('more', 'admin')}${end}`);
+
+/* 03 · Publier 1/3 · point de départ */
+add('03 · Publier · point de départ', `${sbar()}<div class="body">
+  ${navb('Nouveaux taux', '<div class="step">1/3</div>')}
+  <div class="lbl">Partir de</div>
+  <div class="choice on" style="display:block">
+    <div style="display:flex;align-items:center;gap:14px">${binance()}<div class="rm"><div class="rn">Suggestion Binance</div><div class="rs">Il y a 12 min</div></div><div class="radio on"></div></div>
+    <div style="font:700 40px/1 'DM Sans';letter-spacing:-.02em;margin-top:14px">¥ 10 870</div>
+    <div class="box" style="margin:14px 0 0">
+      <div class="kv"><span>Cameroun<br><span style="font-size:15px">achat · max + 5 XAF</span></span><b style="white-space:nowrap">602,60 XAF/USDT</b></div>
+      <div class="kv"><span>Chine<br><span style="font-size:15px">vente · moyenne</span></span><b style="white-space:nowrap">6,550 ¥/USDT</b></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><span class="copy" style="margin:0;height:40px">${sz(ic.refresh('#303030'), 16)} Recalculer</span></div>
+  </div>
+  <div class="choice"><div class="av">${sz(ic.hist('#1E1E1E'), 22)}</div><div class="rm"><div class="rn">Taux actuels</div><div class="rs">¥ 10 838 · depuis 08:00</div></div><div class="radio"></div></div>
+  <div class="choice"><div class="av">${sz(ic.pencil('#1E1E1E'), 22)}</div><div class="rm"><div class="rn">Saisir à la main</div></div><div class="radio"></div></div>
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* 04 · Publier 2/3 · saisie au clavier */
+add('04 · Publier · saisie au clavier', `${sbar()}<div class="body">
+  ${navb('Nouveaux taux', '<div class="step">2/3</div>')}
+  <div class="seg"><span class="on">Pour 1 000 000 XAF</span><span>Pour 1 ¥</span></div>
+  <div class="list" style="margin-top:6px">
+    <div class="row" style="padding:8px 0">${meth('alipay')}<div class="rm"><div class="rn">Alipay</div><div class="rs">Actuel 10 838</div></div><div class="inbox">10 870</div></div>
+    <div class="row" style="padding:8px 0">${meth('wechat')}<div class="rm"><div class="rn">WeChat Pay</div><div class="rs">Actuel 10 838</div></div><div class="inbox">10 870</div></div>
+    <div class="row" style="padding:8px 0">${meth('bank')}<div class="rm"><div class="rn">Virement</div><div class="rs">Actuel 10 790</div></div><div class="inbox on">10 82<span class="caret"></span></div></div>
+    <div class="row" style="padding:8px 0">${meth('cash')}<div class="rm"><div class="rn">Cash</div><div class="rs">Actuel 10 650</div></div><div class="inbox" style="color:#757575">10 650</div></div>
+  </div>
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* 05 · Publier 2/3 · sens CNY → XAF */
+add('05 · Publier · sens « pour 1 ¥ »', `${sbar()}<div class="body">
+  ${navb('Nouveaux taux', '<div class="step">2/3</div>')}
+  <div class="seg"><span>Pour 1 000 000 XAF</span><span class="on">Pour 1 ¥</span></div>
+  <div class="list" style="margin-top:6px">
+    <div class="row" style="padding:8px 0">${meth('alipay')}<div class="rm"><div class="rn">Alipay</div><div class="rs">Soit ¥ 10 870</div></div><div class="inbox">92,00</div></div>
+    <div class="row" style="padding:8px 0">${meth('wechat')}<div class="rm"><div class="rn">WeChat Pay</div><div class="rs">Soit ¥ 10 870</div></div><div class="inbox">92,00</div></div>
+    <div class="row" style="padding:8px 0">${meth('bank')}<div class="rm"><div class="rn">Virement</div><div class="rs">Soit ¥ 10 820</div></div><div class="inbox">92,42</div></div>
+    <div class="row" style="padding:8px 0">${meth('cash')}<div class="rm"><div class="rn">Cash</div><div class="rs">Soit ¥ 10 680</div></div><div class="inbox on">93,63<span class="caret"></span></div></div>
+  </div>
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* 06 · Publier 3/3 · prise d'effet + aperçu */
+const effect = `${navb('Nouveaux taux', '<div class="step">3/3</div>')}
+  <div class="lbl">Prise d'effet</div>
+  <div class="choice on"><div class="rm"><div class="rn">Maintenant</div><div class="rs">Aujourd'hui, 10:24</div></div><div class="radio on"></div></div>
+  <div class="choice"><div class="rm"><div class="rn">Aujourd'hui</div><div class="rs">Depuis 00:00</div></div><div class="radio"></div></div>
+  <div class="choice"><div class="rm"><div class="rn">Hier</div><div class="rs">Depuis 00:00</div></div><div class="radio"></div></div>
+  <div class="choice"><div class="rm"><div class="rn">Autre date et heure</div></div>${chev}</div>
+  <div class="lbl" style="padding-top:12px">Aperçu · Cameroun</div>
+  <div class="box" style="margin-top:6px">
+    <div class="kv">Alipay · WeChat<b>10 838 <span class="arrow">→</span> 10 870</b></div>
+    <div class="kv">Virement<b>10 790 <span class="arrow">→</span> 10 820</b></div>
+    <div class="kv">Cash<b>10 650 <span class="arrow">→</span> 10 680</b></div>
+  </div>`;
+add('06 · Publier · prise d\'effet et aperçu', `${sbar()}<div class="body">${effect}
+  <div class="dock"><div class="btn">Publier</div></div>
+</div>${end}`);
+
+/* 07 · Publier · confirmer */
+add('07 · Publier · confirmer', `${sbar()}<div class="body">${effect}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Publier ces taux ?</h3><p>Maintenant, 10:24 · remplace ceux de 08:00</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Alipay · WeChat<b>10 838 <span class="arrow">→</span> 10 870</b></div>
+      <div class="kv">Virement<b>10 790 <span class="arrow">→</span> 10 820</b></div>
+      <div class="kv">Cash<b>10 650 <span class="arrow">→</span> 10 680</b></div>
+      <div class="kv">5 autres pays<b>Suivent leur écart</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Publier</div>
+  </div>
+</div>${end}`);
+
+/* 08 · Taux publiés */
+add('08 · Taux publiés', `${sbar()}<div class="body">
+  <div style="padding-top:150px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Taux publiés</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">Alipay ¥ 10 870 · Cash ¥ 10 680</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:4px">Actifs depuis 10:24 · 6 pays</div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn ibtn">${ic.share('#F5F5F5')}Partager le flyer</div><div class="btn soft" style="margin-top:10px">Retour aux taux</div></div>
+</div>${end}`);
+
+/* 09 · Taux par pays */
+const COUNTRY_ROWS = [['CM', 'Cameroun', 10838, 'Référence'], ['GA', 'Gabon', 10675, 'Écart −1,5 %'], ['TD', 'Tchad', 10675, 'Écart −1,5 %'], ['CF', 'Centrafrique', 10621, 'Écart −2 %'], ['CG', 'Congo', 10730, 'Écart −1 %'], ['GQ', 'Guinée Équatoriale', 10675, 'Écart −1,5 %']];
+add('09 · Taux par pays', `${sbar()}<div class="body">
+  ${navb('Taux par pays')}
+  <div class="chips"><span class="chip on">Alipay</span><span class="chip">WeChat</span><span class="chip">Virement</span><span class="chip">Cash</span></div>
+  <div class="lbl" style="padding-top:18px">Pour 1 000 000 XAF</div>
+  <div class="list">
+    ${COUNTRY_ROWS.map(([iso, n, v, s]) => `<div class="row">${flag(iso)}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b style="font-size:19px">¥ ${fmt(v)}</b></div>${chev}</div>`).join('')}
+  </div>
+</div>${end}`);
+
+/* 10 · Fiche pays · Gabon */
+const gabon = `${navb('Gabon', I.dots)}
+  <div class="fiche" style="padding-top:18px">${flag('GA', 56)}<div class="big" style="font-size:44px">¥ 10 675</div><div class="sub">Alipay · pour 1 000 000 XAF</div><span class="tag t-neu">Écart −1,5 %</span></div>
+  <div class="list" style="margin-top:12px">
+    <div class="row">${pair}<div class="rm" style="margin-left:4px"><div class="rn">Alipay · WeChat</div><div class="rs">Cameroun 10 838</div></div><div class="ra"><b style="font-size:19px">¥ 10 675</b></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Virement</div><div class="rs">Cameroun 10 790</div></div><div class="ra"><b style="font-size:19px">¥ 10 628</b></div></div>
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Cash</div><div class="rs">Cameroun 10 650</div></div><div class="ra"><b style="font-size:19px">¥ 10 490</b></div></div>
+  </div>
+  <div class="box" style="margin-top:8px"><div class="kv">Écart vs Cameroun<b>−1,5 % <span class="pen">Modifier</span></b></div></div>`;
+add('10 · Pays · Gabon', `${sbar()}<div class="body">${gabon}
+  <div class="dock"><div class="btn ibtn">${ic.flyer('#F5F5F5')}Flyer du jour · Gabon</div></div>
+</div>${end}`);
+
+/* 11 · Modifier l'écart d'un pays (feuille) */
+add('11 · Pays · modifier l\'écart', `${sbar()}<div class="body">${gabon}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Écart du Gabon</h3><p>vs Cameroun · enregistré −1,5 %</p>
+    <div class="pgrid"><span>0 %</span><span>−0,5 %</span><span class="on">−1 %</span><span>−1,5 %</span><span>−2 %</span></div>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Alipay · WeChat<b>10 675 <span class="arrow">→</span> 10 730</b></div>
+      <div class="kv">Virement<b>10 628 <span class="arrow">→</span> 10 682</b></div>
+      <div class="kv">Cash<b>10 490 <span class="arrow">→</span> 10 544</b></div>
+    </div>
+    <div class="note" style="margin:12px 0 0">Paiements du Gabon et flyer</div>
+    <div class="btn" style="margin-top:14px">Enregistrer −1 %</div>
+  </div>
+</div>${end}`);
+
+/* 12 · Écarts pays et paliers */
+const layersAv = `<div class="av">${sz(ic.layers('#1E1E1E'), 22)}</div>`;
+const ecarts = `${navb('Écarts pays et paliers')}
+  <div class="lbl">Pays · vs Cameroun</div>
+  <div class="list">
+    ${COUNTRY_ROWS.map(([iso, n, , s]) => `<div class="row" style="padding:10px 0">${flag(iso)}<div class="rm"><div class="rn">${n}</div>${s === 'Référence' ? '<div class="rs">Référence</div>' : ''}</div><div class="ra"><b>${s === 'Référence' ? '0 %' : s.replace('Écart ', '')}</b></div>${chev}</div>`).join('')}
+  </div>
+  <div class="lbl" style="padding-top:16px">Paliers · par montant</div>
+  <div class="list">
+    <div class="row" style="padding:10px 0">${layersAv}<div class="rm"><div class="rn">1 000 000 XAF et plus</div><div class="rs">Référence</div></div><div class="ra"><b>0 %</b></div>${chev}</div>
+    <div class="row" style="padding:10px 0">${layersAv}<div class="rm"><div class="rn">400 000 à 999 999 XAF</div></div><div class="ra"><b>−1 %</b></div>${chev}</div>
+    <div class="row" style="padding:10px 0">${layersAv}<div class="rm"><div class="rn">Moins de 400 000 XAF</div></div><div class="ra"><b>−2 %</b></div>${chev}</div>
+  </div>`;
+add('12 · Écarts pays et paliers', `${sbar()}<div class="body">${ecarts}</div>${end}`);
+
+/* 13 · Modifier un palier (feuille) */
+add('13 · Palier · modifier', `${sbar()}<div class="body">${ecarts}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>400 000 à 999 999 XAF</h3><p>Tous les pays · enregistré −1 %</p>
+    <div class="pgrid"><span>0 %</span><span class="on">−0,5 %</span><span>−1 %</span><span>−1,5 %</span><span>−2 %</span></div>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Alipay · WeChat<b>10 730 <span class="arrow">→</span> 10 784</b></div>
+      <div class="kv">Virement<b>10 682 <span class="arrow">→</span> 10 736</b></div>
+      <div class="kv">Cash<b>10 544 <span class="arrow">→</span> 10 597</b></div>
+    </div>
+    <div class="note" style="margin:12px 0 0">Cameroun · s'affiche en rouge sur le flyer</div>
+    <div class="btn" style="margin-top:14px">Enregistrer −0,5 %</div>
+  </div>
+</div>${end}`);
+
+/* 14 · Marché Binance */
+add('14 · Marché · taux Binance et journée', `${sbar()}<div class="body">
+  ${navb('Marché Binance', '<span class="tag t-ok" style="margin:0 6px 0 0">En direct</span>' + I.dots)}
+  <div class="hero"><div class="lab">Binance · pour 1 000 000 XAF</div><div class="num">¥ 10 870</div>
+    <div class="sub"><span>Notre Alipay <b>10 838</b></span><span>Marge <b>0,29 %</b></span></div></div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="stat"><span>Achat au Cameroun</span><b>602,60</b><em>XAF / USDT</em></div>
+    <div class="stat"><span>Vente en Chine</span><b>6,550</b><em>¥ / USDT</em></div>
+  </div>
+  <div class="chart"><div class="ct">Aujourd'hui<span>10:20</span></div>${dayChart()}
+    <div class="legend"><span><i style="background:#2C2C2C"></i>Binance</span><span><i style="background:#B3B3B3"></i>Notre Alipay</span></div></div>
+  <div class="dock"><div class="btn">Utiliser ¥ 10 870</div></div>
+</div>${end}`);
+
+/* 15 · Marché · carnet Cameroun */
+const carnet = `${navb('Marché Binance', '<span class="tag t-ok" style="margin:0 6px 0 0">En direct</span>' + I.dots)}
+  <div class="seg"><span class="on">Cameroun · XAF</span><span>Chine · ¥</span></div>
+  <div class="chips"><span class="chip on">Filtre Bonzini</span><span class="chip">Tout Binance</span><span class="chip">${sz(ic.filter('#303030'), 18)} Filtres</span></div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="stat"><span>Meilleur prix</span><b>596,80</b><em>le plus bas</em></div>
+    <div class="stat"><span>Médiane</span><b>603,00</b><em>XAF / USDT</em></div>
+    <div class="stat"><span>Le plus fréquent</span><b>602,00</b><em>38 annonces</em></div>
+    <div class="stat"><span>Annonces</span><b>214</b><em>sur 1 284</em></div>
+  </div>
+  <div class="chart"><div class="ct">Prix XAF / USDT<span>Annonces</span></div>${histo()}</div>`;
+add('15 · Marché · carnet du Cameroun', `${sbar()}<div class="body">${carnet}</div>${end}`);
+
+/* 16 · Marché · annonces d'un palier */
+const ad = (n, k, o, f, u, lim) => `<div class="row"><div class="av">${n.slice(0, 2).toUpperCase()}</div><div class="rm"><div class="rn">${n}</div><div class="rs">${o} ordres/mois · ${f}</div></div><div class="ra"><b>${u} USDT</b><span class="tag t-neu">${k}</span></div></div>`;
+add('16 · Marché · annonces à 602 XAF', `${sbar()}<div class="body">${carnet}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Annonces à 602,00 XAF</h3><p>38 annonces · 17,8 % · 41 200 USDT</p>
+    <div style="margin-top:6px">
+      ${ad('KamerUSDT', 'Marchand', '1 240', '99,1 %', '8 400')}
+      ${ad('MboaTrade', 'Pro', '2 115', '99,6 %', '6 950')}
+      ${ad('DoualaCrypto', 'Marchand', '486', '98,4 %', '3 200')}
+      ${ad('YaoundeP2P', 'Marchand', '312', '97,2 %', '1 800')}
+    </div>
+  </div>
+</div>${end}`);
+
+/* 17 · Historique · graphique plein écran */
+const bc = bigChart(16);
+add('17 · Historique · graphique', `${sbar()}<div class="body">
+  ${navb('Historique des taux')}
+  <div class="chips"><span class="chip">7 j</span><span class="chip on">30 j</span><span class="chip">3 mois</span><span class="chip">1 an</span></div>
+  <div style="padding:18px 20px 0"><div style="font:500 16px 'DM Sans';color:#5A5A5A">Alipay · 30 jours</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin-top:4px"><span style="font:700 40px/1.1 'DM Sans';letter-spacing:-.02em">¥ 10 838</span><span style="font:600 17px 'DM Sans';color:#303030">+148 · +1,4 %</span></div></div>
+  <div style="position:relative;padding:14px 20px 0">${bc.svg}
+    <div class="tip" style="left:${20 + bc.tx - 70}px;top:${14 + bc.ty - 98}px"><b>${DAYS[16]}</b><div><span><i style="background:#2C2C2C"></i>Alipay</span>10 760</div><div><span><i style="background:#B3B3B3"></i>Cash</span>10 585</div></div>
+  </div>
+  <div class="lbl" style="padding-top:14px">Comparer avec</div>
+  <div class="chips" style="padding-top:8px"><span class="chip on">Alipay</span><span class="chip">WeChat</span><span class="chip">Virement</span><span class="chip" style="border:2px solid #2C2C2C;background:#fff">Cash</span></div>
+</div>${end}`);
+
+/* 18 · Historique · publications */
+const PUB = [["Aujourd'hui, 08:00", 10838, 10790, 10650, '+10', true], ['20 oct., 08:05', 10812, 10770, 10640, '+20'], ['19 oct., 08:10', 10795, 10752, 10620, '−5'], ['18 oct., 08:02', 10801, 10760, 10625, '+15'], ['17 oct., 08:00', 10790, 10748, 10610, '+12'], ['16 oct., 08:15', 10768, 10726, 10598, '−2'], ['15 oct., 08:04', 10772, 10730, 10600, '+10']];
+const pubs = `${navb('Publications', I.dots)}
+  <div class="lbl">Octobre 2026 · 19 publications</div>
+  <div class="list">
+    ${PUB.map(([d, a, v, c, dc, act]) => `<div class="row"><div class="rm"><div class="rn">${d}</div><div class="rs">Alipay ${fmt(a)} · Cash ${fmt(c)}</div></div><div class="ra">${act ? '<span class="tag t-ok" style="margin:0">Actif</span>' : `<b style="font-weight:600">${dc}</b><span class="rs" style="display:block;margin-top:0">cash</span>`}</div><div style="margin-left:4px">${I.dots}</div></div>`).join('')}
+  </div>`;
+add('18 · Historique · publications', `${sbar()}<div class="body">${pubs}</div>${end}`);
+
+/* 19 · Publication · menu « … » */
+add('19 · Publication · menu « … »', `${sbar()}<div class="body">${pubs}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>20 oct., 08:05</h3><p>Remplacée le 21 oct., 08:00</p>
+    <div class="box" style="margin:14px 0 6px">
+      <div class="kv">Alipay · WeChat<b>10 812</b></div>
+      <div class="kv">Virement<b>10 770</b></div>
+      <div class="kv">Cash<b>10 640</b></div>
+    </div>
+    ${mrow(ic.pen('#1E1E1E'), 'Corriger la publication')}
+    ${mrow(ic.trash('#EC221F'), 'Supprimer la publication', '', 'red')}
+  </div>
+</div>${end}`);
+
+/* 20 · Corriger une publication (feuille) */
+add('20 · Publication · corriger', `${sbar()}<div class="body">${pubs}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Corriger le 20 oct., 08:05</h3>
+    <div style="margin-top:8px">
+      <div class="row" style="padding:8px 0">${meth('alipay')}<div class="rm"><div class="rn">Alipay</div></div><div class="inbox">10 812</div></div>
+      <div class="row" style="padding:8px 0">${meth('wechat')}<div class="rm"><div class="rn">WeChat Pay</div></div><div class="inbox">10 812</div></div>
+      <div class="row" style="padding:8px 0">${meth('bank')}<div class="rm"><div class="rn">Virement</div></div><div class="inbox">10 770</div></div>
+      <div class="row" style="padding:8px 0">${meth('cash')}<div class="rm"><div class="rn">Cash</div><div class="rs">Avant 10 640</div></div><div class="inbox on">10 645<span class="caret"></span></div></div>
+    </div>
+    <div class="box" style="margin:10px 0 0"><div class="kv">Date d'effet<b>20 oct. 2026, 08:05 ${caret}</b></div></div>
+    <div class="btn" style="margin-top:16px">Enregistrer la correction</div>
+  </div>
+</div>${end}`);
+
+/* 21 · Supprimer une publication (feuille rouge) */
+add('21 · Publication · supprimer', `${sbar()}<div class="body">${pubs}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Supprimer la publication active ?</h3><p>Aujourd'hui, 08:00</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Supprimée<b>Alipay 10 838 · Cash 10 650</b></div>
+      <div class="kv">Redevient active<b>20 oct., 08:05</b></div>
+      <div class="kv">Alipay du jour<b>10 838 <span class="arrow">→</span> 10 812</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px;background:#EC221F;color:#fff">Supprimer</div>
+    <div class="btn soft" style="margin-top:10px">Garder</div>
+  </div>
+</div>${end}`);
+
+/* 22 · Simulateur · XAF → ¥ */
+const ctry = (iso, n) => `<span class="chip fl" style="height:40px">${flag(iso, 24)} ${n} ${caret}</span>`;
+add('22 · Simulateur · XAF → ¥', `${sbar()}<div class="body">
+  ${navb('Simulateur', ctry('CM', 'Cameroun'))}
+  <div class="methods sm" style="margin-top:16px">
+    <div class="m on">${meth('alipay')}Alipay</div><div class="m">${meth('wechat')}WeChat</div><div class="m">${meth('bank')}Virement</div><div class="m">${meth('cash')}Cash</div>
+  </div>
+  <div class="amt" style="padding-top:24px">
+    <div class="big">1 500 000</div>
+    <div><span class="cur"><span class="on">XAF</span><span>¥ RMB</span></span></div>
+    <div class="conv">Le fournisseur reçoit <b>¥ 16 257</b></div>
+    <div class="rate">1 000 000 XAF et plus · ¥ 10 838</div>
+  </div>
+  ${keys}
+  <div class="dock"><div class="btn">Voir la cotation</div></div>
+</div>${end}`);
+
+/* 23 · Simulateur · ¥ → XAF + détail du calcul */
+add('23 · Simulateur · ¥ → XAF et détail', `${sbar()}<div class="body">
+  ${navb('Simulateur', ctry('GA', 'Gabon'))}
+  <div class="methods sm" style="margin-top:16px">
+    <div class="m on">${meth('alipay')}Alipay</div><div class="m">${meth('wechat')}WeChat</div><div class="m">${meth('bank')}Virement</div><div class="m">${meth('cash')}Cash</div>
+  </div>
+  <div class="amt" style="padding-top:24px">
+    <div class="big">¥ 50 000</div>
+    <div><span class="cur"><span>XAF</span><span class="on">¥ RMB</span></span></div>
+    <div class="conv">Le client paie <b>4 683 652 XAF</b></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Détail du calcul</h3><p>Alipay · Gabon</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Taux de base<b>10 838</b></div>
+      <div class="kv">Pays · Gabon<b>−1,5 %</b></div>
+      <div class="kv">Palier · 1 000 000 et plus<b>0 %</b></div>
+      <div class="kv">Taux appliqué<b>10 675,43 <span class="pen">Modifier</span></b></div>
+      <div class="kv">Le client paie<b style="display:flex;align-items:center;gap:8px">4 683 652 XAF ${sz(ic.copy('#303030'), 18)}</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Voir la cotation</div>
+  </div>
+</div>${end}`);
+
+/* 24 · Cotation · image (sombre) */
+add('24 · Cotation · image à partager', `${sbar()}<div class="body">
+  ${navb('Cotation', I.dots)}
+  ${thumb(quoteCard({ xaf: '1 500 000', cny: '16 257', rate: '10 838' }), 353, 353, 353 / 1080)}
+  <div class="chips" style="padding-top:16px"><span class="chip on">FR</span><span class="chip">EN</span><span class="chip on" style="margin-left:10px">Sombre</span><span class="chip">Clair</span></div>
+  <div class="box" style="margin-top:14px"><div class="kv">Taux appliqué<b>10 838 <span class="pen">Modifier</span></b></div></div>
+  <div class="dock"><div class="btn ibtn">${ic.share('#F5F5F5')}Partager l'image</div><div class="btn soft ibtn" style="margin-top:10px">${ic.copy('#1E1E1E')}Copier le texte</div></div>
+</div>${end}`);
+
+/* 25 · Flyer du jour */
+const flyerScreen = (inner) => `${navb('Flyer du jour', I.dots)}
+  <div class="recent" style="padding-top:14px;gap:8px">
+    <span class="chip fl on">${flag('CM', 24)} Cameroun</span><span class="chip fl">${flag('GA', 24)} Gabon</span><span class="chip fl">${flag('TD', 24)} Tchad</span><span class="chip fl">${flag('CG', 24)} Congo</span>
+  </div>
+  <div class="chips" style="padding-top:10px"><span class="chip on">Français</span><span class="chip">English</span></div>
+  ${inner}`;
+add('25 · Flyer du jour', `${sbar()}<div class="body">
+  ${flyerScreen(thumb(flyer({ r: R_CM_NEW }), 288, 360, 288 / 1080))}
+  <div class="dock"><div class="btn ibtn">${waIcon()}Partager sur WhatsApp</div>
+    <div class="twin" style="margin-top:10px"><div class="btn soft ibtn" style="font-size:17px">${ic.copy('#1E1E1E')}L'image</div><div class="btn soft ibtn" style="font-size:17px">${ic.copy('#1E1E1E')}La légende</div></div></div>
+</div>${end}`);
+
+/* 26 · Flyer · partage (feuille du téléphone) */
+const app = (bg, inner, l) => `<div><div class="ap" style="background:${bg}">${inner}</div>${l}</div>`;
+add('26 · Flyer · partage WhatsApp', `${sbar()}<div class="body">
+  ${navb('Flyer du jour', I.dots)}
+  <div class="recent" style="padding-top:14px;gap:8px">
+    <span class="chip fl">${flag('CM', 24)} Cameroun</span><span class="chip fl on">${flag('GA', 24)} Gabon</span><span class="chip fl">${flag('TD', 24)} Tchad</span><span class="chip fl">${flag('CG', 24)} Congo</span>
+  </div>
+  <div class="chips" style="padding-top:10px"><span class="chip">Français</span><span class="chip on">English</span></div>
+  ${thumb(flyer({ lang: 'en', iso: 'GA', country: 'Gabon', r: R_GA_NEW }), 288, 360, 288 / 1080)}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #D9D9D9">
+      ${thumb(flyer({ lang: 'en', iso: 'GA', country: 'Gabon', r: R_GA_NEW }), 44, 55, 44 / 1080, 'margin:0;flex:none')}
+      <div class="rm"><div class="rn" style="font-size:16px">todays_rate_gabon_2026-10-21.png</div><div class="rs">Image · 1080 × 1350</div></div></div>
+    <div class="apps">
+      ${app('#25D366', `<svg viewBox="0 0 24 24"><path d="${WA}" fill="#fff"/></svg>`, 'WhatsApp')}
+      ${app('#07C160', `<svg viewBox="0 0 24 24"><path d="${LOGO.wechat}" fill="#fff"/></svg>`, 'WeChat')}
+      ${app('#2AABEE', '<svg viewBox="0 0 24 24"><path d="M3.5 11.4 19.6 5c.8-.3 1.5.2 1.2 1.4l-2.7 12.8c-.2.9-.8 1.2-1.6.7l-4.2-3.1-2 2c-.2.2-.4.4-.9.4l.3-4.3 7.8-7c.3-.3 0-.5-.5-.2l-9.6 6-4.1-1.3c-.9-.3-.9-.9.2-1.3z" fill="#fff"/></svg>', 'Telegram')}
+      ${app('#34C759', '<svg viewBox="0 0 24 24"><path d="M12 4C7 4 3 7.3 3 11.4c0 2.3 1.3 4.4 3.3 5.8L5.6 20l3.3-1.9c1 .3 2 .4 3.1.4 5 0 9-3.3 9-7.4S17 4 12 4z" fill="#fff"/></svg>', 'Messages')}
+    </div>
+    ${mrow(ic.copy('#1E1E1E'), 'Copier')}
+    ${mrow(ic.down('#1E1E1E'), "Enregistrer l'image")}
+  </div>
+</div>${end}`);
+
+/* 27 · Cotation client · 1/3 choisir le client */
+const cli = (ini, n, iso, ctryN, ph) => `<div class="row"><div class="av">${ini}</div><div class="rm"><div class="rn">${n}</div><div class="rs">${ctryN} · ${ph}</div></div>${flag(iso, 28)}</div>`;
+add('27 · Cotation client · choisir', `${sbar()}<div class="body">
+  ${navb('Cotation pour un client', '<div class="step">1/3</div>')}
+  <div class="search">${I.search} Nom ou téléphone</div>
+  <div class="lbl">Récents</div>
+  <div class="recent"><div class="rc"><div class="av">AD</div>Aïcha</div><div class="rc"><div class="av">FN</div>Fatou</div><div class="rc"><div class="av">IT</div>Ibrahim</div><div class="rc"><div class="av">SN</div>Samuel</div><div class="rc"><div class="av">AB</div>Aminatou</div></div>
+  <div class="lbl">Tous les clients</div>
+  <div class="list">
+    ${cli('AD', 'Aïcha Diallo', 'GA', 'Gabon', '+241 06 12 34 56')}
+    ${cli('AB', 'Aminatou Bello', 'CG', 'Congo', '+242 06 845 21 07')}
+    ${cli('FN', 'Fatou Ndiaye', 'CM', 'Cameroun', '+237 690 55 66 77')}
+    ${cli('IT', 'Ibrahim Touré', 'TD', 'Tchad', '+235 66 21 43 08')}
+  </div>
+</div>${end}`);
+
+/* 28 · Cotation client · 2/3 montant */
+add('28 · Cotation client · montant', `${sbar()}<div class="body">
+  ${navb('Cotation pour un client', '<div class="step">2/3</div>')}
+  <div class="who" style="margin-top:12px;padding:10px 14px"><div class="av">AD</div><div style="flex:1"><b>Aïcha Diallo</b><span>Gabon · écart −1,5 %</span></div>${flag('GA', 28)}</div>
+  <div class="methods sm" style="margin-top:12px">
+    <div class="m">${meth('alipay')}Alipay</div><div class="m on">${meth('wechat')}WeChat</div><div class="m">${meth('bank')}Virement</div><div class="m">${meth('cash')}Cash</div>
+  </div>
+  <div class="amt" style="padding-top:18px">
+    <div class="big" style="font-size:50px">3 000 000</div>
+    <div><span class="cur" style="margin-top:12px"><span class="on">XAF</span><span>¥ RMB</span></span></div>
+    <div class="conv" style="margin-top:12px">Le fournisseur reçoit <b>¥ 32 026</b></div>
+  </div>
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* 29 · Cotation client · 3/3 image (clair) */
+add('29 · Cotation client · envoyer', `${sbar()}<div class="body">
+  ${navb('Cotation pour un client', '<div class="step">3/3</div>')}
+  ${thumb(quoteCard({ xaf: '3 000 000', cny: '32 026', rate: '10 675', m: 'wechat', mName: 'WeChat Pay', mCn: '微信支付', dark: false, country: 'Gabon' }), 353, 353, 353 / 1080)}
+  <div class="chips" style="padding-top:16px"><span class="chip on">FR</span><span class="chip">EN</span><span class="chip" style="margin-left:10px">Sombre</span><span class="chip on">Clair</span></div>
+  <div class="box" style="margin-top:14px"><div class="kv">Aïcha Diallo<b>+241 06 12 34 56</b></div></div>
+  <div class="dock"><div class="btn ibtn">${waIcon()}Envoyer à Aïcha</div><div class="btn soft ibtn" style="margin-top:10px">${ic.copy('#1E1E1E')}Copier le texte</div></div>
+</div>${end}`);
+
+render();
+</script></body></html>

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit.css">
+<style>
+.hdr-btns { display: flex; gap: 10px }
+.mola { width: 44px; height: 44px; border-radius: 22px; background: linear-gradient(150deg, #8f55ff, #f0530f); display: grid; place-items: center; color: #fff; font: 800 17px "DM Sans"; box-shadow: 0 6px 14px -6px rgba(122,60,240,.6) }
+.srch .scanbtn { margin-left: auto; width: 34px; height: 34px; border-radius: 10px; background: var(--violet-soft, #efe8fe); color: var(--violet); display: grid; place-items: center }
+.queue2 .row .ra b { font-size: 15.5px }
+.me { display: flex; align-items: center; gap: 14px; padding: 16px }
+.me .big { width: 56px; height: 56px; border-radius: 28px; background: linear-gradient(150deg, #8f55ff, #6526de); color: #fff; display: grid; place-items: center; font: 700 20px "DM Sans" }
+.me b { font: 700 19px "DM Sans"; display: block; letter-spacing: -.01em }
+.me span { font: 500 14px "DM Sans"; color: var(--t2) }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px }
+.mod { background: #fff; border-radius: 18px; padding: 14px 12px 12px; height: 98px; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.mod .gi { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: #fff }
+.mod .gi svg { width: 21px; height: 21px }
+.mod b { font: 650 13.5px/1.2 "DM Sans"; letter-spacing: -.005em }
+.mod .bd { position: absolute; top: 10px; right: 10px; background: var(--orange); color: #fff; font: 700 11.5px/19px "DM Sans"; min-width: 19px; height: 19px; border-radius: 10px; text-align: center; padding: 0 5px }
+.set { display: flex; align-items: center; gap: 12px; padding: 14px 16px; position: relative; font: 500 16px "DM Sans" }
+.set + .set::before { content: ""; position: absolute; top: 0; left: 60px; right: 0; height: .5px; background: var(--sep) }
+.set .si { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none }
+.set .si svg { width: 18px; height: 18px }
+.set .v { margin-left: auto; color: var(--t3); font: 500 15px "DM Sans"; display: flex; align-items: center; gap: 4px }
+.sw { width: 51px; height: 31px; border-radius: 16px; background: #34c759; position: relative; margin-left: auto; flex: none }
+.sw::after { content: ""; position: absolute; right: 2px; top: 2px; width: 27px; height: 27px; border-radius: 14px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2) }
+.sw.off { background: #e3e0ea } .sw.off::after { right: auto; left: 2px }
+.lbl2 { font: 600 13px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .06em; padding: 22px 32px 8px }
+.logout { margin: 22px 16px 0; height: 52px; border-radius: 16px; background: #fff; color: #d93a2f; font: 600 16.5px "DM Sans"; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.ver { text-align: center; font: 500 13px "DM Sans"; color: var(--t3); margin-top: 12px }
+/* scanner */
+.cam { position: absolute; inset: 0; background: radial-gradient(120% 80% at 50% 40%, #3a3440 0%, #121016 70%) }
+.cam .doc { position: absolute; left: 70px; top: 230px; width: 250px; height: 300px; border-radius: 18px; background: linear-gradient(160deg, #f6f4ef, #dcd8cf); transform: rotate(-4deg); box-shadow: 0 30px 50px rgba(0,0,0,.5) }
+.cam .doc .q { position: absolute; left: 48px; top: 42px; width: 154px; padding: 8px; background: #fff; border-radius: 8px }
+.cam .doc .t1 { position: absolute; left: 24px; bottom: 28px; font: 800 20px "DM Sans"; color: #17111f }
+.cam .doc .t2 { position: absolute; left: 24px; bottom: 12px; font: 600 12px "DM Sans"; color: #6f6981 }
+.frame { position: absolute; left: 96px; top: 246px; width: 200px; height: 200px; z-index: 2 }
+.frame i { position: absolute; width: 44px; height: 44px; border: 5px solid #fff; }
+.frame i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; border-radius: 16px 0 0 0 }
+.frame i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; border-radius: 0 16px 0 0 }
+.frame i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 16px }
+.frame i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; border-radius: 0 0 16px 0 }
+.camtop { position: absolute; top: 54px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 8px 20px; z-index: 3 }
+.cbtn { width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,.18); backdrop-filter: blur(10px); display: grid; place-items: center; color: #fff }
+.camhint { position: absolute; top: 120px; left: 0; right: 0; text-align: center; color: #fff; font: 600 17px "DM Sans" }
+.camhint small { display: block; font: 500 14px "DM Sans"; opacity: .7; margin-top: 4px }
+.sheet2 { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 28px 28px 0 0; padding: 10px 20px 46px; z-index: 4 }
+.sheet2 .grab { width: 40px; height: 5px; border-radius: 3px; background: #dcd8e3; margin: 0 auto 14px }
+.found { display: flex; gap: 12px; align-items: center }
+.found .av { width: 48px; height: 48px; border-radius: 24px; background: #fdf0dc; color: #a2580a; font: 700 17px "DM Sans"; display: grid; place-items: center }
+.found b { font: 700 18px "DM Sans"; display: block }
+.found span { font: 500 14px "DM Sans"; color: var(--t2) }
+.qa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px }
+.qa div { background: #f4f2f7; border-radius: 16px; height: 74px; display: grid; place-items: center; align-content: center; gap: 6px; font: 600 13.5px "DM Sans" }
+.qa i { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-style: normal }
+.openbtn { margin-top: 14px; height: 54px; border-radius: 16px; background: var(--ink); color: #fff; font: 700 17px "DM Sans"; display: grid; place-items: center }
+/* plan des rôles */
+.ab.plan { width: 1240px; height: auto; border-radius: 34px; box-shadow: 0 30px 60px -20px rgba(23,17,31,.25); background: #fff; padding: 40px 44px 44px }
+.plan h3 { font: 800 30px "DM Sans"; letter-spacing: -.02em }
+.plan .pl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; margin-top: 26px }
+.role { border-radius: 22px; background: #f4f2f7; padding: 16px 16px 0; overflow: hidden }
+.role .rh { display: flex; align-items: baseline; gap: 10px; padding: 0 4px 12px }
+.role .rh b { font: 700 18px "DM Sans" }
+.role .rh span { font: 500 14px "DM Sans"; color: var(--t2) }
+.role .tabs { border-radius: 18px 18px 0 0; padding-bottom: 14px; border: .5px solid #e3e0ea; border-bottom: 0 }
+.role .home2 { font: 500 13px "DM Sans"; color: var(--t2); padding: 0 4px 12px }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit.js"></script>
+<script>
+const gi = (bg, svg) => `<div class="gi" style="background:${bg}">${svg}</div>`;
+const S = {
+  tre: ic.tre.replace('viewBox', 'width="21" height="21" viewBox'),
+  rate: '<svg viewBox="0 0 24 24"><path d="M4 16 9 11l4 4 7-8M15 7h5v5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  chart: ic.chart, chat: '<svg viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/></svg>',
+  customs: '<svg viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V6z" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  bank: '<svg viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  team: ic.cli, log: '<svg viewBox="0 0 24 24"><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.1"/></svg>',
+  proof: '<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>',
+  news: '<svg viewBox="0 0 24 24"><path d="M4 5h12v14H6a2 2 0 0 1-2-2zM16 9h4v8a2 2 0 0 1-2 2h-2M7.5 9h5M7.5 13h5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  gear: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>',
+  lock: '<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.1"/></svg>',
+  bellw: '<svg viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/></svg>',
+  key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="14" r="4" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="m11 11 8-8M16 6l2.5 2.5M14 8l2 2" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>',
+  upd: '<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.1"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+};
+const set = (bg, svg, label, right) => `<div class="set"><div class="si" style="background:${bg}">${svg}</div>${label}${right}</div>`;
+const val = (t) => `<span class="v">${t}${ic.chev}</span>`;
+
+// 1. Accueil
+add('Accueil', 'Recherche + scanner, Mola en un tap', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Mardi 21 octobre</div><h1>Bonjour Nelson</h1></div><div class="hdr-btns"><div class="mola">M</div><div class="round">${ic.bell}<span class="b"></span></div></div></div>
+  <div class="srch">${ic.search}Client, téléphone ou référence<div class="scanbtn">${ic.scanSm}</div></div>
+  <div class="tiles"><div class="tile dep"><div class="i">${ic.down}</div><b>Enregistrer<br>un dépôt</b></div><div class="tile pay"><div class="i">${ic.up}</div><b>Nouveau<br>paiement</b></div></div>
+  <div class="sh"><h2>À payer <span class="cnt">4</span></h2><a>Tout voir</a></div>
+  <div class="card">
+    ${row('ali', 'Établissements Fotso &amp; Fils', 'Yiwu Jinsheng Textile Co.', '¥41 011', 'il y a 2 h', '#f0530f')}
+    ${row('ali', 'Awa Ngono Mballa', 'Guangzhou Hengtai Trading', '¥7 493', '12 min', '#f0530f')}
+    ${row('wx', 'Jean-Pierre Kamdem Tchoua', 'Chen Xiaoli', '¥999', '25 min', '#f0530f')}
+  </div>
+  <div class="sh"><h2>Cargo <span class="cnt" style="background:#d93a2f">2</span></h2><a>Ouvrir</a></div>
+  <div class="card">
+    <div class="row"><div class="mk" style="background:#d93a2f;font:800 13px 'DM Sans'">2 j</div><div class="rm"><div class="rn">MSCU 4417092 en retard</div><div class="rs">Arrivée prévue 19/10 · Kribi</div></div>${ic.chev}</div>
+  </div>
+</div>${tabs('home', { ops: 4, cargo: 2 })}<div class="home-ind"></div>`);
+
+// 2. Plus
+add('Plus', 'Moi en haut, tous les modules en grille', `${sbar()}<div class="scroll">
+  <div class="lt" style="padding-bottom:10px"><div><h1>Plus</h1></div></div>
+  <div class="card"><div class="me"><div class="big">NB</div><div style="flex:1"><b>Nelson Bonzini</b><span>Super admin · Face ID activé</span></div>${ic.chev}</div></div>
+  <div class="lbl2">Modules</div>
+  <div class="grid">
+    <div class="mod">${gi('#1c9a57', S.tre)}<b>Trésorerie</b></div>
+    <div class="mod">${gi('#e38a0b', S.rate)}<b>Taux du jour</b></div>
+    <div class="mod">${gi('#7a3cf0', S.chart)}<b>Analyses</b></div>
+    <div class="mod">${gi('#1677ff', S.chat)}<b>Messages clients</b><span class="bd">3</span></div>
+    <div class="mod">${gi('#3f4b5e', S.customs)}<b>Douane</b><span class="bd">1</span></div>
+    <div class="mod">${gi('linear-gradient(150deg,#8f55ff,#f0530f)', '<span style="font:800 17px DM Sans">M</span>')}<b>Mola</b></div>
+    <div class="mod">${gi('#0e8a8a', S.bank)}<b>Coordonnées de paiement</b></div>
+    <div class="mod">${gi('#f0530f', S.team)}<b>Équipe &amp; ventes</b><span class="bd">2</span></div>
+    <div class="mod">${gi('#5b5670', S.log)}<b>Journal</b></div>
+    <div class="mod">${gi('#a2580a', S.proof)}<b>Justificatifs</b></div>
+    <div class="mod">${gi('#c2261d', S.news)}<b>Veille</b></div>
+    <div class="mod">${gi('#8f8aa1', S.gear)}<b>Réglages</b></div>
+  </div>
+</div>${tabs('more', { ops: 4, cargo: 2 })}<div class="home-ind"></div>`);
+
+// 3. Moi
+add('Moi', 'Téléphone, notifications, compte', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Plus</div><div class="t">Moi</div></div>
+  <div class="card" style="margin-top:6px"><div class="me"><div class="big">NB</div><div><b>Nelson Bonzini</b><span>nelson@bonzini.com · Super admin</span></div></div></div>
+  <div class="lbl2">Sur ce téléphone</div>
+  <div class="card">
+    ${set('#3f4b5e', S.lock, 'Face ID', '<span class="sw"></span>')}
+    ${set('#f0530f', S.bellw, 'Notifications', val('Activées'))}
+  </div>
+  <div class="lbl2">Ce que je reçois</div>
+  <div class="card">
+    ${set('#e38a0b', ic.down.replace('width="22" height="22"', 'width="18" height="18"'), 'Dépôts', '<span class="sw"></span>')}
+    ${set('#7a3cf0', ic.up.replace('width="22" height="22"', 'width="18" height="18"'), 'Paiements', '<span class="sw"></span>')}
+    ${set('#1677ff', S.chat, 'Messages clients', '<span class="sw"></span>')}
+    ${set('#3f4b5e', ic.cargo.replace('viewBox', 'width="18" height="18" viewBox'), 'Cargo et arrivées', '<span class="sw off"></span>')}
+  </div>
+  <div class="lbl2">Compte</div>
+  <div class="card">
+    ${set('#8f8aa1', S.key, 'Mot de passe et clés d\'accès', val(''))}
+    ${set('#0e8a8a', S.globe, 'Langue', val('Français'))}
+    ${set('#1c9a57', S.upd, 'Mise à jour', val('À jour · 1.0.4'))}
+  </div>
+  <div class="logout">Se déconnecter</div>
+</div>${tabs('more', { ops: 4, cargo: 2 })}<div class="home-ind"></div>`);
+
+// 4. Scanner
+add('Scanner', 'Un code lu, la bonne action proposée', `<div class="cam"><div class="doc"><div class="q">${qr(11, 21)}</div><div class="t1">BZ-4821</div><div class="t2">Carte client Bonzini</div></div></div>
+  <div class="frame"><i></i><i></i><i></i><i></i></div>
+  <div style="position:relative;z-index:3;color:#fff">${sbar().replace(/#111/g, '#fff')}</div>
+  <div class="camtop"><div class="cbtn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class="cbtn"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 2h6l-1 7h4l-8 13 1-9H7z" fill="#fff"/></svg></div></div>
+  <div class="camhint">Carte client, QR cash, colis ou conteneur</div>
+  <div class="sheet2"><div class="grab"></div>
+    <div class="found"><div class="av">AN</div><div style="flex:1"><b>Awa Ngono Mballa</b><span>BZ-4821 · solde 2 450 000 XAF</span></div></div>
+    <div class="qa"><div><i style="background:#e38a0b">${ic.down.replace('width="22" height="22"', 'width="17" height="17"')}</i>Dépôt</div><div><i style="background:#7a3cf0">${ic.up.replace('width="22" height="22"', 'width="17" height="17"')}</i>Paiement</div><div><i style="background:#3f4b5e">${ic.box.replace('viewBox', 'width="17" height="17" style="color:#fff" viewBox')}</i>Colis</div></div>
+    <div class="openbtn">Ouvrir la fiche</div>
+  </div><div class="home-ind" style="z-index:9"></div>`, 'dark');
+
+// 5. Plan des rôles
+const role = (name, who, set_, on, b, home) => `<div class="role"><div class="rh"><b>${name}</b><span>${who}</span></div>${tabs(on, b, set_)}</div>`;
+add('Une app, sept espaces', 'La barre du bas selon le rôle', `<h3>Une connexion, l'espace de chacun</h3>
+  <div class="pl-grid">
+    ${role('Direction et opérations', 'super admin · ops · support · success', 'admin', 'home', { ops: 4, cargo: 2 })}
+    ${role('Trésorerie', 'trésorier', 'treasurer', 'tre', {})}
+    ${role('Réception Guangzhou', 'réceptionnistes', 'reception', 'today', { today: 6 })}
+    ${role('Entrepôt Douala', 'agents d\'entrepôt', 'warehouse', 'today', { pointer: 3, hand: 5 })}
+    ${role('Commerciaux', 'commerciaux', 'commercial', 'chart', {})}
+    ${role('Agent cash', 'remise des espèces', 'cash', 'ops', { ops: 2 })}
+    ${role('Douane', 'commissionnaire agréé', 'customs', 'sign', { sign: 1 })}
+  </div>`, 'plan');
+render();
+</script>
+</body></html>

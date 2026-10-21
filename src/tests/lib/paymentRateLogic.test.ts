@@ -24,6 +24,12 @@ const ratesData = {
   adjustments: [],
 };
 
+// Taux publié de 11 670 ¥ pour 1 M XAF (Alipay), sans ajustement.
+const rates11670 = {
+  activeRate: { ...baseRate, rate_alipay: 11_670 },
+  adjustments: [],
+};
+
 describe('clientCountryToRateKey', () => {
   it('maps known countries to lowercase keys', () => {
     expect(clientCountryToRateKey('Cameroun')).toBe('cameroun');
@@ -54,7 +60,7 @@ describe('toRateKey', () => {
 });
 
 describe('computePaymentValues', () => {
-  it('returns the fallback rate when no rates data is provided', () => {
+  it('no published rate → no rate, no conversion (never a silent fallback rate)', () => {
     const result = computePaymentValues({
       inputAmount: '1000000',
       currency: 'XAF',
@@ -63,8 +69,36 @@ describe('computePaymentValues', () => {
       clientRatesData: undefined,
       clientCountryKey: 'cameroun',
     });
-    expect(result.rate).toBeCloseTo(0.01167, 5);
+    expect(result.rateAvailable).toBe(false);
+    expect(result.rate).toBe(0);
     expect(result.amountXAF).toBe(1_000_000);
+    expect(result.amountRMB).toBe(0);
+  });
+
+  it('a published rate of 0 for the method is not a rate either', () => {
+    const result = computePaymentValues({
+      inputAmount: '11670',
+      currency: 'RMB',
+      selectedMethod: 'alipay',
+      walletBalanceXaf: 5_000_000,
+      clientRatesData: { activeRate: { ...baseRate, rate_alipay: 0 }, adjustments: [] },
+      clientCountryKey: 'cameroun',
+    });
+    expect(result.rateAvailable).toBe(false);
+    expect(result.amountXAF).toBe(0);
+  });
+
+  it('with a published rate: converts and flags the rate as available', () => {
+    const result = computePaymentValues({
+      inputAmount: '1000000',
+      currency: 'XAF',
+      selectedMethod: 'alipay',
+      walletBalanceXaf: 5_000_000,
+      clientRatesData: rates11670,
+      clientCountryKey: 'cameroun',
+    });
+    expect(result.rateAvailable).toBe(true);
+    expect(result.rate).toBeCloseTo(0.01167, 5);
     expect(result.amountRMB).toBeCloseTo(11_670, 0);
   });
 
@@ -151,7 +185,7 @@ describe('computePaymentValues', () => {
       currency: 'XAF',
       selectedMethod: 'alipay',
       walletBalanceXaf: 0,
-      clientRatesData: undefined,
+      clientRatesData: rates11670,
       clientCountryKey: 'cameroun',
     });
     // Empty input → amountXAF = 0, but rate stays usable.
@@ -165,7 +199,7 @@ describe('computePaymentValues', () => {
       currency: 'RMB',
       selectedMethod: 'alipay',
       walletBalanceXaf: 10_000_000,
-      clientRatesData: undefined,
+      clientRatesData: rates11670,
       clientCountryKey: 'cameroun',
     });
     // 11670 / 0.01167 ≈ 1_000_000

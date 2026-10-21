@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { AirPackage } from '@/lib/airPackage';
 import type { WarehouseArrivalDetail, WarehouseParcel } from '@/lib/warehouse';
 
@@ -96,19 +97,22 @@ function Probe() {
   return <p data-testid="probe">{loc.pathname} | {st?.packageScan?.text ?? ''}</p>;
 }
 
+// Refonte v2 : la photo d'un colis au pointage (useParcelPhotoUrl) passe par un client de requêtes.
+const withQuery = (ui: React.ReactElement) => <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>;
+
 function renderAt(url: string, checkinElement: React.ReactElement = <WarehouseCheckin />) {
-  return render(
+  return render(withQuery(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/w/arrivees" element={<WarehouseArrivals />} />
         <Route path="/w/arrivees/:kind/:id" element={checkinElement} />
       </Routes>
     </MemoryRouter>,
-  );
+  ));
 }
 
 const scan = (text: string) => {
-  const input = screen.getByRole('textbox', { name: /Scannez/ });
+  const input = screen.getByRole('textbox', { name: /Scanner/ });
   fireEvent.change(input, { target: { value: text } });
   fireEvent.keyDown(input, { key: 'Enter' });
 };
@@ -130,6 +134,8 @@ describe('L’arrivée avion : les paquets d’abord', () => {
     expect(screen.getByText('Colis hors paquet')).toBeInTheDocument();
     expect(screen.getByText('RC-000126-01')).toBeInTheDocument();
     expect(screen.queryByText('RC-000123-02')).toBeNull();
+    // Refonte v2 (04/15) : « Tout pointer » est dans « … ».
+    fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
     expect(screen.getByRole('button', { name: /Tout pointer hors paquet \(1\)/ })).toBeInTheDocument();
   });
 
@@ -162,8 +168,9 @@ describe('L’arrivée avion : les paquets d’abord', () => {
 describe('Un paquet ouvert : ses colis, et eux seuls', () => {
   it('« Tout pointer ce paquet » ne pointe que ses colis restants', () => {
     renderAt('/w/arrivees/air/a1?paquet=PQ-000001');
-    expect(screen.getAllByText('PQ-000001').length).toBeGreaterThan(1); // le titre, et la pastille de chaque colis
+    expect(screen.getByRole('heading', { name: 'PQ-000001' })).toBeInTheDocument(); // l'écran du paquet
     expect(screen.queryByText('RC-000126-01')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
     fireEvent.click(screen.getByRole('button', { name: /Tout pointer ce paquet \(1\)/ }));
     fireEvent.click(screen.getByRole('button', { name: /Oui, tout pointer/ }));
     expect(m.checkinMany).toHaveBeenCalledWith({ parcelIds: ['p1b'], location: undefined }, expect.anything());
@@ -171,10 +178,11 @@ describe('Un paquet ouvert : ses colis, et eux seuls', () => {
 
   it('un paquet jamais reçu se signale, et s’ouvre quand même s’il est là', () => {
     renderAt('/w/arrivees/air/a1?paquet=PQ-000003');
-    expect(screen.getByText('Ce paquet n\'a pas été reçu')).toBeInTheDocument();
+    expect(screen.getByText(/^Pas reçu/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Ouvrir le paquet/ }));
     expect(m.open).toHaveBeenCalledWith('k3', expect.anything());
-    fireEvent.click(screen.getByRole('button', { name: /déclarer ses 1 colis manquants/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
+    fireEvent.click(screen.getByRole('button', { name: /déclarer ses 1 colis manquants/i }));
     fireEvent.click(screen.getByRole('button', { name: /Oui, manquants/ }));
     expect(m.flagMany).toHaveBeenCalledWith({ parcelIds: ['p3a'], note: 'Paquet PQ-000003 non reçu à Douala' }, expect.anything());
   });
@@ -189,11 +197,11 @@ describe('Le lien du scanner : /w/arrivees?paquet=PQ-…', () => {
   });
 
   it('le résultat apparaît sur l’écran de pointage', () => {
-    render(
+    render(withQuery(
       <MemoryRouter initialEntries={[{ pathname: '/w/arrivees/air/a1', state: { packageScan: { outcome: 'ok', text: 'PQ-000003 reçu · 3 / 3 paquets reçus' } } }]}>
         <Routes><Route path="/w/arrivees/:kind/:id" element={<WarehouseCheckin />} /></Routes>
       </MemoryRouter>,
-    );
+    ));
     expect(screen.getByText('PQ-000003 reçu · 3 / 3 paquets reçus')).toBeInTheDocument();
   });
 

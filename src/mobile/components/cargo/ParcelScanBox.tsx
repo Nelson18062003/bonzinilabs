@@ -63,7 +63,7 @@ export interface ScanBoxTexts {
 }
 
 const DEFAULT_TEXTS: ScanBoxTexts = {
-  hint: 'Douchette Bluetooth ou caméra : chaque carton lu répond par un bip. Aigu = pointé, grave = inconnu.',
+  hint: '',
   openCamera: 'Ouvrir la caméra',
   closeCamera: 'Fermer la caméra',
   cameraStarting: 'Caméra…',
@@ -149,7 +149,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
             inputMode="text"
             placeholder={placeholder}
             aria-label={placeholder}
-            className={cn('h-12 w-full rounded-lg border pl-12 pr-3 text-[16px] tabular-nums outline-none focus:border-[#2C2C2C] dark:focus:border-[#E3E3E3]', SURFACE.card, SURFACE.divider, TEXT.strong)}
+            className={cn('h-[52px] w-full rounded-lg border pl-12 pr-3 text-[17px] tabular-nums outline-none placeholder:text-[#757575] focus:border-[#2C2C2C] dark:focus:border-[#E3E3E3]', SURFACE.card, SURFACE.field, TEXT.strong)}
           />
         </div>
         {counter && <span className={cn('shrink-0 tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{counter}</span>}
@@ -158,7 +158,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
           onClick={() => setCamera((c) => !c)}
           aria-pressed={camera}
           aria-label={camera ? tx.closeCamera : tx.openCamera}
-          className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border', camera ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : cn(SURFACE.card, SURFACE.divider, TEXT.strong))}
+          className={cn('flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-lg border', camera ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : cn(SURFACE.card, SURFACE.divider, TEXT.strong))}
         >
           {camera ? <CameraOff className="h-5 w-5" /> : <Camera className="h-5 w-5" />}
         </button>
@@ -176,7 +176,7 @@ export function ParcelScanBox({ onScan, placeholder = 'Scannez un carton', count
         <p className={cn('rounded-lg px-4 py-2.5', TYPE.bodyStrong, OUTCOME_STYLE[last.outcome])} role="status" aria-live="polite">{last.text}</p>
       )}
 
-      {!last && <p className={cn(TYPE.small, TEXT.muted)}>{tx.hint}</p>}
+      {!last && tx.hint && <p className={cn('text-[15px]', TEXT.muted)}>{tx.hint}</p>}
     </div>
   );
 }

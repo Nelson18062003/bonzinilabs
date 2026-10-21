@@ -123,7 +123,7 @@ describe('les moyens de dépôt proposés', () => {
 describe('les étapes de paiement montrées dans l’app', () => {
   const files = [
     'src/i18n/locales/fr/deposits.json', 'src/i18n/locales/en/deposits.json', 'src/i18n/locales/zh/deposits.json',
-    'src/mobile/screens/deposits/new-deposit/MobileNewDepositV2.tsx', 'src/desktop/screens/deposits/DesktopNewDeposit.tsx',
+    'src/mobile/screens/deposits/new-deposit/MobileNewDepositV2.tsx', 'src/mobile/screens/deposits/NewDepositScreen.tsx', 'src/desktop/screens/deposits/DesktopNewDeposit.tsx',
     'src/components/deposit/DepositInstructions.tsx', 'src/pages/NewDepositPage.tsx',
   ];
   it('disent la même chose que la fiche officielle : pas de menu inventé, pas de plafond, pas de « transfert d’argent »', async () => {

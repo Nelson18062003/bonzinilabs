@@ -54,9 +54,11 @@ vi.mock('@/hooks/useReception', () => ({
   useParcelPhotoUrl: () => ({ data: null }),
   useAssignDeposit: () => ({ mutateAsync: m.assign, isPending: false }),
   useClientByCode: () => ({ mutateAsync: m.byCode, isPending: false }),
+  useRecentClients: () => ({ data: [], isLoading: false }),
   useAddParcel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateParcel: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useRemoveParcelPhoto: () => ({ mutate: vi.fn(), isPending: false }),
+  useSetParcelCover: () => ({ mutate: vi.fn(), isPending: false }),
   uploadParcelPhotos: vi.fn(),
 }));
 
@@ -134,6 +136,17 @@ beforeEach(() => {
   localStorage.removeItem('bonzini-reception-location');
 });
 
+/** Refonte v2 (04/07) : toucher un colis ouvre ses gestes ; on y choisit l'un d'eux. */
+function parcelAction(text: string, action: RegExp) {
+  fireEvent.click(screen.getByText(text));
+  fireEvent.click(within(screen.getAllByRole('dialog').at(-1)!).getByRole('button', { name: action }));
+}
+/** Refonte v2 : les gestes rares sont dans « … ». */
+function moreAction(action: RegExp) {
+  fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
+  fireEvent.click(within(screen.getAllByRole('dialog').at(-1)!).getByRole('button', { name: action }));
+}
+
 afterEach(() => {
   window.history.replaceState(null, ''); // canGoBack lit window.history.state.idx
 });
@@ -172,7 +185,7 @@ describe('la fiche du dépôt', () => {
     unmount();
 
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
-    fireEvent.click(screen.getByText('Chaussures'));
+    parcelAction('Chaussures', /Modifier le colis/);
     expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1/parcel/p1');
   });
 
@@ -186,7 +199,7 @@ describe('la fiche du dépôt', () => {
   it('un dépôt ouvert par erreur, encore vide, s’abandonne (après confirmation)', () => {
     m.deposit = deposit({ parcels: [], parcel_count: 0 });
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
-    fireEvent.click(screen.getByRole('button', { name: /Abandonner ce dépôt vide/ }));
+    moreAction(/Abandonner ce dépôt vide/);
     const sheet = screen.getAllByRole('dialog').at(-1)!;
     fireEvent.click(within(sheet).getByRole('button', { name: /Abandonner ce dépôt vide/ }));
     expect(m.cancel).toHaveBeenCalledWith({ depositId: 'd1', reason: expect.stringContaining('erreur') }, expect.anything());
@@ -194,7 +207,7 @@ describe('la fiche du dépôt', () => {
 
   it('retirer un colis demande confirmation', () => {
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
-    fireEvent.click(screen.getByRole('button', { name: /Supprimer|Retirer/ }));
+    parcelAction('Chaussures', /Retirer/);
     expect(m.remove).not.toHaveBeenCalled();
     const sheet = screen.getAllByRole('dialog').at(-1)!;
     fireEvent.click(within(sheet).getByRole('button', { name: /Retirer/ }));
@@ -221,14 +234,20 @@ describe('la fiche du dépôt', () => {
   it('« Attribuer » part de la fiche et dit qu’on en vient (pour y revenir, pas l’empiler)', () => {
     m.deposit = deposit({ status: 'closed', client: null });
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
-    fireEvent.click(screen.getByRole('button', { name: /Attribuer à un client/ }));
+    moreAction(/Attribuer à un client/);
     expect(screen.getByTestId('where').textContent).toBe('/r/new?assign=d1&from=deposit');
   });
 
   it('un colis déjà emballé n’a pas de corbeille, même dans mon dépôt en cours (le serveur refuserait)', () => {
     m.deposit = deposit({ parcels: [parcel({ air_package_id: 'k1', package_no: 'PQ-000045' }), parcel({ id: 'p2', seq: 2, parcel_no: 'RC-000123-02', description: 'Sacs' })] });
-    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    // L'autre colis : « Retirer » dans ses gestes. L'emballé : ses photos, sans geste.
+    const { unmount } = mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    fireEvent.click(screen.getByText('Sacs'));
     expect(screen.getAllByRole('button', { name: /Retirer/ })).toHaveLength(1);
+    unmount();
+    mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
+    fireEvent.click(screen.getByText('Chaussures'));
+    expect(screen.queryByRole('button', { name: /Retirer/ })).toBeNull();
   });
 
   it('terminé, devis déjà chez le client : le dire, et ouvrir les photos plutôt que la correction', () => {
@@ -243,7 +262,7 @@ describe('la fiche du dépôt', () => {
     m.cargo = true;
     mount('/r/deposit/d1', <ReceptionDeposit />, '/r/deposit/:depositId');
     expect(screen.queryByText(/déjà chez le client/)).toBeNull();
-    fireEvent.click(screen.getByText('Chaussures'));
+    parcelAction('Chaussures', /Modifier le colis/);
     expect(screen.getByTestId('where').textContent).toBe('/r/deposit/d1/parcel/p1');
   });
 });
@@ -352,7 +371,7 @@ describe('une relecture ratée en arrière-plan', () => {
     m.depError = new Error('Réseau indisponible'); // react-query garde les données et pose l'erreur
     mount('/r/deposit/d1/parcel/p1?step=weight', <ReceptionParcel />, '/r/deposit/:depositId/parcel/:parcelId');
     expect(screen.queryByText('Réseau indisponible')).toBeNull();
-    expect(screen.getByRole('button', { name: /Suivant|Passer/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument();
   });
 
   it('garde la fiche du dépôt', () => {
@@ -397,7 +416,7 @@ describe('dépôt terminé', () => {
   it('sans client : le dire, et « Attribuer maintenant »', () => {
     m.deposit = deposit({ status: 'closed', client: null });
     mount('/r/deposit/d1/done', <ReceptionDone />, '/r/deposit/:depositId/done');
-    expect(screen.getByText(/Ce dépôt attend son client/)).toBeInTheDocument();
+    expect(screen.getByText('À attribuer')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Attribuer maintenant/ }));
     expect(screen.getByTestId('where').textContent).toBe('/r/new?assign=d1');
   });

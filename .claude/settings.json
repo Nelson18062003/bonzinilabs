@@ -19,5 +19,19 @@
       "Bash(npx supabase:*)",
       "Bash(npx vite:*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__.*[Ss]upabase.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/supabase-readonly.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

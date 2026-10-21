@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 
 /** Paiements cash encore à remettre (onglet « À payer » ; pastille de l'app BONZINI HQ). */
-export const CASH_TO_HAND_OVER_STATUSES = ['processing', 'cash_scanned', 'cash_pending', 'ready_for_payment'] as const;
+export const CASH_TO_HAND_OVER_STATUSES = ['cash_pending', 'cash_scanned'] as const;
 
 export interface CashPayment {
   id: string;
@@ -36,8 +36,7 @@ export function useAgentCashPayments(status: 'pending' | 'paid', agentUserId?: s
   return useQuery({
     queryKey: ['agent-cash-payments', status, agentUserId],
     queryFn: async () => {
-      // To Pay tab: show cash payments that are not yet fully paid
-      // This includes 'processing' (awaiting scan), 'cash_scanned', and 'cash_pending'
+      // « À remettre » : cash_pending (QR à scanner) et cash_scanned (à faire signer).
       const statusFilter = status === 'pending'
         ? CASH_TO_HAND_OVER_STATUSES
         : (['completed'] as const);

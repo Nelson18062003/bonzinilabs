@@ -15,18 +15,19 @@
 // L'écran quitté pendant le voile vert (geste retour) : rien ne part.
 // Les étapes avancent en REMPLAÇANT l'écran : le retour du téléphone ne
 // ramène jamais dans une étape close.
+// Refonte v2 (maquette 04/11) : la caméra sur la carte du client, la
+// recherche, les clients récents en ronds, puis « Sans client » et
+// « Nouveau client ».
 // ============================================================
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, Barcode, Check, HelpCircle, ScanLine, Search } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Barcode, Check, Plus, ScanLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { clientFullName, parseScan, type ReceptionClient } from '@/lib/reception';
-import { UnknownCodeError, useAssignDeposit, useClientByCode } from '@/hooks/useReception';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TONE_PILL, TYPE, Button } from '@/mobile/designKit';
-import { StepHeader } from '@/mobile/components/reception/bits';
+import { UnknownCodeError, useAssignDeposit, useClientByCode, useRecentClients } from '@/hooks/useReception';
+import { FOCUS_RING, IconCircle, Initials, ItemList, ItemRow, ScreenTop, SearchBox, SURFACE, TEXT, TONE_PILL, TYPE, Button } from '@/mobile/designKit';
 import { useQrScanner } from '@/mobile/components/reception/useQrScanner';
 import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useAssignFlow } from '@/mobile/components/reception/useAssignFlow';
@@ -49,6 +50,7 @@ export function ReceptionIdentify() {
   const lockRef = useRef(false);
   const assign = useAssignDeposit();
   const byCode = useClientByCode();
+  const recent = useRecentClients();
 
   /** « Scanner encore » : plus de refus ni de voile, la caméra repart (dans l'app, la caméra native se rouvre). */
   const rescan = () => {
@@ -107,11 +109,9 @@ export function ReceptionIdentify() {
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack onBack={() => (assignId ? flow.leave() : back('/r'))} />
+      <ScreenTop title={assignId ? t('rc_assign') : t('rc_new_deposit')} step={assignId ? undefined : '1/4'} onBack={() => (assignId ? flow.leave() : back('/r'))} />
 
-      <div className="flex-1 space-y-6 px-5 pb-10 pt-4">
-        <StepHeader step={1} total={4} title={t('rc_s1_title')} help={t('rc_s1_help')} />
-
+      <div className="flex-1 space-y-4 px-5 pb-10 pt-4">
         {refused && assignId && (
           <div role="alert" className={cn('space-y-3 rounded-lg px-4 py-4', TONE_PILL.danger)}>
             <p className={cn('flex items-start gap-2', TYPE.bodyStrong)}><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /> {refused}</p>
@@ -123,9 +123,13 @@ export function ReceptionIdentify() {
           </div>
         )}
 
-        {/* La caméra : carrée, grande, seule. */}
-        <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '1 / 1' }}>
+        {/* La caméra, sur la carte du client : son QR (app ou étiquette) va droit au client. */}
+        <div className="relative overflow-hidden rounded-lg bg-[#1E1E1E]" style={{ aspectRatio: '6 / 5' }}>
           <div id={SCANNER_ID} className="h-full w-full [&_video]:h-full [&_video]:w-full [&_video]:object-cover" />
+          {!found && !scanner.error && (
+            <div aria-hidden className="pointer-events-none absolute inset-[16%_22%_22%] rounded-lg [background:linear-gradient(#fff,#fff)_top_left/36px_4px,linear-gradient(#fff,#fff)_top_left/4px_36px,linear-gradient(#fff,#fff)_top_right/36px_4px,linear-gradient(#fff,#fff)_top_right/4px_36px,linear-gradient(#fff,#fff)_bottom_left/36px_4px,linear-gradient(#fff,#fff)_bottom_left/4px_36px,linear-gradient(#fff,#fff)_bottom_right/36px_4px,linear-gradient(#fff,#fff)_bottom_right/4px_36px] [background-repeat:no-repeat]" />
+          )}
+          {!found && <p className="pointer-events-none absolute inset-x-0 bottom-4 text-center text-[17px] font-semibold text-white">{t('rc_v2_client_card')}</p>}
           {scanner.starting && <div className="absolute inset-0 flex items-center justify-center text-[16px] font-medium text-white/80">{t('scanning')}</div>}
           {byCode.isPending && !found && <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[17px] font-semibold text-white">{t('rc_looking_up')}</div>}
           {found && (
@@ -142,22 +146,37 @@ export function ReceptionIdentify() {
         </div>
 
         {waybill && (
-          <p className={cn('flex items-center gap-2 tabular-nums', TYPE.small, 'text-[#02542D] dark:text-[#CFF7D3]')}>
-            <Barcode className="h-4 w-4 shrink-0" /> {t('rc_waybill_found')} · {waybill}
+          <p className={cn('flex items-center gap-2 tabular-nums text-[15px] font-semibold', 'text-[#02542D] dark:text-[#CFF7D3]')}>
+            <Barcode className="h-5 w-5 shrink-0" /> {t('rc_waybill_found')} · {waybill}
           </p>
         )}
 
-        {/* Pas de QR ? Deux sorties, grandes, l'une après l'autre. */}
-        <div className="flex flex-col gap-3">
-          <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => { scanner.stop(); navigate(`/r/new/search${qs}`, { replace: true }); }}>
-            <Search /> {t('rc_s1_search')}
-          </Button>
+        <SearchBox placeholder={t('rc_v2_name_or_code')} onClick={() => { scanner.stop(); navigate(`/r/new/search${qs}`, { replace: true }); }} />
+
+        {/* Les clients récents : un toucher, et c'est lui. */}
+        {(recent.data?.length ?? 0) > 0 && (
+          <div className="grid grid-cols-4 gap-2 pt-1">
+            {(recent.data ?? []).slice(0, 4).map((c) => (
+              <button key={c.user_id} type="button" disabled={assign.isPending} onClick={() => { scanner.stop(); void pick(c); }} className={cn('flex min-w-0 flex-col items-center gap-2 rounded-lg py-1', FOCUS_RING)}>
+                <Initials name={clientFullName(c)} size={64} />
+                <span className={cn('max-w-full truncate text-[16px]', TEXT.strong)}>{c.first_name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <ItemList className="-mx-5 border-t border-[#D9D9D9] dark:border-[#444444]">
           {!assignId && (
-            <Button variant="subtle" className="h-14 w-full text-[16px]" onClick={() => { scanner.stop(); navigate('/r/new/how', { replace: true }); }}>
-              <HelpCircle /> {t('rc_s1_unknown')}
-            </Button>
+            <ItemRow
+              leading={<span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[18px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">?</span>}
+              title={t('rc_v2_no_client')}
+              subtitle={t('rc_v2_assign_later')}
+              onClick={() => { scanner.stop(); navigate('/r/new/how', { replace: true }); }}
+              chevron
+            />
           )}
-        </div>
+          <ItemRow leading={<IconCircle icon={Plus} />} title={t('rc_new_client')} subtitle={t('rc_v2_name_phone')} onClick={() => { scanner.stop(); navigate(`/r/new/client${qs}`, { replace: true }); }} chevron />
+        </ItemList>
       </div>
     </div>
   );

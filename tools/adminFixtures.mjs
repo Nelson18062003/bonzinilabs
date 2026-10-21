@@ -1,5 +1,6 @@
 // Shared REST/RPC/storage fixtures for the admin screenshot runners.
 // Used by shoot-admin-before.mjs (real screens) and shoot-admin.mjs (redesign mockups).
+import { respondCargo } from './cargoFixtures.mjs';
 const now = Date.now();
 const ago = (h) => new Date(now - h * 3600_000).toISOString();
 
@@ -175,7 +176,55 @@ const notifications = [
   { id: 'n4', user_id: 'u5', type: 'payment_completed', title: 'Fournisseur payé', message: 'Le règlement BZ-PY-2026-1180 de ¥ 12 000 est arrivé chez votre fournisseur.', metadata: { payment_id: 'p1', reference: 'BZ-PY-2026-1180' }, is_read: true, created_at: ago(300) },
 ];
 
-function respond(url) {
+// ── Opérations v2 : journal, lots de paiements, noms de l'équipe ─────────
+// (lus avant le reste : ces requêtes filtrent sur des colonnes que les
+// branches génériques plus bas ignorent).
+const opsTeam = [
+  { user_id: 'admin1', first_name: 'Nelson', last_name: 'Mbappé' },
+  { user_id: 'admin2', first_name: 'Christelle', last_name: 'Abena' },
+  { user_id: 'admin3', first_name: 'Brice', last_name: 'Fotso' },
+];
+const opsAuditLogs = [
+  { id: 'al1', admin_user_id: 'admin1', action_type: 'validate_deposit', target_type: 'deposit', target_id: 'd5', details: { reference: 'BZ-DP-2026-0847', client_name: 'Fatou Ndiaye' }, created_at: ago(0.4) },
+  { id: 'al2', admin_user_id: 'admin2', action_type: 'complete_payment', target_type: 'payment', target_id: 'p6', details: { reference: 'BZ-PY-2026-1199' }, created_at: ago(0.7) },
+  { id: 'al3', admin_user_id: 'admin1', action_type: 'add_exchange_rate', target_type: 'rate', target_id: 'r1', details: { description: '1 M XAF = ¥ 11 530' }, created_at: ago(3) },
+  { id: 'al4', admin_user_id: 'admin3', action_type: 'update_client', target_type: 'client', target_id: 'u3', details: { client_name: 'Jean-Paul Mbarga' }, created_at: ago(22) },
+  { id: 'al5', admin_user_id: 'admin2', action_type: 'reject_payment', target_type: 'payment', target_id: 'p7', details: { reference: 'BZ-PY-2026-1188' }, created_at: ago(25) },
+  { id: 'al6', admin_user_id: 'admin1', action_type: 'set_wallet_overdraft', target_type: 'wallet', target_id: 'u6', details: { client_name: 'Ibrahim Touré · 2 M' }, created_at: ago(28) },
+];
+const opsBatches = [
+  { id: 'b1', reference: 'BZ-LT-2610-07', user_id: 'u3', line_count: 3, total_amount_rmb: 66400, total_amount_xaf: 5760000, note: 'Commande d’octobre', created_by: 'admin1', created_at: ago(2), updated_at: ago(1) },
+  { id: 'b2', reference: 'BZ-LT-2610-05', user_id: 'u5', line_count: 2, total_amount_rmb: 21300, total_amount_xaf: 1851000, note: null, created_by: 'admin1', created_at: ago(30), updated_at: ago(20) },
+];
+const opsBatchLines = [
+  { ...payments[2], id: 'bl1', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1210', amount_rmb: 24000, amount_xaf: 2082000, status: 'completed', beneficiary_name: 'Guangzhou Hengtai Trading', method: 'alipay', created_at: ago(2) },
+  { ...payments[1], id: 'bl2', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1211', amount_rmb: 18200, amount_xaf: 1578000, status: 'ready_for_payment', beneficiary_name: 'Yiwu Jinsheng Textile', method: 'wechat', created_at: ago(2) },
+  { ...payments[0], id: 'bl3', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1212', amount_rmb: 24200, amount_xaf: 2100000, status: 'ready_for_payment', beneficiary_name: 'Foshan Meida Furniture', method: 'bank_transfer', created_at: ago(2) },
+  { ...payments[2], id: 'bl4', batch_id: 'b2', user_id: 'u5', reference: 'BZ-PY-2026-1180', amount_rmb: 12000, amount_xaf: 1043000, status: 'completed', beneficiary_name: 'Chen Xiaoli', method: 'alipay', created_at: ago(30) },
+  { ...payments[1], id: 'bl5', batch_id: 'b2', user_id: 'u5', reference: 'BZ-PY-2026-1181', amount_rmb: 9300, amount_xaf: 808000, status: 'completed', beneficiary_name: 'Li Wei', method: 'wechat', created_at: ago(30) },
+];
+function respondOps(url) {
+  if (url.includes('/admin_audit_logs')) return opsAuditLogs;
+  // Justificatifs : la preuve avec son dépôt (select=*,deposits(*)).
+  if (url.includes('/deposit_proofs') && /deposits(%28|\()/.test(url)) return depositProofs.map((p) => ({ ...p, deposits: deposits.find((d) => d.id === p.deposit_id) ?? null }));
+  if (url.includes('/user_roles') && /select=user_id(%2C|,)first_name(%2C|,)last_name/.test(url)) return opsTeam;
+  if (url.includes('/payment_batches')) {
+    const m = url.match(/[?&]id=eq\.([^&]+)/);
+    return m ? opsBatches.filter((b) => b.id === decodeURIComponent(m[1])) : opsBatches;
+  }
+  if (url.includes('/payments') && url.includes('batch_id=')) {
+    const eq = url.match(/batch_id=eq\.([^&]+)/);
+    if (eq) return opsBatchLines.filter((l) => l.batch_id === decodeURIComponent(eq[1]));
+    return opsBatchLines;
+  }
+  return undefined;
+}
+
+function respond(url, body) {
+  const ops = respondOps(url);
+  if (ops !== undefined) return ops;
+  // Module Messages · Douane · Mola · Outils (refonte v2) : voir respondOutils, en fin de fichier.
+  { const extra = respondOutils(url); if (extra !== undefined) return extra; }
   if (url.includes('/rpc/get_deposit_stats')) return stats;
   if (url.includes('/storage/v1/object/sign')) {
     // Echo the object path so the GET interception can tell QR from proof.
@@ -227,6 +276,17 @@ function respond(url) {
     if (url.includes('order=effective_at.asc')) return [...dailyRates].reverse();
     return dailyRates;
   }
+  // Module Taux : les écritures répondent « succès » (écran de succès, feuilles qui se ferment).
+  if (url.includes('/rpc/create_daily_rates')) return { success: true, rate_id: 'r-new' };
+  if (url.includes('/rpc/update_daily_rate') || url.includes('/rpc/delete_daily_rate') || url.includes('/rpc/update_rate_adjustment') || url.includes('/rpc/mark_suggestion_applied')) return { success: true };
+  // Analyses (écran Équipe) : le journal des actions de l'équipe.
+  if (url.includes('/admin_audit_logs')) return auditLogs;
+  const tr = treasuryRespond(url);
+  if (tr !== undefined) return tr;
+  { const b = respondModuleB(url); if (b !== undefined) return b; }
+  // Cargo · Réception · Entrepôt (tools/cargoFixtures.mjs).
+  const cargo = respondCargo(url, body);
+  if (cargo !== undefined) return cargo;
   return [];
 }
 
@@ -250,5 +310,330 @@ export function headCount(url) {
     if (url.includes('status=in.')) return 5;
     return 5872;
   }
+  if (url.includes('/webauthn_credentials')) return 2; // Moi › Clés d'accès (refonte v2)
   return 0;
+}
+
+// Analyses mobile (écran Équipe) — actions de l'équipe sur 30 jours, inventées.
+const auditLogs = (() => {
+  const team = [['a1', 46, 58, 2], ['a2', 61, 34, 1], ['a3', 30, 21, 0], ['a4', 0, 28, 0], ['a5', 9, 0, 1]];
+  const out = [];
+  let k = 0;
+  for (const [id, dep, pay, rej] of team) {
+    for (let i = 0; i < dep; i++) out.push({ admin_user_id: id, action_type: 'validate_deposit', created_at: ago((k++ * 7.3) % 700) });
+    for (let i = 0; i < pay; i++) out.push({ admin_user_id: id, action_type: 'process_payment', created_at: ago((k++ * 5.1) % 700) });
+    for (let i = 0; i < rej; i++) out.push({ admin_user_id: id, action_type: 'reject_deposit', created_at: ago((k++ * 3.7) % 700) });
+  }
+  return out;
+})();
+// ── Trésorerie (refonte mobile v2) ─────────────────────────────────────────
+// Les hooks de la trésorerie sont substitués par src/__screenshot__/mockTreasury.ts.
+// Restent les lectures directes de l'écran mobile : le bénéfice semaine par
+// semaine (get_treasury_dashboard, une fois par semaine) et le nom de qui a
+// annulé. Le corps d'une RPC n'arrive pas jusqu'ici : les appels d'une même
+// page reçoivent chacun leur bénéfice, dans l'ordre.
+const trWeekly = [212400, 248900, 190300, 305100, 242700, 312000, 340000, 155000];
+let trDashN = 0;
+let trDashT = 0;
+function treasuryRespond(url) {
+  if (url.includes('/rpc/get_treasury_dashboard')) {
+    const t = Date.now();
+    if (t - trDashT > 1500) trDashN = 0;
+    trDashT = t;
+    const benefit = trWeekly[trDashN++ % trWeekly.length];
+    return {
+      success: true, period: { from: ago(168), to: ago(0) }, balances: [], totals_by_currency: {},
+      purchases: { count: 2, total_xaf: 2_540_000, total_usdt: 4_000, weighted_avg_rate_xaf_per_usdt: 635 },
+      sales: { count: 1, total_usdt: 1_800, total_cny: 12_996, weighted_avg_rate_cny_per_usdt: 7.22 },
+      client_rate: { count: 9, total_xaf: 2_100_000, total_cny: 22_800, weighted_avg_rate_xaf_per_cny: 92.1 },
+      wac_usdt_current: 638.42, stock_usdt: 8_420.5, is_stock_usdt_negative: false, spread_chain_xaf: 0, spread_client_xaf: 0,
+      benefit_total_xaf: benefit, capital_immobilized_current_xaf: 11_620_000, taux_de_revient_xaf_per_cny: 88.24,
+    };
+  }
+  return undefined;
+}
+
+// ─── Module Messages clients · Douane · Mola · Outils (refonte v2) ─────────
+// Tables propres au module, et ce que les tables partagées doivent porter
+// pour lui (les clients avec leur `id` et leur code, les admins du support).
+const outilsClients = clients.map((c, i) => ({ ...c, id: `c${i + 1}`, customer_code: ['BZ-3107', 'BZ-2290', 'BZ-1874', 'BZ-5107', 'BZ-4821', 'BZ-6033', 'BZ-7712'][i] }));
+const supportAdmins = [
+  { id: 'ur1', user_id: 'screenshot-admin', first_name: 'Nelson', last_name: 'Kamdem', role: 'super_admin', is_disabled: false },
+  { id: 'ur2', user_id: 'adm-2', first_name: 'Christelle', last_name: 'Fotso', role: 'support', is_disabled: false },
+  { id: 'ur3', user_id: 'adm-3', first_name: 'Mireille', last_name: 'Ekambi', role: 'customer_success', is_disabled: false },
+];
+const minutesAgo = (m) => new Date(now - m * 60_000).toISOString();
+const today = (h, m) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.toISOString(); };
+const chatConversations = [
+  { id: 'cv1', client_id: 'c5', subject: 'Paiement Hengtai', assigned_admin_id: 'ur1', status: 'open', last_message_at: today(9, 24), last_client_message_at: today(9, 24), last_admin_message_at: today(9, 20), unread_count_client: 0, unread_count_admin: 2, created_at: today(9, 12), updated_at: today(9, 24) },
+  { id: 'cv2', client_id: 'c6', subject: null, assigned_admin_id: null, status: 'open', last_message_at: today(8, 51), last_client_message_at: today(8, 51), last_admin_message_at: null, unread_count_client: 0, unread_count_admin: 1, created_at: today(8, 51), updated_at: today(8, 51) },
+  { id: 'cv3', client_id: 'c4', subject: 'Colis Douala', assigned_admin_id: null, status: 'open', last_message_at: today(8, 30), last_client_message_at: today(8, 30), last_admin_message_at: null, unread_count_client: 0, unread_count_admin: 3, created_at: today(8, 10), updated_at: today(8, 30) },
+  { id: 'cv4', client_id: 'c3', subject: null, assigned_admin_id: 'ur2', status: 'open', last_message_at: ago(20), last_client_message_at: ago(21), last_admin_message_at: ago(20), unread_count_client: 0, unread_count_admin: 0, created_at: ago(30), updated_at: ago(20) },
+  { id: 'cv5', client_id: 'c7', subject: null, assigned_admin_id: 'ur1', status: 'open', last_message_at: ago(22), last_client_message_at: ago(23), last_admin_message_at: ago(22), unread_count_client: 0, unread_count_admin: 0, created_at: ago(26), updated_at: ago(22) },
+  { id: 'cv6', client_id: 'c1', subject: null, assigned_admin_id: 'ur2', status: 'closed', last_message_at: ago(70), last_client_message_at: ago(71), last_admin_message_at: ago(70), unread_count_client: 0, unread_count_admin: 0, created_at: ago(80), updated_at: ago(70) },
+];
+const msg = (id, conv, who, content, at, extra = {}) => ({ id, conversation_id: conv, sender_type: who, sender_id: who === 'admin' ? 'screenshot-admin' : 'client', content, media_url: null, media_type: null, media_duration_seconds: null, media_size_bytes: null, media_filename: null, media_waveform_peaks: null, reply_to_message_id: null, read_at: who === 'admin' ? at : null, created_at: at, ...extra });
+const chatMessages = [
+  msg('m1', 'cv1', 'client', "J'ai déposé 500 000 ce matin par Orange Money", today(9, 12)),
+  msg('m2', 'cv1', 'client', null, today(9, 13), { media_url: 'chat-media/cv1/recu-om.png', media_type: 'image' }),
+  msg('m3', 'cv1', 'admin', 'Merci Fatou, je vérifie et je crédite votre compte.', today(9, 20)),
+  msg('m4', 'cv1', 'client', "Le paiement à Hengtai peut partir aujourd'hui ?", today(9, 24)),
+  msg('m5', 'cv2', 'client', null, today(8, 51), { media_url: 'chat-media/cv2/photo.jpg', media_type: 'image' }),
+  msg('m6', 'cv3', 'client', 'Mon colis est arrivé à Douala ?', today(8, 30)),
+  msg('m7', 'cv4', 'admin', "C'est noté, merci.", ago(20)),
+  msg('m8', 'cv5', 'admin', 'Le taux du jour est ¥ 10 838', ago(22)),
+  msg('m9', 'cv6', 'admin', 'Votre fournisseur a reçu le paiement.', ago(70)),
+];
+const cannedResponses = [
+  { id: 'cr1', label: 'Dépôt reçu', content: 'Bonjour {{client_first_name}}, votre dépôt est bien reçu. Nous le vérifions et vous prévenons dès qu’il est crédité.', variables: [], sort_order: 1, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr2', label: 'Dépôt crédité', content: '{{client_first_name}}, votre compte est crédité de votre dépôt. Vous pouvez payer votre fournisseur.', variables: [], sort_order: 2, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr3', label: 'Paiement envoyé', content: 'Votre fournisseur a reçu ¥… Preuve jointe.', variables: [], sort_order: 3, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr4', label: 'Taux du jour', content: "1 000 000 XAF = ¥ 10 838 aujourd'hui.", variables: [], sort_order: 4, created_by: null, created_at: ago(400), updated_at: ago(400) },
+  { id: 'cr5', label: 'Info fournisseur', content: 'Envoyez-nous le QR Alipay ou WeChat de votre fournisseur, avec son nom.', variables: [], sort_order: 5, created_by: null, created_at: ago(400), updated_at: ago(400) },
+];
+const quickReplies = [
+  { id: 'qr1', label: 'Comment ça marche ?', content: "Pouvez-vous m'expliquer comment fonctionne le paiement de mes fournisseurs ?", sort_order: 1, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr2', label: 'Mon paiement est en retard', content: 'Mon paiement semble en retard, pouvez-vous vérifier ?', sort_order: 2, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr3', label: 'Question sur les taux', content: "J'ai une question sur les taux de change.", sort_order: 3, active: true, created_at: ago(400), updated_at: ago(400) },
+  { id: 'qr4', label: 'Autre question', content: "Bonjour, j'ai une question :", sort_order: 4, active: false, created_at: ago(400), updated_at: ago(400) },
+];
+const dayIso = (back) => { const d = new Date(now - back * 86400_000); return d.toISOString().slice(0, 10); };
+const chatStats = (days) => ({
+  period_days: days, open_conversations: 14, closed_conversations: 61, unassigned_open: 2, total_messages: 1286, client_messages: 702, admin_messages: 584,
+  avg_response_seconds_global: 372, median_response_seconds_global: 184,
+  per_admin: [
+    { admin_user_id: 'adm-3', first_name: 'Mireille', last_name: 'Ekambi', replies_count: 412, avg_response_seconds: 130 },
+    { admin_user_id: 'screenshot-admin', first_name: 'Nelson', last_name: 'Kamdem', replies_count: 108, avg_response_seconds: 420 },
+    { admin_user_id: 'adm-2', first_name: 'Christelle', last_name: 'Fotso', replies_count: 64, avg_response_seconds: 610 },
+  ],
+  daily_volume: Array.from({ length: days }, (_, i) => {
+    const k = (i * 37) % 11;
+    return { day: dayIso(days - 1 - i), client_count: 48 + k * 9, admin_count: 30 + ((k * 5) % 7) * 6 };
+  }),
+  response_buckets: { under_1min: 120, one_to_five: 260, five_to_fifteen: 140, over_fifteen: 64 },
+});
+
+const cCard = (c) => ({ user_id: c.user_id, first_name: c.first_name, last_name: c.last_name, company_name: null, customer_code: outilsClients.find((x) => x.user_id === c.user_id)?.customer_code ?? null });
+const cAicha = cCard(clients[3]);
+const cRosine = { user_id: 'u8', first_name: 'Rosine', last_name: 'Tchoua', company_name: null, customer_code: 'BZ-2604' };
+const cSamuel = { user_id: 'u9', first_name: 'Samuel', last_name: 'Nkoulou', company_name: null, customer_code: 'BZ-3318' };
+const customsQueue = {
+  success: true, is_broker: true,
+  classifications: [
+    { id: 'cl1', ref: 'CL-0412', product_name: 'Chaussures de sport', proposed_code: '640411', status: 'in_review', submitted_at: ago(2), claimed_by: 'screenshot-admin', mine: true, client: cAicha },
+    { id: 'cl2', ref: 'CL-0415', product_name: 'Tissu wax 100 % coton', proposed_code: '520852', status: 'submitted', submitted_at: ago(5), claimed_by: null, mine: false, client: cRosine },
+    { id: 'cl3', ref: 'CL-0418', product_name: 'Chaises de salon', proposed_code: '940161', status: 'submitted', submitted_at: ago(26), claimed_by: null, mine: false, client: cSamuel },
+  ],
+  audits: [
+    { id: 'au1', ref: 'AU-0087', dau_number: '118452', overpaid_xaf: 1284000, claim_deadline: null, status: 'in_review', submitted_at: ago(9), claimed_by: 'screenshot-admin', mine: true, client: cSamuel },
+    { id: 'au2', ref: 'AU-0091', dau_number: '119007', overpaid_xaf: 420000, claim_deadline: null, status: 'submitted', submitted_at: ago(30), claimed_by: null, mine: false, client: cCard(clients[2]) },
+  ],
+  recent: [
+    { kind: 'classification', id: 'cl0', ref: 'CL-0398', label: 'Panneaux solaires', status: 'approved', final_code: '854143', amount_xaf: null, reviewed_at: ago(30) },
+    { kind: 'audit', id: 'au0', ref: 'AU-0080', label: 'DAU 117320', status: 'approved', final_code: null, amount_xaf: 650000, reviewed_at: ago(50) },
+  ],
+};
+const customsClassification = {
+  id: 'cl1', ref: 'CL-0412', client_user_id: 'u4', product_name: 'Chaussures de sport homme', description: null,
+  facts: {}, photo_paths: ['u4/cl1/1.jpg', 'u4/cl1/2.jpg', 'u4/cl1/3.jpg', 'u4/cl1/4.jpg', 'u4/cl1/5.jpg'], candidates: [],
+  proposed_code: '640411', status: 'in_review', submitted_at: ago(2), final_code: null, broker_note: null, claimed_by: 'screenshot-admin',
+  reviewed_by: null, reviewed_at: null, broker_company: null, broker_license_no: null, created_at: ago(3), updated_at: ago(2), client: cAicha,
+  messages: [
+    { id: 'cm1', author: 'client', body: 'Baskets homme, dessus en textile, semelle caoutchouc.', payload: null, created_at: ago(3) },
+    { id: 'cm2', author: 'assistant', body: 'Le dessus en textile et la semelle en caoutchouc mènent à la position 6404.', created_at: ago(2.9), payload: { type: 'proposal', candidates: [
+      { code: '640411', title: 'Chaussures de sport, dessus textile', heading: 'Chaussures à dessus en matières textiles', rate_min: 30, rate_max: 30, confidence: 0.86, reasoning: 'Dessus textile, semelle caoutchouc, usage sportif.', rules: ['RGI 1', 'RGI 6'] },
+      { code: '640419', title: 'Autres chaussures, dessus textile', heading: 'Chaussures à dessus en matières textiles', rate_min: 30, rate_max: 30, confidence: 0.32, reasoning: 'Si l’usage sportif n’est pas établi.', rules: ['RGI 1'] },
+    ], missing_facts: ['usage sportif'] } },
+  ],
+};
+const customsAudit = {
+  id: 'au1', ref: 'AU-0087', client_user_id: 'u9', dau_number: '118452', customs_office: 'Douala Port', registered_on: '2026-10-04', paid_on: '2026-10-06',
+  file_paths: ['u9/au1/dau-118452.pdf', 'u9/au1/facture.pdf', 'u9/au1/bl.pdf'], status: 'in_review', extraction: null, findings: [], total_paid_xaf: 9850000,
+  overpaid_xaf: 1284000, recoverable_xaf: null, claim_deadline: null, ai_model: null, error: null, submitted_at: ago(9), broker_note: null,
+  claimed_by: 'screenshot-admin', reviewed_by: null, reviewed_at: null, broker_company: null, broker_license_no: null, created_at: ago(30), updated_at: ago(9), client: cSamuel,
+};
+const iso = (days) => new Date(now - days * 86400_000).toISOString().slice(0, 10);
+const notice = (o) => ({ advice: null, status: 'in_force', ends_on: null, delay_days: null, hs_specs: [], places: [], source_label: null, source_url: null, confidence: 'marche', published: true, published_at: ago(48), created_at: ago(48), updated_at: ago(48), ...o });
+const customsNotices = [
+  notice({ id: 'nt1', slug: 'port-douala-sature', kind: 'disruption', title: 'Port de Douala saturé', summary: 'Attente au mouillage de 3 à 5 jours, quais pleins.', severity: 'high', starts_on: iso(7), delay_days: 4, places: ['CMDLA'], source_label: 'PAD', advice: 'Prévoir la franchise' }),
+  notice({ id: 'nt2', slug: 'greve-corridor-tchad', kind: 'disruption', title: 'Grève Douala – N’Djamena', summary: 'Camionneurs en grève sur le corridor.', severity: 'medium', starts_on: iso(3), delay_days: 2, places: ['CM-TD'] }),
+  notice({ id: 'nt3', slug: 'escale-lome', kind: 'disruption', title: 'Escale de Lomé allongée', summary: 'Les services passant par Lomé ajoutent un jour.', severity: 'low', starts_on: iso(2), delay_days: 1, places: ['TGLFW'], published: false, published_at: null }),
+  notice({ id: 'nt4', slug: 'tec-2026-textiles', kind: 'regulation', title: 'TEC 2026 : textiles à 30 %', summary: 'Le droit sur les tissus de coton passe à 30 %.', severity: 'medium', starts_on: iso(20), hs_specs: ['5208', '6404'], confidence: 'officiel', source_label: 'Loi de finances 2026' }),
+  notice({ id: 'nt5', slug: 'controle-chaussures', kind: 'regulation', title: 'Contrôle renforcé · chaussures', summary: 'Contrôle physique systématique à Douala pour le chapitre 64.', severity: 'medium', starts_on: iso(10), hs_specs: ['64'], places: ['CMDLA'], source_label: 'DGD' }),
+  notice({ id: 'nt6', slug: 'greve-dockers-ancienne', kind: 'disruption', title: 'Grève des dockers', summary: 'Terminée.', severity: 'medium', starts_on: iso(60), ends_on: iso(55), delay_days: 3, places: ['CMDLA'] }),
+];
+const observedTransit = { window_months: 18, min_count: 3, lanes: [
+  { mode: 'sea', lane: 'CNNSA>CMKBI', n: 23, median: 41, p25: 38, p75: 46, promised_median: 38, late_share: 0.3 },
+  { mode: 'sea', lane: 'CNNSA>CMDLA', n: 12, median: 44, p25: 40, p75: 49, promised_median: 39, late_share: 0.4 },
+  { mode: 'air', lane: 'CAN>DLA', n: 31, median: 6, p25: 5, p75: 8, promised_median: 5, late_share: 0.2 },
+] };
+
+const macroSnapshot = { id: 1, captured_at: minutesAgo(12), oil_brent: 82.4, oil_wti: 78.15, dxy: 104.2, eur_usd: 1.0862, cny_usd: 7.1204, btc_usd: 67420, eth_usd: 3120,
+  news_headlines: [{ title: 'Le yuan se stabilise avant la réunion de la PBoC', source: 'Google News (Reuters)', published_at: ago(3), link: 'https://example.com/a' }],
+  news_by_source: null, trump_posts_recent: null, expert_mentions: null };
+const ratePrediction = { id: 'rp1', created_at: ago(2), current_rate: 7.1204, predicted_rate: 7.118, direction: 'down', confidence: 0.72, key_drivers: ['DXY'], reasoning: 'Le dollar recule légèrement ; la PBoC garde un fixing stable.', scenarios: null, action_recommended: 'Garder le taux', actual_rate: null, error_abs: null };
+const passkeys = [
+  { id: 'pk1', device_label: 'iPhone de Nelson', backed_up: true, created_at: '2026-09-03T08:00:00Z', last_used_at: ago(1) },
+  { id: 'pk2', device_label: 'MacBook Air', backed_up: true, created_at: '2026-08-12T08:00:00Z', last_used_at: ago(50) },
+];
+
+function respondOutils(url) {
+  const q = decodeURIComponent(url);
+  if (q.includes('/rpc/cargo_pricing_get')) return { success: true, air_per_kg_xaf: 8500, sea_per_cbm_xaf: 165000, currency: 'XAF', updated_at: ago(200) };
+  if (q.includes('/rest/v1/macro_snapshots')) return [macroSnapshot];
+  if (q.includes('/rest/v1/rate_predictions')) return [ratePrediction];
+  if (q.includes('/rest/v1/briefs_log')) return [{ id: 'b1', sent_at: ago(5), brief_type: 'morning', message_text: 'Brief du matin : USD/CNY 7,12, Brent 82,4 $.', telegram_sent: true, telegram_error: null }];
+  if (q.includes('/rest/v1/trump_posts')) return [];
+  if (q.includes('/rest/v1/webauthn_credentials')) return passkeys;
+  if (q.includes('/rpc/customs_review_queue')) return customsQueue;
+  if (q.includes('/rpc/customs_classification_get')) return { success: true, classification: customsClassification };
+  if (q.includes('/rpc/customs_audit_get')) return { success: true, audit: customsAudit };
+  if (q.includes('/rpc/logistics_observed_transit')) return observedTransit;
+  if (q.includes('/rest/v1/customs_notices')) return customsNotices;
+  if (q.includes('/storage/v1/object/sign/customs-documents')) return [...customsAudit.file_paths, 'u4/cl1/4.jpg', 'u4/cl1/5.jpg'].map((path) => ({ path, signedURL: `/object/fake/customs/${path.split('/').pop()}?sig=1`, error: null }));
+  if (q.includes('/rpc/get_chat_admin_stats')) { const m = q.match(/"p_period_days":(\d+)/); return chatStats(m ? Number(m[1]) : 7); }
+  if (q.includes('/rpc/search_chat_conversations')) return [{ conversation_id: 'cv1', snippet: 'Le paiement à Hengtai peut partir aujourd’hui ?' }];
+  if (q.includes('/rpc/mark_conversation_read_admin') || q.includes('/rpc/claim_chat_conversation') || q.includes('/rpc/assign_chat_conversation')) return null;
+  if (q.includes('/rest/v1/chat_conversations')) {
+    const m = q.match(/[?&]id=eq\.([^&]+)/);
+    if (m) return chatConversations.filter((c) => c.id === m[1]);
+    const st = q.match(/[?&]status=eq\.([a-z]+)/);
+    return st ? chatConversations.filter((c) => c.status === st[1]) : chatConversations;
+  }
+  if (q.includes('/rest/v1/chat_messages')) {
+    const one = q.match(/conversation_id=eq\.([^&]+)/);
+    if (one) return chatMessages.filter((m) => m.conversation_id === one[1]);
+    return [...chatMessages].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+  if (q.includes('/rest/v1/chat_message_reactions')) return [];
+  if (q.includes('/rest/v1/chat_canned_responses')) return cannedResponses;
+  if (q.includes('/rest/v1/chat_client_quick_replies')) return quickReplies;
+  if (q.includes('/rest/v1/user_roles') && q.includes('first_name')) return supportAdmins;
+  if (q.includes('/rest/v1/clients') && /[?&]id=(eq|in)\./.test(q)) {
+    const one = q.match(/[?&]id=eq\.([^&]+)/);
+    if (one) return outilsClients.filter((c) => c.id === one[1]);
+    const many = q.match(/[?&]id=in\.\(([^)]*)\)/);
+    const ids = many ? many[1].split(',').map((x) => x.replace(/"/g, '')) : [];
+    return outilsClients.filter((c) => ids.includes(c.id));
+  }
+  return undefined;
+}
+
+// ── Module B · Clients, Équipe & ventes, app commercial (refonte v2) ─────────
+// Noms inventés. Les RPC renvoient { success: true, … } comme rpcJson l'attend.
+// commercial_dashboard ne lit pas son corps (POST) : il rend toujours Brice.
+const mbMonth = (() => { const d = new Date(now); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`; })();
+const mbSites = [
+  { id: 'site-gz', code: 'gz_office', label: 'Guangzhou · Bureau', country_iso: 'CN', is_active: true, members: 3 },
+  { id: 'site-gzw', code: 'gz_warehouse', label: 'Guangzhou · Entrepôt', country_iso: 'CN', is_active: true, members: 2 },
+  { id: 'site-dla', code: 'douala', label: 'Douala', country_iso: 'CM', is_active: true, members: 8 },
+];
+const mbSite = (id) => { const s = mbSites.find((x) => x.id === id); return s ? { id: s.id, code: s.code, label: s.label, country_iso: s.country_iso } : null; };
+const mbMember = (user_id, role, first, last, email, phone, site, seenH, extra = {}) => ({
+  user_id, role, email, first_name: first, last_name: last, phone, phones: phone ? [{ phone_e164: phone, country_iso: phone.startsWith('+86') ? 'CN' : 'CM', label: null }] : [],
+  site: mbSite(site), avatar_url: null, is_disabled: false, created_at: ago(24 * 200), last_sign_in_at: seenH == null ? null : ago(seenH), source: null, ...extra,
+});
+const mbTeam = [
+  mbMember('screenshot-admin', 'super_admin', 'Nelson', 'Kamdem', 'nelson@bonzinilabs.com', '+237690112233', 'site-dla', 0.1),
+  mbMember('m-me', 'ops', 'Mireille', 'Ekambi', 'mireille@bonzinilabs.com', '+237677445566', 'site-dla', 0.08),
+  mbMember('m-pf', 'treasurer', 'Patrick', 'Fotso', 'patrick@bonzinilabs.com', '+237699887766', 'site-dla', 26),
+  mbMember('m-bo', 'commercial', 'Brice', 'Onana', 'brice@bonzinilabs.com', '+237655001122', 'site-dla', 2, { source: { id: 'src-brice', label: 'Brice Onana', phone: '+237655001122', is_active: true }, phones: [{ phone_e164: '+237655001122', country_iso: 'CM', label: null }, { phone_e164: '+237677210984', country_iso: 'CM', label: 'Bureau' }] }),
+  mbMember('m-sm', 'commercial', 'Sandrine', 'Mvogo', 'sandrine@bonzinilabs.com', '+237699334455', 'site-dla', 5, { source: { id: 'src-sandrine', label: 'Sandrine Mvogo', phone: '+237699334455', is_active: true } }),
+  mbMember('m-ka', 'commercial', 'Kevin', 'Abena', 'kevin@bonzinilabs.com', '+237670556677', null, 50),
+  mbMember('m-lw', 'warehouse_agent', 'Li', 'Wei', 'liwei@bonzinilabs.com', '+8613802615547', 'site-gzw', 7),
+  mbMember('m-ln', 'receptionist', 'Li', 'Na', 'lina@bonzinilabs.com', '+8613802615548', 'site-gz', 30),
+  mbMember('m-hn', 'customs_broker', 'Hélène', 'Ngando', 'helene@transitngando.cm', '+237677889900', 'site-dla', 70),
+  mbMember('m-he', 'cash_agent', 'Hervé', 'Essomba', 'herve@bonzinilabs.com', '+237651234567', 'site-dla', 900, { is_disabled: true }),
+];
+const mbMetrics = (pay, clients, fresh, extra = {}) => ({
+  clients, new_clients: fresh, active_clients: Math.max(1, clients - 2), payments_xaf: pay, payments_count: Math.round(pay / 900000), deposits_xaf: Math.round(pay * 1.06), deposits_count: Math.round(pay / 850000),
+  air_parcels: 14, air_kg: 212, sea_parcels: 9, sea_cbm: 7.4, prospects_open: 12, prospects_new: 14, prospects_won: 3, prospects_due: 3, ...extra,
+});
+const mbObjectives = (pay, target) => [
+  { metric: 'payments_xaf', target, actual: pay }, { metric: 'new_clients', target: 4, actual: 3 }, { metric: 'air_kg', target: 300, actual: 212 },
+  { metric: 'sea_cbm', target: 12, actual: 7.4 }, { metric: 'prospects_new', target: 20, actual: 14 }, { metric: 'prospects_won', target: 5, actual: 3 },
+];
+const mbCards = [
+  { source: { id: 'src-brice', label: 'Brice Onana', phone: '+237655001122', is_active: true }, staff: { user_id: 'm-bo', name: 'Brice Onana', is_disabled: false }, metrics: mbMetrics(18_200_000, 9, 3), objectives: mbObjectives(18_200_000, 25_000_000) },
+  { source: { id: 'src-sandrine', label: 'Sandrine Mvogo', phone: '+237699334455', is_active: true }, staff: { user_id: 'm-sm', name: 'Sandrine Mvogo', is_disabled: false }, metrics: mbMetrics(14_900_000, 7, 2), objectives: mbObjectives(14_900_000, 22_500_000) },
+  { source: { id: 'src-kevin', label: 'Kevin Abena', phone: null, is_active: true }, staff: null, metrics: mbMetrics(9_800_000, 5, 1), objectives: mbObjectives(9_800_000, 20_000_000) },
+  { source: { id: 'src-estelle', label: 'Estelle Nana', phone: null, is_active: true }, staff: null, metrics: mbMetrics(5_700_000, 2, 1), objectives: mbObjectives(5_700_000, 15_000_000) },
+];
+const mbTotals = (m) => ({
+  clients_total: m.clients, new_clients: m.new_clients, active_clients: m.active_clients, prospects_new: m.prospects_new, prospects_won: m.prospects_won, prospects_lost: 2,
+  payments_xaf: m.payments_xaf, payments_count: m.payments_count, deposits_xaf: m.deposits_xaf, deposits_count: m.deposits_count, air_parcels: m.air_parcels, air_kg: m.air_kg, flights: 3, sea_parcels: m.sea_parcels, sea_cbm: m.sea_cbm,
+});
+const mbSum = (cards) => cards.reduce((t, c) => { const x = mbTotals(c.metrics); for (const k of Object.keys(x)) t[k] = (t[k] ?? 0) + x[k]; return t; }, {});
+const mbFunnel = { total: 14, new: 5, contacted: 4, interested: 3, to_verify: 1, won: 3, lost: 2 };
+const mbSeries = () => ({
+  success: true, grain: 'month', from: mbMonth, to: mbMonth, periods: [mbMonth],
+  sources: mbCards.map((c) => ({ source_id: c.source.id, label: c.source.label, is_active: true, staff_user_id: c.staff?.user_id ?? null, points: [{ period: mbMonth, ...mbTotals(c.metrics) }], totals: mbTotals(c.metrics), previous_totals: mbTotals(c.metrics), funnel: mbFunnel })),
+  team: { points: [{ period: mbMonth, ...mbSum(mbCards) }], totals: { ...mbSum(mbCards), new_clients: 23 }, previous_totals: mbSum(mbCards), funnel: mbFunnel },
+});
+const mbProspect = (id, first, last, company, city, phone, status, nextH, extra = {}) => ({
+  id, source_id: 'src-brice', first_name: first, last_name: last, company, phone, phone_e164: phone, city, gender: null, birth_date: null, email: null,
+  pain_points: 'Paiements lents', help_needed: 'Alipay, groupage', phones: [], interests: ['payments', 'sea'], notes: null, status, lost_reason: null,
+  next_action_at: nextH == null ? null : ago(nextH), converted_user_id: null, converted_at: null, status_changed_at: ago(30), created_at: ago(24 * 2), updated_at: ago(5), ...extra,
+});
+const mbProspects = [
+  mbProspect('pr-pk', 'Paul', 'Kamga', 'Ets Kamga & Fils', 'Douala', '+237699123456', 'interested', 1, { notes: 'Fournisseurs : Foshan, Yiwu' }),
+  mbProspect('pr-ce', 'Carine', 'Eyenga', 'Eyenga Cosmétiques', 'Yaoundé', '+237677998877', 'contacted', 26),
+  mbProspect('pr-am', 'Alain', 'Mbida', 'Quincaillerie', 'Bafoussam', '+237655443322', 'interested', -72),
+  mbProspect('pr-ys', 'Yasmine', 'Sow', 'Mode & Tissus', 'Douala', '+237690778899', 'to_verify', null),
+  mbProspect('pr-dt', 'Didier', 'Tagne', 'Pièces auto', 'Garoua', '+237670112244', 'contacted', -48),
+  mbProspect('pr-ga', 'Gaston', 'Ateba', 'Ateba Import', 'Kribi', '+237671112233', 'won', null),
+  mbProspect('pr-ro', 'Rodrigue', 'Owona', null, 'Ebolowa', '+237672223344', 'lost', null, { lost_reason: 'A déjà un prestataire' }),
+];
+const mbClaim = (i, prospect, client) => ({
+  claim_id: `cl-${i}`, prospect, source_id: 'src-brice', source_label: 'Brice Onana', source_active: true, matched_phone: prospect.phone_e164, created_at: ago(20 + i), previously_rejected_at: null,
+  client: { user_id: client.id, name: client.name, company: null, customer_code: client.code, phone_e164: prospect.phone_e164, email: null, city: 'Douala', created_at: ago(24 * 300), source_id: null, source_label: null, source_kind: null, deposits_count: client.dep, payments_count: client.pay, last_activity_at: ago(48) },
+});
+const mbClaims = [
+  mbClaim(1, mbProspect('pr-c1', 'Paul', 'Kamga', 'Ets Kamga & Fils', 'Douala', '+237699123456', 'to_verify', null), { id: 'u3', name: 'Samuel Nkoulou', code: 'BZ-3307', dep: 12, pay: 31 }),
+  mbClaim(2, mbProspect('pr-c2', 'Yasmine', 'Sow', 'Mode & Tissus', 'Douala', '+237690778899', 'to_verify', null), { id: 'u1', name: 'Jean-Paul Mbarga', code: 'BZ-2290', dep: 4, pay: 9 }),
+  mbClaim(3, mbProspect('pr-c3', 'Aminatou', 'Bello', null, 'Garoua', '+237655445566', 'to_verify', null), { id: 'u2', name: 'Aminatou Bello', code: 'BZ-6015', dep: 0, pay: 0 }),
+  mbClaim(4, mbProspect('pr-c4', 'Ibrahim', 'Touré', 'IT Distribution', 'Douala', '+237671550864', 'to_verify', null), { id: 'u6', name: 'Ibrahim Touré', code: 'BZ-5102', dep: 2, pay: 1 }),
+];
+const mbClientRow = (user_id, name, code, pay) => ({ user_id, name, company: null, customer_code: code, phone: '+237690556677', created_at: ago(24 * 120), source_set_at: null, payments_xaf: pay, payments_count: Math.round(pay / 900000), air_parcels: 3, air_kg: 41, sea_parcels: 2, sea_cbm: 1.2 });
+const mbCommercialClients = [
+  mbClientRow('u3', 'Samuel Nkoulou', 'BZ-3307', 6_100_000), mbClientRow('u5', 'Fatou Ndiaye', 'BZ-4821', 4_800_000),
+  mbClientRow('u1', 'Jean-Paul Mbarga', 'BZ-2290', 3_900_000), mbClientRow('u4', 'Rosine Tchoua', 'BZ-4477', 0),
+];
+const mbParcel = (id, seq, kg, cbm, extra = {}) => ({ id, seq, parcel_no: `P-${id}`, kind: 'carton', weight_kg: kg, length_cm: 50, width_cm: 40, height_cm: 40, cbm, description: 'Chaussures', courier_waybill: null, photo_path: null, status: 'stored', shipment_id: null, container_number: null, air_shipment_id: null, ...extra });
+const mbDeposit = (id, no, h, parcels) => ({
+  id, deposit_no: no, client: { user_id: 'u5', customer_code: 'BZ-4821', first_name: 'Fatou', last_name: 'Ndiaye', phone: '+237690556677', email: null, company_name: null, city: 'Douala', country: 'Cameroun' },
+  location: 'warehouse', brought_by: 'supplier', representative_name: null, representative_phone: null, status: 'closed', received_by: 'm-lw', received_by_name: 'Li Wei',
+  opened_at: ago(h), closed_at: ago(h - 1), parcel_count: parcels.length, total_weight_kg: parcels.reduce((s, p) => s + p.weight_kg, 0), total_cbm: parcels.reduce((s, p) => s + p.cbm, 0), notes: null, parcels,
+});
+const mbDeposits = [
+  mbDeposit('rd1', 'RC-000412', 72, [mbParcel('a1', 1, 8, 0.06), mbParcel('a2', 2, 8, 0.06), mbParcel('a3', 3, 8, 0.06)]),
+  mbDeposit('rd2', 'RC-000398', 240, [mbParcel('b1', 1, 6, 0.04, { air_shipment_id: 'air1', awb_number: '176-1234 5675', status: 'loaded' })]),
+  mbDeposit('rd3', 'RC-000371', 460, [mbParcel('c1', 1, 7, 0.07), mbParcel('c2', 2, 7, 0.07), mbParcel('c3', 3, 7, 0.06), mbParcel('c4', 4, 7, 0.07), mbParcel('c5', 5, 7, 0.07, { shipment_id: '2', container_number: 'MIEU3611115', status: 'loaded' }), mbParcel('c6', 6, 7, 0.06), mbParcel('c7', 7, 7, 0.06), mbParcel('c8', 8, 7, 0.06), mbParcel('c9', 9, 6, 0.05)]),
+];
+function respondModuleB(url) {
+  if (url.includes('/rpc/team_members')) return { success: true, rows: mbTeam };
+  if (url.includes('/rpc/team_sites')) return { success: true, sites: mbSites };
+  if (url.includes('/rpc/sales_overview')) return { success: true, rows: mbCards };
+  if (url.includes('/rpc/sales_series')) return mbSeries();
+  if (url.includes('/rpc/commercial_dashboard')) return { success: true, month: mbMonth, ...mbCards[0] };
+  if (url.includes('/rpc/commercial_clients')) return { success: true, rows: mbCommercialClients };
+  if (url.includes('/rpc/prospect_claims_pending')) return { success: true, rows: mbClaims };
+  if (url.includes('/rpc/prospect_phone_check')) return { success: true, status: 'free' };
+  if (url.includes('/rpc/reception_client_deposits')) return { success: true, deposits: mbDeposits };
+  if (url.includes('/rest/v1/prospects')) {
+    const m = url.match(/[?&]id=eq\.([^&]+)/);
+    return m ? mbProspects.filter((p) => p.id === decodeURIComponent(m[1])) : mbProspects;
+  }
+  if (url.includes('/rest/v1/client_phones')) return [
+    { id: 'cp1', phone_e164: '+237690556677', country_iso: 'CM', label: null, is_primary: true },
+    { id: 'cp2', phone_e164: '+237677210984', country_iso: 'CM', label: 'Boutique Akwa', is_primary: false },
+    { id: 'cp3', phone_e164: '+8615622107731', country_iso: 'CN', label: 'Chine · son agent', is_primary: false },
+  ];
+  if (url.includes('/rest/v1/customs_brokers')) return [{ company: 'Transit Ngando SARL', license_no: 'CAD 0417 / MINFI', representative_no: null, active: true }];
+  if (url.includes('/rpc/admin_client_prospect_eligibility')) return { success: true, eligible: true, blockers: [], warnings: [], suggested_source_id: 'src-jean', reopen_prospect_id: null };
+  // Écrans de succès (création d'un client, d'un accès) : la RPC répond comme la vraie.
+  if (url.includes('/rpc/admin_create_client')) return { success: true, clientId: 'u5', walletId: 'w5', authEmail: 'fatou@ndiaye-fils.cm', tempPassword: 'K7MP-4ZRQ' };
+  if (url.includes('/rpc/team_create_member')) return { success: true, userId: 'm-ln', email: 'lina@bonzinilabs.com', tempPassword: 'K7m-Q2x-91', sourceId: null };
+  if (url.includes('/rpc/team_set_member_profile') || url.includes('/rpc/set_client_source') || url.includes('/rpc/admin_set_client_identity') || url.includes('/rpc/admin_set_client_phones')) return { success: true };
+  return undefined;
 }

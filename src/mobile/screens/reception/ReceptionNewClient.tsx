@@ -18,8 +18,7 @@ import { AlertTriangle, Check, Copy, MessageCircle, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TONE_PILL, TYPE, Button, Card, Holder, PrimaryPill, SoftPill } from '@/mobile/designKit';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { BigButton, Dock, ScreenTop, SURFACE, TEXT, TONE_PILL, TYPE, Button, Card, Holder } from '@/mobile/designKit';
 import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { useCreateClientForm, whatsappShareUrl } from '@/components/clients/useCreateClientForm';
 import { ClientFormSections } from '@/components/clients/ClientFormSections';
@@ -72,7 +71,7 @@ export function ReceptionNewClient() {
     };
     return (
       <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-        <MobileHeader title={t('rc_new_client')} showBack onBack={leave} />
+        <ScreenTop title={t('rc_new_client')} onBack={leave} />
         <div className="flex-1 space-y-6 px-5 pb-10 pt-8">
           <div className="text-center">
             <div className="mx-auto mb-4 flex justify-center"><Holder icon={Check} tone="success" size="lg" /></div>
@@ -113,11 +112,11 @@ export function ReceptionNewClient() {
           )}
           <div className="space-y-3">
             {assignId ? (
-              <PrimaryPill onClick={() => void doAssign()} loading={assign.isPending} disabled={!!refused} className="h-14 w-full text-[17px]">{t('rc_assign_to_client')}</PrimaryPill>
+              <BigButton onClick={() => void doAssign()} loading={assign.isPending} disabled={!!refused}>{t('rc_assign_to_client')}</BigButton>
             ) : (
-              <PrimaryPill onClick={startDeposit} className="h-14 w-full text-[17px]">{fromClients ? t('rc_start_deposit_for') : t('rc_continue_deposit')}</PrimaryPill>
+              <BigButton onClick={startDeposit}>{fromClients ? t('rc_start_deposit_for') : t('rc_continue_deposit')}</BigButton>
             )}
-            {!assignId && <SoftPill onClick={seeCard} className="h-12 w-full"><Tag /> {t('rc_see_client_card')}</SoftPill>}
+            {!assignId && <BigButton variant="soft" onClick={seeCard}><Tag className="h-5 w-5" /> {t('rc_see_client_card')}</BigButton>}
           </div>
         </div>
       </div>
@@ -125,16 +124,14 @@ export function ReceptionNewClient() {
   }
 
   return (
-    <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_new_client')} showBack onBack={() => (fromClients ? back('/r/clients') : navigate(`/r/new/search${flow.qs}`, { replace: true }))} />
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5" style={{ WebkitOverflowScrolling: 'touch' }}>
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={t('rc_new_client')} onBack={() => (fromClients ? back('/r/clients') : navigate(`/r/new/search${flow.qs}`, { replace: true }))} />
+      <div className="flex-1 space-y-6 px-5 pb-6 pt-5">
         <ClientFormSections form={form} />
       </div>
-      <div className={cn('shrink-0 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
-        <PrimaryPill onClick={() => void form.submit()} disabled={!form.canSubmit} loading={form.isSubmitting} className="h-14 w-full text-[17px]">
-          {t('rc_create_and_continue')}
-        </PrimaryPill>
-      </div>
+      <Dock>
+        <BigButton onClick={() => void form.submit()} disabled={!form.canSubmit} loading={form.isSubmitting}>{t('rc_create_and_continue')}</BigButton>
+      </Dock>
     </div>
   );
 }

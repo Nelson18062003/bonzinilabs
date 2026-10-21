@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit.css"></head><body>
+<div class="board" id="board"></div>
+<script src="../kit.js"></script>
+<script>
+
+// 1. Accueil
+add('Accueil', 'Le poste de travail du jour', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Mardi 21 octobre</div><h1>Bonjour Nelson</h1></div><div class="round">${ic.bell}<span class="b"></span></div></div>
+  <div class="srch">${ic.search}Client, téléphone ou référence</div>
+  <div class="tiles"><div class="tile dep"><div class="i">${ic.down}</div><b>Enregistrer<br>un dépôt</b></div><div class="tile pay"><div class="i">${ic.up}</div><b>Nouveau<br>paiement</b></div></div>
+  <div class="sh"><h2>À payer <span class="cnt">4</span></h2><a>Tout voir</a></div>
+  <div class="card">
+    ${row('ali', 'Établissements Fotso &amp; Fils', 'Yiwu Jinsheng Textile Co.', '¥41 011', 'il y a 2 h', '#f0530f')}
+    ${row('ali', 'Awa Ngono Mballa', 'Guangzhou Hengtai Trading', '¥7 493', '12 min', '#f0530f')}
+    ${row('wx', 'Jean-Pierre Kamdem Tchoua', 'Chen Xiaoli', '¥999', '25 min', '#f0530f')}
+    ${row('cash', 'Ibrahim Moussa Bello', 'Cash · Zhang Wei', '¥12 500', 'retrait', '#e38a0b')}
+  </div>
+  <div class="sh"><h2>Aujourd'hui</h2></div>
+  <div class="stats"><div class="stat"><b>12</b><span>paiements payés</span><em>¥84 300</em></div><div class="stat"><b>7</b><span>dépôts crédités</span><em>9,2 M XAF</em></div></div>
+</div>${tabs('home')}<div class="home-ind"></div>`);
+
+// 2. Opérations
+add('Opérations', 'Paiements · filtre gardé', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Opérations</h1><div class="round">${ic.search.replace('currentColor', '#17111f').replace('currentColor', '#17111f')}</div></div>
+  <div class="seg"><div class="on">Paiements</div><div>Dépôts</div></div>
+  <div class="chips"><div class="chip on">À faire <small>4</small></div><div class="chip">En attente <small>2</small></div><div class="chip">Terminés</div><div class="chip">Tous</div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="card">
+    ${row('ali', 'Établissements Fotso &amp; Fils', 'Yiwu Jinsheng Textile Co.', '¥41 011', 'À payer', '#f0530f')}
+    ${row('ali', 'Awa Ngono Mballa', 'Guangzhou Hengtai Trading', '¥7 493', 'À payer', '#f0530f')}
+    ${row('wx', 'Jean-Pierre Kamdem Tchoua', 'Chen Xiaoli', '¥999', 'À payer', '#f0530f')}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="card">
+    ${row('cash', 'Ibrahim Moussa Bello', 'Cash · Zhang Wei', '¥12 500', 'Retrait attendu', '#e38a0b')}
+    ${row('bk', 'Kengne Import SARL', 'Foshan Meida Furniture', '¥18 750', 'À payer', '#f0530f')}
+  </div>
+</div>${tabs('ops')}<div class="home-ind"></div>`);
+
+// 3. Fiche paiement
+add('Fiche paiement', 'Une action : Payé', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Accueil</div><div class="t">BZ-PY-2610-0409</div><div class="sp"></div><div class="act">${ic.dots}</div></div>
+  <div class="hero">${mk('ali').replace('mk ali', 'mk ali')}<div class="amt">¥41 011</div><div class="sub">3 783 945 XAF débités · Alipay</div>${pill('todo', 'À payer')}</div>
+  <div class="card"><div class="row"><div class="av" style="background:#efe8ff;color:#6526de">EF</div><div class="rm"><div class="rn">Établissements Fotso &amp; Fils</div><div class="rs">BZ-1197 · solde 1 336 055 XAF</div></div>${ic.chev}</div></div>
+  <div class="lbl">Bénéficiaire</div>
+  <div class="card" style="display:flex;gap:14px;padding:14px 16px;align-items:center">
+    <div style="width:86px;flex:none;padding:6px;background:#fff;border:1px solid #ece9f1;border-radius:12px">${qr(11)}</div>
+    <div class="rm"><div class="rn">Yiwu Jinsheng Textile Co.</div><div class="rs" style="margin-top:4px">Alipay · 138 2716 4490</div><div style="display:flex;gap:8px;margin-top:10px"><span class="chip" style="height:32px;font-size:13.5px;background:#f2f0f6;box-shadow:none">${ic.copy} Compte</span><span class="chip" style="height:32px;font-size:13.5px;background:#f2f0f6;box-shadow:none">${ic.copy} Montant</span></div></div>
+  </div>
+  <div class="lbl">Détail</div>
+  <div class="card"><div class="kv"><span>Taux</span><b>1 M XAF = ¥10 838</b></div><div class="kv"><span>Créé</span><b>il y a 2 h · Nelson</b></div><div class="kv"><span>Instruction</span><b style="color:#1c9a57">Envoyée à 10:12</b></div></div>
+</div>
+<div class="dock"><div class="btn soft">${ic.share}</div><div class="btn dark">Payé</div></div><div class="home-ind"></div>`);
+
+// 4. Feuille Payé
+add('Marquer payé', 'La preuve en un geste', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Accueil</div><div class="t">BZ-PY-2610-0409</div><div class="sp"></div><div class="act">${ic.dots}</div></div>
+  <div class="hero">${mk('ali')}<div class="amt">¥41 011</div><div class="sub">3 783 945 XAF débités · Alipay</div>${pill('todo', 'À payer')}</div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Marquer payé</h3><div class="lead">¥41 011 à <b style="color:#17111f">Yiwu Jinsheng Textile Co.</b><br>Alipay · 138 2716 4490</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px">
+    <div style="transform:rotate(-1.2deg)">${aliReceipt('41,011.00', 'Yiwu Jinsheng Textile Co.')}</div>
+    <div style="border:2px dashed #d9d3e6;border-radius:14px;display:grid;place-items:center;align-content:center;gap:6px;color:#7a3cf0;font:700 14px 'DM Sans';background:#faf8fe">${ic.cam}Autre photo</div>
+  </div>
+  <div style="padding:0 22px 14px;font:600 15px 'DM Sans';color:#7a3cf0">+ Message au client</div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn dark">Payé · ¥41 011</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 5. Après Payé
+add('Payé, et la suite', 'On enchaîne sans revenir en arrière', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Accueil</div><div class="t">BZ-PY-2610-0409</div><div class="sp"></div><div class="act">${ic.dots}</div></div>
+  <div class="banner"><div class="okc">${ic.check()}</div><div><b>Payé · ¥41 011</b><span>Le client a été prévenu par notification.</span></div></div>
+  <div class="hero" style="padding-top:18px">${mk('ali')}<div class="amt">¥41 011</div><div class="sub">3 783 945 XAF débités · Alipay</div>${pill('done', 'Payé')}</div>
+  <div class="lbl">Preuve</div>
+  <div style="padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">${aliReceipt('41,011.00', 'Yiwu Jinsheng Textile Co.')}<div></div></div>
+</div>
+<div class="dock" style="flex-direction:column;gap:8px"><div style="font:600 14px 'DM Sans';color:#6f6981;text-align:center">Suivant : Awa Ngono Mballa · ¥7 493</div><div class="btn dark">Suivant · 3 à payer</div></div><div class="home-ind"></div>`);
+
+// 6. Enregistrer un dépôt
+add('Enregistrer un dépôt', 'Créer, prouver, créditer : un écran', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouveau dépôt</span><span style="width:52px"></span></div>
+  <div class="fl"><div class="k">Client</div><div class="card" style="margin:0"><div class="row"><div class="av" style="background:#fff1dd;color:#b36800">AN</div><div class="rm"><div class="rn">Awa Ngono Mballa</div><div class="rs">BZ-4821 · solde 2 450 000 XAF</div></div>${ic.chev}</div></div></div>
+  <div class="fl"><div class="k">Montant reçu</div><div class="amtbox"><div class="v">1 000 000<small>XAF</small></div><div class="c">Nouveau solde : 3 450 000 XAF</div></div></div>
+  <div class="fl"><div class="k">Méthode</div><div class="meth4">
+    <div class="meth on">${mk('mtn')}MTN</div><div class="meth">${mk('bank')}Banque</div><div class="meth">${mk('om')}OM retrait</div><div class="meth">${mk('mtn')}MTN retrait</div></div></div>
+  <div class="fl"><div class="k">Preuve</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div style="transform:rotate(1deg)">${momoReceipt('1 000 000')}</div><div style="border:2px dashed #d9d3e6;border-radius:14px;display:grid;place-items:center;align-content:center;gap:6px;color:#7a3cf0;font:700 14px 'DM Sans';background:#faf8fe">${ic.cam}Ajouter</div></div></div>
+</div>
+<div class="dock"><div class="btn amb">Créditer 1 000 000 XAF</div></div><div class="home-ind"></div>`);
+
+// 7. Confirmation crédit
+add('Confirmer le crédit', 'L\'argent se confirme toujours', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouveau dépôt</span><span style="width:52px"></span></div>
+  <div class="fl"><div class="k">Client</div><div class="card" style="margin:0"><div class="row"><div class="av" style="background:#fff1dd;color:#b36800">AN</div><div class="rm"><div class="rn">Awa Ngono Mballa</div><div class="rs">BZ-4821</div></div></div></div></div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Créditer 1 000 000 XAF ?</h3><div class="lead">Awa Ngono Mballa · MTN Mobile Money<br>Preuve jointe · réf. 8 821 004 517</div>
+  <div class="inset" style="margin-bottom:18px"><div class="kv"><span>Solde actuel</span><b>2 450 000 XAF</b></div><div class="kv"><span>Après crédit</span><b style="color:#1c9a57">3 450 000 XAF</b></div></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn amb">Créditer</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 8. Nouveau paiement
+add('Nouveau paiement', 'Alipay par défaut, taux visible', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Nouveau paiement</span><span style="width:52px"></span></div>
+  <div class="fl"><div class="card" style="margin:0"><div class="row"><div class="av" style="background:#fff1dd;color:#b36800">AN</div><div class="rm"><div class="rn">Awa Ngono Mballa</div><div class="rs">BZ-4821 · solde 3 450 000 XAF</div></div>${ic.chev}</div></div></div>
+  <div class="fl"><div class="meths" style="grid-template-columns:repeat(4,1fr)"><div class="meth on" style="flex-direction:column;height:72px;justify-content:center;gap:5px;padding:0;font-size:13.5px">${mk('ali')}Alipay</div><div class="meth" style="flex-direction:column;height:72px;justify-content:center;gap:5px;padding:0;font-size:13.5px">${mk('wx')}WeChat</div><div class="meth" style="flex-direction:column;height:72px;justify-content:center;gap:5px;padding:0;font-size:13.5px">${mk('bk')}Virement</div><div class="meth" style="flex-direction:column;height:72px;justify-content:center;gap:5px;padding:0;font-size:13.5px">${mk('cash')}Cash</div></div></div>
+  <div class="fl"><div class="amtbox"><div class="cur-tg"><span class="on">¥</span><span>XAF</span></div><div class="v">¥7 493<span class="cursor"></span></div><div class="c">= 691 364 XAF débités</div><div class="rate"><span>Taux du jour · 1 M XAF = <b>¥10 838</b></span><a>Personnaliser</a></div></div></div>
+  <div class="fl"><div class="k">Bénéficiaire</div><div class="bens">
+    <div class="ben on">${mk('ali')}<b>Guangzhou Hengtai</b><span>hengtai_gz@163.com</span></div>
+    <div class="ben">${mk('wx')}<b>Chen Xiaoli</b><span>wxid_chenxl88</span></div>
+    <div class="ben add">+ Nouveau</div></div></div>
+</div>
+<div class="dock"><div class="btn vio">Créer le paiement · ¥7 493</div></div><div class="home-ind"></div>`);
+
+// 9. Paiement créé → instruction
+add('Paiement créé', 'L\'instruction part tout de suite', `${sbar()}<div class="scroll" style="background:#fff">
+  <div class="modalnav"><span class="x">Fermer</span><span></span><span style="width:52px"></span></div>
+  <div style="text-align:center;padding:4px 20px 18px"><div style="width:64px;height:64px;border-radius:32px;background:#7a3cf0;display:grid;place-items:center;margin:0 auto 14px">${ic.check('#fff', 30)}</div><div style="font:800 26px 'DM Sans';letter-spacing:-.02em">Paiement créé</div><div style="font:500 15.5px 'DM Sans';color:#6f6981;margin-top:4px">¥7 493 pour Guangzhou Hengtai Trading</div></div>
+  <div style="margin:0 28px;border-radius:22px;overflow:hidden;box-shadow:0 18px 40px -14px rgba(60,30,120,.35);background:#fff;border:1px solid #eee9f6">
+    <div style="background:linear-gradient(135deg,#1a1028,#3b1f7a);color:#fff;padding:16px 18px"><div style="font:700 13px 'Noto SC';opacity:.8">付款指令 · Instruction de paiement</div><div style="font:800 34px 'DM Sans';letter-spacing:-.02em;margin-top:6px">¥7 493.00</div><div style="font:500 13px 'DM Sans';opacity:.75">BZ-PY-2610-0416 · 21/10/2026</div></div>
+    <div style="display:flex;gap:14px;padding:16px 18px;align-items:center"><div style="width:96px;flex:none">${qr(23)}</div><div><div style="font:700 15px 'Noto SC','DM Sans'">Guangzhou Hengtai Trading</div><div style="font:500 13px 'DM Sans';color:#6f6981;margin-top:4px">支付宝 Alipay<br>hengtai_gz@163.com</div></div></div>
+  </div>
+</div>
+<div class="dock" style="flex-direction:column;gap:10px;background:#fff"><div class="btn vio">${ic.share} Envoyer au partenaire</div><div class="btn ghost">Voir la fiche</div></div><div class="home-ind"></div>`, 'white');
+
+// 10. Cash : remise signée
+add('Remise du cash', 'QR scanné, signature obligatoire', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Accueil</div><div class="t">BZ-PY-2610-0403</div><div class="sp"></div><div class="act">${ic.dots}</div></div>
+  <div class="hero">${mk('cash')}<div class="amt">¥12 500</div><div class="sub">Ibrahim Moussa Bello · Cash</div>${pill('todo', 'À confirmer')}</div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Remise du cash</h3><div class="lead">¥12 500 à <b style="color:#17111f">Zhang Wei</b> · QR du client vérifié ${ic.check('#1c9a57', 15)}</div>
+  <div style="margin:0 16px 4px;height:168px;border-radius:18px;background:#f7f5fb;border:1.5px dashed #d9d3e6;position:relative">
+    <svg viewBox="0 0 360 168" style="position:absolute;inset:0;width:100%;height:100%"><path d="M40 112c22-58 44-72 56-34 8 26 18 30 32-6 14-36 22-40 30-6 6 26 16 28 34-2 18-30 30-30 36 4 4 22 14 26 28 2 14-24 24-24 34 0" fill="none" stroke="#17111f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 136h288" stroke="#d9d3e6" stroke-width="1.5"/></svg>
+    <span style="position:absolute;left:16px;bottom:8px;font:600 12.5px 'DM Sans';color:#9a95a8">Signature de Zhang Wei</span>
+  </div>
+  <div class="check"><span class="cb">${ic.check('#fff', 16)}</span><span>J'ai remis <b>¥12 500</b> en espèces et vérifié la pièce d'identité</span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn or">Confirmer la remise</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// 11. Recherche
+add('Recherche', 'Toute la base, en direct', `${sbar()}<div class="scroll">
+  <div style="display:flex;gap:12px;align-items:center;padding:6px 16px 14px"><div class="srch" style="margin:0;flex:1;color:#17111f;box-shadow:0 0 0 2px #7a3cf0">${ic.search.replace(/currentColor/g, '#7a3cf0')}Kamd<span class="cursor" style="height:20px;vertical-align:-4px"></span></div><span style="font:500 17px 'DM Sans';color:#7a3cf0">Annuler</span></div>
+  <div class="day">Clients</div>
+  <div class="card"><div class="row"><div class="av" style="background:#e7f1ff;color:#1a5fd1">JK</div><div class="rm"><div class="rn">Jean-Pierre <span class="hl">Kamd</span>em Tchoua</div><div class="rs">BZ-3305 · +237 655 82 01 77</div></div>${ic.chev}</div></div>
+  <div class="day" style="padding-top:18px">Opérations</div>
+  <div class="card">
+    ${row('wx', 'Jean-Pierre Kamdem Tchoua', 'Paiement · Chen Xiaoli', '¥999', 'À payer', '#f0530f')}
+    ${row('mtn', 'Jean-Pierre Kamdem Tchoua', 'Dépôt · MTN transfert', '640 000', 'Crédité', '#1c9a57')}
+    ${row('ali', 'Jean-Pierre Kamdem Tchoua', 'Paiement · Shantou Lianfa Toys', '¥5 120', 'Payé', '#1c9a57')}
+  </div>
+</div>
+<div class="kbd"><div class="kr">${'azertyuiop'.split('').map((c) => `<div class="kk">${c}</div>`).join('')}</div><div class="kr">${'qsdfghjklm'.split('').map((c) => `<div class="kk">${c}</div>`).join('')}</div><div class="kr"><div class="kk w">⇧</div>${'wxcvbn'.split('').map((c) => `<div class="kk">${c}</div>`).join('')}<div class="kk w">⌫</div></div><div class="kr"><div class="kk w">123</div><div class="kk sp">espace</div><div class="kk w" style="background:#7a3cf0;color:#fff">OK</div></div></div><div class="home-ind"></div>`);
+
+// 12. Fiche dépôt crédité
+add('Fiche dépôt', 'Crédité, vu en banque', `${sbar()}<div class="scroll">
+  <div class="nb"><div class="back">${ic.back}Dépôts</div><div class="t">BZ-DP-2610-0230</div><div class="sp"></div><div class="act">${ic.dots}</div></div>
+  <div class="hero">${mk('bank')}<div class="amt">4 575 000</div><div class="sub">XAF · Banque, versement au guichet</div>${pill('done', 'Crédité')}</div>
+  <div class="card"><div class="row"><div class="av" style="background:#e6f6ed;color:#137042">KI</div><div class="rm"><div class="rn">Kengne Import SARL</div><div class="rs">BZ-0846 · solde 8 900 000 XAF</div></div>${ic.chev}</div></div>
+  <div class="lbl">Rapprochement</div>
+  <div class="card"><div class="kv"><span style="color:#17111f;font-weight:600">Vu en banque</span><span class="toggle"></span></div></div>
+  <div class="lbl">Historique</div>
+  <div class="card"><div class="tl">
+    <div class="tli"><i class="g"></i>Vu en banque<span>11:05</span></div>
+    <div class="tli"><i class="g"></i>Crédité · 4 575 000 XAF<span>09:31</span></div>
+    <div class="tli"><i></i>Enregistré par Nelson, preuve jointe<span>09:31</span></div>
+  </div></div>
+</div>${tabs('ops')}<div class="home-ind"></div>`);
+render();
+</script>
+</body></html>

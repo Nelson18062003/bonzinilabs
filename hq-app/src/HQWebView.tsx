@@ -29,8 +29,6 @@ interface Props {
   onNetworkError: () => void;
   /** Ce que le site dit à l'app. */
   onSiteMessage: (msg: SiteMessage) => void;
-  /** Retour Android sans page précédente : l'écran principal décide (revenir à l'accueil…). */
-  onBackAtRoot?: () => boolean;
 }
 
 /** Hors de l'app : applications du téléphone (tel:, mailto:, whatsapp:…) ou navigateur intégré. */
@@ -55,7 +53,7 @@ function callSite(expr: string): string {
   return `(function(){var n=0;function go(){if(window.__bonziniHQ){try{${expr}}catch(e){}}else if(n++<40){setTimeout(go,150);}}go();})();true;`;
 }
 
-export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFirstLoad, onNetworkError, onSiteMessage, onBackAtRoot }, ref) {
+export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFirstLoad, onNetworkError, onSiteMessage }, ref) {
   const web = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const loadedOnce = useRef(false);
@@ -76,10 +74,10 @@ export const HQWebView = forwardRef<WebHandle, Props>(function HQWebView({ onFir
         web.current?.goBack();
         return true;
       }
-      return onBackAtRoot ? onBackAtRoot() : false;
+      return false;
     });
     return () => sub.remove();
-  }, [canGoBack, onBackAtRoot]);
+  }, [canGoBack]);
 
   const onShouldStart = useCallback((req: ShouldStartLoadRequest) => {
     const { url } = req;

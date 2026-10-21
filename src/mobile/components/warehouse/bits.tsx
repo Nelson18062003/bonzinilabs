@@ -9,7 +9,7 @@ import { AlertTriangle, Check, ChevronRight, PackageX, Plane, Ship } from 'lucid
 import { cn } from '@/lib/utils';
 import { clientFullName, formatDims, formatKg, initials, type ReceptionClient } from '@/lib/reception';
 import { transportLabel, type WarehouseParcel } from '@/lib/warehouse';
-import { SURFACE, TEXT, TYPE, BottomSheet, Holder, SoftPill } from '@/mobile/designKit';
+import { SURFACE, TEXT, TYPE, BigButton, BottomSheet, Holder } from '@/mobile/designKit';
 import { ParcelThumb } from '@/mobile/components/reception/bits';
 
 /* ── Le fil du parcours : une barre, « Étape 2 sur 3 », une phrase pour
@@ -163,7 +163,7 @@ export function HowItWorks({ open, onClose }: { open: boolean; onClose: () => vo
           </li>
         ))}
       </ol>
-      <SoftPill onClick={onClose} className="mt-6 h-14 w-full text-[17px]">Compris</SoftPill>
+      <BigButton variant="soft" onClick={onClose} className="mt-6">Compris</BigButton>
     </BottomSheet>
   );
 }

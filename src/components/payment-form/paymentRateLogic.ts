@@ -24,8 +24,6 @@ interface RatesInput {
   }>;
 }
 
-const FALLBACK_RATE = 0.01167;
-
 /**
  * Pays du client (`clients.country`, libellé libre : « Gabon », « GA »,
  * « République centrafricaine », « RCA »…) → clé `rate_adjustments`. Une clé
@@ -50,8 +48,14 @@ export function toRateKey(method: PaymentMethodType | null): PaymentMethodKey {
 }
 
 export interface ComputedPaymentValues {
-  /** Final rate as a decimal (e.g. 0.01167 means 1 XAF = 0.01167 RMB). */
+  /** Final rate as a decimal (e.g. 0.01167 means 1 XAF = 0.01167 RMB). 0 when no published rate is loaded. */
   rate: number;
+  /**
+   * A published rate is loaded for the selected method. Without it there is
+   * NO conversion (no silent fallback rate): the screen must block and offer
+   * a retry. The server recomputes the price anyway (create_payment).
+   */
+  rateAvailable: boolean;
   amountXAF: number;
   amountRMB: number;
   /** Wallet balance after the payment is deducted. */
@@ -80,10 +84,11 @@ export function computePaymentValues(params: {
 }): ComputedPaymentValues {
   const { inputAmount, currency, selectedMethod, walletBalanceXaf, clientRatesData, clientCountryKey } = params;
 
-  let rate = FALLBACK_RATE;
-  if (clientRatesData?.activeRate) {
-    const rateKey = toRateKey(selectedMethod);
-    const baseRate = getBaseRate(clientRatesData.activeRate, rateKey);
+  let rate = 0;
+  const rateKey = toRateKey(selectedMethod);
+  const publishedBase = clientRatesData?.activeRate ? Number(getBaseRate(clientRatesData.activeRate, rateKey)) || 0 : 0;
+  if (clientRatesData?.activeRate && publishedBase > 0) {
+    const baseRate = publishedBase;
     const countryAdj = clientRatesData.adjustments.find(
       (a) => a.type === 'country' && a.key === clientCountryKey,
     );
@@ -116,7 +121,9 @@ export function computePaymentValues(params: {
   const amountRMB =
     currency === 'RMB'
       ? parseFloat(inputAmount) || 0
-      : Math.round(amountXAF * rate * 100) / 100;
+      : rate > 0
+        ? Math.round(amountXAF * rate * 100) / 100
+        : 0;
 
   const hasEnoughBalance = amountXAF <= walletBalanceXaf;
   const isValidAmount =
@@ -124,5 +131,5 @@ export function computePaymentValues(params: {
   const showRate = amountXAF > 0;
   const balanceAfter = walletBalanceXaf - amountXAF;
 
-  return { rate, amountXAF, amountRMB, balanceAfter, hasEnoughBalance, isValidAmount, showRate };
+  return { rate, rateAvailable: rate > 0, amountXAF, amountRMB, balanceAfter, hasEnoughBalance, isValidAmount, showRate };
 }

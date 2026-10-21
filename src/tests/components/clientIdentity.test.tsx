@@ -174,7 +174,7 @@ vi.mock('@/hooks/useShippingSettings', () => ({ useAdminShippingSettings: () => 
 vi.mock('@/hooks/useAdminDeleteClient', () => ({ useAdminDeleteClient: () => ({ mutate: vi.fn(), isPending: false }) }));
 
 import { DesktopClientPanel } from '@/desktop/screens/clients/DesktopClientPanel';
-import { MobileClientDetail } from '@/mobile/screens/clients/MobileClientDetail';
+import { MobileClientIdentity } from '@/mobile/screens/clients/MobileClientIdentity';
 import { AdminAuthContext } from '@/contexts/AdminAuthContext';
 
 function baseClient(o: Record<string, unknown> = {}) {
@@ -228,11 +228,20 @@ describe('La fiche client montre le sexe et la date de naissance', () => {
     vi.useRealTimers();
   });
 
-  it('téléphone : deux phrases, comme les lignes voisines', () => {
+  // Refonte v2 (maquette 10/10) : sur le téléphone, le sexe et la naissance sont dans « … › Identité ».
+  it('téléphone : l’écran Identité montre le sexe et la date, et n’envoie l’identité que si elle change', async () => {
     client = baseClient();
-    mount(<MobileClientDetail />, '/m/clients/u1', '/m/clients/:clientId');
-    expect(screen.getByText(/^Sexe :/).textContent).toBe('Sexe : Femme.');
-    expect(screen.getByText(/^Date de naissance :/).textContent).toBe('Date de naissance : 21 avril 1988 (38 ans).');
+    updateClient.mockClear();
+    setIdentity.mockClear();
+    mount(<MobileClientIdentity />, '/m/clients/u1/identite', '/m/clients/:clientId/identite');
+    expect(screen.getByRole('radio', { name: 'Femme' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByLabelText('Naissance')).toHaveValue('21/04/1988');
+    fireEvent.change(screen.getByLabelText('Naissance'), { target: { value: '12031985' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    });
+    expect(updateClient).toHaveBeenCalledTimes(1);
+    expect(setIdentity).toHaveBeenCalledWith({ userId: 'u1', birthDate: '1985-03-12' });
     vi.useRealTimers();
   });
 });

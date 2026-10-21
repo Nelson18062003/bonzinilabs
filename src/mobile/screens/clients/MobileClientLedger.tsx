@@ -20,6 +20,7 @@ import { ENTRY_TYPE_CONFIG } from '@/lib/ledgerDisplay';
 import { SkeletonListScreen } from '@/mobile/components/ui/SkeletonCard';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
 import { SURFACE, TEXT, Chip, Holder, Line } from '@/mobile/designKit';
+import { MobileClientLedgerV2 } from './MobileClientLedgerV2';
 
 const FILTER_OPTIONS: { value: LedgerEntryType | 'all'; label: string }[] = [
   { value: 'all', label: 'Tout' },
@@ -38,7 +39,15 @@ const AMOUNT_COLOR: Record<string, string> = {
 };
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
+/**
+ * Le téléphone a le relevé v2 (MobileClientLedgerV2, maquette 03/06) ;
+ * l'ordinateur garde cet écran tel qu'il était (`desktop`).
+ */
 export function MobileClientLedger({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <ClassicLedger desktop /> : <MobileClientLedgerV2 />;
+}
+
+function ClassicLedger({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { clientId } = useParams();
   const [filter, setFilter] = useState<LedgerEntryType | 'all'>('all');

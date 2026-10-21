@@ -25,7 +25,9 @@ export type SiteToApp =
   | { type: 'scan-open'; continuous: boolean }
   | { type: 'scan-close' }
   /** Le lieu de réception de ce téléphone (bureau / entrepôt) : la pastille « Paquets » ne vaut qu'au bureau. */
-  | { type: 'reception-location'; location: 'office' | 'warehouse' | null };
+  | { type: 'reception-location'; location: 'office' | 'warehouse' | null }
+  /** La carte « Moi » en tête de « Plus » : l'app ouvre son écran natif Moi. */
+  | { type: 'open-me' };
 
 /** Ce que l'app peut demander au site (window.__bonziniHQ). */
 export interface NativeSiteApi {

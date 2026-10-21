@@ -1,23 +1,27 @@
 // ============================================================
-// AGENT-CASH — AgentCashScanner (QR html5-qrcode + saisie manuelle)
-// Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
-//   cadre caméra + états en Card/Holder · saisie manuelle en Card +
-//   TextInput + PrimaryPill.
+// AGENT-CASH — AgentCashScanner, v2 (maquette 02-operations/12) : la
+//   caméra plein écran (le seul écran sombre), le cadre de visée, Fermer,
+//   et « Saisir le code » (douchette / saisie manuelle) dans une feuille.
 // ⚠️ LOGIQUE CAMÉRA/SCANNER 100% INTACTE : safeStopScanner, l'effet de
 //   démarrage, handleScanResult, le mapping d'erreurs caméra, le div
 //   #agent-cash-qr-reader (cible de montage html5-qrcode) et ses classes,
-//   handleManualSearch — RIEN n'est touché côté scanner.
+//   handleManualSearch.
+// Dans l'app BONZINI HQ : c'est la caméra NATIVE qui lit (même pont que
+// useQrScanner) ; un bouton la rouvre. Un QR lu (ou saisi) ouvre la fiche
+// avec le contenu lu (« ?qr=… », qui porte le jeton secret du client) : c'est
+// ce qui y autorise « Procéder au paiement ». L'identifiant seul ne suffit pas.
 // ============================================================
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { parseCashQRCode } from '@/hooks/useCashPayment';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { ScanLine, Search, AlertCircle, Camera } from 'lucide-react';
+import { ScanLine, Search, AlertCircle, Camera, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, Card, Holder, TextInput, PrimaryPill } from '@/mobile/designKit';
+import { BigButton, BottomSheet, TEXT, TextInput } from '@/mobile/designKit';
+import { isNativeApp } from '@/lib/nativeApp';
+import { closeNativeScanner, openNativeScanner, registerNativeScanner } from '@/lib/nativeBridge';
 
 function safeStopScanner(scanner: Html5Qrcode | null) {
   if (!scanner) return;
@@ -36,8 +40,10 @@ export function AgentCashScanner() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [manualId, setManualId] = useState('');
+  const [manualOpen, setManualOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isStarting, setIsStarting] = useState(true);
+  const native = isNativeApp();
+  const [isStarting, setIsStarting] = useState(!native);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const hasNavigated = useRef(false);
 
@@ -49,13 +55,17 @@ export function AgentCashScanner() {
       hasNavigated.current = true;
       // Stop scanner before navigating
       safeStopScanner(scannerRef.current);
-      navigate(`/a/payment/${paymentId}`);
+      if (native) closeNativeScanner();
+      navigate(`/a/payment/${paymentId}?qr=${encodeURIComponent(decodedText.trim())}`);
     } else {
       toast.error(t('invalid_qr'));
     }
-  }, [navigate, t]);
+  }, [navigate, t, native]);
 
   useEffect(() => {
+    // App BONZINI HQ : la caméra native lit et rend le texte ici.
+    if (native) return registerNativeScanner((text) => handleScanResult(text));
+
     const scannerId = 'agent-cash-qr-reader';
     let mounted = true;
 
@@ -110,7 +120,7 @@ export function AgentCashScanner() {
       safeStopScanner(scannerRef.current);
       scannerRef.current = null;
     };
-  }, [handleScanResult, t]);
+  }, [handleScanResult, t, native]);
 
   const handleManualSearch = () => {
     const input = manualId.trim();
@@ -118,82 +128,88 @@ export function AgentCashScanner() {
 
     const { paymentId, isValid } = parseCashQRCode(input);
     if (isValid && paymentId) {
-      navigate(`/a/payment/${paymentId}`);
+      navigate(`/a/payment/${paymentId}?qr=${encodeURIComponent(input)}`);
     } else {
       toast.error(t('invalid_qr'));
     }
   };
 
   return (
-    <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader title={t('scanner')} />
-
-      <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-4 sm:space-y-6">
-        {/* Camera viewfinder */}
-        <Card className="overflow-hidden p-0">
-          {isStarting && !cameraError && (
-            <div className="flex h-72 flex-col items-center justify-center gap-3">
-              <Holder icon={Camera} size="lg" className="animate-pulse" />
-              <p className={cn('text-sm', TEXT.muted)}>{t('scanning')}</p>
-            </div>
-          )}
-
-          {cameraError && (
-            <div className="flex h-72 flex-col items-center justify-center gap-3 p-6 text-center">
-              <Holder icon={AlertCircle} tone="danger" size="lg" />
-              <p className={cn('text-sm', TEXT.muted)}>{cameraError}</p>
-            </div>
-          )}
-
-          <div
-            id="agent-cash-qr-reader"
-            className={cameraError ? 'hidden' : ''}
-            style={{ width: '100%' }}
-          />
-
-          {!cameraError && !isStarting && (
-            <div className="p-3 text-center">
-              <div className={cn('flex items-center justify-center gap-2 text-sm', TEXT.muted)}>
-                <ScanLine className="w-4 h-4" />
-                <span>{t('align_qr')}</span>
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* Section label — whitespace only, no divider lines (kit language) */}
-        <p className={cn('px-1 pt-1 text-[14px] font-bold uppercase tracking-wider', TEXT.muted)}>
-          {t('manual_entry')}
-        </p>
-
-        {/* Manual entry */}
-        <Card className="space-y-3">
-          <p className={cn('text-sm', TEXT.muted)}>{t('enter_payment_id')}</p>
-          <div className="flex gap-2">
-            <TextInput
-              value={manualId}
-              onChange={(e) => setManualId(e.target.value)}
-              placeholder="Payment ID / QR content"
-              className="flex-1 font-mono"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              enterKeyHint="search"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleManualSearch();
-              }}
-            />
-            <PrimaryPill
-              onClick={handleManualSearch}
-              disabled={!manualId.trim()}
-              ariaLabel={t('search')}
-              className="shrink-0 px-4"
-            >
-              <Search className="w-4 h-4" />
-            </PrimaryPill>
-          </div>
-        </Card>
+    <div className="fixed inset-0 z-30 flex flex-col bg-[#1E1E1E] text-white">
+      <div className="flex h-16 shrink-0 items-center justify-between px-4 pt-[env(safe-area-inset-top)]">
+        <button type="button" onClick={() => navigate('/a')} aria-label={t('cash_close')} className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white/80">
+          <X className="h-7 w-7" />
+        </button>
+        <h1 className="text-[18px] font-semibold">{t('cash_qr_title')}</h1>
+        <span className="h-12 w-12" aria-hidden />
       </div>
+
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+        {native ? (
+          <button type="button" onClick={() => openNativeScanner()} className="flex h-14 w-full max-w-sm items-center justify-center gap-2 rounded-lg bg-white text-[18px] font-semibold text-[#1E1E1E]">
+            <ScanLine className="h-5 w-5" />
+            {t('open_scanner')}
+          </button>
+        ) : (
+          <div className="relative w-full max-w-[300px]">
+            {/* Le cadre de visée, aux quatre coins */}
+            <span aria-hidden className="pointer-events-none absolute -left-3 -top-3 z-10 h-12 w-12 rounded-tl-lg border-l-4 border-t-4 border-white" />
+            <span aria-hidden className="pointer-events-none absolute -right-3 -top-3 z-10 h-12 w-12 rounded-tr-lg border-r-4 border-t-4 border-white" />
+            <span aria-hidden className="pointer-events-none absolute -bottom-3 -left-3 z-10 h-12 w-12 rounded-bl-lg border-b-4 border-l-4 border-white" />
+            <span aria-hidden className="pointer-events-none absolute -bottom-3 -right-3 z-10 h-12 w-12 rounded-br-lg border-b-4 border-r-4 border-white" />
+            <div className="aspect-square w-full overflow-hidden rounded-lg bg-black">
+              {isStarting && !cameraError && (
+                <div className="flex h-full flex-col items-center justify-center gap-3">
+                  <Camera className="h-9 w-9 animate-pulse" />
+                  <p className="text-[16px] text-white/80">{t('scanning')}</p>
+                </div>
+              )}
+              {cameraError && (
+                <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+                  <AlertCircle className="h-9 w-9 text-[#FDD3D0]" />
+                  <p className="text-[16px] text-white/90">{cameraError}</p>
+                </div>
+              )}
+              <div
+                id="agent-cash-qr-reader"
+                className={cameraError ? 'hidden' : ''}
+                style={{ width: '100%' }}
+              />
+            </div>
+          </div>
+        )}
+        {!native && !cameraError && !isStarting && (
+          <p className="mt-8 text-[17px] text-white/85">{t('align_qr')}</p>
+        )}
+      </div>
+
+      <div className="shrink-0 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-3">
+        <button type="button" onClick={() => setManualOpen(true)} className="flex h-14 w-full items-center justify-center rounded-lg border-2 border-white/80 text-[18px] font-semibold">
+          {t('cash_enter_code')}
+        </button>
+      </div>
+
+      <BottomSheet open={manualOpen} onClose={() => setManualOpen(false)}>
+        <h3 className={cn('text-[22px] font-semibold', TEXT.strong)}>{t('cash_enter_code')}</h3>
+        <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{t('enter_payment_id')}</p>
+        <TextInput
+          value={manualId}
+          onChange={(e) => setManualId(e.target.value)}
+          placeholder="Payment ID / QR content"
+          className="mt-4 h-14 font-mono"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="search"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleManualSearch();
+          }}
+        />
+        <BigButton className="mt-5" onClick={handleManualSearch} disabled={!manualId.trim()}>
+          <Search className="h-5 w-5" />
+          {t('search')}
+        </BigButton>
+      </BottomSheet>
     </div>
   );
 }

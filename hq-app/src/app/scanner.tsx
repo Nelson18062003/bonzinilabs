@@ -25,7 +25,7 @@ const BARCODES = ['qr', 'code128', 'code39', 'code93', 'ean13', 'ean8', 'upc_a',
 const SAME_CODE_MS = 2500;
 
 export default function Scanner() {
-  const { scan, setScan, web, user, setNativeTab } = useHQ();
+  const { scan, setScan, web, user } = useHQ();
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
   const [last, setLast] = useState<string | null>(null);
@@ -76,7 +76,6 @@ export default function Scanner() {
       setUnknown(text);
       return;
     }
-    setNativeTab(null);
     web.current?.navigate(action.path);
     if (action.kind === 'deliver') web.current?.deliverScan(action.text);
     close();

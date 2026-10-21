@@ -197,6 +197,20 @@ export function usePaginatedAdminPayments(filters?: PaymentFilters) {
         query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`);
       }
 
+      // Server-side search, same rule as the desktop table: reference,
+      // beneficiary name / identifier, or the client's name / phone / company.
+      if (filters?.search?.trim()) {
+        const term = sanitizeTerm(filters.search);
+        const userIds = await searchClientIds(term);
+        const ors = [
+          `reference.ilike.%${term}%`,
+          `beneficiary_name.ilike.%${term}%`,
+          `beneficiary_identifier.ilike.%${term}%`,
+        ];
+        if (userIds.length > 0) ors.push(`user_id.in.(${userIds.join(',')})`);
+        query = query.or(ors.join(','));
+      }
+
       const { data: payments, error: paymentsError } = await query
         .range(pageParam, pageParam + PAGE_SIZE - 1);
 

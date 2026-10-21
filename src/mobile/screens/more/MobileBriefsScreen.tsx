@@ -3,8 +3,14 @@ import { useLatestMacroSnapshot, useRecentBriefs, useRecentTrumpPosts, useLatest
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, Minus, Loader2, AlertCircle, Newspaper } from 'lucide-react';
+import { BriefsV2 } from './BriefsV2';
 
+/** Téléphone : la v2 (BriefsV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileBriefsScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileBriefsScreen desktop /> : <BriefsV2 />;
+}
+
+function LegacyMobileBriefsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { data: macro, isLoading: loadingMacro } = useLatestMacroSnapshot();
   const { data: briefs, isLoading: loadingBriefs } = useRecentBriefs(3);
   const { data: trumpPosts, isLoading: loadingTrump } = useRecentTrumpPosts(5);

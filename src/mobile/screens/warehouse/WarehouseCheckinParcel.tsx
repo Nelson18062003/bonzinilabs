@@ -3,24 +3,21 @@
 // est-il là ? », et trois réponses. En bon état : pointé, retour à la liste.
 // Abîmé : une remarque, puis pointé abîmé. Manquant : une confirmation.
 // Un colis déjà pointé, abîmé ou manquant se corrige ici, de la même façon.
+// Refonte v2 (maquette 10/50) : la photo prise à Guangzhou en grand, la
+// rangée et la remarque, « Oui, en bon état » en noir ; abîmé et manquant
+// à côté (manquant passe par une confirmation).
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Check, PackageX } from 'lucide-react';
 import { toast } from 'sonner';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useCheckinParcel, useFlagMissing, useWarehouseArrival } from '@/hooks/useWarehouse';
-import { warehouseStage } from '@/lib/warehouse';
+import { checkinSummary, warehouseStage } from '@/lib/warehouse';
+import { clientFullName, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill, StatusPill } from '@/mobile/designKit';
-import { TextArea } from '@/components/form';
-import { formatDateTime } from '@/mobile/components/reception/bits';
-import { AnswerButton, CheckMark, ClientHead, ParcelText, WhQuestion } from '@/mobile/components/warehouse/bits';
-import { ParcelThumb } from '@/mobile/components/reception/bits';
+import { BigButton, ConfirmSheet, Dock, EmptyLine, ScreenLoader, ScreenTop, SURFACE, TEXT, Tag, TextInput } from '@/mobile/designKit';
+import { ParcelThumb, formatDateTime } from '@/mobile/components/reception/bits';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
-import { PackageChip } from '@/mobile/components/warehouse/packages';
-
-type Step = 'state' | 'damaged' | 'missing';
+import { CapsLabel } from '@/mobile/components/cargo/v2';
 
 export function WarehouseCheckinParcel() {
   const navigate = useNavigate();
@@ -28,8 +25,9 @@ export function WarehouseCheckinParcel() {
   const { data, isLoading, error, refetch } = useWarehouseArrival(kind, id);
   const checkin = useCheckinParcel();
   const flag = useFlagMissing();
-  const [step, setStep] = useState<Step>('state');
-  const [note, setNote] = useState('');
+  const [missingOpen, setMissingOpen] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [placeDraft, setPlaceDraft] = useState<string | null>(null);
   const viewer = useParcelViewer();
   // Ouvert depuis un paquet (?paquet=PQ-…) : on y revient.
   const fromPackage = useSearchParams()[0].get('paquet');
@@ -37,57 +35,87 @@ export function WarehouseCheckinParcel() {
 
   if (isLoading) return <ScreenLoader className="min-h-[100dvh]" />;
   const parcel = data?.parcels.find((p) => p.id === parcelId);
-  if (error || !data || !parcel) return <ScreenError description={(error as Error | null)?.message ?? 'Colis introuvable dans cette arrivée'} onRetry={() => void refetch()} />;
+  if (error || !data || !parcel) {
+    return (
+      <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+        <ScreenTop title="Colis" backTo={back} />
+        <EmptyLine action={{ label: 'Réessayer', onClick: () => void refetch() }}>{(error as Error | null)?.message ?? 'Colis introuvable dans cette arrivée'}</EmptyLine>
+      </div>
+    );
+  }
   const st = warehouseStage(parcel);
   const busy = checkin.isPending || flag.isPending;
   const done = (msg: string) => { toast.success(msg); navigate(back, { replace: true }); };
-  const place = (() => { try { return sessionStorage.getItem('bonzini-warehouse-place') ?? ''; } catch { return ''; } })();
+  const saved = (() => { try { return sessionStorage.getItem('bonzini-warehouse-place') ?? ''; } catch { return ''; } })();
+  const place = (placeDraft ?? (parcel.warehouse_location || saved)).trim();
+  const remark = (note ?? parcel.condition_note ?? '').trim();
+  const sum = checkinSummary(data.parcels);
+  const keepPlace = () => { if (placeDraft != null) { try { sessionStorage.setItem('bonzini-warehouse-place', place); } catch { /* privé */ } } };
+  const okNow = () => { keepPlace(); checkin.mutate({ parcelId: parcel.id, location: place || undefined, condition: 'ok' }, { onSuccess: () => done(`${parcel.parcel_no} pointé`) }); };
+  const damagedNow = () => { keepPlace(); checkin.mutate({ parcelId: parcel.id, location: place || undefined, condition: 'damaged', note: remark || undefined }, { onSuccess: () => done(`${parcel.parcel_no} pointé, abîmé`) }); };
 
   return (
-    <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-      <MobileHeader title={parcel.parcel_no} subtitle={data.label} showBack backTo={back} />
-      <div className="space-y-6 px-4 pb-10 pt-4">
-        <Card className="space-y-3">
-          <ClientHead client={parcel.client} size="md" />
-          <div className="flex items-center gap-3 border-t pt-3 dark:border-[#444444]"><CheckMark parcel={parcel} size="lg" /><ParcelText parcel={parcel} withTransport /><ParcelThumb path={parcel.photo_path} onOpen={() => viewer.open(0)} size="h-16 w-16" /></div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="flex flex-wrap items-center gap-2"><StatusPill tone={st.tone} label={st.label} />{parcel.package_no && <PackageChip no={parcel.package_no} className="h-8" />}</span>
-            {parcel.checked_in_at && <span className={cn('tabular-nums', TYPE.small, TEXT.muted)}>pointé le {formatDateTime(parcel.checked_in_at)}</span>}
-          </div>
-        </Card>
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={parcel.parcel_no} backTo={back} step={`${sum.seen}/${sum.total}`} />
+      <div className="flex-1 space-y-4 px-5 pb-20 pt-4">
+        {/* La photo prise à Guangzhou : on compare avec le carton qu'on a devant soi. */}
+        <button type="button" onClick={() => viewer.open(0)} className="block w-full overflow-hidden rounded-lg" aria-label="Voir la photo en grand">
+          <ParcelThumb path={parcel.photo_path} size="h-[220px] w-full" />
+        </button>
+        <p className={cn('text-[15px]', TEXT.muted)}>
+          Photo prise à Guangzhou · {parcel.description || parcel.kind} · {formatKg(parcel.weight_kg)}
+          {parcel.client ? ` · ${clientFullName(parcel.client)}` : ''}
+          {parcel.package_no ? ` · ${parcel.package_no}` : ''}
+        </p>
+        {(parcel.checked_in_at || parcel.condition) && (
+          <p className="flex flex-wrap items-center gap-2">
+            <Tag tone={st.tone === 'info' ? 'neutral' : st.tone}>{st.label}</Tag>
+            {parcel.checked_in_at && <span className={cn('text-[15px] tabular-nums', TEXT.muted)}>pointé le {formatDateTime(parcel.checked_in_at)}</span>}
+          </p>
+        )}
 
         {parcel.delivered_at ? (
-          <WhQuestion title="Déjà remis au client" help={`Ce colis est sorti de l'entrepôt${parcel.release_no ? ` (bon ${parcel.release_no})` : ''}. Il n'y a plus rien à pointer.`} />
-        ) : step === 'state' ? (
-          <>
-            <WhQuestion title="Ce colis est-il là ?" help={parcel.condition === 'missing' ? 'Il avait été déclaré manquant. S\'il est retrouvé, pointez-le.' : 'Regardez le carton : est-il entier, fermé, sec ?'} />
-            <div className="space-y-3">
-              <AnswerButton icon={Check} tone="primary" title="Oui, en bon état" help={place ? `Pointé, rangé en ${place}` : 'Pointé, prêt pour le client'} loading={busy}
-                onClick={() => checkin.mutate({ parcelId: parcel.id, location: place || undefined, condition: 'ok' }, { onSuccess: () => done(`${parcel.parcel_no} pointé`) })} />
-              <AnswerButton icon={AlertTriangle} tone="warn" title="Oui, mais abîmé" help="Ouvert, mouillé, écrasé : vous direz quoi" onClick={() => { setNote(parcel.condition_note ?? ''); setStep('damaged'); }} />
-              {parcel.condition !== 'missing' && <AnswerButton icon={PackageX} tone="danger" title="Non, il manque" help="Jamais vu à l'arrivée" onClick={() => { setNote(''); setStep('missing'); }} />}
-            </div>
-          </>
-        ) : step === 'damaged' ? (
-          <>
-            <WhQuestion title="Qu'est-ce qui ne va pas ?" help="Une phrase suffit. Elle sera sur le bon de retrait et l'équipe la verra." />
-            <TextArea id="ck-note" label="Remarque" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Carton ouvert sur un coin, contenu intact" controlClassName="min-h-[96px]" autoFocus />
-            <div className="space-y-2">
-              <PrimaryPill onClick={() => checkin.mutate({ parcelId: parcel.id, location: place || undefined, condition: 'damaged', note: note.trim() || undefined }, { onSuccess: () => done(`${parcel.parcel_no} pointé, abîmé`) })} loading={busy} className="h-14 w-full text-[17px]"><AlertTriangle /> Pointer abîmé</PrimaryPill>
-              <SoftPill onClick={() => setStep('state')} className="h-12 w-full text-[16px]">Retour</SoftPill>
-            </div>
-          </>
+          <p className={cn('text-[22px] font-semibold', TEXT.strong)}>Déjà remis{parcel.release_no ? ` · ${parcel.release_no}` : ''}</p>
         ) : (
           <>
-            <WhQuestion title="Le déclarer manquant ?" help="Il restera attendu. L'équipe le verra dans la console et cherchera avec Guangzhou. S'il arrive plus tard, vous le pointerez." />
-            <TextArea id="ck-missing" label="Remarque (facultatif)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Absent de la palette 2" controlClassName="min-h-[72px]" />
-            <div className="space-y-2">
-              <PrimaryPill onClick={() => flag.mutate({ parcelId: parcel.id, missing: true, note: note.trim() || undefined }, { onSuccess: () => done(`${parcel.parcel_no} déclaré manquant`) })} loading={busy} className="h-14 w-full bg-[#C00F0C] text-[17px] text-white dark:bg-[#EC221F] dark:text-white"><PackageX /> Oui, manquant</PrimaryPill>
-              <SoftPill onClick={() => setStep('state')} className="h-12 w-full text-[16px]">Retour</SoftPill>
+            <h2 className={cn('pt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em]', TEXT.strong)}>Ce colis est-il là ?</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="space-y-2">
+                <CapsLabel>Rangée</CapsLabel>
+                <TextInput value={placeDraft ?? (parcel.warehouse_location || saved)} onChange={(e) => setPlaceDraft(e.target.value)} placeholder="B3" className="h-14 text-[17px]" />
+              </label>
+              <label className="space-y-2">
+                <CapsLabel>Remarque</CapsLabel>
+                <TextInput value={note ?? parcel.condition_note ?? ''} onChange={(e) => setNote(e.target.value)} placeholder="Facultatif" className="h-14 text-[17px]" />
+              </label>
             </div>
           </>
         )}
       </div>
+
+      {!parcel.delivered_at && (
+        <Dock>
+          <BigButton onClick={okNow} loading={checkin.isPending} disabled={busy}>Oui, en bon état</BigButton>
+          <div className="grid grid-cols-2 gap-2.5">
+            <BigButton variant="soft" onClick={damagedNow} disabled={busy}>Oui, mais abîmé</BigButton>
+            {parcel.condition !== 'missing'
+              ? <BigButton variant="soft" onClick={() => setMissingOpen(true)} disabled={busy}>Non, il manque</BigButton>
+              : <BigButton variant="soft" onClick={() => navigate(back)} disabled={busy}>Retour</BigButton>}
+          </div>
+        </Dock>
+      )}
+
+      <ConfirmSheet
+        open={missingOpen}
+        danger
+        onClose={() => setMissingOpen(false)}
+        title="Le déclarer manquant ?"
+        subtitle={`${parcel.parcel_no} · ${data.label}`}
+        rows={[{ label: 'Remarque', value: remark || '—' }]}
+        confirmLabel="Oui, manquant"
+        loading={flag.isPending}
+        onConfirm={() => flag.mutate({ parcelId: parcel.id, missing: true, note: remark || undefined }, { onSuccess: () => { setMissingOpen(false); done(`${parcel.parcel_no} déclaré manquant`); } })}
+      />
       <ParcelPhotoViewer parcels={[{ ...parcel, note: `Photo prise à Guangzhou · ${st.label}` }]} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={data.label} />
     </div>
   );

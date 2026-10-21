@@ -185,7 +185,13 @@
       "newBalance": "Nouveau solde",
       "debitNotice": "Votre solde est débité à la confirmation. Bonzini règle ensuite votre fournisseur et vous envoie la preuve."
     },
-    "rateAppliedTitle": "Taux du jour appliqué"
+    "rateAppliedTitle": "Taux du jour appliqué",
+    "rateUnavailable": {
+      "loading": "Lecture du taux du jour…",
+      "title": "Taux du jour indisponible",
+      "message": "Votre paiement attend le taux publié. Réessayez dans un instant.",
+      "retry": "Réessayer"
+    }
   },
   "detail": {
     "title": "Détail du paiement",

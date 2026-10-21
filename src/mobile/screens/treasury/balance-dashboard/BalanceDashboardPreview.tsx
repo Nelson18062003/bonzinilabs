@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import {
   COLORS,
+  LIGHT_COLORS,
   DASHBOARD_ACCOUNTS,
   LAYOUT,
   PAGE,
@@ -15,7 +16,11 @@ interface Props {
   balances: Record<string, number>;
   /** Generation timestamp (header date + footer). */
   generatedAt: Date;
+  /** Sombre par défaut (l'image d'origine) ; clair pour le partage mobile. */
+  theme?: 'dark' | 'light';
 }
+
+type Palette = Record<keyof typeof COLORS, string>;
 
 const FONT = "'DM Sans', system-ui, sans-serif";
 
@@ -31,7 +36,7 @@ function GradientLine({ width }: { width: number }) {
   );
 }
 
-function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS)[number]; balance: number }) {
+function AccountCard({ account, balance, C }: { account: (typeof DASHBOARD_ACCOUNTS)[number]; balance: number; C: Palette }) {
   // All cards render at full brightness regardless of balance (zero-dimming removed per request).
   const accent = account.color;
 
@@ -41,8 +46,8 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
         position: 'relative',
         width: LAYOUT.cardWidth,
         height: LAYOUT.cardHeight,
-        background: COLORS.cardBg,
-        border: `0.5px solid ${COLORS.cardBorder}`,
+        background: C.cardBg,
+        border: `0.5px solid ${C.cardBorder}`,
         borderRadius: LAYOUT.cardRadius,
         boxSizing: 'border-box',
         overflow: 'hidden',
@@ -94,7 +99,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
           fontFamily: FONT,
           fontWeight: 700,
           fontSize: 14,
-          color: COLORS.textWhite,
+          color: C.textWhite,
           whiteSpace: 'nowrap',
         }}
       >
@@ -104,8 +109,8 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
       {/* Type badge */}
       {(() => {
         const isMobile = account.type === 'Mobile Money';
-        const badgeBg = isMobile ? COLORS.badgeMobileBg : COLORS.badgeBankBg;
-        const badgeText = isMobile ? COLORS.badgeMobileText : COLORS.badgeBankText;
+        const badgeBg = isMobile ? C.badgeMobileBg : C.badgeBankBg;
+        const badgeText = isMobile ? C.badgeMobileText : C.badgeBankText;
         const label = isMobile ? 'Mobile Money' : 'Bank';
         return (
           <div
@@ -137,7 +142,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
             fontFamily: FONT,
             fontWeight: 700,
             fontSize: 22,
-            color: COLORS.textWhite,
+            color: C.textWhite,
           }}
         >
           {formatXAF(balance)}
@@ -148,7 +153,7 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
             fontWeight: 400,
             fontSize: 13,
             marginLeft: 4,
-            color: COLORS.textMuted,
+            color: C.textMuted,
           }}
         >
           XAF
@@ -164,9 +169,10 @@ function AccountCard({ account, balance }: { account: (typeof DASHBOARD_ACCOUNTS
  * The ref points to the root node for html-to-image capture.
  */
 export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(function BalanceDashboardPreview(
-  { balances, generatedAt },
+  { balances, generatedAt, theme = 'dark' },
   ref,
 ) {
+  const C: Palette = theme === 'light' ? LIGHT_COLORS : COLORS;
   const total = DASHBOARD_ACCOUNTS.reduce((s, a) => s + (balances[a.key] || 0), 0);
 
   return (
@@ -175,7 +181,7 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
       style={{
         width: PAGE.width,
         height: PAGE.height,
-        background: COLORS.bg,
+        background: C.bg,
         position: 'relative',
         fontFamily: FONT,
         boxSizing: 'border-box',
@@ -183,12 +189,12 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
     >
       {/* Header */}
       <div style={{ position: 'absolute', top: 40, left: LAYOUT.margin, width: LAYOUT.contentWidth, textAlign: 'center' }}>
-        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 28, color: COLORS.textWhite, letterSpacing: 0.5 }}>
+        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 28, color: C.textWhite, letterSpacing: 0.5 }}>
           MY ACCOUNT BALANCES
         </div>
       </div>
       <div style={{ position: 'absolute', top: 78, left: LAYOUT.margin, width: LAYOUT.contentWidth, textAlign: 'center' }}>
-        <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 13, color: COLORS.textMuted }}>
+        <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 13, color: C.textMuted }}>
           {formatHeaderDate(generatedAt)}
         </span>
       </div>
@@ -204,7 +210,7 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
         const cy = LAYOUT.gridStartY + row * (LAYOUT.cardHeight + LAYOUT.cardGap);
         return (
           <div key={account.key} style={{ position: 'absolute', left: cx, top: cy }}>
-            <AccountCard account={account} balance={balances[account.key] || 0} />
+            <AccountCard account={account} balance={balances[account.key] || 0} C={C} />
           </div>
         );
       })}
@@ -227,23 +233,23 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
                 left: LAYOUT.margin,
                 width: LAYOUT.contentWidth,
                 height: cardH,
-                background: COLORS.totalCardBg,
-                border: `1px solid ${COLORS.totalCardBorder}`,
+                background: C.totalCardBg,
+                border: `1px solid ${C.totalCardBorder}`,
                 borderRadius: LAYOUT.cardRadius,
                 boxSizing: 'border-box',
-                borderTop: `3px solid ${darken(COLORS.greenAccent, 0.3)}`,
+                borderTop: `3px solid ${darken(C.greenAccent, 0.3)}`,
               }}
             >
               <div style={{ width: '100%', textAlign: 'center', marginTop: 20 }}>
-                <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 13, color: COLORS.textMuted, letterSpacing: 1 }}>
+                <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 13, color: C.textMuted, letterSpacing: 1 }}>
                   TOTAL BALANCE
                 </span>
               </div>
               <div style={{ width: '100%', textAlign: 'center', marginTop: 8, display: 'flex', alignItems: 'baseline', justifyContent: 'center' }}>
-                <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 38, color: COLORS.textWhite }}>
+                <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 38, color: C.textWhite }}>
                   {formatXAF(total)}
                 </span>
-                <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 20, color: COLORS.greenAccent, marginLeft: 6 }}>
+                <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 20, color: C.greenAccent, marginLeft: 6 }}>
                   XAF
                 </span>
               </div>
@@ -254,7 +260,7 @@ export const BalanceDashboardPreview = forwardRef<HTMLDivElement, Props>(functio
 
       {/* Footer */}
       <div style={{ position: 'absolute', bottom: 22, left: LAYOUT.margin, width: LAYOUT.contentWidth, textAlign: 'center' }}>
-        <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 8, color: COLORS.textVeryDim }}>
+        <span style={{ fontFamily: FONT, fontWeight: 400, fontSize: 8, color: C.textVeryDim }}>
           Automatically generated document  —  Bonzini  —  {formatFooterTimestamp(generatedAt)}
         </span>
       </div>

@@ -6,18 +6,18 @@
 // client si l'on vient de là, `?from=client`). Si l'appareil ne sait pas
 // encore où il est (bureau ou entrepôt), on le demande ICI : jamais un
 // « Continuer » grisé sans raison.
+// Refonte v2 (maquette 10/43) : le client en carte, quatre grands choix.
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { BROUGHT_BY, initials, type BroughtBy } from '@/lib/reception';
+import { BROUGHT_BY, type BroughtBy } from '@/lib/reception';
 import { useOpenDeposit } from '@/hooks/useReception';
 import type { ReceptionLocation } from '@/lib/reception';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Card, FormField, Holder, PrimaryPill, TextInput } from '@/mobile/designKit';
-import { LocationMark, StepHeader } from '@/mobile/components/reception/bits';
+import { BigButton, Dock, Initials, ScreenTop, SURFACE, TEXT, TextInput, WhoCard } from '@/mobile/designKit';
+import { LocationMark } from '@/mobile/components/reception/bits';
+import { CapsLabel, OptionCard } from '@/mobile/components/cargo/v2';
 import { useReceptionBack, useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
 
@@ -54,85 +54,52 @@ export function ReceptionBroughtBy() {
     if (dep && stillHere()) navigate(`/r/deposit/${dep.id}/supplier`, { replace: true }); // quitté pendant l'envoi : le dépôt attend dans Aujourd'hui
   };
 
+  const placeLabel = location === 'office' ? t('rc_office_short') : location === 'warehouse' ? t('rc_warehouse_short') : null;
   return (
-    <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_new_deposit')} showBack onBack={leave} />
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={t('rc_new_deposit')} step="2/4" onBack={leave} />
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        <StepHeader step={2} total={4} title={t('rc_brought_title')} help={t('rc_s2_help')} />
-
-        {/* Le client, en une ligne : on sait pour qui on travaille, sans que ça prenne l'écran. */}
-        <button type="button" onClick={leave} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.inset)}>
-          <Holder size="sm" tone={clientId ? 'neutral' : 'pending'}>{clientId ? initials(clientName) : '?'}</Holder>
-          <span className={cn('min-w-0 flex-1 break-words', TYPE.bodyStrong, TEXT.strong)}>
-            {clientId ? clientName : t('rc_unknown_client')}
-            {clientCode && <span className={cn('ml-2 whitespace-nowrap font-normal tabular-nums', TEXT.muted)}>{clientCode}</span>}
-          </span>
-          {location && <LocationMark location={location} size={24} />}
-          <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{t('rc_change')}</span>
-        </button>
+      <div className="flex-1 space-y-5 px-5 pb-6 pt-4">
+        {/* Le client, en une carte : on sait pour qui on travaille ; un toucher pour le changer. */}
+        <WhoCard
+          leading={clientId ? <Initials name={clientName} /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] text-[18px] font-semibold text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]">?</span>}
+          name={clientId ? clientName : t('rc_unknown_client')}
+          line={[clientCode, placeLabel].filter(Boolean).join(' · ') || undefined}
+          onClick={leave}
+        />
 
         {!location && (
-          <Card className="space-y-3">
-            <p className={cn(TYPE.bodyStrong, TEXT.strong)}>{t('rc_choose_location')}</p>
-            <p className={cn(TYPE.small, TEXT.muted)}>{t('rc_choose_location_hint')}</p>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2.5">
+            <CapsLabel>{t('rc_choose_location')}</CapsLabel>
+            <div className="grid grid-cols-2 gap-2.5">
               {(['warehouse', 'office'] as ReceptionLocation[]).map((l) => (
-                <button key={l} type="button" onClick={() => setLocation(l)} className={cn('flex min-h-[56px] items-center justify-center gap-2 rounded-lg border px-3', SURFACE.card, SURFACE.divider, TYPE.bodyStrong, TEXT.strong)}>
+                <button key={l} type="button" onClick={() => setLocation(l)} className={cn('flex min-h-[56px] items-center justify-center gap-2 rounded-lg border px-3 text-[17px] font-semibold', SURFACE.divider, TEXT.strong)}>
                   <LocationMark location={l} size={24} /> {l === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}
                 </button>
               ))}
             </div>
-          </Card>
+          </div>
         )}
 
-        <div className="flex flex-col gap-3" role="radiogroup" aria-label={t('rc_brought_title')}>
-          {BROUGHT_BY.map((b) => {
-            const on = choice === b;
-            return (
-              <button
-                key={b}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() => setChoice(b)}
-                className={cn('flex min-h-[76px] w-full items-center gap-4 rounded-lg border px-4 py-4 text-left transition-colors', on ? 'border-[#2C2C2C] bg-[#F5F5F5] dark:border-[#E3E3E3] dark:bg-[#383838]' : cn(SURFACE.card, SURFACE.divider))}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className={cn('block', TYPE.bodyStrong, TEXT.strong)}>{t(`rc_by_${b}`)}</span>
-                  <span className={cn('mt-0.5 block', TYPE.small, TEXT.muted)}>{t(`rc_by_${b}_hint`)}</span>
-                </span>
-                <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full border', on ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'border-[#949494]')}>
-                  {on && <Check className="h-4 w-4" strokeWidth={3} />}
-                </span>
-              </button>
-            );
-          })}
+        <h2 className={cn('text-[24px] font-semibold leading-tight tracking-[-0.01em]', TEXT.strong)}>{t('rc_brought_title')}</h2>
+        <div className="flex flex-col gap-2.5" role="radiogroup" aria-label={t('rc_brought_title')}>
+          {BROUGHT_BY.map((b) => (
+            <OptionCard key={b} selected={choice === b} onClick={() => setChoice(b)} title={t(`rc_by_${b}`)} hint={t(`rc_by_${b}_hint`)}>
+              {b === 'representative' ? (
+                <>
+                  <TextInput value={repName} onChange={(e) => setRepName(e.target.value)} autoCapitalize="words" placeholder={t('rc_rep_name')} aria-label={t('rc_rep_name')} className="h-12" />
+                  <TextInput value={repPhone} onChange={(e) => setRepPhone(e.target.value)} inputMode="tel" placeholder={t('rc_rep_phone')} aria-label={t('rc_rep_phone')} className="h-12" />
+                </>
+              ) : undefined}
+            </OptionCard>
+          ))}
         </div>
-
-        {choice === 'representative' && (
-          <Card className="space-y-4">
-            <FormField label={t('rc_rep_name')} htmlFor="rep-name">
-              <TextInput id="rep-name" value={repName} onChange={(e) => setRepName(e.target.value)} autoCapitalize="words" className="h-12" />
-            </FormField>
-            <FormField label={t('rc_rep_phone')} htmlFor="rep-phone">
-              <TextInput id="rep-phone" value={repPhone} onChange={(e) => setRepPhone(e.target.value)} inputMode="tel" className="h-12" />
-            </FormField>
-          </Card>
-        )}
       </div>
 
-      <div className={cn('shrink-0 space-y-2 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3', SURFACE.canvas)}>
-        {/* Le bouton grisé dit pourquoi. */}
-        {!canOpen && (
-          <p className={cn('text-center', TYPE.small, TEXT.muted)}>
-            {!location ? t('rc_need_location') : !choice ? t('rc_need_brought') : t('rc_need_rep_name')}
-          </p>
-        )}
-        <PrimaryPill onClick={() => void submit()} disabled={!canOpen} loading={open.isPending} className="h-14 w-full text-[17px]">
-          {t('rc_continue_next')}
-        </PrimaryPill>
-      </div>
+      <Dock>
+        {!canOpen && choice && <p className={cn('text-center text-[15px]', TEXT.muted)}>{!location ? t('rc_need_location') : t('rc_need_rep_name')}</p>}
+        <BigButton onClick={() => void submit()} disabled={!canOpen} loading={open.isPending}>{t('rc_continue_next')}</BigButton>
+      </Dock>
     </div>
   );
 }

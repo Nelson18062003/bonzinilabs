@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<style>
+@font-face { font-family: "DM Sans"; font-weight: 400; src: url(dm-sans-latin-400-normal.woff2) format("woff2") }
+@font-face { font-family: "DM Sans"; font-weight: 500; src: url(dm-sans-latin-500-normal.woff2) format("woff2") }
+@font-face { font-family: "DM Sans"; font-weight: 600; src: url(dm-sans-latin-600-normal.woff2) format("woff2") }
+@font-face { font-family: "DM Sans"; font-weight: 700; src: url(dm-sans-latin-700-normal.woff2) format("woff2") }
+* { box-sizing: border-box; margin: 0; padding: 0 }
+/* Le kit BONZINI HQ (src/mobile/designKit/tokens.ts) : blanc, filet #D9D9D9,
+   rayon 8, un seul primaire #2C2C2C, la couleur ne porte que le statut, aucune ombre. */
+:root { --ink: #2C2C2C; --strong: #1E1E1E; --body: #303030; --muted: #5A5A5A; --faint: #757575; --line: #D9D9D9; --soft: #F5F5F5; --field: #949494 }
+body { background: #e9e9ec; font-family: "DM Sans", sans-serif; color: var(--strong); -webkit-font-smoothing: antialiased }
+.board { display: flex; flex-wrap: wrap; gap: 44px; padding: 48px; width: 2000px }
+.shot { display: grid; gap: 14px; justify-items: center }
+.cap { font: 600 17px "DM Sans"; color: #444; text-align: center }
+.ab { width: 393px; height: 852px; border-radius: 52px; overflow: hidden; position: relative; background: #fff; box-shadow: 0 0 0 10px #111, 0 30px 60px -20px rgba(0,0,0,.35); display: flex; flex-direction: column }
+.sbar { height: 54px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 34px 0 42px; font: 600 17px "DM Sans"; position: relative }
+.sbar .di { position: absolute; left: 50%; top: 11px; transform: translateX(-50%); width: 124px; height: 36px; border-radius: 20px; background: #000 }
+.sbar .ic { display: flex; gap: 6px; align-items: center }
+.home-ind { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 136px; height: 5px; border-radius: 3px; background: #111; z-index: 9 }
+.body { flex: 1; overflow: hidden; position: relative }
+.pad { padding: 0 20px }
+/* barre d'onglets */
+.tabs { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px 32px; border-top: 1px solid var(--line); background: #fff }
+.tab { display: grid; justify-items: center; gap: 4px; font: 600 12px "DM Sans"; color: var(--faint); position: relative }
+.tab.on { color: var(--strong) }
+.tab svg { width: 26px; height: 26px }
+.tab .b { position: absolute; top: -4px; left: calc(50% + 6px); background: #EC221F; color: #fff; font: 700 12px/18px "DM Sans"; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; text-align: center }
+/* en-têtes */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 0; height: 56px }
+.hello { font: 600 24px "DM Sans"; letter-spacing: -.02em }
+.icbtn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--line); display: grid; place-items: center; position: relative }
+.icbtn .dot { position: absolute; top: 8px; right: 9px; width: 9px; height: 9px; border-radius: 5px; background: #EC221F }
+.nav { height: 56px; display: flex; align-items: center; gap: 6px; padding: 0 16px 0 10px; border-bottom: 1px solid var(--line) }
+.nav .t { font: 600 18px "DM Sans"; flex: 1 }
+.nav .step { font: 600 16px "DM Sans"; color: var(--muted) }
+/* le chiffre du jour, façon Wave */
+.hero { margin: 14px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 18px 18px 16px }
+.hero .lab { font: 500 16px "DM Sans"; color: var(--muted) }
+.hero .num { font: 700 40px/1.1 "DM Sans"; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums }
+.hero .num small { font-size: 20px; font-weight: 600; color: var(--muted) }
+.hero .sub { font: 500 16px "DM Sans"; color: var(--body); margin-top: 8px; display: flex; gap: 16px }
+.hero .sub b { font-weight: 700 }
+/* les gros boutons ronds, façon Wave */
+.acts { display: grid; grid-template-columns: repeat(4, 1fr); padding: 22px 14px 6px }
+.act { display: grid; justify-items: center; gap: 9px; font: 600 15px/1.2 "DM Sans"; text-align: center; color: var(--strong) }
+.act .r { width: 64px; height: 64px; border-radius: 32px; background: var(--soft); display: grid; place-items: center }
+.act .r.ink { background: var(--ink) }
+.act .r svg { width: 28px; height: 28px }
+.h2 { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 20px 6px }
+.h2 b { font: 600 20px "DM Sans" }
+.h2 a { font: 600 16px "DM Sans"; color: var(--strong); text-decoration: underline; text-underline-offset: 3px }
+/* lignes */
+.list { padding: 0 20px }
+.row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line) }
+.row:last-child { border-bottom: 0 }
+.logo { width: 44px; height: 44px; border-radius: 22px; flex: none; display: grid; place-items: center; overflow: hidden }
+.logo svg { width: 24px; height: 24px }
+.logo img { width: 100%; height: 100% ; object-fit: cover }
+.av { width: 44px; height: 44px; border-radius: 22px; background: var(--soft); display: grid; place-items: center; font: 600 16px "DM Sans"; flex: none }
+.rm { flex: 1; min-width: 0 }
+.rn { font: 600 17px/1.25 "DM Sans"; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.rs { font: 400 15px/1.3 "DM Sans"; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.ra { text-align: right; flex: none }
+.ra b { display: block; font: 700 17px "DM Sans"; font-variant-numeric: tabular-nums }
+.tag { display: inline-block; font: 600 14px/1 "DM Sans"; padding: 5px 8px; border-radius: 6px; margin-top: 5px }
+.t-todo { background: #FFF1C2; color: #682D03 }
+.t-ok { background: #CFF7D3; color: #02542D }
+.t-bad { background: #FDD3D0; color: #900B09 }
+.t-neu { background: #F5F5F5; color: #303030 }
+/* recherche */
+.search { margin: 14px 20px 0; height: 52px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 400 17px "DM Sans"; color: var(--faint) }
+/* contacts récents façon Wave */
+.recent { display: flex; gap: 14px; padding: 18px 20px 4px; overflow: hidden }
+.rc { width: 70px; flex: none; display: grid; justify-items: center; gap: 7px; font: 500 14px/1.2 "DM Sans"; text-align: center }
+.rc .av { width: 60px; height: 60px; border-radius: 30px; font-size: 19px }
+.lbl { font: 600 14px "DM Sans"; color: var(--muted); padding: 22px 20px 4px; text-transform: uppercase; letter-spacing: .05em }
+/* montant + clavier */
+.who { display: flex; align-items: center; gap: 12px; margin: 16px 20px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px }
+.who b { font: 600 17px "DM Sans"; display: block }
+.who span { font: 400 15px "DM Sans"; color: var(--muted) }
+.amt { text-align: center; padding: 34px 20px 0 }
+.amt .big { font: 700 56px/1 "DM Sans"; letter-spacing: -.03em; font-variant-numeric: tabular-nums }
+.amt .cur { display: inline-flex; margin-top: 18px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.amt .cur span { padding: 8px 18px; font: 600 16px "DM Sans" }
+.amt .cur .on { background: var(--ink); color: #F5F5F5 }
+.amt .conv { font: 500 17px "DM Sans"; color: var(--body); margin-top: 16px }
+.amt .rate { font: 400 15px "DM Sans"; color: var(--muted); margin-top: 6px }
+.keys { position: absolute; left: 0; right: 0; bottom: 110px; display: grid; grid-template-columns: repeat(3, 1fr); row-gap: 6px; padding: 0 24px }
+.keys div { height: 58px; display: grid; place-items: center; font: 500 28px "DM Sans" }
+.dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 20px 36px; background: #fff; border-top: 1px solid var(--line) }
+.btn { height: 56px; border-radius: 8px; background: var(--ink); color: #F5F5F5; display: grid; place-items: center; font: 600 18px "DM Sans" }
+.btn.off { background: #D9D9D9; color: #B3B3B3 }
+.btn.soft { background: #fff; color: var(--strong); border: 1px solid var(--line) }
+/* fiche */
+.fiche { text-align: center; padding: 22px 20px 0 }
+.fiche .logo { width: 56px; height: 56px; border-radius: 28px; margin: 0 auto }
+.fiche .logo svg { width: 30px; height: 30px }
+.fiche .big { font: 700 48px/1 "DM Sans"; letter-spacing: -.03em; margin-top: 14px; font-variant-numeric: tabular-nums }
+.fiche .sub { font: 400 16px "DM Sans"; color: var(--muted); margin-top: 8px }
+.fiche .tag { font-size: 15px; padding: 6px 10px; margin-top: 12px }
+.box { margin: 18px 20px 0; border: 1px solid var(--line); border-radius: 8px }
+.kv { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); font: 400 16px "DM Sans"; color: var(--muted) }
+.kv:last-child { border-bottom: 0 }
+.kv b { font: 600 16px "DM Sans"; color: var(--strong); text-align: right }
+.benef { display: flex; gap: 14px; align-items: center; padding: 14px 16px }
+.qr { width: 92px; height: 92px; display: grid; grid-template-columns: repeat(21, 1fr); flex: none; padding: 6px; border: 1px solid var(--line); border-radius: 8px }
+.qr i { background: transparent } .qr i.k { background: #111 }
+.copy { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; height: 36px; padding: 0 12px; border: 1px solid #767676; border-radius: 8px; background: #E3E3E3; font: 600 15px "DM Sans"; color: var(--body) }
+/* segmented / filtres */
+.seg { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 20px 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.seg span { text-align: center; padding: 11px 0; font: 600 16px "DM Sans" }
+.seg .on { background: var(--ink); color: #F5F5F5 }
+.chips { display: flex; gap: 8px; padding: 14px 20px 0 }
+.chip { height: 36px; padding: 0 12px; border-radius: 8px; background: var(--soft); display: flex; align-items: center; gap: 6px; font: 600 15px "DM Sans"; color: var(--body); white-space: nowrap }
+.chip.on { background: var(--ink); color: #F5F5F5 }
+.day { font: 600 15px "DM Sans"; color: var(--muted); padding: 18px 20px 0 }
+/* dépôt */
+.methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 0 20px }
+.m { border: 1px solid var(--line); border-radius: 8px; height: 88px; display: grid; justify-items: center; align-content: center; gap: 8px; font: 600 14px "DM Sans"; text-align: center }
+.m.on { border: 2px solid var(--ink) }
+.m .logo { width: 36px; height: 36px; border-radius: 18px }
+.proof { margin: 0 20px; height: 120px; border: 1.5px dashed var(--field); border-radius: 8px; display: grid; place-items: center; align-content: center; gap: 8px; font: 600 16px "DM Sans" }
+.field { margin: 0 20px; height: 64px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; padding: 0 16px; font: 700 30px "DM Sans"; letter-spacing: -.02em; font-variant-numeric: tabular-nums }
+.field small { font: 600 18px "DM Sans"; color: var(--muted); margin-left: 8px }
+.note { margin: 10px 20px 0; font: 500 16px "DM Sans"; color: var(--body) }
+.mola { position: absolute; left: 18px; bottom: 104px; width: 58px; height: 58px; border-radius: 29px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--line) }
+.mola img { width: 100%; height: 100% }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 16px 16px 0 0; padding: 10px 20px 36px; border-top: 1px solid var(--line); z-index: 5 }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 4 }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 16px }
+.sheet h3 { font: 600 22px "DM Sans" }
+.sheet p { font: 400 16px "DM Sans"; color: var(--muted); margin-top: 4px }
+.done { width: 72px; height: 72px; border-radius: 36px; background: #CFF7D3; display: grid; place-items: center; margin: 0 auto }
+</style></head><body>
+<div class="board" id="board"></div>
+<script>
+const LOGO = {
+  alipay: 'M19.695 15.07c3.426 1.158 4.203 1.22 4.203 1.22V3.846c0-2.124-1.705-3.845-3.81-3.845H3.914C1.808.001.102 1.722.102 3.846v16.31c0 2.123 1.706 3.845 3.813 3.845h16.173c2.105 0 3.81-1.722 3.81-3.845v-.157s-6.19-2.602-9.315-4.119c-2.096 2.602-4.8 4.181-7.607 4.181-4.75 0-6.361-4.19-4.112-6.949.49-.602 1.324-1.175 2.617-1.497 2.025-.502 5.247.313 8.266 1.317a16.796 16.796 0 0 0 1.341-3.302H5.781v-.952h4.799V6.975H4.77v-.953h5.81V3.591s0-.409.411-.409h2.347v2.84h5.744v.951h-5.744v1.704h4.69a19.453 19.453 0 0 1-1.986 5.06c1.424.52 2.702 1.011 3.654 1.333m-13.81-2.032c-.596.06-1.71.325-2.321.869-1.83 1.608-.735 4.55 2.968 4.55 2.151 0 4.301-1.388 5.99-3.61-2.403-1.182-4.438-2.028-6.637-1.809',
+  wechat: 'M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z',
+};
+const meth = (m) => m === 'alipay' ? `<div class="logo" style="background:#1677FF"><svg viewBox="0 0 24 24"><path d="${LOGO.alipay}" fill="#fff"/></svg></div>`
+  : m === 'wechat' ? `<div class="logo" style="background:#07C160"><svg viewBox="0 0 24 24"><path d="${LOGO.wechat}" fill="#fff"/></svg></div>`
+  : m === 'bank' ? `<div class="logo" style="background:#8B5CF6"><svg viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`
+  : m === 'cash' ? `<div class="logo" style="background:#E0322B;color:#fff;font:700 20px 'DM Sans'">¥</div>`
+  : m === 'om' ? `<div class="logo" style="border:1px solid #D9D9D9;background:#fff"><img src="orange-money.png" style="object-fit:contain;padding:5px"></div>`
+  : m === 'wave' ? `<div class="logo"><img src="wave.png"></div>`
+  : m === 'mtn' ? `<div class="logo" style="background:#FFCB05;font:800 12px 'DM Sans';color:#111">MTN</div>`
+  : m === 'uba' ? `<div class="logo" style="border:1px solid #D9D9D9"><img src="uba.png" style="object-fit:contain;padding:6px"></div>` : '';
+const sbar = () => `<div class="sbar"><span>9:41</span><div class="di"></div><div class="ic"><svg width="18" height="12" viewBox="0 0 18 12"><rect y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg><svg width="17" height="12" viewBox="0 0 17 12"><path d="M8.5 2.2c2.4 0 4.6.9 6.2 2.5l1.3-1.3A10.6 10.6 0 008.5.4 10.6 10.6 0 001 3.4l1.3 1.3a8.8 8.8 0 016.2-2.5zm0 3.6c1.4 0 2.7.5 3.6 1.4l1.3-1.3a7 7 0 00-9.8 0l1.3 1.3a5.1 5.1 0 013.6-1.4zm0 3.6c.5 0 1 .2 1.3.5L8.5 11.2 7.2 9.9c.3-.3.8-.5 1.3-.5z"/></svg><svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="#111" opacity=".4"/><rect x="2" y="2" width="20" height="9" rx="2"/></svg></div></div>`;
+const I = {
+  home: (on) => `<svg viewBox="0 0 26 26"><path d="M4 11.6 13 4.5l9 7.1V21a1.5 1.5 0 0 1-1.5 1.5H16v-6.2h-6v6.2H5.5A1.5 1.5 0 0 1 4 21z" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
+  ops: '<svg viewBox="0 0 26 26"><path d="M7 8h14l-3.5-3.5M19 18H5l3.5 3.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cli: '<svg viewBox="0 0 26 26"><circle cx="10" cy="9" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 21.5c.9-3.9 3.7-6 7-6s6.1 2.1 7 6M17.5 5a4 4 0 0 1 0 8M19.6 15.9c2 .8 3.2 2.8 3.6 5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  cargo: '<svg viewBox="0 0 26 26"><path d="M3 15h20l-2.5 6H5.5zM6 15V9h14v6M13 9V4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  more: '<svg viewBox="0 0 26 26"><circle cx="6" cy="13" r="2" fill="currentColor"/><circle cx="13" cy="13" r="2" fill="currentColor"/><circle cx="20" cy="13" r="2" fill="currentColor"/></svg>',
+  back: '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="#1E1E1E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  bell: '<svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4zM10 20.5a2 2 0 0 0 4 0" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linejoin="round"/></svg>',
+  search: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="#5A5A5A" stroke-width="2.2"/><path d="m16 16 4.5 4.5" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  dots: '<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="#1E1E1E"/><circle cx="12" cy="12" r="2" fill="#1E1E1E"/><circle cx="19" cy="12" r="2" fill="#1E1E1E"/></svg>',
+  dep: (c) => `<svg viewBox="0 0 24 24"><path d="M12 4v13M6 11l6 6 6-6M5 20h14" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  pay: (c) => `<svg viewBox="0 0 24 24"><path d="M5 19 19 5M9 5h10v10" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  scan: (c) => `<svg viewBox="0 0 24 24"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3M8 12h8" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`,
+  user: (c) => `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="${c}" stroke-width="2.2"/><path d="M4.5 20.5c1-4 3.9-6 7.5-6s6.5 2 7.5 6" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/></svg>`,
+  copy: '<svg width="16" height="16" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="#303030" stroke-width="2.2"/><path d="M16 5a1 1 0 0 0-1-1H6a2 2 0 0 0-2 2v9a1 1 0 0 0 1 1" fill="none" stroke="#303030" stroke-width="2.2"/></svg>',
+  cam: '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="#1E1E1E" stroke-width="2"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="#1E1E1E" stroke-width="2"/></svg>',
+  check: '<svg width="36" height="36" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="#02542D" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  del: '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M9 5h11v14H9l-6-7z" fill="none" stroke="#1E1E1E" stroke-width="2" stroke-linejoin="round"/><path d="m12 9 5 6M17 9l-5 6" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>',
+};
+const tabs = (on) => `<div class="tabs">${[['home', 'Accueil'], ['ops', 'Opérations'], ['cli', 'Clients'], ['cargo', 'Cargo'], ['more', 'Plus']].map(([k, l]) => `<div class="tab ${on === k ? 'on' : ''}">${k === 'home' ? I.home(on === k) : I[k]}${k === 'ops' ? '<span class="b">5</span>' : ''}<span>${l}</span></div>`).join('')}</div>`;
+const qr = (seed = 7) => { let x = seed; const r = () => (x = (x * 9301 + 49297) % 233280) / 233280; let h = ''; for (let i = 0; i < 21; i++) for (let j = 0; j < 21; j++) { const f = (a, b) => i >= a && i < a + 7 && j >= b && j < b + 7; let k; if (f(0, 0) || f(0, 14) || f(14, 0)) { const a = i < 7 ? i : i - 14, b = j < 7 ? j : j - 14; k = a === 0 || a === 6 || b === 0 || b === 6 || (a >= 2 && a <= 4 && b >= 2 && b <= 4); } else k = r() > .52; h += `<i class="${k ? 'k' : ''}"></i>`; } return `<div class="qr">${h}</div>`; };
+const mola = '<div class="mola"><img src="mola-mascot.png"></div>';
+
+const S = [];
+const add = (t, html) => S.push({ t, html });
+
+// 1 · Accueil
+add('Accueil', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Bonjour Nelson</div><div style="display:flex;gap:10px"><div class="icbtn" style="overflow:hidden;padding:0"><img src="mola-mascot.png" style="width:100%;height:100%;border-radius:22px"></div><div class="icbtn">${I.bell}<span class="dot"></span></div></div></div>
+  <div class="hero"><div class="lab">À payer aujourd'hui</div><div class="num">¥ 261 680</div><div class="sub"><span><b>5</b> paiements</span><span><b>2</b> dépôts à valider</span></div></div>
+  <div class="acts">
+    <div class="act"><div class="r ink">${I.pay('#F5F5F5')}</div>Paiement</div>
+    <div class="act"><div class="r">${I.dep('#1E1E1E')}</div>Dépôt</div>
+    <div class="act"><div class="r">${I.scan('#1E1E1E')}</div>Scanner</div>
+    <div class="act"><div class="r">${I.user('#1E1E1E')}</div>Client</div>
+  </div>
+  <div class="h2"><b>À payer</b><a>Tout voir</a></div>
+  <div class="list">
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">Virement · il y a 14 h</div></div><div class="ra"><b>¥ 58 900</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Aïcha Diallo</div><div class="rs">WeChat Pay · 14 oct.</div></div><div class="ra"><b>¥ 9 210</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">Alipay · 7 oct.</div></div><div class="ra"><b>¥ 14 380</b><span class="tag t-todo">À payer</span></div></div>
+  </div>
+</div>${tabs('home')}<div class="home-ind"></div>`);
+
+// 2 · Paiement · le client
+add('Paiement · 1. Le client', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Nouveau paiement</div><div class="step">1/3</div></div>
+  <div class="search">${I.search}Nom ou téléphone</div>
+  <div class="lbl">Récents</div>
+  <div class="recent">
+    <div class="rc"><div class="av">FN</div>Fatou</div>
+    <div class="rc"><div class="av">JM</div>Jean-Paul</div>
+    <div class="rc"><div class="av">AD</div>Aïcha</div>
+    <div class="rc"><div class="av">SN</div>Samuel</div>
+    <div class="rc"><div class="av">RT</div>Rosine</div>
+  </div>
+  <div class="lbl">Tous les clients</div>
+  <div class="list">
+    <div class="row"><div class="av">AB</div><div class="rm"><div class="rn">Aminatou Bello</div><div class="rs">+237 655 44 55 66</div></div><div class="ra"><b>145 000</b><span class="rs">XAF</span></div></div>
+    <div class="row"><div class="av">FN</div><div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">+237 690 55 66 77</div></div><div class="ra"><b>1 213 450</b><span class="rs">XAF</span></div></div>
+    <div class="row"><div class="av">JM</div><div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">+237 690 11 22 33</div></div><div class="ra"><b>820 000</b><span class="rs">XAF</span></div></div>
+    <div class="row"><div class="av">SN</div><div class="rm"><div class="rn">Samuel Nkoulou</div><div class="rs">+237 677 88 99 00</div></div><div class="ra"><b>6 400 000</b><span class="rs">XAF</span></div></div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 3 · Paiement · le montant
+add('Paiement · 2. Le montant', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Nouveau paiement</div><div class="step">2/3</div></div>
+  <div class="who"><div class="av">FN</div><div style="flex:1"><b>Fatou Ndiaye</b><span>Solde 1 213 450 XAF</span></div></div>
+  <div class="amt">
+    <div class="big">¥ 7 493</div>
+    <div><span class="cur"><span class="on">¥ RMB</span><span>XAF</span></span></div>
+    <div class="conv">= 691 364 XAF</div>
+    <div class="rate">Taux du jour · 1 000 000 XAF = ¥ 10 838</div>
+  </div>
+  <div class="keys">${['1','2','3','4','5','6','7','8','9',',','0',''].map((k) => `<div>${k || I.del}</div>`).join('')}</div>
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div><div class="home-ind"></div>`);
+
+// 4 · Paiement · à qui + confirmer
+add('Paiement · 3. À qui', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Nouveau paiement</div><div class="step">3/3</div></div>
+  <div class="lbl">Fournisseurs de Fatou</div>
+  <div class="list">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Guangzhou Hengtai Trading</div><div class="rs">Alipay · hengtai_gz@163.com</div></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Chen Xiaoli</div><div class="rs">WeChat Pay · wxid_chenxl88</div></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Foshan Meida Furniture</div><div class="rs">Virement · ICBC ****6621</div></div></div>
+    <div class="row"><div class="av" style="font-size:24px">+</div><div class="rm"><div class="rn">Nouveau fournisseur</div><div class="rs">QR, compte ou cash</div></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Payer ¥ 7 493 ?</h3><p>à Guangzhou Hengtai Trading, par Alipay</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Client<b>Fatou Ndiaye</b></div>
+      <div class="kv">Débité<b>691 364 XAF</b></div>
+      <div class="kv">Solde après<b>522 086 XAF</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Créer le paiement</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 5 · Fiche paiement
+add('Fiche paiement', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Paiement</div>${I.dots}</div>
+  <div class="fiche">${meth('alipay')}<div class="big">¥ 7 493</div><div class="sub">Fatou Ndiaye · 691 364 XAF</div><span class="tag t-todo">À payer</span></div>
+  <div class="box">
+    <div class="benef">${qr(9)}<div style="min-width:0"><div class="rn">Guangzhou Hengtai Trading</div><div class="rs">hengtai_gz@163.com</div><span class="copy">${I.copy} Copier le compte</span></div></div>
+  </div>
+  <div class="box">
+    <div class="kv">Taux<b>1 M XAF = ¥ 10 838</b></div>
+    <div class="kv">Créé<b>Aujourd'hui, 10:12</b></div>
+    <div class="kv">Référence<b>BZ-PY-2610-0416</b></div>
+  </div>
+  <div class="dock"><div class="btn">Marquer comme payé</div></div>
+</div><div class="home-ind"></div>`);
+
+// 6 · Payé
+add('Payé', `${sbar()}<div class="body">
+  <div style="padding-top:150px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Payé</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">¥ 7 493 à Guangzhou Hengtai Trading</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:4px">Fatou est prévenue.</div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn">Paiement suivant · Aïcha ¥ 9 210</div><div class="btn soft" style="margin-top:10px">Retour à l'accueil</div></div>
+</div><div class="home-ind"></div>`);
+
+// 7 · Opérations
+add('Opérations', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Opérations</div><div class="icbtn">${I.search}</div></div>
+  <div class="seg"><span class="on">Paiements</span><span>Dépôts</span></div>
+  <div class="chips"><span class="chip on">À payer 5</span><span class="chip">En cours 3</span><span class="chip">Payés</span><span class="chip">Tous</span></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">Guangzhou Hengtai</div></div><div class="ra"><b>¥ 7 493</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">Foshan Meida Furniture</div></div><div class="ra"><b>¥ 58 900</b><span class="tag t-todo">À payer</span></div></div>
+  </div>
+  <div class="day">Cette semaine</div>
+  <div class="list">
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Aïcha Diallo</div><div class="rs">Chen Xiaoli</div></div><div class="ra"><b>¥ 9 210</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('cash')}<div class="rm"><div class="rn">Ibrahim Touré</div><div class="rs">Retrait au bureau</div></div><div class="ra"><b>¥ 23 060</b><span class="tag t-neu">Au bureau</span></div></div>
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Rosine Tchoua</div><div class="rs">Yiwu Jinsheng Textile</div></div><div class="ra"><b>¥ 14 380</b><span class="tag t-todo">À payer</span></div></div>
+  </div>
+</div>${tabs('ops')}<div class="home-ind"></div>`);
+
+// 8 · Dépôt
+add('Dépôt (un seul écran)', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Nouveau dépôt</div></div>
+  <div class="who"><div class="av">FN</div><div style="flex:1"><b>Fatou Ndiaye</b><span>Solde 1 213 450 XAF</span></div></div>
+  <div class="lbl">Montant reçu</div>
+  <div class="field">850 000<small>XAF</small></div>
+  <div class="lbl">Par</div>
+  <div class="methods">
+    <div class="m on">${meth('om')}Orange</div>
+    <div class="m">${meth('mtn')}MTN</div>
+    <div class="m">${meth('wave')}Wave</div>
+    <div class="m">${meth('uba')}Banque</div>
+  </div>
+  <div class="lbl">Preuve</div>
+  <div class="proof">${I.cam}Photo du reçu</div>
+  <div class="dock"><div class="btn">Créditer 850 000 XAF</div></div>
+</div><div class="home-ind"></div>`);
+
+document.getElementById('board').innerHTML = S.map((s, i) => `<div class="shot" id="s${i + 1}"><div class="ab">${s.html}</div><div class="cap">${s.t}</div></div>`).join('');
+</script></body></html>

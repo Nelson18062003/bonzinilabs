@@ -13,21 +13,27 @@
 //     étiquettes des colis » sur place.
 // Un dépôt sans client se voit tout de suite, avec le bouton pour l'attribuer.
 // La flèche ramène là d'où l'on vient (Aujourd'hui, la fiche client…).
+// Refonte v2 (gabarit 04/07, sans l'encaissement) : le client en carte, les
+// colis avec leur photo ; toucher un colis = le corriger, voir ses photos ou
+// le retirer ; le fournisseur et le reste dans « … ».
 // ============================================================
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, Printer, Trash2, UserSearch } from 'lucide-react';
+import { Images, Pencil, Plus, Printer, Store, Trash2, UserSearch } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, depositSupplier, formatCbm, formatKg, initials, parcelLockReason, quoteLocksParcels, supplierLine, type Parcel } from '@/lib/reception';
+import { clientFullName, depositSupplier, formatCbm, formatKg, isParcelIncomplete, parcelLockReason, quoteLocksParcels, supplierLine, type Parcel } from '@/lib/reception';
 import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
 import { useCancelDeposit, useCloseDeposit, useReceptionDeposit, useRemoveParcel } from '@/hooks/useReception';
 import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TONE_PILL, TYPE, BottomSheet, Button, Card, Holder, PrimaryPill, SoftPill, StatusPill } from '@/mobile/designKit';
-import { DepositLoadState, LocationMark, ParcelRow, StepHeader, useReceptionLabels } from '@/mobile/components/reception/bits';
+import {
+  ActionSheet, BigButton, ConfirmSheet, Dock, EmptyLine, IconCircle, Initials, ItemList, ItemRow, KVBox, MoreButton, ScreenTop, SURFACE, TEXT, TONE_PILL, Tag, useSheet,
+  type SheetAction,
+} from '@/mobile/designKit';
+import { DepositLoadState, ParcelLine, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { CapsLabel } from '@/mobile/components/cargo/v2';
 import { ParcelPhotoViewer, useParcelViewer } from '@/mobile/components/reception/ParcelPhotoViewer';
 import { InternalLabelSheet } from '@/mobile/components/reception/InternalLabelSheet';
 import { assignPath } from '@/mobile/components/reception/useAssignFlow';
@@ -55,6 +61,8 @@ export function ReceptionDeposit() {
   const [removing, setRemoving] = useState<Parcel | null>(null);
   const [abandon, setAbandon] = useState(false);
   const [labelsOpen, setLabelsOpen] = useState(false);
+  const [parcelMenu, setParcelMenu] = useState<Parcel | null>(null);
+  const more = useSheet();
 
   const leave = () => back('/r');
 
@@ -89,142 +97,135 @@ export function ReceptionDeposit() {
     if (cancel.isPending) return;
     cancel.mutate({ depositId: deposit.id, reason: ABANDON_REASON }, { onSuccess: () => { setAbandon(false); leave(); } });
   };
-  /** Toucher un colis : le corriger s'il est à moi, pas encore parti, devis pas engagé ; sinon, ses photos. */
+  /** Corriger un colis : s'il est à moi, pas encore parti, devis pas engagé. */
+  const canEditParcel = (p: Parcel) => mine && !cancelled && !quoteLocked && !parcelLockReason(p);
+  /** Toucher un colis : ses gestes s'il y en a, sinon ses photos. */
   const openParcel = (p: Parcel) => {
-    if (mine && !cancelled && !quoteLocked && !parcelLockReason(p)) navigate(`/r/deposit/${deposit.id}/parcel/${p.id}`);
+    if (canEditParcel(p) || (editable && !parcelLockReason(p))) setParcelMenu(p);
     else viewer.open(deposit.parcels.indexOf(p));
   };
+  const supplier = depositSupplier(deposit);
+  const actions: SheetAction[] = [
+    { label: t('rc_sup_edit'), hint: supplier ? supplierLine(supplier) : t('rc_sup_none'), icon: Store, onClick: () => navigate(`/r/deposit/${deposit.id}/supplier?edit`), hidden: !editable },
+    { label: t('rc_assign'), icon: UserSearch, onClick: () => navigate(assignPath(deposit.id, true)), hidden: !!deposit.client || cancelled },
+    { label: t('rc_print_labels'), icon: Printer, onClick: () => setLabelsOpen(true), hidden: !deposit.client || deposit.parcels.length === 0 },
+    { label: t('rc_dep_abandon'), icon: Trash2, danger: true, onClick: () => setAbandon(true), hidden: !(editable && deposit.parcels.length === 0) },
+  ];
+  const hasMore = actions.some((x) => !x.hidden);
+  const placeLabel = deposit.location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short');
 
   return (
-    <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={deposit.deposit_no} subtitle={labels.location(deposit.location)} showBack onBack={leave} />
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title={deposit.deposit_no} onBack={leave} step={editable ? '4/4' : undefined} right={hasMore ? <MoreButton onClick={more.show} /> : undefined} />
 
-      <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-6 pt-5">
-        {editable && <StepHeader step={4} total={4} title={t('rc_s3_title')} help={t('rc_s3_help')} />}
-
-        {cancelled && (
-          <p className={cn('rounded-lg px-4 py-3', TYPE.bodyStrong, TONE_PILL.danger)}>{t('rc_dep_cancelled')}</p>
-        )}
-        {quoteLocked && (
-          <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.pending)}>{t('rc_dep_quote_locked')}</p>
-        )}
+      <div className="flex-1 px-5 pb-6 pt-4">
+        {cancelled && <p className={cn('mb-4 rounded-lg px-4 py-3 text-[16px] font-semibold', TONE_PILL.danger)}>{t('rc_dep_cancelled')}</p>}
+        {quoteLocked && <p className={cn('mb-4 rounded-lg px-4 py-3 text-[16px]', TONE_PILL.pending)}>{t('rc_dep_quote_locked')}</p>}
         {deposit.status === 'open' && !mine && (
-          <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.pending)}>
-            {ti('rc_dep_other_open', { name: deposit.received_by_name || t('rc_dep_colleague') })}
-          </p>
+          <p className={cn('mb-4 rounded-lg px-4 py-3 text-[16px]', TONE_PILL.pending)}>{ti('rc_dep_other_open', { name: deposit.received_by_name || t('rc_dep_colleague') })}</p>
         )}
 
-        {/* Le client, en une ligne — la fiche complète n'a rien à faire ici. */}
-        <Card className="space-y-3">
-          <div className="flex items-center gap-3">
-            <Holder size="lg" tone={deposit.client ? 'neutral' : 'pending'}>{deposit.client ? initials(name) : '?'}</Holder>
-            <span className="min-w-0 flex-1">
-              <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
-              <span className={cn('mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums', TYPE.small, TEXT.muted)}>
-                {deposit.client ? <span>{deposit.client.customer_code}{deposit.client.account_name ? ` · ${deposit.client.account_name}` : ''}</span> : <span>{t('rc_pending')}</span>}
-                <span>· {labels.broughtBy(deposit.brought_by)}{deposit.representative_name ? ` (${deposit.representative_name})` : ''}</span>
-                <span className="inline-flex items-center gap-1">· <LocationMark location={deposit.location} size={18} />{deposit.location === 'warehouse' ? t('rc_warehouse_short') : t('rc_office_short')}</span>
-              </span>
-            </span>
-            {deposit.client && <StatusPill tone={st.tone} label={st.label} className="shrink-0" />}
-          </div>
-          {editable ? (
-            <button type="button" onClick={() => navigate(`/r/deposit/${deposit.id}/supplier?edit`)} className={cn('flex w-full items-center gap-2 rounded-md px-3 py-2 text-left', SURFACE.inset)}>
-              <span className={cn('shrink-0', TYPE.small, TEXT.muted)}>{t('rc_sup_label')}</span>
-              <span className={cn('min-w-0 flex-1 break-words', TYPE.smallStrong, depositSupplier(deposit) ? TEXT.strong : TEXT.muted)}>{depositSupplier(deposit) ? supplierLine(depositSupplier(deposit)) : t('rc_sup_none')}</span>
-              <span className={cn('shrink-0', TYPE.smallStrong, TEXT.muted)}>{depositSupplier(deposit) ? t('rc_change') : t('rc_sup_add')}</span>
-            </button>
-          ) : (
-            <p className={cn('flex w-full items-center gap-2 rounded-md px-3 py-2', SURFACE.inset)}>
-              <span className={cn('shrink-0', TYPE.small, TEXT.muted)}>{t('rc_sup_label')}</span>
-              <span className={cn('min-w-0 flex-1 break-words', TYPE.smallStrong, depositSupplier(deposit) ? TEXT.strong : TEXT.muted)}>{depositSupplier(deposit) ? supplierLine(depositSupplier(deposit)) : t('rc_sup_none')}</span>
-            </p>
-          )}
-          {!deposit.client && !cancelled && (
-            <Button variant="neutral" className="h-12 w-full" onClick={() => navigate(assignPath(deposit.id, true))}>
-              <UserSearch /> {t('rc_assign')}
-            </Button>
-          )}
-        </Card>
-
-        {/* Les colis */}
-        <section>
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className={cn(TYPE.lead, TEXT.strong)}>{t('rc_parcels')}</h2>
-            <span className={cn('tabular-nums', TYPE.smallStrong, TEXT.muted)}>{deposit.parcels.length}</span>
-          </div>
-          {deposit.parcels.length === 0 ? (
-            <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
-              <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_no_parcel_yet')}</p>
-            </Card>
-          ) : (
-            <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
-              {deposit.parcels.map((p) => (
-                <ParcelRow key={p.id} parcel={p} onClick={() => openParcel(p)} onPhoto={() => viewer.open(deposit.parcels.indexOf(p))} onRemove={editable && !parcelLockReason(p) ? () => setRemoving(p) : undefined} />
-              ))}
-            </Card>
-          )}
-          {editable && deposit.parcels.length === 0 && (
-            <button type="button" onClick={() => setAbandon(true)} className={cn('mt-4 flex h-11 w-full items-center justify-center gap-2', TYPE.smallStrong, 'text-[#C00F0C] dark:text-[#FCB3AD]')}>
-              <Trash2 className="h-4 w-4" /> {t('rc_dep_abandon')}
-            </button>
-          )}
-        </section>
-      </div>
-
-      <div className={cn('shrink-0 space-y-3 border-t px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4', SURFACE.canvas, SURFACE.divider)}>
-        {/* Le total sur deux lignes : l'étiquette, puis les chiffres — ça tient sur 320 px comme sur 430. */}
-        {deposit.parcels.length > 0 && <div>
-          <span className={cn('block', TYPE.small, TEXT.muted)}>{t('rc_total')}</span>
-          <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>
-            {labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}
+        {/* Le client, en une carte ; sans client, un toucher l'attribue. */}
+        <button
+          type="button"
+          disabled={!!deposit.client || cancelled}
+          onClick={() => navigate(assignPath(deposit.id, true))}
+          className="flex w-full items-center gap-3.5 rounded-lg border border-[#D9D9D9] px-4 py-3.5 text-left disabled:cursor-default dark:border-[#444444]"
+        >
+          {deposit.client ? <Initials name={name} /> : <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FFF1C2] text-[18px] font-semibold text-[#682D03]">?</span>}
+          <span className="min-w-0 flex-1">
+            <span className={cn('block truncate text-[17px] font-semibold', TEXT.strong)}>{name}</span>
+            <span className={cn('block truncate text-[15px] tabular-nums', TEXT.muted)}>{[deposit.client?.customer_code, deposit.client?.account_name, placeLabel].filter(Boolean).join(' · ')}</span>
           </span>
-        </div>}
-        {editable ? (
-          <div className="space-y-3">
-            {/* Le geste principal, en pleine largeur ; « Terminer » n'apparaît qu'une fois qu'il y a quelque chose à terminer. */}
-            <PrimaryPill onClick={() => navigate(`/r/deposit/${deposit.id}/parcel`)} className="h-14 w-full text-[17px]"><Plus /> {t('rc_add_parcel')}</PrimaryPill>
-            {deposit.parcels.length > 0 && (
-              <SoftPill onClick={() => setConfirm(true)} className="h-14 w-full text-[17px]">{ti('rc_finish_n', { count: deposit.parcels.length })}</SoftPill>
-            )}
-          </div>
-        ) : deposit.status === 'closed' && deposit.client && deposit.parcels.length > 0 ? (
-          // Terminé : les étiquettes des colis se réimpriment ici même.
-          <PrimaryPill onClick={() => setLabelsOpen(true)} className="h-14 w-full text-[17px]"><Printer /> {t('rc_print_labels')} ({deposit.parcels.length})</PrimaryPill>
+          <Tag tone={st.tone === 'info' ? 'pending' : st.tone}>{st.label}</Tag>
+        </button>
+
+        <CapsLabel className="mt-6">{labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}</CapsLabel>
+        {deposit.parcels.length === 0 ? (
+          <EmptyLine>{t('rc_no_parcel_yet')}</EmptyLine>
         ) : (
-          <SoftPill onClick={leave} className="h-12 w-full">{t('rc_back')}</SoftPill>
+          <div className="mt-1">
+            {deposit.parcels.map((p) => (
+              <ParcelLine
+                key={p.id}
+                parcel={p}
+                onClick={() => openParcel(p)}
+                right={isParcelIncomplete(p) ? <Tag tone="pending">{t('rc_incomplete')}</Tag> : undefined}
+              />
+            ))}
+          </div>
         )}
+        {editable && (
+          <ItemList className="-mx-5">
+            <ItemRow leading={<IconCircle icon={Plus} />} title={t('rc_add_parcel')} onClick={() => navigate(`/r/deposit/${deposit.id}/parcel`)} />
+          </ItemList>
+        )}
+
+        <KVBox
+          className="mt-5"
+          rows={[
+            { label: t('rc_sup_label'), value: supplier ? supplier.name : t('rc_sup_none'), onClick: editable ? () => navigate(`/r/deposit/${deposit.id}/supplier?edit`) : undefined },
+            { label: t('rc_brought_by'), value: `${labels.broughtBy(deposit.brought_by)}${deposit.representative_name ? ` · ${deposit.representative_name}` : ''}` },
+            { label: t('rc_received_by'), value: `${deposit.received_by_name ?? '—'} · ${formatDateTime(deposit.opened_at)}` },
+          ]}
+        />
       </div>
 
-      <BottomSheet open={confirm} onClose={() => setConfirm(false)} title={t('rc_close_confirm')}>
-        <div className="space-y-5">
-          <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_close_hint')}</p>
-          <Card className={cn(SURFACE.inset, 'border-0')}>
-            <div className={cn('flex items-center justify-between', TYPE.body)}>
-              <span className={TEXT.muted}>{name}</span>
-              <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{labels.parcels(deposit.parcels.length)} · {formatKg(deposit.total_weight_kg)} · {formatCbm(deposit.total_cbm)}</span>
-            </div>
-          </Card>
-          <PrimaryPill onClick={() => void finish()} loading={close.isPending} className="h-14 w-full text-[17px]">{t('rc_finish')}</PrimaryPill>
-          <SoftPill onClick={() => setConfirm(false)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
-        </div>
-      </BottomSheet>
+      {editable ? (
+        <Dock>
+          {deposit.parcels.length > 0
+            ? <BigButton onClick={() => setConfirm(true)}>{ti('rc_finish_n', { count: deposit.parcels.length })}</BigButton>
+            : <BigButton onClick={() => navigate(`/r/deposit/${deposit.id}/parcel`)}>{t('rc_add_parcel')}</BigButton>}
+        </Dock>
+      ) : deposit.status === 'closed' && deposit.client && deposit.parcels.length > 0 ? (
+        <Dock><BigButton onClick={() => setLabelsOpen(true)}>{t('rc_print_labels')} ({deposit.parcels.length})</BigButton></Dock>
+      ) : null}
 
-      <BottomSheet open={removing !== null} onClose={() => setRemoving(null)} title={ti('rc_remove_confirm_title', { no: removing?.parcel_no ?? '' })}>
-        <div className="space-y-5">
-          <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_remove_confirm_hint')}</p>
-          <PrimaryPill danger onClick={doRemove} loading={remove.isPending} className="h-14 w-full text-[17px]"><Trash2 /> {t('rc_remove')}</PrimaryPill>
-          <SoftPill onClick={() => setRemoving(null)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
-        </div>
-      </BottomSheet>
+      <ActionSheet open={more.open} onClose={more.hide} title={deposit.deposit_no} actions={actions} />
+      <ActionSheet
+        open={parcelMenu != null}
+        onClose={() => setParcelMenu(null)}
+        title={parcelMenu?.parcel_no}
+        actions={parcelMenu ? [
+          { label: t('rc_edit_parcel'), icon: Pencil, onClick: () => navigate(`/r/deposit/${deposit.id}/parcel/${parcelMenu.id}`), hidden: !canEditParcel(parcelMenu) },
+          { label: t('rc_v2_photos'), icon: Images, onClick: () => viewer.open(deposit.parcels.indexOf(parcelMenu)) },
+          { label: t('rc_remove'), icon: Trash2, danger: true, onClick: () => setRemoving(parcelMenu), hidden: !(editable && !parcelLockReason(parcelMenu)) },
+        ] : []}
+      />
 
-      <BottomSheet open={abandon} onClose={() => setAbandon(false)} title={t('rc_dep_abandon')}>
-        <div className="space-y-5">
-          <p className={cn(TYPE.body, TEXT.muted)}>{ti('rc_dep_abandon_hint', { no: deposit.deposit_no })}</p>
-          <PrimaryPill danger onClick={doAbandon} loading={cancel.isPending} className="h-14 w-full text-[17px]"><Trash2 /> {t('rc_dep_abandon')}</PrimaryPill>
-          <SoftPill onClick={() => setAbandon(false)} className="h-12 w-full">{t('rc_cancel')}</SoftPill>
-        </div>
-      </BottomSheet>
+      <ConfirmSheet
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        title={t('rc_close_confirm')}
+        subtitle={name}
+        rows={[{ label: t('rc_parcels'), value: labels.parcels(deposit.parcels.length) }, { label: t('rc_weight'), value: formatKg(deposit.total_weight_kg) }, { label: t('rc_volume'), value: formatCbm(deposit.total_cbm) }]}
+        confirmLabel={t('rc_finish')}
+        cancelLabel={t('rc_cancel')}
+        loading={close.isPending}
+        onConfirm={() => void finish()}
+      />
+      <ConfirmSheet
+        open={removing !== null}
+        danger
+        onClose={() => setRemoving(null)}
+        title={ti('rc_remove_confirm_title', { no: removing?.parcel_no ?? '' })}
+        subtitle={removing ? `${removing.description ?? labels.kind(removing.kind)} · ${formatKg(removing.weight_kg)}` : undefined}
+        confirmLabel={t('rc_remove')}
+        cancelLabel={t('rc_cancel')}
+        loading={remove.isPending}
+        onConfirm={doRemove}
+      />
+      <ConfirmSheet
+        open={abandon}
+        danger
+        onClose={() => setAbandon(false)}
+        title={t('rc_dep_abandon')}
+        subtitle={deposit.deposit_no}
+        confirmLabel={t('rc_dep_abandon')}
+        cancelLabel={t('rc_cancel')}
+        loading={cancel.isPending}
+        onConfirm={doAbandon}
+      />
 
       {deposit.client && <InternalLabelSheet open={labelsOpen} onClose={() => setLabelsOpen(false)} deposit={deposit} settings={settings ?? DEFAULT_SHIPPING_SETTINGS} />}
       <ParcelPhotoViewer parcels={deposit.parcels} index={viewer.index} close={viewer.close} setIndex={viewer.setIndex} title={deposit.deposit_no} />

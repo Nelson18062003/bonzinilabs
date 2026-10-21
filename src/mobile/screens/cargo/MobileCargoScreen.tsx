@@ -1,190 +1,215 @@
 /**
- * Mobile admin — Cargo › Container : ce qui brûle, en quatre lignes par conteneur.
- * (L'autre partie du module, la Réception des colis, vit à /m/cargo/reception ;
- * le sélecteur en haut passe de l'une à l'autre.)
+ * Mobile admin — Cargo (refonte v2, maquettes 04/01 et 10/30).
  *
- * Pour quelqu'un de 50–60 ans, debout, au soleil (05-simplicite.md) :
- * rien sous 16 px, texte foncé, aucune coupure, une idée par ligne —
- *   1. le client, et l'état en un mot
- *   2. « Arrive à Kribi le 11 octobre, dans 28 jours »
- *   3. « Retard de 14 jours » — seulement s'il y en a un
- *   4. « À faire : régler le fret au transitaire » — la prochaine, une seule
- * Le numéro de boîte n'apparaît que si le client a plusieurs boîtes.
+ * L'accueil du module : le chiffre qui compte (les conteneurs en mer, dont
+ * ceux en retard et ceux qui arrivent sous 7 jours), quatre gros ronds
+ * (Suivre · Avion · Réception · Carte), puis les quatre conteneurs qui
+ * pressent. « Tout voir » (`?vue=tous`) ouvre la liste complète avec les
+ * files de l'ordinateur (Tous · En mer · Sous 7 j · À régler · Sans suivi ·
+ * Livré), la recherche, et dans « … » l'armateur, la destination, le tri et
+ * l'export CSV.
  */
 import { useMemo, useState } from 'react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowDownUp, Calculator, Download, Map as MapIcon, Package, Plane, Plus, Search, Ship, Users } from 'lucide-react';
 import { QueryError } from '@/components/ui/QueryError';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Map as MapIcon, Search as SearchIcon } from 'lucide-react';
-import { MobileCargoParts } from '@/components/cargo/CargoParts';
 import { DisruptionStrip } from '@/components/cargo/DisruptionStrip';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
-import { ALERT, ALERT_ORDER, TONE_OF, alertLevel, alertTally, type AlertLevel } from '@/lib/cargo/palette';
-import { arrivalSentence, delaySentence, nextActionSentence, plural, uncap } from '@/lib/cargo/plain';
-import { nextSteps } from '@/lib/cargo/todo';
-import { bestEta } from '@/lib/cargo/model';
-import { cn } from '@/lib/utils';
-import { TEXT, TYPE, Button, IconButton, ScreenLoader, StatusPill, SURFACE, TextInput } from '@/mobile/designKit';
+import { useCargoShipments } from '@/hooks/useCargo';
+import { useCargoPartsSummary } from '@/hooks/useReception';
+import { CARRIER_LABEL, bestEta, daysUntilArrival, etaSlipDays } from '@/lib/cargo/model';
+import type { CargoShipment } from '@/lib/cargo/model';
+import {
+  ActionCircles, ActionSheet, EmptyLine, HeroFigure, ItemList, ItemRow, MoreButton, RoundButton, ScreenLoader, ScreenTop, SearchBox,
+  SectionHead, TabTop, useSheet, type SheetAction,
+} from '@/mobile/designKit';
+import { CarrierCircle, ChipRow, TopIcon } from '@/mobile/components/cargo/v2';
+import { BUCKETS, boxNo, exportFleetCsv, inBucket, shipmentLine, shipmentTag, type Bucket } from './fleet';
 
-/** Au-delà, les filtres ne suffisent plus : un champ de recherche apparaît. */
-const SEARCH_FROM = 8;
-/** La section qui règle chaque chose à faire (même table que le dossier). */
-const TODO_SECTION: Record<string, string> = { freight: 'argent', telex: 'argent', bl: 'papiers', invoice: 'papiers', besc: 'papiers', vessel: 'ou', client: 'client' };
+/** Le plus urgent d'abord : le retard (le plus long en tête), puis ce qui attend un geste, puis la plus proche arrivée. */
+const TAG_RANK: Record<string, number> = { danger: 3, pending: 2, success: 1, neutral: 0, info: 0 };
+function byUrgency(a: CargoShipment, b: CargoShipment): number {
+  const ta = shipmentTag(a); const tb = shipmentTag(b);
+  const d = TAG_RANK[tb.tone] - TAG_RANK[ta.tone];
+  if (d !== 0) return d;
+  const slip = etaSlipDays(b) - etaSlipDays(a);
+  if (slip !== 0) return slip;
+  return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
+}
 
+function ShipmentRow({ s, onClick }: { s: CargoShipment; onClick: () => void }) {
+  return (
+    <ItemRow
+      leading={<CarrierCircle carrier={s.carrier} />}
+      title={boxNo(s.container_number)}
+      subtitle={shipmentLine(s)}
+      tag={shipmentTag(s)}
+      onClick={onClick}
+    />
+  );
+}
 
 export function MobileCargoScreen() {
   const { hasPermission } = useAdminAuth();
+  const [params] = useSearchParams();
+  if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
+  return params.get('vue') === 'tous' ? <FleetList initialSearch={params.get('q') === '1'} /> : <CargoHome />;
+}
+
+function CargoHome() {
   const navigate = useNavigate();
+  const { hasPermission } = useAdminAuth();
   const { data, isLoading, isError, refetch } = useCargoShipments();
-  const { data: docsBy } = useCargoFleetDocuments();
-  const [filter, setFilter] = useState<AlertLevel | 'all'>('all');
-  const [query, setQuery] = useState('');
-  const [weekOpen, setWeekOpen] = useState(false);
+  const { data: parts } = useCargoPartsSummary();
+  const more = useSheet();
 
   const all = useMemo(() => data ?? [], [data]);
-  const allDocs = useMemo(() => Object.values(docsBy ?? {}).flat(), [docsBy]);
-  const tally = useMemo(() => alertTally(all, allDocs), [all, allDocs]);
-  // Trois cartes « PRC » identiques ne se distinguent pas : quand un client a
-  // plusieurs boîtes, on écrit le numéro de boîte sous son nom.
-  const dupes = useMemo(() => {
-    const n = new Map<string, number>();
-    for (const s of all) n.set(s.client_label, (n.get(s.client_label) ?? 0) + 1);
-    return n;
-  }, [all]);
-  // Ce qui presse cette semaine, toutes boîtes confondues : les choses « à faire maintenant ».
-  const urgent = useMemo(() => all.flatMap((s) => nextSteps(s, docsBy?.[s.id]).filter((t) => t.level === 'now').map((t) => ({ s, t }))), [all, docsBy]);
-  const rows = useMemo(() => {
-    const q = query.trim().toUpperCase();
-    const list = (filter === 'all' ? all : all.filter((s) => alertLevel(s, docsBy?.[s.id]) === filter))
-      .filter((s) => !q || s.client_label.toUpperCase().includes(q) || s.container_number.includes(q) || (s.bl_number ?? '').toUpperCase().includes(q) || (s.vessel_name ?? '').toUpperCase().includes(q));
-    return [...list].sort((a, b) => {
-      const d = ALERT[alertLevel(b, docsBy?.[b.id])].rank - ALERT[alertLevel(a, docsBy?.[a.id])].rank;
-      if (d !== 0) return d;
-      return (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity);
-    });
-  }, [all, filter, query, docsBy]);
+  const atSea = all.filter((s) => s.status === 'AT_SEA');
+  const late = all.filter((s) => s.status !== 'DELIVERED' && etaSlipDays(s) > 0).length;
+  const soon = all.filter((s) => { const d = daysUntilArrival(s); return s.status !== 'DELIVERED' && d != null && d >= 0 && d <= 7; }).length;
+  const top = useMemo(() => [...all].filter((s) => s.status !== 'DELIVERED').sort(byUrgency).slice(0, 4), [all]);
 
-  if (!hasPermission('canViewCargo')) return <Navigate to="/m" replace />;
+  const actions: SheetAction[] = [
+    { label: 'Tous les conteneurs', icon: Ship, onClick: () => navigate('/m/cargo?vue=tous') },
+    { label: 'Le coût à quai', icon: Calculator, onClick: () => navigate('/m/cargo/cout') },
+    { label: 'Comptes cargo', icon: Users, onClick: () => navigate('/m/cargo/comptes') },
+    { label: 'Exporter la flotte (CSV)', icon: Download, onClick: () => exportFleetCsv(all), disabled: all.length === 0 },
+  ];
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader
+    <div className="flex min-h-full flex-col pb-6">
+      <TabTop
         title="Cargo"
-        subtitle={all.length > 0 ? `${plural(all.length, 'conteneur')}${tally.late > 0 ? ` · ${tally.late} en retard` : ''}` : undefined}
-        rightElement={
+        right={
           <>
-            <IconButton icon={MapIcon} variant="subtle" onClick={() => navigate('/m/cargo/map')} ariaLabel="Voir la carte des navires" />
-            <IconButton icon={SearchIcon} variant="primary" onClick={() => navigate('/m/cargo/track')} ariaLabel="Chercher une référence" />
+            <RoundButton icon={Search} ariaLabel="Chercher un conteneur" onClick={() => navigate('/m/cargo?vue=tous&q=1')} />
+            <MoreButton bordered onClick={more.show} />
           </>
         }
       />
 
-      {/* Les deux parties du module : Container (ici) · Réception. */}
-      <MobileCargoParts active="container" />
-
-      {/* La veille douane : congés en Chine, port, corridor — ce qui touche la flotte. */}
-      <DisruptionStrip shipments={all} />
-
-      {/* Les filtres : gros, à 40 px, avec le compte dans le mot. */}
-      <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pt-3">
-        {([['all', 'Tous', all.length], ...ALERT_ORDER.map((k) => [k, ALERT[k].label, tally[k]] as const)] as const).map(([k, label, n]) => {
-          const active = filter === k;
-          return (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setFilter(active && k !== 'all' ? 'all' : (k as AlertLevel | 'all'))}
-              className={cn(
-                'inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[16px] font-semibold transition-colors',
-                active ? 'bg-[#2C2C2C] text-[#F5F5F5] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'bg-[#F5F5F5] text-[#1E1E1E] dark:bg-[#383838] dark:text-[#F5F5F5]',
-              )}
-            >
-              {label}<span className={cn('tabular-nums', active ? 'opacity-70' : TEXT.muted)}>{n}</span>
-            </button>
-          );
-        })}
+      <div className="px-5 pt-3.5">
+        <HeroFigure
+          label="En mer"
+          value={isLoading ? '—' : atSea.length}
+          unit={atSea.length > 1 ? 'conteneurs' : 'conteneur'}
+          sub={[
+            <><b className="font-bold">{late}</b> en retard</>,
+            <><b className="font-bold">{soon}</b> arrivent sous 7 j</>,
+          ]}
+          onClick={() => navigate('/m/cargo?vue=tous')}
+        />
       </div>
 
-      {all.length >= SEARCH_FROM && (
-        <div className="relative px-4 pt-3">
-          <SearchIcon className={cn('pointer-events-none absolute left-7 top-1/2 mt-1.5 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
-          <TextInput type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Client, n° de boîte, B/L ou navire" className="pl-10" />
+      <ActionCircles
+        actions={[
+          ...(hasPermission('canManageCargo') ? [{ label: 'Suivre', icon: Plus, onClick: () => navigate('/m/cargo/track') }] : [{ label: 'Suivre', icon: Search, onClick: () => navigate('/m/cargo/track') }]),
+          { label: 'Avion', icon: Plane, onClick: () => navigate('/m/cargo/avion'), badge: parts?.air_open ?? 0, primary: false },
+          { label: 'Réception', icon: Package, onClick: () => navigate('/m/cargo/reception'), badge: parts?.deposits_pending ?? 0, primary: false },
+          { label: 'Carte', icon: MapIcon, onClick: () => navigate('/m/cargo/map'), primary: false },
+        ]}
+      />
+
+      <SectionHead title="Conteneurs" link={{ label: 'Tout voir', onClick: () => navigate('/m/cargo?vue=tous') }} />
+      {isLoading ? <ScreenLoader /> : isError ? (
+        <div className="px-5"><QueryError what="la flotte" onRetry={() => { void refetch(); }} /></div>
+      ) : top.length === 0 ? (
+        <EmptyLine action={{ label: 'Suivre un conteneur', onClick: () => navigate('/m/cargo/track') }}>Aucun conteneur suivi.</EmptyLine>
+      ) : (
+        <ItemList>
+          {top.map((s) => <ShipmentRow key={s.id} s={s} onClick={() => navigate(`/m/cargo/${s.id}`)} />)}
+        </ItemList>
+      )}
+
+      <ActionSheet open={more.open} onClose={more.hide} title="Cargo" actions={actions} />
+    </div>
+  );
+}
+
+type Sort = 'urgent' | 'eta' | 'client';
+const SORT_LABEL: Record<Sort, string> = { urgent: 'Le plus urgent', eta: 'Par arrivée', client: 'Par client' };
+
+function FleetList({ initialSearch }: { initialSearch: boolean }) {
+  const navigate = useNavigate();
+  const { data, isLoading, isError, refetch } = useCargoShipments();
+  const [bucket, setBucket] = useState<Bucket>('all');
+  const [searching, setSearching] = useState(initialSearch);
+  const [query, setQuery] = useState('');
+  const [carrier, setCarrier] = useState('all');
+  const [pod, setPod] = useState('all');
+  const [sort, setSort] = useState<Sort>('urgent');
+  const [pick, setPick] = useState<'carrier' | 'pod' | 'sort' | null>(null);
+  const more = useSheet();
+
+  const all = useMemo(() => data ?? [], [data]);
+  const carriers = useMemo(() => [...new Set(all.map((s) => s.carrier))], [all]);
+  const pods = useMemo(() => [...new Set(all.map((s) => s.pod_name).filter(Boolean))], [all]);
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = all.filter((s) => {
+      if (!inBucket(s, bucket)) return false;
+      if (carrier !== 'all' && s.carrier !== carrier) return false;
+      if (pod !== 'all' && s.pod_name !== pod) return false;
+      if (q) {
+        const hay = [s.client_label, s.container_number, s.bl_number, s.vessel_name ?? '', s.pod_name, s.pol_name ?? ''].join(' ').toLowerCase();
+        if (!hay.includes(q) && !hay.replace(/\s/g, '').includes(q.replace(/\s/g, ''))) return false;
+      }
+      return true;
+    });
+    if (sort === 'client') return list.sort((a, b) => a.client_label.localeCompare(b.client_label, 'fr'));
+    if (sort === 'eta') return list.sort((a, b) => (bestEta(a).date?.getTime() ?? Infinity) - (bestEta(b).date?.getTime() ?? Infinity));
+    return list.sort(byUrgency);
+  }, [all, bucket, carrier, pod, query, sort]);
+
+  const options = BUCKETS.map((b) => ({ value: b.value, label: b.label, count: all.filter((s) => inBucket(s, b.value)).length }));
+  const pickActions: SheetAction[] = pick === 'carrier'
+    ? [{ label: 'Tous les armateurs', onClick: () => setCarrier('all') }, ...carriers.map((c) => ({ label: CARRIER_LABEL[c] ?? c, onClick: () => setCarrier(c) }))]
+    : pick === 'pod'
+      ? [{ label: 'Toutes les destinations', onClick: () => setPod('all') }, ...pods.map((p) => ({ label: p, onClick: () => setPod(p) }))]
+      : (Object.keys(SORT_LABEL) as Sort[]).map((k) => ({ label: SORT_LABEL[k], onClick: () => setSort(k) }));
+
+  return (
+    <div className="flex min-h-full flex-col pb-6">
+      <ScreenTop
+        title="Conteneurs"
+        backTo="/m/cargo"
+        right={
+          <>
+            <TopIcon icon={Search} ariaLabel="Chercher" onClick={() => setSearching((v) => !v)} />
+            <MoreButton onClick={more.show} />
+          </>
+        }
+      />
+      {searching && (
+        <div className="px-5 pt-3">
+          <SearchBox value={query} onChange={setQuery} placeholder="Client, conteneur, B/L, navire, port" autoFocus />
         </div>
       )}
+      <DisruptionStrip shipments={all} className="px-5" />
+      <ChipRow className="pt-3" options={options} value={bucket} onChange={setBucket} />
 
-      {/* Ce qui presse : une ligne par chose à faire maintenant, repliée par défaut. */}
-      {urgent.length > 0 && filter === 'all' && !query && (
-        <section className={cn('mx-4 mt-3 rounded-lg', SURFACE.card, SURFACE.shadow)}>
-          <button type="button" aria-expanded={weekOpen} onClick={() => setWeekOpen((v) => !v)} className="flex min-h-[56px] w-full items-center gap-3 px-4 text-left">
-            <span className="min-w-0 flex-1">
-              <span className={cn('block', TYPE.lead, TEXT.strong)}>À faire cette semaine</span>
-              <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{plural(urgent.length, 'chose')} avant les prochaines arrivées</span>
-            </span>
-            <ChevronDown className={cn('h-6 w-6 shrink-0 transition-transform', TEXT.muted, weekOpen && 'rotate-180')} />
-          </button>
-          {weekOpen && (
-            <ul className={cn('border-t px-4 pb-2', SURFACE.divider)}>
-              {urgent.map(({ s, t }) => (
-                <li key={`${s.id}-${t.id}`}>
-                  <button type="button" onClick={() => navigate(`/m/cargo/${s.id}${TODO_SECTION[t.id] ? `/${TODO_SECTION[t.id]}` : ''}`)} className="flex w-full items-start gap-3 py-3 text-left">
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block text-[16px] font-semibold leading-snug', TEXT.strong)}>{t.label}</span>
-                      <span className={cn('block text-[16px] leading-snug', TEXT.muted)}>{s.client_label} · {uncap(arrivalSentence(s))}</span>
-                    </span>
-                    <ChevronRight className={cn('mt-0.5 h-6 w-6 shrink-0', TEXT.muted)} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+      {isLoading ? <ScreenLoader /> : isError ? (
+        <div className="px-5 pt-4"><QueryError what="la flotte" onRetry={() => { void refetch(); }} /></div>
+      ) : rows.length === 0 ? (
+        <EmptyLine>{query ? 'Aucun conteneur ne correspond.' : 'Aucun conteneur dans cette file.'}</EmptyLine>
+      ) : (
+        <ItemList className="pt-1">
+          {rows.map((s) => <ShipmentRow key={s.id} s={s} onClick={() => navigate(`/m/cargo/${s.id}`)} />)}
+        </ItemList>
       )}
 
-      <div className="space-y-3 px-4 pt-3">
-        {isLoading && <ScreenLoader />}
-        {isError && !isLoading && <QueryError what="la flotte" onRetry={() => { void refetch(); }} />}
-        {rows.map((s) => {
-          const level = alertLevel(s, docsBy?.[s.id]);
-          const delay = delaySentence(s);
-          const next = nextActionSentence(s, docsBy?.[s.id]);
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => navigate(`/m/cargo/${s.id}`)}
-              className={cn('flex w-full items-center gap-3 rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.card, SURFACE.shadow)}
-            >
-              <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <span className={cn('break-words', TYPE.title, TEXT.strong)}>{s.client_label}</span>
-                  <StatusPill tone={TONE_OF[level]} label={ALERT[level].label} />
-                </div>
-                {(dupes.get(s.client_label) ?? 0) > 1 && <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{s.container_number}</p>}
-                <p className={cn('text-[16px] leading-snug', TEXT.strong)}>{arrivalSentence(s)}</p>
-                {delay && <p className="text-[16px] font-semibold leading-snug text-[#975102] dark:text-[#E8B931]">{delay}</p>}
-                {next && <p className={cn('text-[16px] leading-snug', level === 'late' ? 'text-[#C00F0C] dark:text-[#EC221F]' : TEXT.muted)}>{next}</p>}
-              </div>
-              <ChevronRight className={cn('h-6 w-6 shrink-0', TEXT.muted)} />
-            </button>
-          );
-        })}
-
-        {!isLoading && !isError && rows.length === 0 && (
-          <div className="flex flex-col items-center py-12 text-center">
-            <p className={cn(TYPE.lead, TEXT.strong)}>{query ? 'Aucun conteneur ne correspond' : filter === 'all' ? 'Aucun conteneur suivi' : 'Aucun conteneur dans cet état'}</p>
-            <p className={cn('mt-2 max-w-xs text-[16px]', TEXT.muted)}>
-              {query ? 'Essayez le nom du client, le numéro de boîte ou le bill of lading.' : filter === 'all' ? 'Un numéro de bill of lading ou de conteneur suffit pour commencer.' : 'Bonne nouvelle. Touche « Tous » pour revoir la flotte.'}
-            </p>
-            {filter === 'all' && !query && (
-              <Button className="mt-4" onClick={() => navigate('/m/cargo/track')}>
-                <SearchIcon /> Chercher une référence
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+      <ActionSheet
+        open={more.open}
+        onClose={more.hide}
+        title="Conteneurs"
+        actions={[
+          { label: 'Armateur', hint: carrier === 'all' ? 'Tous' : CARRIER_LABEL[carrier] ?? carrier, icon: Ship, onClick: () => setPick('carrier') },
+          { label: 'Destination', hint: pod === 'all' ? 'Toutes' : pod, icon: MapIcon, onClick: () => setPick('pod') },
+          { label: 'Trier', hint: SORT_LABEL[sort], icon: ArrowDownUp, onClick: () => setPick('sort') },
+          { label: 'Exporter la liste (CSV)', icon: Download, onClick: () => exportFleetCsv(rows), disabled: rows.length === 0 },
+        ]}
+      />
+      <ActionSheet open={pick != null} onClose={() => setPick(null)} title={pick === 'carrier' ? 'Armateur' : pick === 'pod' ? 'Destination' : 'Trier'} actions={pickActions} />
     </div>
   );
 }

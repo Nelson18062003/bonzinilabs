@@ -7,9 +7,11 @@ interface SignatureCanvasProps {
   onSave: (signatureDataUrl: string) => void;
   onCancel?: () => void;
   isLoading?: boolean;
+  /** Bloque « Confirmer » (ex. : la case « cash remis » n'est pas cochée). */
+  disabled?: boolean;
 }
 
-export function SignatureCanvas({ onSave, onCancel, isLoading = false }: SignatureCanvasProps) {
+export function SignatureCanvas({ onSave, onCancel, isLoading = false, disabled = false }: SignatureCanvasProps) {
   const sigCanvas = useRef<SignaturePad>(null);
   const [isEmpty, setIsEmpty] = useState(true);
 
@@ -19,7 +21,7 @@ export function SignatureCanvas({ onSave, onCancel, isLoading = false }: Signatu
   };
 
   const handleSave = () => {
-    if (sigCanvas.current && !sigCanvas.current.isEmpty()) {
+    if (!disabled && sigCanvas.current && !sigCanvas.current.isEmpty()) {
       const dataUrl = sigCanvas.current.toDataURL('image/png');
       onSave(dataUrl);
     }
@@ -80,7 +82,7 @@ export function SignatureCanvas({ onSave, onCancel, isLoading = false }: Signatu
         
         <Button
           onClick={handleSave}
-          disabled={isEmpty || isLoading}
+          disabled={isEmpty || isLoading || disabled}
           className="flex-1 btn-primary-gradient"
         >
           <Check className="w-4 h-4 mr-2" />

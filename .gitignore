@@ -46,3 +46,6 @@ tools/out/
 
 # Scripts de rendu jetables (agents de relecture des PDF) — jamais versionnés
 tools/.tmp-*
+
+# Rendus PNG des maquettes de la refonte mobile (30 Mo) : se régénèrent depuis docs/mobile-refonte/maquettes avec shot.cjs
+docs/mobile-refonte/photos/

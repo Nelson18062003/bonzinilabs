@@ -5,3 +5,8 @@ export { MobileClientLedger } from './MobileClientLedger';
 export { default as MobileClientBeneficiaries } from './MobileClientBeneficiaries';
 export { MobileClientScan } from './MobileClientScan';
 export { MobileClientParcels } from './MobileClientParcels';
+export { MobileClientParcelsV2 } from './MobileClientParcelsV2';
+export { MobileClientAdjust } from './MobileClientAdjust';
+export { MobileClientIdentity } from './MobileClientIdentity';
+export { MobileClientPhones } from './MobileClientPhones';
+export { MobileClientLabel } from './MobileClientLabel';
