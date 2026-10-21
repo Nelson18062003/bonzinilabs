@@ -175,7 +175,53 @@ const notifications = [
   { id: 'n4', user_id: 'u5', type: 'payment_completed', title: 'Fournisseur payé', message: 'Le règlement BZ-PY-2026-1180 de ¥ 12 000 est arrivé chez votre fournisseur.', metadata: { payment_id: 'p1', reference: 'BZ-PY-2026-1180' }, is_read: true, created_at: ago(300) },
 ];
 
+// ── Opérations v2 : journal, lots de paiements, noms de l'équipe ─────────
+// (lus avant le reste : ces requêtes filtrent sur des colonnes que les
+// branches génériques plus bas ignorent).
+const opsTeam = [
+  { user_id: 'admin1', first_name: 'Nelson', last_name: 'Mbappé' },
+  { user_id: 'admin2', first_name: 'Christelle', last_name: 'Abena' },
+  { user_id: 'admin3', first_name: 'Brice', last_name: 'Fotso' },
+];
+const opsAuditLogs = [
+  { id: 'al1', admin_user_id: 'admin1', action_type: 'validate_deposit', target_type: 'deposit', target_id: 'd5', details: { reference: 'BZ-DP-2026-0847', client_name: 'Fatou Ndiaye' }, created_at: ago(0.4) },
+  { id: 'al2', admin_user_id: 'admin2', action_type: 'complete_payment', target_type: 'payment', target_id: 'p6', details: { reference: 'BZ-PY-2026-1199' }, created_at: ago(0.7) },
+  { id: 'al3', admin_user_id: 'admin1', action_type: 'add_exchange_rate', target_type: 'rate', target_id: 'r1', details: { description: '1 M XAF = ¥ 11 530' }, created_at: ago(3) },
+  { id: 'al4', admin_user_id: 'admin3', action_type: 'update_client', target_type: 'client', target_id: 'u3', details: { client_name: 'Jean-Paul Mbarga' }, created_at: ago(22) },
+  { id: 'al5', admin_user_id: 'admin2', action_type: 'reject_payment', target_type: 'payment', target_id: 'p7', details: { reference: 'BZ-PY-2026-1188' }, created_at: ago(25) },
+  { id: 'al6', admin_user_id: 'admin1', action_type: 'set_wallet_overdraft', target_type: 'wallet', target_id: 'u6', details: { client_name: 'Ibrahim Touré · 2 M' }, created_at: ago(28) },
+];
+const opsBatches = [
+  { id: 'b1', reference: 'BZ-LT-2610-07', user_id: 'u3', line_count: 3, total_amount_rmb: 66400, total_amount_xaf: 5760000, note: 'Commande d’octobre', created_by: 'admin1', created_at: ago(2), updated_at: ago(1) },
+  { id: 'b2', reference: 'BZ-LT-2610-05', user_id: 'u5', line_count: 2, total_amount_rmb: 21300, total_amount_xaf: 1851000, note: null, created_by: 'admin1', created_at: ago(30), updated_at: ago(20) },
+];
+const opsBatchLines = [
+  { ...payments[2], id: 'bl1', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1210', amount_rmb: 24000, amount_xaf: 2082000, status: 'completed', beneficiary_name: 'Guangzhou Hengtai Trading', method: 'alipay', created_at: ago(2) },
+  { ...payments[1], id: 'bl2', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1211', amount_rmb: 18200, amount_xaf: 1578000, status: 'ready_for_payment', beneficiary_name: 'Yiwu Jinsheng Textile', method: 'wechat', created_at: ago(2) },
+  { ...payments[0], id: 'bl3', batch_id: 'b1', user_id: 'u3', reference: 'BZ-PY-2026-1212', amount_rmb: 24200, amount_xaf: 2100000, status: 'ready_for_payment', beneficiary_name: 'Foshan Meida Furniture', method: 'bank_transfer', created_at: ago(2) },
+  { ...payments[2], id: 'bl4', batch_id: 'b2', user_id: 'u5', reference: 'BZ-PY-2026-1180', amount_rmb: 12000, amount_xaf: 1043000, status: 'completed', beneficiary_name: 'Chen Xiaoli', method: 'alipay', created_at: ago(30) },
+  { ...payments[1], id: 'bl5', batch_id: 'b2', user_id: 'u5', reference: 'BZ-PY-2026-1181', amount_rmb: 9300, amount_xaf: 808000, status: 'completed', beneficiary_name: 'Li Wei', method: 'wechat', created_at: ago(30) },
+];
+function respondOps(url) {
+  if (url.includes('/admin_audit_logs')) return opsAuditLogs;
+  // Justificatifs : la preuve avec son dépôt (select=*,deposits(*)).
+  if (url.includes('/deposit_proofs') && /deposits(%28|\()/.test(url)) return depositProofs.map((p) => ({ ...p, deposits: deposits.find((d) => d.id === p.deposit_id) ?? null }));
+  if (url.includes('/user_roles') && /select=user_id(%2C|,)first_name(%2C|,)last_name/.test(url)) return opsTeam;
+  if (url.includes('/payment_batches')) {
+    const m = url.match(/[?&]id=eq\.([^&]+)/);
+    return m ? opsBatches.filter((b) => b.id === decodeURIComponent(m[1])) : opsBatches;
+  }
+  if (url.includes('/payments') && url.includes('batch_id=')) {
+    const eq = url.match(/batch_id=eq\.([^&]+)/);
+    if (eq) return opsBatchLines.filter((l) => l.batch_id === decodeURIComponent(eq[1]));
+    return opsBatchLines;
+  }
+  return undefined;
+}
+
 function respond(url) {
+  const ops = respondOps(url);
+  if (ops !== undefined) return ops;
   if (url.includes('/rpc/get_deposit_stats')) return stats;
   if (url.includes('/storage/v1/object/sign')) {
     // Echo the object path so the GET interception can tell QR from proof.

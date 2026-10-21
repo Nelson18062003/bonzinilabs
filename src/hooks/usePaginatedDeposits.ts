@@ -74,8 +74,12 @@ export function usePaginatedAdminDeposits(filters?: DepositFilters) {
         query = query.eq('status', filters.status);
       }
 
-      // Apply method filter
-      if (filters?.method && filters.method !== 'all') {
+      // Apply method filter — a family (several DB methods) or a single one.
+      // (`methods` was declared but ignored here: the mobile family filter
+      // had no effect.)
+      if (filters?.methods && filters.methods.length > 0) {
+        query = query.in('method', filters.methods);
+      } else if (filters?.method && filters.method !== 'all') {
         query = query.eq('method', filters.method);
       }
 
@@ -86,6 +90,18 @@ export function usePaginatedAdminDeposits(filters?: DepositFilters) {
       if (filters?.dateTo) {
         // Add end-of-day to include the full day
         query = query.lte('created_at', `${filters.dateTo}T23:59:59.999Z`);
+      }
+
+      // Server-side search, same rule as the desktop table: reference, or
+      // the client's name / phone / company.
+      if (filters?.search?.trim()) {
+        const term = sanitizeTerm(filters.search);
+        const userIds = await searchUserIds(term);
+        if (userIds.length > 0) {
+          query = query.or(`reference.ilike.%${term}%,user_id.in.(${userIds.join(',')})`);
+        } else {
+          query = query.ilike('reference', `%${term}%`);
+        }
       }
 
       const { data: deposits, error: depositsError } = await query
