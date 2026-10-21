@@ -442,7 +442,7 @@ const App = () => (
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
                 <Route path="/a" element={<AgentCashRouteWrapper><AgentCashPayments /></AgentCashRouteWrapper>} />
                 <Route path="/a/plus" element={<AgentCashRouteWrapper><AgentCashMore /></AgentCashRouteWrapper>} />
-                <Route path="/a/scan" element={<AgentCashRouteWrapper><AgentCashScanner /></AgentCashRouteWrapper>} />
+                <Route path="/a/scan" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashScanner /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />

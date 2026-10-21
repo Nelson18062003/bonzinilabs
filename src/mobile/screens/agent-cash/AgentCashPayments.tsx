@@ -1,46 +1,28 @@
 // ============================================================
-// AGENT-CASH — AgentCashPayments (liste, onglets À payer / Payés)
-// Présentation migrée sur le design kit (Ofspace/Mola) :
-//   canvas doux · Segmented (onglets) · lignes Card + Holder + Amount +
-//   StatusPill toné + Row · ScreenLoader · empty-state Holder.
-// Logique 100% préservée : useAgentCashPayments(pending|paid), onglets,
-// logout, bascule EN/ZH, navigation détail, libellés de statut.
+// AGENT-CASH — la liste, v2 (maquette 06-messages-douane-outils/17) :
+//   « Bonjour Liang », le gros chiffre de ce qui reste à remettre, le
+//   segment À remettre / Remis, puis une ligne par paiement (rond cash,
+//   bénéficiaire, client, montant et tag QR lu / À remettre).
+// Logique inchangée : useAgentCashPayments('pending' | 'paid', moi),
+//   navigation vers la fiche. Langue et déconnexion sont dans Plus (/a/plus).
 // ============================================================
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPayments, CashPayment } from '@/hooks/useAgentCashPayments';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { formatCurrencyRMB, formatDate } from '@/lib/formatters';
-import { LogOut, ChevronRight, Banknote, Inbox } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import {
-  SURFACE,
-  TEXT,
-  Segmented,
-  Card,
-  Holder,
-  Amount,
-  Row,
-  StatusPill,
-  ScreenLoader,
-  type Tone,
+  BoxSegmented, EmptyLine, HeroFigure, ItemList, ItemRow, MethodCircle, ScreenLoader, TabTop, type Tone,
 } from '@/mobile/designKit';
+import { yuan } from '@/mobile/screens/operations/opsLabels';
 
-// Statut paiement cash → tone : payé=vert, QR scanné (à faire signer)=bleu,
-// à remettre (cash_pending, ou ancien ready_for_payment / processing)=ambre.
-function cashStatusTone(status: string): Tone {
-  if (status === 'completed') return 'success';
-  if (status === 'cash_scanned') return 'info';
-  return 'pending';
-}
+const wide = (s: string) => s.replace(/ /g, ' ');
 
 export function AgentCashPayments() {
   const navigate = useNavigate();
-  const { currentUser, logout } = useAdminAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { currentUser } = useAdminAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'pending' | 'paid'>('pending');
 
   const { data: pendingPayments, isLoading: loadingPending } = useAgentCashPayments('pending');
@@ -49,124 +31,65 @@ export function AgentCashPayments() {
   const payments = activeTab === 'pending' ? pendingPayments : paidPayments;
   const isLoading = activeTab === 'pending' ? loadingPending : loadingPaid;
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/a/login');
-  };
+  const getClientName = (payment: CashPayment) =>
+    payment.profile ? `${payment.profile.first_name} ${payment.profile.last_name}`.trim() : '—';
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'zh' : 'en');
-  };
-
-  const getBeneficiaryName = (payment: CashPayment) => cashBeneficiaryName(payment);
-
-  const getClientName = (payment: CashPayment) => {
-    if (payment.profile) {
-      return `${payment.profile.first_name} ${payment.profile.last_name}`;
-    }
-    return '—';
-  };
-
-  const statusLabel = (status: string) =>
+  const tag = (status: string): { tone: Tone; label: string } =>
     status === 'completed'
-      ? t('status_paid')
+      ? { tone: 'success', label: t('cash_done') }
       : status === 'cash_scanned'
-        ? t('status_scanned')
-        : t('status_to_hand_over'); /* cash_pending, et les anciens ready_for_payment / processing */
+        ? { tone: 'neutral', label: t('cash_qr_read') }
+        : { tone: 'pending', label: t('status_to_hand_over') }; /* cash_pending, et les anciens ready_for_payment / processing */
+
+  const total = (pendingPayments ?? []).reduce((s, p) => s + (Number(p.amount_rmb) || 0), 0);
+  const today = new Date().toDateString();
+  const handedToday = (paidPayments ?? []).filter((p) => p.cash_paid_at && new Date(p.cash_paid_at).toDateString() === today).length;
 
   return (
-    <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('cash_payments')}
-        rightElement={
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggleLanguage}
-              className={cn('min-h-11 rounded-lg px-3 text-[14px] font-semibold transition-colors hover:text-foreground', TEXT.muted)}
-            >
-              {language === 'en' ? '中文' : 'EN'}
-            </button>
-            <button
-              onClick={handleLogout}
-              className={cn('flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:text-foreground', TEXT.muted)}
-              aria-label={t('logout')}
-            >
-              <LogOut className="h-5 w-5" />
-            </button>
-          </div>
-        }
-      />
+    <div className="flex min-h-full flex-col pb-6">
+      <TabTop title={`${t('cash_hello')} ${currentUser?.firstName ?? ''}`.trim()} />
 
-      <div className="px-4 pt-4 pb-28 space-y-4">
-        {/* Segment tabs */}
-        <Segmented
+      <div className="px-5 pt-3.5">
+        <HeroFigure
+          label={t('cash_to_hand')}
+          value={loadingPending ? '—' : wide(yuan(total))}
+          sub={[
+            <><b className="font-bold">{pendingPayments?.length ?? 0}</b> {t('cash_payments_n')}</>,
+            <><b className="font-bold">{handedToday}</b> {t('cash_handed_n')}</>,
+          ]}
+        />
+      </div>
+
+      <div className="px-5 pt-[18px]">
+        <BoxSegmented<'pending' | 'paid'>
           value={activeTab}
           onChange={setActiveTab}
           options={[
-            {
-              value: 'pending',
-              label: (
-                <span className="inline-flex items-center justify-center gap-1.5">
-                  {t('to_pay')}
-                  {pendingPayments && pendingPayments.length > 0 && (
-                    <span className="rounded-full bg-[#F8EFD8] px-1.5 py-0.5 text-[11px] font-bold text-[#9A6B12] dark:bg-[#372D14] dark:text-[#E7C083]">
-                      {pendingPayments.length}
-                    </span>
-                  )}
-                </span>
-              ),
-            },
-            { value: 'paid', label: t('paid') },
+            { value: 'pending', label: t('status_to_hand_over') },
+            { value: 'paid', label: t('cash_tab_handed') },
           ]}
         />
-
-        {/* Loading state */}
-        {isLoading && <ScreenLoader />}
-
-        {/* Empty state */}
-        {!isLoading && (!payments || payments.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Holder icon={Inbox} size="lg" className="mb-4" />
-            <p className={cn('text-sm', TEXT.muted)}>
-              {activeTab === 'pending' ? t('no_pending_payments') : t('no_paid_payments')}
-            </p>
-          </div>
-        )}
-
-        {/* Payment cards */}
-        {!isLoading && payments && payments.length > 0 && (
-          <div className="space-y-3">
-            {payments.map((payment, index) => (
-              <button
-                key={payment.id}
-                onClick={() => navigate(`/a/payment/${payment.id}`)}
-                className="w-full text-left animate-slide-up"
-                style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
-              >
-                <Card className="transition active:scale-[0.99]">
-                  <div className="mb-2 flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Holder icon={Banknote} />
-                      <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <StatusPill tone={cashStatusTone(payment.status)} label={statusLabel(payment.status)} />
-                      <ChevronRight className={cn('h-4 w-4', TEXT.muted)} />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Row label={t('beneficiary')} value={getBeneficiaryName(payment)} />
-                    <Row label={t('client')} value={getClientName(payment)} />
-                    <Row label={t('reference')} value={<span className="font-mono text-[14px]">{payment.reference}</span>} />
-                    <Row label={t('date')} value={formatDate(payment.created_at, 'datetime')} />
-                  </div>
-                </Card>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+
+      {isLoading ? (
+        <ScreenLoader />
+      ) : !payments || payments.length === 0 ? (
+        <EmptyLine>{activeTab === 'pending' ? t('no_pending_payments') : t('no_paid_payments')}</EmptyLine>
+      ) : (
+        <ItemList className="pt-2">
+          {payments.map((payment) => (
+            <ItemRow
+              key={payment.id}
+              leading={<MethodCircle method="cash" />}
+              title={cashBeneficiaryName(payment)}
+              subtitle={`${t('client')} ${getClientName(payment)}`}
+              amount={yuan(payment.amount_rmb)}
+              tag={tag(payment.status)}
+              onClick={() => navigate(`/a/payment/${payment.id}`)}
+            />
+          ))}
+        </ItemList>
+      )}
     </div>
   );
 }
