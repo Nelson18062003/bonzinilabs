@@ -3205,32 +3205,6 @@ export type Database = {
           },
         ]
       }
-      payment_cash_tokens: {
-        Row: {
-          created_at: string
-          payment_id: string
-          token: string
-        }
-        Insert: {
-          created_at?: string
-          payment_id: string
-          token: string
-        }
-        Update: {
-          created_at?: string
-          payment_id?: string
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_cash_tokens_payment_id_fkey"
-            columns: ["payment_id"]
-            isOneToOne: true
-            referencedRelation: "payments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       payment_batches: {
         Row: {
           created_at: string
@@ -3269,6 +3243,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payment_cash_tokens: {
+        Row: {
+          created_at: string
+          payment_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          payment_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          payment_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_cash_tokens_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_proofs: {
         Row: {
@@ -4957,6 +4957,7 @@ export type Database = {
         Args: { p_first: string; p_user_id: string }
         Returns: undefined
       }
+      _payment_debit_held: { Args: { p_payment_id: string }; Returns: number }
       _phone_e164: { Args: { p_phone: string }; Returns: string }
       _phone_is_client: { Args: { p_e164: string }; Returns: boolean }
       _prospect_claim_clients: {
@@ -5003,6 +5004,7 @@ export type Database = {
         Args: { p_notify?: boolean; p_prospect_id: string }
         Returns: string
       }
+      _rate_country_key: { Args: { p_country: string }; Returns: string }
       _sales_month: {
         Args: { p_month: string }
         Returns: {
@@ -5554,17 +5556,17 @@ export type Database = {
         | {
             Args: {
               p_payment_id: string
-              p_signature_url: string
+              p_signature_path: string
               p_signed_by_name: string
+              p_signer_id_number: string
             }
             Returns: Json
           }
         | {
             Args: {
               p_payment_id: string
-              p_signature_path: string
+              p_signature_url: string
               p_signed_by_name: string
-              p_signer_id_number: string
             }
             Returns: Json
           }
