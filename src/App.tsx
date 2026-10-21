@@ -94,6 +94,12 @@ const PaymentDetailsPage = lazy(() => import("./pages/PaymentDetailsPage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
+// Refonte v2 — fiche client : colis, crédit/débit, identité, téléphones, étiquette (mobile ; l'ordinateur garde ses écrans).
+const MobileClientParcelsV2 = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcelsV2 })));
+const MobileClientAdjust = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientAdjust })));
+const MobileClientIdentity = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientIdentity })));
+const MobileClientPhones = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientPhones })));
+const MobileClientLabel = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLabel })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
 const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
@@ -108,6 +114,14 @@ const TeamMemberScreen = lazy(() => import("./components/team/TeamMemberScreen")
 const SalesBoard = lazy(() => import("./components/team/SalesBoard").then(m => ({ default: m.SalesBoard })));
 const SalesCommercial = lazy(() => import("./components/team/SalesCommercial").then(m => ({ default: m.SalesCommercial })));
 const ProspectClaims = lazy(() => import("./components/team/ProspectClaims").then(m => ({ default: m.ProspectClaims })));
+// Refonte v2 — Équipe & ventes et sources, sur téléphone (l'ordinateur garde les écrans ci-dessus).
+const TeamMembersV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamMembersV2 })));
+const TeamMemberV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamMemberV2 })));
+const TeamNewAccessV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamNewAccessV2 })));
+const SalesBoardV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SalesBoardV2 })));
+const SalesCommercialV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SalesCommercialV2 })));
+const ClaimsV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.ClaimsV2 })));
+const SourcesV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SourcesV2 })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
 const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -347,13 +361,17 @@ const App = () => (
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
                 {/* Sources & commerciaux : même écran (réactif) sur ordinateur et téléphone. */}
-                <Route path="/m/clients/sources" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/clients/sources/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients/sources" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><SourcesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/clients/sources/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><SourcesV2 /></AdminRouteWrapper>} />
                 <Route path="/m/clients/scan" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientScan desktop />}><MobileClientScan /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
-                <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
-                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false} desktop={<div className="mx-auto max-w-2xl"><MobileClientParcels /></div>}><MobileClientParcelsV2 /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/ajuster" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientAdjust /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/identite" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientIdentity /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/telephones" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientPhones /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/etiquette" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientLabel /></AdminRouteWrapper>} />
                 <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
@@ -362,13 +380,13 @@ const App = () => (
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 {/* Mes équipes (remplace « Administrateurs ») : les anciens liens y mènent. */}
-                <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamScreen /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewMember /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/ventes" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesBoard />}><SalesBoard /></AdminRouteWrapper>} />
+                <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamMembersV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewAccessV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes" element={<AdminRouteWrapper desktop={<SalesBoard />}><SalesBoardV2 /></AdminRouteWrapper>} />
                 {/* Les fiches « À vérifier » (07/10) : un numéro saisi par un commercial est déjà celui d'un client. */}
-                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ProspectClaims /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercial /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberScreen /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ClaimsV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercialV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberV2 /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<Navigate to="/m/equipe" replace />} />
                 <Route path="/m/more/admins/new" element={<Navigate to="/m/equipe/nouveau" replace />} />
                 <Route path="/m/more/admins/:adminId" element={<LegacyAdminRedirect />} />

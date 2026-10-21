@@ -164,7 +164,8 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
-  const labelCls = 'text-[14px] font-semibold s-ink';
+  // v2 : l'étiquette en capitales espacées (« WHATSAPP », « AUTRE NUMÉRO »).
+  const labelCls = 'text-[14px] font-bold uppercase tracking-[0.06em] text-[#5A5A5A] dark:text-[#CDCDCD]';
   const text = (
     <>
       {label}

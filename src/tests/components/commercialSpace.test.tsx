@@ -8,20 +8,20 @@
  *     personne non connectée vers SA connexion, « /v/login » (email + mot
  *     de passe : son adresse est souvent inventée, aucun code ne lui arrive) ;
  *     elle pose la portée `.sales-ui` (le langage visuel de « /v ») ;
- *   · son menu mène à « Changer mon mot de passe », la sortie à « /v/login » ;
+ *   · le rond du compte mène à « Mon mot de passe », la sortie à « /v/login » ;
  *   · un compte pas encore relié à sa fiche voit un message clair ;
- *   · « À relancer » ne montre que les relances échues ; la recherche trouve
+ *   · « Relances » ne montre que les relances échues ; la recherche trouve
  *     aussi par un autre numéro et par l'email ;
  *   · la fiche : appeler et WhatsApp pour CHAQUE numéro (E.164), le statut
  *     d'un toucher, « Perdu » exige un motif, un perdu se rouvre, une fiche
  *     d'avant le 06/10 se dit incomplète (dans la liste aussi, « À
- *     compléter »), « Modifier » ouvre l'étape, « Compléter » enchaîne ce qui
- *     manque ; le brouillon d'un collègue ne s'affiche pas ;
+ *     compléter »), toucher une ligne ouvre l'étape, « Compléter » enchaîne
+ *     ce qui manque ; le brouillon d'un collègue ne s'affiche pas ;
  *   · les listes affichent les numéros au format international ;
  *   · « À vérifier » (07/10, un numéro déjà celui d'un client Bonzini) :
  *     la fiche l'explique, sans actions de statut, le reste modifiable ;
  *     dans la liste, la pastille, et une puce « À vérifier » qui n'apparaît
- *     que s'il y en a ; « Ouverts » ne les compte pas ; « Tous » les range
+ *     que s'il y en a ; « Ouverts » ne les montre pas ; « Tous » les range
  *     après les ouverts.
  * L'assistant « Nouveau prospect » a son propre fichier
  * (salesProspectWizard.test.tsx).
@@ -126,6 +126,22 @@ function mount(ui: React.ReactElement, { route = '/', path = '*' }: { route?: st
   );
 }
 
+/** La dernière feuille ouverte (les feuilles qui se ferment restent un instant dans le DOM). */
+const lastSheet = () => screen.getAllByRole('dialog').at(-1)!;
+/** Le menu « … » de la fiche. */
+const openMore = () => fireEvent.click(screen.getByRole('button', { name: "Plus d'actions" }));
+
+/** `tel:` et `mailto:` passent par `window.location.href` ; jsdom ne navigue pas : on l'observe. */
+function watchLocation() {
+  const original = window.location;
+  const fake = { href: '' } as Location;
+  Object.defineProperty(window, 'location', { value: fake, configurable: true, writable: true });
+  return {
+    get href() { return fake.href; },
+    restore: () => Object.defineProperty(window, 'location', { value: original, configurable: true, writable: true }),
+  };
+}
+
 beforeEach(() => {
   h.auth.isAuthenticated = true;
   h.auth.currentUser = { id: 'u1', email: 'jean@bonzini.com', firstName: 'Jean', lastName: 'Mbarga', role: 'commercial' };
@@ -171,34 +187,52 @@ describe('Espace commercial — accès', () => {
     expect(screen.queryByTestId('where')).toBeNull();
   });
 
-  it('le menu du compte mène à « Changer mon mot de passe »', () => {
+  it('le rond du compte mène à « Mon mot de passe »', () => {
     mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
     fireEvent.click(screen.getByRole('button', { name: 'Mon compte' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: /Changer mon mot de passe/ }));
+    expect(within(lastSheet()).getByRole('button', { name: /Se déconnecter/ })).toBeTruthy();
+    fireEvent.click(within(lastSheet()).getByRole('button', { name: /Mon mot de passe/ }));
     expect(screen.getByTestId('where').textContent).toBe('/v/password');
   });
 
   it('le commercial entre, dans le langage visuel de « /v » (portée `.sales-ui`)', () => {
     const { container } = mount(<CommercialRouteWrapper><CommercialHome /></CommercialRouteWrapper>, { route: '/v', path: '/v' });
     expect(screen.getByText(/Jean$/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Nouveau prospect/ })).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Prospect' }) as HTMLButtonElement).disabled).toBe(false);
     expect(container.querySelector('.admin-theme.sales-ui')).not.toBeNull();
   });
 });
 
 describe('Espace commercial — accueil', () => {
-  it('montre la fiche, les objectifs et les chiffres du mois', () => {
+  it('montre les paiements du mois, les objectifs, les relances et les chiffres', () => {
     mount(<CommercialHome />);
-    expect(screen.getByText(/Fiche « Jean Mbarga »/)).toBeTruthy();
-    expect(screen.getByRole('progressbar', { name: 'Nouveaux clients' }).getAttribute('aria-valuenow')).toBe('50');
-    expect(screen.getByText(/4\s500\s000 XAF/)).toBeTruthy();
-    expect(screen.getByText(/1 prospect à relancer/)).toBeTruthy();
+    // Les paiements de ses clients (commercial_dashboard, sales_series encore en route).
+    expect(screen.getByText('4,5 M')).toBeTruthy();
+    // Pas d'objectif de paiements : la phrase calme sous le chiffre.
+    expect(screen.getByText('Pas d’objectif ce mois')).toBeTruthy();
+    // Ses autres objectifs : réalisé / cible et le pourcentage.
+    const objective = screen.getByText('Nouveaux clients').parentElement as HTMLElement;
+    expect(objective.textContent?.replace(/\s+/g, ' ')).toMatch(/2 \/ 4 50 %/);
+    // Le rond « Relances » porte le nombre de relances échues ; la liste les montre.
+    expect(within(screen.getByRole('button', { name: /Relances/ })).getByText('1')).toBeTruthy();
+    expect(screen.getByText('Awa')).toBeTruthy();
+    // Une fiche « À vérifier » ne se relance pas : elle a sa propre ligne.
+    expect(screen.getByRole('button', { name: /À vérifier/ })).toBeTruthy();
+    expect(screen.queryByText('Didier Fotso')).toBeNull();
+  });
+
+  it('un objectif de paiements : la barre et le pourcentage', () => {
+    h.dashboard = { ...h.dashboard, data: { ...h.card, objectives: [{ metric: 'payments_xaf', target: 9_000_000, actual: 4_500_000 }] } };
+    mount(<CommercialHome />);
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('50');
+    expect(screen.getByText(/de 9 M$/)).toBeTruthy();
   });
 
   it('aucun objectif : un état vide calme', () => {
     h.dashboard = { ...h.dashboard, data: { ...h.card, objectives: [] } };
     mount(<CommercialHome />);
-    expect(screen.getByText('Pas encore d’objectif ce mois-ci')).toBeTruthy();
+    expect(screen.getByText('Pas d’objectif ce mois')).toBeTruthy();
+    expect(screen.queryByText('Mes objectifs')).toBeNull();
   });
 
   it('compte pas encore relié à sa fiche : le message du serveur, sans bouton d’action', () => {
@@ -206,7 +240,7 @@ describe('Espace commercial — accueil', () => {
     mount(<CommercialHome />);
     expect(screen.getByText('Votre espace n’est pas encore prêt')).toBeTruthy();
     expect(screen.getByText(h.UNLINKED)).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Nouveau prospect/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Prospect' })).toBeNull();
   });
 });
 
@@ -220,7 +254,7 @@ describe('Espace commercial — prospects', () => {
 
   it('« ?filtre=relancer » : seulement les relances échues', () => {
     mount(<CommercialProspects />, { route: '/v/prospects?filtre=relancer', path: '/v/prospects' });
-    expect(screen.getByRole('button', { name: /À relancer/ }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: /^Relances/ }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('Awa')).toBeTruthy();
     expect(screen.queryByText('Bruno Ekané')).toBeNull();
     expect(screen.queryByText('Chantal')).toBeNull();
@@ -228,10 +262,10 @@ describe('Espace commercial — prospects', () => {
     expect(screen.queryByText('Didier Fotso')).toBeNull();
   });
 
-  it('« À vérifier » : ni dans « Ouverts » ni dans leur nombre ; sa puce (comptée) les montre, avec leur pastille', () => {
+  it('« À vérifier » : pas dans « Ouverts » ; sa puce (comptée) les montre, avec leur pastille', () => {
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
     expect(screen.queryByText('Didier Fotso')).toBeNull();
-    expect(screen.getByText('2 prospects ouverts')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Ouverts/ }).getAttribute('aria-pressed')).toBe('true');
     const chip = screen.getByRole('button', { name: /^À vérifier/ });
     expect(chip.textContent).toBe('À vérifier1');
     fireEvent.click(chip);
@@ -247,13 +281,13 @@ describe('Espace commercial — prospects', () => {
     h.list = { ...h.list, data: h.prospects.filter((p) => p.status !== 'to_verify') };
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
     expect(screen.queryByRole('button', { name: /^À vérifier/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /^À relancer/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Relances/ })).toBeTruthy();
   });
 
   it('« Tous » : les ouverts, puis les « À vérifier », puis les clos', () => {
     mount(<CommercialProspects />, { route: '/v/prospects?filtre=tous', path: '/v/prospects' });
     const all = ['Awa', 'Bruno Ekané', 'Chantal', 'Didier Fotso'];
-    const names = screen.getAllByRole('listitem').map((li) => all.find((n) => within(li).queryByText(n)));
+    const names = screen.getAllByRole('button').map((row) => all.find((n) => within(row).queryByText(n))).filter(Boolean);
     expect(names).toEqual(['Awa', 'Bruno Ekané', 'Didier Fotso', 'Chantal']);
   });
 });
@@ -261,36 +295,50 @@ describe('Espace commercial — prospects', () => {
 describe('Espace commercial — la fiche', () => {
   it('« Perdu » exige un motif d’au moins 3 caractères (un motif fréquent d’un toucher)', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-due', path: '/v/prospects/:id' });
-    fireEvent.click(screen.getByRole('button', { name: /Marquer perdu/ }));
-    const sheet = screen.getByRole('dialog');
+    openMore();
+    fireEvent.click(within(lastSheet()).getByRole('button', { name: /Marquer perdu/ }));
+    const sheet = lastSheet();
     const confirm = within(sheet).getByRole('button', { name: 'Marquer perdu' }) as HTMLButtonElement;
-    fireEvent.change(within(sheet).getByLabelText('Pourquoi ?'), { target: { value: 'ok' } });
     expect(confirm.disabled).toBe(true);
-    fireEvent.change(within(sheet).getByLabelText('Pourquoi ?'), { target: { value: 'Trop cher' } });
+    fireEvent.change(within(sheet).getByLabelText('Précisez'), { target: { value: 'ok' } });
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(within(sheet).getByLabelText('Précisez'), { target: { value: 'Trop cher' } });
     expect(confirm.disabled).toBe(false);
     fireEvent.click(confirm);
-    expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-due', status: 'lost', reason: 'Trop cher' }, expect.any(Object));
-    fireEvent.click(within(sheet).getByRole('button', { name: 'A déjà un transitaire' }));
-    expect((within(sheet).getByLabelText('Pourquoi ?') as HTMLTextAreaElement).value).toBe('A déjà un transitaire');
+    expect(h.setStatus).toHaveBeenLastCalledWith({ id: 'p-due', status: 'lost', reason: 'Trop cher' }, expect.any(Object));
+    // Un motif fréquent d'un toucher suffit ; la précision s'y ajoute.
+    fireEvent.change(within(sheet).getByLabelText('Précisez'), { target: { value: '' } });
+    fireEvent.click(within(sheet).getByRole('button', { name: 'A déjà un prestataire' }));
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    expect(h.setStatus).toHaveBeenLastCalledWith({ id: 'p-due', status: 'lost', reason: 'A déjà un prestataire' }, expect.any(Object));
+    fireEvent.change(within(sheet).getByLabelText('Précisez'), { target: { value: 'Un cousin à Canton' } });
+    fireEvent.click(confirm);
+    expect(h.setStatus).toHaveBeenLastCalledWith({ id: 'p-due', status: 'lost', reason: 'A déjà un prestataire · Un cousin à Canton' }, expect.any(Object));
   });
 
   it('un perdu se rouvre (statut « À contacter »)', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
     // Ses numéros sont vérifiés comme pour une réouverture (la fiche elle-même exclue).
     expect(h.numbersCheck).toHaveBeenCalledWith([expect.any(String)], 'p-lost', true);
-    fireEvent.click(screen.getByRole('button', { name: /Rouvrir/ }));
+    // Pas de statut à changer ni de « Marquer perdu » : « Rouvrir » est dans « … ».
+    expect(screen.queryByRole('radiogroup', { name: 'Statut du prospect' })).toBeNull();
+    openMore();
+    expect(within(lastSheet()).queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
+    fireEvent.click(within(lastSheet()).getByRole('button', { name: /Rouvrir/ }));
     expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-lost', status: 'new', reason: undefined }, expect.any(Object));
   });
 
-  it('un perdu dont un numéro est celui d’un client (refusé par la direction) : pas de « Rouvrir », une phrase le dit — sans nom', () => {
+  it('un perdu dont un numéro est celui d’un client (refusé par la direction) : « Rouvrir » est éteint, une phrase dit pourquoi — sans nom', () => {
     h.numbersCheck.mockReturnValue({ pending: false, blocking: 'client' });
     try {
       mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
-      expect(screen.queryByRole('button', { name: /Rouvrir/ })).toBeNull();
-      expect(
-        // (Testing Library ramène l'espace insécable avant « : » à une espace.)
-        screen.getByText('Un de ses numéros est celui d’un client Bonzini : cette fiche ne peut pas être rouverte. Si le numéro est faux, corrigez-le.'),
-      ).toBeTruthy();
+      openMore();
+      const reopen = within(lastSheet()).getByRole('button', { name: /Rouvrir/ }) as HTMLButtonElement;
+      expect(reopen.disabled).toBe(true);
+      expect(within(reopen).getByText('Un numéro est celui d’un client Bonzini')).toBeTruthy();
+      fireEvent.click(reopen);
+      expect(h.setStatus).not.toHaveBeenCalled();
     } finally {
       h.numbersCheck.mockReturnValue({ pending: false, blocking: null });
     }
@@ -300,7 +348,8 @@ describe('Espace commercial — la fiche', () => {
     h.numbersCheck.mockReturnValue({ pending: true, blocking: null });
     try {
       mount(<CommercialProspectForm />, { route: '/v/prospects/p-lost', path: '/v/prospects/:id' });
-      expect((screen.getByRole('button', { name: /Rouvrir/ }) as HTMLButtonElement).disabled).toBe(true);
+      openMore();
+      expect((within(lastSheet()).getByRole('button', { name: /Rouvrir/ }) as HTMLButtonElement).disabled).toBe(true);
     } finally {
       h.numbersCheck.mockReturnValue({ pending: false, blocking: null });
     }
@@ -319,27 +368,46 @@ describe('Espace commercial — la fiche', () => {
     expect(h.setStatus).toHaveBeenCalledWith({ id: 'p-later', status: 'contacted', reason: undefined }, expect.any(Object));
   });
 
-  it('appeler et WhatsApp pour CHAQUE numéro, en E.164 ; l’email en lien', () => {
-    mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
-    expect(screen.getByRole('link', { name: 'Appeler le +237 6 90 00 00 02' }).getAttribute('href')).toBe('tel:+237690000002');
-    expect(screen.getByRole('link', { name: 'WhatsApp : +237 6 90 00 00 02' }).getAttribute('href')).toBe('https://wa.me/237690000002');
-    expect(screen.getByRole('link', { name: 'Appeler le +86 138 1234 5678' }).getAttribute('href')).toBe('tel:+8613812345678');
-    expect(screen.getByRole('link', { name: 'WhatsApp : +86 138 1234 5678' }).getAttribute('href')).toBe('https://wa.me/8613812345678');
-    expect(screen.getByText('WeChat')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Écrire à bruno.ekane@gmail.com' }).getAttribute('href')).toBe('mailto:bruno.ekane@gmail.com');
+  it('appeler et WhatsApp pour CHAQUE numéro, en E.164 ; écrire à l’email', () => {
+    const loc = watchLocation();
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    try {
+      mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
+      // Les ronds : le numéro principal.
+      fireEvent.click(screen.getByRole('button', { name: 'Appeler' }));
+      expect(loc.href).toBe('tel:+237690000002');
+      fireEvent.click(screen.getByRole('button', { name: 'WhatsApp' }));
+      expect(open).toHaveBeenLastCalledWith('https://wa.me/237690000002', '_blank', 'noopener');
+      // Chaque numéro, avec son libellé : toucher la ligne propose Appeler ou WhatsApp.
+      expect(screen.getByText('WeChat')).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: /^WeChat\s*\+86 138 1234 5678/ }));
+      fireEvent.click(within(lastSheet()).getByRole('button', { name: 'Appeler' }));
+      expect(loc.href).toBe('tel:+8613812345678');
+      fireEvent.click(screen.getByRole('button', { name: /^WeChat/ }));
+      fireEvent.click(within(lastSheet()).getByRole('button', { name: 'WhatsApp' }));
+      expect(open).toHaveBeenLastCalledWith('https://wa.me/8613812345678', '_blank', 'noopener');
+      // L'email : écrire.
+      fireEvent.click(screen.getByRole('button', { name: /^Email\s*bruno\.ekane@gmail\.com/ }));
+      fireEvent.click(within(lastSheet()).getByRole('button', { name: 'Écrire' }));
+      expect(loc.href).toBe('mailto:bruno.ekane@gmail.com');
+    } finally {
+      open.mockRestore();
+      loc.restore();
+    }
   });
 
   it('ses besoins sont mis en valeur ; une fiche complète n’a pas de bandeau', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
     expect(screen.getByText('Payer ses fournisseurs en Chine : trop lent')).toBeTruthy();
     expect(screen.getByText('Régler en 48 h')).toBeTruthy();
-    expect(screen.queryByText('Fiche incomplète')).toBeNull();
+    expect(screen.queryByText('À compléter')).toBeNull();
+    expect(screen.queryByText(/^Il manque/)).toBeNull();
   });
 
   it('une fiche d’avant le 06/10 (sans nom, sexe, ville ni « ses plus gros problèmes ») le dit ; « Compléter » enchaîne ce qui manque', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-due', path: '/v/prospects/:id' });
-    expect(screen.getByText('Fiche incomplète')).toBeTruthy();
-    // Le bandeau dit ce qui manque — sans renvoyer « à la prochaine modification » à côté d'un bouton « Compléter ».
+    expect(screen.getByText('À compléter')).toBeTruthy();
+    // La fiche dit ce qui manque, au-dessus du rond « Compléter ».
     expect(screen.getByText('Il manque le nom, le sexe, la ville et ses plus gros problèmes.')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Compléter' }));
     expect(screen.getByText('Compléter la fiche')).toBeTruthy();
@@ -347,6 +415,9 @@ describe('Espace commercial — la fiche', () => {
   });
 
   it('dans la liste, une fiche incomplète porte « À compléter » ; une fiche complète, non', () => {
+    // (Une relance échue passe avant : une seule pastille par ligne.)
+    const later = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    h.list = { ...h.list, data: h.prospects.map((p) => (p.id === 'p-due' ? { ...p, next_action_at: later } : p)) };
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
     const row = (name: string) => screen.getByText(name).closest('button') as HTMLElement;
     expect(within(row('Awa')).getByText('À compléter')).toBeTruthy();
@@ -357,11 +428,11 @@ describe('Espace commercial — la fiche', () => {
     const draft = { v: 1, step: 'reach', savedAt: '', draft: { firstName: 'Gaëlle', lastName: 'Nkoulou', gender: 'FEMALE', phone: { country: 'CM', national: '' } } };
     localStorage.setItem('bonzini.v.prospect-draft:u-autre', JSON.stringify({ ...draft, owner: 'u-autre' }));
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
-    expect(screen.queryByText(/Saisie en cours/)).toBeNull();
+    expect(screen.queryByText(/Brouillon/)).toBeNull();
     // Le sien, oui.
     localStorage.setItem('bonzini.v.prospect-draft:u1', JSON.stringify({ ...draft, owner: 'u1' }));
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
-    expect(screen.getByText('Saisie en cours : Gaëlle Nkoulou')).toBeTruthy();
+    expect(screen.getByText('Brouillon · Gaëlle Nkoulou')).toBeTruthy();
   });
 
   it('« À vérifier » : le bandeau l’explique ; pas d’actions de statut ; le reste de la fiche se modifie', () => {
@@ -371,12 +442,14 @@ describe('Espace commercial — la fiche', () => {
     expect(notice.textContent?.replace(/\u00a0/g, ' ')).toMatch(/Un de ses numéros est déjà celui d’un client Bonzini\. La direction est prévenue : elle vous attribuera ce client si c’est bien vous qui l’avez convaincu\./);
     // Le commercial ne sait pas de quel client il s'agit : aucun nom de client, aucune action de statut.
     expect(screen.queryByRole('radiogroup', { name: 'Statut du prospect' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Rouvrir/ })).toBeNull();
-    expect(screen.queryByText('Où en êtes-vous ?')).toBeNull();
-    // Appeler, WhatsApp et « Modifier » restent.
-    expect(screen.getByRole('link', { name: 'Appeler le +237 6 90 00 00 04' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Modifier ses problèmes' }));
+    openMore();
+    expect(within(lastSheet()).queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
+    expect(within(lastSheet()).queryByRole('button', { name: /Rouvrir/ })).toBeNull();
+    expect(within(lastSheet()).getByRole('button', { name: /Modifier/ })).toBeTruthy();
+    // Appeler, WhatsApp et les lignes à modifier restent.
+    expect(screen.getByRole('button', { name: 'Appeler' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'WhatsApp' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /^Problème/ }));
     expect(screen.getByText(/Modifier · Ses problèmes/)).toBeTruthy();
   });
 
@@ -391,9 +464,9 @@ describe('Espace commercial — la fiche', () => {
     expect(screen.getByText('Prospect introuvable')).toBeTruthy();
   });
 
-  it('« Modifier » sur une section ouvre l’étape de l’assistant, pré-remplie', () => {
+  it('toucher une ligne de la fiche ouvre l’étape de l’assistant, pré-remplie', () => {
     mount(<CommercialProspectForm />, { route: '/v/prospects/p-later', path: '/v/prospects/:id' });
-    fireEvent.click(screen.getByRole('button', { name: 'Modifier ses problèmes' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Problème/ }));
     expect(screen.getByText(/Modifier · Ses problèmes/)).toBeTruthy();
     expect((screen.getByLabelText(/Ses plus gros problèmes/) as HTMLTextAreaElement).value).toBe('Payer ses fournisseurs en Chine : trop lent');
   });
@@ -408,10 +481,10 @@ describe('Espace commercial — numéros dans les listes', () => {
 
   it('la recherche trouve aussi par un autre numéro et par l’email', () => {
     mount(<CommercialProspects />, { route: '/v/prospects', path: '/v/prospects' });
-    fireEvent.change(screen.getByLabelText('Rechercher un prospect'), { target: { value: '138 1234' } });
+    fireEvent.change(screen.getByPlaceholderText('Nom, entreprise ou téléphone'), { target: { value: '138 1234' } });
     expect(screen.getByText('Bruno Ekané')).toBeTruthy();
     expect(screen.queryByText('Awa')).toBeNull();
-    fireEvent.change(screen.getByLabelText('Rechercher un prospect'), { target: { value: 'ekane@gmail' } });
+    fireEvent.change(screen.getByPlaceholderText('Nom, entreprise ou téléphone'), { target: { value: 'ekane@gmail' } });
     expect(screen.getByText('Bruno Ekané')).toBeTruthy();
   });
 
@@ -425,8 +498,10 @@ describe('Espace commercial — numéros dans les listes', () => {
       }],
     };
     mount(<CommercialClients />);
-    expect(screen.getByText('+237 6 99 27 81 44')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Appeler Esther Ngono' }).getAttribute('href')).toBe('tel:+237699278144');
-    expect(screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toBe('https://wa.me/237699278144');
+    expect(screen.getByRole('link', { name: 'Écrire à Esther Ngono sur WhatsApp' }).getAttribute('href')).toBe('https://wa.me/237699278144');
+    // Toucher la ligne : ses chiffres du mois et son numéro, au format international.
+    fireEvent.click(screen.getByText('Esther Ngono'));
+    expect(within(lastSheet()).getByText('+237 6 99 27 81 44')).toBeTruthy();
   });
 });

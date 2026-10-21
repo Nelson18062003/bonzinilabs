@@ -31,20 +31,21 @@
 // ============================================================
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CornerDownLeft, Info, RotateCcw, X } from 'lucide-react';
+import { ChevronLeft, RotateCcw } from 'lucide-react';
 import { ViewportShell } from '@/components/layout/ViewportShell';
-import { toE164 } from '@/components/form/PhoneNumberInput';
+import { formatE164ForDisplay, toE164 } from '@/components/form/PhoneNumberInput';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useCreateProspect, useUpdateProspect, type Prospect } from '@/hooks/useSales';
-import { BottomSheet } from '@/mobile/designKit';
-import { Odometer, Shimmer, StepProgress } from './SalesUi';
-import { btn } from './uiClasses';
-import { ActivitySection, ContactSection, HelpSection, IdentitySection, NeedsSection, NextSection } from './ProspectSections';
+import { useCreateProspect, useProspectPhoneCheck, useUpdateProspect, type Prospect } from '@/hooks/useSales';
+import { INTERESTS } from '@/lib/sales';
+import { formatBirthDate } from '@/lib/people';
+import { BigButton, ConfirmSheet, KVBox, type KV } from '@/mobile/designKit';
+import { CheckLine, StepBar } from '@/mobile/screens/clients/parts';
 import { BusinessStep, HelpStep, NeedsStep, NextStep, ReachStep, WhoStep, type StepProps } from './ProspectSteps';
 import {
   COMPLETE,
   EMPTY_DRAFT,
   STEPS,
+  birthIso,
   clearDraft,
   clearEditDraft,
   draftOf,
@@ -258,24 +259,30 @@ function WizardFrame({
   overlay?: ReactNode;
   children: ReactNode;
 }) {
+  // Refonte v2 (maquettes 03/17, 10/28) : retour, titre, « 2/7 » ; la barre des étapes ; un bouton noir de 56.
+  // Au premier pas, le retour ferme l'assistant (le brouillon reste dans le téléphone).
   const header = (
-    <div className="s-surface">
-      <div className="mx-auto w-full max-w-lg px-3 pt-[calc(0.5rem+env(safe-area-inset-top))] sm:px-4">
-        <div className="grid h-12 grid-cols-[44px_1fr_44px] items-center">
-          {onBack ? (
-            // Pendant l'envoi, ni retour ni fermeture : l'enregistrement va jusqu'au bout sous les yeux.
-            <button type="button" onClick={onBack} disabled={busy} aria-label={backLabel ?? 'Étape précédente'} className={btn('ghost', 'icon')}>
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-          ) : (
-            <span />
-          )}
-          <div className="truncate text-center text-[13px] font-semibold s-ink-2">{eyebrow}</div>
-          <button type="button" onClick={onClose} disabled={busy} aria-label="Fermer" className={btn('ghost', 'icon')}>
-            <X className="h-5 w-5" />
+    <div className="bg-white dark:bg-[#1E1E1E]">
+      <div className="mx-auto w-full max-w-lg pt-[env(safe-area-inset-top)]">
+        <div className="flex h-14 items-center gap-1.5 border-b border-[#D9D9D9] pl-1.5 pr-4 dark:border-[#444444]">
+          {/* Pendant l'envoi, ni retour ni fermeture : l'enregistrement va jusqu'au bout sous les yeux. */}
+          <button
+            type="button"
+            onClick={onBack ?? onClose}
+            disabled={busy}
+            aria-label={onBack ? (backLabel ?? 'Étape précédente') : 'Fermer'}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#1E1E1E] active:bg-[#F5F5F5] disabled:opacity-40 dark:text-[#F5F5F5] dark:active:bg-[#383838]"
+          >
+            <ChevronLeft className="h-7 w-7" strokeWidth={2} />
           </button>
+          <div className="min-w-0 flex-1 truncate text-[18px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">{eyebrow}</div>
+          {progress && progress.count > 1 && (
+            <span className="shrink-0 text-[16px] font-semibold tabular-nums text-[#5A5A5A] dark:text-[#CDCDCD]">
+              {progress.index + 1}/{progress.count}
+            </span>
+          )}
         </div>
-        {progress && progress.count > 1 ? <StepProgress index={progress.index} count={progress.count} className="mx-2 mb-1 mt-1" /> : <div className="h-[3px]" />}
+        {progress && progress.count > 1 ? <StepBar total={progress.count} current={progress.index + 1} className="px-5 pt-3" /> : null}
         <p className="sr-only" aria-live="polite">
           {announce}
         </p>
@@ -283,24 +290,23 @@ function WizardFrame({
     </div>
   );
   const footer = (
-    <div className="s-surface shadow-[0_-1px_0_hsl(var(--s-line))]">
-      <div className="mx-auto w-full max-w-lg px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-6">
-        <button type="button" onClick={onPrimary} disabled={busy || primaryDisabled} className={btn('ink', 'xl', 'w-full')}>
-          {busy ? <Shimmer>Enregistrement…</Shimmer> : primary}
-          {!busy && !primaryDisabled && <CornerDownLeft className="hidden h-4 w-4 opacity-50 sm:block" aria-hidden />}
-        </button>
+    <div className="border-t border-[#D9D9D9] bg-white dark:border-[#444444] dark:bg-[#1E1E1E]">
+      <div className="mx-auto w-full max-w-lg px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+        <BigButton onClick={onPrimary} disabled={primaryDisabled} loading={busy}>
+          {primary}
+        </BigButton>
       </div>
     </div>
   );
   return (
     <>
-      <ViewportShell header={header} footer={footer} scrollRef={scrollRef} className="s-surface">
+      <ViewportShell header={header} footer={footer} scrollRef={scrollRef} className="bg-white dark:bg-[#1E1E1E]">
         <form
           id={FORM_ID}
           noValidate
           onSubmit={(e) => e.preventDefault()}
           onKeyDown={onKeyDown}
-          className="mx-auto w-full max-w-lg px-5 pb-10 pt-4 sm:px-6"
+          className="mx-auto w-full max-w-lg px-5 pb-10 pt-5"
         >
           {children}
         </form>
@@ -313,10 +319,11 @@ function WizardFrame({
 /** Le titre d'une étape : grand, court, au prénom du prospect dès qu'on le connaît. */
 function StepHeading({ step, d }: { step: StepId; d: ProspectDraft }) {
   const { title, lead } = stepCopy(step, d);
+  // v2 : le titre seul, en grand ; la phrase d'aide reste pour les lecteurs d'écran.
   return (
-    <div className="mb-7">
-      <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.02em] s-ink">{title}</h1>
-      <p className="mt-2 text-[16px] leading-snug s-ink-2">{lead}</p>
+    <div className="mb-6">
+      <h1 className="text-[30px] font-bold leading-[1.15] tracking-[-0.02em] text-[#1E1E1E] dark:text-[#F5F5F5]">{step === 'review' ? 'Tout est bon ?' : title}</h1>
+      <p className="sr-only">{lead}</p>
     </div>
   );
 }
@@ -325,7 +332,7 @@ function StepHeading({ step, d }: { step: StepId; d: ProspectDraft }) {
 function Refusal({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" data-tone="warn" className="s-note s-pop mb-6 rounded-[14px] px-4 py-3 text-[15px] font-medium s-ink">
+    <p role="alert" className="mb-6 rounded-lg bg-[#FFF1C2] px-4 py-3 text-[16px] font-semibold text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
       {message}
     </p>
   );
@@ -334,11 +341,13 @@ function Refusal({ message }: { message: string | null }) {
 /** « Brouillon repris » / « Modification reprise » : ce qui était tapé est là, rien n'est enregistré ; de quoi repartir de zéro. */
 function ResumedNote({ title, action, onReset }: { title: string; action: string; onReset: () => void }) {
   return (
-    <div data-tone="accent" className="s-note mb-6 rounded-[14px] px-4 pb-2 pt-3">
-      <div className="text-[15px] font-semibold s-ink">{title}</div>
-      <div className="text-[14px] leading-snug s-ink-2">Ce que vous aviez saisi est là. Rien n’est encore enregistré.</div>
-      <button type="button" onClick={onReset} className={btn('ghost', 'sm', '-ml-3 mt-1 gap-1.5')}>
-        <RotateCcw className="h-3.5 w-3.5" aria-hidden /> {action}
+    <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-[#D9D9D9] px-4 py-2.5 dark:border-[#444444]">
+      <div className="min-w-0">
+        <div className="text-[16px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">{title}</div>
+        <div className="text-[15px] text-[#5A5A5A] dark:text-[#CDCDCD]">Pas encore enregistré</div>
+      </div>
+      <button type="button" onClick={onReset} className="inline-flex h-11 shrink-0 items-center gap-1.5 text-[16px] font-semibold text-[#1E1E1E] underline underline-offset-[3px] dark:text-[#F5F5F5]">
+        <RotateCcw className="h-4 w-4" aria-hidden /> {action}
       </button>
     </div>
   );
@@ -463,11 +472,7 @@ export function NewProspectWizard() {
 
   return (
     <WizardFrame
-      eyebrow={
-        <span className="inline-flex items-baseline gap-1 tabular-nums">
-          Nouveau prospect · <Odometer value={index + 1} /> / {STEPS.length}
-        </span>
-      }
+      eyebrow="Nouveau prospect"
       progress={{ index, count: STEPS.length }}
       announce={announceOf(index, STEPS.length, step, draft)}
       onBack={index > 0 ? back : undefined}
@@ -485,8 +490,8 @@ export function NewProspectWizard() {
         <Refusal message={s.unplaced(step)} />
         {step === 'review' ? (
           <>
+            <Review d={draft} onEdit={edit} clientNumber={s.clientNumber} />
             {s.clientNumber && <ClientNumberReview />}
-            <Review d={draft} onEdit={edit} />
           </>
         ) : (
           <StepFields
@@ -508,34 +513,40 @@ export function NewProspectWizard() {
 /** Au récapitulatif, un des numéros est celui d'un client Bonzini : ce qui va se passer, avant d'enregistrer. */
 function ClientNumberReview() {
   return (
-    <div role="status" data-tone="warn" className="s-note s-pop mb-4 flex items-start gap-3 rounded-[14px] px-4 py-3">
-      <Info className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
-      <div className="min-w-0">
-        <div className="text-[15px] font-semibold s-ink">Un numéro est déjà celui d’un client Bonzini</div>
-        <div className="mt-0.5 text-[14px] leading-snug s-ink-2">
-          La fiche sera enregistrée «&nbsp;À&nbsp;vérifier&nbsp;» et la direction prévenue&nbsp;: elle vous attribuera ce client si c’est bien vous qui
-          l’avez convaincu.
-        </div>
-      </div>
+    <div role="status" className="mt-4">
+      <CheckLine tone="pending">Déjà client · partira « À vérifier »</CheckLine>
     </div>
   );
 }
 
-/** Le récapitulatif : chaque section, « Modifier » pour la rouvrir. */
-function Review({ d, onEdit }: { d: ProspectDraft; onEdit: (step: StepId) => void }) {
+/** Le récapitulatif (maquette 10/28) : une ligne par section ; la toucher la rouvre. */
+function Review({ d, onEdit, clientNumber }: { d: ProspectDraft; onEdit: (step: StepId) => void; clientNumber?: boolean }) {
   const main = toE164(d.phone);
-  const numbers = [
-    ...(main ? [{ e164: main, label: null, main: true }] : []),
-    ...otherPhonesOf(d).map((p) => ({ e164: p.phone_e164, label: p.label, main: false })),
+  const check = useProspectPhoneCheck(main, null);
+  const name = [d.firstName, d.lastName].map((x) => x.trim()).filter(Boolean).join(' ');
+  const interests = d.interests.map((i) => INTERESTS.find((x) => x.value === i)?.label).filter(Boolean).join(', ');
+  const follow = d.followUp ? new Date(`${d.followUp}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : null;
+  const birth = birthIso(d.birth);
+  const rows: KV[] = [
+    { label: 'Identité', value: [name, d.company.trim()].filter(Boolean).join(' · ') || '—', onClick: () => onEdit('who') },
+    ...(birth ? [{ label: 'Naissance', value: formatBirthDate(birth), onClick: () => onEdit('who') }] : []),
+    { label: 'WhatsApp', value: main ? formatE164ForDisplay(main) : '—', onClick: () => onEdit('reach') },
+    ...otherPhonesOf(d).map((p) => ({ label: p.label || 'Autre numéro', value: formatE164ForDisplay(p.phone_e164), onClick: () => onEdit('reach') })),
+    ...(d.email.trim() ? [{ label: 'Email', value: d.email.trim(), onClick: () => onEdit('reach') }] : []),
+    { label: 'Activité', value: [interests, d.city.trim()].filter(Boolean).join(' · ') || '—', onClick: () => onEdit('business') },
+    { label: 'Problèmes', value: d.painPoints.trim() || '—', onClick: () => onEdit('needs') },
+    { label: 'Aide', value: d.helpNeeded.trim() || '—', onClick: () => onEdit('help') },
+    { label: 'La suite', value: follow ? `Relancer le ${follow}` : '—', onClick: () => onEdit('next') },
+    ...(d.notes.trim() ? [{ label: 'Notes', value: d.notes.trim(), onClick: () => onEdit('next') }] : []),
   ];
   return (
-    <div className="space-y-4">
-      <IdentitySection d={d} onEdit={onEdit} />
-      <ContactSection numbers={numbers} email={d.email} onEdit={onEdit} delay={40} />
-      <ActivitySection d={d} onEdit={onEdit} delay={80} />
-      <NeedsSection d={d} onEdit={onEdit} delay={120} />
-      <HelpSection d={d} onEdit={onEdit} delay={160} />
-      <NextSection d={d} onEdit={onEdit} delay={200} />
+    <div>
+      <KVBox rows={rows} />
+      {!clientNumber && check.data?.status === 'free' && (
+        <div className="mt-4">
+          <CheckLine>Numéro libre · pas encore client</CheckLine>
+        </div>
+      )}
     </div>
   );
 }
@@ -657,17 +668,16 @@ export function EditProspectWizard({ prospect, requested, onDone }: { prospect: 
       scrollRef={scrollRef}
       onKeyDown={enterAdvances(next)}
       overlay={
-        <BottomSheet open={leaving} onClose={() => setLeaving(false)} title="Abandonner vos modifications ?" className="s-sheet">
-          <p className="text-[15px] leading-snug s-ink-2">Ce que vous avez changé ici n’est pas enregistré.</p>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setLeaving(false)} className={btn('quiet', 'lg')}>
-              Continuer la saisie
-            </button>
-            <button type="button" onClick={discard} className={btn('red', 'lg')}>
-              Abandonner
-            </button>
-          </div>
-        </BottomSheet>
+        <ConfirmSheet
+          open={leaving}
+          onClose={() => setLeaving(false)}
+          title="Abandonner vos modifications ?"
+          subtitle="Rien n’est encore enregistré"
+          confirmLabel="Abandonner"
+          danger
+          cancelLabel="Continuer la saisie"
+          onConfirm={discard}
+        />
       }
     >
       <div key={step} className={dir === 'fwd' ? 's-step-fwd' : 's-step-back'}>
