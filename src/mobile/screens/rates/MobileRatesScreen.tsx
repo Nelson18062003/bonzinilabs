@@ -1,163 +1,134 @@
-// ============================================================
-// MODULE TAUX — MobileRatesScreen
-// Disposition VALIDÉE par le client (maquette rates.tsx) : UN SEUL
-// SCROLL, sections empilées sous des intitulés, tout sous les yeux —
-// pas d'onglets. Rendu réel et complet en composant les vrais blocs
-// déjà migrés sur le kit :
-//   · Définir les taux du jour (RateSetTab — saisie + prise d'effet + publier + flyer)
-//   · Taux par pays (CountryRatesCard — Gabon & co. dérivés du Cameroun, flyer par pays)
-//   · Simulateur (RateSimulatorTab)
-//   · Historique (RateHistoryTab) + graphique d'évolution (repli)
-//   · Ajustements pays & tranches (RateConfigTab — repli, usage avancé)
-//   · Marché Binance → sous-module /m/more/rates/market (distribution en
-//     direct du carnet Binance P2P), réservé à canManageRates
-// Logique 100% préservée (hooks, RPC, calculs, exports).
-// ============================================================
-import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { cn } from '@/lib/utils';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+/**
+ * Taux du jour — l'accueil du module (refonte v2, maquette 08-taux/01 et 02).
+ *
+ * Façon Wave : le chiffre qui compte (Alipay pour 1 000 000 XAF), quatre gros
+ * ronds (Publier, Simuler, Flyer, Marché), puis les taux du Cameroun avec
+ * ceux de la publication précédente. Le reste est dans « … » : taux par pays,
+ * écarts et paliers, historique, copie du texte du jour.
+ *
+ * Sans `canManageRates` : ni Publier, ni Marché, ni réglages ; simulateur,
+ * historique, pays et flyer restent en lecture.
+ */
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { ArrowUpToLine, Calculator, Copy, FileText, Globe, History, Layers, TrendingUp } from 'lucide-react';
 import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
-import { SURFACE, TEXT, SOFT_PILL, BottomSheet } from '@/mobile/designKit';
-import { RateFlyerSheet } from '@/mobile/components/rates/RateFlyerSheet';
-import { CountryRatesCard } from '@/components/rates/CountryRatesCard';
-import { RateSetTab } from './tabs/RateSetTab';
-import { RateChartTab } from './tabs/RateChartTab';
-import { RateHistoryTab } from './tabs/RateHistoryTab';
-import { RateConfigTab } from './tabs/RateConfigTab';
-import { RateSimulatorTab } from './tabs/RateSimulatorTab';
+import {
+  ActionCircles, ActionSheet, EmptyLine, HeroFigure, ItemList, ItemRow, RoundButton, ScreenError, ScreenLoader, SectionHead, useSheet,
+  type CircleAction, type SheetAction,
+} from '@/mobile/designKit';
+import { MoreHorizontal } from 'lucide-react';
+import { REFERENCE_COUNTRY_KEY } from '@/lib/countryRates';
+import { buildFlyerData, flyerCaption, type FlyerLang } from '@/lib/rateFlyer';
+import { GroupCircle, ModuleTop } from './parts';
+import { dayLabel, hm, nb, rateGroups, signed } from './rateFormat';
+import { useRatesData } from './useRatesData';
 
-function Caption({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className={cn('mb-3 px-1 text-[16px] font-bold', TEXT.muted)}>
-      {children}
-    </h2>
-  );
-}
-
-// Section repliable — pour les blocs avancés (graphique, ajustements) afin de
-// garder le scroll principal compact, comme la maquette aimée.
-function Collapsible({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className={cn('flex w-full items-center justify-between rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
-      >
-        <span className={cn('text-[16px] font-bold', TEXT.strong)}>{title}</span>
-        <ChevronDown className={cn('h-5 w-5 transition-transform', TEXT.muted, !open && '-rotate-90')} />
-      </button>
-      {open && <div className="mt-3">{children}</div>}
-    </div>
-  );
+function savedFlyerLang(): FlyerLang {
+  try { return localStorage.getItem('bz.flyer.lang') === 'en' ? 'en' : 'fr'; } catch { return 'fr'; }
 }
 
 export function MobileRatesScreen() {
-  const queryClient = useQueryClient();
-  const { hasPermission } = useAdminAuth();
+  const navigate = useNavigate();
+  const more = useSheet();
+  const { activeRate, previous, base, prevBase, adjustments, sheets, isLoading, isError, canManage, refetch } = useRatesData();
 
-  const { data: activeRate, isLoading: rateLoading, isError: rateError } = useActiveDailyRate();
-  const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
+  const go = (path: string) => () => navigate(path);
 
-  const [flyerOpen, setFlyerOpen] = useState(false);
-  // Le flyer partagé reflète les taux ACTIFS (publiés) — ce que voient les
-  // clients ; `flyerCountry` = pays présélectionné (depuis « Taux par pays »).
-  const [flyerCountry, setFlyerCountry] = useState<string | null>(null);
-  const openFlyer = (country: string | null) => { setFlyerCountry(country); setFlyerOpen(true); };
+  const actions: CircleAction[] = canManage
+    ? [
+        { label: 'Publier', icon: ArrowUpToLine, onClick: go('/m/more/rates/publish'), primary: true },
+        { label: 'Simuler', icon: Calculator, onClick: go('/m/more/rates/simulator') },
+        { label: 'Flyer', icon: FileText, onClick: go('/m/more/rates/flyer') },
+        { label: 'Marché', icon: TrendingUp, onClick: go('/m/more/rates/market') },
+      ]
+    : [
+        { label: 'Simuler', icon: Calculator, onClick: go('/m/more/rates/simulator'), primary: true },
+        { label: 'Flyer', icon: FileText, onClick: go('/m/more/rates/flyer') },
+        { label: 'Historique', icon: History, onClick: go('/m/more/rates/history') },
+      ];
 
-  const handleRefresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['daily-rates'] });
-    await queryClient.invalidateQueries({ queryKey: ['rate-adjustments'] });
+  const copyText = async () => {
+    if (!activeRate) { toast.error('Aucun taux publié'); return; }
+    const flyer = buildFlyerData(activeRate, adjustments, REFERENCE_COUNTRY_KEY, new Date(), savedFlyerLang());
+    try {
+      await navigator.clipboard.writeText(flyerCaption(flyer));
+      toast.success('Texte copié');
+    } catch {
+      toast.error('Copie impossible sur cet appareil');
+    }
   };
 
+  const menu: SheetAction[] = [
+    { label: 'Taux par pays', hint: sheets.length > 1 ? `Cameroun et ${sheets.length - 1} pays` : undefined, icon: Globe, onClick: go('/m/more/rates/countries') },
+    { label: 'Écarts pays et paliers', icon: Layers, onClick: go('/m/more/rates/settings'), hidden: !canManage },
+    { label: 'Historique des taux', icon: History, onClick: go('/m/more/rates/history') },
+    { label: 'Copier les taux en texte', hint: 'Pour WhatsApp', icon: Copy, onClick: () => void copyText() },
+  ];
+
+  // « +26 sur hier » : écart avec la publication précédente, nommée par son jour.
+  const delta = base && prevBase ? base.alipay - prevBase.alipay : null;
+  const prevDay = previous ? dayLabel(previous.effective_at) : null;
+  const deltaLabel = delta != null && prevDay
+    ? <><b className="font-bold">{signed(delta)}</b> {prevDay === 'Hier' ? 'sur hier' : `sur le ${prevDay}`}</>
+    : null;
+  const prevWord = prevDay === 'Hier' ? 'Hier' : prevDay ?? '';
+
   return (
-    <div className={cn('min-h-screen', SURFACE.canvas)}>
-      <MobileHeader title="Taux de change" showBack backTo="/m/more" className={SURFACE.canvas} />
+    <div className="flex min-h-full flex-col pb-4">
+      <ModuleTop
+        title="Taux du jour"
+        backTo="/m/more"
+        right={<RoundButton icon={MoreHorizontal} ariaLabel="Plus d'actions" onClick={more.show} />}
+      />
 
-      <PullToRefresh onRefresh={handleRefresh} className="overflow-auto">
-        <div className="space-y-7 p-4 pb-24">
-          {/* ── Définir les taux du jour (+ flyer) ── */}
-          <section>
-            <Caption>Définir les taux du jour</Caption>
-            <RateSetTab currentRate={activeRate} />
-          </section>
+      <PullToRefresh onRefresh={async () => { await refetch(); }}>
+        {isLoading ? (
+          <ScreenLoader />
+        ) : isError ? (
+          <ScreenError title="Taux indisponibles" description="Réessayez dans un instant." />
+        ) : (
+          <>
+            <div className="px-5 pt-3.5">
+              {activeRate && base ? (
+                <HeroFigure
+                  label="Alipay · pour 1 000 000 XAF"
+                  value={<>¥&nbsp;{nb(base.alipay)}</>}
+                  sub={[deltaLabel, `Depuis ${hm(activeRate.effective_at)}`].filter(Boolean)}
+                />
+              ) : (
+                <HeroFigure label="Taux du jour" value="—" sub={['Aucun taux publié']} />
+              )}
+            </div>
 
-          {/* ── Taux par pays — Gabon & co., dérivés du Cameroun ── */}
-          <section>
-            <Caption>Taux par pays</Caption>
-            <CountryRatesCard
-              activeRate={activeRate}
-              adjustments={adjustments}
-              isLoading={adjLoading}
-              onOpenFlyer={(key) => openFlyer(key)}
+            <ActionCircles actions={actions} />
+
+            <SectionHead
+              title="Cameroun"
+              link={sheets.length > 1 ? { label: `${sheets.length} pays`, onClick: go('/m/more/rates/countries') } : undefined}
             />
-          </section>
-
-          {/* ── Simulateur ── */}
-          <section>
-            <Caption>Simulateur</Caption>
-            <RateSimulatorTab
-              activeRate={activeRate}
-              adjustments={adjustments || []}
-              isLoading={rateLoading || adjLoading}
-              isError={rateError || adjError}
-            />
-          </section>
-
-          {/* ── Historique (rows) + graphique en repli ── */}
-          <section className="space-y-3">
-            <Caption>Historique</Caption>
-            <RateHistoryTab />
-            <Collapsible title="Graphique d'évolution">
-              <RateChartTab />
-            </Collapsible>
-          </section>
-
-          {/* ── Marché Binance — sous-module ── */}
-          {hasPermission('canManageRates') && (
-            <section>
-              <Caption>Marché Binance</Caption>
-              <Link
-                to="/m/more/rates/market"
-                className={cn('flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
-              >
-                <span>
-                  <span className={cn('block text-[16px] font-bold', TEXT.strong)}>Distribution des prix en direct</span>
-                  <span className={cn('block text-[14px]', TEXT.muted)}>Toutes les annonces Binance P2P, Chine et Cameroun, avec filtres</span>
-                </span>
-                <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-              </Link>
-            </section>
-          )}
-
-          {/* ── Ajustements pays & tranches (avancé, repli) ── */}
-          <section>
-            <Caption>Réglages</Caption>
-            <Collapsible title="Ajustements pays & tranches">
-              <RateConfigTab />
-            </Collapsible>
-          </section>
-
-          {/* ── Flyer du jour — pilule en bas, fidèle à la maquette validée ── */}
-          <button
-            onClick={() => openFlyer(null)}
-            className={cn('flex w-full items-center justify-center gap-1.5 py-[14px] text-[16px] font-semibold', SOFT_PILL)}
-          >
-            Voir le flyer du jour <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
+            {base ? (
+              <ItemList>
+                {rateGroups(base, prevBase).map((g) => (
+                  <ItemRow
+                    key={g.key}
+                    leading={<GroupCircle methods={g.methods} />}
+                    title={g.label}
+                    subtitle={g.prev != null && prevWord ? `${prevWord} ${nb(g.prev)}` : undefined}
+                    amount={<>¥&nbsp;{nb(g.value)}</>}
+                  />
+                ))}
+              </ItemList>
+            ) : (
+              <EmptyLine action={canManage ? { label: 'Publier les taux', onClick: go('/m/more/rates/publish') } : undefined}>
+                Aucun taux publié
+              </EmptyLine>
+            )}
+          </>
+        )}
       </PullToRefresh>
 
-      <BottomSheet open={flyerOpen} onClose={() => setFlyerOpen(false)} title="Flyer du jour">
-        <RateFlyerSheet activeRate={activeRate} adjustments={adjustments} initialCountry={flyerCountry} />
-      </BottomSheet>
+      <ActionSheet open={more.open} onClose={more.hide} actions={menu} />
     </div>
   );
 }

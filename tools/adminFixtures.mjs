@@ -227,6 +227,9 @@ function respond(url) {
     if (url.includes('order=effective_at.asc')) return [...dailyRates].reverse();
     return dailyRates;
   }
+  // Module Taux : les écritures répondent « succès » (écran de succès, feuilles qui se ferment).
+  if (url.includes('/rpc/create_daily_rates')) return { success: true, rate_id: 'r-new' };
+  if (url.includes('/rpc/update_daily_rate') || url.includes('/rpc/delete_daily_rate') || url.includes('/rpc/update_rate_adjustment') || url.includes('/rpc/mark_suggestion_applied')) return { success: true };
   return [];
 }
 
