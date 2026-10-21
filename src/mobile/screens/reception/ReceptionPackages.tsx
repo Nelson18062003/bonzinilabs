@@ -14,18 +14,18 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ListChecks, PackageOpen, PackagePlus } from 'lucide-react';
+import { Package, Plus, ScanLine, Tag as TagIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { formatKg } from '@/lib/reception';
-import { packageQueue, parsePackageCode, sumParcelKg, waitingCount, weightGauge, type PackableParcel, type PackageQueue } from '@/lib/airPackage';
+import { packageKg, packageQueue, parsePackageCode, waitingCount, weightGauge, type AirPackage, type PackageQueue } from '@/lib/airPackage';
 import { useAirPackages, useCreateAirPackage, useFindAirPackage, usePackableParcels } from '@/hooks/useAirPackages';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
-import { SURFACE, TEXT, TONE_PILL, TONE_TEXT, TYPE, Card, PrimaryPill, ScreenError, ScreenLoader, SoftPill } from '@/mobile/designKit';
-import { PackageRow } from '@/mobile/components/reception/packageBits';
+import { BigButton, DayLabel, EmptyLine, FOCUS_RING, IconCircle, ItemList, ItemRow, RoundButton, ScreenLoader, SectionHead, SURFACE, TabTop, TEXT, TONE_PILL, TYPE } from '@/mobile/designKit';
+import { InkProgress } from '@/mobile/components/cargo/v2';
+import { ShipSheet } from '@/mobile/components/cargo/ShipSheet';
 import { usePackageText, useScanTexts } from '@/mobile/components/reception/packageText';
 import { useStillHere } from '@/mobile/components/reception/useReceptionBack';
 import { useReceptionLocation } from './useReceptionLocation';
@@ -54,6 +54,11 @@ export function ReceptionPackages() {
   const scanTexts = useScanTexts(t('rc_pk_find_hint'));
   const tx = usePackageText();
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [shipOpen, setShipOpen] = useState(false);
+  const { hasPermission } = useAdminAuth();
+  const canShip = hasPermission('canViewCargo');
 
   const groupTitle: Record<GroupKey, string> = {
     open: t('rc_pk_group_open'),
@@ -108,88 +113,86 @@ export function ReceptionPackages() {
     create.mutate(undefined, { onSuccess: (pkg) => navigate(`/r/paquets/${pkg.id}`) });
   };
 
-  return (
-    <div className={cn('min-h-[100dvh]', SURFACE.canvas)}>
-      <MobileHeader title={t('rc_pk_title')} subtitle={t('rc_pk_subtitle')} alignStart />
-      <div className="space-y-6 px-5 pb-8 pt-5">
-        {!atOffice ? (
-          <p className={cn('rounded-lg px-4 py-3', TYPE.body, TONE_PILL.info)}>{t('rc_pk_warehouse_note')}</p>
-        ) : (
-          <div className="space-y-3">
-            {/* Le geste principal : continuer le carton en cours, sinon en ouvrir un. */}
-            {current ? (
-              <>
-                <PrimaryPill onClick={() => navigate(`/r/paquets/${current.id}`)} ariaLabel={ti('rc_pk_continue', { no: current.package_no, left: formatKg(weightGauge(current).left) })} className="h-auto min-h-16 w-full py-2.5 text-[18px] [&_svg]:h-6 [&_svg]:w-6">
-                  <PackageOpen />
-                  <span className="flex flex-col items-start leading-tight">
-                    <span className="tabular-nums">{ti('rc_pk_continue_no', { no: current.package_no })}</span>
-                    <span className="text-[14px] font-medium tabular-nums opacity-80">{tx.left(weightGauge(current))}</span>
-                  </span>
-                </PrimaryPill>
-                <SoftPill onClick={onCreate} disabled={create.isPending} className="h-12 w-full"><PackagePlus /> {t('rc_pk_new')}</SoftPill>
-              </>
-            ) : (
-              <PrimaryPill onClick={onCreate} loading={create.isPending} disabled={create.isPending} className="h-16 w-full text-[18px] [&_svg]:h-6 [&_svg]:w-6">
-                <PackagePlus /> {t('rc_pk_new')}
-              </PrimaryPill>
-            )}
-            {/* Ce qui attend un paquet, en une ligne : la liste à cocher, par client. */}
-            {todo.data && count && count.total > 0 && (
-              <TodoLine ready={todo.data.ready} toFix={count.toFix} onOpen={() => navigate('/r/paquets/emballer')} />
-            )}
-          </div>
-        )}
+  const ready = groups.find((g) => g.key === 'ready')?.items ?? [];
+  const others = groups.filter((g) => g.key !== 'ready' && g.key !== 'open');
+  const g = current ? weightGauge(current) : null;
+  const row = (p: AirPackage) => {
+    const st = tx.status(p.status);
+    return (
+      <ItemRow
+        key={p.id}
+        leading={<IconCircle icon={p.status === 'open' ? Package : TagIcon} />}
+        title={p.package_no}
+        subtitle={`${formatKg(packageKg(p))} · ${ti('rc_n_parcels', { count: p.parcel_count })} · ${tx.clients(p.client_count)}`}
+        tag={{ tone: st.tone === 'info' ? 'neutral' : st.tone, label: st.label }}
+        onClick={() => navigate(`/r/paquets/${p.id}`)}
+      />
+    );
+  };
 
-        <div className="space-y-2">
+  return (
+    <div className={cn('min-h-[100dvh] pb-6', SURFACE.canvas)}>
+      <TabTop title={t('rc_tab_packages')} right={<RoundButton icon={ScanLine} ariaLabel={t('rc_pk_find_ph')} onClick={() => setScanOpen((v) => !v)} />} />
+
+      {(scanOpen || codeError) && (
+        <div className="space-y-2 px-5 pt-2">
           <ParcelScanBox onScan={(text) => openCode(text)} placeholder={t('rc_pk_find_ph')} texts={scanTexts} keepFocus={false} />
           {codeError && <p role="alert" className={cn('rounded-lg px-4 py-2.5', TYPE.bodyStrong, TONE_PILL.danger)}>{codeError}</p>}
         </div>
+      )}
 
-        {isLoading ? (
-          <ScreenLoader />
-        ) : error ? (
-          <ScreenError title={t('error')} description={(error as Error).message} retryLabel={t('rc_retry')} onRetry={() => void refetch()} />
-        ) : groups.length === 0 ? (
-          <Card className={cn('text-center', SURFACE.inset, 'border-0')}>
-            <p className={cn(TYPE.body, TEXT.muted)}>{t('rc_pk_empty')}</p>
-          </Card>
-        ) : (
-          groups.map((g) => {
-            const kg = g.items.reduce((s, p) => s + (Number(p.gross_weight_kg ?? p.net_weight_kg) || 0), 0);
-            return (
-              <section key={g.key}>
-                <div className="mb-3 flex items-baseline justify-between gap-3">
-                  <h2 className={cn(TYPE.lead, g.key === 'refused' ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>{groupTitle[g.key]}</h2>
-                  <span className={cn('shrink-0 tabular-nums', TYPE.smallStrong, TEXT.muted)}>{g.items.length} · {formatKg(kg)}</span>
-                </div>
-                <Card className="py-0 [&>*]:border-b [&>*]:border-[#D9D9D9] [&>*:last-child]:border-b-0 dark:[&>*]:border-[#444444]">
-                  {g.items.map((p) => <PackageRow key={p.id} pkg={p} onClick={() => navigate(`/r/paquets/${p.id}`)} />)}
-                </Card>
-              </section>
-            );
-          })
-        )}
-      </div>
+      {!atOffice ? (
+        <p className={cn('mx-5 mt-3 rounded-lg px-4 py-3 text-[16px]', TONE_PILL.info)}>{t('rc_pk_warehouse_note')}</p>
+      ) : (
+        <>
+          {/* Le carton en cours : ce qu'il pèse sur ses 32 kg. Un toucher, et on le remplit. */}
+          {current && g && (
+            <div className="px-5 pt-3.5">
+              <button type="button" onClick={() => navigate(`/r/paquets/${current.id}`)} className={cn('block w-full rounded-lg border border-[#D9D9D9] px-[18px] pb-4 pt-[18px] text-left active:bg-[#F5F5F5] dark:border-[#444444] dark:active:bg-[#383838]', FOCUS_RING)}>
+                <span className={cn('block text-[16px] font-medium tabular-nums', TEXT.muted)}>{current.package_no} · {t('rc_pk_st_open').toLowerCase()}</span>
+                <span className={cn('mt-1.5 block text-[40px] font-bold leading-[1.1] tracking-[-0.02em] tabular-nums', TEXT.strong)}>
+                  {g.net.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}
+                  <span className={cn('ml-1.5 text-[20px] font-semibold', TEXT.muted)}>/ {g.max} kg</span>
+                </span>
+                <InkProgress className="mt-3" value={g.net} max={g.max} label={t('rc_pk_net')} />
+                <span className={cn('mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[16px] font-medium tabular-nums', TEXT.body)}>
+                  <span><b className="font-bold">{current.parcel_count}</b> {t('rc_parcels').toLowerCase()}</span>
+                  <span>{tx.clients(current.client_count)}</span>
+                  <span>{tx.left(g)}</span>
+                </span>
+              </button>
+            </div>
+          )}
+          <ItemList className="pt-2">
+            {todo.data && count && count.total > 0 && (
+              <ItemRow leading={<IconCircle icon={Package} />} title={ti('rc_pk_todo_count', { count: count.total })} subtitle={t('rc_v2_pick_and_pack')} onClick={() => navigate('/r/paquets/emballer')} chevron />
+            )}
+            <ItemRow leading={<IconCircle icon={Plus} />} title={t('rc_pk_new')} onClick={create.isPending ? undefined : onCreate} chevron />
+          </ItemList>
+        </>
+      )}
+
+      {isLoading ? <ScreenLoader /> : error ? (
+        <EmptyLine action={{ label: t('rc_retry'), onClick: () => void refetch() }}>{(error as Error).message}</EmptyLine>
+      ) : (
+        <>
+          <SectionHead title={t('rc_v2_closed_ready')} link={others.length > 0 ? { label: showAll ? t('rc_v2_less') : t('rc_v2_all'), onClick: () => setShowAll((v) => !v) } : undefined} />
+          {ready.length === 0 ? <EmptyLine>{t('rc_pk_empty')}</EmptyLine> : <ItemList>{ready.map(row)}</ItemList>}
+          {atOffice && canShip && ready.length > 0 && (
+            <div className="px-5 pt-5">
+              <BigButton onClick={() => setShipOpen(true)}>{t('rc_v2_put_on_flight')} · {ti('rc_v2_n_packages', { count: ready.length })}</BigButton>
+            </div>
+          )}
+          {showAll && others.map((gr) => (
+            <div key={gr.key}>
+              <DayLabel className={gr.key === 'refused' ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : undefined}>{groupTitle[gr.key]}</DayLabel>
+              <ItemList>{gr.items.map(row)}</ItemList>
+            </div>
+          ))}
+        </>
+      )}
+
+      {canShip && <ShipSheet open={shipOpen} onClose={() => setShipOpen(false)} />}
     </div>
-  );
-}
-
-/** Ce qui attend un paquet, en une ligne : combien, quels kilos, combien à compléter — et la liste. */
-function TodoLine({ ready, toFix, onOpen }: { ready: PackableParcel[]; toFix: number; onOpen: () => void }) {
-  const { t: ti } = useTranslation('agent');
-  const tx = usePackageText();
-  const clients = new Set(ready.map((it) => it.deposit.client?.user_id)).size;
-  return (
-    <button type="button" onClick={onOpen} className={cn('flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left', SURFACE.card, SURFACE.shadow, 'active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
-      <ListChecks className={cn('h-6 w-6 shrink-0', TEXT.strong)} />
-      <span className="min-w-0 flex-1">
-        <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{ti('rc_pk_todo_count', { count: ready.length + toFix })}</span>
-        <span className={cn('block tabular-nums', TYPE.small, TEXT.muted)}>
-          {ready.length > 0 && `${formatKg(sumParcelKg(ready))} · ${tx.clients(clients)}`}
-          {toFix > 0 && <span className={TONE_TEXT.pending}>{ready.length > 0 ? ' · ' : ''}{ti('rc_pk_todo_blocked_count', { count: toFix })}</span>}
-        </span>
-      </span>
-      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-    </button>
   );
 }

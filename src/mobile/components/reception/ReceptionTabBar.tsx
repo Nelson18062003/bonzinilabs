@@ -1,10 +1,9 @@
-import { Home, MoreHorizontal, Package, ScanLine, Users } from 'lucide-react';
-import { LiquidTabBar } from '@/components/navigation/LiquidTabBar';
+import { CalendarDays, MoreHorizontal, Package, ScanLine, Users } from 'lucide-react';
+import { RoleTabBar, type RoleTab } from '@/mobile/components/cargo/RoleTabBar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useReceptionDay } from '@/hooks/useReception';
 import { usePackableCount } from '@/hooks/useAirPackages';
 import { useReceptionLocation } from '@/mobile/screens/reception/useReceptionLocation';
-import type { TabItem } from '@/components/navigation/types';
 
 /**
  * Refonte v2 : Aujourd'hui · Paquets · Scanner (identifier le client d'un
@@ -18,12 +17,12 @@ export function ReceptionTabBar() {
   const { data: day } = useReceptionDay();
   const { location } = useReceptionLocation();
   const { data: toPack } = usePackableCount(location === 'office');
-  const items: TabItem[] = [
-    { to: '/r', icon: Home, label: t('rc_today'), end: true, badgeCount: day?.pending ?? 0 },
+  const items: RoleTab[] = [
+    { to: '/r', icon: CalendarDays, label: t('rc_today'), end: true, badgeCount: day?.pending ?? 0 },
     { to: '/r/paquets', icon: Package, label: t('rc_tab_packages'), badgeCount: location === 'office' ? toPack ?? 0 : 0 },
     { to: '/r/new', icon: ScanLine, label: 'Scanner' },
     { to: '/r/clients', icon: Users, label: t('rc_tab_clients') },
     { to: '/r/plus', icon: MoreHorizontal, label: 'Plus' },
   ];
-  return <LiquidTabBar items={items} />;
+  return <RoleTabBar items={items} ariaLabel={t('rc_today')} />;
 }

@@ -162,8 +162,7 @@ function SuiviTab({ s, pos, onPosition, onEta, onJournal, onDouane, canManage }:
 }
 
 /* ── Onglet Colis ────────────────────────────────────────────────────── */
-function ColisTab({ s, canManage, onSheet }: { s: CargoShipment; canManage: boolean; onSheet: (k: 'lots' | '3d') => void }) {
-  const navigate = useNavigate();
+function ColisTab({ s, onSheet }: { s: CargoShipment; onSheet: (k: 'lots' | '3d') => void }) {
   const { data: loaded } = useShipmentParcels(s.id);
   const groups = useMemo(() => {
     const by = new Map<string, { name: string; deposits: Set<string>; parcels: number; cbm: number }>();
@@ -318,7 +317,7 @@ export function MobileCargoDossier() {
               </ItemList>
             </>
           )}
-          {tab === 'colis' && <ColisTab s={s} canManage={canManage} onSheet={(k) => setDialog(k)} />}
+          {tab === 'colis' && <ColisTab s={s} onSheet={(k) => setDialog(k)} />}
           {tab === 'couts' && <DossierCosts s={s} canManage={canManage} />}
 
           <BottomSheet open={dialog === 'douane'} onClose={close} title="Douane et arrivée"><TabDouane shipment={s} canManage={canManage} /></BottomSheet>

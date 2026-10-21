@@ -71,20 +71,37 @@ export function OptionCard({ selected, onClick, title, hint, children, className
   );
 }
 
+/* ── RadioRow ─────────────────────────────────────────────────────────────
+ * Un choix dans une liste, sans carte (« Déjà vus pour ce client ») : rond
+ * à gauche, nom, une ligne ; filet entre les lignes. */
+export function RadioRow({ selected, onClick, title, hint }: { selected: boolean; onClick: () => void; title: React.ReactNode; hint?: React.ReactNode }) {
+  return (
+    <button type="button" role="radio" aria-checked={selected} onClick={onClick} className={cn('flex min-h-[64px] w-full items-center gap-3.5 border-b py-3 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider, FOCUS_RING)}>
+      <span className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2', selected ? 'border-[#2C2C2C] bg-[#2C2C2C] dark:border-[#E3E3E3] dark:bg-[#E3E3E3]' : 'border-[#949494]')}>
+        {selected && <span className="h-2.5 w-2.5 rounded-full bg-white dark:bg-[#1E1E1E]" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className={cn('block break-words text-[17px] font-semibold leading-snug', TEXT.strong)}>{title}</span>
+        {hint != null && <span className={cn('block text-[15px] leading-snug', TEXT.muted)}>{hint}</span>}
+      </span>
+    </button>
+  );
+}
+
 /* ── UnitField ────────────────────────────────────────────────────────────
  * Un nombre en grand avec son unité (« 23,2 kg », « 70 cm »). */
-export const UnitField = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { unit: React.ReactNode; size?: 'lg' | 'md'; invalid?: boolean }>(
-  function UnitField({ unit, size = 'md', invalid, className, ...rest }, ref) {
+export const UnitField = React.forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> & { unit: React.ReactNode; big?: boolean; invalid?: boolean }>(
+  function UnitField({ unit, big = false, invalid, className, ...rest }, ref) {
     return (
-      <label className={cn('flex w-full items-baseline gap-2 rounded-lg border bg-white px-4 dark:bg-[#2C2C2C]', size === 'lg' ? 'h-[72px]' : 'h-16', invalid ? 'border-[#EC221F]' : 'border-[#949494] focus-within:border-2 focus-within:border-[#2C2C2C] dark:border-[#6E6E6E] dark:focus-within:border-[#E3E3E3]', className)}>
+      <label className={cn('flex w-full items-baseline gap-2 rounded-lg border bg-white px-4 dark:bg-[#2C2C2C]', big ? 'h-[72px]' : 'h-16', invalid ? 'border-[#EC221F]' : 'border-[#949494] focus-within:border-2 focus-within:border-[#2C2C2C] dark:border-[#6E6E6E] dark:focus-within:border-[#E3E3E3]', className)}>
         {/* eslint-disable-next-line no-restricted-syntax -- champ chiffré du module (taille de chiffre, pas de zoom iOS) */}
         <input
           ref={ref}
           inputMode="decimal"
-          className={cn('h-full min-w-0 flex-1 bg-transparent font-bold tabular-nums outline-none placeholder:font-semibold placeholder:text-[#B3B3B3]', size === 'lg' ? 'text-[34px]' : 'text-[26px]', TEXT.strong)}
+          className={cn('h-full min-w-0 flex-1 bg-transparent font-bold tabular-nums outline-none placeholder:font-semibold placeholder:text-[#B3B3B3]', big ? 'text-[34px]' : 'text-[26px]', TEXT.strong)}
           {...rest}
         />
-        <span className={cn('shrink-0 font-semibold', size === 'lg' ? 'text-[20px]' : 'text-[17px]', TEXT.muted)}>{unit}</span>
+        <span className={cn('shrink-0 font-semibold', big ? 'text-[20px]' : 'text-[17px]', TEXT.muted)}>{unit}</span>
       </label>
     );
   },
@@ -170,6 +187,22 @@ export function TopIcon({ icon: Icon, onClick, ariaLabel, disabled }: { icon: Re
   return (
     <button type="button" onClick={onClick} aria-label={ariaLabel} disabled={disabled} className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full disabled:opacity-40 active:bg-[#F5F5F5] dark:active:bg-[#383838]', FOCUS_RING, TEXT.strong)}>
       <Icon className="h-6 w-6" strokeWidth={2} />
+    </button>
+  );
+}
+
+/* ── RowButton ────────────────────────────────────────────────────────────
+ * Le petit bouton blanc à filet au bout d'une ligne (« Attribuer »,
+ * « Retirer »). `link` : souligné, sans cadre. */
+export function RowButton({ children, onClick, disabled, link }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; link?: boolean }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={cn('flex h-11 shrink-0 items-center justify-center rounded-lg text-[16px] font-semibold disabled:opacity-40', FOCUS_RING, TEXT.strong, link ? 'px-1 underline underline-offset-[3px]' : cn('border px-4 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider))}
+    >
+      {children}
     </button>
   );
 }

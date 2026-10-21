@@ -121,6 +121,44 @@ export function ParcelRow({ parcel, onRemove, onClick, onPhoto }: { parcel: Parc
 }
 
 /**
+ * Refonte v2 : la ligne d'un colis (maquettes 04/07, 04/15, 10/39) — sa
+ * photo en carré de 64, le contenu, le n° et le poids ; à droite, le volume
+ * ou ce que l'écran y pose (tag, case, rangée).
+ */
+export function ParcelLine({ parcel, title, subtitle, right, leading, onClick, showVolume = true }: {
+  parcel: Pick<Parcel, 'photo_path' | 'parcel_no' | 'description' | 'weight_kg' | 'cbm'> & { kind: string };
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  right?: ReactNode;
+  leading?: ReactNode;
+  onClick?: () => void;
+  showVolume?: boolean;
+}) {
+  const { t } = useTranslation('agent');
+  const Body = onClick ? 'button' : 'div';
+  const vol = parcel.cbm != null ? Number(parcel.cbm).toLocaleString(getCurrentLocale(), { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : null;
+  return (
+    <div className={cn('flex w-full items-center gap-3 border-b py-3.5 last:border-b-0', SURFACE.divider)}>
+      <Body type={onClick ? 'button' : undefined} onClick={onClick} className={cn('flex min-w-0 flex-1 items-center gap-3.5 text-left', onClick && 'rounded-lg active:bg-[#F5F5F5] dark:active:bg-[#383838]')}>
+        {leading}
+        <ParcelThumb path={parcel.photo_path} size="h-16 w-16" />
+        <span className="min-w-0 flex-1">
+          <span className={cn('block truncate text-[17px] font-semibold leading-snug', TEXT.strong)}>{title ?? (parcel.description || t(`kind_${parcel.kind}`))}</span>
+          <span className={cn('mt-0.5 block truncate text-[15px] tabular-nums', TEXT.muted)}>{subtitle ?? `${parcel.parcel_no} · ${formatKg(parcel.weight_kg)}`}</span>
+        </span>
+        {!right && showVolume && (
+          <span className="shrink-0 text-right">
+            <span className={cn('block text-[17px] font-bold tabular-nums', TEXT.strong)}>{vol ?? '—'}</span>
+            <span className={cn('block text-[15px]', TEXT.muted)}>m³</span>
+          </span>
+        )}
+      </Body>
+      {right}
+    </div>
+  );
+}
+
+/**
  * Un dépôt qui charge, ou qui n'a pas pu être lu : l'en-tête et sa flèche
  * restent — jamais un sablier sans fin, jamais un écran sans sortie.
  */

@@ -3,7 +3,7 @@
  * RoleMoreScreen. Ce qui n'a plus d'onglet à soi y est rangé (la réception
  * y trouve « En attente » ; le commercial, son mot de passe).
  */
-import { Inbox, PackagePlus } from 'lucide-react';
+import { HelpCircle, Inbox, PackagePlus } from 'lucide-react';
 import { RoleMoreScreen } from './RoleMoreScreen';
 
 export function ReceptionMore() {
@@ -13,6 +13,7 @@ export function ReceptionMore() {
       links={[
         { label: 'Nouveau dépôt de colis', icon: PackagePlus, to: '/r/new' },
         { label: 'En attente d’attribution', icon: Inbox, to: '/r/pending' },
+        { label: 'Comment ça marche', icon: HelpCircle, to: '/r?aide=1' },
       ]}
     />
   );

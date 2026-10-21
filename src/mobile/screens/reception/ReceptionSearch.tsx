@@ -8,14 +8,12 @@
 // ============================================================
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronRight, Search, UserPlus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { clientFullName, initials, type ReceptionClient } from '@/lib/reception';
+import { clientFullName, type ReceptionClient } from '@/lib/reception';
 import { useAssignDeposit, useReceptionSearch } from '@/hooks/useReception';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { SURFACE, TEXT, TYPE, Button, Card, Holder, TextInput } from '@/mobile/designKit';
-import { StepHeader } from '@/mobile/components/reception/bits';
+import { EmptyLine, IconCircle, Initials, ItemList, ItemRow, ScreenTop, SearchBox, SURFACE } from '@/mobile/designKit';
 import { useAssignFlow } from '@/mobile/components/reception/useAssignFlow';
 
 export function ReceptionSearch() {
@@ -56,47 +54,35 @@ export function ReceptionSearch() {
 
   return (
     <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title={assignId ? t('rc_assign') : t('rc_new_deposit')} showBack onBack={() => navigate(`/r/new${qs}`, { replace: true })} />
-      <div className="flex-1 space-y-5 px-5 pb-10 pt-4">
-        {!assignId && <StepHeader step={1} total={4} title={t('rc_search_title')} help={t('rc_search_help')} />}
-        <div className="relative">
-          <Search className={cn('pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2', TEXT.muted)} />
-          <TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('rc_search_clients_ph')} className="h-14 pl-12 text-[17px]" autoComplete="off" inputMode="search" autoFocus aria-label={t('rc_search_clients_ph')} />
-        </div>
-
-        {searching && (
-          <Card className="py-0">
-            {search.isLoading ? (
-              <p className={cn('py-5 text-center', TYPE.body, TEXT.muted)}>…</p>
-            ) : search.isError ? (
-              <div className="space-y-3 py-5 text-center">
-                <p className={cn(TYPE.body, TEXT.muted)}>{(search.error as Error).message}</p>
-                <Button variant="neutral" className="h-11 px-4" onClick={() => void search.refetch()}>{t('rc_retry')}</Button>
-              </div>
-            ) : results.length === 0 ? (
-              <p className={cn('py-5 text-center', TYPE.body, TEXT.muted)}>{t('rc_no_result')}</p>
-            ) : (
-              results.map((c) => {
-                const name = clientFullName(c);
-                return (
-                  <button key={c.user_id} type="button" onClick={() => void pick(c)} disabled={assign.isPending} className={cn('flex w-full items-center gap-3 border-b py-4 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider)}>
-                    <Holder size="lg">{initials(name)}</Holder>
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block break-words', TYPE.bodyStrong, TEXT.strong)}>{name}</span>
-                      <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{[c.customer_code, c.phone, c.city].filter(Boolean).join(' · ')}</span>
-                    </span>
-                    <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-                  </button>
-                );
-              })
-            )}
-          </Card>
-        )}
-
-        <Button variant="neutral" className="h-14 w-full text-[17px]" onClick={() => navigate(`/r/new/client${qs}`, { replace: true })}>
-          <UserPlus /> {t('rc_new_client')}
-        </Button>
+      <ScreenTop title={assignId ? t('rc_assign') : t('rc_search_title')} step={assignId ? undefined : '1/4'} onBack={() => navigate(`/r/new${qs}`, { replace: true })} />
+      <div className="px-5 pt-4">
+        <SearchBox value={query} onChange={setQuery} placeholder={t('rc_search_clients_ph')} autoFocus />
       </div>
+      {searching && (
+        search.isLoading ? <EmptyLine>…</EmptyLine>
+        : search.isError ? <EmptyLine action={{ label: t('rc_retry'), onClick: () => void search.refetch() }}>{(search.error as Error).message}</EmptyLine>
+        : results.length === 0 ? <EmptyLine>{t('rc_no_result')}</EmptyLine>
+        : (
+          <ItemList className="pt-2">
+            {results.map((c) => {
+              const name = clientFullName(c);
+              return (
+                <ItemRow
+                  key={c.user_id}
+                  leading={<Initials name={name} />}
+                  title={name}
+                  subtitle={[c.customer_code, c.phone, c.city].filter(Boolean).join(' · ')}
+                  onClick={assign.isPending ? undefined : () => void pick(c)}
+                  chevron
+                />
+              );
+            })}
+          </ItemList>
+        )
+      )}
+      <ItemList className="pt-2">
+        <ItemRow leading={<IconCircle icon={Plus} />} title={t('rc_new_client')} subtitle={t('rc_v2_name_phone')} onClick={() => navigate(`/r/new/client${qs}`, { replace: true })} chevron />
+      </ItemList>
     </div>
   );
 }
