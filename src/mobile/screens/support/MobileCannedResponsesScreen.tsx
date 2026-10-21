@@ -37,6 +37,7 @@ import {
   ScreenLoader,
   Button,
 } from '@/mobile/designKit';
+import { CannedResponsesV2 } from './CannedResponsesV2';
 
 // Textarea matched to the TextInput gabarit (card surface, ring) — no kit textarea.
 const textareaClass = cn(
@@ -47,7 +48,12 @@ const textareaClass = cn(
   'placeholder:text-[#B3B3B3] focus:ring-2 focus:ring-[#2C2C2C] dark:focus:ring-[#E3E3E3]',
 );
 
+/** Téléphone : la v2 (CannedResponsesV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileCannedResponsesScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileCannedResponsesScreen desktop /> : <CannedResponsesV2 />;
+}
+
+function LegacyMobileCannedResponsesScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { currentUser, hasPermission } = useAdminAuth();

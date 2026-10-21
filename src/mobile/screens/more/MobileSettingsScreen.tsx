@@ -10,8 +10,14 @@ import { isNativeApp } from '@/lib/nativeApp';
 import { supportedLanguages, languageNames, type SupportedLanguage } from '@/i18n';
 import { persistPreferredLocale } from '@/lib/persistLocale';
 import { BoxSegmented } from '@/mobile/designKit';
+import { SettingsV2 } from './SettingsV2';
 
+/** Téléphone : la v2 (SettingsV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileSettingsScreen desktop /> : <SettingsV2 />;
+}
+
+function LegacyMobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t, i18n } = useTranslation('common');
   const navigate = useNavigate();
   const { currentUser, profile } = useAdminAuth();

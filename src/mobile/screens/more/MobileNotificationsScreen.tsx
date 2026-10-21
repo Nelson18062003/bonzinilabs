@@ -20,6 +20,7 @@ import {
   UserSearch,
 } from 'lucide-react';
 import { SURFACE, TEXT, type Tone, Holder, SectionTitle } from '@/mobile/designKit';
+import { NotificationsV2 } from './NotificationsV2';
 
 // Notification type → icon + unified tone (color carries meaning only).
 const TYPE_CONFIG: Record<AdminNotificationType, { icon: React.ElementType; tone: Tone }> = {
@@ -40,7 +41,12 @@ function formatRelativeDate(dateStr: string) {
   return format(date, "dd MMM 'à' HH:mm", { locale: fr });
 }
 
+/** Téléphone : la v2 (NotificationsV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileNotificationsScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileNotificationsScreen desktop /> : <NotificationsV2 />;
+}
+
+function LegacyMobileNotificationsScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const { data: notifications, isLoading, isError, refetch } = useAdminNotifications();
   const navigate = useNavigate();

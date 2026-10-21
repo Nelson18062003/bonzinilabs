@@ -8,12 +8,12 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  BarChart3, Banknote, FileText, History, Landmark, MessageCircle, Newspaper, Route, Settings, TrendingUp, UsersRound, Wallet,
+  BarChart3, Banknote, FileText, History, Landmark, MessageCircle, Newspaper, Route, Search, Settings, TrendingUp, UsersRound, Wallet,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
 import { MolaMascot } from '@/components/MolaMascot';
-import { ItemList, ModuleGrid, TabTop, type ModuleTile } from '@/mobile/designKit';
+import { ItemList, ModuleGrid, RoundButton, TabTop, type ModuleTile } from '@/mobile/designKit';
 import { LogoutRow } from './LogoutRow';
 import { ProfileCard } from './ProfileCard';
 
@@ -24,6 +24,8 @@ export function MobileMoreScreen() {
   const role = currentUser?.role;
   const canChat = hasPermission('canAccessSupportChat');
   const { data: convs } = useAdminConversations();
+  // La loupe : la recherche globale (clients, BZ-DP-…, BZ-PY-…) — refonte v2, 01/07.
+  const canSearch = hasPermission('canViewClients') || hasPermission('canViewDeposits') || hasPermission('canViewPayments');
   const unread = canChat ? (convs ?? []).reduce((sum, c) => sum + (c.unread_count_admin || 0), 0) : 0;
 
   const tiles = useMemo<ModuleTile[]>(() => {
@@ -61,7 +63,10 @@ export function MobileMoreScreen() {
 
   return (
     <div className="flex min-h-full flex-col pb-6">
-      <TabTop title={t('more', { defaultValue: 'Plus' })} />
+      <TabTop
+        title={t('more', { defaultValue: 'Plus' })}
+        right={canSearch ? <RoundButton icon={Search} ariaLabel="Rechercher" onClick={() => navigate('/m/recherche')} /> : undefined}
+      />
       <div className="px-5 pt-2">
         <ProfileCard webPath="/m/more/profile" />
       </div>

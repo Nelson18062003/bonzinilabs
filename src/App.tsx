@@ -132,6 +132,8 @@ const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m =
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
 const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
+const MobileMeScreen = lazy(() => import("./mobile/screens/more/MeScreen").then(m => ({ default: m.MeScreen })));
+const MobileStaffSearch = lazy(() => import("./mobile/screens/search/StaffSearchScreen").then(m => ({ default: m.StaffSearchScreen })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
@@ -140,6 +142,13 @@ const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").t
 
 // ── AI Assistant (Directeur des Opérations) ────────────────────
 const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
+// ── Douane, espace équipe — refonte mobile v2 (le desktop garde les pages d'avant) ──
+const CustomsHomeV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.CustomsHomeV2 })));
+const CustomsReviewV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.ReviewV2 })));
+const CustomsAuditV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.AuditV2 })));
+const CustomsNoticesV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.NoticesV2 })));
+const CustomsRoutesV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.RoutesV2 })));
+const CustomsSimulatorV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.SimulatorV2 })));
 
 const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.TreasuryTab })));
 // Trésorerie desktop : UN écran à quatre vues (docs/admin-redesign/07). Les
@@ -374,7 +383,7 @@ const App = () => (
                 <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
-                <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
+                <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates/market" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
@@ -401,13 +410,15 @@ const App = () => (
                 <Route path="/m/more/admins/new" element={<Navigate to="/m/equipe/nouveau" replace />} />
                 <Route path="/m/more/admins/:adminId" element={<LegacyAdminRedirect />} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/payment-details" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
                 <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
-                <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/passkeys" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileMeScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile/edit" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/recherche" element={<AdminRouteWrapper showTabBar={false}><MobileStaffSearch /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
                 <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
@@ -421,12 +432,12 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
-                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
-                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><RoutesPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomeV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><CustomsSimulatorV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><CustomsNoticesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><CustomsRoutesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><CustomsAuditV2 /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />

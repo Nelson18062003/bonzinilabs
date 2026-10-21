@@ -15,6 +15,7 @@ import { SURFACE, TEXT, Card, SectionTitle, PrimaryPill } from '@/mobile/designK
 import { Fingerprint, Trash2, ShieldCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { PasskeysV2 } from './AccountV2';
 
 interface PasskeyRow {
   id: string;
@@ -27,7 +28,12 @@ interface PasskeyRow {
 const formatDate = (value: string | null) =>
   value ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
 
+/** Téléphone : la v2 (PasskeysV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobilePasskeysScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobilePasskeysScreen desktop /> : <PasskeysV2 />;
+}
+
+function LegacyMobilePasskeysScreen({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('common');
   const queryClient = useQueryClient();
   const [supported, setSupported] = useState<boolean | null>(null);
