@@ -98,7 +98,7 @@ export function ShippingV2() {
 
 /** « 165000 » → « 165 000 » à l'écran ; l'état garde les chiffres seuls. */
 const grouped = (raw: string) => { const [i, d] = raw.split(/[.,]/); const g = (i ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'); return d != null ? `${g},${d}` : g; };
-const num = (s: string) => { const v = parseFloat(s.replace(/[\s  ]/g, '').replace(',', '.')); return Number.isFinite(v) && v >= 0 ? v : null; };
+const num = (s: string) => { const v = parseFloat(s.replace(/[\s\u00A0\u202F]/g, '').replace(',', '.')); return Number.isFinite(v) && v >= 0 ? v : null; };
 
 export function CargoPricingV2() {
   const { hasPermission } = useAdminAuth();

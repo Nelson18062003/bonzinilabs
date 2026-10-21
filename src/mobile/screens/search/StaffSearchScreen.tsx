@@ -54,7 +54,7 @@ const PAYMENT_TAG: Record<string, { tone: Tone; label: string }> = {
   created: { tone: 'neutral', label: 'Créé' },
 };
 
-const nbsp = (s: string) => s.replace(/ /g, ' ');
+const nbsp = (s: string) => s.replace(/\u202F/g, '\u00A0');
 const xafShort = (n: number) => nbsp(Math.round(n).toLocaleString('fr-FR'));
 
 /** Le terme, sans ce qui casserait le filtre PostgREST (virgules, parenthèses, jokers). */

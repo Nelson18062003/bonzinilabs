@@ -26,7 +26,7 @@ export function waited(iso: string | null | undefined): string {
 export const agoLabel = (iso: string | null | undefined) => (iso ? `il y a ${waited(iso)}` : '');
 
 /** 1 284 000 → « 1 284 000 » (espace insécable, qui s'affiche en DM Sans). */
-export const nb = (n: number) => formatNumber(Math.round(n)).replace(/ /g, ' ');
+export const nb = (n: number) => formatNumber(Math.round(n)).replace(/\u202F/g, '\u00A0');
 /** 1 284 000 → « 1,28 M » (les puces du montant récupérable). */
 export const millions = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} M` : nb(n));
 

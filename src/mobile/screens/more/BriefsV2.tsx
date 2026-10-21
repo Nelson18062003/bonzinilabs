@@ -14,7 +14,7 @@ import {
 } from '@/mobile/designKit';
 
 const fmt = (n: number | null | undefined, d = 2) =>
-  n == null || !Number.isFinite(n) ? '—' : n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/ /g, ' ');
+  n == null || !Number.isFinite(n) ? '—' : n.toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/\u202F/g, '\u00A0');
 const ago = (iso: string) => formatDistanceToNow(new Date(iso), { locale: fr, addSuffix: true });
 
 function Code({ text }: { text: string }) {
@@ -44,7 +44,7 @@ export function BriefsV2() {
     { code: 'DXY', title: 'DXY', value: fmt(m.dxy, 1) },
     { code: '€/$', title: 'EUR/USD', value: fmt(m.eur_usd, 4) },
     { code: '¥/$', title: 'USD/CNY', value: fmt(m.cny_usd, 4) },
-    { code: '₿', title: 'BTC', value: `${m.btc_usd ? Math.round(m.btc_usd).toLocaleString('fr-FR').replace(/ /g, ' ') : '—'} $` },
+    { code: '₿', title: 'BTC', value: `${m.btc_usd ? Math.round(m.btc_usd).toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0') : '—'} $` },
   ] : [];
 
   return (
