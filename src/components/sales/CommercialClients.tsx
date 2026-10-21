@@ -1,45 +1,44 @@
 // ============================================================
-// ESPACE COMMERCIAL — « Mes clients ». Les clients dont il est l'origine,
-// chacun avec ce qu'il a fait dans le mois choisi : paiements terminés
-// (XAF), fret avion (kg, colis), fret bateau (m³, colis). Les totaux en
-// tête. Appeler / WhatsApp depuis la ligne ; aucune fiche « /m » (il n'y a
-// pas accès). Données : commercial_clients, limité à SA fiche.
+// ESPACE COMMERCIAL — « Mes clients » (refonte v2, maquette 10/26). Les
+// clients dont il est l'origine, et ce qu'ils ont fait dans le mois choisi
+// (« Octobre ⌄ ») : paiements terminés, fret avion (kg, colis), fret bateau
+// (m³, colis). Le total en tête ; Appeler / WhatsApp sur la ligne ; toucher
+// la ligne montre ses chiffres du mois. Aucune fiche « /m » (il n'y a pas
+// accès). Données : commercial_clients, limité à SA fiche.
 // ============================================================
 import { useMemo, useState } from 'react';
-import { Handshake, MessageCircle, Phone, Plane, Ship, Users, Wallet } from 'lucide-react';
+import { ChevronDown, MessageCircle, Phone, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { normalizeText } from '@/lib/clientSearch';
 import { useCommercialClients } from '@/hooks/useSales';
-import { clientPhoneE164, currentMonth, fmtCbm, fmtCount, fmtKg, fmtXaf, monthLabel, whatsappLink, type CommercialClient } from '@/lib/sales';
-import { Figure, ListSkeleton, LoadError, MonthSwitcher, PhoneNumber, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
-import { SearchField } from './SalesUi';
-import { btn } from './uiClasses';
-import { fmtLongDay, initialsOf, isUnlinkedError, plural } from './salesHelpers';
+import { clientPhoneE164, currentMonth, fmtCbm, fmtKg, fmtXaf, whatsappLink, type CommercialClient } from '@/lib/sales';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
+import {
+  BottomSheet, EmptyLine, Initials, ItemList, ItemRow, KVBox, RoundButton, SearchBox, TabTop, TEXT, SURFACE, FOCUS_RING,
+} from '@/mobile/designKit';
+import { shortXaf } from '@/mobile/screens/clients/parts';
+import { MonthSheet, monthName } from '@/mobile/screens/team/teamParts';
+import { UnlinkedNotice } from './SalesBits';
+import { fmtLongDay, isUnlinkedError, plural } from './salesHelpers';
 
 const isActive = (c: CommercialClient) => c.payments_count + c.air_parcels + c.sea_parcels > 0;
+const num = (v: number, d = 0) => v.toLocaleString('fr-FR', { maximumFractionDigits: d }).replace(/\u202F/g, '\u00A0');
 
 export function CommercialClients() {
   const thisMonth = useMemo(() => currentMonth(), []);
   const [month, setMonth] = useState(thisMonth);
+  const [pick, setPick] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState<CommercialClient | null>(null);
   const clients = useCommercialClients(month);
   const unlinked = clients.isError && isUnlinkedError(clients.error);
   const rows = clients.data ?? [];
-  const monthName = monthLabel(month).split(' ')[0];
 
   const sum = rows.reduce(
-    (s, c) => ({
-      pay: s.pay + c.payments_xaf,
-      payN: s.payN + c.payments_count,
-      airKg: s.airKg + c.air_kg,
-      airN: s.airN + c.air_parcels,
-      seaCbm: s.seaCbm + c.sea_cbm,
-      seaN: s.seaN + c.sea_parcels,
-      active: s.active + (isActive(c) ? 1 : 0),
-    }),
-    { pay: 0, payN: 0, airKg: 0, airN: 0, seaCbm: 0, seaN: 0, active: 0 },
+    (s, c) => ({ pay: s.pay + c.payments_xaf, airKg: s.airKg + c.air_kg, seaCbm: s.seaCbm + c.sea_cbm, active: s.active + (isActive(c) ? 1 : 0) }),
+    { pay: 0, airKg: 0, seaCbm: 0, active: 0 },
   );
-
   const nq = normalizeText(q);
   const digits = q.replace(/\D/g, '');
   const shown = !nq
@@ -51,134 +50,95 @@ export function CommercialClients() {
       );
 
   return (
-    <div>
-      <ScreenHeader title="Mes clients" subtitle={clients.data ? `${plural(rows.length, 'client', 'clients')} · ${sum.active} actif${sum.active > 1 ? 's' : ''} en ${monthName}` : ' '} />
-
-      <div className="space-y-5 px-4 pt-4 sm:px-6">
-        {unlinked ? (
+    <div className="flex min-h-full flex-col bg-white pb-6 dark:bg-[#1E1E1E]">
+      <TabTop title="Mes clients" right={!unlinked ? <RoundButton icon={Search} ariaLabel="Chercher un client" onClick={() => setSearching((s) => !s)} /> : undefined} />
+      {unlinked ? (
+        <div className="px-5 pt-4">
           <UnlinkedNotice message={(clients.error as Error).message} onRetry={() => void clients.refetch()} />
-        ) : (
-          <>
-            <div className="flex justify-center">
-              <MonthSwitcher month={month} onChange={setMonth} max={thisMonth} className="w-full sm:w-auto" />
-            </div>
-
-            {clients.isLoading ? (
-              <>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className={cn('s-skeleton h-24 animate-pulse rounded-[18px] bg-muted', i < 2 && 'col-span-2 md:col-span-1')} />
-                  ))}
-                </div>
-                <div className={SALES_CARD}>
-                  <ListSkeleton rows={4} />
-                </div>
-              </>
-            ) : clients.isError ? (
-              <div className={SALES_CARD}>
-                <LoadError message="Vos clients n’ont pas pu être chargés." onRetry={() => void clients.refetch()} />
-              </div>
-            ) : rows.length === 0 ? (
-              <div className={cn(SALES_CARD, 's-enter flex flex-col items-center px-6 py-12 text-center')}>
-                <span className="s-inset flex h-11 w-11 items-center justify-center rounded-xl">
-                  <Handshake className="h-5 w-5 s-ink-3" />
-                </span>
-                <h2 className="mt-4 text-[18px] font-semibold tracking-[-0.01em] s-ink">Pas encore de client</h2>
-                <p className="mt-1.5 max-w-sm text-[15px] leading-relaxed s-ink-2">
-                  Un client apparaît ici dès que la réception crée son compte en vous choisissant comme origine — ou tout seul, quand son numéro est
-                  celui de l’un de vos prospects.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Téléphone : clients et paiements sur toute la largeur (un montant en XAF passait sur deux lignes dans une demi-tuile). */}
-                <section className="s-enter grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <Figure className="col-span-2 md:col-span-1" icon={Users} label="Clients" value={fmtCount(rows.length)} hint={`${sum.active} actif${sum.active > 1 ? 's' : ''} en ${monthName}`} />
-                  <Figure className="col-span-2 md:col-span-1" icon={Wallet} label="Paiements" value={fmtXaf(sum.pay)} hint={plural(sum.payN, 'paiement', 'paiements')} />
-                  <Figure icon={Plane} label="Fret avion" value={fmtKg(sum.airKg)} hint={plural(sum.airN, 'colis', 'colis')} />
-                  <Figure icon={Ship} label="Fret bateau" value={fmtCbm(sum.seaCbm)} hint={plural(sum.seaN, 'colis', 'colis')} />
-                </section>
-
-                {rows.length > 6 && <SearchField value={q} onChange={setQ} placeholder="Nom, entreprise, code client, téléphone" ariaLabel="Rechercher un client" />}
-
-                <div className={cn('overflow-hidden', SALES_CARD)}>
-                  {shown.length === 0 ? (
-                    <div className="p-10 text-center text-[15px] s-ink-2">Aucun client ne correspond à cette recherche.</div>
-                  ) : (
-                    <ul className="s-divide">
-                      {shown.map((c, i) => (
-                        <li key={c.user_id} className="s-enter" style={i < 12 ? { animationDelay: `${60 + i * 28}ms` } : undefined}>
-                          <ClientRow c={c} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <p className="px-1 pb-2 text-[13px] leading-relaxed s-ink-3">
-                  Chiffres de {monthName} : paiements terminés, colis enregistrés (avion au bureau, bateau à l’entrepôt), dépôts annulés exclus.
-                </p>
-              </>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ClientRow({ c }: { c: CommercialClient }) {
-  const e164 = clientPhoneE164(c.phone);
-  const tel = e164 ?? c.phone?.replace(/[^\d+]/g, '') ?? null;
-  const sub = [c.company, c.customer_code].filter(Boolean).join('\u00a0· ');
-  return (
-    <div className="px-4 py-4 sm:px-5">
-      <div className="flex items-start gap-3">
-        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold', isActive(c) ? 's-ink bg-[hsl(var(--s-accent-tint))] shadow-[inset_0_0_0_1px_hsl(var(--s-accent)/0.2)]' : 's-field-bg s-ink-2')} aria-hidden>
-          {initialsOf(c.name)}
-        </span>
-        {/* Le nom partage sa ligne avec Appeler / WhatsApp ; le numéro (drapeau, format international), puis l'entreprise, le code et « client depuis » passent dessous, sur toute la largeur. */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1 truncate text-[16px] font-semibold s-ink">{c.name || '—'}</div>
-            {tel && (
-              <div className="flex shrink-0 items-center gap-1.5">
-                <a href={`tel:${tel}`} aria-label={`Appeler ${c.name}`} className={btn('quiet', 'icon')}>
-                  <Phone className="h-4 w-4" />
-                </a>
-                {e164 && (
-                  <a href={whatsappLink(e164)} target="_blank" rel="noreferrer" aria-label={`Écrire à ${c.name} sur WhatsApp`} className={btn('whatsapp', 'icon')}>
-                    <MessageCircle className="h-4 w-4" />
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-          {c.phone && (
-            <div className="text-[13px] s-ink-2">
-              <PhoneNumber e164={e164 ?? c.phone} />
+        </div>
+      ) : (
+        <>
+          {searching && (
+            <div className="px-5 pt-3">
+              <SearchBox value={q} onChange={setQ} placeholder="Nom, code client, téléphone" autoFocus />
             </div>
           )}
-          {/* Entreprise et code sur une ligne, « client depuis » sur la sienne : aucun « · » ne pend en bout de ligne. */}
-          {sub && <div className="text-[13px] tabular-nums s-ink-2">{sub}</div>}
-          <div className="text-[13px] s-ink-2">Client depuis le {fmtLongDay(c.created_at)}</div>
-        </div>
-      </div>
-      <dl className="s-inset mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl bg-muted/50 px-3 py-2.5 text-[13px] tabular-nums sm:ml-[3.25rem] sm:grid-cols-3">
-        <Cell className="col-span-2 sm:col-span-1" label="Paiements" value={c.payments_xaf ? fmtXaf(c.payments_xaf) : '—'} hint={c.payments_count ? plural(c.payments_count, 'paiement', 'paiements') : undefined} />
-        <Cell label="Avion" value={c.air_parcels ? fmtKg(c.air_kg) : '—'} hint={c.air_parcels ? plural(c.air_parcels, 'colis', 'colis') : undefined} />
-        <Cell label="Bateau" value={c.sea_parcels ? fmtCbm(c.sea_cbm) : '—'} hint={c.sea_parcels ? plural(c.sea_parcels, 'colis', 'colis') : undefined} />
-      </dl>
-    </div>
-  );
-}
+          <div className="px-5 pt-3.5">
+            <div className={cn('rounded-lg border px-[18px] pb-4 pt-[18px]', SURFACE.divider)}>
+              <div className="flex items-start justify-between gap-3">
+                <span className={cn('text-[16px] font-medium', TEXT.muted)}>Paiements · {plural(rows.length, 'client', 'clients')}</span>
+                <button type="button" onClick={() => setPick(true)} className={cn('-mr-1 inline-flex h-8 items-center gap-1 rounded px-1 text-[16px] font-semibold', TEXT.strong, FOCUS_RING)}>
+                  {monthName(month)} <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+              <div className={cn('mt-1.5 text-[40px] font-bold leading-[1.1] tracking-[-0.02em] tabular-nums', TEXT.strong)}>
+                {clients.isLoading ? '—' : shortXaf(sum.pay)}<span className={cn('ml-1.5 text-[20px] font-semibold', TEXT.muted)}>XAF</span>
+              </div>
+              <div className={cn('mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[16px] font-medium', TEXT.body)}>
+                <span><b className="font-bold">{sum.active}</b> actif{sum.active > 1 ? 's' : ''}</span>
+                <span><b className="font-bold">{num(sum.airKg)}</b> kg avion</span>
+                <span><b className="font-bold">{num(sum.seaCbm, 1)}</b> m³</span>
+              </div>
+            </div>
+          </div>
 
-function Cell({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
-  return (
-    <div className={cn('min-w-0', className)}>
-      <dt className="text-[12px] s-ink-2">{label}</dt>
-      <dd className="truncate text-[14px] font-semibold s-ink">{value}</dd>
-      {hint && <dd className="truncate text-[12px] s-ink-2">{hint}</dd>}
+          {clients.isLoading ? (
+            <ItemList className="mt-3">{[0, 1, 2].map((i) => <div key={i} className="my-2 h-14 animate-pulse rounded-lg bg-[#F5F5F5] dark:bg-[#383838]" />)}</ItemList>
+          ) : clients.isError ? (
+            <EmptyLine action={{ label: 'Réessayer', onClick: () => void clients.refetch() }}>Vos clients n’ont pas pu être chargés.</EmptyLine>
+          ) : rows.length === 0 ? (
+            <EmptyLine>Pas encore de client.</EmptyLine>
+          ) : shown.length === 0 ? (
+            <EmptyLine>Aucun client ne correspond.</EmptyLine>
+          ) : (
+            <ItemList className="mt-2">
+              {shown.map((c) => {
+                const e164 = clientPhoneE164(c.phone);
+                const tel = e164 ?? c.phone?.replace(/[^\d+]/g, '') ?? null;
+                const round = cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#383838]', TEXT.strong, FOCUS_RING);
+                return (
+                  // La ligne s'ouvre ; Appeler et WhatsApp sont des liens à côté (pas DANS le bouton).
+                  <div key={c.user_id} className={cn('flex items-center gap-2 border-b last:border-b-0', SURFACE.divider)}>
+                    <ItemRow
+                      className="min-w-0 flex-1 border-b-0"
+                      leading={<Initials name={c.name || '?'} />}
+                      title={c.name || '—'}
+                      subtitle={[c.customer_code, `${shortXaf(c.payments_xaf)} ce mois`].filter(Boolean).join(' · ')}
+                      onClick={() => setOpen(c)}
+                    />
+                    {tel && <a href={`tel:${tel}`} aria-label={`Appeler ${c.name}`} className={round}><Phone className="h-5 w-5" /></a>}
+                    {e164 && (
+                      <a href={whatsappLink(e164)} target="_blank" rel="noreferrer" aria-label={`Écrire à ${c.name} sur WhatsApp`} className={round}>
+                        <MessageCircle className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </ItemList>
+          )}
+        </>
+      )}
+
+      <MonthSheet open={pick} onClose={() => setPick(false)} value={month} onChange={setMonth} />
+      <BottomSheet open={!!open} onClose={() => setOpen(null)}>
+        {open && (
+          <>
+            <h3 className={cn('text-[22px] font-semibold leading-tight', TEXT.strong)}>{open.name || '—'}</h3>
+            <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{[open.company, open.customer_code].filter(Boolean).join(' · ') || 'Client'}</p>
+            <KVBox
+              className="mt-4"
+              rows={[
+                { label: 'Paiements', value: open.payments_xaf ? `${fmtXaf(open.payments_xaf)} · ${open.payments_count}` : '—' },
+                { label: 'Avion', value: open.air_parcels ? `${fmtKg(open.air_kg)} · ${plural(open.air_parcels, 'colis', 'colis')}` : '—' },
+                { label: 'Bateau', value: open.sea_parcels ? `${fmtCbm(open.sea_cbm)} · ${plural(open.sea_parcels, 'colis', 'colis')}` : '—' },
+                { label: 'Téléphone', value: open.phone ? formatE164ForDisplay(clientPhoneE164(open.phone) ?? open.phone) : '—' },
+                { label: 'Client depuis', value: fmtLongDay(open.created_at) },
+              ]}
+            />
+          </>
+        )}
+      </BottomSheet>
     </div>
   );
 }

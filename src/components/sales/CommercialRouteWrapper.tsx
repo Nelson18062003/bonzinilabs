@@ -49,7 +49,7 @@ function Protected({ children }: { children: ReactNode }) {
 export function CommercialShell({ children, showTabBar = true, bare = false }: { children: ReactNode; showTabBar?: boolean; bare?: boolean }) {
   const withBar = showTabBar && !inApp;
   return (
-    <div className="admin-theme sales-ui min-h-screen bg-background text-foreground">
+    <div className="admin-theme sales-ui min-h-screen bg-white text-foreground dark:bg-[#1E1E1E]">
       <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col md:max-w-2xl">
         <main className={cn('flex-1', withBar ? 'pb-28' : bare ? '' : 'pb-10')}>
           <AnimatedPage>{children}</AnimatedPage>

@@ -30,12 +30,22 @@ export function btn(variant: BtnVariant, size: BtnSize = 'md', extra?: string): 
 
 /** La carte : surface blanche, filet d'un pixel, ombre en couches. */
 export const CARD = 's-card rounded-[18px]';
-/** Le champ d'une ligne : rempli, sans bord, 52 px. */
-export const FIELD = 's-input h-[52px] w-full rounded-[14px] px-4 text-[17px]';
+/**
+ * Refonte v2 (21/10/2026) : les champs et les pastilles de « /v » prennent
+ * ceux du kit mobile — blanc, bord #949494, rayon 8, 56 px ; pastille grise,
+ * noire quand elle est choisie.
+ */
+const V2_FIELD =
+  'border border-[#949494] bg-white text-[#1E1E1E] outline-none transition-colors placeholder:text-[#757575] focus:border-[#2C2C2C] focus:ring-1 focus:ring-[#2C2C2C] ' +
+  'aria-[invalid=true]:border-[#C00F0C] disabled:opacity-55 dark:border-[#6E6E6E] dark:bg-[#2C2C2C] dark:text-[#F5F5F5] dark:placeholder:text-[#B3B3B3] dark:focus:border-[#E3E3E3] dark:focus:ring-[#E3E3E3]';
+/** Le champ d'une ligne : 56 px. */
+export const FIELD = cn(V2_FIELD, 'h-14 w-full rounded-lg px-4 text-[17px]');
 /** Le champ long. */
-export const AREA = 's-input block w-full resize-none rounded-[14px] px-4 py-3.5 text-[17px] leading-relaxed';
+export const AREA = cn(V2_FIELD, 'block w-full resize-none rounded-lg px-4 py-3.5 text-[17px] leading-relaxed');
 /** Une pastille à choisir (intérêts, villes, libellés). */
-export const CHIP = 's-chip inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-[15px] font-medium';
+export const CHIP =
+  'inline-flex h-11 items-center gap-1.5 rounded-lg bg-[#F5F5F5] px-3 text-[16px] font-semibold text-[#303030] transition-colors active:bg-[#E6E6E6] ' +
+  'aria-pressed:bg-[#2C2C2C] aria-pressed:text-[#F5F5F5] aria-checked:bg-[#2C2C2C] aria-checked:text-[#F5F5F5] dark:bg-[#383838] dark:text-[#E3E3E3]';
 /** L'identifiant de l'erreur ou de l'indice d'un champ (`Field`) : à poser en `aria-describedby` sur le contrôle. */
 export const descId = (htmlFor: string) => `${htmlFor}-desc`;
 /** Le titre d'une section de carte. */

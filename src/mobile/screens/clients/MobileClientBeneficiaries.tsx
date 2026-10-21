@@ -35,6 +35,7 @@ import {
   type BeneficiaryFormValues,
 } from '@/components/beneficiary/BeneficiaryForm';
 import { SURFACE, TEXT, Button, Chip, IconButton, Line, TextInput, PrimaryPill, SoftPill, BottomSheet } from '@/mobile/designKit';
+import { MobileClientBeneficiariesV2 } from './MobileClientBeneficiariesV2';
 
 type View = { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; beneficiary: Beneficiary };
 
@@ -55,7 +56,15 @@ function toFormValues(b: Beneficiary): BeneficiaryFormValues {
   };
 }
 
+/**
+ * Le téléphone a l'écran v2 (MobileClientBeneficiariesV2, maquettes 03/07 et
+ * 10/12) ; l'ordinateur garde celui-ci tel quel (`desktop`).
+ */
 export default function MobileClientBeneficiaries({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <ClassicBeneficiaries desktop /> : <MobileClientBeneficiariesV2 />;
+}
+
+function ClassicBeneficiaries({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('client');
   const { clientId } = useParams();
   const { data: client } = useClient(clientId || '');

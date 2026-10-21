@@ -282,6 +282,7 @@ function respond(url) {
   if (url.includes('/admin_audit_logs')) return auditLogs;
   const tr = treasuryRespond(url);
   if (tr !== undefined) return tr;
+  { const b = respondModuleB(url); if (b !== undefined) return b; }
   return [];
 }
 
@@ -511,5 +512,124 @@ function respondOutils(url) {
     const ids = many ? many[1].split(',').map((x) => x.replace(/"/g, '')) : [];
     return outilsClients.filter((c) => ids.includes(c.id));
   }
+  return undefined;
+}
+
+// ── Module B · Clients, Équipe & ventes, app commercial (refonte v2) ─────────
+// Noms inventés. Les RPC renvoient { success: true, … } comme rpcJson l'attend.
+// commercial_dashboard ne lit pas son corps (POST) : il rend toujours Brice.
+const mbMonth = (() => { const d = new Date(now); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`; })();
+const mbSites = [
+  { id: 'site-gz', code: 'gz_office', label: 'Guangzhou · Bureau', country_iso: 'CN', is_active: true, members: 3 },
+  { id: 'site-gzw', code: 'gz_warehouse', label: 'Guangzhou · Entrepôt', country_iso: 'CN', is_active: true, members: 2 },
+  { id: 'site-dla', code: 'douala', label: 'Douala', country_iso: 'CM', is_active: true, members: 8 },
+];
+const mbSite = (id) => { const s = mbSites.find((x) => x.id === id); return s ? { id: s.id, code: s.code, label: s.label, country_iso: s.country_iso } : null; };
+const mbMember = (user_id, role, first, last, email, phone, site, seenH, extra = {}) => ({
+  user_id, role, email, first_name: first, last_name: last, phone, phones: phone ? [{ phone_e164: phone, country_iso: phone.startsWith('+86') ? 'CN' : 'CM', label: null }] : [],
+  site: mbSite(site), avatar_url: null, is_disabled: false, created_at: ago(24 * 200), last_sign_in_at: seenH == null ? null : ago(seenH), source: null, ...extra,
+});
+const mbTeam = [
+  mbMember('screenshot-admin', 'super_admin', 'Nelson', 'Kamdem', 'nelson@bonzinilabs.com', '+237690112233', 'site-dla', 0.1),
+  mbMember('m-me', 'ops', 'Mireille', 'Ekambi', 'mireille@bonzinilabs.com', '+237677445566', 'site-dla', 0.08),
+  mbMember('m-pf', 'treasurer', 'Patrick', 'Fotso', 'patrick@bonzinilabs.com', '+237699887766', 'site-dla', 26),
+  mbMember('m-bo', 'commercial', 'Brice', 'Onana', 'brice@bonzinilabs.com', '+237655001122', 'site-dla', 2, { source: { id: 'src-brice', label: 'Brice Onana', phone: '+237655001122', is_active: true }, phones: [{ phone_e164: '+237655001122', country_iso: 'CM', label: null }, { phone_e164: '+237677210984', country_iso: 'CM', label: 'Bureau' }] }),
+  mbMember('m-sm', 'commercial', 'Sandrine', 'Mvogo', 'sandrine@bonzinilabs.com', '+237699334455', 'site-dla', 5, { source: { id: 'src-sandrine', label: 'Sandrine Mvogo', phone: '+237699334455', is_active: true } }),
+  mbMember('m-ka', 'commercial', 'Kevin', 'Abena', 'kevin@bonzinilabs.com', '+237670556677', null, 50),
+  mbMember('m-lw', 'warehouse_agent', 'Li', 'Wei', 'liwei@bonzinilabs.com', '+8613802615547', 'site-gzw', 7),
+  mbMember('m-ln', 'receptionist', 'Li', 'Na', 'lina@bonzinilabs.com', '+8613802615548', 'site-gz', 30),
+  mbMember('m-hn', 'customs_broker', 'Hélène', 'Ngando', 'helene@transitngando.cm', '+237677889900', 'site-dla', 70),
+  mbMember('m-he', 'cash_agent', 'Hervé', 'Essomba', 'herve@bonzinilabs.com', '+237651234567', 'site-dla', 900, { is_disabled: true }),
+];
+const mbMetrics = (pay, clients, fresh, extra = {}) => ({
+  clients, new_clients: fresh, active_clients: Math.max(1, clients - 2), payments_xaf: pay, payments_count: Math.round(pay / 900000), deposits_xaf: Math.round(pay * 1.06), deposits_count: Math.round(pay / 850000),
+  air_parcels: 14, air_kg: 212, sea_parcels: 9, sea_cbm: 7.4, prospects_open: 12, prospects_new: 14, prospects_won: 3, prospects_due: 3, ...extra,
+});
+const mbObjectives = (pay, target) => [
+  { metric: 'payments_xaf', target, actual: pay }, { metric: 'new_clients', target: 4, actual: 3 }, { metric: 'air_kg', target: 300, actual: 212 },
+  { metric: 'sea_cbm', target: 12, actual: 7.4 }, { metric: 'prospects_new', target: 20, actual: 14 }, { metric: 'prospects_won', target: 5, actual: 3 },
+];
+const mbCards = [
+  { source: { id: 'src-brice', label: 'Brice Onana', phone: '+237655001122', is_active: true }, staff: { user_id: 'm-bo', name: 'Brice Onana', is_disabled: false }, metrics: mbMetrics(18_200_000, 9, 3), objectives: mbObjectives(18_200_000, 25_000_000) },
+  { source: { id: 'src-sandrine', label: 'Sandrine Mvogo', phone: '+237699334455', is_active: true }, staff: { user_id: 'm-sm', name: 'Sandrine Mvogo', is_disabled: false }, metrics: mbMetrics(14_900_000, 7, 2), objectives: mbObjectives(14_900_000, 22_500_000) },
+  { source: { id: 'src-kevin', label: 'Kevin Abena', phone: null, is_active: true }, staff: null, metrics: mbMetrics(9_800_000, 5, 1), objectives: mbObjectives(9_800_000, 20_000_000) },
+  { source: { id: 'src-estelle', label: 'Estelle Nana', phone: null, is_active: true }, staff: null, metrics: mbMetrics(5_700_000, 2, 1), objectives: mbObjectives(5_700_000, 15_000_000) },
+];
+const mbTotals = (m) => ({
+  clients_total: m.clients, new_clients: m.new_clients, active_clients: m.active_clients, prospects_new: m.prospects_new, prospects_won: m.prospects_won, prospects_lost: 2,
+  payments_xaf: m.payments_xaf, payments_count: m.payments_count, deposits_xaf: m.deposits_xaf, deposits_count: m.deposits_count, air_parcels: m.air_parcels, air_kg: m.air_kg, flights: 3, sea_parcels: m.sea_parcels, sea_cbm: m.sea_cbm,
+});
+const mbSum = (cards) => cards.reduce((t, c) => { const x = mbTotals(c.metrics); for (const k of Object.keys(x)) t[k] = (t[k] ?? 0) + x[k]; return t; }, {});
+const mbFunnel = { total: 14, new: 5, contacted: 4, interested: 3, to_verify: 1, won: 3, lost: 2 };
+const mbSeries = () => ({
+  success: true, grain: 'month', from: mbMonth, to: mbMonth, periods: [mbMonth],
+  sources: mbCards.map((c) => ({ source_id: c.source.id, label: c.source.label, is_active: true, staff_user_id: c.staff?.user_id ?? null, points: [{ period: mbMonth, ...mbTotals(c.metrics) }], totals: mbTotals(c.metrics), previous_totals: mbTotals(c.metrics), funnel: mbFunnel })),
+  team: { points: [{ period: mbMonth, ...mbSum(mbCards) }], totals: { ...mbSum(mbCards), new_clients: 23 }, previous_totals: mbSum(mbCards), funnel: mbFunnel },
+});
+const mbProspect = (id, first, last, company, city, phone, status, nextH, extra = {}) => ({
+  id, source_id: 'src-brice', first_name: first, last_name: last, company, phone, phone_e164: phone, city, gender: null, birth_date: null, email: null,
+  pain_points: 'Paiements lents', help_needed: 'Alipay, groupage', phones: [], interests: ['payments', 'sea'], notes: null, status, lost_reason: null,
+  next_action_at: nextH == null ? null : ago(nextH), converted_user_id: null, converted_at: null, status_changed_at: ago(30), created_at: ago(24 * 2), updated_at: ago(5), ...extra,
+});
+const mbProspects = [
+  mbProspect('pr-pk', 'Paul', 'Kamga', 'Ets Kamga & Fils', 'Douala', '+237699123456', 'interested', 1, { notes: 'Fournisseurs : Foshan, Yiwu' }),
+  mbProspect('pr-ce', 'Carine', 'Eyenga', 'Eyenga Cosmétiques', 'Yaoundé', '+237677998877', 'contacted', 26),
+  mbProspect('pr-am', 'Alain', 'Mbida', 'Quincaillerie', 'Bafoussam', '+237655443322', 'interested', -72),
+  mbProspect('pr-ys', 'Yasmine', 'Sow', 'Mode & Tissus', 'Douala', '+237690778899', 'to_verify', null),
+  mbProspect('pr-dt', 'Didier', 'Tagne', 'Pièces auto', 'Garoua', '+237670112244', 'contacted', -48),
+  mbProspect('pr-ga', 'Gaston', 'Ateba', 'Ateba Import', 'Kribi', '+237671112233', 'won', null),
+  mbProspect('pr-ro', 'Rodrigue', 'Owona', null, 'Ebolowa', '+237672223344', 'lost', null, { lost_reason: 'A déjà un prestataire' }),
+];
+const mbClaim = (i, prospect, client) => ({
+  claim_id: `cl-${i}`, prospect, source_id: 'src-brice', source_label: 'Brice Onana', source_active: true, matched_phone: prospect.phone_e164, created_at: ago(20 + i), previously_rejected_at: null,
+  client: { user_id: client.id, name: client.name, company: null, customer_code: client.code, phone_e164: prospect.phone_e164, email: null, city: 'Douala', created_at: ago(24 * 300), source_id: null, source_label: null, source_kind: null, deposits_count: client.dep, payments_count: client.pay, last_activity_at: ago(48) },
+});
+const mbClaims = [
+  mbClaim(1, mbProspect('pr-c1', 'Paul', 'Kamga', 'Ets Kamga & Fils', 'Douala', '+237699123456', 'to_verify', null), { id: 'u3', name: 'Samuel Nkoulou', code: 'BZ-3307', dep: 12, pay: 31 }),
+  mbClaim(2, mbProspect('pr-c2', 'Yasmine', 'Sow', 'Mode & Tissus', 'Douala', '+237690778899', 'to_verify', null), { id: 'u1', name: 'Jean-Paul Mbarga', code: 'BZ-2290', dep: 4, pay: 9 }),
+  mbClaim(3, mbProspect('pr-c3', 'Aminatou', 'Bello', null, 'Garoua', '+237655445566', 'to_verify', null), { id: 'u2', name: 'Aminatou Bello', code: 'BZ-6015', dep: 0, pay: 0 }),
+  mbClaim(4, mbProspect('pr-c4', 'Ibrahim', 'Touré', 'IT Distribution', 'Douala', '+237671550864', 'to_verify', null), { id: 'u6', name: 'Ibrahim Touré', code: 'BZ-5102', dep: 2, pay: 1 }),
+];
+const mbClientRow = (user_id, name, code, pay) => ({ user_id, name, company: null, customer_code: code, phone: '+237690556677', created_at: ago(24 * 120), source_set_at: null, payments_xaf: pay, payments_count: Math.round(pay / 900000), air_parcels: 3, air_kg: 41, sea_parcels: 2, sea_cbm: 1.2 });
+const mbCommercialClients = [
+  mbClientRow('u3', 'Samuel Nkoulou', 'BZ-3307', 6_100_000), mbClientRow('u5', 'Fatou Ndiaye', 'BZ-4821', 4_800_000),
+  mbClientRow('u1', 'Jean-Paul Mbarga', 'BZ-2290', 3_900_000), mbClientRow('u4', 'Rosine Tchoua', 'BZ-4477', 0),
+];
+const mbParcel = (id, seq, kg, cbm, extra = {}) => ({ id, seq, parcel_no: `P-${id}`, kind: 'carton', weight_kg: kg, length_cm: 50, width_cm: 40, height_cm: 40, cbm, description: 'Chaussures', courier_waybill: null, photo_path: null, status: 'stored', shipment_id: null, container_number: null, air_shipment_id: null, ...extra });
+const mbDeposit = (id, no, h, parcels) => ({
+  id, deposit_no: no, client: { user_id: 'u5', customer_code: 'BZ-4821', first_name: 'Fatou', last_name: 'Ndiaye', phone: '+237690556677', email: null, company_name: null, city: 'Douala', country: 'Cameroun' },
+  location: 'warehouse', brought_by: 'supplier', representative_name: null, representative_phone: null, status: 'closed', received_by: 'm-lw', received_by_name: 'Li Wei',
+  opened_at: ago(h), closed_at: ago(h - 1), parcel_count: parcels.length, total_weight_kg: parcels.reduce((s, p) => s + p.weight_kg, 0), total_cbm: parcels.reduce((s, p) => s + p.cbm, 0), notes: null, parcels,
+});
+const mbDeposits = [
+  mbDeposit('rd1', 'RC-000412', 72, [mbParcel('a1', 1, 8, 0.06), mbParcel('a2', 2, 8, 0.06), mbParcel('a3', 3, 8, 0.06)]),
+  mbDeposit('rd2', 'RC-000398', 240, [mbParcel('b1', 1, 6, 0.04, { air_shipment_id: 'air1', awb_number: '176-1234 5675', status: 'loaded' })]),
+  mbDeposit('rd3', 'RC-000371', 460, [mbParcel('c1', 1, 7, 0.07), mbParcel('c2', 2, 7, 0.07), mbParcel('c3', 3, 7, 0.06), mbParcel('c4', 4, 7, 0.07), mbParcel('c5', 5, 7, 0.07, { shipment_id: '2', container_number: 'MIEU3611115', status: 'loaded' }), mbParcel('c6', 6, 7, 0.06), mbParcel('c7', 7, 7, 0.06), mbParcel('c8', 8, 7, 0.06), mbParcel('c9', 9, 6, 0.05)]),
+];
+function respondModuleB(url) {
+  if (url.includes('/rpc/team_members')) return { success: true, rows: mbTeam };
+  if (url.includes('/rpc/team_sites')) return { success: true, sites: mbSites };
+  if (url.includes('/rpc/sales_overview')) return { success: true, rows: mbCards };
+  if (url.includes('/rpc/sales_series')) return mbSeries();
+  if (url.includes('/rpc/commercial_dashboard')) return { success: true, month: mbMonth, ...mbCards[0] };
+  if (url.includes('/rpc/commercial_clients')) return { success: true, rows: mbCommercialClients };
+  if (url.includes('/rpc/prospect_claims_pending')) return { success: true, rows: mbClaims };
+  if (url.includes('/rpc/prospect_phone_check')) return { success: true, status: 'free' };
+  if (url.includes('/rpc/reception_client_deposits')) return { success: true, deposits: mbDeposits };
+  if (url.includes('/rest/v1/prospects')) {
+    const m = url.match(/[?&]id=eq\.([^&]+)/);
+    return m ? mbProspects.filter((p) => p.id === decodeURIComponent(m[1])) : mbProspects;
+  }
+  if (url.includes('/rest/v1/client_phones')) return [
+    { id: 'cp1', phone_e164: '+237690556677', country_iso: 'CM', label: null, is_primary: true },
+    { id: 'cp2', phone_e164: '+237677210984', country_iso: 'CM', label: 'Boutique Akwa', is_primary: false },
+    { id: 'cp3', phone_e164: '+8615622107731', country_iso: 'CN', label: 'Chine · son agent', is_primary: false },
+  ];
+  if (url.includes('/rest/v1/customs_brokers')) return [{ company: 'Transit Ngando SARL', license_no: 'CAD 0417 / MINFI', representative_no: null, active: true }];
+  if (url.includes('/rpc/admin_client_prospect_eligibility')) return { success: true, eligible: true, blockers: [], warnings: [], suggested_source_id: 'src-jean', reopen_prospect_id: null };
+  // Écrans de succès (création d'un client, d'un accès) : la RPC répond comme la vraie.
+  if (url.includes('/rpc/admin_create_client')) return { success: true, clientId: 'u5', walletId: 'w5', authEmail: 'fatou@ndiaye-fils.cm', tempPassword: 'K7MP-4ZRQ' };
+  if (url.includes('/rpc/team_create_member')) return { success: true, userId: 'm-ln', email: 'lina@bonzinilabs.com', tempPassword: 'K7m-Q2x-91', sourceId: null };
+  if (url.includes('/rpc/team_set_member_profile') || url.includes('/rpc/set_client_source') || url.includes('/rpc/admin_set_client_identity') || url.includes('/rpc/admin_set_client_phones')) return { success: true };
   return undefined;
 }

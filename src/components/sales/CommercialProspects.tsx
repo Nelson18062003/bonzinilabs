@@ -1,45 +1,43 @@
 // ============================================================
-// ESPACE COMMERCIAL — « Prospects ». Ses prospects seulement (la RLS de
-// `prospects` le garantit), filtrés par statut, avec « À relancer » en
-// tête : les ouverts dont la date de relance est arrivée. Une recherche
-// (nom, entreprise, ville, email, l'un QUELCONQUE de ses numéros) ; une
-// ligne ouvre la fiche. `?filtre=relancer` ouvre directement les relances
+// ESPACE COMMERCIAL — « Prospects » (refonte v2, maquette 03/16). Ses
+// prospects seulement (la RLS de `prospects` le garantit), filtrés par
+// statut : Ouverts · Relances · Clients · Perdus, puis (en faisant glisser
+// la rangée) À vérifier, À contacter, Contacté, Intéressé, Tous. Une
+// recherche (nom, entreprise, ville, email, l'un QUELCONQUE de ses numéros) ;
+// une ligne ouvre la fiche. `?filtre=relancer` ouvre directement les relances
 // (lien de l'accueil). Un prospect en cours de saisie (brouillon gardé dans
-// le téléphone, sous SON compte) se reprend d'ici. Une fiche OUVERTE à
-// laquelle il manque quelque chose (nom, sexe, ville, « ses plus gros
-// problèmes ») porte « À compléter ».
-// « À vérifier » (07/10) : une fiche dont un numéro est déjà celui d'un
-// client Bonzini, en attente de la direction. Ni ouverte ni close : sa puce
-// n'apparaît que s'il y en a, juste après « À relancer » ; dans « Tous »,
-// ces fiches viennent après les ouvertes.
-// Lignes à la RECORDS TABLE, filtres à la FILTER TABLE (beautifului.dev).
+// le téléphone, sous SON compte) se reprend en tête de liste. Une fiche
+// OUVERTE à laquelle il manque quelque chose porte « À compléter ».
+// « À vérifier » (07/10) : un numéro déjà celui d'un client Bonzini, en
+// attente de la direction ; sa puce n'apparaît que s'il y en a.
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlarmClock, PenLine, Plus, UserSearch } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { PenLine, Plus } from 'lucide-react';
 import { normalizeText } from '@/lib/clientSearch';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCommercialDashboard, useProspects, type Prospect } from '@/hooks/useSales';
 import { currentMonth, type ProspectStatus } from '@/lib/sales';
-import { ListSkeleton, LoadError, PhoneNumber, SALES_CARD, ScreenHeader, UnlinkedNotice } from './SalesBits';
-import { SearchField, StatusTag } from './SalesUi';
-import { btn } from './uiClasses';
-import { isDraftEmpty, loadDraft, missingOf } from './prospectDraft';
-import { followUpLabel, initialsOf, isDue, isOpenProspect, isUnlinkedError, plural, prospectName } from './salesHelpers';
+import { Chip, EmptyLine, IconCircle, Initials, ItemList, ItemRow, RoundButton, SearchBox, TabTop } from '@/mobile/designKit';
+import { ChipRow } from '@/mobile/screens/clients/parts';
+import { prospectTag } from '@/mobile/screens/team/prospectBits';
+import { UnlinkedNotice } from './SalesBits';
+import { isDraftEmpty, loadDraft, missingOf, stepIndex, STEPS } from './prospectDraft';
+import { isDue, isOpenProspect, isUnlinkedError, prospectName } from './salesHelpers';
 
 type Filter = 'open' | 'due' | ProspectStatus | 'all';
 
 /** Les filtres, dans l'ordre des puces ; `param` est la valeur de `?filtre=`. */
 const FILTERS: { value: Filter; label: string; param: string | null }[] = [
   { value: 'open', label: 'Ouverts', param: null },
-  { value: 'due', label: 'À relancer', param: 'relancer' },
+  { value: 'due', label: 'Relances', param: 'relancer' },
+  { value: 'won', label: 'Clients', param: 'clients' },
+  { value: 'lost', label: 'Perdus', param: 'perdus' },
   { value: 'to_verify', label: 'À vérifier', param: 'a-verifier' },
   { value: 'new', label: 'À contacter', param: 'a-contacter' },
   { value: 'contacted', label: 'Contacté', param: 'contacte' },
   { value: 'interested', label: 'Intéressé', param: 'interesse' },
-  { value: 'won', label: 'Devenus clients', param: 'clients' },
-  { value: 'lost', label: 'Perdus', param: 'perdus' },
   { value: 'all', label: 'Tous', param: 'tous' },
 ];
 
@@ -125,9 +123,7 @@ export function CommercialProspects() {
     now,
   );
 
-  const label = FILTERS.find((f) => f.value === filter)?.label ?? '';
-
-  // Le filtre choisi reste en vue dans la rangée qui défile (« Devenus clients » ouvert par un lien).
+  // Le filtre choisi reste en vue dans la rangée qui défile (« Perdus » ouvert par un lien).
   const filtersRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     filtersRef.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
@@ -138,165 +134,64 @@ export function CommercialProspects() {
   })();
 
   return (
-    <div>
-      <ScreenHeader
-        title="Mes prospects"
-        subtitle={prospects.data ? plural(counts.open, 'prospect ouvert', 'prospects ouverts') : '\u00a0'}
-        action={
-          !unlinked && (
-            <button type="button" onClick={() => navigate('/v/prospects/new')} className={btn('ink', 'md', 'gap-1.5 rounded-full pl-3.5')}>
-              <Plus className="h-4 w-4" /> Nouveau
-            </button>
-          )
-        }
-      />
-
-      <div className="space-y-4 px-4 pt-4 sm:px-6">
-        {unlinked ? (
+    <div className="flex min-h-full flex-col bg-white pb-6 dark:bg-[#1E1E1E]">
+      <TabTop title="Prospects" right={!unlinked ? <RoundButton icon={Plus} ariaLabel="Nouveau prospect" onClick={() => navigate('/v/prospects/new')} /> : undefined} />
+      {unlinked ? (
+        <div className="px-5 pt-4">
           <UnlinkedNotice message={(fiche.error as Error).message} onRetry={() => void fiche.refetch()} />
-        ) : (
-          <>
-            {draftName && (
-              <button
-                type="button"
-                onClick={() => navigate('/v/prospects/new')}
-                data-tone="accent"
-                className="s-note s-enter flex w-full items-center gap-3 rounded-[16px] px-4 py-3 text-left"
-              >
-                <PenLine className="h-5 w-5 shrink-0 s-accent" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-semibold s-ink">Saisie en cours : {draftName}</span>
-                  <span className="block text-[13px] s-ink-2">Pas encore enregistré. Touchez pour reprendre.</span>
-                </span>
-                <span className="text-[14px] font-semibold s-accent">Reprendre</span>
-              </button>
-            )}
-
-            <SearchField value={q} onChange={setQ} placeholder="Nom, entreprise, ville, numéro" ariaLabel="Rechercher un prospect" />
-
-            {/* Une rangée qui défile, fondue aux deux bords : une puce coupée se lit « il y en a d'autres ». */}
-            <div
-              ref={filtersRef}
-              className="s-fade-x -mx-4 flex gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-6 sm:px-6 [&::-webkit-scrollbar]:hidden"
-              role="group"
-              aria-label="Filtrer par statut"
-            >
+        </div>
+      ) : (
+        <>
+          <div className="px-5 pt-2.5">
+            <SearchBox value={q} onChange={setQ} placeholder="Nom, entreprise ou téléphone" />
+          </div>
+          <div ref={filtersRef}>
+            <ChipRow className="mt-3.5">
               {FILTERS.map((f) => {
-                const active = f.value === filter;
                 const n = counts[f.value] ?? 0;
-                if (ONLY_IF_ANY.includes(f.value) && !active && (!prospects.data || n === 0)) return null;
-                return (
-                  <button
-                    key={f.value}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setFilter(f.value)}
-                    className="s-filter inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[14px] font-medium"
-                  >
-                    {(f.value === 'due' || f.value === 'to_verify') && n > 0 && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--s-orange))]" aria-hidden />
-                    )}
-                    {f.label}
-                    {prospects.data && n > 0 && <span className="s-count rounded-[5px] px-1 text-[12px] tabular-nums">{n}</span>}
-                  </button>
-                );
+                if (ONLY_IF_ANY.includes(f.value) && f.value !== filter && (!prospects.data || n === 0)) return null;
+                return <Chip key={f.value} label={f.label} count={f.value === 'due' || f.value === 'to_verify' ? n : null} active={f.value === filter} onClick={() => setFilter(f.value)} />;
               })}
-            </div>
+            </ChipRow>
+          </div>
 
-            {filter === 'to_verify' && (
-              <p className="s-enter px-1 text-[14px] leading-snug s-ink-2">
-                Un de leurs numéros est déjà celui d’un client Bonzini&nbsp;: la direction décide. Leur statut ne change pas en attendant.
-              </p>
+          <ItemList className="mt-1">
+            {draftName && (
+              <ItemRow
+                leading={<IconCircle icon={PenLine} />}
+                title={`Brouillon · ${draftName}`}
+                subtitle={`Étape ${Math.max(1, stepIndex(draft!.step) + 1)} sur ${STEPS.length}`}
+                tag={{ tone: 'neutral', label: 'Reprendre' }}
+                onClick={() => navigate('/v/prospects/new')}
+              />
             )}
-
-            <div className={cn('overflow-hidden', SALES_CARD)}>
-              {prospects.isLoading ? (
-                <ListSkeleton rows={5} />
-              ) : prospects.isError ? (
-                <LoadError message="La liste n’a pas pu être chargée." onRetry={() => void prospects.refetch()} />
-              ) : shown.length === 0 ? (
-                <Empty filter={filter} label={label} searching={!!q.trim()} total={all.length} onNew={() => navigate('/v/prospects/new')} />
-              ) : (
-                <ul className="s-divide">
-                  {shown.map((p, i) => (
-                    <li key={p.id} className="s-enter" style={i < 12 ? { animationDelay: `${i * 28}ms` } : undefined}>
-                      <ProspectRow p={p} now={now} onClick={() => navigate(`/v/prospects/${p.id}`)} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ProspectRow({ p, now, onClick }: { p: Prospect; now: Date; onClick: () => void }) {
-  const name = prospectName(p);
-  const due = isDue(p, now);
-  const where = [p.company, p.city].filter(Boolean).join(' · ');
-  const more = (p.phones ?? []).length;
-  // Seulement sur les ouverts : c'est là que l'entretien peut encore la compléter (un client ou un perdu ne se relance plus).
-  const incomplete = isOpenProspect(p) && missingOf(p).length > 0;
-  return (
-    <button type="button" onClick={onClick} className="s-row flex w-full items-start gap-3 px-4 py-3.5 text-left sm:px-5">
-      <span
-        className={cn(
-          'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[14px] font-semibold',
-          p.status === 'won' ? 's-good bg-[hsl(var(--s-green-tint))]' : 's-field-bg s-ink',
-        )}
-        aria-hidden
-      >
-        {initialsOf(name)}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-start justify-between gap-2">
-          <span className="min-w-0 truncate pt-0.5 text-[16px] font-semibold s-ink">{name}</span>
-          <StatusTag status={p.status} />
-        </span>
-        {where && <span className="block truncate text-[14px] s-ink-2">{where}</span>}
-        <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] tabular-nums">
-          <span className="inline-flex items-center gap-1.5 s-ink-2">
-            <PhoneNumber e164={p.phone_e164} />
-            {more > 0 && <span className="s-ink-3">+{more}</span>}
-          </span>
-          {incomplete && (
-            <span data-tone="warn" className="s-tag inline-flex h-[22px] items-center rounded-md px-1.5 text-[12px] font-medium">
-              À compléter
-            </span>
-          )}
-          {isOpenProspect(p) && p.next_action_at && (
-            <span className={cn('inline-flex items-center gap-1', due ? 'font-semibold s-warn' : 's-ink-2')}>
-              <AlarmClock className="h-3.5 w-3.5" aria-hidden />
-              Relance {followUpLabel(p.next_action_at, now).toLowerCase()}
-            </span>
-          )}
-        </span>
-      </span>
-    </button>
-  );
-}
-
-function Empty({ filter, label, searching, total, onNew }: { filter: Filter; label: string; searching: boolean; total: number; onNew: () => void }) {
-  const text = searching
-    ? 'Aucun prospect ne correspond à cette recherche.'
-    : total === 0
-      ? 'Pas encore de prospect. Ajoutez le premier : il apparaîtra ici avec sa date de relance.'
-      : filter === 'due'
-        ? 'Rien à relancer pour l’instant.'
-        : `Aucun prospect « ${label} ».`;
-  return (
-    <div className="s-enter flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <span className="s-inset flex h-10 w-10 items-center justify-center rounded-xl">
-        <UserSearch className="h-5 w-5 s-ink-3" aria-hidden />
-      </span>
-      <p className="max-w-xs text-[15px] s-ink-2">{text}</p>
-      {total === 0 && !searching && (
-        <button type="button" onClick={onNew} className={btn('ink', 'md', 'mt-1 gap-1.5')}>
-          <Plus className="h-4 w-4" /> Nouveau prospect
-        </button>
+            {prospects.isLoading ? (
+              [0, 1, 2, 3].map((i) => <div key={i} className="my-2 h-14 animate-pulse rounded-lg bg-[#F5F5F5] dark:bg-[#383838]" />)
+            ) : prospects.isError ? (
+              <EmptyLine action={{ label: 'Réessayer', onClick: () => void prospects.refetch() }}>La liste n’a pas pu être chargée.</EmptyLine>
+            ) : shown.length === 0 ? (
+              <EmptyLine action={all.length === 0 && !q.trim() ? { label: 'Nouveau prospect', onClick: () => navigate('/v/prospects/new') } : undefined}>
+                {q.trim() ? 'Aucun prospect ne correspond.' : all.length === 0 ? 'Pas encore de prospect.' : filter === 'due' ? 'Rien à relancer.' : 'Aucun prospect ici.'}
+              </EmptyLine>
+            ) : (
+              shown.map((p) => {
+                const due = isDue(p, now);
+                const incomplete = isOpenProspect(p) && missingOf(p).length > 0;
+                const tag = due ? { tone: 'pending' as const, label: 'À relancer' } : incomplete ? { tone: 'pending' as const, label: 'À compléter' } : prospectTag(p);
+                return (
+                  <ItemRow
+                    key={p.id}
+                    leading={<Initials name={prospectName(p)} />}
+                    title={prospectName(p)}
+                    subtitle={[p.company, p.city].filter(Boolean).join(' · ') || formatE164ForDisplay(p.phone_e164 || p.phone)}
+                    tag={tag}
+                    onClick={() => navigate(`/v/prospects/${p.id}`)}
+                  />
+                );
+              })
+            )}
+          </ItemList>
+        </>
       )}
     </div>
   );
