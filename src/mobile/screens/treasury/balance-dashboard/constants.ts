@@ -24,6 +24,27 @@ export const COLORS = {
   badgeBankText: '#60A5FA',
 } as const;
 
+/** La même image en clair (mobile : « Clair / Sombre »). Mêmes clés que COLORS. */
+export const LIGHT_COLORS: Record<keyof typeof COLORS, string> = {
+  bg: '#FFFFFF',
+  cardBg: '#FFFFFF',
+  cardBgZero: '#F5F5F5',
+  cardBorder: '#D9D9D9',
+  textWhite: '#1E1E1E',
+  textMuted: '#5A5A5A',
+  textDimmed: '#757575',
+  textVeryDim: '#9A9A9A',
+  gradientStart: '#7C3AED',
+  gradientEnd: '#3B82F6',
+  greenAccent: '#009951',
+  totalCardBg: '#F5F5F5',
+  totalCardBorder: '#D9D9D9',
+  badgeMobileBg: '#CFF7D3',
+  badgeMobileText: '#02542D',
+  badgeBankBg: '#E3ECFA',
+  badgeBankText: '#1D4ED8',
+};
+
 export const LAYOUT = {
   margin: 40,
   contentWidth: PAGE.width - 40 * 2, // 515.28
