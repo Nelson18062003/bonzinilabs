@@ -376,9 +376,9 @@ export function PaymentDetailScreen() {
               <span className={cn('block truncate text-[15px]', TEXT.muted)}>à {supplierName}</span>
             </span>
           </div>
-          {cashStepUi === 'scan' && cashStep === 'scan' ? (
+          {mayHandleCash && cashStepUi === 'scan' && cashStep === 'scan' ? (
             <AdminCashScan paymentId={payment.id} prefilledQr={scannedQr} onDone={() => setCashStepUi('sign')} onCancel={close} />
-          ) : cashStepUi === 'sign' && (cashStep === 'sign' || cashStep === 'scan') ? (
+          ) : mayHandleCash && cashStepUi === 'sign' && (cashStep === 'sign' || cashStep === 'scan') ? (
             <AdminCashSign paymentId={payment.id} beneficiaryName={supplierName} onDone={close} onCancel={close} />
           ) : (
             <EmptyLine action={{ label: 'Retour', onClick: close }}>Rien à faire pour ce paiement.</EmptyLine>

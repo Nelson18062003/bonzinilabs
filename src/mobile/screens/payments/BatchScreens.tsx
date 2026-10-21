@@ -11,6 +11,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Plus, StickyNote, UserRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,6 +36,7 @@ function useClientNames() {
 
 export function BatchListScreen() {
   const navigate = useNavigate();
+  const canPay = useAdminAuth().hasPermission('canProcessPayments');
   const { data: batches, isLoading, isError, refetch } = usePaymentBatches();
   const ids = useMemo(() => (batches ?? []).map((b) => b.id), [batches]);
   const { data: progress } = useBatchProgress(ids);
@@ -47,7 +49,7 @@ export function BatchListScreen() {
 
   return (
     <div className="flex min-h-full flex-col pb-6">
-      <ScreenTop title="Lots de paiements" backTo="/m/payments" right={<RoundButton icon={Plus} ariaLabel="Nouveau lot" className="border-0" onClick={() => navigate('/m/payments/batch/new')} />} />
+      <ScreenTop title="Lots de paiements" backTo="/m/payments" right={canPay ? <RoundButton icon={Plus} ariaLabel="Nouveau lot" className="border-0" onClick={() => navigate('/m/payments/batch/new')} /> : undefined} />
       <div className="scrollbar-hide flex gap-2 overflow-x-auto px-5 pb-1 pt-3.5">
         <Chip label="En cours" count={openCount} active={filter === 'open'} onClick={() => setFilter('open')} />
         <Chip label="Payés" active={filter === 'paid'} onClick={() => setFilter('paid')} />
@@ -58,7 +60,7 @@ export function BatchListScreen() {
       ) : isError ? (
         <EmptyLine action={{ label: 'Réessayer', onClick: () => void refetch() }}>Les lots n'ont pas pu être chargés.</EmptyLine>
       ) : rows.length === 0 ? (
-        <EmptyLine action={{ label: 'Nouveau lot', onClick: () => navigate('/m/payments/batch/new') }}>Aucun lot.</EmptyLine>
+        <EmptyLine action={canPay ? { label: 'Nouveau lot', onClick: () => navigate('/m/payments/batch/new') } : undefined}>Aucun lot.</EmptyLine>
       ) : (
         <ItemList className="pt-1">
           {rows.map((b) => {
@@ -85,6 +87,7 @@ export function BatchListScreen() {
 }
 
 export function BatchDetailScreen() {
+  const canPay = useAdminAuth().hasPermission('canProcessPayments');
   const { batchId } = useParams<{ batchId: string }>();
   const navigate = useNavigate();
   const { data, isLoading } = usePaymentBatch(batchId);
@@ -156,7 +159,7 @@ export function BatchDetailScreen() {
         items={[
           { label: 'Fiche du client', icon: UserRound, onClick: () => navigate(`/m/clients/${batch.user_id}`) },
           { label: showNote ? 'Masquer la note' : 'Note', icon: StickyNote, onClick: () => setShowNote(!showNote), hidden: !batch.note },
-          { label: 'Nouveau lot', icon: Plus, onClick: () => navigate('/m/payments/batch/new') },
+          { label: 'Nouveau lot', icon: Plus, onClick: () => navigate('/m/payments/batch/new'), hidden: !canPay },
         ]}
       />
     </div>

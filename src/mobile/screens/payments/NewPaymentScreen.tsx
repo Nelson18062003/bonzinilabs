@@ -17,7 +17,8 @@
  * useAdminCreateBeneficiary — repris tels quels de MobileNewPayment.
  */
 import { useCallback, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { CalendarClock, Clock3, Percent, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
@@ -32,7 +33,7 @@ import { nextSupplierName } from '@/lib/beneficiaries/defaultName';
 import { draftErrors, draftPayload, emptyDraft, type BeneficiaryDraft } from '@/lib/beneficiaries/contact';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import type { PaymentMethodKey } from '@/types/rates';
-import { cn } from '@/lib/utils';
+import { cn, validateUploadFile } from '@/lib/utils';
 import {
   AmountDisplay, BigButton, BottomSheet, ConfirmSheet, Dock, EmptyLine, IconCircle, Initials, ItemList, ItemRow, Keypad, MethodCircle,
   MoreButton, PAYMENT_METHOD, ScreenTop, SuccessView, TEXT, WhoCard, applyKey, formatPad, padValue, useSheet, type PadKey,
@@ -57,7 +58,14 @@ const MODES: { key: BeneficiaryMode; label: string; rateKey: PaymentMethodKey }[
 const rateKeyOf = (m: BeneficiaryMode): PaymentMethodKey => MODES.find((x) => x.key === m)?.rateKey ?? 'alipay';
 const nameOf = (c: { first_name?: string | null; last_name?: string | null } | null) => (c ? `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() : '') || 'Client';
 
+/** Créer un paiement : canProcessPayments (le serveur le vérifie aussi). */
 export function NewPaymentScreen() {
+  const { hasPermission } = useAdminAuth();
+  if (!hasPermission('canProcessPayments')) return <Navigate to="/m/payments" replace />;
+  return <NewPaymentScreenInner />;
+}
+
+function NewPaymentScreenInner() {
   const navigate = useNavigate();
   const { data: rateData, isLoading: rateLoading, isFetching: rateFetching, refetch: refetchRate } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
@@ -139,6 +147,7 @@ export function NewPaymentScreen() {
   const setQrFromFiles = (files: File[]) => {
     const f = files[0];
     if (!f) return;
+    try { validateUploadFile(f); } catch (e) { toast.error(e instanceof Error ? e.message : 'Fichier refusé'); return; }
     setQrFile(f);
     setQrPreview((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(f); });
   };

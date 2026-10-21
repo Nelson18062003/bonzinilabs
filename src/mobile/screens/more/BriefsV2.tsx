@@ -109,7 +109,7 @@ export function BriefsV2() {
       <BottomSheet open={newsSheet.open} onClose={newsSheet.hide} title="Actualités">
         <div>
           {news.slice(0, 12).map((h, i) => (
-            <a key={i} href={h.link} target="_blank" rel="noreferrer" className="block border-b border-[#D9D9D9] py-3 last:border-b-0 dark:border-[#444444]">
+            <a key={i} href={/^https?:\/\//i.test(h.link ?? '') ? h.link : undefined} target="_blank" rel="noreferrer" className="block border-b border-[#D9D9D9] py-3 last:border-b-0 dark:border-[#444444]">
               <span className={cn('block text-[15px]', TEXT.muted)}>{h.source.replace('Google News (', '').replace(')', '')}</span>
               <span className={cn('block text-[16px] font-semibold leading-snug', TEXT.strong)}>{h.title}</span>
             </a>

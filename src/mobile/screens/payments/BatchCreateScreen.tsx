@@ -10,8 +10,9 @@
  * comme BulkPaymentCreate — qui reste l'écran de l'ordinateur. Taux : pays du
  * client et tranche du montant (teamPaymentFromCny), ou taux perso par ligne.
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Copy, Plus, Trash2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { useActiveDailyRate, useRateAdjustments } from '@/hooks/useDailyRates';
@@ -26,7 +27,7 @@ import { toStoredPath } from '@/lib/signedUrls';
 import { draftErrors, draftPayload, emptyDraft, type BeneficiaryDraft } from '@/lib/beneficiaries/contact';
 import type { BeneficiaryMode } from '@/lib/beneficiaries/spec';
 import type { PaymentMethodKey } from '@/types/rates';
-import { cn } from '@/lib/utils';
+import { cn, validateUploadFile } from '@/lib/utils';
 import {
   BigButton, BottomSheet, ConfirmSheet, Dock, IconCircle, Initials, ItemList, ItemRow, MethodCircle, MoreButton, PAYMENT_METHOD,
   ScreenTop, TextInput, TEXT, SURFACE, WhoCard, useSheet,
@@ -61,7 +62,20 @@ interface Line {
   keep: boolean;
 }
 
+/** Créer un paiement : canProcessPayments (le serveur le vérifie aussi). */
+/** Le fichier QR passe les mêmes contrôles que partout (type, 10 Mo). */
+function acceptFile(f: File): boolean {
+  try { validateUploadFile(f); return true; } catch (e) { toast.error(e instanceof Error ? e.message : 'Fichier refusé'); return false; }
+}
+
 export function BatchCreateScreen() {
+  const { hasPermission } = useAdminAuth();
+  if (!hasPermission('canProcessPayments')) return <Navigate to="/m/payments" replace />;
+  return <BatchCreateScreenInner />;
+}
+
+function BatchCreateScreenInner() {
+  const submitted = useRef(false);
   const navigate = useNavigate();
   const { data: rateData, isLoading: rateLoading, isFetching: rateFetching, refetch: refetchRate } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
@@ -152,7 +166,8 @@ export function BatchCreateScreen() {
   };
 
   const create = () => {
-    if (!client || lines.length === 0) return;
+    // Un seul lot par appui : la feuille se ferme et l'envoi est verrouillé tant que le lot et les carnets s'enregistrent.
+    if (!client || lines.length === 0 || submitted.current) return;
     if (totalXaf > available) { toast.error('Solde insuffisant pour ce lot.'); return; }
     if (lines.some((l) => !(l.rate > 0) || !Number.isSafeInteger(l.xaf))) { toast.error('Un montant est invalide.'); return; }
     const input: CreatePaymentBatchInput = {
@@ -181,7 +196,10 @@ export function BatchCreateScreen() {
         };
       }),
     };
+    submitted.current = true;
+    setVerify(false);
     createBatch.mutate(input, {
+      onError: () => { submitted.current = false; },
       onSuccess: async (res) => {
         for (const l of lines.filter((x) => x.keep && !x.picked && !(x.mode === 'cash' && x.draft.isClient))) {
           const p = draftPayload(l.mode, l.draft);
@@ -325,7 +343,7 @@ export function BatchCreateScreen() {
                 qr={editing.mode === 'alipay' || editing.mode === 'wechat' ? {
                   preview: qrPreview,
                   fileName: editing.qrFile?.name,
-                  onFiles: (f) => { patch({ qrFile: f[0] }); setQrPreview((old) => { if (old) URL.revokeObjectURL(old); return f[0] ? URL.createObjectURL(f[0]) : null; }); },
+                  onFiles: (f) => { if (f[0] && !acceptFile(f[0])) return; patch({ qrFile: f[0] }); setQrPreview((old) => { if (old) URL.revokeObjectURL(old); return f[0] ? URL.createObjectURL(f[0]) : null; }); },
                   onRemove: () => { patch({ qrFile: null }); setQrPreview(null); },
                 } : undefined}
               />
@@ -368,8 +386,8 @@ export function BatchCreateScreen() {
         ]}
         confirmLabel="Créer le lot"
         onConfirm={create}
-        loading={createBatch.isPending}
-        disabled={lines.length === 0 || over}
+        loading={createBatch.isPending || createBeneficiary.isPending}
+        disabled={lines.length === 0 || over || submitted.current}
       >
         <FieldLabel className="pt-0">Note</FieldLabel>
         <TextInput className="h-14 text-[17px]" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Commande d'octobre, facture…" />

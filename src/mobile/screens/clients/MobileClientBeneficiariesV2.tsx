@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Archive, ArrowUpRight, Pencil } from 'lucide-react';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { useClient } from '@/hooks/useClientManagement';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   useAdminArchiveBeneficiary, useAdminClientBeneficiaries, useAdminCreateBeneficiary, useAdminUpdateBeneficiary, type Beneficiary,
 } from '@/hooks/useBeneficiaries';
@@ -77,6 +78,7 @@ type View = { kind: 'list' } | { kind: 'add' } | { kind: 'edit'; b: Beneficiary 
 
 export function MobileClientBeneficiariesV2() {
   const { clientId = '' } = useParams();
+  const canPay = useAdminAuth().hasPermission('canProcessPayments');
   const navigate = useNavigate();
   const { data: client } = useClient(clientId);
   const { data: list, isLoading } = useAdminClientBeneficiaries(clientId || undefined);
@@ -188,7 +190,7 @@ export function MobileClientBeneficiariesV2() {
         )}
         <ActionSheetRows
           actions={open ? [
-            { label: `Payer ${open.alias || open.name}`, icon: ArrowUpRight, onClick: () => navigate(`/m/payments/new?clientId=${clientId}&beneficiaryId=${open.id}`) },
+            ...(canPay ? [{ label: `Payer ${open.alias || open.name}`, icon: ArrowUpRight, onClick: () => navigate(`/m/payments/new?clientId=${clientId}&beneficiaryId=${open.id}`) }] : []),
             { label: 'Modifier', icon: Pencil, onClick: () => setView({ kind: 'edit', b: open }) },
             { label: 'Archiver', hint: 'plus proposé', icon: Archive, onClick: () => setConfirmArchive(open) },
           ] : []}

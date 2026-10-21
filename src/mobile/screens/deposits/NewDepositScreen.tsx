@@ -260,7 +260,7 @@ export function NewDepositScreen() {
           { label: "Date de l'opération", icon: CalendarClock, hint: customDate ? 'antidatée' : undefined, onClick: () => setDateSheet(true) },
           { label: 'Note', icon: StickyNote, hint: note ? '1' : undefined, onClick: () => setNoteSheet(true) },
           { label: 'Coordonnées à donner', icon: ClipboardCopy, onClick: () => setCoordSheet(true), disabled: coords.length === 0 },
-          { label: 'Enregistrer sans créditer', icon: Save, onClick: () => void submit(false), hidden: !canCredit, disabled: !ready },
+          { label: 'Enregistrer sans créditer', icon: Save, onClick: () => void submit(false), hidden: !canCredit, disabled: !ready || createDeposit.isPending },
         ]}
       />
 

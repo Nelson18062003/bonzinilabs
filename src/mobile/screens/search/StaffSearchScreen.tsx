@@ -57,8 +57,8 @@ const PAYMENT_TAG: Record<string, { tone: Tone; label: string }> = {
 const nbsp = (s: string) => s.replace(/\u202F/g, '\u00A0');
 const xafShort = (n: number) => nbsp(Math.round(n).toLocaleString('fr-FR'));
 
-/** Le terme, sans ce qui casserait le filtre PostgREST (virgules, parenthèses, jokers). */
-export const cleanTerm = (raw: string) => (raw ?? '').replace(/[,()*%\\]/g, ' ').replace(/\s+/g, ' ').trim();
+/** Le terme, sans ce qui casserait le filtre PostgREST (virgules, parenthèses, guillemets, jokers). */
+export const cleanTerm = (raw: string) => (raw ?? '').replace(/[,()*%\\"]/g, ' ').replace(/\s+/g, ' ').trim();
 
 function useStaffSearch(raw: string, can: { clients: boolean; deposits: boolean; payments: boolean }) {
   const term = cleanTerm(raw);
