@@ -246,6 +246,11 @@ export function useCreatePayment() {
         p_cash_beneficiary_first_name: data.cash_beneficiary_first_name || null,
         p_cash_beneficiary_last_name: data.cash_beneficiary_last_name || null,
         p_cash_beneficiary_phone: data.cash_beneficiary_phone || null,
+        // Passés à la RPC elle-même : un paiement cash naît en `cash_pending`,
+        // statut où la mise à jour directe ci-dessous n'est plus permise (RLS).
+        p_beneficiary_id: data.beneficiary_id || null,
+        p_beneficiary_details: (data.beneficiary_details ?? null) as Json,
+        p_rate_is_custom: data.rate_is_custom ?? false,
       }));
 
       if (error) throw error;

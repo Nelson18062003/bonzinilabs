@@ -47,6 +47,7 @@ import { PasteDropZone } from '@/components/upload/PasteDropZone';
 import { ACCEPT_IMAGE } from '@/lib/clipboardFiles';
 import type { PaymentMethodKey } from '@/types/rates';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { RateUnavailableNotice } from '@/mobile/components/payments/RateUnavailableNotice';
 import {
   ChevronLeft, Plus, Search, Trash2, Pencil, Copy, Wallet, AlertTriangle, Users,
   QrCode, Check, Phone, Mail, Hash, Maximize2, RotateCcw, Landmark, Banknote, BookUser,
@@ -61,7 +62,6 @@ const VIOLET = '#8B5CF6';
 const AMBER = '#E8932A';
 const GREEN = '#2E7D52';
 const RED = '#C0504D';
-const FALLBACK_RATE = 11530;
 const UI_METHODS: PaymentMethodKey[] = ['alipay', 'wechat', 'virement', 'cash'];
 
 const dbMethod = (m: PaymentMethodKey): PaymentMethod => (m === 'virement' ? 'bank_transfer' : m);
@@ -127,7 +127,7 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   const navigate = useNavigate();
   const { t } = useTranslation('payments');
   const { data: clients = [] } = useAllClients();
-  const { data: rateData } = useActiveDailyRate();
+  const { data: rateData, isLoading: rateLoading, isFetching: rateFetching, refetch: refetchRate } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
   const createBatch = useCreatePaymentBatch();
   const createBeneficiary = useAdminCreateBeneficiary();
@@ -197,16 +197,20 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   // Pays du client ET tranche du montant, comme un paiement seul (avant le
   // 25/09/2026, les paiements groupés prenaient le taux du Cameroun à 1 M).
   const eRaw = parseInt(eRawAmount) || 0;
-  const eRef = rateData ? getBaseRate(rateData, eMethod) : FALLBACK_RATE;
+  // Pas de taux de secours : sans taux publié pour la méthode, la ligne ne
+  // peut pas être ajoutée (RateUnavailableNotice) — jamais un « Taux du jour »
+  // inventé (11 530).
+  const eRef = rateData ? (getBaseRate(rateData, eMethod) || 0) : 0;
+  const ratePublished = eRef > 0;
   const eClientKey = client ? clientCountryToRateKey(client.country) : null;
-  const eBaseRate = !rateData
-    ? FALLBACK_RATE
+  const eBaseRate = !ratePublished
+    ? 0
     : eCurrency === 'xaf'
       ? teamPaymentRate(eRef, eClientKey, adjustments, eRaw)
       : teamPaymentFromCny(eRef, eClientKey, adjustments, eRaw).rate;
-  const eRate = eCustomRate ? parseInt(eCustomRateStr) || FALLBACK_RATE : eBaseRate;
-  const eXaf = eCurrency === 'xaf' ? eRaw : Math.round((eRaw * 1_000_000) / eRate);
-  const eCny = eCurrency === 'xaf' ? Math.round((eRaw * eRate) / 1_000_000) : eRaw;
+  const eRate = eCustomRate ? parseInt(eCustomRateStr) || eBaseRate : eBaseRate;
+  const eXaf = eRate > 0 ? (eCurrency === 'xaf' ? eRaw : Math.round((eRaw * 1_000_000) / eRate)) : 0;
+  const eCny = eRate > 0 ? (eCurrency === 'xaf' ? Math.round((eRaw * eRate) / 1_000_000) : eRaw) : 0;
 
   const isCash = eMethod === 'cash';
   const isBank = eMethod === 'virement';
@@ -233,10 +237,11 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
   const benefErrors = validateBeneficiaryInput(editorBenef);
   const benefComplete = isBeneficiaryComplete(editorBenef);
   // Même garde d'entier que le paiement simple ; pas de plafond.
-  const amountValid = isValidXafAmount(eXaf, MIN_PAYMENT_XAF) && eCny >= 1;
+  const amountValid = ratePublished && eRate > 0 && isValidXafAmount(eXaf, MIN_PAYMENT_XAF) && eCny >= 1;
   const editorValid = amountValid && benefComplete;
 
   function errMsg(): string | null {
+    if (!ratePublished) return t('bulk.errRate', { defaultValue: 'Taux du jour indisponible : réessayez' });
     if (!amountValid) return t('bulk.errAmount', { defaultValue: 'Renseignez un montant valide' });
     const k = Object.values(benefErrors)[0];
     if (!k) return null;
@@ -367,6 +372,8 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
 
   async function confirmCreate() {
     if (!client || lines.length === 0 || overBudget) return;
+    // Chaque ligne porte un taux réel (publié ou saisi) : jamais 0, jamais une constante.
+    if (lines.some((l) => !(l.rate > 0))) return;
     const input: CreatePaymentBatchInput = {
       user_id: client.user_id,
       note: note.trim() || undefined,
@@ -588,7 +595,9 @@ export function BulkPaymentCreate({ desktop = false }: { desktop?: boolean } = {
             </div>
             {/* rate */}
             <div className="mt-3 border-t border-black/[0.06] pt-3 dark:border-white/[0.07]">
-              {!eCustomRate ? (
+              {!ratePublished ? (
+                <RateUnavailableNotice loading={rateLoading} retrying={rateFetching} onRetry={() => { void refetchRate(); }} />
+              ) : !eCustomRate ? (
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-1.5">

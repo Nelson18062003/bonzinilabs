@@ -27,6 +27,8 @@ export interface RolePermission {
   canProcessDeposits: boolean;
   canViewPayments: boolean;
   canProcessPayments: boolean;
+  /** Remettre le cash au bureau : scanner le QR du client, faire signer le bénéficiaire. Seule permission « paiement » de l'agent cash. */
+  canHandleCash: boolean;
   canManageRates: boolean;
   canViewLogs: boolean;
   canManageUsers: boolean;
@@ -68,6 +70,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: true,
     canViewPayments: true,
     canProcessPayments: true,
+    canHandleCash: true,
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: true,
@@ -96,6 +99,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: true,
     canViewPayments: true,
     canProcessPayments: true,
+    canHandleCash: true,
     canManageRates: true,
     canViewLogs: true,
     canManageUsers: false,
@@ -124,6 +128,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: true,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: true,
     canManageUsers: false,
@@ -152,6 +157,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: true,
     canViewPayments: true,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -179,7 +185,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canViewDeposits: false,
     canProcessDeposits: false,
     canViewPayments: true,
-    canProcessPayments: true,
+    canProcessPayments: false,
+    canHandleCash: true,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -208,6 +215,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: false,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -242,6 +250,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: false,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -275,6 +284,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: false,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -308,6 +318,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: false,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,
@@ -342,6 +353,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, RolePermission> = {
     canProcessDeposits: false,
     canViewPayments: false,
     canProcessPayments: false,
+    canHandleCash: false,
     canManageRates: false,
     canViewLogs: false,
     canManageUsers: false,

@@ -3,18 +3,22 @@
 // Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
 //   hero Card + Holder + Amount + StatusPill toné · infos en Row ·
 //   boutons d'action en PrimaryPill · ScreenLoader/ScreenError.
-// Logique 100% préservée : useAgentCashPaymentDetail, useAgentScanCashPayment,
-//   handleProceedToPayment (scan → confirm, fallback déjà scanné), statuts
-//   (isPaid/isPending/isCashScanned), CashReceiptDownloadButton, signature.
+// Chaîne cash (21/10/2026) — scan du QR du client ET signature obligatoires :
+//   · à remettre (cash_pending, ou ancien ready_for_payment / processing) :
+//     « Procéder » n'apparaît QUE si l'on arrive d'un scan (?scanned=1, posé
+//     par le scanner du site ou celui de l'app BONZINI HQ) ; sinon on
+//     demande de scanner le QR du client ;
+//   · QR scanné (cash_scanned) : « Confirmer » mène à la signature.
 // ============================================================
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPaymentDetail } from '@/hooks/useAgentCashPayments';
 import { useAgentScanCashPayment } from '@/hooks/useAgentCashActions';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
 import { formatCurrencyRMB, formatNumber, formatDate } from '@/lib/formatters';
-import { Banknote, CheckCircle2 } from 'lucide-react';
+import { Banknote, CheckCircle2, ScanLine } from 'lucide-react';
+import { cashHandoverStep } from '@/lib/paymentActions';
 import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
 import { toast } from 'sonner';
@@ -35,6 +39,8 @@ import {
 export function AgentCashPaymentDetail() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const arrivedFromScan = searchParams.get('scanned') === '1';
   const { t } = useLanguage();
   const { data: payment, isLoading, error } = useAgentCashPaymentDetail(paymentId);
   const scanMutation = useAgentScanCashPayment();
@@ -49,16 +55,18 @@ export function AgentCashPaymentDetail() {
   };
 
   const isPaid = payment?.status === 'completed';
-  const isPending = payment?.status === 'processing' || payment?.status === 'ready_for_payment';
-  const isCashScanned = payment?.status === 'cash_scanned' || payment?.status === 'cash_pending';
+  const step = payment ? cashHandoverStep(payment.status) : null;
+  const isToHandOver = step === 'scan';
+  const isCashScanned = step === 'sign';
 
   const statusTone: Tone = isPaid ? 'success' : isCashScanned ? 'info' : 'pending';
   const statusLabel = isPaid
     ? t('status_paid')
     : isCashScanned
-      ? t('status_scanned') || 'Scanné'
-      : t('status_to_pay');
+      ? t('status_scanned')
+      : t('status_to_hand_over');
 
+  // Le QR vient d'être lu : on enregistre le scan, puis la signature.
   const handleProceedToPayment = async () => {
     if (!payment) return;
 
@@ -67,22 +75,10 @@ export function AgentCashPaymentDetail() {
       if (result.success) {
         navigate(`/a/payment/${payment.id}/confirm`);
       } else {
-        // If scan fails because already scanned, still allow proceeding to confirm
-        const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
-        if (alreadyScanned) {
-          navigate(`/a/payment/${payment.id}/confirm`);
-        } else {
-          toast.error(result.error || t('error'));
-        }
+        toast.error(result.error || t('error'));
       }
     } catch {
-      // If RPC throws but payment is already scanned, allow continuing
-      const alreadyScanned = payment.status === 'cash_scanned' || payment.status === 'cash_pending';
-      if (alreadyScanned) {
-        navigate(`/a/payment/${payment.id}/confirm`);
-      } else {
-        toast.error(t('error'));
-      }
+      toast.error(t('error'));
     }
   };
 
@@ -199,7 +195,7 @@ export function AgentCashPaymentDetail() {
             />
           )}
 
-          {isPending && (
+          {isToHandOver && arrivedFromScan && (
             <PrimaryPill
               onClick={handleProceedToPayment}
               loading={scanMutation.isPending}
@@ -209,6 +205,16 @@ export function AgentCashPaymentDetail() {
             </PrimaryPill>
           )}
 
+          {isToHandOver && !arrivedFromScan && (
+            <div className="space-y-3">
+              <p className={cn('text-center text-[14px]', TEXT.muted)}>{t('scan_client_qr_first')}</p>
+              <PrimaryPill onClick={() => navigate('/a/scan')} className="h-14 w-full text-[16px]">
+                <ScanLine className="h-5 w-5" />
+                {t('scan_qr')}
+              </PrimaryPill>
+            </div>
+          )}
+
           {isCashScanned && (
             <div className="space-y-3">
               <PrimaryPill
@@ -216,10 +222,10 @@ export function AgentCashPaymentDetail() {
                 className="h-14 w-full text-[16px]"
               >
                 <CheckCircle2 className="h-5 w-5" />
-                {t('confirm_payment') || 'Confirmer le paiement'}
+                {t('confirm_payment')}
               </PrimaryPill>
               <p className={cn('text-center text-[14px]', TEXT.muted)}>
-                {t('qr_already_scanned_continue') || 'QR déjà scanné — continuez vers la confirmation'}
+                {t('qr_already_scanned_continue')}
               </p>
             </div>
           )}

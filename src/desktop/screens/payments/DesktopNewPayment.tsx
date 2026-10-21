@@ -43,8 +43,8 @@ import { ClientPickerField } from '@/desktop/components/ClientPickerField';
 import { BigAmount, CheckRow, Choice, Disclosure, Section } from '@/desktop/components/formDialogParts';
 import { BeneficiaryContactFields } from '@/components/payment-form/BeneficiaryContactFields';
 import { DesktopPaymentsScreen } from './DesktopPaymentsScreen';
+import { RateUnavailableNotice } from '@/mobile/components/payments/RateUnavailableNotice';
 
-const FALLBACK_RATE = 11530;
 
 function fmt(n: number): string {
   return Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -80,7 +80,7 @@ export function DesktopNewPayment() {
 
 export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; onCreated: (paymentId: string | null) => void }) {
   const { data: clients = [], isLoading: clientsLoading } = useAllClients();
-  const { data: rateData } = useActiveDailyRate();
+  const { data: rateData, isLoading: rateLoading, isFetching: rateFetching, refetch: refetchRate } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
   const createBeneficiary = useAdminCreateBeneficiary();
@@ -102,7 +102,7 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
   const [rawXaf, setRawXaf] = useState<number | null>(null);
   const [rawCny, setRawCny] = useState<number | null>(null);
   const [useCustomRate, setUseCustomRate] = useState(false);
-  const [customRate, setCustomRate] = useState<number | null>(FALLBACK_RATE);
+  const [customRate, setCustomRate] = useState<number | null>(null);
   const [useCustomDate, setUseCustomDate] = useState(false);
   const [customDateStr, setCustomDateStr] = useState('');
 
@@ -127,7 +127,9 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
   // Taux du jour de la méthode (référence Cameroun), puis celui du PAYS du
   // client s'il s'en écarte — même dérivation que « Taux par pays » et que la
   // RPC calculate_final_rate — et la TRANCHE du montant (petits paiements).
-  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : null;
+  // Pas de taux de secours (11 530 présenté comme « Taux du jour ») : sans
+  // taux publié, le montant et la confirmation restent bloqués.
+  const refRate = rateData && mode ? (getBaseRate(rateData, mode.id) || null) : null;
   const clientKey = client ? clientCountryToRateKey(client.country) : null;
   const baseRate =
     refRate == null
@@ -137,8 +139,8 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
         : teamPaymentRate(refRate, clientKey, adjustments, rawXaf ?? 0);
   const countryRate = refRate != null ? clientCountryRate(refRate, clientKey, adjustments) : null;
   const smallPayment = refRate != null && baseRate !== teamPaymentRate(refRate, clientKey, adjustments, 1_000_000);
-  const fallbackActive = !!mode && !useCustomRate && baseRate == null;
-  const rate: number | null = useCustomRate ? customRate || FALLBACK_RATE : (baseRate ?? (mode ? FALLBACK_RATE : null));
+  const rateUnavailable = !!mode && refRate == null;
+  const rate: number | null = rateUnavailable ? null : useCustomRate ? customRate || baseRate : baseRate;
   const hasRate = rate != null && rate > 0;
   const xaf = lastEdited === 'xaf' ? (rawXaf ?? 0) : hasRate ? Math.round(((rawCny ?? 0) * 1_000_000) / rate!) : 0;
   const cny = lastEdited === 'cny' ? (rawCny ?? 0) : hasRate ? Math.round(((rawXaf ?? 0) * rate!) / 1_000_000) : 0;
@@ -221,6 +223,8 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
     ? 'Choisissez le client.'
     : !mode
       ? 'Choisissez la destination.'
+      : rateUnavailable
+        ? 'Taux du jour indisponible : réessayez avant de confirmer.'
       : !amountValid
         ? `Montant invalide — minimum ${fmt(MIN_PAYMENT_XAF)} XAF.`
         : !hasEnoughBalance
@@ -483,14 +487,12 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             <p className={cn('text-[12.5px] tabular-nums', TEXT.muted)}>
               {!hasRate ? (
-                'Choisissez la destination : le taux du jour de la méthode s’appliquera.'
+                rateUnavailable ? 'Taux du jour indisponible.' : 'Choisissez la destination : le taux du jour de la méthode s’appliquera.'
               ) : (
                 <>
                   {useCustomRate
                     ? 'Taux personnalisé'
-                    : fallbackActive
-                      ? 'Taux de secours'
-                      : countryRate
+                    : countryRate
                         ? `Taux du jour ${mode?.name} · ${countryRate.label} ${formatCountryPct(countryRate.percentage)}${smallPayment ? ' · petit paiement' : ''}`
                         : `Taux du jour ${mode?.name}${smallPayment ? ' · petit paiement' : ''}`}{' '}
                   : <b className={TEXT.strong}>¥{fmt(rate!)} pour 1 000 000 XAF</b>
@@ -499,7 +501,7 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
                 </>
               )}
             </p>
-            {mode && (
+            {mode && !rateUnavailable && (
               <div className="flex items-center gap-2">
                 {useCustomRate && (
                   <span className="inline-flex items-center gap-1.5">
@@ -517,7 +519,7 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
                 <button
                   type="button"
                   onClick={() => {
-                    if (!useCustomRate) setCustomRate(baseRate ?? FALLBACK_RATE);
+                    if (!useCustomRate) setCustomRate(baseRate);
                     setUseCustomRate((v) => !v);
                   }}
                   className="text-[12.5px] font-bold text-indigo-700 hover:underline dark:text-indigo-400"
@@ -527,10 +529,8 @@ export function NewPaymentDialog({ onClose, onCreated }: { onClose: () => void; 
               </div>
             )}
           </div>
-          {fallbackActive && (
-            <p className="mt-2 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[12.5px] font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-              <AlertTriangle className="h-4 w-4 shrink-0" /> Taux du jour indisponible — taux de secours ¥{fmt(FALLBACK_RATE)} appliqué. Vérifiez avant de confirmer.
-            </p>
+          {rateUnavailable && (
+            <RateUnavailableNotice className="mt-2" loading={rateLoading} retrying={rateFetching} onRetry={() => { void refetchRate(); }} />
           )}
           {xaf > 0 && client && !hasEnoughBalance && (
             <p className="mt-2 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-[12.5px] font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400">

@@ -29,11 +29,11 @@ import {
   type Tone,
 } from '@/mobile/designKit';
 
-// Statut paiement cash → tone (conserve l'intention visuelle d'origine :
-// payé=vert, scanné=bleu/info, à payer=ambre/pending).
+// Statut paiement cash → tone : payé=vert, QR scanné (à faire signer)=bleu,
+// à remettre (cash_pending, ou ancien ready_for_payment / processing)=ambre.
 function cashStatusTone(status: string): Tone {
   if (status === 'completed') return 'success';
-  if (status === 'cash_scanned' || status === 'cash_pending') return 'info';
+  if (status === 'cash_scanned') return 'info';
   return 'pending';
 }
 
@@ -70,9 +70,9 @@ export function AgentCashPayments() {
   const statusLabel = (status: string) =>
     status === 'completed'
       ? t('status_paid')
-      : status === 'cash_scanned' || status === 'cash_pending'
-        ? t('status_scanned') || 'Scanné'
-        : t('status_to_pay'); /* covers ready_for_payment + processing */
+      : status === 'cash_scanned'
+        ? t('status_scanned')
+        : t('status_to_hand_over'); /* cash_pending, et les anciens ready_for_payment / processing */
 
   return (
     <div className={cn('min-h-screen', SURFACE.canvas)}>

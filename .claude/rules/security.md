@@ -39,7 +39,9 @@ END IF;
 Correspondances : dépôts → `canProcessDeposits` · paiements →
 `canProcessPayments` · ajustements de portefeuille → `canAdjustWallets` ·
 clients/admins → `canManageUsers` · taux → `canManageRates` · trésorerie →
-`canManageTreasury` · découvert client → `canGrantOverdraft` (super_admin).
+`canManageTreasury` · découvert client → `canGrantOverdraft` (super_admin) ·
+remise du cash (scan du QR, signature) → `canHandleCash` (super_admin, ops,
+cash_agent — l'agent cash n'a PAS `canProcessPayments`).
 
 Si vous ajoutez un rôle ou une permission, mettez à jour **les deux**
 matrices : le test `src/tests/security/rolePermissionParity.test.ts` échoue

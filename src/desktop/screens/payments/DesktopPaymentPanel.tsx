@@ -13,7 +13,6 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   useAdminPaymentDetail,
   useAdminPaymentProofs,
@@ -23,8 +22,8 @@ import {
 } from '@/hooks/usePayments';
 import { useCancelPayment, useAdminUpdateBeneficiaryInfo, useDeletePaymentProof, useAdminCorrectPayment } from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
-import { useAgentConfirmCashPayment } from '@/hooks/useAgentCashActions';
-import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
+import { AdminCashScan, AdminCashSign } from '@/components/cash/AdminCashHandover';
+import { cashHandoverStep } from '@/lib/paymentActions';
 import { partitionUploadFiles, rejectionMessage, ACCEPT_UPLOAD } from '@/lib/clipboardFiles';
 import {
   PAYMENT_STATUS_CONFIG,
@@ -92,6 +91,7 @@ import {
   MoreHorizontal,
   Pencil,
   PenLine,
+  ScanLine,
   Play,
   Plus,
   Send,
@@ -190,14 +190,12 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const { data: proofs } = useAdminPaymentProofs(paymentId);
   const { data: timeline } = useAdminPaymentTimeline(paymentId);
 
-  const queryClient = useQueryClient();
   const processPayment = useProcessPayment();
   const uploadProof = useAdminUploadPaymentProof();
   const cancelPayment = useCancelPayment();
   const updateBeneficiary = useAdminUpdateBeneficiaryInfo();
   const deleteProof = useDeletePaymentProof();
   const instructionUpload = useAdminUploadPaymentInstruction();
-  const confirmCash = useAgentConfirmCashPayment();
   const correctPayment = useAdminCorrectPayment();
 
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -222,7 +220,9 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const [showCorrect, setShowCorrect] = useState(false);
   const [corr, setCorr] = useState({ xaf: '', rmb: '', rate: '', reason: '' });
   const [replaceProofId, setReplaceProofId] = useState<string | null>(null);
-  const [showSign, setShowSign] = useState(false);
+  // Remise cash : scan du QR du client, puis signature du bénéficiaire.
+  const [cashFlow, setCashFlow] = useState<'scan' | 'sign' | null>(null);
+  const showSign = cashFlow !== null;
   const [completeFile, setCompleteFile] = useState<File | null>(null);
   const [completePreview, setCompletePreview] = useState<string | null>(null);
 
@@ -243,11 +243,14 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
   const status = payment?.status as PaymentStatus | undefined;
   // Gardes dérivées de `paymentEdits.ts` — miroir des RPC, jamais de logique locale.
   const isLocked = !payment || isClosedPayment(payment.status);
-  // RPC-accurate: process_payment('start_processing') only accepts ready_for_payment.
-  const canStart = canProcess && status === 'ready_for_payment';
-  const canComplete = canProcess && status === 'processing';
-  const canReject = canProcess && !isLocked && status !== 'cash_pending';
   const isCash = payment?.method === 'cash';
+  // RPC-accurate: process_payment('start_processing') only accepts ready_for_payment,
+  // and never a cash payment (scan du QR puis signature, migration 20261021100000).
+  const canStart = canProcess && !isCash && status === 'ready_for_payment';
+  const canComplete = canProcess && !isCash && status === 'processing';
+  const canReject = canProcess && !isLocked;
+  const mayHandleCash = hasPermission('canHandleCash');
+  const cashStep = isCash && status ? cashHandoverStep(status) : null;
   // Bénéficiaire : tant que le paiement n'est pas parti, jamais en cash
   // (admin_update_payment_beneficiary refuse un paiement clos, même au super admin).
   const canEditBeneficiary = !!payment && canEditPaymentBeneficiary(payment.status, payment.method, canProcess);
@@ -466,29 +469,6 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       },
     );
   }, [cancelNeedsReason, cancelReason, cancelPayment, paymentId, close]);
-
-  const handleCashSignature = useCallback(
-    async (signatureDataUrl: string) => {
-      const signedByName = currentUser
-        ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Admin'
-        : 'Admin';
-      try {
-        const result = await confirmCash.mutateAsync({ paymentId, signatureDataUrl, signedByName });
-        if (result?.success) {
-          setShowSign(false);
-          toast.success('Signature enregistrée — paiement confirmé');
-          queryClient.invalidateQueries({ queryKey: ['admin-payment', paymentId] });
-          queryClient.invalidateQueries({ queryKey: ['admin-payments'] });
-          queryClient.invalidateQueries({ queryKey: ['admin-payment-timeline', paymentId] });
-        } else {
-          toast.error((result as { error?: string })?.error || 'Erreur lors de la confirmation');
-        }
-      } catch {
-        /* handled by mutation */
-      }
-    },
-    [confirmCash, paymentId, currentUser, queryClient],
-  );
 
   // ── Fiche → PNG (copie presse-papiers ou téléchargement) ─────────────────
   const exportFiche = useCallback(
@@ -941,18 +921,22 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
                   )}
                 </div>
               </div>
-            ) : canProcess && !isLocked ? (
+            ) : cashStep ? (
               <div className={cn('flex items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5', SURFACE.canvas)}>
                 <span className={cn('min-w-0 text-[12px]', TEXT.muted)}>
-                  Le bénéficiaire doit signer avant la remise des fonds
+                  {cashStep === 'scan'
+                    ? 'Le QR du client doit être scanné au bureau (agent cash ou administrateur habilité) avant la remise'
+                    : `QR scanné — ${cashBeneficiaryName} signe à la remise des fonds`}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowSign(true)}
-                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-destructive px-3.5 py-2 text-[12px] font-bold text-destructive-foreground"
-                >
-                  <PenLine className="h-3.5 w-3.5" /> Faire signer
-                </button>
+                {mayHandleCash && (
+                  <button
+                    type="button"
+                    onClick={() => setCashFlow(cashStep)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md bg-destructive px-3.5 py-2 text-[12px] font-bold text-destructive-foreground"
+                  >
+                    {cashStep === 'scan' ? <><ScanLine className="h-3.5 w-3.5" /> Scanner le QR</> : <><PenLine className="h-3.5 w-3.5" /> Faire signer</>}
+                  </button>
+                )}
               </div>
             ) : (
               <div className={cn('rounded-2xl px-3.5 py-2.5 text-[12px]', SURFACE.canvas, TEXT.muted)}>
@@ -1347,15 +1331,26 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
       </CenterDialog>
 
       {/* ── Dialogue : signature cash ───────────────────────────────────── */}
-      <CenterDialog open={showSign} onClose={() => setShowSign(false)} title="Signature du bénéficiaire" width={560}>
+      <CenterDialog
+        open={showSign}
+        onClose={() => setCashFlow(null)}
+        title={cashFlow === 'scan' ? 'Scanner le QR du client' : 'Signature du bénéficiaire'}
+        width={560}
+      >
         <div className="space-y-3">
           <div className={cn('rounded-2xl p-3 text-center', SURFACE.canvas)}>
             <Amount value={formatCurrencyRMB(payment.amount_rmb)} size="md" />
             <div className={cn('mt-0.5 text-[12px]', TEXT.muted)}>
-              {cashBeneficiaryName} · la signature confirme la remise des fonds
+              {cashFlow === 'scan'
+                ? `${payment.reference} · le client présente le QR de ce paiement`
+                : `${cashBeneficiaryName} · la signature confirme la remise des fonds`}
             </div>
           </div>
-          <SignatureCanvas onSave={handleCashSignature} onCancel={() => setShowSign(false)} isLoading={confirmCash.isPending} />
+          {cashFlow === 'scan' && cashStep === 'scan' ? (
+            <AdminCashScan paymentId={paymentId} onDone={() => setCashFlow('sign')} onCancel={() => setCashFlow(null)} />
+          ) : cashFlow === 'sign' && cashStep !== null ? (
+            <AdminCashSign paymentId={paymentId} beneficiaryName={cashBeneficiaryName} onDone={() => setCashFlow(null)} onCancel={() => setCashFlow(null)} />
+          ) : null}
         </div>
       </CenterDialog>
 

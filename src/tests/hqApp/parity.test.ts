@@ -59,8 +59,9 @@ describe('BONZINI HQ ↔ site', () => {
 
   it('oriente un scan selon le rôle', () => {
     const cash = JSON.stringify({ type: 'BONZINI_CASH_PAYMENT', id: '0f8fad5b-d9cb-469f-a165-70867728950e', v: 1 });
-    expect(routeScan('cash_agent', cash)).toEqual({ kind: 'open', path: '/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e' });
-    expect(routeScan('ops', cash)).toEqual({ kind: 'open', path: '/m/payments/0f8fad5b-d9cb-469f-a165-70867728950e' });
+    expect(routeScan('cash_agent', cash)).toEqual({ kind: 'open', path: '/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1' });
+    expect(routeScan('ops', cash)).toEqual({ kind: 'open', path: '/m/payments/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1' });
+    expect(staffPath('/a/payment/0f8fad5b-d9cb-469f-a165-70867728950e?scanned=1')).not.toBeNull();
     expect(routeScan('receptionist', 'https://bonzinilabs.com/c/BZ-482913')).toEqual({ kind: 'deliver', path: '/r/new', text: 'BZ-482913' });
     expect(routeScan('receptionist', 'SF1234567890')).toEqual({ kind: 'deliver', path: '/r/new', text: 'SF1234567890' });
     expect(routeScan('warehouse_agent', 'BZ-482913')).toEqual({ kind: 'deliver', path: '/w/remise', text: 'BZ-482913' });

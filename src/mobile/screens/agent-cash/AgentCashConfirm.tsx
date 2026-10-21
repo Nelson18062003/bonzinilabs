@@ -97,6 +97,22 @@ export function AgentCashConfirm() {
     );
   }
 
+  // La signature ne se prend qu'APRÈS le scan du QR du client
+  // (confirm_cash_payment n'accepte que cash_scanned).
+  if (payment.status !== 'cash_scanned') {
+    return (
+      <div className={cn('min-h-screen', SURFACE.canvas)}>
+        <MobileHeader title={t('cash_confirmation')} showBack backTo={`/a/payment/${payment.id}`} />
+        <div className="space-y-4 px-4 pt-6">
+          <ScreenError className="min-h-0 py-8" title={payment.status === 'completed' ? t('already_paid') : t('confirm_requires_scan')} />
+          <SoftPill onClick={() => navigate(`/a/payment/${payment.id}`, { replace: true })} className="w-full">
+            {t('back')}
+          </SoftPill>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('min-h-screen', SURFACE.canvas)}>
       <MobileHeader

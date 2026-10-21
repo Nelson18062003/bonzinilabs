@@ -6,7 +6,10 @@
 // ⚠️ LOGIQUE CAMÉRA/SCANNER 100% INTACTE : safeStopScanner, l'effet de
 //   démarrage, handleScanResult, le mapping d'erreurs caméra, le div
 //   #agent-cash-qr-reader (cible de montage html5-qrcode) et ses classes,
-//   handleManualSearch — RIEN n'est touché côté scanner.
+//   handleManualSearch.
+// Dans l'app BONZINI HQ : c'est la caméra NATIVE qui lit (même pont que
+// useQrScanner) ; un bouton la rouvre. Un QR lu (ou saisi) ouvre la fiche
+// avec « ?scanned=1 » : c'est ce qui y autorise « Procéder au paiement ».
 // ============================================================
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +21,8 @@ import { toast } from 'sonner';
 import { Html5Qrcode } from 'html5-qrcode';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Holder, TextInput, PrimaryPill } from '@/mobile/designKit';
+import { isNativeApp } from '@/lib/nativeApp';
+import { closeNativeScanner, openNativeScanner, registerNativeScanner } from '@/lib/nativeBridge';
 
 function safeStopScanner(scanner: Html5Qrcode | null) {
   if (!scanner) return;
@@ -37,7 +42,8 @@ export function AgentCashScanner() {
   const { t } = useLanguage();
   const [manualId, setManualId] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [isStarting, setIsStarting] = useState(true);
+  const native = isNativeApp();
+  const [isStarting, setIsStarting] = useState(!native);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const hasNavigated = useRef(false);
 
@@ -49,13 +55,17 @@ export function AgentCashScanner() {
       hasNavigated.current = true;
       // Stop scanner before navigating
       safeStopScanner(scannerRef.current);
-      navigate(`/a/payment/${paymentId}`);
+      if (native) closeNativeScanner();
+      navigate(`/a/payment/${paymentId}?scanned=1`);
     } else {
       toast.error(t('invalid_qr'));
     }
-  }, [navigate, t]);
+  }, [navigate, t, native]);
 
   useEffect(() => {
+    // App BONZINI HQ : la caméra native lit et rend le texte ici.
+    if (native) return registerNativeScanner((text) => handleScanResult(text));
+
     const scannerId = 'agent-cash-qr-reader';
     let mounted = true;
 
@@ -110,7 +120,7 @@ export function AgentCashScanner() {
       safeStopScanner(scannerRef.current);
       scannerRef.current = null;
     };
-  }, [handleScanResult, t]);
+  }, [handleScanResult, t, native]);
 
   const handleManualSearch = () => {
     const input = manualId.trim();
@@ -118,7 +128,7 @@ export function AgentCashScanner() {
 
     const { paymentId, isValid } = parseCashQRCode(input);
     if (isValid && paymentId) {
-      navigate(`/a/payment/${paymentId}`);
+      navigate(`/a/payment/${paymentId}?scanned=1`);
     } else {
       toast.error(t('invalid_qr'));
     }
@@ -130,7 +140,14 @@ export function AgentCashScanner() {
 
       <div className="px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4 pb-24 sm:pb-28 space-y-4 sm:space-y-6">
         {/* Camera viewfinder */}
-        <Card className="overflow-hidden p-0">
+        {native && (
+          <PrimaryPill onClick={() => openNativeScanner()} className="h-14 w-full text-[16px]">
+            <ScanLine className="h-5 w-5" />
+            {t('open_scanner')}
+          </PrimaryPill>
+        )}
+
+        <Card className={cn('overflow-hidden p-0', native && 'hidden')}>
           {isStarting && !cameraError && (
             <div className="flex h-72 flex-col items-center justify-center gap-3">
               <Holder icon={Camera} size="lg" className="animate-pulse" />

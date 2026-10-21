@@ -3,7 +3,8 @@
 // (Quand c'est un écran du site qui a ouvert le scanner, le texte lui est
 // simplement rendu — voir useQrScanner côté site.)
 //
-//   · QR de paiement cash (BONZINI_CASH_PAYMENT) → la fiche du paiement ;
+//   · QR de paiement cash (BONZINI_CASH_PAYMENT) → la fiche du paiement,
+//     marquée « ?scanned=1 » (le scan est enregistré là) ;
 //   · code client BZ-xxxxxx (carte, étiquette, lien /c/…) → selon le rôle :
 //     réception → nouveau dépôt ; Douala → remise ; admin → fiche client ;
 //   · paquet avion PQ-xxxxxx → réception (et ops) : la fiche du paquet ;
@@ -57,8 +58,10 @@ export function routeScan(role: StaffRole, raw: string): ScanAction {
   const text = raw.trim();
   const cash = cashPaymentId(text);
   if (cash) {
-    if (role === 'cash_agent') return { kind: 'open', path: `/a/payment/${cash}` };
-    if (role !== 'receptionist' && role !== 'warehouse_agent' && role !== 'treasurer' && role !== 'commercial') return { kind: 'open', path: `/m/payments/${cash}` };
+    // « ?scanned=1 » : la fiche sait que le QR du client vient d'être lu
+    // (scan obligatoire avant la remise du cash).
+    if (role === 'cash_agent') return { kind: 'open', path: `/a/payment/${cash}?scanned=1` };
+    if (role !== 'receptionist' && role !== 'warehouse_agent' && role !== 'treasurer' && role !== 'commercial') return { kind: 'open', path: `/m/payments/${cash}?scanned=1` };
     return { kind: 'unknown', text };
   }
   const pkg = /RC[^0-9]{0,3}\d{6}/i.test(text) ? null : packageCode(text);

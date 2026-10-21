@@ -20,7 +20,7 @@ export function PaymentCashSection({ payment }: Props) {
 
   if (payment.method !== 'cash') return null;
 
-  const isFinalised = payment.status === 'completed' || payment.status === 'rejected';
+  const isFinalised = payment.status === 'completed' || payment.status === 'rejected' || payment.status === 'cancelled_by_admin';
 
   return (
     <>

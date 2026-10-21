@@ -15,6 +15,16 @@
 
 ## En attente
 
+> **21/10/2026 — `supabase/migrations/20261021100000_cash_chain_and_money_fixes.sql`** (prérequis : `20261020120000`,
+> déjà en production). Chaîne cash réelle (paiement cash créé en `cash_pending`, scan du QR puis signature
+> obligatoires, `process_payment` refuse le cash), permission `canHandleCash` (l'agent cash perd `canProcessPayments`),
+> `cancel_deposit` reprend le montant réellement crédité. À livrer **ensemble**, sinon l'ancien site propose
+> « Commencer » sur un cash que le serveur refuse :
+> 1. coller le fichier dans l'éditeur SQL, puis `npx supabase migration repair --status applied 20261021100000` ;
+> 2. déployer le site **et** la fonction `admin-assistant` (sa matrice de permissions connaît `canHandleCash`) ;
+> 3. `cd hq-app && npm run update:production` (le scanner natif ouvre la fiche avec `?scanned=1`) ;
+> 4. `/gen-types` (aucune signature ne change).
+
 > **13/10/2026 — UN seul fichier pour les lots 14 et 15 : `migrations/20261013_consolidated.sql`.** Il contient, dans
 > l'ordre, un contrôle des prérequis (s'arrête net, sans rien modifier, s'il en manque un), `20261012140000` (colis
 > avion à emballer, « ouvert par ») puis `20261013100000` (devis engagé, dépôt en saisie refusé, poids à la virgule).

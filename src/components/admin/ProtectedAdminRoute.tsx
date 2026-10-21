@@ -28,7 +28,9 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
   // porte par laquelle il est entré (connexion admin, lien, retour arrière).
   // L'agent d'entrepôt de Douala aussi (« /w »), et le commercial (« /v ») :
   // côté serveur il ne lit rien de l'administration (is_admin l'exclut).
-  if (currentUser?.role === 'receptionist' || currentUser?.role === 'warehouse_agent' || currentUser?.role === 'commercial') {
+  // L'agent cash (« /a ») : il ne remet que le cash (canHandleCash) ; l'accueil
+  // admin lui ouvrait les paiements Alipay / virement.
+  if (currentUser?.role === 'receptionist' || currentUser?.role === 'warehouse_agent' || currentUser?.role === 'commercial' || currentUser?.role === 'cash_agent') {
     return <Navigate to={staffHomeFor(currentUser.role)} replace />;
   }
 

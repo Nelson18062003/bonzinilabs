@@ -279,8 +279,11 @@ export function DesktopPaymentsScreen() {
                         : 0;
                       const proofCount = (payment as { proof_count?: number }).proof_count || 0;
                       const open = () => navigate(`/m/payments/${payment.id}`);
+                      // Cash : jamais « Traiter » / « Valider » (scan du QR puis signature).
                       const quick =
-                        payment.status === 'ready_for_payment'
+                        payment.method === 'cash'
+                          ? null
+                          : payment.status === 'ready_for_payment'
                           ? { label: 'Traiter', action: 'start', cls: VIOLET_PILL, icon: true }
                           : payment.status === 'processing'
                             ? { label: 'Valider', action: 'complete', cls: EMERALD_PILL, icon: false }

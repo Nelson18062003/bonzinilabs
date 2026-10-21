@@ -57,10 +57,10 @@ import {
   TextInput,
 } from '@/mobile/designKit';
 import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLogo';
+import { RateUnavailableNotice } from '@/mobile/components/payments/RateUnavailableNotice';
 
 // Violet d'action = marque Paiements (cohérent liste/détail/FAB).
 const VIOLET = 'var(--ink)'; // l'encre du kit, qui suit le thème (voir --ink dans index.css)
-const FALLBACK_RATE = 11530;
 
 // ── Helpers ────────────────────────────────────────────────────
 function fmt(n: number): string {
@@ -137,7 +137,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
 
   // ── Data ─────────────────────────────────────────────────────
   const { data: clients = [] } = useAllClients();
-  const { data: rateData } = useActiveDailyRate();
+  const { data: rateData, isLoading: rateLoading, isFetching: rateFetching, refetch: refetchRate } = useActiveDailyRate();
   const { data: adjustments } = useRateAdjustments();
   const createPayment = useAdminCreatePayment();
 
@@ -164,7 +164,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const [inputCurrency, setInputCurrency] = useState<'xaf' | 'cny'>('xaf');
   const [rawAmount, setRawAmount] = useState('');
   const [useCustomRate, setUseCustomRate] = useState(false);
-  const [customRateStr, setCustomRateStr] = useState(String(FALLBACK_RATE));
+  const [customRateStr, setCustomRateStr] = useState('');
   // Date de l'opération — « maintenant » par défaut, antidatable
   const [useCustomDate, setUseCustomDate] = useState(false);
   const [customDateStr, setCustomDateStr] = useState('');
@@ -237,11 +237,13 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // client (Gabon −1 %…) et de la TRANCHE du montant (petits paiements, en
   // rouge sur le flyer) — même règle que l'app client et que la RPC
   // calculate_final_rate, arrondie à l'entier.
-  const refRate = rateData && mode ? getBaseRate(rateData, mode.id) : FALLBACK_RATE;
+  // Pas de taux de secours : sans taux publié pour la méthode, refRate vaut 0
+  // et l'étape du montant reste bloquée (RateUnavailableNotice) — jamais un
+  // « Taux du jour » inventé.
+  const refRate = rateData && mode ? (getBaseRate(rateData, mode.id) || 0) : 0;
   const raw = parseInt(rawAmount) || 0;
   const clientKey = client ? clientCountryToRateKey(client.country) : null;
-  // Jamais d'écart pays ni de tranche sur la constante de secours : elle n'est pas un taux publié.
-  const published = !!(rateData && mode);
+  const published = !!(rateData && mode) && refRate > 0;
   const fromCny = published && inputCurrency !== 'xaf' ? teamPaymentFromCny(refRate, clientKey, adjustments, raw) : null;
   const baseRate = !published ? refRate : fromCny ? fromCny.rate : teamPaymentRate(refRate, clientKey, adjustments, raw);
   // Pour les libellés : l'écart du pays, et si la tranche « petits paiements » s'applique.
@@ -252,8 +254,8 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // sur la constante de secours (le paiement partait à 11 530).
   const rate = useCustomRate ? (parseInt(customRateStr) || baseRate) : baseRate;
   const customRateValid = !useCustomRate || parseInt(customRateStr) > 0;
-  const xaf = inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate);
-  const cny = inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw;
+  const xaf = rate > 0 ? (inputCurrency === 'xaf' ? raw : Math.round(raw * 1_000_000 / rate)) : 0;
+  const cny = rate > 0 ? (inputCurrency === 'xaf' ? Math.round(raw * rate / 1_000_000) : raw) : 0;
   // Animation du montant converti (kit cohérent avec l'assistant dépôt).
   const convertedTarget = inputCurrency === 'xaf' ? cny : xaf;
   const animatedConverted = useCountUp(convertedTarget, { enabled: convertedTarget > 0 });
@@ -287,15 +289,15 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   const canNext =
     step === 1 ? !!client :
     step === 2 ? !!mode :
-    step === 3 ? (amountValid && hasEnoughBalance && customRateValid) :
+    step === 3 ? (published && amountValid && hasEnoughBalance && customRateValid) :
     step === 4 ? benef4Valid :
-    true;
+    published;
 
   // ── Reset ─────────────────────────────────────────────────────
   function reset() {
     setStep(1); setSearch(''); setClient(null); setMode(null);
     setInputCurrency('xaf'); setRawAmount('');
-    setUseCustomRate(false); setCustomRateStr(String(FALLBACK_RATE));
+    setUseCustomRate(false); setCustomRateStr('');
     setUseCustomDate(false); setCustomDateStr('');
     setDraft(emptyDraft(null)); setSkipBenef(false); carnetIdRef.current = null;
     setBenefTab('existing'); setSelectedBenef(null); setSaveToCarnet(true);
@@ -338,6 +340,10 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
   // ── Soumission ────────────────────────────────────────────────
   async function handleConfirm() {
     if (!client || !mode || !dbMode) return;
+    if (!published || !(rate > 0)) {
+      toast.error('Taux du jour indisponible : le paiement attend le taux publié.');
+      return;
+    }
     // Re-check at the call site: the step guard is UI, this one protects the RPC.
     if (!amountValid || !hasEnoughBalance) {
       toast.error(
@@ -684,6 +690,15 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               )}
             </div>
 
+            {!published && (
+              <RateUnavailableNotice
+                className="mb-4"
+                loading={rateLoading}
+                retrying={rateFetching}
+                onRetry={() => { void refetchRate(); }}
+              />
+            )}
+
             {/* Toggle XAF / ¥ */}
             <div className={cn('mb-4 inline-flex w-full items-center gap-1 rounded-full p-1', SURFACE.card, SURFACE.shadow)}>
               {(['xaf', 'cny'] as const).map((cur) => {
@@ -812,7 +827,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
               <div className="flex items-center justify-between">
                 <div>
                   <div className={cn('text-[16px] font-bold', TEXT.strong)}>Taux personnalisé</div>
-                  {!useCustomRate && (
+                  {!useCustomRate && published && (
                     <div className={cn('mt-0.5 text-[16px]', TEXT.muted)}>
                       {countryRate
                         ? <>Taux {countryRate.label} ({formatCountryPct(countryRate.percentage)}){smallPayment ? ' · petit paiement' : ''} : 1M XAF = ¥{fmt(baseRate)} · Cameroun ¥{fmt(refRate)}</>
@@ -824,7 +839,7 @@ export function MobileNewPayment({ desktop = false }: { desktop?: boolean } = {}
                 <button
                   onClick={() => {
                     setUseCustomRate(!useCustomRate);
-                    if (!useCustomRate) setCustomRateStr(String(baseRate));
+                    if (!useCustomRate) setCustomRateStr(baseRate > 0 ? String(baseRate) : '');
                   }}
                   aria-label="Activer le taux personnalisé"
                   className="relative h-[26px] w-11 shrink-0 rounded-full transition-colors"
