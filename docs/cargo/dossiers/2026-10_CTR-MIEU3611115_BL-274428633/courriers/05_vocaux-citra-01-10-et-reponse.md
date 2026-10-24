@@ -66,3 +66,38 @@ sans frais connus (`dossiers/2026-08_CTR-MRSU9909331_BL-271875389/abattement-min
 « Le tiers du montant abattu » peut viser l'économie de droits ou la baisse de valeur :
 à faire préciser si la question se repose. Le montant de 12 749 062 est celui du DAU
 définitif ; le paiement n'est pas encore confirmé dans nos fichiers.
+
+## Réponse de Donelle (mardi 13/10/2026, 12:56 à 13:08, WhatsApp)
+
+> Bonjour M. Soh. Je vous prie d'excuser mon silence. Je dois me marier le 14 et je suis
+> énormément sous pression. Alors j'ai reçu votre message et je vous en remercie. Merci de
+> me faire confiance. Je vous rassure que vous ne serez pas déçus. Aussi nous pouvons aussi
+> essayer le couloir des abattements. Ça pourra vraiment vous minimiser les coûts et éviter
+> les mots de couper les valeurs. Passez une agréable journée.
+
+**Lecture** : la relation est intacte ; elle accepte le prochain conteneur. Elle propose
+l'abattement comme alternative propre à « couper les valeurs ». Mais son canal d'abattement
+passe par des intermédiaires (150 000 F puis un tiers du montant abattu, vocal du 01/10),
+alors que l'abattement d'août a été obtenu par lettre directe du DG au Ministre, sans frais
+connus. Position retenue : oui à l'abattement, par la voie officielle, avec son aide
+facturée par CITRA ; pas de pourcentage à des intermédiaires.
+
+## Notre réponse (brouillon du 24/10/2026)
+
+> Bonjour Donelle,
+>
+> Toutes mes félicitations pour votre mariage ! J'espère que ce fut une très belle journée.
+> Je vous souhaite beaucoup de bonheur.
+>
+> Merci pour votre message et pour votre confiance.
+>
+> Pour l'abattement, nous sommes d'accord pour le tenter sur le prochain conteneur, plutôt que
+> de toucher aux valeurs. Nous souhaitons le faire par la voie officielle : une demande écrite
+> de notre DG au Ministre des Finances, comme nous l'avons fait en août. Votre expérience nous
+> serait très utile pour bien monter ce dossier : les bonnes pièces, le bon moment. Votre
+> prestation serait bien sûr facturée par CITRA.
+>
+> Je reviens vers vous dès que le chargement en Chine est confirmé, avec tout le dossier.
+>
+> Belle journée à vous,
+> Nelson
