@@ -69,8 +69,12 @@ l'honneur » pour l'immatriculation ; liste officielle non trouvée.
   tout de suite, PLP envoyé après vérification. Le PLP porte un QR code ; contrôle
   d'authenticité sur `https://www.infos.house/controle` (page « Authentifier un PLP »).
 - Normes annoncées : UPU S42 et AFNOR NF Z 10-011 (non vérifié).
-- Contacts publiés : appel +237 683 050 066, WhatsApp +237 687 061 395,
-  contact@findme.house. Adresse affichée : 17 place Elig-Essono, Yaoundé.
+- **Plaque d'adresse sur la façade** : selon Forbes Afrique (18/12/2023), FindMe vend des
+  « plaques signalétiques » à « 10 000 francs CFA l'unité », et « les techniciens de FindMe
+  l'apposent sur la devanture ». Prix de 2023, à reconfirmer.
+- Contacts publiés : WhatsApp **+237 687 061 395** (lien wa.me du site), appel
+  +237 683 050 066, contact@findme.house, Facebook `FindMe.officiel`, LinkedIn
+  `linkedin.com/company/findme-house`. Adresse affichée : 17 place Elig-Essono, Yaoundé.
 
 ### Ce qui est confirmé ailleurs
 
@@ -100,9 +104,9 @@ Le site de la Campost (campost.cm) ne répondait pas pendant la recherche (erreu
 
 ## Ce qu'on fait
 
-1. **Annie** crée les adresses FindMe sur place (boutique de Bépanda Omnisport, magasin,
-   bureau s'il est ailleurs), avec un **numéro de l'entreprise**, pas son numéro personnel,
-   et demande un PLP entreprise par site (5 000 F chacun).
+1. **Annie** contacte FindMe et demande, pour chaque local, l'adresse, le **PLP certifié
+   Campost** et la **plaque posée sur la façade**. Elle commence par le magasin de
+   Kanyabassi, où elle travaille, puis la boutique de Bépanda Omnisport.
 2. **Gratuit, en parallèle** : fiche Google (Google Business Profile) pour la boutique, et
    le lien Google Maps de chaque site.
 3. **Demander à notre banque** si elle accepte le PLP FindMe.
