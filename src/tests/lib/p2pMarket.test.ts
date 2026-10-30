@@ -193,7 +193,7 @@ describe('OKX (30/10/2026)', () => {
     expect(book.methods.map((m) => m.name)).toEqual(['Alipay', 'Virement bancaire']);
   });
 
-  it('carnet complet quand chaque mode tient sous 200, incomplet si un mode échoue', async () => {
+  it('carnet complet quand chaque mode tient sous 200', async () => {
     const calls: string[] = [];
     const complete = await fetchOkxBook('CNY', async (u) => {
       const { pm } = query(u); calls.push(pm);
@@ -201,16 +201,51 @@ describe('OKX (30/10/2026)', () => {
     });
     expect([complete.total, complete.capped]).toEqual([200, false]);
     expect(calls).toEqual(['all', 'aliPay', 'bank']); // aucune recherche par montant
-    const failed = await fetchOkxBook('CNY', async (u) => (query(u).pm === 'all' ? top : query(u).pm === 'aliPay' ? mk(150, 6.65, 'aliPay', 'a') : null));
-    expect([failed.total, failed.capped]).toEqual([200, true]);
     // côté Cameroun, carnet court : une seule requête, rien de caché
     const small = await fetchOkxBook('XAF', async () => mk(30, 623, 'MTN Mobile Money', 'x'));
     expect([small.total, small.capped, small.side]).toEqual([30, false, 'BUY']);
   });
 
-  it('refuse un carnet dont trop de recherches par montant échouent', async () => {
-    const full = [...mk(200, 6.65, 'aliPay', 'a')];
-    await expect(fetchOkxBook('CNY', async (u) => (query(u).amount ? null : full))).rejects.toThrow('Carnet OKX incomplet');
+  it('un mode dont la recherche échoue est quand même lu, par montant', async () => {
+    const book = await fetchOkxBook('CNY', async (u) => {
+      const { pm, amount } = query(u);
+      if (pm === 'all') return top;
+      if (pm === 'aliPay') return mk(150, 6.65, 'aliPay', 'a');
+      return amount ? mk(80, 6.50, 'bank', 'bb') : null; // virement : recherche du mode perdue
+    });
+    expect(book.total).toBe(150 + 50 + 80); // le bas du carnet « virement » est là
+    expect(book.capped).toBe(true); // mais on ne peut pas prouver qu'il est complet
+  });
+
+  it('refuse un carnet où un mode perd plus de 10 % de ses recherches, et arrête aussitôt', async () => {
+    const full = mk(200, 6.65, 'aliPay', 'a');
+    let calls = 0;
+    await expect(fetchOkxBook('CNY', async (u) => { calls++; return query(u).amount ? null : full; })).rejects.toThrow('Carnet OKX incomplet');
+    expect(calls).toBeLessThan(10); // 24 montants prévus : on cesse après 3 pertes (+ celles en cours)
+    // la recherche du mode compte dans son budget : mode perdu + 2 montants perdus = refus
+    const bankLost = (lostAmounts: number[]) => fetchOkxBook('CNY', async (u) => {
+      const { pm, amount } = query(u);
+      if (pm === 'all') return top;
+      if (pm === 'aliPay') return mk(150, 6.65, 'aliPay', 'a');
+      return !amount || lostAmounts.includes(amount) ? null : mk(80, 6.50, 'bank', 'bb');
+    });
+    await expect(bankLost([100])).resolves.toMatchObject({ total: 280 });
+    await expect(bankLost([100, 150])).rejects.toThrow('Carnet OKX incomplet');
+  });
+
+  it('abandonne passé 45 s plutôt que de dépasser la limite de Supabase', async () => {
+    vi.useFakeTimers();
+    try {
+      const full = mk(200, 6.65, 'aliPay', 'a');
+      let calls = 0;
+      const p = fetchOkxBook('CNY', async () => { calls++; await new Promise((r) => setTimeout(r, 10_000)); return full; });
+      const done = expect(p).rejects.toThrow('OKX limite les demandes');
+      await vi.advanceTimersByTimeAsync(120_000);
+      await done;
+      expect(calls).toBeLessThan(2 + 24); // les 24 montants n'ont pas tous été demandés
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('montants essayés : progression géométrique des limites vues', () => {

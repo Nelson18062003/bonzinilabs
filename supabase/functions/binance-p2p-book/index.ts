@@ -21,8 +21,8 @@
 // même temps ne multiplient pas les appels. Les relevés simultanés partagent
 // la même promesse, et un échec est retenu 10 s (pas de rafale pendant que la
 // plateforme limite). Un carnet troué (Binance : > 5 % de pages perdues ;
-// OKX : > 10 % de recherches perdues) est refusé plutôt que montré avec un
-// total et une médiane faux.
+// OKX : > 10 % des recherches d'un mode de paiement perdues, ou plus de 45 s)
+// est refusé plutôt que montré avec un total et une médiane faux.
 //
 // Types : tenir en phase avec src/lib/p2pMarket.ts (P2PAd, P2PBook).
 

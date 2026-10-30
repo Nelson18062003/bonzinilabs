@@ -17,8 +17,10 @@
 //      que les annonces dont les limites acceptent ce montant, et d'autres
 //      annonces entrent ainsi dans les 200. On fusionne par identifiant.
 // `capped` dit qu'un mode n'a pas pu être lu en entier : il peut manquer
-// quelques annonces, toutes dans les prix bas (celles qu'aucune recherche ne
-// classe dans ses 200 meilleures).
+// quelques annonces, celles qu'aucune recherche ne classe dans ses 200
+// meilleures — ~2 % à l'essai (1 493 avec 24 montants, 1 521 avec 48),
+// surtout des prix bas ou des limites trop étroites pour contenir un des
+// montants essayés. La médiane n'en bouge pas (6,55 dès 12 montants).
 //
 // Différences avec Binance, assumées et affichées à l'écran :
 //   · ordres = nombre TOTAL d'ordres réalisés (OKX ne publie pas le mois) ;
@@ -40,16 +42,17 @@ export interface OkxBook {
 const BOOKS = "https://www.okx.com/v3/c2c/tradingOrders/books";
 const PAGE_CAP = 200;
 const MAX_METHODS = 8;
-// 24 montants par mode : ~1 490 annonces sur ~1 520 trouvées avec 48 (essai
-// du 30/10/2026) ; la médiane ne bouge plus dès 12 montants (6,55). 3 modes
-// pleins → 76 recherches, ~8 s.
+// 24 montants par mode : 3 modes pleins → 76 recherches, ~8 s (~30 s quand
+// OKX limite le débit).
 const AMOUNT_STEPS = 24;
 // OKX répond 429 au-delà d'une quinzaine de requêtes par seconde : 4 à la
 // fois, une nouvelle toutes les 100 ms au plus, et pause générale sur un 429.
 const CONCURRENCY = 4;
 const GAP_MS = 100;
-// Au-delà de 10 % de recherches perdues, on refuse le carnet (comme Binance).
+// Au-delà de 10 % de recherches perdues sur un mode, on refuse le carnet
+// (comme Binance) ; au-delà de 45 s, on abandonne (Supabase coupe à 150 s).
 const MAX_FAILED = 0.1;
+const DEADLINE_MS = 45_000;
 // côté OKX de la requête et nom de la liste dans la réponse
 const SIDE: Record<Fiat, "buy" | "sell"> = { CNY: "buy", XAF: "sell" };
 const METHOD_NAMES: Record<string, string> = { aliPay: "Alipay", wxPay: "WeChat", bank: "Virement bancaire" };
@@ -138,12 +141,13 @@ export function amountGrid(ads: Raw[], steps = AMOUNT_STEPS): number[] {
   return [...new Set(Array.from({ length: steps }, (_, i) => Number((lo * r ** (i / (steps - 1))).toPrecision(2))))];
 }
 
-/** fn sur chaque élément, au plus n à la fois ; l'ordre des résultats suit celui des éléments. */
-async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Promise<R[]> {
+/** fn sur chaque élément, au plus n à la fois ; l'ordre des résultats suit
+ *  celui des éléments. `stop()` vrai : plus aucun nouvel élément n'est lancé. */
+async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>, stop = () => false): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
-    while (next < items.length) {
+    while (next < items.length && !stop()) {
       const i = next++;
       out[i] = await fn(items[i]);
     }
@@ -154,6 +158,7 @@ async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Prom
 const methodsOf = (l: Raw[]) => l.flatMap((x) => (x.paymentMethods ?? []).map(String) as string[]);
 
 export async function fetchOkxBook(fiat: Fiat, get: Fetcher = okxFetcher(fiat)): Promise<OkxBook> {
+  const t0 = Date.now();
   const first = await get(url(fiat, "all"));
   if (!first) throw new Error("OKX ne répond pas. Réessayez dans un instant.");
 
@@ -171,16 +176,31 @@ export async function fetchOkxBook(fiat: Fiat, get: Fetcher = okxFetcher(fiat)):
     queried.forEach((m, i) => base.set(m, byMethod[i]));
     for (const l of byMethod) if (l) lists.push(l);
 
-    // Modes encore pleins : on les redécoupe par montant.
-    const full = queried.filter((m) => (base.get(m)?.length ?? 0) >= PAGE_CAP);
-    if (full.length) {
+    // Modes encore pleins, ou dont la recherche a échoué : on les redécoupe
+    // par montant.
+    const sweep = queried.filter((m) => (base.get(m)?.length ?? PAGE_CAP) >= PAGE_CAP);
+    if (sweep.length) {
       const amounts = amountGrid(lists.flat());
-      const urls = full.flatMap((m) => amounts.map((a) => url(fiat, m, a)));
-      const extra = await pool(urls, CONCURRENCY, get);
-      const lost = extra.filter((l) => !l).length;
-      if (lost > urls.length * MAX_FAILED) {
-        throw new Error(`Carnet OKX incomplet (${lost} recherches sur ${urls.length} perdues). Réessayez dans un instant.`);
-      }
+      const jobs = sweep.flatMap((m) => amounts.map((a) => ({ m, a })));
+      // Pertes comptées PAR MODE (recherche du mode seul comprise) : le bas
+      // d'un mode ne se voit que par ses propres recherches. Dès qu'un mode
+      // dépasse 10 %, ou passé DEADLINE_MS, on arrête de solliciter OKX.
+      const lost = new Map(sweep.map((m) => [m, base.get(m) ? 0 : 1]));
+      const budget = Math.floor(amounts.length * MAX_FAILED);
+      let stop = [...lost.values()].some((n) => n > budget) ? "Carnet OKX incomplet. Réessayez dans un instant." : "";
+      const extra = await pool(jobs, CONCURRENCY, async ({ m, a }) => {
+        const l = await get(url(fiat, m, a));
+        if (!l) {
+          const n = (lost.get(m) ?? 0) + 1;
+          lost.set(m, n);
+          if (n > budget) stop ||= `Carnet OKX incomplet (${n} recherches ${METHOD_NAMES[m] ?? m} perdues). Réessayez dans un instant.`;
+        }
+        return l;
+      }, () => {
+        if (!stop && Date.now() - t0 > DEADLINE_MS) stop = "OKX limite les demandes en ce moment. Réessayez dans une minute.";
+        return stop !== "";
+      });
+      if (stop) throw new Error(stop);
       for (const l of extra) if (l) lists.push(l);
     }
   }
