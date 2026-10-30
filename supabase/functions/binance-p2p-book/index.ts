@@ -21,7 +21,7 @@
 // même temps ne multiplient pas les appels. Les relevés simultanés partagent
 // la même promesse, et un échec est retenu 10 s (pas de rafale pendant que la
 // plateforme limite). Un carnet troué (Binance : > 5 % de pages perdues ;
-// OKX : > 10 % des recherches d'un mode de paiement perdues, ou plus de 45 s)
+// OKX : une recherche encore perdue après sa seconde chance, ou plus de 45 s)
 // est refusé plutôt que montré avec un total et une médiane faux.
 //
 // Types : tenir en phase avec src/lib/p2pMarket.ts (P2PAd, P2PBook).
@@ -166,7 +166,7 @@ async function fetchBook(fiat: Fiat): Promise<Book> {
   return { exchange: "binance", fiat, side: SIDE[fiat], fetchedAt: new Date().toISOString(), total: ads.length, methods, ads };
 }
 
-// Une ligne de journal par relevé OKX (~80 recherches côté Chine) : la limite
+// Une ligne de journal par relevé OKX (16 recherches côté Chine) : la limite
 // de débit d'OKX vue depuis Supabase se lit dans les logs de la fonction.
 async function okxBook(fiat: Fiat): Promise<OkxBook> {
   const get = okxFetcher(fiat), t0 = Date.now();

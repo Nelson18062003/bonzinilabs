@@ -23,7 +23,7 @@ export interface P2PBook {
   /** absent sur les relevés antérieurs à OKX : Binance */
   exchange?: P2PExchange;
   /** OKX : un mode de paiement n'a pas pu être lu en entier (200 annonces au
-   *  plus par recherche) ; il peut manquer quelques annonces (~2 %, voir okx.ts) */
+   *  plus par recherche, 16 recherches) ; ~85 % du carnet est relevé (voir okx.ts) */
   capped?: boolean;
   fiat: P2PFiat;
   side: 'SELL' | 'BUY';
