@@ -20,14 +20,15 @@
 // Cache mémoire 20 s par plateforme et devise : plusieurs écrans ouverts en
 // même temps ne multiplient pas les appels. Les relevés simultanés partagent
 // la même promesse, et un échec est retenu 10 s (pas de rafale pendant que la
-// plateforme limite). Un carnet Binance troué (> 5 % de pages perdues) est
-// refusé plutôt que montré avec un total et une médiane faux.
+// plateforme limite). Un carnet troué (Binance : > 5 % de pages perdues ;
+// OKX : > 10 % de recherches perdues) est refusé plutôt que montré avec un
+// total et une médiane faux.
 //
 // Types : tenir en phase avec src/lib/p2pMarket.ts (P2PAd, P2PBook).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fetchOkxBook, type Ad, type Fiat, type OkxBook } from "./okx.ts";
+import { fetchOkxBook, okxFetcher, type Ad, type Fiat, type OkxBook } from "./okx.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,6 +166,23 @@ async function fetchBook(fiat: Fiat): Promise<Book> {
   return { exchange: "binance", fiat, side: SIDE[fiat], fetchedAt: new Date().toISOString(), total: ads.length, methods, ads };
 }
 
+// Une ligne de journal par relevé OKX (~80 recherches côté Chine) : la limite
+// de débit d'OKX vue depuis Supabase se lit dans les logs de la fonction.
+async function okxBook(fiat: Fiat): Promise<OkxBook> {
+  const get = okxFetcher(fiat), t0 = Date.now();
+  let calls = 0, lost = 0;
+  try {
+    return await fetchOkxBook(fiat, async (u) => {
+      calls++;
+      const l = await get(u);
+      if (!l) lost++;
+      return l;
+    });
+  } finally {
+    console.log(`binance-p2p-book okx:${fiat} ${calls} recherches, ${lost} perdues, ${Date.now() - t0} ms`);
+  }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -208,7 +226,7 @@ serve(async (req) => {
 
     let pending = inflight.get(key);
     if (!pending) {
-      pending = (exchange === "okx" ? fetchOkxBook(fiat) : fetchBook(fiat)).finally(() => inflight.delete(key));
+      pending = (exchange === "okx" ? okxBook(fiat) : fetchBook(fiat)).finally(() => inflight.delete(key));
       inflight.set(key, pending);
     }
     try {
