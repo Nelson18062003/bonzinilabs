@@ -9,8 +9,8 @@
 //   · Simulateur (RateSimulatorTab)
 //   · Historique (RateHistoryTab) + graphique d'évolution (repli)
 //   · Ajustements pays & tranches (RateConfigTab — repli, usage avancé)
-//   · Marché P2P → sous-module /m/more/rates/market (distribution en
-//     direct du carnet P2P de Binance ou d'OKX), réservé à canManageRates
+//   · Marché Binance → sous-module /m/more/rates/market (distribution en
+//     direct du carnet Binance P2P), réservé à canManageRates
 // Logique 100% préservée (hooks, RPC, calculs, exports).
 // ============================================================
 import { useState } from 'react';
@@ -120,17 +120,17 @@ export function MobileRatesScreen() {
             </Collapsible>
           </section>
 
-          {/* ── Marché P2P — sous-module ── */}
+          {/* ── Marché Binance — sous-module ── */}
           {hasPermission('canManageRates') && (
             <section>
-              <Caption>Marché P2P</Caption>
+              <Caption>Marché Binance</Caption>
               <Link
                 to="/m/more/rates/market"
                 className={cn('flex w-full items-center justify-between gap-3 rounded-lg px-4 py-3.5', SURFACE.card, SURFACE.shadow)}
               >
                 <span>
                   <span className={cn('block text-[16px] font-bold', TEXT.strong)}>Distribution des prix en direct</span>
-                  <span className={cn('block text-[14px]', TEXT.muted)}>Binance ou OKX, Chine et Cameroun, avec filtres</span>
+                  <span className={cn('block text-[14px]', TEXT.muted)}>Toutes les annonces Binance P2P, Chine et Cameroun, avec filtres</span>
                 </span>
                 <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
               </Link>

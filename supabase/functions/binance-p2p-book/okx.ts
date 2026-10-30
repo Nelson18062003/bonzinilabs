@@ -15,7 +15,7 @@
 //   · ordres = nombre TOTAL d'ordres réalisés (OKX ne publie pas le mois) ;
 //   · type d'annonceur : diamond → 2, certified → 1, autres → 0.
 
-type Fiat = "CNY" | "XAF";
+export type Fiat = "CNY" | "XAF";
 export type Ad = [number, number, number, number, number, number, number, number, 0 | 1 | 2, string];
 export interface OkxBook {
   exchange: "okx";
@@ -100,12 +100,14 @@ export async function fetchOkxBook(fiat: Fiat, get: Fetcher = okxFetcher(fiat)):
 
   // Le carnet « tous modes » est plein : on complète mode par mode.
   const lists: Raw[][] = [first];
+  let capped = false;
   if (first.length >= PAGE_CAP) {
     const extra = await Promise.all(methodIds.slice(0, MAX_METHOD_QUERIES).map((m) => get(url(fiat, m))));
     for (const l of extra) if (l) lists.push(l);
+    // Incomplet si une liste par mode est encore pleine, si une requête a
+    // échoué, ou si des modes n'ont pas été interrogés (au-delà du 8ᵉ).
+    capped = extra.some((l) => !l || l.length >= PAGE_CAP) || methodIds.length > MAX_METHOD_QUERIES;
   }
-  // Une liste encore pleine = des annonces moins bonnes existent sans être visibles.
-  const capped = lists.some((l) => l.length >= PAGE_CAP);
 
   // Les requêtes par mode peuvent faire apparaître des modes absents du premier lot.
   for (const l of lists) for (const x of l) for (const m of x.paymentMethods ?? []) if (!methodIds.includes(String(m))) methodIds.push(String(m));

@@ -52,7 +52,7 @@ export function P2PHistogram({
     const bw = (W - M.l - M.r) / n;
     const gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
     // +8 % de marge : l'étiquette de la plus haute barre ne doit pas toucher celle de la médiane
-    const axis = niceAxis(Math.max(...bars.map(share), 0) * 1.08);
+    const axis = niceAxis(Math.min(100, Math.max(...bars.map(share), 0) * 1.08));
     const ymax = axis.max;
     const y = (v: number) => H - M.b - (v / ymax) * (H - M.b - M.t);
     const x = (i: number) => M.l + i * bw;

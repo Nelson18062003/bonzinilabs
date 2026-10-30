@@ -27,7 +27,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fetchOkxBook, type OkxBook } from "./okx.ts";
+import { fetchOkxBook, type Ad, type Fiat, type OkxBook } from "./okx.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,17 +43,14 @@ const FAIL_MS = 10_000;
 const MAX_LOST_PAGES = 0.05;
 const METHODS_CACHE_MS = 3_600_000;
 
-type Fiat = "CNY" | "XAF";
 const SIDE: Record<Fiat, "SELL" | "BUY"> = { CNY: "SELL", XAF: "BUY" };
 // Garde-fou : le carnet CNY compte ~1 600 annonces (80 pages) ; XAF ~120.
 const MAX_PAGES: Record<Fiat, number> = { CNY: 150, XAF: 40 };
 
-/**
- * Annonce compactée (tuple, pour un poids ~4× moindre qu'un objet) :
- * [prix, usdtDisponible, minFiat, maxFiat, ordresMois, réussite‰,
- *  masquePaiement, délaiPaiementMin, type (0 particulier · 1 marchand · 2 pro), pseudo]
- */
-type Ad = [number, number, number, number, number, number, number, number, 0 | 1 | 2, string];
+// Annonce compactée (type Ad, défini dans okx.ts et partagé) — tuple, ~4×
+// moins lourd qu'un objet : [prix, usdtDisponible, minFiat, maxFiat,
+// ordresMois, réussite‰, masquePaiement, délaiPaiementMin,
+// type (0 particulier · 1 marchand · 2 pro), pseudo].
 
 interface Book {
   exchange: "binance";

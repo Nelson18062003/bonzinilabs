@@ -138,10 +138,18 @@ describe('OKX (30/10/2026)', () => {
     const f = bonziniFilters('okx', 'CNY', OKX_METHODS);
     expect(f.pay).toEqual(['aliPay', 'wxPay']);
     const ok = matcher(f, OKX_METHODS);
-    expect(ok(ad(6.63, { pay: 0b100 }))).toBe(true); // WeChat
-    expect(ok(ad(6.63, { pay: 0b010 }))).toBe(false); // virement seul
+    expect(ok(ad(6.63, { pay: 0b100, orders: 5_000 }))).toBe(true); // WeChat, annonceur établi
+    expect(ok(ad(6.63, { pay: 0b010, orders: 5_000 }))).toBe(false); // virement seul
+    expect(ok(ad(6.63, { pay: 0b100, orders: 500 }))).toBe(false); // 500 ordres au total : trop peu chez OKX
     // les identifiants Binance n'existent pas chez OKX : pas de filtre de paiement fantôme
     expect(bonziniFilters('binance', 'CNY', OKX_METHODS).pay).toEqual([]);
+    // OKX publie les ordres au TOTAL : seuil plus haut que les 200/mois de Binance
+    expect(bonziniFilters('okx', 'CNY', OKX_METHODS).minOrders).toBe(1_000);
+    expect(bonziniFilters('binance', 'CNY', METHODS).minOrders).toBe(200);
+  });
+
+  it('l’ancien appel bonziniFilters(fiat, methods) reste valable et vaut Binance', () => {
+    expect(bonziniFilters('CNY', METHODS)).toEqual(bonziniFilters('binance', 'CNY', METHODS));
   });
 
   it('convertit une annonce OKX au format commun', () => {
@@ -168,6 +176,15 @@ describe('OKX (30/10/2026)', () => {
     expect(book.total).toBe(250);
     expect(book.capped).toBe(true);
     expect(book.methods.map((m) => m.name)).toEqual(['Alipay', 'Virement bancaire']);
+    // carnet « tous modes » plein, mais chaque mode tient sous 200 : la fusion est complète
+    const complete = await fetchOkxBook('CNY', async (u) => {
+      const pm = new URL(u).searchParams.get('paymentMethod');
+      return pm === 'all' ? all : pm === 'aliPay' ? mk(150, 6.65, 'aliPay', 'a') : mk(50, 6.64, 'bank', 'b');
+    });
+    expect([complete.total, complete.capped]).toEqual([200, false]);
+    // une requête par mode qui échoue : on ne peut plus garantir le carnet
+    const failed = await fetchOkxBook('CNY', async (u) => (new URL(u).searchParams.get('paymentMethod') === 'all' ? all : null));
+    expect(failed.capped).toBe(true);
     // côté Cameroun, carnet court : une seule requête, rien de caché
     const small = await fetchOkxBook('XAF', async () => mk(30, 623, 'MTN Mobile Money', 'x'));
     expect([small.total, small.capped, small.side]).toEqual([30, false, 'BUY']);

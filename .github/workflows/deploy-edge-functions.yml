@@ -84,7 +84,7 @@ jobs:
             --project-ref "$PROJECT_REF" \
             --no-verify-jwt
 
-      # Marché Binance (module Taux) : carnet P2P complet pour l'écran admin.
+      # Marché P2P (module Taux) : carnet Binance ou OKX pour l'écran admin.
       # JWT admin exigé (verify_jwt actif) + garde canManageRates dans la fonction.
       - name: Déployer la fonction binance-p2p-book
         run: |

@@ -62,6 +62,7 @@ function loadPrefs(): Prefs {
     const p = JSON.parse(localStorage.getItem(STORE) || 'null');
     // Réglages d'avant OKX : on reprend les filtres comme filtres Binance.
     const old = p ? null : JSON.parse(localStorage.getItem(STORE_V2) || 'null');
+    if (old) localStorage.removeItem(STORE_V2);
     const src = p ?? old;
     if (src && typeof src === 'object') {
       const filters = blankAll();

@@ -12,7 +12,6 @@ import { fmtCount, fmtPrice, fmtUsdt } from './format';
 import { chipCls } from './styles';
 import { TextField } from '@/components/form/TextField';
 
-const ORDERS: [string, number][] = [['Tous', 0], ['50', 50], ['200', 200], ['500', 500]];
 const FINISH: [string, number][] = [['Tous', 0], ['90 %', 900], ['95 %', 950], ['98 %', 980]];
 const TIME: [string, number][] = [['Tous', 0], ['15 min', 15], ['30 min', 30]];
 
@@ -36,6 +35,7 @@ export function P2PFilterPanel({
   const ex = EXCHANGE[exchange];
   const bz = bonziniFilters(exchange, fiat, book.methods);
   const kinds: [string, number][] = ex.kindChips.map((l, i) => [l, i]);
+  const orders: [string, number][] = ex.orderChips.map((v) => [v ? fmtCount(v) : 'Tous', v]);
   const counts = useMemo(() => book.methods.map((_, i) => book.ads.filter((a) => a[AD.pay] & methodBit(i)).length), [book]);
   const methods = book.methods
     .map((m, i) => ({ ...m, i, n: counts[i] }))
@@ -104,7 +104,7 @@ export function P2PFilterPanel({
       </Group>
 
       <Group label="Annonceurs"><Chips opts={kinds} cur={f.kind} on={(v) => set({ kind: v as 0 | 1 | 2 })} /></Group>
-      <Group label={ex.ordersFilter}><Chips opts={ORDERS} cur={f.minOrders} on={(v) => set({ minOrders: v })} /></Group>
+      <Group label={ex.ordersFilter}><Chips opts={orders} cur={f.minOrders} on={(v) => set({ minOrders: v })} /></Group>
       <Group label="Taux de réussite, au moins"><Chips opts={FINISH} cur={f.minFinish} on={(v) => set({ minFinish: v })} /></Group>
       <Group label="Délai de paiement, au plus"><Chips opts={TIME} cur={f.maxTime} on={(v) => set({ maxTime: v })} /></Group>
     </section>

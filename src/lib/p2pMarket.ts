@@ -87,6 +87,10 @@ export const EXCHANGE: Record<P2PExchange, {
   bonziniPay: Record<P2PFiat, string[]>;
   ordersColumn: string;
   ordersFilter: string;
+  /** paliers proposés dans le filtre « ordres » (0 = tous) */
+  orderChips: number[];
+  /** seuil d'ordres du filtre Bonzini */
+  bonziniMinOrders: number;
   bonziniNote: Record<P2PFiat, string>;
   kindChips: [string, string, string];
   kindTag: Record<1 | 2, string>;
@@ -96,6 +100,8 @@ export const EXCHANGE: Record<P2PExchange, {
     bonziniPay: { CNY: ['ALIPAY', 'WECHAT'], XAF: [] },
     ordersColumn: 'Ordres/mois',
     ordersFilter: 'Ordres par mois, au moins',
+    orderChips: [0, 50, 200, 500],
+    bonziniMinOrders: 200,
     bonziniNote: { CNY: 'Alipay ou WeChat, 200 ordres/mois, 95 % de réussite.', XAF: '200 ordres/mois, 95 % de réussite.' },
     kindChips: ['Tous', 'Marchands', 'Pro'],
     kindTag: { 1: 'Marchand', 2: 'Pro' },
@@ -105,7 +111,12 @@ export const EXCHANGE: Record<P2PExchange, {
     bonziniPay: { CNY: ['aliPay', 'wxPay'], XAF: [] },
     ordersColumn: 'Ordres (total)',
     ordersFilter: 'Ordres réalisés (total), au moins',
-    bonziniNote: { CNY: 'Alipay ou WeChat, 200 ordres réalisés, 95 % de réussite.', XAF: '200 ordres réalisés, 95 % de réussite.' },
+    // OKX publie le TOTAL depuis l'ouverture du compte : 200 garderait 98 %
+    // des annonces. 1 000 garde ~90 % en Chine et ~57 % au Cameroun (relevé
+    // du 30/10/2026), proche des deux tiers retenus chez Binance.
+    orderChips: [0, 500, 1_000, 5_000, 20_000],
+    bonziniMinOrders: 1_000,
+    bonziniNote: { CNY: 'Alipay ou WeChat, 1 000 ordres réalisés, 95 % de réussite.', XAF: '1 000 ordres réalisés, 95 % de réussite.' },
     kindChips: ['Tous', 'Certifiés', 'Diamant'],
     kindTag: { 1: 'Certifié', 2: 'Diamant' },
   },
@@ -120,9 +131,16 @@ export function payMask(methods: P2PBook['methods'], ids: string[]): number {
   return ids.reduce((mask, id) => mask | methodBit(methods.findIndex((m) => m.id === id)), 0);
 }
 
-/** Filtre Bonzini : ≥ 200 ordres (du mois sur Binance, au total sur OKX), ≥ 95 % de réussite (+ Alipay/WeChat côté Chine). */
-export function bonziniFilters(exchange: P2PExchange, fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters {
-  return { ...blankFilters(), pay: EXCHANGE[exchange].bonziniPay[fiat].filter((id) => methods.some((m) => m.id === id)), minOrders: 200, minFinish: 950 };
+/** Filtre Bonzini : seuil d'ordres de la plateforme (200/mois chez Binance,
+ *  1 000 au total chez OKX), ≥ 95 % de réussite (+ Alipay/WeChat côté Chine).
+ *  La forme à deux arguments (fiat, methods) vaut Binance : c'est l'appel
+ *  d'avant OKX, encore utilisé par l'écran mobile v2 (PR #233). */
+export function bonziniFilters(fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters;
+export function bonziniFilters(exchange: P2PExchange, fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters;
+export function bonziniFilters(a: P2PExchange | P2PFiat, b: P2PFiat | P2PBook['methods'], c?: P2PBook['methods']): P2PFilters {
+  const [exchange, fiat, methods] = Array.isArray(b) ? ['binance' as P2PExchange, a as P2PFiat, b] : [a as P2PExchange, b, c ?? []];
+  const ex = EXCHANGE[exchange];
+  return { ...blankFilters(), pay: ex.bonziniPay[fiat].filter((id) => methods.some((m) => m.id === id)), minOrders: ex.bonziniMinOrders, minFinish: 950 };
 }
 
 export const sameFilters = (a: P2PFilters, b: P2PFilters) =>
@@ -235,10 +253,10 @@ export function zoomOf(ads: P2PAd[], fiat: P2PFiat, f: P2PFilters, full: boolean
     const m = p[p.length >> 1];
     if (MARKET[fiat].best === 'max') {
       const cut = m * 0.97;
-      if (cut > lo) { lo = Math.min(cut, m); mode = 'auto'; }
+      if (cut > lo) { lo = cut; mode = 'auto'; }
     } else {
       const cut = m * 1.03;
-      if (cut < hi) { hi = Math.max(cut, m); mode = 'auto'; }
+      if (cut < hi) { hi = cut; mode = 'auto'; }
     }
   }
   return { lo, hi, mode };
