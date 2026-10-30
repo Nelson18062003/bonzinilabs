@@ -10,7 +10,7 @@
  *     dérivés du Cameroun, avec leur flyer.
  *   · Historique — tendance + table, la surveillance.
  *   · Réglages — ajustements pays & tranches.
- *   · Marché Binance — distribution en direct du carnet Binance P2P
+ *   · Marché P2P — distribution en direct du carnet P2P de Binance ou d'OKX
  *     (CNY et XAF), filtres toujours visibles (canManageRates).
  * Rien d'autre n'est affiché que la vue choisie. Le flyer reste accessible
  * depuis l'en-tête, en dialogue centré.
@@ -37,14 +37,14 @@ const VIEWS: { key: RatesView; label: string }[] = [
   { key: 'publish', label: 'Publier' },
   { key: 'history', label: 'Historique' },
   { key: 'settings', label: 'Réglages' },
-  { key: 'market', label: 'Marché Binance' },
+  { key: 'market', label: 'Marché P2P' },
 ];
 
 export function DesktopRatesScreen({ initialView = 'simulator' }: { initialView?: RatesView } = {}) {
   const { data: activeRate } = useActiveDailyRate();
   const { data: adjustments, isLoading: adjLoading, isError: adjError } = useRateAdjustments();
   const { hasPermission } = useAdminAuth();
-  // Le carnet Binance est servi par une edge function gardée par
+  // Le carnet P2P (Binance, OKX) est servi par une edge function gardée par
   // canManageRates : on ne montre l'onglet qu'à qui peut le lire.
   const canMarket = hasPermission('canManageRates');
   const views = VIEWS.filter((v) => v.key !== 'market' || canMarket);

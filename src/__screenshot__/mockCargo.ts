@@ -103,6 +103,8 @@ export const useCargoVesselPositions = () => ok(POSITIONS);
 export const useCargoEvents = (id: string | null) => ok(id === '2' ? EVENTS : []);
 export const useUpdateCargoShipment = noop;
 export const useRemoveCargoShipment = noop;
+export const useMarkShipmentArrived = noop;
+export const useUnmarkShipmentArrived = noop;
 export const useRequestCargoSync = noop;
 export const useSetVesselPosition = noop;
 export const useRequestCargoLookup = noop;

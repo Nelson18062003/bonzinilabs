@@ -1,7 +1,9 @@
 /**
- * Sous-module « Marché Binance » du module Taux de change — la distribution
- * en direct du carnet Binance P2P (maquette validée le 01/10/2026).
+ * Sous-module « Marché P2P » du module Taux de change — la distribution en
+ * direct du carnet P2P de Binance OU d'OKX (au choix, 30/10/2026), maquette
+ * validée le 01/10/2026.
  *
+ *   · deux plateformes au choix : Binance · OKX (même écran, mêmes calculs)
  *   · deux côtés : Vente en Chine (CNY) · Achat au Cameroun (XAF)
  *   · le NOMBRE TOTAL d'annonces du marché, puis ce qui reste avec les filtres
  *   · l'histogramme : pour chaque prix, sa part de toutes les annonces
@@ -14,10 +16,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBinanceP2PBook } from '@/hooks/useBinanceP2PBook';
+import { useP2PBook } from '@/hooks/useP2PBook';
 import {
-  AD, MARKET, bestPrice, priceDecimals, blankFilters, bonziniFilters, histogram, impliedRate, levels as toLevels, matcher, median, sameFilters, zoomOf,
-  type P2PFiat, type P2PFilters,
+  AD, EXCHANGE, MARKET, bestPrice, priceDecimals, blankFilters, bonziniFilters, histogram, impliedRate, levels as toLevels, matcher, median, sameFilters, zoomOf,
+  type P2PExchange, type P2PFiat, type P2PFilters,
 } from '@/lib/p2pMarket';
 import { P2PHistogram } from './P2PHistogram';
 import { P2PRangeStrip } from './P2PRangeStrip';
@@ -25,12 +27,19 @@ import { P2PFilterPanel } from './P2PFilterPanel';
 import { chipCls } from './styles';
 import { fmtClock, fmtCount, fmtPct, fmtPrice, fmtUsdt } from './format';
 
-const STORE = 'bz-p2p-market-v2';
-interface Prefs { fiat: P2PFiat; unit: 'count' | 'usdt'; bin: Record<P2PFiat, number>; filters: Record<P2PFiat, P2PFilters> }
+const STORE = 'bz-p2p-market-v3';
+const STORE_V2 = 'bz-p2p-market-v2'; // avant OKX : filtres Binance seulement
+const EXCHANGES: P2PExchange[] = ['binance', 'okx'];
+const FIATS: P2PFiat[] = ['CNY', 'XAF'];
+type FilterKey = `${P2PExchange}:${P2PFiat}`;
+// Filtres mémorisés PAR plateforme : les identifiants des modes de paiement
+// diffèrent (ALIPAY chez Binance, aliPay chez OKX).
+interface Prefs { exchange: P2PExchange; fiat: P2PFiat; unit: 'count' | 'usdt'; bin: Record<P2PFiat, number>; filters: Record<FilterKey, P2PFilters> }
+const blankAll = () => Object.fromEntries(EXCHANGES.flatMap((e) => FIATS.map((c) => [`${e}:${c}`, blankFilters()]))) as Record<FilterKey, P2PFilters>;
 const DEFAULT_PREFS: Prefs = {
-  fiat: 'CNY', unit: 'count',
+  exchange: 'binance', fiat: 'CNY', unit: 'count',
   bin: { CNY: MARKET.CNY.defaultBin, XAF: MARKET.XAF.defaultBin },
-  filters: { CNY: blankFilters(), XAF: blankFilters() },
+  filters: blankAll(),
 };
 // Préférences relues champ par champ : une valeur absente ou fausse (palier
 // 0, champ manquant) viderait le graphique. Le zoom n'est pas restauré — le
@@ -51,12 +60,22 @@ function cleanFilters(x: unknown): P2PFilters {
 function loadPrefs(): Prefs {
   try {
     const p = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (p && typeof p === 'object') {
+    // Réglages d'avant OKX : on reprend les filtres comme filtres Binance.
+    const old = p ? null : JSON.parse(localStorage.getItem(STORE_V2) || 'null');
+    if (old) localStorage.removeItem(STORE_V2);
+    const src = p ?? old;
+    if (src && typeof src === 'object') {
+      const filters = blankAll();
+      for (const e of EXCHANGES) for (const c of FIATS) {
+        const saved = p ? p.filters?.[`${e}:${c}`] : e === 'binance' ? old.filters?.[c] : undefined;
+        filters[`${e}:${c}`] = cleanFilters(saved);
+      }
       return {
-        fiat: p.fiat === 'XAF' ? 'XAF' : 'CNY',
-        unit: p.unit === 'usdt' ? 'usdt' : 'count',
-        bin: { CNY: num(p.bin?.CNY, MARKET.CNY.bins, MARKET.CNY.defaultBin), XAF: num(p.bin?.XAF, MARKET.XAF.bins, MARKET.XAF.defaultBin) },
-        filters: { CNY: cleanFilters(p.filters?.CNY), XAF: cleanFilters(p.filters?.XAF) },
+        exchange: src.exchange === 'okx' ? 'okx' : 'binance',
+        fiat: src.fiat === 'XAF' ? 'XAF' : 'CNY',
+        unit: src.unit === 'usdt' ? 'usdt' : 'count',
+        bin: { CNY: num(src.bin?.CNY, MARKET.CNY.bins, MARKET.CNY.defaultBin), XAF: num(src.bin?.XAF, MARKET.XAF.bins, MARKET.XAF.defaultBin) },
+        filters,
       };
     }
   } catch { /* stockage indisponible : réglages par défaut */ }
@@ -80,17 +99,27 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
   const [filtersOpen, setFiltersOpen] = useState(!compact);
   useEffect(() => { try { localStorage.setItem(STORE, JSON.stringify(prefs)); } catch { /* ignoré */ } }, [prefs]);
 
-  const fiat = prefs.fiat;
-  const cny = useBinanceP2PBook('CNY', { live });
-  const xaf = useBinanceP2PBook('XAF', { live });
+  const { exchange, fiat } = prefs;
+  const ex = EXCHANGE[exchange];
+  const cny = useP2PBook(exchange, 'CNY', { live });
+  const xaf = useP2PBook(exchange, 'XAF', { live });
   const q = fiat === 'CNY' ? cny : xaf;
   const book = q.data;
-  const f = prefs.filters[fiat];
+  const fKey: FilterKey = `${exchange}:${fiat}`;
+  const f = prefs.filters[fKey];
   const bin = prefs.bin[fiat];
   const best = MARKET[fiat].best === 'max';
 
+  // Changer de plateforme : autre carnet, donc palier choisi et zoom remis à zéro.
+  const switchExchange = (e: P2PExchange) => {
+    if (e === exchange) return;
+    setPrefs((p) => ({ ...p, exchange: e }));
+    setSelected({ CNY: null, XAF: null });
+    setFull({ CNY: false, XAF: false });
+  };
+
   const setFilters = (nf: P2PFilters) => {
-    setPrefs((p) => ({ ...p, filters: { ...p.filters, [fiat]: nf } }));
+    setPrefs((p) => ({ ...p, filters: { ...p.filters, [fKey]: nf } }));
     setSelected((s) => ({ ...s, [fiat]: null }));
     if (nf.lo == null && nf.hi == null && (f.lo != null || f.hi != null)) setFull((s) => ({ ...s, [fiat]: false }));
   };
@@ -116,14 +145,14 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
     };
   }, [book, f, bin, fiat, full, best]);
 
-  // Taux que donne le marché : médianes des deux côtés au filtre Bonzini
+  // Taux que donne le marché : médianes des deux côtés au filtre Bonzini, sur la plateforme choisie
   const rate = useMemo(() => {
     const c = cny.data, x = xaf.data;
     if (!c || !x) return NaN;
-    const mc = median(c.ads.filter(matcher(bonziniFilters('CNY', c.methods), c.methods)));
-    const mx = median(x.ads.filter(matcher(bonziniFilters('XAF', x.methods), x.methods)));
+    const mc = median(c.ads.filter(matcher(bonziniFilters(exchange, 'CNY', c.methods), c.methods)));
+    const mx = median(x.ads.filter(matcher(bonziniFilters(exchange, 'XAF', x.methods), x.methods)));
     return impliedRate(mc, mx);
-  }, [cny.data, xaf.data]);
+  }, [cny.data, xaf.data, exchange]);
 
   // palier choisi encore présent dans le relevé ? sinon on retombe sur le plus fréquent
   const picked = v && selected[fiat] != null && v.lv.some((l) => l.key === selected[fiat]) ? selected[fiat] : null;
@@ -134,6 +163,15 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className="space-y-4">
+      {/* ── Plateforme : Binance ou OKX ── */}
+      <div role="tablist" aria-label="Plateforme" className="inline-flex rounded-[10px] border border-border bg-muted p-[3px]">
+        {EXCHANGES.map((e) => (
+          <button key={e} type="button" role="tab" aria-selected={exchange === e} className={segBtn(exchange === e)} onClick={() => switchExchange(e)}>
+            Marché {EXCHANGE[e].label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Côté + direct ── */}
       <div className="flex flex-wrap items-center gap-3">
         <div role="tablist" aria-label="Côté du marché" className="inline-flex rounded-[10px] border border-border bg-muted p-[3px]">
@@ -159,20 +197,20 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
         <span className="flex-1" />
         {Number.isFinite(rate) && (
           <span className="text-[14px] text-muted-foreground">
-            Taux que donne le marché (médianes, filtre Bonzini) : <b className="text-[16px] font-extrabold text-foreground">{fmtCount(rate)}</b> CNY pour 1 M XAF
+            Taux que donne {ex.label} (médianes, filtre Bonzini) : <b className="text-[16px] font-extrabold text-foreground">{fmtCount(rate)}</b> CNY pour 1 M XAF
           </span>
         )}
       </div>
 
       {q.isError && !book ? (
         <div className="rounded-[10px] border border-border bg-card p-10 text-center">
-          <p className="text-[16px] font-bold text-foreground">Impossible de lire le carnet Binance</p>
+          <p className="text-[16px] font-bold text-foreground">Impossible de lire le carnet {ex.label}</p>
           <p className="mt-1 text-[14px] text-muted-foreground">{(q.error as Error)?.message}</p>
           <button type="button" onClick={() => q.refresh()} className={cn(chipCls(true), 'mt-4 h-9 px-4')}>Réessayer</button>
         </div>
       ) : !book || !v ? (
         <div className="flex items-center justify-center gap-2 rounded-[10px] border border-border bg-card p-16 text-[14px] text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" /> Lecture du carnet Binance complet…
+          <Loader2 className="h-5 w-5 animate-spin" /> Lecture du carnet {ex.label}…
         </div>
       ) : (
         <div className="grid items-start gap-5 lg:grid-cols-[288px_minmax(0,1fr)]">
@@ -185,13 +223,14 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                 <ChevronDown className={cn('h-5 w-5 text-muted-foreground transition-transform', !filtersOpen && '-rotate-90')} />
               </button>
             )}
-            {filtersOpen && <P2PFilterPanel fiat={fiat} book={book} filters={f} onChange={setFilters} />}
+            {filtersOpen && <P2PFilterPanel exchange={exchange} fiat={fiat} book={book} filters={f} onChange={setFilters} />}
           </div>
 
           <div className="min-w-0 space-y-5">
             {/* ── Chiffres ── */}
             <section aria-label="Chiffres" className="grid grid-cols-2 overflow-hidden rounded-[10px] border border-border bg-card sm:grid-cols-3 xl:grid-cols-5">
-              <Kpi big k="Annonces sur le marché" v={fmtCount(book.total)} s={`${fmtUsdt(v.totalUsdt)} USDT · ${v.distinct} prix différents`} className="col-span-2 sm:col-span-1" />
+              <Kpi big k={book.capped ? 'Annonces visibles' : 'Annonces sur le marché'} v={`${book.capped ? '≥ ' : ''}${fmtCount(book.total)}`}
+                s={book.capped ? `${ex.label} ne publie que les meilleures · ${v.distinct} prix différents` : `${fmtUsdt(v.totalUsdt)} USDT · ${v.distinct} prix différents`} className="col-span-2 sm:col-span-1" />
               <Kpi k="Avec vos filtres" v={fmtCount(v.ads.length)} s={`${fmtPct((v.ads.length / Math.max(1, book.total)) * 100)} du marché · ${fmtUsdt(v.usdt)} USDT`} />
               <Kpi k="Médiane" v={fmtPrice(v.med, 2)} s="la moitié au-dessus, la moitié en dessous" />
               <Kpi k="Prix le plus fréquent" v={v.mode ? fmtPrice(v.mode.price, dec) : '—'} s={v.mode ? `${fmtCount(v.mode.count)} annonces · ${fmtPct(v.mode.shareCount)}` : '—'} />
@@ -303,14 +342,14 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
                 </p>
                 <div className="max-h-[440px] overflow-auto">
                   <table className="w-full min-w-[520px] border-collapse text-[14px] tabular-nums">
-                    <thead><tr>{['Annonceur', 'Ordres/mois', 'Réussite', 'USDT dispo', 'Limites'].map((h, i) => <Th key={h} left={i === 0}>{h}</Th>)}</tr></thead>
+                    <thead><tr>{['Annonceur', ex.ordersColumn, 'Réussite', 'USDT dispo', 'Limites'].map((h, i) => <Th key={h} left={i === 0}>{h}</Th>)}</tr></thead>
                     <tbody>
                       {(selLevel ? [...selLevel.ads].sort((a, b) => b[AD.usdt] - a[AD.usdt]) : []).map((a, i) => (
                         <tr key={`${a[AD.nick]}-${i}`}>
                           <Td left>
                             <span className="inline-block max-w-[180px] truncate align-middle">{a[AD.nick]}</span>
                             {a[AD.kind] > 0 && (
-                              <span className="ml-1.5 rounded-[5px] bg-muted px-1.5 text-[12px] font-bold leading-5 text-foreground">{a[AD.kind] === 2 ? 'Pro' : 'Marchand'}</span>
+                              <span className="ml-1.5 rounded-[5px] bg-muted px-1.5 text-[12px] font-bold leading-5 text-foreground">{ex.kindTag[a[AD.kind] as 1 | 2]}</span>
                             )}
                           </Td>
                           <Td>{fmtCount(a[AD.orders])}</Td>
@@ -326,7 +365,9 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
             </div>
 
             <p className="text-[13px] text-muted-foreground">
-              Source : carnet Binance P2P (USDT) complet, relevé toutes les 30 secondes.{' '}
+              {book.capped
+                ? `Source : carnet ${ex.label} P2P (USDT), relevé toutes les 30 secondes. ${ex.label} ne publie que les 200 meilleures annonces par requête : on les relève pour chaque mode de paiement et on les fusionne, le bas du carnet n’est donc pas visible.`
+                : `Source : carnet ${ex.label} P2P (USDT) complet, relevé toutes les 30 secondes.`}{' '}
               {fiat === 'CNY' ? 'Côté Chine : toutes les annonces où l’on peut vendre ses USDT contre des CNY.' : 'Côté Cameroun : toutes les annonces où l’on peut acheter des USDT en XAF.'}
               {!sameFilters(f, blankFilters()) && ' Filtres actifs : seules les annonces qui les passent comptent dans les %.'}
             </p>

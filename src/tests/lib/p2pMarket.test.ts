@@ -1,10 +1,11 @@
-// Marché Binance (01/10/2026) : distribution du carnet P2P, filtres et zoom.
+// Marché P2P (01/10/2026, OKX le 30/10/2026) : distribution du carnet P2P, filtres et zoom.
 import { describe, expect, it } from 'vitest';
 import { fmtClock } from '@/components/rates/market/format';
 import {
-  MARKET, binKey, blankFilters, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
+  MARKET, binKey, blankFilters, niceAxis, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
   type P2PAd,
 } from '@/lib/p2pMarket';
+import { fetchOkxBook, toAd } from '../../../supabase/functions/binance-p2p-book/okx';
 
 const METHODS = [{ id: 'ALIPAY', name: 'Alipay' }, { id: 'BANK', name: 'Bank Transfer' }, { id: 'WECHAT', name: 'WeChat' }];
 const ad = (price: number, o: Partial<{ usdt: number; min: number; max: number; orders: number; finish: number; pay: number; time: number; kind: 0 | 1 | 2 }> = {}): P2PAd =>
@@ -42,7 +43,7 @@ describe('paliers', () => {
 
 describe('filtres', () => {
   it('Bonzini = Alipay ou WeChat, 200 ordres, 95 %', () => {
-    const f = bonziniFilters('CNY', METHODS);
+    const f = bonziniFilters('binance', 'CNY', METHODS);
     expect(f.pay).toEqual(['ALIPAY', 'WECHAT']);
     const ok = matcher(f, METHODS);
     expect(ok(ad(6.6, { pay: 0b100 }))).toBe(true); // WeChat seul
@@ -91,6 +92,15 @@ describe('zoom', () => {
     expect(z.hi).toBeLessThan(700);
   });
 
+  it('petit carnet : une annonce isolée hors de ±3 % de la médiane sort du graphique', () => {
+    const okxXaf = [622.8, 623, 624.6, 625, 625.4, 626, 627, 628, 700, 750].map((p) => ad(p));
+    const z = zoomOf(okxXaf, 'XAF', blankFilters(), false)!;
+    expect(z.mode).toBe('auto');
+    expect(z.lo).toBe(622.8);
+    expect(z.hi).toBeLessThan(700);
+    expect(zoomOf(okxXaf, 'XAF', blankFilters(), true)!.hi).toBe(750);
+  });
+
   it('« tout le carnet » et la fourchette choisie l’emportent sur l’auto', () => {
     expect(zoomOf(book, 'CNY', blankFilters(), true)!.lo).toBe(6.03);
     const z = zoomOf(book, 'CNY', { ...blankFilters(), lo: 6.6, hi: 6.62 }, false)!;
@@ -118,5 +128,78 @@ describe('chiffres clés', () => {
   it('taux = round(1e6 × CNY ÷ XAF / 10) × 10', () => {
     expect(impliedRate(6.62, 615)).toBe(10760);
     expect(impliedRate(6.62, NaN)).toBeNaN();
+  });
+});
+
+describe('OKX (30/10/2026)', () => {
+  const OKX_METHODS = [{ id: 'aliPay', name: 'Alipay' }, { id: 'bank', name: 'Virement bancaire' }, { id: 'wxPay', name: 'WeChat' }];
+
+  it('le filtre Bonzini OKX vise Alipay et WeChat avec les identifiants OKX', () => {
+    const f = bonziniFilters('okx', 'CNY', OKX_METHODS);
+    expect(f.pay).toEqual(['aliPay', 'wxPay']);
+    const ok = matcher(f, OKX_METHODS);
+    expect(ok(ad(6.63, { pay: 0b100, orders: 5_000 }))).toBe(true); // WeChat, annonceur établi
+    expect(ok(ad(6.63, { pay: 0b010, orders: 5_000 }))).toBe(false); // virement seul
+    expect(ok(ad(6.63, { pay: 0b100, orders: 500 }))).toBe(false); // 500 ordres au total : trop peu chez OKX
+    // les identifiants Binance n'existent pas chez OKX : pas de filtre de paiement fantôme
+    expect(bonziniFilters('binance', 'CNY', OKX_METHODS).pay).toEqual([]);
+    // OKX publie les ordres au TOTAL : seuil plus haut que les 200/mois de Binance
+    expect(bonziniFilters('okx', 'CNY', OKX_METHODS).minOrders).toBe(1_000);
+    expect(bonziniFilters('binance', 'CNY', METHODS).minOrders).toBe(200);
+  });
+
+  it('l’ancien appel bonziniFilters(fiat, methods) reste valable et vaut Binance', () => {
+    expect(bonziniFilters('CNY', METHODS)).toEqual(bonziniFilters('binance', 'CNY', METHODS));
+  });
+
+  it('convertit une annonce OKX au format commun', () => {
+    const a = toAd({ price: '6.65', availableAmount: '33067.00', quoteMinAmountPerOrder: '99999.00', quoteMaxAmountPerOrder: '219895.55',
+      completedOrderQuantity: 2559, completedRate: '0.9770', paymentMethods: ['bank', 'wxPay'], paymentTimeoutMinutes: '20', creatorType: 'diamond', nickName: 'X' },
+    ['aliPay', 'bank', 'wxPay']);
+    expect(a).toEqual([6.65, 33067, 99999, 219896, 2559, 977, 0b110, 20, 2, 'X']);
+    expect(toAd({ price: 'abc' }, [])).toBeNull();
+  });
+
+  it('fusionne les relevés par mode de paiement et signale un carnet incomplet', async () => {
+    const mk = (n: number, start: number, pm: string, idp: string) =>
+      Array.from({ length: n }, (_, i) => ({ id: `${idp}${i}`, price: (start - i * 0.0001).toFixed(4), availableAmount: '100', paymentMethods: [pm], completedRate: '1', creatorType: 'certified' }));
+    const all = [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.64, 'bank', 'b')]; // 200 = plein
+    const calls: string[] = [];
+    const get = async (u: string) => {
+      const pm = new URL(u).searchParams.get('paymentMethod')!; calls.push(pm);
+      if (pm === 'all') return all;
+      if (pm === 'aliPay') return [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.60, 'aliPay', 'c')]; // 50 nouvelles
+      return mk(50, 6.64, 'bank', 'b'); // déjà vues
+    };
+    const book = await fetchOkxBook('CNY', get);
+    expect(calls).toEqual(['all', 'aliPay', 'bank']);
+    expect(book.total).toBe(250);
+    expect(book.capped).toBe(true);
+    expect(book.methods.map((m) => m.name)).toEqual(['Alipay', 'Virement bancaire']);
+    // carnet « tous modes » plein, mais chaque mode tient sous 200 : la fusion est complète
+    const complete = await fetchOkxBook('CNY', async (u) => {
+      const pm = new URL(u).searchParams.get('paymentMethod');
+      return pm === 'all' ? all : pm === 'aliPay' ? mk(150, 6.65, 'aliPay', 'a') : mk(50, 6.64, 'bank', 'b');
+    });
+    expect([complete.total, complete.capped]).toEqual([200, false]);
+    // une requête par mode qui échoue : on ne peut plus garantir le carnet
+    const failed = await fetchOkxBook('CNY', async (u) => (new URL(u).searchParams.get('paymentMethod') === 'all' ? all : null));
+    expect(failed.capped).toBe(true);
+    // côté Cameroun, carnet court : une seule requête, rien de caché
+    const small = await fetchOkxBook('XAF', async () => mk(30, 623, 'MTN Mobile Money', 'x'));
+    expect([small.total, small.capped, small.side]).toEqual([30, false, 'BUY']);
+  });
+
+  it('OKX ne répond pas : erreur claire', async () => {
+    await expect(fetchOkxBook('CNY', async () => null)).rejects.toThrow('OKX ne répond pas');
+  });
+});
+
+describe('axe du graphique', () => {
+  it('graduations rondes : 29 % → 0-10-20-30, 18 % → pas de 5, 0,4 % → pas de 1', () => {
+    expect(niceAxis(29.4)).toEqual({ max: 30, step: 10 });
+    expect(niceAxis(18.4)).toEqual({ max: 20, step: 5 });
+    expect(niceAxis(0.4)).toEqual({ max: 1, step: 1 });
+    expect(niceAxis(50)).toEqual({ max: 60, step: 20 });
   });
 });
