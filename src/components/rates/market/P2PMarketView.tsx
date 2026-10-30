@@ -366,7 +366,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
 
             <p className="text-[13px] text-muted-foreground">
               {book.capped
-                ? `Source : carnet ${ex.label} P2P (USDT), relevé toutes les 30 secondes. ${ex.label} n’affiche jamais plus de 200 annonces par recherche : on fait une recherche par mode de paiement et par montant, puis on fusionne. Il peut en manquer quelques-unes (environ 2 % lors de nos essais), sans effet visible sur la médiane.`
+                ? `Source : carnet ${ex.label} P2P (USDT), relevé toutes les 30 secondes. ${ex.label} n’affiche jamais plus de 200 annonces par recherche et refuse les recherches trop nombreuses : on en fait 16 (par mode de paiement et par montant), puis on fusionne. On relève ainsi environ 85 % du carnet ; la médiane reste juste à 0,01 près.`
                 : `Source : carnet ${ex.label} P2P (USDT) complet, relevé toutes les 30 secondes.`}{' '}
               {fiat === 'CNY' ? 'Côté Chine : toutes les annonces où l’on peut vendre ses USDT contre des CNY.' : 'Côté Cameroun : toutes les annonces où l’on peut acheter des USDT en XAF.'}
               {!sameFilters(f, blankFilters()) && ' Filtres actifs : seules les annonces qui les passent comptent dans les %.'}
