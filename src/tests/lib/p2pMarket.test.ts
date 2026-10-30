@@ -1,11 +1,11 @@
 // Marché P2P (01/10/2026, OKX le 30/10/2026) : distribution du carnet P2P, filtres et zoom.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { fmtClock } from '@/components/rates/market/format';
 import {
   MARKET, binKey, blankFilters, niceAxis, bonziniFilters, bestPrice, histogram, impliedRate, levels, matcher, median, sameFilters, zoomOf,
   type P2PAd,
 } from '@/lib/p2pMarket';
-import { fetchOkxBook, toAd } from '../../../supabase/functions/binance-p2p-book/okx';
+import { amountGrid, fetchOkxBook, okxFetcher, toAd } from '../../../supabase/functions/binance-p2p-book/okx';
 
 const METHODS = [{ id: 'ALIPAY', name: 'Alipay' }, { id: 'BANK', name: 'Bank Transfer' }, { id: 'WECHAT', name: 'WeChat' }];
 const ad = (price: number, o: Partial<{ usdt: number; min: number; max: number; orders: number; finish: number; pay: number; time: number; kind: 0 | 1 | 2 }> = {}): P2PAd =>
@@ -160,38 +160,124 @@ describe('OKX (30/10/2026)', () => {
     expect(toAd({ price: 'abc' }, [])).toBeNull();
   });
 
-  it('fusionne les relevés par mode de paiement et signale un carnet incomplet', async () => {
-    const mk = (n: number, start: number, pm: string, idp: string) =>
-      Array.from({ length: n }, (_, i) => ({ id: `${idp}${i}`, price: (start - i * 0.0001).toFixed(4), availableAmount: '100', paymentMethods: [pm], completedRate: '1', creatorType: 'certified' }));
-    const all = [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.64, 'bank', 'b')]; // 200 = plein
+  // Annonces OKX factices : prix décroissants, limites [min, max] en CNY.
+  const mk = (n: number, start: number, pm: string, idp: string, min = 100, max = 1_000_000) =>
+    Array.from({ length: n }, (_, i) => ({ id: `${idp}${i}`, price: (start - i * 0.0001).toFixed(4), availableAmount: '100',
+      quoteMinAmountPerOrder: String(min), quoteMaxAmountPerOrder: String(max), paymentMethods: [pm], completedRate: '1', creatorType: 'certified' }));
+  const top = [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.64, 'bank', 'b')]; // 200 = plein
+  const query = (u: string) => {
+    const p = new URL(u).searchParams;
+    return { pm: p.get('paymentMethod')!, amount: Number(p.get('quoteMinAmountPerOrder') ?? 0) };
+  };
+
+  it('lit le bas du carnet : par mode de paiement, puis par montant pour les modes encore pleins', async () => {
+    // bas du carnet Alipay (6,40) : n'entre dans les 200 qu'en cherchant un petit montant
+    const low = mk(80, 6.40, 'aliPay', 'low', 10, 500);
     const calls: string[] = [];
-    const get = async (u: string) => {
-      const pm = new URL(u).searchParams.get('paymentMethod')!; calls.push(pm);
-      if (pm === 'all') return all;
-      if (pm === 'aliPay') return [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.60, 'aliPay', 'c')]; // 50 nouvelles
-      return mk(50, 6.64, 'bank', 'b'); // déjà vues
-    };
-    const book = await fetchOkxBook('CNY', get);
-    expect(calls).toEqual(['all', 'aliPay', 'bank']);
-    expect(book.total).toBe(250);
-    expect(book.capped).toBe(true);
+    const book = await fetchOkxBook('CNY', async (u) => {
+      const { pm, amount } = query(u);
+      calls.push(amount ? `${pm}@${amount}` : pm);
+      if (pm === 'all') return top;
+      if (pm === 'bank') return mk(50, 6.64, 'bank', 'b'); // sous 200 : lu en entier
+      return amount && amount <= 500 ? [...mk(120, 6.65, 'aliPay', 'a'), ...low] : [...mk(150, 6.65, 'aliPay', 'a'), ...mk(50, 6.60, 'aliPay', 'c')];
+    });
+    expect(calls.slice(0, 3)).toEqual(['all', 'aliPay', 'bank']);
+    // seul le mode encore plein est redécoupé par montant, de 100 à 1 000 000
+    const swept = calls.slice(3);
+    expect(swept.length).toBe(24);
+    expect(swept.every((c) => c.startsWith('aliPay@'))).toBe(true);
+    expect([swept[0], swept[swept.length - 1]]).toEqual(['aliPay@100', 'aliPay@1000000']);
+    expect(book.total).toBe(150 + 50 + 50 + 80);
+    expect(book.ads.filter((a) => a[0] < 6.5)).toHaveLength(80);
+    expect(book.capped).toBe(true); // Alipay toujours plein : il peut en manquer
     expect(book.methods.map((m) => m.name)).toEqual(['Alipay', 'Virement bancaire']);
-    // carnet « tous modes » plein, mais chaque mode tient sous 200 : la fusion est complète
+  });
+
+  it('carnet complet quand chaque mode tient sous 200', async () => {
+    const calls: string[] = [];
     const complete = await fetchOkxBook('CNY', async (u) => {
-      const pm = new URL(u).searchParams.get('paymentMethod');
-      return pm === 'all' ? all : pm === 'aliPay' ? mk(150, 6.65, 'aliPay', 'a') : mk(50, 6.64, 'bank', 'b');
+      const { pm } = query(u); calls.push(pm);
+      return pm === 'all' ? top : pm === 'aliPay' ? mk(150, 6.65, 'aliPay', 'a') : mk(50, 6.64, 'bank', 'b');
     });
     expect([complete.total, complete.capped]).toEqual([200, false]);
-    // une requête par mode qui échoue : on ne peut plus garantir le carnet
-    const failed = await fetchOkxBook('CNY', async (u) => (new URL(u).searchParams.get('paymentMethod') === 'all' ? all : null));
-    expect(failed.capped).toBe(true);
+    expect(calls).toEqual(['all', 'aliPay', 'bank']); // aucune recherche par montant
     // côté Cameroun, carnet court : une seule requête, rien de caché
     const small = await fetchOkxBook('XAF', async () => mk(30, 623, 'MTN Mobile Money', 'x'));
     expect([small.total, small.capped, small.side]).toEqual([30, false, 'BUY']);
   });
 
+  it('un mode dont la recherche échoue est quand même lu, par montant', async () => {
+    const book = await fetchOkxBook('CNY', async (u) => {
+      const { pm, amount } = query(u);
+      if (pm === 'all') return top;
+      if (pm === 'aliPay') return mk(150, 6.65, 'aliPay', 'a');
+      return amount ? mk(80, 6.50, 'bank', 'bb') : null; // virement : recherche du mode perdue
+    });
+    expect(book.total).toBe(150 + 50 + 80); // le bas du carnet « virement » est là
+    expect(book.capped).toBe(true); // mais on ne peut pas prouver qu'il est complet
+  });
+
+  it('refuse un carnet où un mode perd plus de 10 % de ses recherches, et arrête aussitôt', async () => {
+    const full = mk(200, 6.65, 'aliPay', 'a');
+    let calls = 0;
+    await expect(fetchOkxBook('CNY', async (u) => { calls++; return query(u).amount ? null : full; })).rejects.toThrow('Carnet OKX incomplet');
+    expect(calls).toBeLessThan(10); // 24 montants prévus : on cesse après 3 pertes (+ celles en cours)
+    // la recherche du mode compte dans son budget : mode perdu + 2 montants perdus = refus
+    const bankLost = (lostAmounts: number[]) => fetchOkxBook('CNY', async (u) => {
+      const { pm, amount } = query(u);
+      if (pm === 'all') return top;
+      if (pm === 'aliPay') return mk(150, 6.65, 'aliPay', 'a');
+      return !amount || lostAmounts.includes(amount) ? null : mk(80, 6.50, 'bank', 'bb');
+    });
+    await expect(bankLost([100])).resolves.toMatchObject({ total: 280 });
+    await expect(bankLost([100, 150])).rejects.toThrow('Carnet OKX incomplet');
+  });
+
+  it('abandonne passé 45 s plutôt que de dépasser la limite de Supabase', async () => {
+    vi.useFakeTimers();
+    try {
+      const full = mk(200, 6.65, 'aliPay', 'a');
+      let calls = 0;
+      const p = fetchOkxBook('CNY', async () => { calls++; await new Promise((r) => setTimeout(r, 10_000)); return full; });
+      const done = expect(p).rejects.toThrow('OKX limite les demandes');
+      await vi.advanceTimersByTimeAsync(120_000);
+      await done;
+      expect(calls).toBeLessThan(2 + 24); // les 24 montants n'ont pas tous été demandés
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('montants essayés : progression géométrique des limites vues', () => {
+    expect(amountGrid([{ quoteMinAmountPerOrder: '100', quoteMaxAmountPerOrder: '50000' }, { quoteMinAmountPerOrder: '5000', quoteMaxAmountPerOrder: '1000000' }], 5))
+      .toEqual([100, 1000, 10000, 100000, 1000000]);
+    expect(amountGrid([{ price: '6.6' }])).toEqual([]);
+  });
+
   it('OKX ne répond pas : erreur claire', async () => {
     await expect(fetchOkxBook('CNY', async () => null)).rejects.toThrow('OKX ne répond pas');
+  });
+
+  it('un 429 d’OKX suspend les requêtes au moins une seconde, puis réessaie', async () => {
+    vi.useFakeTimers();
+    const at: number[] = [];
+    const fetchMock = vi.fn(async () => {
+      at.push(Date.now());
+      return at.length === 1
+        ? new Response('{"msg":"Too many requests","code":"50011"}', { status: 429 })
+        : new Response(JSON.stringify({ code: 0, data: { buy: [{ id: '1' }] } }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const p = okxFetcher('CNY')('https://www.okx.com/x');
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(await p).toEqual([{ id: '1' }]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(at[1] - at[0]).toBeGreaterThanOrEqual(1_000);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
   });
 });
 

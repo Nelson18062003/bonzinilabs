@@ -22,7 +22,8 @@ export type P2PAd = [number, number, number, number, number, number, number, num
 export interface P2PBook {
   /** absent sur les relevés antérieurs à OKX : Binance */
   exchange?: P2PExchange;
-  /** OKX : seules les meilleures annonces sont publiées (200 par requête) */
+  /** OKX : un mode de paiement n'a pas pu être lu en entier (200 annonces au
+   *  plus par recherche) ; il peut manquer quelques annonces (~2 %, voir okx.ts) */
   capped?: boolean;
   fiat: P2PFiat;
   side: 'SELL' | 'BUY';
@@ -111,9 +112,9 @@ export const EXCHANGE: Record<P2PExchange, {
     bonziniPay: { CNY: ['aliPay', 'wxPay'], XAF: [] },
     ordersColumn: 'Ordres (total)',
     ordersFilter: 'Ordres réalisés (total), au moins',
-    // OKX publie le TOTAL depuis l'ouverture du compte : 200 garderait 98 %
-    // des annonces. 1 000 garde ~90 % en Chine et ~57 % au Cameroun (relevé
-    // du 30/10/2026), proche des deux tiers retenus chez Binance.
+    // OKX publie le TOTAL depuis l'ouverture du compte : 200 garderait 99 %
+    // des annonces. 1 000 garde ~95 % en Chine (carnet entier, ~1 500
+    // annonces) et ~57 % au Cameroun (relevé du 30/10/2026).
     orderChips: [0, 500, 1_000, 5_000, 20_000],
     bonziniMinOrders: 1_000,
     bonziniNote: { CNY: 'Alipay ou WeChat, 1 000 ordres réalisés, 95 % de réussite.', XAF: '1 000 ordres réalisés, 95 % de réussite.' },

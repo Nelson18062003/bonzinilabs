@@ -229,8 +229,8 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
           <div className="min-w-0 space-y-5">
             {/* ── Chiffres ── */}
             <section aria-label="Chiffres" className="grid grid-cols-2 overflow-hidden rounded-[10px] border border-border bg-card sm:grid-cols-3 xl:grid-cols-5">
-              <Kpi big k={book.capped ? 'Annonces visibles' : 'Annonces sur le marché'} v={`${book.capped ? '≥ ' : ''}${fmtCount(book.total)}`}
-                s={book.capped ? `${ex.label} ne publie que les meilleures · ${v.distinct} prix différents` : `${fmtUsdt(v.totalUsdt)} USDT · ${v.distinct} prix différents`} className="col-span-2 sm:col-span-1" />
+              <Kpi big k={book.capped ? 'Annonces relevées' : 'Annonces sur le marché'} v={fmtCount(book.total)}
+                s={`${fmtUsdt(v.totalUsdt)} USDT · ${v.distinct} prix différents`} className="col-span-2 sm:col-span-1" />
               <Kpi k="Avec vos filtres" v={fmtCount(v.ads.length)} s={`${fmtPct((v.ads.length / Math.max(1, book.total)) * 100)} du marché · ${fmtUsdt(v.usdt)} USDT`} />
               <Kpi k="Médiane" v={fmtPrice(v.med, 2)} s="la moitié au-dessus, la moitié en dessous" />
               <Kpi k="Prix le plus fréquent" v={v.mode ? fmtPrice(v.mode.price, dec) : '—'} s={v.mode ? `${fmtCount(v.mode.count)} annonces · ${fmtPct(v.mode.shareCount)}` : '—'} />
@@ -366,7 +366,7 @@ export function P2PMarketView({ compact = false }: { compact?: boolean }) {
 
             <p className="text-[13px] text-muted-foreground">
               {book.capped
-                ? `Source : carnet ${ex.label} P2P (USDT), relevé toutes les 30 secondes. ${ex.label} ne publie que les 200 meilleures annonces par requête : on les relève pour chaque mode de paiement et on les fusionne, le bas du carnet n’est donc pas visible.`
+                ? `Source : carnet ${ex.label} P2P (USDT), relevé toutes les 30 secondes. ${ex.label} n’affiche jamais plus de 200 annonces par recherche : on fait une recherche par mode de paiement et par montant, puis on fusionne. Il peut en manquer quelques-unes (environ 2 % lors de nos essais), sans effet visible sur la médiane.`
                 : `Source : carnet ${ex.label} P2P (USDT) complet, relevé toutes les 30 secondes.`}{' '}
               {fiat === 'CNY' ? 'Côté Chine : toutes les annonces où l’on peut vendre ses USDT contre des CNY.' : 'Côté Cameroun : toutes les annonces où l’on peut acheter des USDT en XAF.'}
               {!sameFilters(f, blankFilters()) && ' Filtres actifs : seules les annonces qui les passent comptent dans les %.'}
