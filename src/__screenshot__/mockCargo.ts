@@ -105,6 +105,8 @@ export const useUpdateCargoShipment = noop;
 export const useRemoveCargoShipment = noop;
 export const useRequestCargoSync = noop;
 export const useSetVesselPosition = noop;
+export const useMarkShipmentArrived = noop;
+export const useUnmarkShipmentArrived = noop;
 export const useRequestCargoLookup = noop;
 export const useCargoLookup = (id: string | null) => ok(id ? LOOKUP : undefined);
 export const useRecentCargoLookups = () => ok([LOOKUP]);

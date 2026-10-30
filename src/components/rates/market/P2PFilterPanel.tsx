@@ -1,17 +1,17 @@
 /**
  * Filtres du marché — TOUJOURS ouverts, effet immédiat (pas de bouton
- * « Appliquer »). Reprend les filtres de Binance P2P : mode de paiement,
- * montant, type d'annonceur, ordres/mois, réussite, délai — plus le zoom de
- * prix. Chaque mode de paiement affiche son nombre d'annonces.
+ * « Appliquer »). Reprend les filtres des plateformes P2P (Binance, OKX) : mode
+ * de paiement, montant, type d'annonceur, ordres, réussite, délai — plus le
+ * zoom de prix. Chaque mode de paiement affiche son nombre d'annonces. Les
+ * libellés suivent la plateforme (ordres du mois chez Binance, total chez OKX).
  */
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { AD, MARKET, methodBit, blankFilters, bonziniFilters, sameFilters, type P2PBook, type P2PFiat, type P2PFilters } from '@/lib/p2pMarket';
+import { AD, EXCHANGE, MARKET, methodBit, blankFilters, bonziniFilters, sameFilters, type P2PBook, type P2PExchange, type P2PFiat, type P2PFilters } from '@/lib/p2pMarket';
 import { fmtCount, fmtPrice, fmtUsdt } from './format';
 import { chipCls } from './styles';
 import { TextField } from '@/components/form/TextField';
 
-const KIND: [string, 0 | 1 | 2][] = [['Tous', 0], ['Marchands', 1], ['Pro', 2]];
 const ORDERS: [string, number][] = [['Tous', 0], ['50', 50], ['200', 200], ['500', 500]];
 const FINISH: [string, number][] = [['Tous', 0], ['90 %', 900], ['95 %', 950], ['98 %', 980]];
 const TIME: [string, number][] = [['Tous', 0], ['15 min', 15], ['30 min', 30]];
@@ -23,8 +23,9 @@ const parseNum = (s: string) => {
 };
 
 export function P2PFilterPanel({
-  fiat, book, filters, onChange,
+  exchange, fiat, book, filters, onChange,
 }: {
+  exchange: P2PExchange;
   fiat: P2PFiat;
   book: P2PBook;
   filters: P2PFilters;
@@ -32,7 +33,9 @@ export function P2PFilterPanel({
 }) {
   const f = filters;
   const set = (patch: Partial<P2PFilters>) => onChange({ ...f, ...patch });
-  const bz = bonziniFilters(fiat, book.methods);
+  const ex = EXCHANGE[exchange];
+  const bz = bonziniFilters(exchange, fiat, book.methods);
+  const kinds: [string, number][] = ex.kindChips.map((l, i) => [l, i]);
   const counts = useMemo(() => book.methods.map((_, i) => book.ads.filter((a) => a[AD.pay] & methodBit(i)).length), [book]);
   const methods = book.methods
     .map((m, i) => ({ ...m, i, n: counts[i] }))
@@ -44,8 +47,8 @@ export function P2PFilterPanel({
   const [amount, setAmount] = useState(f.amount ? fmtCount(f.amount) : '');
   const [lo, setLo] = useState(f.lo == null ? '' : fmtPrice(f.lo, 2));
   const [hi, setHi] = useState(f.hi == null ? '' : fmtPrice(f.hi, 2));
-  useEffect(() => { setAmount(f.amount ? fmtCount(f.amount) : ''); }, [f.amount, fiat]);
-  useEffect(() => { setLo(f.lo == null ? '' : fmtPrice(f.lo, 2)); setHi(f.hi == null ? '' : fmtPrice(f.hi, 2)); }, [f.lo, f.hi, fiat]);
+  useEffect(() => { setAmount(f.amount ? fmtCount(f.amount) : ''); }, [f.amount, fiat, exchange]);
+  useEffect(() => { setLo(f.lo == null ? '' : fmtPrice(f.lo, 2)); setHi(f.hi == null ? '' : fmtPrice(f.hi, 2)); }, [f.lo, f.hi, fiat, exchange]);
 
 
   return (
@@ -57,12 +60,10 @@ export function P2PFilterPanel({
         </button>
       </div>
       <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-        <button type="button" className={cn(chipCls(sameFilters(f, blankFilters())), 'h-9 justify-center')} onClick={() => onChange(blankFilters())}>Tout Binance</button>
+        <button type="button" className={cn(chipCls(sameFilters(f, blankFilters())), 'h-9 justify-center')} onClick={() => onChange(blankFilters())}>Tout {ex.label}</button>
         <button type="button" className={cn(chipCls(sameFilters(f, bz)), 'h-9 justify-center')} onClick={() => onChange(bz)}>Filtre Bonzini</button>
       </div>
-      <p className="mt-1.5 text-[13px] text-muted-foreground">
-        Bonzini = {fiat === 'CNY' ? 'Alipay ou WeChat, ' : ''}200 ordres/mois, 95 % de réussite.
-      </p>
+      <p className="mt-1.5 text-[13px] text-muted-foreground">Bonzini = {ex.bonziniNote[fiat]}</p>
 
       <Group label="Mode de paiement" hint="vide = tous">
         <div className="flex flex-wrap gap-1.5">
@@ -102,8 +103,8 @@ export function P2PFilterPanel({
         <p className="mt-1.5 text-[13px] text-muted-foreground">Ou glissez sur la petite barre sous le graphique. Les % restent calculés sur toutes les annonces.</p>
       </Group>
 
-      <Group label="Annonceurs"><Chips opts={KIND} cur={f.kind} on={(v) => set({ kind: v as 0 | 1 | 2 })} /></Group>
-      <Group label="Ordres par mois, au moins"><Chips opts={ORDERS} cur={f.minOrders} on={(v) => set({ minOrders: v })} /></Group>
+      <Group label="Annonceurs"><Chips opts={kinds} cur={f.kind} on={(v) => set({ kind: v as 0 | 1 | 2 })} /></Group>
+      <Group label={ex.ordersFilter}><Chips opts={ORDERS} cur={f.minOrders} on={(v) => set({ minOrders: v })} /></Group>
       <Group label="Taux de réussite, au moins"><Chips opts={FINISH} cur={f.minFinish} on={(v) => set({ minFinish: v })} /></Group>
       <Group label="Délai de paiement, au plus"><Chips opts={TIME} cur={f.maxTime} on={(v) => set({ maxTime: v })} /></Group>
     </section>

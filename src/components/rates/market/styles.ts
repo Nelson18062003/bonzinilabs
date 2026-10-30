@@ -1,4 +1,4 @@
-// Classes partagées du sous-module « Marché Binance ».
+// Classes partagées du sous-module « Marché P2P ».
 import { cn } from '@/lib/utils';
 
 export const chipCls = (on: boolean) => cn(

@@ -1,5 +1,5 @@
 /**
- * Histogramme du carnet Binance P2P — une barre par palier de prix, hauteur =
+ * Histogramme du carnet P2P (Binance ou OKX) — une barre par palier de prix, hauteur =
  * part du palier dans TOUTES les annonces filtrées (ou dans les USDT).
  * SVG maison (pas de lib de graphe) : barres à sommet arrondi posées sur
  * l'axe, paliers vides gardés, ligne de médiane, étiquettes directes
@@ -8,19 +8,13 @@
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { binKey, priceDecimals, type P2PFiat, type P2PLevel, MARKET } from '@/lib/p2pMarket';
+import { binKey, niceAxis, priceDecimals, type P2PFiat, type P2PLevel, MARKET } from '@/lib/p2pMarket';
 import { fmtCount, fmtPct, fmtPrice, fmtUsdt } from './format';
 
 const H = 360;
 const M = { t: 30, r: 12, b: 34, l: 48 };
 const INK = 'hsl(var(--foreground))';
 
-function niceMax(v: number) {
-  const steps = [1, 2, 2.5, 5, 10];
-  const mag = 10 ** Math.floor(Math.log10(Math.max(v, 0.01)));
-  for (const s of steps) if (s * mag >= v) return s * mag;
-  return 10 * mag;
-}
 
 export function P2PHistogram({
   fiat, bars, bin, unit, median, selected, onSelect, cumulative,
@@ -57,10 +51,12 @@ export function P2PHistogram({
     const n = Math.max(1, bars.length);
     const bw = (W - M.l - M.r) / n;
     const gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
-    const ymax = niceMax(Math.max(1, ...bars.map(share)));
+    // +8 % de marge : l'étiquette de la plus haute barre ne doit pas toucher celle de la médiane
+    const axis = niceAxis(Math.max(...bars.map(share), 0) * 1.08);
+    const ymax = axis.max;
     const y = (v: number) => H - M.b - (v / ymax) * (H - M.b - M.t);
     const x = (i: number) => M.l + i * bw;
-    const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * ymax);
+    const ticks = Array.from({ length: Math.round(ymax / axis.step) + 1 }, (_, i) => i * axis.step);
     const every = Math.max(1, Math.ceil(46 / bw));
     // étiquettes directes : toutes si la place le permet, sinon les 4 plus
     // hautes à 50 px d'écart au moins

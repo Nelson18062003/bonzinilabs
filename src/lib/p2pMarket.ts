@@ -1,8 +1,9 @@
 // ============================================================
-// Marché Binance P2P — logique pure du sous-module « Marché Binance »
+// Marché P2P (Binance ou OKX) — logique pure du sous-module « Marché P2P »
 // (module Taux de change). Le carnet vient de l'edge function
-// `binance-p2p-book` ; tout le reste (filtres, paliers, médiane, zoom) se
-// calcule ici, côté écran, sur un seul relevé — exactement comme Binance.
+// `binance-p2p-book` (qui sert les deux plateformes au même format) ; tout
+// le reste (filtres, paliers, médiane, zoom) se calcule ici, côté écran, sur
+// un seul relevé — exactement comme sur la plateforme.
 //
 //   CNY = vente en Chine : annonceurs qui achètent l'USDT → meilleur prix = le plus HAUT
 //   XAF = achat au Cameroun : annonceurs qui vendent l'USDT → meilleur prix = le plus BAS
@@ -12,12 +13,17 @@
 // ============================================================
 
 export type P2PFiat = 'CNY' | 'XAF';
+export type P2PExchange = 'binance' | 'okx';
 
 /** Tenir en phase avec supabase/functions/binance-p2p-book (type Ad).
  *  [prix, usdtDispo, minFiat, maxFiat, ordresMois, réussite‰, masquePaiement, délaiMin, type, pseudo] */
 export type P2PAd = [number, number, number, number, number, number, number, number, 0 | 1 | 2, string];
 
 export interface P2PBook {
+  /** absent sur les relevés antérieurs à OKX : Binance */
+  exchange?: P2PExchange;
+  /** OKX : seules les meilleures annonces sont publiées (200 par requête) */
+  capped?: boolean;
   fiat: P2PFiat;
   side: 'SELL' | 'BUY';
   fetchedAt: string;
@@ -29,8 +35,8 @@ export interface P2PBook {
 export const AD = { price: 0, usdt: 1, min: 2, max: 3, orders: 4, finish: 5, pay: 6, time: 7, kind: 8, nick: 9 } as const;
 
 export interface P2PFilters {
-  /** identifiants Binance des modes de paiement (vide = tous). Des ids et
-   *  non des positions : l'ordre des méthodes de Binance peut changer entre
+  /** identifiants des modes de paiement de la plateforme (vide = tous). Des ids
+   *  et non des positions : l'ordre des méthodes peut changer entre
    *  deux relevés, un masque mémorisé désignerait alors d'autres méthodes. */
   pay: string[];
   /** montant fiat à traiter (0 = tous) : l'annonce doit l'accepter dans ses limites */
@@ -59,15 +65,49 @@ export const MARKET: Record<P2PFiat, {
   bins: number[];
   defaultBin: number;
   amounts: number[];
-  bonziniPay: string[];
 }> = {
   CNY: {
     label: 'Vente en Chine', timeZone: 'Asia/Shanghai', hourOf: 'de Chine', placeIn: 'en Chine', short: 'CNY', best: 'max', bins: [0.01, 0.02, 0.05], defaultBin: 0.01,
-    amounts: [5_000, 20_000, 100_000, 500_000], bonziniPay: ['ALIPAY', 'WECHAT'],
+    amounts: [5_000, 20_000, 100_000, 500_000],
   },
   XAF: {
     label: 'Achat au Cameroun', timeZone: 'Africa/Douala', hourOf: 'du Cameroun', placeIn: 'au Cameroun', short: 'XAF', best: 'min', bins: [0.5, 1, 2, 5], defaultBin: 1,
-    amounts: [500_000, 1_000_000, 5_000_000, 20_000_000], bonziniPay: [],
+    amounts: [500_000, 1_000_000, 5_000_000, 20_000_000],
+  },
+};
+
+/**
+ * Ce qui diffère d'une plateforme à l'autre. OKX ne publie pas les ordres du
+ * mois mais le TOTAL réalisé, et classe ses annonceurs « certifié » ou
+ * « diamant » (là où Binance dit « marchand » ou « pro »).
+ */
+export const EXCHANGE: Record<P2PExchange, {
+  label: string;
+  /** identifiants des modes de paiement du filtre Bonzini, par devise */
+  bonziniPay: Record<P2PFiat, string[]>;
+  ordersColumn: string;
+  ordersFilter: string;
+  bonziniNote: Record<P2PFiat, string>;
+  kindChips: [string, string, string];
+  kindTag: Record<1 | 2, string>;
+}> = {
+  binance: {
+    label: 'Binance',
+    bonziniPay: { CNY: ['ALIPAY', 'WECHAT'], XAF: [] },
+    ordersColumn: 'Ordres/mois',
+    ordersFilter: 'Ordres par mois, au moins',
+    bonziniNote: { CNY: 'Alipay ou WeChat, 200 ordres/mois, 95 % de réussite.', XAF: '200 ordres/mois, 95 % de réussite.' },
+    kindChips: ['Tous', 'Marchands', 'Pro'],
+    kindTag: { 1: 'Marchand', 2: 'Pro' },
+  },
+  okx: {
+    label: 'OKX',
+    bonziniPay: { CNY: ['aliPay', 'wxPay'], XAF: [] },
+    ordersColumn: 'Ordres (total)',
+    ordersFilter: 'Ordres réalisés (total), au moins',
+    bonziniNote: { CNY: 'Alipay ou WeChat, 200 ordres réalisés, 95 % de réussite.', XAF: '200 ordres réalisés, 95 % de réussite.' },
+    kindChips: ['Tous', 'Certifiés', 'Diamant'],
+    kindTag: { 1: 'Certifié', 2: 'Diamant' },
   },
 };
 
@@ -80,9 +120,9 @@ export function payMask(methods: P2PBook['methods'], ids: string[]): number {
   return ids.reduce((mask, id) => mask | methodBit(methods.findIndex((m) => m.id === id)), 0);
 }
 
-/** Filtre Bonzini : ≥ 200 ordres/mois, ≥ 95 % de réussite (+ Alipay/WeChat côté Chine). */
-export function bonziniFilters(fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters {
-  return { ...blankFilters(), pay: MARKET[fiat].bonziniPay.filter((id) => methods.some((m) => m.id === id)), minOrders: 200, minFinish: 950 };
+/** Filtre Bonzini : ≥ 200 ordres (du mois sur Binance, au total sur OKX), ≥ 95 % de réussite (+ Alipay/WeChat côté Chine). */
+export function bonziniFilters(exchange: P2PExchange, fiat: P2PFiat, methods: P2PBook['methods']): P2PFilters {
+  return { ...blankFilters(), pay: EXCHANGE[exchange].bonziniPay[fiat].filter((id) => methods.some((m) => m.id === id)), minOrders: 200, minFinish: 950 };
 }
 
 export const sameFilters = (a: P2PFilters, b: P2PFilters) =>
@@ -92,7 +132,7 @@ export const sameFilters = (a: P2PFilters, b: P2PFilters) =>
 /** Prédicat d'un jeu de filtres pour un carnet (le masque est résolu une fois). */
 export function matcher(f: P2PFilters, methods: P2PBook['methods']): (ad: P2PAd) => boolean {
   const mask = payMask(methods, f.pay);
-  // ids absents du carnet (méthode retirée par Binance) : ignorés plutôt que de tout masquer
+  // ids absents du carnet (méthode retirée par la plateforme) : ignorés plutôt que de tout masquer
   return (ad) => passes(ad, f, mask);
 }
 
@@ -187,6 +227,19 @@ export function zoomOf(ads: P2PAd[], fiat: P2PFiat, f: P2PFilters, full: boolean
       const q = p[Math.ceil(p.length * 0.97) - 1];
       if (q < hi) { hi = q; mode = 'auto'; }
     }
+  } else if (!full && p.length > 1) {
+    // Petit carnet (OKX au Cameroun : une dizaine d'annonces au filtre
+    // Bonzini) : un quantile ne veut rien dire, on garde ±3 % autour de la
+    // médiane du côté du mauvais prix — une annonce isolée à 750 XAF ne doit
+    // pas écraser le graphique.
+    const m = p[p.length >> 1];
+    if (MARKET[fiat].best === 'max') {
+      const cut = m * 0.97;
+      if (cut > lo) { lo = Math.min(cut, m); mode = 'auto'; }
+    } else {
+      const cut = m * 1.03;
+      if (cut < hi) { hi = Math.max(cut, m); mode = 'auto'; }
+    }
   }
   return { lo, hi, mode };
 }
@@ -215,4 +268,15 @@ export function histogram(all: P2PLevel[], bin: number, zoom: P2PZoom, fiat: P2P
 export function impliedRate(cny: number, xaf: number): number {
   if (!Number.isFinite(cny) || !Number.isFinite(xaf) || xaf <= 0) return NaN;
   return Math.round((1e6 * cny) / xaf / 10) * 10;
+}
+
+/** Axe vertical : pas « rond » (1, 2 ou 5 × 10ⁿ) pour environ 4 graduations,
+ *  plafond = premier multiple du pas au-dessus de la plus haute barre. Ainsi
+ *  29 % donne 0-10-20-30 et non 0-12,5-25-37,5-50 (affiché « 13 % »). */
+export function niceAxis(v: number): { max: number; step: number } {
+  const raw = Math.max(v, 1) / 4;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  // pas d'au moins 1 point : les graduations s'affichent en % entiers
+  const step = Math.max(1, [1, 2, 5, 10].map((k) => k * mag).find((s) => s >= raw) ?? 10 * mag);
+  return { max: step * Math.ceil(Math.max(v, 1) / step - 1e-9), step };
 }

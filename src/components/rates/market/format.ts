@@ -1,4 +1,4 @@
-// Formats d'affichage du sous-module « Marché Binance » (fr-FR, espaces fines).
+// Formats d'affichage du sous-module « Marché P2P » (fr-FR, espaces fines).
 const nf = (d: number) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 export const fmtPrice = (v: number, dec = 2) => (Number.isFinite(v) ? nf(dec).format(v) : '—');

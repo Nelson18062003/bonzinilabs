@@ -1,22 +1,23 @@
-// Carnet Binance P2P en direct pour le sous-module « Marché Binance ».
+// Carnet P2P en direct (Binance ou OKX) pour le sous-module « Marché P2P ».
 // Admin uniquement → `supabaseAdmin` (session) + fetch direct de l'edge
 // function (functions.invoke échoue en « Invalid JWT » — supabase-clients.md).
 // Rafraîchi toutes les 30 s tant que l'écran est visible ; l'ancien relevé
 // reste affiché pendant le chargement du suivant (react-query garde `data`
-// pendant un refetch), et chaque devise a son propre cache.
+// pendant un refetch), et chaque plateforme × devise a son propre cache.
 // `refresh()` (bouton « Actualiser ») demande un relevé NEUF : il passe outre
 // le cache de 20 s de la fonction serveur.
 import { useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabaseAdmin } from '@/integrations/supabase/client';
 import { VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY } from '@/lib/env';
-import type { P2PBook, P2PFiat } from '@/lib/p2pMarket';
+import type { P2PBook, P2PExchange, P2PFiat } from '@/lib/p2pMarket';
 
 export const P2P_REFRESH_MS = 30_000;
 
-async function fetchBook(fiat: P2PFiat, fresh: boolean): Promise<P2PBook> {
+async function fetchBook(exchange: P2PExchange, fiat: P2PFiat, fresh: boolean): Promise<P2PBook> {
   const { data: { session } } = await supabaseAdmin.auth.getSession();
   if (!session) throw new Error('Session admin requise');
+  // Le nom de la fonction date d'avant OKX : elle sert les deux plateformes.
   const res = await fetch(`${VITE_SUPABASE_URL}/functions/v1/binance-p2p-book`, {
     method: 'POST',
     headers: {
@@ -24,18 +25,18 @@ async function fetchBook(fiat: P2PFiat, fresh: boolean): Promise<P2PBook> {
       apikey: VITE_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ fiat, fresh }),
+    body: JSON.stringify({ exchange, fiat, fresh }),
   });
   const json = await res.json().catch(() => ({ success: false, error: res.statusText }));
   if (!res.ok || !json.success) throw new Error(json.error || `Erreur ${res.status}`);
   return json.book as P2PBook;
 }
 
-export function useBinanceP2PBook(fiat: P2PFiat, { live = true }: { live?: boolean } = {}) {
+export function useP2PBook(exchange: P2PExchange, fiat: P2PFiat, { live = true }: { live?: boolean } = {}) {
   const fresh = useRef(false);
   const q = useQuery({
-    queryKey: ['binance-p2p-book', fiat],
-    queryFn: () => { const f = fresh.current; fresh.current = false; return fetchBook(fiat, f); },
+    queryKey: ['p2p-book', exchange, fiat],
+    queryFn: () => { const f = fresh.current; fresh.current = false; return fetchBook(exchange, fiat, f); },
     refetchInterval: live ? P2P_REFRESH_MS : false,
     refetchIntervalInBackground: false,
     staleTime: 15_000,
