@@ -1340,7 +1340,7 @@ export function DesktopPaymentPanel({ paymentId }: { paymentId: string }) {
           </div>
           {cashFlow === 'scan' && cashStep === 'scan' ? (
             <AdminCashScan paymentId={paymentId} onDone={() => setCashFlow('sign')} onCancel={() => setCashFlow(null)} />
-          ) : cashFlow === 'sign' && cashStep === 'sign' ? (
+          ) : cashFlow === 'sign' && (cashStep === 'sign' || cashStep === 'scan') ? (
             <AdminCashSign paymentId={paymentId} beneficiaryName={cashBeneficiaryName} onDone={() => setCashFlow(null)} onCancel={() => setCashFlow(null)} />
           ) : null}
         </div>

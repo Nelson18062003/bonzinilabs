@@ -9,6 +9,8 @@
 //      personne qui signe DÉCLARE (et sa pièce, si elle la montre) →
 //      confirm_cash_payment.
 // Réservé à `canHandleCash` (le serveur le vérifie de toute façon).
+// L'ADMINISTRATION (canProcessPayments) peut passer le scan, et valider sans
+// signature ni nom (décision du propriétaire, 31/10/2026) ; l'agent cash non.
 // ============================================================
 import { useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +23,7 @@ import { parseCashQRCode } from '@/hooks/useCashPayment';
 import { useAgentConfirmCashPayment, useAgentScanCashPayment } from '@/hooks/useAgentCashActions';
 import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { useQrScanner } from '@/mobile/components/reception/useQrScanner';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { cn } from '@/lib/utils';
 
 /** Rafraîchit la fiche, la timeline, la liste et les pastilles après un geste cash. */
@@ -59,6 +62,7 @@ export function AdminCashScan({
 }) {
   const scan = useAgentScanCashPayment();
   const invalidate = useInvalidateCashPayment(paymentId);
+  const canSkip = useAdminAuth().hasPermission('canProcessPayments');
   const [manual, setManual] = useState('');
   const [mismatch, setMismatch] = useState(false);
   const busy = useRef(false);
@@ -165,6 +169,11 @@ export function AdminCashScan({
         </Button>
       </form>
 
+      {canSkip && (
+        <Button type="button" variant="outline" className="w-full" onClick={onDone} disabled={scan.isPending}>
+          Remettre sans scanner
+        </Button>
+      )}
       <Button type="button" variant="outline" className="w-full" onClick={onCancel} disabled={scan.isPending}>
         Annuler
       </Button>
@@ -187,12 +196,14 @@ export function AdminCashSign({
 }) {
   const confirm = useAgentConfirmCashPayment();
   const invalidate = useInvalidateCashPayment(paymentId);
+  const isAdmin = useAdminAuth().hasPermission('canProcessPayments');
   const [handed, setHanded] = useState(false);
   const [declaredName, setDeclaredName] = useState('');
   const [idNumber, setIdNumber] = useState('');
-  const ready = handed && declaredName.trim().length >= 2;
+  // L'administration valide sans nom ni signature ; l'agent cash, jamais.
+  const ready = handed && (isAdmin || declaredName.trim().length >= 2);
 
-  const handleSave = async (signatureDataUrl: string) => {
+  const handleSave = async (signatureDataUrl: string | null) => {
     if (!ready) return;
     try {
       const result = await confirm.mutateAsync({
@@ -202,7 +213,7 @@ export function AdminCashSign({
         signerIdNumber: idNumber,
       });
       if (result?.success) {
-        toast.success('Signature enregistrée — cash remis');
+        toast.success(signatureDataUrl ? 'Signature enregistrée — cash remis' : 'Cash remis — validé sans signature');
         invalidate();
         onDone();
       } else {
@@ -221,13 +232,13 @@ export function AdminCashSign({
         Bénéficiaire attendu : {beneficiaryName}. Vérifiez son identité avant de remettre les fonds.
       </p>
       <TextField
-        label="Nom de la personne qui signe"
+        label={isAdmin ? 'Nom de la personne qui reçoit (facultatif)' : 'Nom de la personne qui signe'}
         value={declaredName}
         onChange={(e) => setDeclaredName(e.target.value)}
         placeholder="Tel qu’elle le déclare"
         autoComplete="off"
         variant="name"
-        required
+        required={!isAdmin}
       />
       <TextField
         label="N° de pièce d’identité (si présentée)"
@@ -247,9 +258,14 @@ export function AdminCashSign({
         <span className="text-[15px] font-medium">Cash remis à la personne qui signe</span>
       </label>
       <SignatureCanvas onSave={handleSave} onCancel={onCancel} isLoading={confirm.isPending} disabled={!ready} />
+      {isAdmin && (
+        <Button type="button" variant="outline" className="w-full" onClick={() => void handleSave(null)} disabled={!ready || confirm.isPending}>
+          Valider sans signature
+        </Button>
+      )}
       {!ready && (
         <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-          <Check className="h-3.5 w-3.5" /> Saisissez le nom déclaré et cochez « Cash remis » pour confirmer.
+          <Check className="h-3.5 w-3.5" /> {isAdmin ? 'Cochez « Cash remis » pour confirmer.' : 'Saisissez le nom déclaré et cochez « Cash remis » pour confirmer.'}
         </p>
       )}
     </div>

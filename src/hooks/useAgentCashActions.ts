@@ -64,6 +64,8 @@ export function useAgentScanCashPayment() {
  * with the object PATH: the server checks the file exists, was uploaded by
  * this account, for this payment, after the scan.
  * `signedByName` is the name the signer DECLARES (not the expected one).
+ * Administration (canProcessPayments) : signature, nom et scan facultatifs
+ * (décision du propriétaire, 31/10/2026) — sans signature, rien n'est déposé.
  */
 export function useAgentConfirmCashPayment() {
   const queryClient = useQueryClient();
@@ -76,25 +78,28 @@ export function useAgentConfirmCashPayment() {
       signerIdNumber,
     }: {
       paymentId: string;
-      signatureDataUrl: string;
-      signedByName: string;
+      signatureDataUrl?: string | null;
+      signedByName?: string | null;
       signerIdNumber?: string | null;
     }): Promise<ConfirmCashPaymentResult> => {
-      // Upload signature to storage
-      const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
-      const fileName = `${paymentId}/${Date.now()}_signature.png`;
+      // Upload signature to storage (s'il y en a une)
+      let fileName = '';
+      if (signatureDataUrl) {
+        const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
+        fileName = `${paymentId}/${Date.now()}_signature.png`;
 
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from('cash-signatures')
-        .upload(fileName, signatureBlob, { contentType: 'image/png' });
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('cash-signatures')
+          .upload(fileName, signatureBlob, { contentType: 'image/png' });
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
+      }
 
-      // Confirm the payment
+      // Confirm the payment ('' = sans signature / sans nom : le serveur le lit comme absent)
       const { data, error } = await supabaseAdmin.rpc('confirm_cash_payment', rpcArgs<'confirm_cash_payment'>({
         p_payment_id: paymentId,
         p_signature_path: fileName,
-        p_signed_by_name: signedByName.trim(),
+        p_signed_by_name: signedByName?.trim() ?? '',
         p_signer_id_number: signerIdNumber?.trim() || null,
       }));
 

@@ -34,12 +34,31 @@ function latestBody(fn: string): string {
 }
 
 describe('SÉCURITÉ — chaîne cash : scan puis signature, par canHandleCash', () => {
-  it.each(['scan_cash_payment', 'confirm_cash_payment'])('%s exige canHandleCash', (fn) => {
-    const body = latestBody(fn);
+  it('scan_cash_payment exige canHandleCash', () => {
+    const body = latestBody('scan_cash_payment');
     expect(body).toContain("admin_has_permission(auth.uid(), 'canHandleCash')");
     expect(body).not.toContain("'canProcessPayments'");
     expect(body).toContain('WHERE id = p_payment_id FOR UPDATE');
     expect(body).toContain("IN ('rejected', 'cancelled_by_admin')");
+  });
+
+  // Décision du propriétaire (31/10/2026) : l'administration (canProcessPayments)
+  // valide la remise sans scan ni signature ; l'agent cash garde la chaîne complète.
+  it('confirm_cash_payment : agent cash (canHandleCash) ou administration (canProcessPayments), clôture verrouillée', () => {
+    const body = latestBody('confirm_cash_payment');
+    expect(body).toContain("admin_has_permission(auth.uid(), 'canHandleCash')");
+    expect(body).toContain("admin_has_permission(auth.uid(), 'canProcessPayments')");
+    expect(body).toContain('_cash_payment_complete(');
+    const core = latestBody('_cash_payment_complete');
+    expect(core).toContain('WHERE id = p_payment_id FOR UPDATE');
+    expect(core).toContain("IN ('rejected', 'cancelled_by_admin')");
+    expect(core).toContain("v_payment.status = 'completed'");
+    expect(core).toContain('_payment_debit_held(p_payment_id) <> v_payment.amount_xaf');
+  });
+
+  it('_cash_payment_complete n’est appelable que par les RPC (aucun EXECUTE pour anon / authenticated)', () => {
+    const file = files.map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8')).find((c) => c.includes('FUNCTION public._cash_payment_complete('));
+    expect(file).toContain('REVOKE EXECUTE ON FUNCTION public._cash_payment_complete(uuid, text, text, text, boolean) FROM PUBLIC, anon, authenticated');
   });
 
   it('scan_cash_payment(id, jeton) : seulement depuis cash_pending, jeton exact, montant réservé', () => {
@@ -50,7 +69,7 @@ describe('SÉCURITÉ — chaîne cash : scan puis signature, par canHandleCash',
     expect(body).toContain('_payment_debit_held(p_payment_id) <> v_payment.amount_xaf');
   });
 
-  it('les anciennes signatures (sans jeton, URL publique) refusent toujours', () => {
+  it('le 21/10, les anciennes signatures (sans jeton, URL publique) refusaient (le scan sans jeton refuse toujours)', () => {
     for (const sig of ['scan_cash_payment(p_payment_id uuid)', 'confirm_cash_payment(p_payment_id uuid, p_signature_url text, p_signed_by_name text)']) {
       const idx = CHAIN.indexOf(`CREATE OR REPLACE FUNCTION public.${sig}`);
       expect(idx, sig).toBeGreaterThan(-1);
@@ -60,16 +79,27 @@ describe('SÉCURITÉ — chaîne cash : scan puis signature, par canHandleCash',
     }
   });
 
-  it('confirm_cash_payment : après le scan, fichier déposé par l’appelant pour CE paiement, nom déclaré', () => {
+  it('confirm_cash_payment, agent cash : après le scan, fichier déposé par l’appelant pour CE paiement, nom déclaré', () => {
     const body = latestBody('confirm_cash_payment');
     expect(body).toMatch(/^CREATE OR REPLACE FUNCTION public\.confirm_cash_payment\(p_payment_id uuid, p_signature_path text, p_signed_by_name text, p_signer_id_number text\)/);
-    expect(body).toContain("v_payment.status <> 'cash_scanned'");
+    // La chaîne stricte vit dans la branche « pas administration ».
+    const agent = body.slice(body.indexOf('IF NOT v_admin THEN'));
+    expect(agent).toContain("v_payment.status <> 'cash_scanned'");
+    expect(agent).toContain('IF v_signed_by IS NULL');
+    expect(agent).toContain('o.created_at >= v_payment.cash_scanned_at');
+    // Une signature fournie, même par l'administration, est un vrai fichier de CE paiement, déposé par l'appelant.
     expect(body).toContain("o.bucket_id = 'cash-signatures'");
     expect(body).toContain('COALESCE(o.owner_id, o.owner::text) = auth.uid()::text');
-    expect(body).toContain('o.created_at >= v_payment.cash_scanned_at');
     expect(body).toContain("p_payment_id::text || '/'");
-    expect(body).toContain('IF v_signed_by IS NULL');
-    expect(body).toContain('_payment_debit_held(p_payment_id) <> v_payment.amount_xaf');
+  });
+
+  it('l’ancienne confirmation (3 arguments) est réservée à l’administration', () => {
+    const files3 = [...files].reverse().map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'));
+    const sig = 'CREATE OR REPLACE FUNCTION public.confirm_cash_payment(p_payment_id uuid, p_signature_url text, p_signed_by_name text)';
+    const content = files3.find((c) => c.includes(sig))!;
+    const body = content.slice(content.indexOf(sig), content.indexOf('$function$;', content.indexOf(sig)));
+    expect(body).toContain("IF NOT public.admin_has_permission(auth.uid(), 'canProcessPayments') THEN");
+    expect(body).toContain('_cash_payment_complete(');
   });
 
   it('ni le scan ni la confirmation ne sont exposés à Mola (caméra et signature devant le client)', () => {
