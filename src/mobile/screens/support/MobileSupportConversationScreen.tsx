@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 import type { ChatMessage } from '@/types/chat';
 import type { TemplateContext } from '@/lib/template-vars';
 import { SURFACE, TEXT, StatusPill, Avatar, Holder } from '@/mobile/designKit';
+import { ConversationV2 } from './ConversationV2';
 
 // Fond de la zone de messages (identique côté client — cohérence cross-app).
 const CHAT_BG = 'bg-[hsl(30_8%_96%)] dark:bg-[hsl(220_20%_11%)]';
@@ -44,7 +45,15 @@ interface MobileSupportConversationScreenProps {
   embedded?: boolean;
 }
 
+/**
+ * Téléphone : la conversation v2 (ConversationV2). Console desktop
+ * (`embedded`) : l'écran d'origine, inchangé.
+ */
 export function MobileSupportConversationScreen({ embedded = false }: MobileSupportConversationScreenProps = {}) {
+  return embedded ? <EmbeddedConversation embedded /> : <ConversationV2 />;
+}
+
+function EmbeddedConversation({ embedded = false }: MobileSupportConversationScreenProps = {}) {
   const { t } = useTranslation('support');
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();

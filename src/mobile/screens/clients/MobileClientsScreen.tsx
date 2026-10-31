@@ -1,193 +1,196 @@
-import { useMemo, useState } from 'react';
-import { QueryError } from '@/components/ui/QueryError';
-import { useTranslation } from 'react-i18next';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+/**
+ * Clients — l'onglet (refonte v2, maquette 03/01).
+ *
+ * Une recherche (nom, téléphone, e-mail, entreprise, BZ-), trois filtres
+ * (Tous · Avec solde · Découvert N) et le bouton de tri ⇅, qui ouvre une
+ * feuille : le tri (nom, solde, dépôts, paiements, ancienneté) et les autres
+ * statuts (Actifs, Inactifs, Suspendus, KYC, Solde nul). Une ligne par
+ * client : initiales, nom, BZ + téléphone, solde à droite (tag Découvert,
+ * Inactif, Suspendu ou KYC). La liste se charge au fil du défilement, 40 par
+ * 40, au lieu de tout rendre d'un coup. Scanner et « + » en haut à droite.
+ *
+ * Données : `useClients()` (supabaseAdmin), recherche et tri locaux
+ * (`clientSearch.ts`). Le desktop a son propre écran (DesktopClientsScreen).
+ */
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowUpDown, Check, Megaphone, Plus, ScanLine } from 'lucide-react';
 import { useClients } from '@/hooks/useClientManagement';
 import { matchesClientSearch, compareClients, type ClientSortField } from '@/lib/clientSearch';
-import { ArrowUpDown, Check, Megaphone, Plus, ScanLine, Search, User } from 'lucide-react';
-import { SkeletonClientItem } from '@/mobile/components/ui/SkeletonCard';
-import { PullToRefresh } from '@/mobile/components/ui/PullToRefresh';
-import { formatXAF } from '@/lib/formatters';
-import { useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { InfiniteScrollTrigger } from '@/mobile/components/ui/InfiniteScrollTrigger';
 import { cn } from '@/lib/utils';
 import {
-  SURFACE,
-  TEXT,
-  Chip,
-  IconButton,
-  clientStatusTone,
-  Avatar,
-  StatusPill,
-  TextInput,
-  Holder,
-  PrimaryPill,
-  BottomSheet,
+  BottomSheet, Chip, EmptyLine, IconCircle, Initials, ItemList, ItemRow, RoundButton, SearchBox, SectionHead, Tag, TabTop, TEXT, type Tone,
 } from '@/mobile/designKit';
 import type { ClientStatus } from '@/types/admin';
+import { ChipRow, xaf } from './parts';
 
-// Filter labels are static since they're defined outside the component.
-// For i18n, we re-create them inside the component.
-const STATUS_FILTER_KEYS: { value: ClientStatus | 'all'; labelKey: string; defaultLabel: string }[] = [
-  { value: 'all', labelKey: 'all', defaultLabel: 'Tous' },
-  { value: 'ACTIVE', labelKey: 'activeUsers', defaultLabel: 'Actifs' },
-  { value: 'INACTIVE', labelKey: 'inactiveUsers', defaultLabel: 'Inactifs' },
-  { value: 'SUSPENDED', labelKey: 'suspended', defaultLabel: 'Suspendus' },
-  { value: 'PENDING_KYC', labelKey: 'kyc', defaultLabel: 'KYC' },
-];
+type Filter = 'all' | 'balance' | 'overdraft' | 'zero' | ClientStatus;
+type SortKey = `${ClientSortField}-${'asc' | 'desc'}`;
 
-// Tri : mêmes options que le menu « Trier » desktop.
-type SortKey = 'name-asc' | 'name-desc' | 'balance-desc' | 'balance-asc' | 'created-desc' | 'created-asc';
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+const SORTS: { value: SortKey; label: string }[] = [
   { value: 'created-desc', label: 'Plus récents' },
   { value: 'created-asc', label: 'Plus anciens' },
   { value: 'name-asc', label: 'Nom A → Z' },
   { value: 'name-desc', label: 'Nom Z → A' },
-  { value: 'balance-desc', label: 'Solde décroissant' },
-  { value: 'balance-asc', label: 'Solde croissant' },
+  { value: 'balance-desc', label: 'Solde le plus haut' },
+  { value: 'balance-asc', label: 'Solde le plus bas' },
+  { value: 'deposits-desc', label: 'Plus de dépôts' },
+  { value: 'payments-desc', label: 'Plus de paiements' },
 ];
 
+const MORE_FILTERS: { value: Filter; label: string }[] = [
+  { value: 'ACTIVE', label: 'Actifs' },
+  { value: 'INACTIVE', label: 'Inactifs' },
+  { value: 'SUSPENDED', label: 'Suspendus' },
+  { value: 'PENDING_KYC', label: 'KYC' },
+  { value: 'zero', label: 'Solde nul' },
+];
+
+const PAGE = 40;
+
+/** « +237 690 55 66 77 » → « 690 55 66 77 » : le Cameroun va sans indicatif. */
+export function shortPhone(raw: string | null | undefined): string {
+  const p = (raw ?? '').trim();
+  return p.startsWith('+237') ? p.slice(4).trim() : p;
+}
+
+/** Le tag d'un client dans une liste : découvert d'abord, sinon son statut s'il n'est pas actif. */
+export function clientTag(status: string, balance: number): { tone: Tone; label: string } | null {
+  if (balance < 0) return { tone: 'danger', label: 'Découvert' };
+  if (status === 'INACTIVE') return { tone: 'neutral', label: 'Inactif' };
+  if (status === 'SUSPENDED') return { tone: 'danger', label: 'Suspendu' };
+  if (status === 'PENDING_KYC') return { tone: 'pending', label: 'KYC' };
+  return null;
+}
+
 export function MobileClientsScreen() {
-  const { t } = useTranslation('common');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ClientStatus | 'all'>('all');
-  const [sortKey, setSortKey] = useState<SortKey>('created-desc');
-  const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const navigate = useNavigate();
-
-  const STATUS_FILTERS = STATUS_FILTER_KEYS.map(f => ({ value: f.value, label: t(f.labelKey, { defaultValue: f.defaultLabel }) }));
-
+  const { hasPermission } = useAdminAuth();
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [sort, setSort] = useState<SortKey>('created-desc');
+  const [sheet, setSheet] = useState(false);
+  const [shown, setShown] = useState(PAGE);
   const { data: clients, isLoading, isError, refetch } = useClients();
 
-  // Recherche + filtre + tri côté client (voir src/lib/clientSearch.ts) :
-  // instantané, insensible aux accents, prénom+nom, téléphone, e-mail.
-  const filteredClients = useMemo(() => {
-    let list = clients ?? [];
-    if (statusFilter !== 'all') list = list.filter((c) => c.status === statusFilter);
-    const q = searchQuery.trim();
-    if (q) list = list.filter((c) => matchesClientSearch(c, q));
-    const [field, dir] = sortKey.split('-') as [ClientSortField, 'asc' | 'desc'];
-    return [...list].sort(compareClients(field, dir === 'asc'));
-  }, [clients, statusFilter, searchQuery, sortKey]);
+  const all = useMemo(() => clients ?? [], [clients]);
+  const overdraftCount = useMemo(() => all.filter((c) => (c.walletBalance || 0) < 0).length, [all]);
 
-  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortKey)?.label ?? '';
+  const list = useMemo(() => {
+    let l = all;
+    if (filter === 'balance') l = l.filter((c) => (c.walletBalance || 0) > 0);
+    else if (filter === 'overdraft') l = l.filter((c) => (c.walletBalance || 0) < 0);
+    else if (filter === 'zero') l = l.filter((c) => (c.walletBalance || 0) === 0);
+    else if (filter !== 'all') l = l.filter((c) => c.status === filter);
+    const q = query.trim();
+    if (q) l = l.filter((c) => matchesClientSearch(c, q));
+    const [field, dir] = sort.split('-') as [ClientSortField, 'asc' | 'desc'];
+    return [...l].sort(compareClients(field, dir === 'asc'));
+  }, [all, filter, query, sort]);
+
+  // Une nouvelle recherche ou un autre filtre repart du haut.
+  useEffect(() => setShown(PAGE), [filter, query, sort]);
+
+  const extraFilter = MORE_FILTERS.find((f) => f.value === filter);
 
   return (
-    <div className="flex min-h-full flex-col">
-      <MobileHeader title={t('clients', { defaultValue: 'Clients' })} rightElement={<div className="flex items-center gap-2"><IconButton icon={Megaphone} onClick={() => navigate('/m/clients/sources')} ariaLabel="Sources & commerciaux" /><IconButton icon={ScanLine} onClick={() => navigate('/m/clients/scan')} ariaLabel={t('scanCustomerCode', { defaultValue: 'Scanner un identifiant client' })} /><IconButton icon={Plus} variant="primary" onClick={() => navigate('/m/clients/new')} ariaLabel={t('createClient', { defaultValue: 'Créer un client' })} /></div>} />
-
-      <PullToRefresh
-        onRefresh={refetch}
-        className={cn('flex-1 space-y-4 overflow-y-auto px-4 py-5', SURFACE.canvas)}
-      >
-        {/* Search */}
-        <div className="relative">
-          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          <TextInput
-            type="text"
-            placeholder={t('searchByNamePhoneCode', { defaultValue: 'Nom, téléphone ou BZ-…' })}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        {/* Status Filter Chips + tri */}
-        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip icon={ArrowUpDown} label={sortLabel} active={sortKey !== 'created-desc'} onClick={() => setSortSheetOpen(true)} />
-          {STATUS_FILTERS.map((filter) => (
-            <Chip key={filter.value} label={filter.label} active={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)} />
-          ))}
-        </div>
-
-        {/* Clients List */}
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonClientItem key={i} />
-            ))}
-          </div>
-        ) : isError ? (
-          <QueryError what="les clients" onRetry={() => { void refetch(); }} />
-        ) : filteredClients.length > 0 ? (
-          <div className="space-y-3">
-            {filteredClients.map((client) => {
-              const name = `${client.firstName ?? ''} ${client.lastName ?? ''}`.trim() || '?';
-              return (
-                <button
-                  key={client.id}
-                  onClick={() => navigate(`/m/clients/${client.id}`)}
-                  className={cn(
-                    'w-full rounded-lg p-4 text-left transition-colors active:bg-[#F5F5F5] dark:active:bg-[#383838]',
-                    SURFACE.card,
-                    SURFACE.shadow,
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar name={name} size="lg" />
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                        <p className={cn('break-words text-[20px] font-semibold leading-tight', TEXT.strong)}>
-                          {client.firstName} {client.lastName}
-                        </p>
-                        <StatusPill
-                          tone={clientStatusTone(client.status)}
-                          label={client.status === 'ACTIVE' ? t('active', { defaultValue: 'Actif' }) :
-                            client.status === 'INACTIVE' ? t('inactive', { defaultValue: 'Inactif' }) :
-                            client.status === 'SUSPENDED' ? t('suspendedStatus', { defaultValue: 'Suspendu' }) : 'KYC'}
-                        />
-                      </div>
-                      <p className={cn('text-[16px] leading-snug', (client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>{(client.walletBalance || 0) < 0 ? 'Découvert' : 'Solde'} : <b className="tabular-nums">{formatXAF(client.walletBalance || 0)} XAF</b></p>
-                      <p className={cn('text-[16px] leading-snug tabular-nums', TEXT.muted)}>{[client.customerCode, client.phone].filter(Boolean).join(' · ')}</p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Holder icon={User} size="lg" />
-            <p className={cn('mt-4 text-[16px] font-semibold', TEXT.strong)}>
-              {searchQuery ? t('noClientFound', { defaultValue: 'Aucun client trouvé' }) : t('noClientsYet', { defaultValue: 'Aucun client pour le moment' })}
-            </p>
-            <PrimaryPill onClick={() => navigate('/m/clients/new')} className="mt-4">
-              {t('createClient', { defaultValue: 'Créer un client' })}
-            </PrimaryPill>
-          </div>
-        )}
-      </PullToRefresh>
-
-      {/* Sort sheet */}
-      <BottomSheet
-        open={sortSheetOpen}
-        onClose={() => setSortSheetOpen(false)}
-        title={
-          <span className="flex items-center gap-2">
-            <ArrowUpDown className="h-5 w-5" />
-            {t('sortBy', { defaultValue: 'Trier par' })}
-          </span>
+    <div className="flex min-h-full flex-col pb-6">
+      <TabTop
+        title="Clients"
+        right={
+          <>
+            <RoundButton icon={ScanLine} ariaLabel="Scanner un code client" onClick={() => navigate('/m/clients/scan')} />
+            <RoundButton icon={Plus} ariaLabel="Nouveau client" onClick={() => navigate('/m/clients/new')} />
+          </>
         }
-      >
-        <div className="space-y-1">
-          {SORT_OPTIONS.map((opt) => (
+      />
+
+      <div className="px-5 pt-2.5">
+        <SearchBox value={query} onChange={setQuery} placeholder="Nom, téléphone ou BZ-…" />
+      </div>
+
+      <ChipRow className="mt-3.5">
+        <Chip label="Tous" active={filter === 'all'} onClick={() => setFilter('all')} />
+        <Chip label="Avec solde" active={filter === 'balance'} onClick={() => setFilter('balance')} />
+        <Chip label="Découvert" count={overdraftCount} active={filter === 'overdraft'} onClick={() => setFilter('overdraft')} />
+        {extraFilter && <Chip label={extraFilter.label} active onClick={() => setFilter('all')} />}
+        <Chip label={<ArrowUpDown className="h-5 w-5" aria-label="Trier et filtrer" />} active={sort !== 'created-desc'} onClick={() => setSheet(true)} />
+      </ChipRow>
+
+      {isLoading ? (
+        <ItemList className="mt-2">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="flex items-center gap-3.5 border-b border-[#D9D9D9] py-3.5 last:border-b-0 dark:border-[#444444]">
+              <span className="h-11 w-11 animate-pulse rounded-full bg-[#F5F5F5] dark:bg-[#383838]" />
+              <span className="h-10 flex-1 animate-pulse rounded-lg bg-[#F5F5F5] dark:bg-[#383838]" />
+            </div>
+          ))}
+        </ItemList>
+      ) : isError ? (
+        <EmptyLine action={{ label: 'Réessayer', onClick: () => void refetch() }}>La liste n'a pas pu être chargée.</EmptyLine>
+      ) : list.length === 0 ? (
+        <EmptyLine action={{ label: 'Nouveau client', onClick: () => navigate('/m/clients/new') }}>
+          {query || filter !== 'all' ? 'Aucun client trouvé.' : 'Aucun client pour le moment.'}
+        </EmptyLine>
+      ) : (
+        <ItemList className="mt-1">
+          {list.slice(0, shown).map((c) => {
+            const name = `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() || '?';
+            const bal = c.walletBalance || 0;
+            const tag = clientTag(c.status, bal);
+            return (
+              <ItemRow
+                key={c.id}
+                leading={<Initials name={name} />}
+                title={name}
+                subtitle={[c.customerCode, shortPhone(c.phone)].filter(Boolean).join(' · ')}
+                right={
+                  <span className="shrink-0 text-right">
+                    <span className={cn('block text-[17px] font-bold tabular-nums', TEXT.strong)}>{xaf(bal)}</span>
+                    {tag ? <Tag tone={tag.tone} className="mt-[5px]">{tag.label}</Tag> : <span className={cn('block text-[15px]', TEXT.muted)}>XAF</span>}
+                  </span>
+                }
+                onClick={() => navigate(`/m/clients/${c.id}`)}
+              />
+            );
+          })}
+          <InfiniteScrollTrigger onLoadMore={() => setShown((n) => n + PAGE)} hasNextPage={shown < list.length} isFetchingNextPage={false} />
+        </ItemList>
+      )}
+
+      <BottomSheet open={sheet} onClose={() => setSheet(false)}>
+        <h3 className={cn('text-[22px] font-semibold', TEXT.strong)}>Trier</h3>
+        <div className="mt-2">
+          {SORTS.map((o) => (
             <button
-              key={opt.value}
-              onClick={() => {
-                setSortKey(opt.value);
-                setSortSheetOpen(false);
-              }}
-              className={cn(
-                'flex min-h-[48px] w-full items-center justify-between rounded-lg px-3 py-3 text-left text-[16px] font-medium transition-colors',
-                sortKey === opt.value ? cn('bg-[#F5F5F5] dark:bg-[#383838]', TEXT.strong) : TEXT.strong,
-              )}
+              key={o.value}
+              type="button"
+              onClick={() => { setSort(o.value); setSheet(false); }}
+              className="flex min-h-[52px] w-full items-center justify-between border-b border-[#D9D9D9] text-left last:border-b-0 dark:border-[#444444]"
             >
-              {opt.label}
-              {sortKey === opt.value && <Check className="h-5 w-5" />}
+              <span className={cn('text-[17px] font-semibold', TEXT.strong)}>{o.label}</span>
+              {sort === o.value && <Check className="h-5 w-5" />}
             </button>
           ))}
         </div>
+        <SectionHead title="Statut" className="px-0" />
+        <div className="flex flex-wrap gap-2 pt-1">
+          {MORE_FILTERS.map((f) => (
+            <Chip key={f.value} label={f.label} active={filter === f.value} onClick={() => { setFilter(filter === f.value ? 'all' : f.value); setSheet(false); }} />
+          ))}
+        </div>
+        {hasPermission('canViewClients') && (
+          <ItemRow
+            className="mt-4 border-t border-[#D9D9D9] dark:border-[#444444]"
+            leading={<IconCircle icon={Megaphone} />}
+            title="Sources des clients"
+            chevron
+            onClick={() => { setSheet(false); navigate('/m/clients/sources'); }}
+          />
+        )}
       </BottomSheet>
-
     </div>
   );
 }

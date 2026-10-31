@@ -1,240 +1,192 @@
-import { useEffect, useMemo, useState } from 'react';
-import { QueryError } from '@/components/ui/QueryError';
+/**
+ * Messages clients — refonte v2 (maquette 06/01). Une rangée de puces
+ * (Ouvertes · À moi · À prendre · Fermées · Toutes), une ligne par client :
+ * initiales, nom, dernier message (gras si non lu), assigné ou « À prendre »,
+ * heure et rond noir des non-lus. Le rare — recherche dans les messages,
+ * statistiques, réponses types, suggestions — est dans « … ».
+ */
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { MessageCircle, BarChart3, Search, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { format, isToday, isYesterday } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { BarChart3, MessageSquareQuote, Search, Sparkles } from 'lucide-react';
 import { HighlightedSnippet } from '@/components/support/HighlightedSnippet';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useAdminConversations } from '@/hooks/useAdminChat';
 import { useSearchConversations, useSupportAdmins } from '@/hooks/useAdminChatTools';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
-import type { Locale } from 'date-fns';
-import { SURFACE, TEXT, Avatar, TextInput, Holder, ScreenLoader, Chip } from '@/mobile/designKit';
+import type { ChatConversationWithClient } from '@/types/chat';
+import {
+  ActionSheet, Chip, EmptyLine, FOCUS_RING, Initials, MoreButton, ScreenLoader, SearchBox, SURFACE, Tag, TabTop, TEXT, useSheet,
+} from '@/mobile/designKit';
+import { UnreadBadge } from '@/mobile/screens/more/parts';
 
-type StatusFilter = 'open' | 'all' | 'closed';
-type AssignFilter = 'all' | 'mine' | 'unassigned';
+type Filter = 'open' | 'mine' | 'unassigned' | 'closed' | 'all';
+
+const statusOf = (f: Filter): 'open' | 'closed' | 'all' => (f === 'closed' ? 'closed' : f === 'all' ? 'all' : 'open');
+
+/** « 09:24 », « Hier », « 14 oct. » : l'heure du dernier message. */
+export function chatTime(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isToday(d)) return format(d, 'HH:mm');
+  if (isYesterday(d)) return 'Hier';
+  return format(d, 'd MMM', { locale: fr });
+}
 
 export function MobileSupportListScreen() {
-  const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { hasPermission, currentUser } = useAdminAuth();
   const canAccess = hasPermission('canAccessSupportChat');
+  const more = useSheet();
 
+  const [filter, setFilter] = useState<Filter>('open');
+  const [searching, setSearching] = useState(false);
   const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
-  const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
+  const debounced = useDebouncedValue(search);
+  const query = debounced.trim().length >= 2 ? debounced.trim() : '';
 
-  const { data: conversations, isLoading, isError, refetch } = useAdminConversations(statusFilter);
-  const { data: searchResults, isLoading: isSearchLoading } = useSearchConversations(
-    debouncedSearch.length >= 2 ? debouncedSearch : ''
-  );
+  const openList = useAdminConversations('open');
+  const list = useAdminConversations(statusOf(filter));
+  const { data: searchResults, isLoading: searchLoading } = useSearchConversations(query);
   const { data: admins } = useSupportAdmins();
-  const [locale, setLocale] = useState<Locale | undefined>(undefined);
 
-  useEffect(() => {
-    let cancelled = false;
-    getDateFnsLocale().then((l) => !cancelled && setLocale(l));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const myRoleId = admins?.find((a) => a.user_id === currentUser?.id)?.id ?? null;
+  const open = openList.data ?? [];
+  const mineCount = myRoleId ? open.filter((c) => c.assigned_admin_id === myRoleId).length : 0;
+  const toTakeCount = open.filter((c) => !c.assigned_admin_id).length;
 
-  const myUserRoleId = admins?.find((a) => a.user_id === currentUser?.id)?.id ?? null;
+  const snippets = useMemo(() => new Map((searchResults ?? []).map((r) => [r.conversation_id, r.snippet])), [searchResults]);
 
-  const searchSnippetByConv = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const r of searchResults ?? []) map.set(r.conversation_id, r.snippet);
-    return map;
-  }, [searchResults]);
+  const rows = useMemo(() => {
+    let l = list.data ?? [];
+    if (filter === 'mine') l = myRoleId ? l.filter((c) => c.assigned_admin_id === myRoleId) : [];
+    if (filter === 'unassigned') l = l.filter((c) => !c.assigned_admin_id);
+    if (query && searchResults) l = l.filter((c) => snippets.has(c.id));
+    return l;
+  }, [list.data, filter, myRoleId, query, searchResults, snippets]);
 
-  const filtered = useMemo(() => {
-    let list = conversations ?? [];
-
-    if (assignFilter === 'mine' && myUserRoleId) {
-      list = list.filter((c) => c.assigned_admin_id === myUserRoleId);
-    } else if (assignFilter === 'unassigned') {
-      list = list.filter((c) => !c.assigned_admin_id);
-    }
-
-    // Quand on recherche, on intersecte
-    if (debouncedSearch.trim().length >= 2 && searchResults) {
-      const matchingIds = new Set(searchResults.map((r) => r.conversation_id));
-      list = list.filter((c) => matchingIds.has(c.id));
-    }
-
-    return list;
-  }, [conversations, assignFilter, myUserRoleId, debouncedSearch, searchResults]);
-
-  const isSearching = debouncedSearch.trim().length >= 2;
-
-  const assignFilters: { value: AssignFilter; label: string }[] = [
-    { value: 'all', label: t('admin.filterAll') },
-    { value: 'mine', label: t('admin.filterMine') },
-    { value: 'unassigned', label: t('admin.filterUnassigned') },
-  ];
-  const statusFilters: { value: StatusFilter; label: string }[] = [
-    { value: 'open', label: t('admin.filterOpen') },
-    { value: 'all', label: t('admin.filterAllStatus') },
-    { value: 'closed', label: t('admin.filterClosed') },
-  ];
+  const adminName = (id: string | null) => {
+    const a = admins?.find((x) => x.id === id);
+    return a ? (a.first_name || `${a.first_name ?? ''} ${a.last_name ?? ''}`.trim() || 'Admin') : null;
+  };
 
   if (!canAccess) {
     return (
-      <div className={cn('flex min-h-[100dvh] flex-col items-center justify-center p-6 text-center', SURFACE.canvas)}>
-        <Holder icon={MessageCircle} size="lg" />
-        <p className={cn('mt-4 text-[14px]', TEXT.muted)}>
-          Vous n'avez pas accès au support chat.
-        </p>
+      <div className="flex min-h-full flex-col">
+        <TabTop title="Messages clients" />
+        <EmptyLine action={{ label: 'Ouvrir Plus', onClick: () => navigate('/m/more') }}>Réservé à l'équipe des messages.</EmptyLine>
       </div>
     );
   }
 
+  const chips: { value: Filter; label: string; count?: number }[] = [
+    { value: 'open', label: 'Ouvertes' },
+    { value: 'mine', label: 'À moi', count: mineCount },
+    { value: 'unassigned', label: 'À prendre', count: toTakeCount },
+    { value: 'closed', label: 'Fermées' },
+    { value: 'all', label: 'Toutes' },
+  ];
+
   return (
-    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader
-        title={t('admin.listTitle')}
-        rightElement={
-          <button
-            type="button"
-            onClick={() => navigate('/m/support/stats')}
-            className={cn('flex h-11 w-11 items-center justify-center rounded-full', TEXT.muted)}
-            aria-label={t('admin.statsLink')}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </button>
-        }
+    <div className="flex min-h-full flex-col pb-6">
+      <TabTop
+        title="Messages clients"
+        right={<MoreButton bordered onClick={more.show} />}
       />
 
-      <div className="space-y-3 px-4 py-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className={cn('absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2', TEXT.muted)} />
-          <TextInput
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('admin.searchPlaceholder')}
-            className="pl-10 pr-10"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className={cn('absolute right-3 top-1/2 z-10 -translate-y-1/2', TEXT.muted)}
-              aria-label="Clear"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Assign filter chips */}
-        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {assignFilters.map((filter) => (
-            <Chip key={filter.value} label={filter.label} active={assignFilter === filter.value} onClick={() => setAssignFilter(filter.value)} />
-          ))}
-        </div>
-
-        {/* Status filter chips */}
-        <div className="scrollbar-hide -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {statusFilters.map((filter) => (
-            <Chip key={filter.value} label={filter.label} active={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)} />
-          ))}
-        </div>
-      </div>
-
-      {isLoading || (debouncedSearch.length >= 2 && isSearchLoading) ? (
-        <ScreenLoader />
-      ) : isError ? (
-        <QueryError what="les conversations" onRetry={() => { void refetch(); }} className="mx-4" />
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-          <Holder icon={MessageCircle} size="lg" />
-          <p className={cn('mt-4 text-[14px] font-medium', TEXT.muted)}>
-            {debouncedSearch.length >= 2 ? t('admin.noMatch') : t('admin.listEmpty')}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3 px-4 pb-6">
-          {filtered.map((c) => {
-            const name =
-              `${c.client_first_name ?? ''} ${c.client_last_name ?? ''}`.trim() ||
-              t('admin.noClientName');
-            const unread = c.unread_count_admin;
-            const time = c.last_message_at
-              ? formatDistanceToNow(new Date(c.last_message_at), {
-                  addSuffix: false,
-                  locale,
-                })
-              : '';
-            const assignedAdmin = admins?.find((a) => a.id === c.assigned_admin_id);
-            const assignedName = assignedAdmin
-              ? `${assignedAdmin.first_name ?? ''} ${assignedAdmin.last_name ?? ''}`.trim()
-              : null;
-            const subject = c.subject;
-
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => navigate(`/m/support/${c.id}`)}
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-lg p-4 text-left transition-transform active:scale-[0.98]',
-                  SURFACE.card,
-                  SURFACE.shadow,
-                  c.status === 'closed' && 'opacity-60',
-                )}
-              >
-                <div className="relative">
-                  <Avatar name={name} tone={unread > 0 ? 'info' : 'neutral'} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className={cn('truncate text-[14px]', unread > 0 ? 'font-bold' : 'font-semibold', TEXT.strong)}>
-                      {name}
-                    </span>
-                    <span className={cn('shrink-0 text-[14px]', TEXT.muted)}>{time}</span>
-                  </div>
-                  {subject && (
-                    <p className="truncate text-[14px] font-semibold text-[#1E1E1E] dark:text-[#F5F5F5]">
-                      {subject}
-                    </p>
-                  )}
-                  {isSearching && searchSnippetByConv.has(c.id) ? (
-                    <HighlightedSnippet
-                      text={searchSnippetByConv.get(c.id) ?? ''}
-                      query={debouncedSearch}
-                      maxLength={100}
-                      className={cn('mt-0.5 truncate text-[14px]', unread > 0 ? TEXT.strong : TEXT.muted)}
-                    />
-                  ) : (
-                    <p className={cn('mt-0.5 truncate text-[14px]', unread > 0 ? TEXT.strong : TEXT.muted)}>
-                      {c.last_message_preview || '—'}
-                    </p>
-                  )}
-                  {assignedName && (
-                    <p className="mt-0.5 text-[14px] text-[#682D03] dark:text-[#FFF1C2]">
-                      {t('admin.assignedToLabel')} {assignedName}
-                    </p>
-                  )}
-                </div>
-
-                {unread > 0 && (
-                  <span className="shrink-0 rounded-lg bg-[#FE560D] px-2 py-0.5 text-[14px] font-bold text-white">
-                    {unread}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {searching && (
+        <div className="flex items-center gap-3 px-5 pt-2">
+          <SearchBox value={search} onChange={setSearch} placeholder="Rechercher dans les messages" autoFocus className="flex-1" />
+          <button type="button" onClick={() => { setSearching(false); setSearch(''); }} className={cn('h-11 shrink-0 rounded text-[17px] font-semibold', FOCUS_RING, TEXT.strong)}>Annuler</button>
         </div>
       )}
+
+      <div className="scrollbar-hide flex gap-2.5 overflow-x-auto px-5 pb-1 pt-4">
+        {chips.map((c) => (
+          <Chip key={c.value} label={c.label} count={c.count} active={filter === c.value} onClick={() => setFilter(c.value)} className="h-12 px-4 text-[17px]" />
+        ))}
+      </div>
+
+      {list.isLoading || (query && searchLoading) ? (
+        <ScreenLoader />
+      ) : list.isError ? (
+        <EmptyLine action={{ label: 'Réessayer', onClick: () => void list.refetch() }}>Les conversations n'ont pas pu être chargées.</EmptyLine>
+      ) : rows.length === 0 ? (
+        <EmptyLine>{query ? 'Aucun message ne correspond.' : 'Aucune conversation ici.'}</EmptyLine>
+      ) : (
+        <div className="px-5 pt-1">
+          {rows.map((c) => (
+            <ConversationRow
+              key={c.id}
+              c={c}
+              assignee={adminName(c.assigned_admin_id)}
+              snippet={query ? snippets.get(c.id) : undefined}
+              query={query}
+              onClick={() => navigate(`/m/support/${c.id}`)}
+            />
+          ))}
+        </div>
+      )}
+
+      <ActionSheet
+        open={more.open}
+        onClose={more.hide}
+        actions={[
+          { label: 'Rechercher dans les messages', icon: Search, onClick: () => setSearching(true) },
+          { label: 'Statistiques', icon: BarChart3, onClick: () => navigate('/m/support/stats') },
+          { label: 'Réponses types', icon: MessageSquareQuote, onClick: () => navigate('/m/more/canned-responses') },
+          { label: 'Suggestions aux nouveaux clients', icon: Sparkles, onClick: () => navigate('/m/more/quick-replies') },
+        ]}
+      />
     </div>
   );
 }
+
+function ConversationRow({
+  c, assignee, snippet, query, onClick,
+}: {
+  c: ChatConversationWithClient;
+  assignee: string | null;
+  snippet?: string;
+  query: string;
+  onClick: () => void;
+}) {
+  const name = `${c.client_first_name ?? ''} ${c.client_last_name ?? ''}`.trim() || 'Client';
+  const unread = c.unread_count_admin || 0;
+  const fromUs = !!c.last_admin_message_at && (!c.last_client_message_at || c.last_admin_message_at >= c.last_client_message_at);
+  // L'aperçu du hook porte un emoji (« 🖼️ Photo ») : le mot suffit.
+  const preview = (c.last_message_preview || c.subject || '—').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '');
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn('flex w-full items-center gap-3.5 border-b py-4 text-left last:border-b-0 active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.divider, FOCUS_RING, c.status === 'closed' && 'opacity-70')}
+    >
+      <Initials name={name} size={52} />
+      <span className="min-w-0 flex-1">
+        <span className={cn('block truncate text-[18px] font-semibold leading-tight', TEXT.strong)}>{name}</span>
+        {snippet ? (
+          <HighlightedSnippet text={snippet} query={query} maxLength={90} className={cn('mt-1 block truncate text-[16px]', TEXT.muted)} />
+        ) : (
+          <span className={cn('mt-1 block truncate text-[16px]', unread > 0 ? cn('font-semibold', TEXT.strong) : TEXT.muted)}>
+            {fromUs && unread === 0 ? `Vous : ${preview}` : preview}
+          </span>
+        )}
+        <span className="mt-2 block">
+          {c.status === 'closed'
+            ? <Tag tone="neutral">Fermée</Tag>
+            : assignee
+              ? <Tag tone="neutral">{assignee}</Tag>
+              : <Tag tone="pending">À prendre</Tag>}
+        </span>
+      </span>
+      <span className="flex shrink-0 flex-col items-end gap-2 self-stretch justify-center">
+        <span className={cn('text-[16px] tabular-nums', TEXT.muted)}>{chatTime(c.last_message_at)}</span>
+        <UnreadBadge count={unread} />
+      </span>
+    </button>
+  );
+}
+

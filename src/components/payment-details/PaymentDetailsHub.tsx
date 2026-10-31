@@ -35,10 +35,10 @@ import orangeMoneyLogo from '@/assets/deposit-logos/orange-money.png';
 
 type Tab = 'banks' | 'momo';
 
-const DOC_LANG_KEY = 'bz.paymentDocs.lang';
+export const DOC_LANG_KEY = 'bz.paymentDocs.lang';
 
 /** La langue des documents : celle choisie la dernière fois, sinon celle de l'app. */
-function initialDocLang(uiLang: string): DocLang {
+export function initialDocLang(uiLang: string): DocLang {
   try {
     const saved = localStorage.getItem(DOC_LANG_KEY);
     if (saved === 'fr' || saved === 'en' || saved === 'bi') return saved;
@@ -138,7 +138,7 @@ function busyKey(doc: PaymentDoc, format: PaymentDocFormat): string {
 
 interface Preview { doc: PaymentDoc; orientation: GuideOrientation; title: string; file: File; url: string }
 
-function useDocuments(orientation: GuideOrientation, lang: DocLang) {
+export function useDocuments(orientation: GuideOrientation, lang: DocLang) {
   const { t } = useTranslation('deposits');
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -206,7 +206,7 @@ function DocButtons({ doc, docs, pdfLabel, imagesLabel }: { doc: PaymentDoc; doc
  * téléphone, on peut aussi la partager. L'aperçu est l'image elle-même : clic
  * droit ou appui long « Copier l'image » marche aussi.
  */
-function ImageSheet({ docs }: { docs: DocsApi }) {
+export function ImageSheet({ docs }: { docs: DocsApi }) {
   const { t } = useTranslation('deposits');
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -289,7 +289,7 @@ function ImageSheet({ docs }: { docs: DocsApi }) {
 /* ─────────────── Banques ─────────────── */
 
 /** La coordonnée d'une banque en texte, prête à coller dans un message — référence comprise. */
-function bankText(a: BankGuideAccount, mention: string): string {
+export function bankText(a: BankGuideAccount, mention: string): string {
   return [
     a.holder,
     a.name,

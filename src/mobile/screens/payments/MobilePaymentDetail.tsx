@@ -40,7 +40,6 @@ import {
   useAdminCorrectPayment,
 } from '@/hooks/useAdminPayments';
 import { useAdminUploadPaymentInstruction } from '@/hooks/usePaymentProofUpload';
-import { useAgentConfirmCashPayment } from '@/hooks/useAgentCashActions';
 import {
   PAYMENT_STATUS_CONFIG,
   PAYMENT_METHOD_LABELS,
@@ -49,7 +48,7 @@ import {
 import type { PaymentStatus, PaymentMethod } from '@/types/payment';
 import { cn, validateUploadFile } from '@/lib/utils';
 import { isTerminalPayment } from '@/lib/terminalStatuses';
-import { paymentMainAction } from '@/lib/paymentActions';
+import { cashHandoverStep, paymentMainAction } from '@/lib/paymentActions';
 import {
   canCancelPayment,
   cancelRequiresReason,
@@ -87,8 +86,8 @@ import { PaymentMethodLogo } from '@/mobile/components/payments/PaymentMethodLog
 import { formatCurrency, formatCurrencyRMB, formatNumber } from '@/lib/formatters';
 import { getPaymentSlaLevel } from '@/lib/paymentSla';
 import { whenSentence, sinceSentence } from '@/lib/plainTime';
-import { SignatureCanvas } from '@/components/cash/SignatureCanvas';
-import { CashQRCode } from '@/components/cash/CashQRCode';
+import { AdminCashScan, AdminCashSign } from '@/components/cash/AdminCashHandover';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
 import { toast } from 'sonner';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -177,7 +176,6 @@ export function MobilePaymentDetail() {
   const cancelPayment              = useCancelPayment();
   const correctPayment             = useAdminCorrectPayment();
   const deletePaymentProof         = useDeletePaymentProof();
-  const confirmCash                = useAgentConfirmCashPayment();
 
   // ── Derived proof lists ───────────────────────────────────
   const clientProofs = useMemo(() => proofs?.filter(p => p.uploaded_by_type !== 'admin') ?? [], [proofs]);
@@ -232,8 +230,9 @@ export function MobilePaymentDetail() {
   const [showQR,        setShowQR]        = useState(false);
   const qrInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Cash ──────────────────────────────────────────────────
-  const [signing, setSigning] = useState(false);
+  // ── Cash : scan du QR du client, puis signature du bénéficiaire ──
+  const [cashFlow, setCashFlow] = useState<'scan' | 'sign' | null>(null);
+  const signing = cashFlow !== null;
 
   // ── Coller (Ctrl+V) — routé vers la zone active ───────────
   const isAlipayOrWechat = payment?.method === 'alipay' || payment?.method === 'wechat';
@@ -469,20 +468,6 @@ export function MobilePaymentDetail() {
     } catch { /* géré */ }
   };
 
-  const handleCashSignature = async (signatureDataUrl: string) => {
-    if (!paymentId) return;
-    const signedByName = currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Admin' : 'Admin';
-    try {
-      const result = await confirmCash.mutateAsync({ paymentId, signatureDataUrl, signedByName });
-      if (result?.success) {
-        setSigning(false);
-        toast.success('Signature enregistrée — paiement confirmé');
-      } else {
-        toast.error((result as { error?: string })?.error || 'Erreur lors de la confirmation');
-      }
-    } catch { /* géré */ }
-  };
-
   const handleDownloadReceipt = async () => {
     if (!payment || isGeneratingPDF) return;
     setIsGeneratingPDF(true);
@@ -532,6 +517,15 @@ export function MobilePaymentDetail() {
     }, { replace: true });
   }, [wantsInstruction, isLoading, canSendInstruction, setSearchParams]);
 
+  // « ?qr=… » : le scanner natif de l'app BONZINI HQ a lu le QR du client.
+  // Rien n'est envoyé au serveur ici : la fiche ouvre l'étape « scan » et
+  // c'est le geste « Enregistrer le scan » qui appelle scan_cash_payment.
+  const scannedQr = searchParams.get('qr');
+  const mayHandleCash = hasPermission('canHandleCash');
+  useEffect(() => {
+    if (scannedQr && mayHandleCash) setCashFlow('scan');
+  }, [scannedQr, mayHandleCash]);
+
   // Quand le paiement change de statut sous nos pieds, on ferme l'édition.
   useEffect(() => {
     if (payment && isClosedPayment(payment.status)) setEditBenef(false);
@@ -567,7 +561,8 @@ export function MobilePaymentDetail() {
   const canProcess         = hasPermission('canProcessPayments');
   const isLocked           = isTerminalPayment(payment.status);
   const isCash             = payment.method === 'cash';
-  const mainKind           = paymentMainAction(payment.status, canProcess);
+  const mainKind           = paymentMainAction(payment.status, canProcess, payment.method);
+  const cashStep           = payment.method === 'cash' ? cashHandoverStep(payment.status) : null;
   const canStartProcessing = mainKind === 'start_processing';
   const canComplete        = mainKind === 'complete';
   const canReject          = canProcess && !isLocked;
@@ -696,10 +691,7 @@ export function MobilePaymentDetail() {
           </Card>
         </section>
 
-        {/* ── QR Code cash ─────────────────────────────────── */}
-        {isCash && !isLocked && (
-          <CashQRCode paymentId={payment.id} paymentReference={payment.reference} amountRMB={payment.amount_rmb} beneficiaryName={cashBeneficiaryName} />
-        )}
+        {/* Pas de QR cash ici : il porte le secret du CLIENT, que le staff ne voit pas. */}
 
         {/* ── Le bénéficiaire ──────────────────────────────── */}
         <section>
@@ -913,23 +905,40 @@ export function MobilePaymentDetail() {
             <Card className="space-y-3">
               {extra.cash_signature_url ? (
                 <>
-                  <img src={extra.cash_signature_url} alt="Signature" className={cn('max-h-[120px] w-full rounded-lg bg-white object-contain', SURFACE.shadow)} />
+                  <img src={cashSignatureSrc(extra.cash_signature_url) ?? undefined} alt="Signature" className={cn('max-h-[120px] w-full rounded-lg bg-white object-contain', SURFACE.shadow)} />
                   <Line>
                     {extra.cash_paid_at ? `Signé le ${when(extra.cash_paid_at)}` : 'Signature enregistrée'}
-                    {extra.cash_signed_by_name && <>, devant {extra.cash_signed_by_name}</>}.
+                    {extra.cash_signed_by_name && <>, par {extra.cash_signed_by_name}</>}.
                   </Line>
                   {payment.status === 'completed' && (
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     <CashReceiptDownloadButton payment={payment as any} variant="outline" size="sm" label="Télécharger le reçu PDF" />
                   )}
                 </>
-              ) : signing ? (
-                <SignatureCanvas onSave={handleCashSignature} onCancel={() => setSigning(false)} isLoading={confirmCash.isPending} />
-              ) : (
+              ) : cashFlow === 'scan' && cashStep === 'scan' && mayHandleCash ? (
+                <AdminCashScan
+                  paymentId={payment.id}
+                  prefilledQr={scannedQr}
+                  onDone={() => setCashFlow('sign')}
+                  onCancel={() => {
+                    setCashFlow(null);
+                    if (scannedQr) setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('qr'); return next; }, { replace: true });
+                  }}
+                />
+              ) : cashFlow === 'sign' && cashStep === 'sign' && mayHandleCash ? (
+                <AdminCashSign paymentId={payment.id} beneficiaryName={cashBeneficiaryName} onDone={() => setCashFlow(null)} onCancel={() => setCashFlow(null)} />
+              ) : cashStep === 'scan' ? (
                 <>
-                  <Line>La personne qui reçoit le cash doit signer avant la remise des fonds.</Line>
-                  {!isLocked && <Button className="w-full" onClick={() => setSigning(true)}>Faire signer</Button>}
+                  <Line>Le QR du client doit être scanné au bureau, par un agent cash ou un administrateur habilité, avant la remise des fonds.</Line>
+                  {mayHandleCash && <Button className="w-full" onClick={() => setCashFlow('scan')}>Scanner le QR du client</Button>}
                 </>
+              ) : cashStep === 'sign' ? (
+                <>
+                  <Line>QR scanné. {cashBeneficiaryName} doit signer à la remise des fonds.</Line>
+                  {mayHandleCash && <Button className="w-full" onClick={() => setCashFlow('sign')}>Remettre le cash et faire signer</Button>}
+                </>
+              ) : (
+                <Line>Aucune signature enregistrée.</Line>
               )}
             </Card>
           </section>

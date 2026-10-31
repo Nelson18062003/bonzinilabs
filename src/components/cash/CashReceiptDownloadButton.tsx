@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cashSignatureSrc } from '@/lib/cashSignature';
 import { Button } from '@/components/ui/button';
 import { FileDown, Loader2 } from 'lucide-react';
 import { downloadPDF } from '@/lib/pdf/downloadPDF';
@@ -83,7 +84,7 @@ export function CashReceiptDownloadButton({
         beneficiary_name: beneficiaryName,
         beneficiary_phone: payment.cash_beneficiary_phone || payment.beneficiary_phone,
         beneficiary_email: payment.beneficiary_email,
-        cash_signature_url: payment.cash_signature_url,
+        cash_signature_url: cashSignatureSrc(payment.cash_signature_url),
         cash_signature_timestamp: payment.cash_signature_timestamp,
         cash_signed_by_name: payment.cash_signed_by_name,
       };

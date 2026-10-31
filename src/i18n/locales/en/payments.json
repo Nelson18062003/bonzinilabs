@@ -185,7 +185,13 @@
     "rateDependsOnMethod": "The day rate depends on the chosen method.",
     "balanceAfterPayment": "Balance after payment",
     "minMaxCaption": "The maximum is your available balance.",
-    "rateAppliedTitle": "Today's rate applied"
+    "rateAppliedTitle": "Today's rate applied",
+    "rateUnavailable": {
+      "loading": "Loading today's rate…",
+      "title": "Today's rate is unavailable",
+      "message": "Your payment waits for the published rate. Try again in a moment.",
+      "retry": "Try again"
+    }
   },
   "detail": {
     "title": "Payment detail",

@@ -7,31 +7,41 @@
 // quand il lit l'étiquette d'un paquet avion) : le paquet est reçu, puis on
 // file au pointage de son expédition, qui affiche le résultat. Un refus
 // s'affiche ici, en rouge.
+// Refonte v2 (maquette 10/49) : « Quelle arrivée ? » en liste, avec ce qui
+// reste à pointer ; le rond de scan en haut reçoit un paquet (PQ-…).
 // ============================================================
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronRight, Loader2 } from 'lucide-react';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
+import { Loader2, Plane, ScanLine, Ship } from 'lucide-react';
 import { useWarehouseDay } from '@/hooks/useWarehouse';
 import { useAirPackages, useReceiveAirPackage } from '@/hooks/useAirPackages';
 import { parsePackageCode } from '@/lib/airPackage';
-import { nParcels, packageReceivedWord, packagesProgress } from '@/lib/warehouse';
+import { packageReceivedWord, packagesProgress } from '@/lib/warehouse';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Card, ScreenLoader, StatusPill } from '@/mobile/designKit';
-import { formatDateTime } from '@/mobile/components/reception/bits';
-import { TransportMark, WhQuestion } from '@/mobile/components/warehouse/bits';
+import { EmptyLine, IconCircle, ItemList, ItemRow, RoundButton, ScreenLoader, SURFACE, TabTop, TEXT, TYPE } from '@/mobile/designKit';
 import { ScanNotice } from '@/mobile/components/warehouse/packages';
-import { scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
+import { ParcelScanBox, scanFeedback, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
+import { CapsLabel } from '@/mobile/components/cargo/v2';
 
-/** « 5 paquets · 3 reçus » sous une arrivée avion — rien s'il n'y a pas de paquets. */
-function ArrivalPackages({ airId }: { airId: string }) {
-  const { data } = useAirPackages('all', airId);
-  if (!data || data.length === 0) return null;
+/** « paquets reçus 4 / 6 » sous une arrivée avion — rien s'il n'y a pas de paquets. */
+function useArrivalPackages(airId: string | null) {
+  const { data } = useAirPackages('all', airId ?? undefined, !!airId);
+  if (!airId || !data || data.length === 0) return null;
   const p = packagesProgress(data);
+  return `paquets reçus ${p.received} / ${p.total}`;
+}
+
+function ArrivalRow({ a, onClick }: { a: { kind: 'air' | 'sea'; id: string; label: string; sub: string | null; arrived_at: string | null; expected: number; checked: number; missing: number }; onClick: () => void }) {
+  const pk = useArrivalPackages(a.kind === 'air' ? a.id : null);
+  const left = a.expected - a.checked;
   return (
-    <span className={cn('block tabular-nums', TYPE.smallStrong, p.done ? 'text-[#009951] dark:text-[#14AE5C]' : 'text-[#975102] dark:text-[#E8B931]')}>
-      {p.total} paquet{p.total > 1 ? 's' : ''} · {p.done ? (p.total > 1 ? 'tous reçus' : 'reçu') : `${p.received} reçu${p.received > 1 ? 's' : ''}`}
-    </span>
+    <ItemRow
+      leading={<IconCircle icon={a.kind === 'air' ? Plane : Ship} />}
+      title={a.label}
+      subtitle={[a.kind === 'air' ? 'Avion' : 'Boîte', pk ?? a.sub].filter(Boolean).join(' · ')}
+      tag={!a.arrived_at ? { tone: 'neutral', label: 'Attendu' } : left > 0 ? { tone: 'pending', label: `${left} à pointer` } : { tone: 'success', label: 'Tout pointé' }}
+      onClick={onClick}
+    />
   );
 }
 
@@ -44,6 +54,15 @@ export function WarehouseArrivals() {
   const handled = useRef<string | null>(null);
   const mounted = useRef(true);
   const linked = params.get('paquet');
+  const [scanOpen, setScanOpen] = useState(false);
+  /** Un paquet scanné ici : le même chemin que le lien du scanner (?paquet=). */
+  const onScan = async (text: string): Promise<ScanResult> => {
+    const code = parsePackageCode(text);
+    if (!code) return { outcome: 'unknown', text: `${text} : ce n'est pas une étiquette de paquet (PQ-000000)` };
+    setLinkResult(null);
+    setParams((p) => { const n = new URLSearchParams(p); n.set('paquet', code); return n; }, { replace: true });
+    return { outcome: 'ok', text: `Paquet ${code} : réception…` };
+  };
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
@@ -71,41 +90,25 @@ export function WarehouseArrivals() {
   }, [linked, receivePackage, navigate, setParams]);
 
   return (
-    <div className={cn('flex min-h-full flex-col', SURFACE.canvas)}>
-      <MobileHeader title="Pointer" showBack backTo="/w" />
-      <div className="space-y-5 px-4 pb-10 pt-4">
+    <div className={cn('flex min-h-[100dvh] flex-col pb-6', SURFACE.canvas)}>
+      <TabTop title="Pointer" right={<RoundButton icon={ScanLine} ariaLabel="Scanner un paquet" onClick={() => setScanOpen((v) => !v)} />} />
+      <div className="space-y-3 px-5 pt-2">
+        {scanOpen && <ParcelScanBox onScan={onScan} placeholder="Scannez un paquet (PQ-…)" keepFocus={false} />}
         {linked && !linkResult && (
-          <Card className="flex items-center gap-3" role="status">
-            <Loader2 className={cn('h-5 w-5 shrink-0 animate-spin', TEXT.muted)} />
-            <span className={cn(TYPE.bodyStrong, TEXT.strong)}>Paquet {parsePackageCode(linked) ?? linked} : réception…</span>
-          </Card>
+          <p className={cn('flex items-center gap-3 rounded-lg border border-[#D9D9D9] px-4 py-3 dark:border-[#444444]', TYPE.bodyStrong, TEXT.strong)} role="status">
+            <Loader2 className={cn('h-5 w-5 shrink-0 animate-spin', TEXT.muted)} /> Paquet {parsePackageCode(linked) ?? linked} : réception…
+          </p>
         )}
         {linkResult && <ScanNotice result={linkResult} />}
-        <WhQuestion title="Quelle arrivée ?" help="Un avion ou une boîte qui vient d'arriver. Touchez-la pour pointer ses colis." />
-        {isLoading || !data ? <ScreenLoader /> : data.arrivals.length === 0 ? (
-          <Card className={cn('text-center', SURFACE.inset, 'border-0')}><p className={cn(TYPE.body, TEXT.muted)}>Rien n'est arrivé. Quand l'équipe marque un avion ou une boîte « arrivé », il apparaît ici.</p></Card>
-        ) : (
-          <div className="space-y-3">
-            {data.arrivals.map((a) => {
-              const left = a.expected - a.checked;
-              return (
-                <button key={`${a.kind}-${a.id}`} type="button" onClick={() => navigate(`/w/arrivees/${a.kind}/${a.id}`)}
-                  className={cn('flex w-full items-center gap-3 rounded-lg p-4 text-left active:bg-[#F5F5F5] dark:active:bg-[#383838]', SURFACE.card, SURFACE.shadow)}>
-                  <TransportMark kind={a.kind} />
-                  <span className="min-w-0 flex-1">
-                    <span className={cn('block break-words tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{a.label}</span>
-                    <span className={cn('block break-words', TYPE.small, TEXT.muted)}>{a.sub}{a.arrived_at ? ` · ${formatDateTime(a.arrived_at)}` : ''}</span>
-                    {a.kind === 'air' && <ArrivalPackages airId={a.id} />}
-                    <span className={cn('mt-1 block tabular-nums', TYPE.small, TEXT.muted)}>{nParcels(a.expected)} attendus · {a.checked} pointés{a.missing > 0 ? ` · ${a.missing} manquant${a.missing > 1 ? 's' : ''}` : ''}</span>
-                    <span className="mt-2 block">{left > 0 ? <StatusPill tone="pending" label={`${left} à pointer`} /> : <StatusPill tone="success" label="Tout pointé" />}</span>
-                  </span>
-                  <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <CapsLabel className="pt-2">Quelle arrivée ?</CapsLabel>
       </div>
+      {isLoading || !data ? <ScreenLoader /> : data.arrivals.length === 0 ? (
+        <EmptyLine>Rien n'est arrivé.</EmptyLine>
+      ) : (
+        <ItemList>
+          {data.arrivals.map((a) => <ArrivalRow key={`${a.kind}-${a.id}`} a={a} onClick={() => navigate(`/w/arrivees/${a.kind}/${a.id}`)} />)}
+        </ItemList>
+      )}
     </div>
   );
 }

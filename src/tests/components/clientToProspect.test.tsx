@@ -114,21 +114,31 @@ beforeEach(() => {
   h.toast.mockReset();
 });
 
-const openMobile = () => fireEvent.click(screen.getByRole('button', { name: /^Repasser en prospect/ }));
+// Refonte v2 (maquettes 03/03, 10/13) : l'action est dans le menu « … » de la fiche, la feuille est plus courte.
+// Le menu qui se ferme reste un instant dans le DOM (animation de sortie) : la feuille ouverte est la dernière.
+const sheet = () => screen.getAllByRole('dialog').at(-1)!;
+const openMenu = () => fireEvent.click(screen.getByRole('button', { name: 'Plus d\'actions' }));
+const openMobile = () => {
+  openMenu();
+  fireEvent.click(screen.getByRole('button', { name: /^Repasser en prospect/ }));
+};
 
 describe('Repasser en prospect — qui le voit', () => {
   it('téléphone : visible pour le super admin (canManageUsers + canManageSales)', () => {
     mount('mobile');
+    openMenu();
     expect(screen.getByRole('button', { name: /^Repasser en prospect/ })).toBeInTheDocument();
   });
 
   it('téléphone : invisible sans canManageSales, et sans canManageUsers', () => {
     h.perms = new Set(['canManageUsers', 'canViewClients', 'canEditClients']);
     const { unmount } = mount('mobile');
+    openMenu();
     expect(screen.queryByRole('button', { name: /Repasser en prospect/ })).toBeNull();
     unmount();
     h.perms = new Set(['canManageSales', 'canViewClients', 'canEditClients']);
     mount('mobile');
+    openMenu();
     expect(screen.queryByRole('button', { name: /Repasser en prospect/ })).toBeNull();
     expect(h.eligibilityCalls).toEqual([]);
   });
@@ -151,7 +161,7 @@ describe('Repasser en prospect — la fenêtre', () => {
     h.eligibility = BLOCKED;
     mount('mobile');
     openMobile();
-    const dialog = screen.getByRole('dialog');
+    const dialog = sheet();
     expect(dialog).toHaveTextContent('Mariam Koné ne peut pas redevenir prospect');
     const list = within(dialog).getByRole('list', { name: 'Ce qui bloque' });
     expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual(['3 dépôts', 'Solde de 25 000 XAF']);
@@ -164,12 +174,15 @@ describe('Repasser en prospect — la fenêtre', () => {
   it('éligible : l’explication, le commercial proposé coché, rien sans la case', () => {
     mount('mobile');
     openMobile();
-    const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveTextContent('Son compte sera supprimé : il ne pourra plus se connecter. Ses informations deviennent une fiche prospect confiée au commercial choisi.');
-    expect(dialog).toHaveTextContent('Une fiche prospect est créée avec ses coordonnées');
-    // Seuls les commerciaux actifs : pas « Facebook ».
+    const dialog = sheet();
+    // v2 : une ligne dit l'essentiel — aucune opération, le compte est supprimé.
+    expect(dialog).toHaveTextContent('Aucune opération · son compte est supprimé');
+    // Seuls les commerciaux actifs : pas « Facebook » ; le proposé est marqué.
     const radios = within(dialog).getAllByRole('radio');
-    expect(radios.map((r) => r.textContent)).toEqual(['Carine Ewane', 'Rodrigue Tchamiproposé']);
+    expect(radios).toHaveLength(2);
+    expect(radios[0]).toHaveTextContent('Carine Ewane');
+    expect(radios[1]).toHaveTextContent('Rodrigue Tchami');
+    expect(radios[1]).toHaveTextContent('Proposé');
     expect(within(dialog).getByRole('radio', { name: /Rodrigue Tchami/ })).toHaveAttribute('aria-checked', 'true');
     const submit = within(dialog).getByRole('button', { name: 'Repasser en prospect' });
     expect(submit).toBeDisabled();
@@ -181,9 +194,9 @@ describe('Repasser en prospect — la fenêtre', () => {
     h.toProspect.mockImplementation((_v: unknown, opts: { onSuccess: () => void }) => opts.onSuccess());
     mount('mobile');
     openMobile();
-    const dialog = screen.getByRole('dialog');
+    const dialog = sheet();
     fireEvent.click(within(dialog).getByRole('radio', { name: /Carine Ewane/ }));
-    fireEvent.change(within(dialog).getByLabelText('Motif (facultatif)'), { target: { value: 'Compte créé trop tôt' } });
+    fireEvent.change(within(dialog).getByLabelText('Motif'), { target: { value: 'Compte créé trop tôt' } });
     fireEvent.click(within(dialog).getByRole('checkbox'));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Repasser en prospect' }));
     expect(h.toProspect).toHaveBeenCalledWith({ userId: 'u7', sourceId: 'src-carine', reason: 'Compte créé trop tôt' }, expect.anything());
@@ -199,18 +212,18 @@ describe('Repasser en prospect — la fenêtre', () => {
     h.eligibility = { ...ELIGIBLE, warnings: ['1 bénéficiaire enregistré (comptes de ses fournisseurs)', 'Sa conversation avec le support (2 messages)'] };
     const { unmount } = mount('mobile');
     openMobile();
-    const list = within(screen.getByRole('dialog')).getByRole('list', { name: 'Effacé aussi avec le compte (gardé au journal)' });
+    const list = within(sheet()).getByRole('list', { name: 'Effacé aussi avec le compte (gardé au journal)' });
     expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '1 bénéficiaire enregistré (comptes de ses fournisseurs)',
       'Sa conversation avec le support (2 messages)',
     ]);
     // L'envoi reste possible (ce ne sont pas des opérations).
-    expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Repasser en prospect' })).toBeInTheDocument();
+    expect(within(sheet()).getByRole('button', { name: 'Repasser en prospect' })).toBeInTheDocument();
     unmount();
     h.eligibility = ELIGIBLE;
     mount('mobile');
     openMobile();
-    expect(within(screen.getByRole('dialog')).queryByRole('list', { name: /Effacé aussi/ })).toBeNull();
+    expect(within(sheet()).queryByRole('list', { name: /Effacé aussi/ })).toBeNull();
   });
 
   it('français : une espace insécable avant chaque « : » (pas de deux-points seul en tête de ligne)', async () => {
@@ -223,6 +236,6 @@ describe('Repasser en prospect — la fenêtre', () => {
     h.eligibility = { ...ELIGIBLE, reopen_prospect_id: 'pr-old' };
     mount('mobile');
     openMobile();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Son ancienne fiche prospect est rouverte, au statut « Contacté ».');
+    expect(sheet()).toHaveTextContent('son ancienne fiche rouverte');
   });
 });

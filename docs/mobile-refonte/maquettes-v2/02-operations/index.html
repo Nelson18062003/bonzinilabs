@@ -1,0 +1,366 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit2.css">
+<style>
+/* Lot 02 · Opérations — mêmes jetons que kit2.css (#2C2C2C, #D9D9D9, rayon 8, aucune ombre). */
+.fiche .big small { font-size: 22px; font-weight: 600; color: var(--muted); letter-spacing: 0 }
+.lnk { text-decoration: underline; text-underline-offset: 3px }
+/* menu « … » en feuille */
+.mi { display: flex; align-items: center; gap: 14px; height: 54px; border-bottom: 1px solid var(--line); font: 500 17px "DM Sans"; color: var(--strong) }
+.mi:last-child { border-bottom: 0 }
+.mi svg { width: 24px; height: 24px; flex: none }
+.mi .sp { flex: 1 }
+.mi .v { font: 400 16px "DM Sans"; color: var(--muted) }
+.mi.red { color: #EC221F }
+.mi:has(+ .gap) { border-bottom: 0 }
+.mi.gap { border-top: 8px solid var(--soft); margin: 0 -20px; padding: 0 20px }
+/* interrupteur */
+.sw { width: 51px; height: 31px; border-radius: 16px; background: #D9D9D9; position: relative; flex: none }
+.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 25px; height: 25px; border-radius: 13px; background: #fff }
+.sw.on { background: var(--ink) } .sw.on::after { left: 23px }
+/* éléments dans une feuille */
+.sheet .lbl { padding: 18px 0 2px }
+.sheet .chips { padding: 8px 0 0; flex-wrap: wrap }
+.sheet .methods { padding: 8px 0 0 }
+.sheet .h { display: flex; justify-content: space-between; align-items: baseline }
+.sheet .h a { font: 600 16px "DM Sans"; text-decoration: underline; text-underline-offset: 3px; color: var(--strong) }
+.ta { margin-top: 8px; min-height: 92px; border: 1px solid var(--field); border-radius: 8px; padding: 13px 16px; font: 400 16px/1.4 "DM Sans"; color: var(--body) }
+.ta.ph { color: var(--faint) }
+.srow { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font: 600 17px "DM Sans" }
+.alink { display: inline-block; margin-top: 14px; font: 600 16px "DM Sans"; text-decoration: underline; text-underline-offset: 3px }
+/* la preuve (photo du reçu) */
+.photo { margin: 16px 20px 0; height: 172px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); display: grid; place-items: center; position: relative; overflow: hidden }
+.photo .n { position: absolute; top: 10px; right: 10px; margin: 0; background: #fff; border: 1px solid var(--line) }
+.rcpt { width: 184px; height: 148px; background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 0; display: grid; justify-items: center; align-content: start; gap: 6px; transform: rotate(-2deg) }
+.rcpt .ok { width: 30px; height: 30px; border-radius: 15px; background: #CFF7D3; display: grid; place-items: center }
+.rcpt b { white-space: nowrap; font: 700 18px "DM Sans"; font-variant-numeric: tabular-nums }
+.rcpt span { font: 500 14px "DM Sans"; color: var(--muted) }
+.bar { height: 7px; border-radius: 4px; background: #E6E6E6; width: 100% }
+/* vignettes */
+.thumbs { display: flex; gap: 12px; padding: 10px 20px 0 }
+.th { width: 104px; display: grid; gap: 6px; font: 500 14px "DM Sans"; color: var(--body); text-align: center }
+.th .im { height: 120px; border: 1px solid var(--line); border-radius: 8px; background: var(--soft); display: grid; place-items: center }
+.th .im.add { background: #fff; border: 1.5px dashed var(--field); font: 400 30px "DM Sans" }
+.mini { width: 62px; height: 84px; background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 8px 7px; display: grid; gap: 5px; align-content: start }
+/* suivi */
+.tl { padding: 18px 20px 0 }
+.ti { display: flex; gap: 14px; position: relative; padding-bottom: 20px }
+.ti:not(:last-child)::before { content: ''; position: absolute; left: 11px; top: 28px; bottom: 4px; width: 2px; background: var(--line) }
+.ti .d { width: 24px; height: 24px; border-radius: 12px; background: var(--ink); flex: none; display: grid; place-items: center; margin-top: 1px }
+.ti .d.now { background: #FFF1C2; box-shadow: none; border: 2px solid #682D03 }
+.ti .d.todo { background: #fff; border: 2px solid var(--line) }
+.ti b { display: block; font: 600 17px/1.3 "DM Sans" }
+.ti span { display: block; font: 400 15px/1.3 "DM Sans"; color: var(--muted); margin-top: 2px }
+/* saisie */
+.inp { margin: 0 20px; height: 56px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; padding: 0 16px; font: 500 17px "DM Sans"; color: var(--strong) }
+.inp.ph { color: var(--faint); font-weight: 400 }
+.sig { margin: 0 20px; height: 150px; border: 1px solid var(--field); border-radius: 8px; position: relative }
+.sig .e { position: absolute; top: 10px; right: 14px; font: 600 15px "DM Sans"; text-decoration: underline; text-underline-offset: 3px }
+.sig .base { position: absolute; left: 18px; right: 18px; bottom: 34px; border-top: 1px dashed var(--field) }
+.ck { display: flex; align-items: center; gap: 12px; margin: 18px 20px 0; font: 600 17px "DM Sans" }
+.ck .bx { width: 26px; height: 26px; border-radius: 6px; background: var(--ink); display: grid; place-items: center; flex: none }
+/* caméra */
+.ab:has(.camroot) { background: #141414; color: #F5F5F5 }
+.ab:has(.camroot) .sbar svg { fill: #fff } .ab:has(.camroot) .sbar rect[stroke] { stroke: #fff }
+.ab:has(.camroot) .home-ind { background: #fff }
+.frame { position: absolute; left: 50%; top: 196px; transform: translateX(-50%); width: 260px; height: 260px }
+.frame > i { position: absolute; width: 46px; height: 46px; border: 0 solid #fff }
+.frame > i:nth-child(1) { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 14px }
+.frame > i:nth-child(2) { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 14px }
+.frame > i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 14px }
+.frame > i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 14px }
+.frame .q { position: absolute; inset: 40px; background: #fff; border-radius: 10px; display: grid; place-items: center }
+.frame .q .qr { width: 156px; height: 156px; border: 0; padding: 4px }
+.cbtn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid #5A5A5A; display: grid; place-items: center }
+.btn.ghost { background: transparent; color: #F5F5F5; border: 1px solid #F5F5F5 }
+/* lot : barre d'avancement */
+.prog { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 210px; margin: 14px auto 0 }
+.prog i { height: 6px; border-radius: 3px; background: var(--line) } .prog i.k { background: var(--ink) }
+</style></head><body><div class="board" id="board"></div>
+<script src="../kit2.js"></script><script>
+// Icônes propres au lot (même trait 2 px, coins ronds que kit2.js)
+const ic = (d, c = '#1E1E1E') => `<svg viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const J = {
+  share: (c) => ic('<path d="M12 3.5v11M8 7.5l4-4 4 4M6 11H5a1 1 0 0 0-1 1v7.5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V12a1 1 0 0 0-1-1h-1"/>', c),
+  image: (c) => ic('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9.5" r="1.6"/><path d="m4 17 5-4.5 4 3.5 2.5-2 4.5 3.5"/>', c),
+  doc: (c) => ic('<path d="M6.5 3.5h7l4 4v12a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z"/><path d="M13.5 3.5v4h4M8.5 12.5h7M8.5 16h5"/>', c),
+  clock: (c) => ic('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', c),
+  edit: (c) => ic('<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', c),
+  fix: (c) => ic('<path d="M4 7h11M4 7l3-3M4 7l3 3M20 17H9m11 0-3-3m3 3-3 3"/>', c),
+  play: (c) => ic('<circle cx="12" cy="12" r="8.5"/><path d="M10 8.5v7l5.5-3.5z"/>', c),
+  xc: (c) => ic('<circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6M15 9l-6 6"/>', c),
+  ban: (c) => ic('<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>', c),
+  filter: (c) => ic('<path d="M4 6.5h16M7 12h10M10 17.5h4"/>', c),
+  stack: (c) => ic('<path d="M12 4 3.5 8.5 12 13l8.5-4.5z"/><path d="m3.5 12.5 8.5 4.5 8.5-4.5M3.5 16.5 12 21l8.5-4.5"/>', c),
+  down: (c) => ic('<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>', c),
+  clip: (c) => ic('<path d="m20 11.5-7.8 7.8a5 5 0 0 1-7-7L13 4.5a3.4 3.4 0 0 1 4.8 4.8l-7.7 7.8a1.7 1.7 0 0 1-2.4-2.4L14.5 8"/>', c),
+  eye: (c) => ic('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>', c),
+  bank: (c) => ic('<path d="M3 9.5 12 4l9 5.5M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18"/>', c),
+  swap: (c) => ic('<path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><path d="M9 12.5a3 3 0 0 1 5.2-2M15 12.5a3 3 0 0 1-5.2 2M14.5 8.5v2h-2M9.5 16.5v-2h2"/>', c),
+  plus: (c) => ic('<path d="M12 5v14M5 12h14"/>', c),
+  close: (c) => ic('<path d="m6 6 12 12M18 6 6 18"/>', c),
+  cal: (c) => ic('<rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>', c).replace('<svg ', '<svg width="22" height="22" '),
+  torch: (c) => ic('<path d="M8 3.5h8v3l-2 3.5v10.5h-4V10L8 6.5z"/><path d="M12 13v2"/>', c),
+  chev: '<svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:-3px"><path d="m9 5 7 7-7 7" fill="none" stroke="#1E1E1E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  tick: (c = '#F5F5F5', s = 14) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const K = '#1E1E1E', RED = '#EC221F';
+const mi = (icon, label, right = '', cls = '') => `<div class="mi ${cls}">${icon}<span class="sp">${label}</span>${right}</div>`;
+
+// ── Fonds réutilisés (écrans déjà validés ou du lot) ──────────────────────
+const payPage = () => `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Paiement</div>${I.dots}</div>
+  <div class="fiche">${meth('alipay')}<div class="big">¥ 7 493</div><div class="sub">Fatou Ndiaye · 691 364 XAF</div><span class="tag t-todo">À payer</span></div>
+  <div class="box"><div class="benef">${qr(9)}<div style="min-width:0"><div class="rn">Guangzhou Hengtai Trading</div><div class="rs">hengtai_gz@163.com</div><span class="copy">${I.copy} Copier le compte</span></div></div></div>
+  <div class="box"><div class="kv">Taux<b>1 M XAF = ¥ 10 838</b></div><div class="kv">Créé<b>Aujourd'hui, 10:12</b></div><div class="kv">Référence<b>BZ-PY-2610-0416</b></div></div>
+  <div class="dock"><div class="btn">Marquer comme payé</div></div>`;
+
+const depPage = () => `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Dépôt</div>${I.dots}</div>
+  <div class="fiche" style="padding-top:18px">${meth('om')}<div class="big">850 000 <small>XAF</small></div><div class="sub">Orange Money · il y a 2 h</div><span class="tag t-todo">À valider</span></div>
+  <div class="photo"><span class="tag t-neu n">1/2</span><div class="rcpt"><div class="ok">${J.tick('#02542D', 16)}</div><span>Transfert réussi</span><b>850 000 FCFA</b><div class="bar"></div><div class="bar" style="width:70%"></div></div></div>
+  <div class="box"><div class="kv">Client<b class="lnk">Fatou Ndiaye</b></div><div class="kv">Solde<b>1 213 450 XAF</b></div><div class="kv">Référence<b>BZ-DP-2610-0187</b></div></div>
+  <div class="dock"><div class="btn">Créditer 850 000 XAF</div></div>`;
+
+const depRows = () => `
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    <div class="row">${meth('om')}<div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">Orange Money · il y a 2 h</div></div><div class="ra"><b>850 000 XAF</b><span class="tag t-todo">À valider</span></div></div>
+    <div class="row">${meth('uba')}<div class="rm"><div class="rn">Samuel Nkoulou</div><div class="rs">UBA · vu en banque</div></div><div class="ra"><b>2 500 000 XAF</b><span class="tag t-todo">À valider</span></div></div>
+  </div>
+  <div class="day">Cette semaine</div>
+  <div class="list">
+    <div class="row">${meth('mtn')}<div class="rm"><div class="rn">Aminatou Bello</div><div class="rs">MTN MoMo · hier</div></div><div class="ra"><b>145 000 XAF</b><span class="tag t-ok">Crédité</span></div></div>
+    <div class="row">${meth('wave')}<div class="rm"><div class="rn">Rosine Tchoua</div><div class="rs">Wave · 18 oct.</div></div><div class="ra"><b>300 000 XAF</b><span class="tag t-ok">Crédité</span></div></div>
+    <div class="row">${meth('om')}<div class="rm"><div class="rn">Ibrahim Touré</div><div class="rs">Orange Money · 17 oct.</div></div><div class="ra"><b>75 000 XAF</b><span class="tag t-bad">Refusé</span></div></div>
+  </div>`;
+const opsTop = () => `<div class="top"><div class="hello">Opérations</div><div style="display:flex;gap:10px"><div class="icbtn">${I.search}</div><div class="icbtn">${I.dots}</div></div></div>`;
+
+// 1 · Dépôts
+add('Opérations · Dépôts', `${sbar()}<div class="body">
+  ${opsTop()}
+  <div class="seg"><span>Paiements</span><span class="on">Dépôts</span></div>
+  <div class="chips"><span class="chip">À valider 2</span><span class="chip">Crédités</span><span class="chip">Refusés</span><span class="chip on">Tous</span></div>
+  ${depRows()}
+</div>${tabs('ops')}<div class="home-ind"></div>`);
+
+// 2 · Menu « … » d'Opérations
+add('Opérations · menu « … »', `${sbar()}<div class="body">
+  ${opsTop()}
+  <div class="seg"><span>Paiements</span><span class="on">Dépôts</span></div>
+  <div class="chips"><span class="chip">À valider 2</span><span class="chip">Crédités</span><span class="chip">Refusés</span><span class="chip on">Tous</span></div>
+  ${depRows()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    ${mi(J.filter(K), 'Filtres et tri')}
+    ${mi(J.stack(K), 'Lots de paiements', '<span class="v">2 en cours</span>')}
+    ${mi(J.down(K), 'Exporter les en cours (PDF)')}
+    ${mi(J.clip(K), 'Justificatifs')}
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 3 · Fiche dépôt À valider
+add('Dépôt · À valider', `${depPage()}</div><div class="home-ind"></div>`);
+
+// 4 · Créditer — confirmation
+add('Dépôt · Créditer ?', `${depPage()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Créditer 850 000 XAF ?</h3><p>à Fatou Ndiaye, par Orange Money</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Montant reçu<b class="lnk">850 000 XAF</b></div>
+      <div class="kv">Solde avant<b>1 213 450 XAF</b></div>
+      <div class="kv">Solde après<b>2 063 450 XAF</b></div>
+    </div>
+    <div class="srow">Prévenir Fatou<span class="sw on"></span></div>
+    <div class="btn" style="margin-top:18px">Créditer</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 5 · Menu « … » du dépôt
+add('Dépôt · menu « … »', `${depPage()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    ${mi(J.bank(K), 'Vu en banque', '<span class="sw"></span>')}
+    ${mi(J.eye(K), 'En vérification')}
+    ${mi(J.swap(K), 'Remplacer la preuve')}
+    ${mi(J.plus(K), 'Ajouter une preuve')}
+    ${mi(J.doc(K), 'Reçu PDF')}
+    ${mi(J.xc(K), 'Refuser')}
+    ${mi(J.ban(RED), 'Annuler le dépôt', '', 'red gap')}
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 6 · Refuser le dépôt
+add('Dépôt · Refuser', `${depPage()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Refuser le dépôt ?</h3><p>850 000 XAF · Fatou Ndiaye</p>
+    <div class="lbl">Motif</div>
+    <div class="chips"><span class="chip">Preuve illisible</span><span class="chip on">Montant différent</span><span class="chip">Pas reçu</span><span class="chip">Doublon</span><span class="chip">Mauvais client</span><span class="chip">Autre</span></div>
+    <div class="lbl">Message à Fatou</div>
+    <div class="ta">Le montant reçu ne correspond pas au reçu. Merci d'envoyer le bon reçu.</div>
+    <span class="alink">Ajouter une note interne</span>
+    <div class="btn" style="margin-top:18px">Refuser le dépôt</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 7 · Marquer payé
+add('Paiement · Marquer payé', `${payPage()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Marquer payé ?</h3><p>¥ 7 493 à Guangzhou Hengtai Trading</p>
+    <div class="lbl">Reçu Alipay</div>
+    <div style="display:flex;gap:14px;align-items:center;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:12px">
+      <div class="mini" style="width:58px;height:76px;justify-items:center;padding:9px 6px"><div style="width:20px;height:20px;border-radius:10px;background:#1677FF;display:grid;place-items:center">${J.tick('#fff', 12)}</div><div class="bar"></div><div class="bar" style="width:70%"></div><div class="bar"></div></div>
+      <div class="rm"><div class="rn">Photo du reçu</div><div class="rs">Ajoutée à 11:40</div></div>
+      <span class="lnk" style="font:600 16px 'DM Sans'">Changer</span>
+    </div>
+    <div class="lbl">Message à Fatou</div>
+    <div class="ta ph">Facultatif</div>
+    <div class="btn" style="margin-top:18px">Payé</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 8 · Menu « … » du paiement
+add('Paiement · menu « … »', `${payPage()}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    ${mi(J.share(K), "Partager l'instruction")}
+    ${mi(J.image(K), "Exporter l'image")}
+    ${mi(J.doc(K), 'Reçu PDF')}
+    ${mi(J.clock(K), 'Historique')}
+    ${mi(J.edit(K), 'Modifier le fournisseur')}
+    ${mi(J.fix(K), 'Corriger le montant')}
+    ${mi(J.play(K), 'Passer en cours')}
+    ${mi(J.xc(K), 'Refuser')}
+    ${mi(J.ban(RED), 'Annuler le paiement', '', 'red gap')}
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 9 · Historique du paiement
+add('Paiement · Historique', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Historique</div></div>
+  <div class="who">${meth('alipay')}<div style="flex:1;min-width:0"><b>¥ 7 493 · Fatou Ndiaye</b><span>BZ-PY-2610-0416</span></div></div>
+  <div class="tl">
+    <div class="ti"><div class="d">${J.tick()}</div><div><b>Créé</b><span>Nelson · aujourd'hui 10:12</span><span class="lnk" style="color:#1E1E1E;font-weight:600">Lot BZ-LT-2610-07</span></div></div>
+    <div class="ti"><div class="d">${J.tick()}</div><div><b>Fournisseur ajouté</b><span>Guangzhou Hengtai Trading · 10:12</span></div></div>
+    <div class="ti"><div class="d">${J.tick()}</div><div><b>Instruction envoyée</b><span>Au partenaire · 10:15</span></div></div>
+    <div class="ti"><div class="d now"></div><div><b>À payer</b><span>Depuis 1 h 28</span></div></div>
+    <div class="ti"><div class="d todo"></div><div><b style="color:#5A5A5A">Payé</b></div></div>
+  </div>
+  <div class="lbl" style="padding-top:8px">Pièces</div>
+  <div class="thumbs">
+    <div class="th"><div class="im"><div class="mini"><div class="bar"></div><div class="bar" style="width:60%"></div><div class="bar"></div><div class="bar" style="width:80%"></div></div></div>Instruction</div>
+    <div class="th"><div class="im"><div class="mini" style="justify-items:center"><div style="width:22px;height:22px;border-radius:4px;display:grid;grid-template-columns:repeat(3,1fr);gap:2px">${'<i style="background:#111"></i>'.repeat(5)}<i></i>${'<i style="background:#111"></i>'.repeat(3)}</div><div class="bar"></div><div class="bar" style="width:70%"></div></div></div>QR fournisseur</div>
+    <div class="th"><div class="im add">+</div>Ajouter</div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 10 · Filtres
+const payList = `${sbar()}<div class="body">
+  ${opsTop()}
+  <div class="seg"><span class="on">Paiements</span><span>Dépôts</span></div>
+  <div class="chips"><span class="chip on">À payer 5</span><span class="chip">En cours 3</span><span class="chip">Payés</span><span class="chip">Tous</span></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">Guangzhou Hengtai</div></div><div class="ra"><b>¥ 7 493</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">Foshan Meida Furniture</div></div><div class="ra"><b>¥ 58 900</b><span class="tag t-todo">À payer</span></div></div>
+  </div>`;
+add('Opérations · Filtres', `${payList}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <div class="h"><h3>Filtres</h3><a>Réinitialiser</a></div>
+    <div class="lbl">Période</div>
+    <div class="chips"><span class="chip">Aujourd'hui</span><span class="chip">7 jours</span><span class="chip on">30 jours</span><span class="chip" style="padding:0 10px">${J.cal(K)}</span></div>
+    <div class="lbl">Moyen</div>
+    <div class="methods">
+      <div class="m on">${meth('alipay')}Alipay</div>
+      <div class="m">${meth('wechat')}WeChat</div>
+      <div class="m">${meth('bank')}Virement</div>
+      <div class="m">${meth('cash')}Cash</div>
+    </div>
+    <div class="lbl">Statut</div>
+    <div class="chips"><span class="chip">Sans fournisseur</span><span class="chip">Refusés</span><span class="chip">Annulés</span></div>
+    <div class="lbl">Trier</div>
+    <div class="seg" style="grid-template-columns:repeat(3,1fr);margin:8px 0 0"><span class="on">Récent</span><span>Ancien</span><span>Montant ↓</span></div>
+    <div class="btn" style="margin-top:20px">Voir 12 paiements</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 11 · Retrait au bureau (cash)
+add('Cash · Retrait au bureau', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Retrait au bureau</div>${I.dots}</div>
+  <div class="fiche">${meth('cash')}<div class="big">¥ 23 060</div><div class="sub">Ibrahim Touré · 2 127 699 XAF</div><span class="tag t-neu">Au bureau</span></div>
+  <div class="box"><div class="benef"><div class="av">IT</div><div class="rm"><div class="rn">Ibrahim Touré</div><div class="rs">Le client · +237 699 12 34 56</div></div></div></div>
+  <div class="box">
+    <div class="kv">Lieu<b>Bureau de Guangzhou</b></div>
+    <div class="kv">Créé<b>Hier, 16:40</b></div>
+    <div class="kv">Référence<b>BZ-PY-2610-0409</b></div>
+  </div>
+  <div class="dock"><div class="btn">Scanner le QR du client</div></div>
+</div><div class="home-ind"></div>`);
+
+// 12 · Scanner le QR
+add('Cash · Scanner le QR', `${sbar()}<div class="body camroot">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 20px 0;height:56px"><div class="cbtn">${J.close('#F5F5F5')}</div><div style="font:600 18px 'DM Sans'">QR du client</div><div class="cbtn">${J.torch('#F5F5F5')}</div></div>
+  <div class="frame"><i></i><i></i><i></i><i></i><div class="q">${qr(23)}</div></div>
+  <div style="position:absolute;top:490px;left:0;right:0;text-align:center"><div style="font:700 24px 'DM Sans'">¥ 23 060</div><div style="font:400 16px 'DM Sans';color:#CDCDCD;margin-top:6px">Ibrahim Touré · BZ-PY-2610-0409</div></div>
+  <div class="dock" style="background:transparent;border:0"><div class="btn ghost">Saisir le code</div></div>
+</div><div class="home-ind"></div>`);
+
+// 13 · Signature
+add('Cash · Signature', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Remise en espèces</div></div>
+  <div class="who">${meth('cash')}<div style="flex:1"><b>¥ 23 060</b><span>à Ibrahim Touré</span></div></div>
+  <div class="lbl">Nom de la personne</div>
+  <div class="inp">Ibrahim Touré</div>
+  <div class="lbl">Pièce d'identité · facultatif</div>
+  <div class="inp ph">Numéro</div>
+  <div class="lbl">Signature</div>
+  <div class="sig"><span class="e">Effacer</span><div class="base"></div>
+    <svg viewBox="0 0 350 150" style="position:absolute;inset:0;width:100%;height:100%"><path d="M34 98c10-30 22-52 30-50 9 2-6 44 2 46 7 1 14-30 22-30 6 0-1 24 6 24 8 0 14-22 24-22 7 0 2 20 10 20 9 0 12-14 20-14 6 0 4 12 12 12 14 0 26-28 40-46 6-8 12-7 8 4-6 18-18 40-14 44 5 4 18-12 30-12 10 0 6 14 18 12 16-3 30-10 52-12" fill="none" stroke="#1E1E1E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="ck"><span class="bx">${J.tick('#F5F5F5', 16)}</span>Espèces remises</div>
+  <div class="dock"><div class="btn">Confirmer la remise</div></div>
+</div><div class="home-ind"></div>`);
+
+// 14 · Remis
+add('Cash · Remis', `${sbar()}<div class="body">
+  <div style="padding-top:150px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Remis</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">¥ 23 060 à Ibrahim Touré</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:4px">Signé à 14:32 · Ibrahim est prévenu.</div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn">Scanner le suivant</div><div class="btn soft" style="margin-top:10px">Reçu de remise</div></div>
+</div><div class="home-ind"></div>`);
+
+// 15 · Lots de paiements
+add('Lots de paiements', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Lots de paiements</div>${J.plus(K).replace('<svg ', '<svg width="26" height="26" ')}</div>
+  <div class="chips"><span class="chip">En cours 2</span><span class="chip">Payés</span><span class="chip on">Tous</span></div>
+  <div class="list" style="margin-top:6px">
+    <div class="row"><div class="av">SN</div><div class="rm"><div class="rn">Samuel Nkoulou</div><div class="rs">6 fournisseurs · aujourd'hui</div></div><div class="ra"><b>¥ 96 400</b><span class="tag t-todo">3/6 payés</span></div></div>
+    <div class="row"><div class="av">JM</div><div class="rm"><div class="rn">Jean-Paul Mbarga</div><div class="rs">4 fournisseurs · hier</div></div><div class="ra"><b>¥ 41 750</b><span class="tag t-todo">1/4 payé</span></div></div>
+    <div class="row"><div class="av">AB</div><div class="rm"><div class="rn">Aminatou Bello</div><div class="rs">3 fournisseurs · 16 oct.</div></div><div class="ra"><b>¥ 12 900</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row"><div class="av">FN</div><div class="rm"><div class="rn">Fatou Ndiaye</div><div class="rs">5 fournisseurs · 12 oct.</div></div><div class="ra"><b>¥ 38 120</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row"><div class="av">RT</div><div class="rm"><div class="rn">Rosine Tchoua</div><div class="rs">2 fournisseurs · 9 oct.</div></div><div class="ra"><b>¥ 8 400</b><span class="tag t-ok">Payé</span></div></div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 16 · Un lot
+add('Lot · Payer le suivant', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Lot BZ-LT-2610-07</div>${I.dots}</div>
+  <div class="fiche" style="padding-top:12px"><div class="big">¥ 96 400</div><div class="sub">Samuel Nkoulou · 8 894 630 XAF</div><div class="prog"><i class="k"></i><i class="k"></i><i class="k"></i><i></i><i></i><i></i></div><div class="sub" style="margin-top:8px;color:#303030;font-weight:600">3 sur 6 payés</div></div>
+  <div class="list" style="margin-top:0">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Guangzhou Hengtai Trading</div><div class="rs">Alipay</div></div><div class="ra"><b>¥ 24 000</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Chen Xiaoli</div><div class="rs">WeChat Pay</div></div><div class="ra"><b>¥ 9 800</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Foshan Meida Furniture</div><div class="rs">Virement · ICBC</div></div><div class="ra"><b>¥ 15 600</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Yiwu Jinsheng Textile</div><div class="rs">Alipay</div></div><div class="ra"><b>¥ 18 200</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Shenzhen Lianfa Electronics</div><div class="rs">Virement · BOC</div></div><div class="ra"><b>¥ 21 300</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Li Wei</div><div class="rs">WeChat Pay</div></div><div class="ra"><b>¥ 7 500</b><span class="tag t-todo">À payer</span></div></div>
+  </div>
+  <div class="dock"><div class="btn">Payer le suivant · ¥ 18 200</div></div>
+</div><div class="home-ind"></div>`);
+
+render();
+</script></body></html>

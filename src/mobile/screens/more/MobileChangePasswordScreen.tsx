@@ -22,6 +22,7 @@ import { SURFACE, TEXT, Card, PrimaryPill } from '@/mobile/designKit';
 import { Check, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { PasswordV2 } from './AccountV2';
 
 /** Un compte qui signe des paiements mérite mieux que les 6 caractères du client. */
 const MIN_LENGTH = 10;
@@ -32,6 +33,17 @@ const MIN_LENGTH = 10;
  * d'entrer, pas un dernier recours : l'explication le dit.
  */
 export function MobileChangePasswordScreen({
+  desktop = false,
+  doneTo,
+  field = false,
+}: { desktop?: boolean; doneTo?: string; field?: boolean } = {}) {
+  // Téléphone : la v2 (PasswordV2), qui revient d'où l'on vient. Ordinateur : l'écran d'origine, inchangé.
+  return desktop
+    ? <LegacyChangePassword desktop doneTo={doneTo ?? '/m/more/settings'} field={field} />
+    : <PasswordV2 doneTo={doneTo} />;
+}
+
+function LegacyChangePassword({
   desktop = false,
   doneTo = '/m/more/settings',
   field = false,

@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit.css">
+<style>
+/* —— lot 03 : cargo, réception, entrepôt —— */
+.mk.sea { background: #efe8ff } .mk.air { background: #e4f0ff } .mk.tk { background: var(--orange-soft) } .mk.ok { background: var(--green-soft) } .mk.am { background: var(--amber-soft) } .mk.gr { background: #f2f0f6 }
+.meth4 .mk.mtn { font-size: 10px }
+.mk.xaf { background: #2f8f5b; font: 800 11.5px "DM Sans" } .mk.wal { background: var(--violet); font: 800 12px "DM Sans" }
+.acts { display: flex; gap: 10px }
+/* photo de colis */
+.ph { position: relative; display: block; flex: none; overflow: hidden; background: linear-gradient(170deg, #c9c3b8 0%, #a59d90 100%) }
+.ph .bx { position: absolute; left: 13%; right: 11%; top: 17%; bottom: 11%; border-radius: 3px; background: var(--b); transform: rotate(var(--r)); box-shadow: 0 3px 6px rgba(0,0,0,.25) }
+.ph .bx::before { content: ""; position: absolute; left: 42%; width: 15%; top: 0; bottom: 0; background: var(--t) }
+.ph .bx::after { content: ""; position: absolute; right: 9%; bottom: 12%; width: 30%; height: 22%; background: #fbfaf6; border-radius: 1.5px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06) }
+.ph.nol .bx::after { display: none }
+/* en-tête dossier conteneur */
+.dh { margin: 0 16px 12px; background: #fff; border-radius: 20px; padding: 14px 16px 14px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.dh .t1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px }
+.dh h2 { font: 800 21px/1.15 "DM Sans"; letter-spacing: -.02em }
+.dh .s { font: 500 14px "DM Sans"; color: var(--t2); margin-top: 3px; display: flex; align-items: center; gap: 6px }
+.route { display: flex; align-items: center; gap: 12px; margin: 16px 0 14px }
+.route > span { font: 700 14px "DM Sans" } .route small { display: block; font: 500 12px "DM Sans"; color: var(--t3); margin-top: 1px }
+.route .bar { flex: 1; height: 4px; background: #ebe8f0; border-radius: 2px; position: relative }
+.route .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--violet); border-radius: 2px }
+.route .bar em { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 14px; background: var(--violet); display: grid; place-items: center; box-shadow: 0 0 0 4px #fff }
+.flags { display: flex; gap: 6px }
+.flag { font: 700 12.5px "DM Sans"; padding: 6px 9px; border-radius: 9px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap }
+.flag i { width: 6px; height: 6px; border-radius: 3px }
+.flag.w { background: var(--amber-soft); color: #9a5d00 } .flag.w i { background: var(--amber) }
+.flag.g { background: var(--green-soft); color: #137042 } .flag.g i { background: var(--green) }
+.flag.o { background: var(--orange-soft); color: #c23f07 } .flag.o i { background: var(--orange) }
+.flag.r { background: #fdecec; color: #c2261d } .flag.r i { background: #d93a2f }
+/* onglets internes défilants */
+.dt { margin: 0 16px 6px; background: #e6e3ec; border-radius: 12px; padding: 3px; overflow: hidden; position: relative }
+.dt::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 34px; background: linear-gradient(to right, rgba(230,227,236,0), #e6e3ec 80%) }
+.dti { display: flex; gap: 2px; white-space: nowrap }
+.dt span { height: 34px; padding: 0 13px; border-radius: 9px; display: flex; align-items: center; font: 600 14.5px "DM Sans"; color: #4b4560; flex: none }
+.dt .on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(23,17,31,.08) }
+.lbl a { float: right; color: var(--violet); text-transform: none; letter-spacing: 0; font: 600 14.5px "DM Sans" }
+/* escales */
+.esc { padding: 6px 16px 6px }
+.ei { display: flex; gap: 12px; align-items: flex-start; position: relative; padding: 9px 0 }
+.ei > i { width: 13px; height: 13px; border-radius: 7px; border: 2.5px solid #cfcad9; background: #fff; margin-top: 4px; flex: none; position: relative; z-index: 1 }
+.ei.done > i { background: var(--green); border-color: var(--green) }
+.ei.now > i { border-color: var(--violet); box-shadow: 0 0 0 4px var(--violet-soft) }
+.ei::before { content: ""; position: absolute; left: 5.5px; top: 26px; bottom: -10px; width: 2px; background: #ebe8f0 }
+.ei:last-child::before { display: none }
+.ei.done::before { background: var(--green) }
+.ei b { font: 600 15.5px "DM Sans"; display: block } .ei span { font: 500 13.5px "DM Sans"; color: var(--t2) }
+.ei em { margin-left: auto; font: 600 14px "DM Sans"; font-style: normal; color: var(--ink); text-align: right; white-space: nowrap }
+.ei em small { display: block; font: 500 12.5px "DM Sans"; color: var(--t3) }
+/* listes de feuille */
+.sl { display: flex; align-items: center; gap: 14px; padding: 10px 22px; font: 600 16px "DM Sans" }
+.sl .ii { width: 38px; height: 38px; border-radius: 12px; background: #f2f0f6; display: grid; place-items: center; flex: none }
+.sl .tx { flex: 1; min-width: 0 } .sl .tx small { display: block; font: 500 13.5px "DM Sans"; color: var(--t2); margin-top: 1px }
+.sl.red { color: #c2261d } .sl.red .ii { background: #fdecec }
+.toggle.off { background: #e3e0ea } .toggle.off::after { right: auto; left: 2px }
+.tog { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; position: relative; font: 600 16px "DM Sans" }
+.tog small { display: block; font: 500 13.5px "DM Sans"; color: var(--t2) }
+.tog + .tog::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+/* jauges */
+.gauge { height: 8px; border-radius: 4px; background: #ebe8f0; overflow: hidden; display: flex }
+.gauge i { display: block; height: 100% }
+.gl { display: flex; justify-content: space-between; font: 600 14px "DM Sans"; margin: 0 0 7px } .gl span { color: var(--t2); font-weight: 500 }
+/* mini-tuiles chiffres */
+.mini { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px }
+.mini div { background: #fff; border-radius: 16px; padding: 11px 10px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.mini b { display: block; font: 800 19px "DM Sans"; letter-spacing: -.02em; font-variant-numeric: tabular-nums }
+
+.mini span { white-space: nowrap; font: 500 12px "DM Sans"; color: var(--t2) }
+.fbar { display: flex; gap: 8px; padding: 0 20px 14px; align-items: center }
+.dd { height: 32px; padding: 0 10px 0 12px; border-radius: 10px; background: #fff; display: flex; align-items: center; gap: 4px; font: 600 13.5px "DM Sans"; color: var(--ink); box-shadow: 0 1px 2px rgba(23,17,31,.05); white-space: nowrap }
+.dd svg { opacity: .55 }
+.chips.wrap { flex-wrap: wrap; padding: 0 16px 6px }
+.chips.wrap .chip { background: #f2f0f6; box-shadow: none; height: 34px }
+.chips.wrap .chip.on { background: var(--ink) }
+.sk { font: 700 13px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .06em; padding: 4px 22px 10px }
+.tick { width: 24px; height: 24px; border-radius: 12px; border: 2px solid #cfcad9; flex: none; display: grid; place-items: center }
+.tick.on { background: var(--violet); border-color: var(--violet) }
+.tick.g { background: var(--green); border-color: var(--green) }
+.tick.sq { border-radius: 7px }
+.tick.sq.on { background: var(--ink); border-color: var(--ink) }
+/* caméra */
+.camv { position: absolute; inset: 0; background: radial-gradient(110% 70% at 50% 38%, #6b6157 0%, #3a332d 55%, #171412 100%) }
+.frame { position: absolute; width: 236px; height: 236px; left: 50%; transform: translateX(-50%) }
+.frame i { position: absolute; width: 42px; height: 42px; border: 4px solid #fff }
+.frame i:nth-child(1) { left: 0; top: 0; border-right: 0; border-bottom: 0; border-radius: 18px 0 0 0 }
+.frame i:nth-child(2) { right: 0; top: 0; border-left: 0; border-bottom: 0; border-radius: 0 18px 0 0 }
+.frame i:nth-child(3) { left: 0; bottom: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 18px }
+.frame i:nth-child(4) { right: 0; bottom: 0; border-left: 0; border-top: 0; border-radius: 0 0 18px 0 }
+.camtop { position: absolute; top: 54px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 6px 20px; color: #fff; z-index: 2; font: 600 17px "DM Sans" }
+.glass { width: 42px; height: 42px; border-radius: 21px; background: rgba(255,255,255,.18); display: grid; place-items: center; backdrop-filter: blur(10px) }
+.sbar.w { color: #fff } .sbar.w svg rect, .sbar.w svg path { fill: #fff; stroke: #fff }
+.panel { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 28px 28px 0 0; z-index: 3; padding: 10px 0 34px }
+.fd { position: absolute; left: 16px; right: 16px; z-index: 4; display: flex; gap: 10px }
+.field { background: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.field .k2 { font: 600 12.5px "DM Sans"; color: var(--t2) } .field .v2 { font: 600 16px "DM Sans"; margin-top: 2px }
+.ring { width: 112px; height: 112px; flex: none; position: relative }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; font: 800 25px "DM Sans"; letter-spacing: -.03em; text-align: center }
+.ring b small { display: block; font: 600 12.5px "DM Sans"; color: var(--t2); letter-spacing: 0 }
+.sig { margin: 0 16px; height: 150px; border-radius: 18px; background: #f7f5fb; border: 1.5px dashed #d9d3e6; position: relative }
+.redlink { color: #c2261d; font: 600 15.5px "DM Sans"; text-align: center; padding: 6px 0 }
+.rowsel { background: #f7f3ff }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit.js"></script>
+<script>
+// —— icônes du lot ——
+const S = (d, c = '#17111f', s = 20, w = 2, f = 'none') => `<svg width="${s}" height="${s}" viewBox="0 0 24 24"><path d="${d}" fill="${f}" stroke="${f === 'none' ? c : 'none'}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const P = {
+  ship: 'M3 14.5h18l-2.6 5H5.6zM6 14.5V9h5v5.5M11 14.5V5.5h6v9',
+  plane: 'M21.5 15v-2l-8.3-5.2V4.2a1.6 1.6 0 0 0-3.2 0v3.6L1.7 13v2l8.3-2.6v4.4l-2.3 1.7V20l4-1.1 4 1.1v-1.5l-2.3-1.7v-4.4z',
+  doc: 'M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5',
+  refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
+  plus: 'M12 5v14M5 12h14',
+  pencil: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
+  trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13',
+  tag: 'M3 12V4h8l10 10-8 8zM7.5 8h.01',
+  print: 'M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z',
+  map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14',
+  pin: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 12a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8z',
+  down: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+  up: 'M12 16V4M7 9l5-5 5 5M5 20h14',
+  filter: 'M4 6h16M7 12h10M10 18h4',
+  warn: 'M12 3.5 2.5 20h19zM12 10v4.5M12 17.2h.01',
+  box: 'M12 3 21 7.5v9L12 21l-9-4.5v-9zM3 7.5 12 12l9-4.5M12 12v9',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
+  link: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
+  flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
+  route: 'M6 19a2 2 0 1 0 0-.01M18 7a2 2 0 1 0 0-.01M6 17V9a3 3 0 0 1 3-3h1M18 9v6a3 3 0 0 1-3 3h-1',
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c.9-4 4-6 8-6s7.1 2 8 6',
+  cam: 'M4 8.5A2.5 2.5 0 0 1 6.5 6h1.6l1.4-2h5l1.4 2h1.6A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5zM12 15.9a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8z',
+  photos: 'M4 6h12v12H4zM8 3h13v13M4 15l4-4 4 4 2-2 2 2',
+  calc: 'M6 3h12v18H6zM9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01',
+  team: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c.8-3.6 3.5-5.5 7-5.5s6.2 1.9 7 5.5M16 3.5a4 4 0 0 1 0 7.5M18.5 14.5c1.8.8 3 2.6 3.5 5',
+  globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z',
+  restore: 'M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5',
+  history: 'M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5M12 8v4l3 2',
+  scale: 'M4 20h16l-2.2-11H6.2zM9 9a3 3 0 0 1 6 0',
+  x: 'M6 6l12 12M18 6 6 18',
+  star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z',
+  bolt: 'M13 3 5 14h6l-1 7 8-11h-6z',
+  wallet: 'M4 7h15a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM4 7l11-3v3M16 13.5h.01',
+  qr: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2',
+  sea: 'M3 16c2 0 2-1.5 4.5-1.5S9.5 16 12 16s2-1.5 4.5-1.5S19 16 21 16M3 20c2 0 2-1.5 4.5-1.5S9.5 20 12 20s2-1.5 4.5-1.5S19 20 21 20M6 12V6h12v6',
+};
+const mkI = (d, cls, col, fill) => `<span class="mk ${cls}">${S(d, col, 22, 2, fill ? col : 'none')}</span>`;
+const IC = { search: ic.search.replace(/currentColor/g, '#17111f'), dots: ic.dots };
+// photo de colis (carton, sac tissé, sac noir…)
+const PV = [['#d6b07f', 'rgba(255,255,255,.32)', '-3deg'], ['linear-gradient(160deg,#f2f0ea,#d6d1c5)', 'rgba(214,57,44,.55)', '2deg'], ['#c49660', 'rgba(70,120,210,.55)', '-1deg'], ['#2e2b31', 'rgba(255,255,255,.12)', '3deg'], ['#dcb98e', 'rgba(240,200,40,.65)', '1deg']];
+const ph = (v = 0, w = 44, h = 44, r = 10, extra = '') => { const [b, t, rot] = PV[v % 5]; return `<span class="ph ${v % 5 === 3 ? 'nol' : ''}" style="width:${w}px;height:${h}px;border-radius:${r}px;${extra}"><span class="bx" style="--b:${b};--t:${t};--r:${rot}"></span></span>`; };
+const nb = (back, t, sub, acts = IC.dots) => `<div class="nb"><div class="back">${ic.back}${back}</div><div class="t">${t}${sub ? `<small>${sub}</small>` : ''}</div><div class="sp"></div>${acts.split('|').map((a) => `<div class="act" style="margin-left:8px">${a}</div>`).join('')}</div>`;
+const hi = '<div class="home-ind"></div>';
+const R2 = (icon, name, sub, amt, meta, dot, cls = '') => `<div class="row ${cls}">${icon}<div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div></div><div class="ra"><b>${amt}</b><span>${dot ? `<span class="dotline"><i style="background:${dot}"></i>${meta}</span>` : meta}</span></div></div>`;
+const OR = '#f0530f', AM = '#e38a0b', GR = '#1c9a57', RD = '#d93a2f';
+const caret = S('m7 10 5 5 5-5', '#17111f', 14, 2.4);
+
+// —— dossier conteneur ——
+const DH = `<div class="dh"><div class="t1"><div><h2>Groupage octobre</h2><div class="s">Maersk · BL MAEU254889631 ${ic.copy}</div></div>${pill('wait', 'En mer')}</div>
+  <div class="route"><span>Nansha<small>parti 3 oct.</small></span><div class="bar"><i style="width:64%"></i><em style="left:64%">${S(P.ship, '#fff', 15, 2.2)}</em></div><span style="text-align:right">Douala<small style="color:#c23f07;font-weight:600">31 oct. · +3 j</small></span></div>
+  <div class="flags"><span class="flag w"><i></i>Télex attendu</span><span class="flag g"><i></i>Fret réglé</span><span class="flag o"><i></i>BESC à faire</span></div></div>`;
+const DTABS = ['Aperçu', 'Suivi', 'Chargement', 'Documents', 'Douane', 'Coûts', 'Clients', 'Intervenants', 'Notes'];
+const DT = (on, shift = 0) => `<div class="dt"><div class="dti" style="transform:translateX(-${shift}px)">${DTABS.map((t) => `<span class="${t === on ? 'on' : ''}">${t}</span>`).join('')}</div></div>`;
+const DNB = nb('Cargo', 'MIEU3611115', '', `${S(P.refresh, '#17111f', 19, 2.2)}|${IC.dots}`);
+const MAP = `<svg viewBox="0 0 329 124" width="100%" height="124" style="display:block;background:#e3edf6">
+  <path d="M0 52 C18 48 30 60 46 74 C56 84 52 102 64 124 L0 124Z" fill="#f1eee6"/>
+  <path d="M232 0 C236 18 250 26 262 22 C276 18 282 34 300 30 C312 28 320 14 329 12 L329 0Z" fill="#f1eee6"/>
+  <path d="M214 54 c8 -6 18 -4 22 6 c-6 6 -16 6 -22 -6z" fill="#f1eee6"/>
+  <polyline points="40,82 70,76 130,108 172,100" fill="none" stroke="#7a3cf0" stroke-width="2.4" stroke-dasharray="4 5" opacity=".5"/>
+  <polyline points="172,100 228,64 288,30" fill="none" stroke="#7a3cf0" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="40" cy="82" r="4.5" fill="#fff" stroke="#17111f" stroke-width="2"/><circle cx="70" cy="76" r="3.5" fill="#fff" stroke="#9a95a8" stroke-width="2"/>
+  <circle cx="228" cy="64" r="3.5" fill="#1c9a57"/><circle cx="288" cy="30" r="3.5" fill="#1c9a57"/>
+  <circle cx="172" cy="100" r="12" fill="#7a3cf0" opacity=".18"/><circle cx="172" cy="100" r="6" fill="#7a3cf0" stroke="#fff" stroke-width="2.5"/>
+  <text x="24" y="100" font-family="DM Sans" font-weight="700" font-size="11" fill="#17111f">Douala</text>
+  <text x="62" y="68" font-family="DM Sans" font-weight="600" font-size="10" fill="#6f6981">Lomé</text>
+  <text x="236" y="76" font-family="DM Sans" font-weight="600" font-size="10" fill="#6f6981">Tanjung Pelepas</text>
+  <text x="236" y="24" font-family="DM Sans" font-weight="700" font-size="11" fill="#17111f">Nansha</text>
+  <text x="150" y="122" font-family="DM Sans" font-weight="700" font-size="10.5" fill="#7a3cf0">14,2 nds</text>
+</svg>`;
+
+// ═════════ ADMIN · CARGO ═════════
+// 1. Cargo — expéditions
+add('Cargo', 'Conteneurs + avion, alertes, à faire', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">7 expéditions · 1 en retard</div><h1>Cargo</h1></div><div class="acts"><div class="round">${IC.search}</div><div class="round">${IC.dots}</div></div></div>
+  <div class="seg"><div class="on">Expéditions</div><div>Réception</div></div>
+  <div class="chips"><div class="chip on">Tous <small>7</small></div><div class="chip">En retard <small>1</small></div><div class="chip">À régler <small>2</small></div><div class="chip">Sous 7 j <small>2</small></div><div class="chip">Sans suivi</div></div>
+  <div class="sh"><h2>À faire cette semaine <span class="cnt">3</span></h2><a>Tout</a></div>
+  <div class="card">
+    ${R2(mkI(P.doc, 'tk', OR), 'Obtenir le télex release', 'MIEU3611115 · Eric, KASSUMAYE', 'ven.', 'urgent', OR)}
+    ${R2(mkI(P.flag, 'tk', OR), 'Établir le BESC', 'MIEU3611115 · déclarante Douala', 'lun.', 'à faire', OR)}
+  </div>
+  <div class="sh"><h2>Conteneurs</h2><a>Carte</a></div>
+  <div class="card">
+    ${R2(mkI(P.ship, 'sea', '#7a3cf0'), 'Groupage octobre', 'MIEU3611115 · Maersk', '31 oct.', '+3 j', OR)}
+    ${R2(mkI(P.ship, 'sea', '#7a3cf0'), 'Kengne Import SARL', 'MSCU4471852 · MSC', '5 nov.', 'à l\'heure', GR)}
+  </div>
+  <div class="sh"><h2>Avion</h2><a>Tout voir</a></div>
+  <div class="card">
+    ${R2(mkI(P.plane, 'air', '#1a6fe0', true), 'ET 607 · CAN → DLA', 'LTA 071-2231 4410 · 6 paquets', '23 oct.', 'préparation', AM)}
+  </div>
+</div>${tabs('cargo', { ops: 4, cargo: 1 })}${hi}`);
+
+// 2. Feuille « … » de Cargo
+add('Cargo · menu', 'Suivre, avion, carte, export, comptes', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">7 expéditions · 1 en retard</div><h1>Cargo</h1></div><div class="acts"><div class="round">${IC.search}</div><div class="round">${IC.dots}</div></div></div>
+  <div class="seg"><div class="on">Expéditions</div><div>Réception</div></div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div>
+  <div class="tiles" style="padding:0 16px 14px"><div class="tile pay" style="height:104px"><div class="i">${S(P.ship, '#fff', 22, 2.2)}</div><b>Suivre un<br>conteneur</b></div><div class="tile" style="height:104px;background:linear-gradient(150deg,#3f8cff,#1f5fd6)"><div class="i">${S(P.plane, '#fff', 22, 2, '#fff')}</div><b>Expédition<br>avion</b></div></div>
+  <div class="sl"><span class="ii">${S(P.map)}</span><span class="tx">Carte de la flotte</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.filter)}</span><span class="tx">Trier et filtrer<small>Armateur, destination, arrivée</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.down)}</span><span class="tx">Exporter la liste (CSV)</span></div>
+  <div class="sl"><span class="ii">${S(P.calc)}</span><span class="tx">Coût à quai</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.team)}</span><span class="tx">Comptes cargo<small>4 comptes · 34 colis en attente</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.scale)}</span><span class="tx">Tarifs cargo<small>Air 3 000 XAF/kg · Mer 185 000 XAF/m³</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.pin)}</span><span class="tx">Adresses en Chine</span>${ic.chev}</div>
+</div>${hi}`, 'white');
+
+// 3. Dossier — Suivi
+add('Dossier · Suivi', 'Escales, dernier mouvement, position', `${sbar()}<div class="scroll">
+  ${DNB}${DH}${DT('Suivi')}
+  <div class="lbl" style="padding-top:12px">Où est-il <a>MarineTraffic</a></div>
+  <div class="card">${MAP}
+    <div class="kv"><span>Dernier départ</span><b>Tanjung Pelepas · 14 oct.</b></div>
+    <div class="kv"><span>Position</span><b>AIS · il y a 3 h</b></div>
+  </div>
+  <div class="lbl">Escales <a>Modifier</a></div>
+  <div class="card"><div class="esc">
+    <div class="ei done"><i></i><div><b>Nansha, Chine</b><span>Départ réel</span></div><em>3 oct.</em></div>
+    <div class="ei done"><i></i><div><b>Tanjung Pelepas</b><span>Transbordement</span></div><em>14 oct.</em></div>
+    <div class="ei now"><i></i><div><b>Lomé, Togo</b><span>Prochaine escale</span></div><em>29 oct.</em></div>
+    <div class="ei"><i></i><div><b>Douala</b><span>Arrivée retenue · armateur</span></div><em>31 oct.</em></div>
+  </div></div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.pin, '#17111f', 22)}</div><div class="btn dark">Corriger l'arrivée</div></div>${hi}`);
+
+// 4. Corriger l'arrivée (feuille) + estimations successives
+add('Corriger l\'arrivée', 'Les 4 dates, l\'historique des estimations', `${sbar()}<div class="scroll">${DNB}${DH}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Arrivée à Douala</h3><div class="lead">MIEU3611115 · Maersk Nouakchott 643W</div>
+  <div class="inset">
+    <div class="kv"><span>Promise · transitaire</span><b>28 oct.</b></div>
+    <div class="kv"><span>Armateur · Maersk</span><b>31 oct. ${pill('done', 'Retenue')}</b></div>
+    <div class="kv"><span>Relevée</span><b style="color:#9a95a8">—</b></div>
+  </div>
+  <div class="seg" style="margin:16px 16px 12px"><div>Suivre l'armateur</div><div class="on">Date manuelle</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:10px;padding:0 16px 16px">
+    <div class="field" style="background:#f4f2f7;box-shadow:none"><div class="k2">Date</div><div class="v2">2 nov. 2026</div></div>
+    <div class="field" style="background:#f4f2f7;box-shadow:none"><div class="k2">Note</div><div class="v2">Escale Lomé rallongée</div></div>
+  </div>
+  <div class="sk">Estimations successives</div>
+  <div class="tl" style="padding:0 22px 12px">
+    <div class="tli"><i class="g"></i>31 oct. · Maersk<span>18 oct.</span></div>
+    <div class="tli"><i></i>30 oct. · Maersk<span>9 oct.</span></div>
+    <div class="tli"><i></i>28 oct. · promise par Eric<span>1 oct.</span></div>
+  </div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn dark">Retenir le 2 nov.</div></div>
+</div>${hi}`, 'white');
+
+// 5. Menu « … » du dossier
+add('Dossier · menu', 'Toutes les corrections du desktop', `${sbar()}<div class="scroll">${DNB}${DH}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:12px">MIEU3611115</h3>
+  <div class="inset" style="margin-bottom:8px">
+    <div class="tog"><span>Fret réglé<small>3 200 USD · Eric</small></span><span class="toggle"></span></div>
+    <div class="tog"><span>Télex reçu</span><span class="toggle off"></span></div>
+  </div>
+  <div class="sl"><span class="ii">${S(P.refresh)}</span><span class="tx">Rafraîchir auprès de Maersk<small>Dernière synchro 07:12</small></span></div>
+  <div class="sl"><span class="ii">${S(P.ship)}</span><span class="tx">Navire et voyage<small>Maersk Nouakchott · 643W</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.pin)}</span><span class="tx">Position manuelle</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.route)}</span><span class="tx">Modifier les escales</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.flag)}</span><span class="tx">Marquer arrivé</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.doc)}</span><span class="tx">Avis d'expédition (PDF)</span></div>
+  <div class="sl"><span class="ii">${S(P.link)}</span><span class="tx">Voir en direct</span></div>
+  <div class="sl red"><span class="ii">${S(P.trash, '#c2261d')}</span><span class="tx">Retirer de la flotte</span></div>
+</div>${hi}`, 'white');
+
+// 6. Dossier — Documents
+const DOCROW = (n, s, k, t) => R2(mkI(P.doc, k === 'done' ? 'ok' : k === 'wait' ? 'am' : 'tk', k === 'done' ? GR : k === 'wait' ? AM : OR), n, s, '', '', '').replace('<b></b><span></span>', pill(k, t));
+add('Dossier · Documents', 'Classeur, BL, télex, BESC', `${sbar()}<div class="scroll">
+  ${DNB}${DH}${DT('Documents', 150)}
+  <div class="lbl" style="padding-top:12px">Classeur · 6 / 9 complètes <a>Chercher</a></div>
+  <div class="card">
+    ${DOCROW('Connaissement (BL)', 'Copie · originaux chez Eric', 'done', 'Reçu')}
+    ${DOCROW('Télex release', 'Demandé à Eric le 17 oct.', 'wait', 'Attendu')}
+    ${DOCROW('BESC', 'À établir avant l\'arrivée', 'todo', 'À faire')}
+    ${DOCROW('Facture fret', 'KASSUMAYE · KP-2610-17', 'done', 'Reçue')}
+    ${DOCROW('Packing list', '148 colis · 23 clients · PDF', 'done', 'Prête')}
+    ${DOCROW('Certificat VGM', '9 870 kg · PDF', 'done', 'Reçu')}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.up, '#17111f', 22)}</div><div class="btn dark">${S(P.plus, '#fff', 20, 2.4)} Nouvelle pièce</div></div>${hi}`);
+
+// 7. Dossier — Chargement
+const CONT = `<svg viewBox="0 0 140 70" width="132" height="66"><path d="M18 14 L118 14 L134 4 L34 4Z" fill="#f1eafe" stroke="#7a3cf0" stroke-width="1.5"/><path d="M118 14 L134 4 L134 54 L118 64Z" fill="#e4d8fd" stroke="#7a3cf0" stroke-width="1.5"/><rect x="18" y="14" width="100" height="50" fill="#faf8fe" stroke="#7a3cf0" stroke-width="1.5"/><rect x="19" y="27" width="77" height="36" fill="#7a3cf0" opacity=".85"/><path d="M19 27 L96 27 L96 63" fill="none" stroke="#5a22c8" stroke-width="1"/>${[30, 42, 54, 66, 78, 90].map((x) => `<path d="M${x} 27v36" stroke="#fff" stroke-opacity=".35"/>`).join('')}<path d="M19 45h77" stroke="#fff" stroke-opacity=".35"/></svg>`;
+add('Dossier · Chargement', 'Remplissage, lots, colis reçus', `${sbar()}<div class="scroll">
+  ${DNB}${DH}${DT('Chargement', 30)}
+  <div class="card" style="margin-top:8px;padding:14px 16px;display:flex;gap:14px;align-items:center">
+    ${CONT}
+    <div style="flex:1">
+      <div class="gl"><b>52,4 m³</b><span>/ 67,7 · 77 %</span></div><div class="gauge" style="margin-bottom:12px"><i style="width:77%;background:#7a3cf0"></i></div>
+      <div class="gl"><b>9 870 kg</b><span>/ 26 500</span></div><div class="gauge"><i style="width:37%;background:#e38a0b"></i></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:10px;background:var(--orange-soft);box-shadow:none"><div class="row">${mkI(P.warn, 'tk', OR)}<div class="rm"><div class="rn" style="color:#a3360a">2 lots sans propriétaire</div><div class="rs" style="color:#c25a2a">1 colis sans dimensions</div></div>${ic.chev}</div></div>
+  <div class="lbl">Lots · 148 colis · 23 clients <a>+ Lot</a></div>
+  <div class="card">
+    ${R2(ph(0, 40, 40, 12), 'Awa Ngono Mballa', '14 colis · 2 dépôts', '3,2 m³', '612 kg')}
+    ${R2(ph(1, 40, 40, 12), 'Établissements Fotso &amp; Fils', '22 colis · 2 dépôts', '7,9 m³', '1 340 kg')}
+    ${R2(ph(2, 40, 40, 12), 'Kamdem Quincaillerie', '9 colis · RC-000377', '2,1 m³', '488 kg')}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.doc, '#17111f', 22)}</div><div class="btn dark">Charger des colis reçus</div></div>${hi}`);
+
+// 8. Dossier — Coûts
+add('Dossier · Coûts', 'Totaux, fret annoncé, justificatifs', `${sbar()}<div class="scroll">
+  ${DNB}${DH}${DT('Coûts', 290)}
+  <div class="mini" style="grid-template-columns:repeat(3,1fr);margin-top:8px"><div><b>4 180</b><span>USD</span></div><div><b>¥6 850</b><span>CNY</span></div><div><b>1,32 M</b><span>XAF</span></div></div>
+  <div class="lbl">Fret annoncé <a>Modifier</a></div>
+  <div class="card"><div class="kv"><span>Annoncé par Eric</span><b>3 200 USD</b></div><div class="kv"><span>Facture</span><b style="color:#1c9a57">KP-2610-17 · reçue</b></div></div>
+  <div class="lbl">7 coûts <a>Coût à quai</a></div>
+  <div class="card">
+    ${R2(mkI(P.ship, 'sea', '#7a3cf0'), 'Fret maritime', 'KASSUMAYE · facture jointe', '3 200 USD', 'payé', GR)}
+    ${R2(mkI(P.box, 'gr', '#4b4560'), 'Camion vers Nansha', 'Eric · 3 oct.', '¥2 400', 'payé', GR)}
+    ${R2(mkI(P.doc, 'gr', '#4b4560'), 'Douane export', 'Eric · déclaration 5160…', '¥1 850', 'payé', GR)}
+    ${R2(mkI(P.flag, 'am', AM), 'Manutention Douala (THC)', 'à l\'arrivée', '620 000', 'à payer', AM)}
+  </div>
+</div>
+<div class="dock"><div class="btn dark">${S(P.plus, '#fff', 20, 2.4)} Ajouter un coût</div></div>${hi}`);
+
+// 9. Dossier — Clients du groupage
+add('Dossier · Clients', 'Part de chacun, lots à attribuer', `${sbar()}<div class="scroll">
+  ${DNB}${DH}${DT('Clients', 360)}
+  <div class="card" style="margin-top:8px"><div class="kv"><span>Au nom de</span><b>NORTON GAUSS BONZINI SARL</b></div></div>
+  <div class="lbl">23 clients · part du fret</div>
+  <div class="card">
+    ${R2('<div class="av" style="background:#efe8ff;color:#6526de">EF</div>', 'Établissements Fotso &amp; Fils', '22 colis · 7,9 m³', '1 461 500', '15 %')}
+    ${R2('<div class="av" style="background:#fff1dd;color:#b36800">AN</div>', 'Awa Ngono Mballa', '14 colis · 3,2 m³', '592 000', '6 %')}
+    ${R2('<div class="av" style="background:#e7f1ff;color:#1a5fd1">KQ</div>', 'Kamdem Quincaillerie', '9 colis · 2,1 m³', '388 500', '4 %')}
+    ${R2('<div class="av" style="background:#e6f6ed;color:#137042">IM</div>', 'Ibrahim Moussa Bello', '6 colis · 1,4 m³', '259 000', '3 %')}
+  </div>
+  <div class="lbl">Sans propriétaire</div>
+  <div class="card">${R2(mkI(P.box, 'tk', OR), 'Lot 17 · 3 cartons', '0,6 m³ · 84 kg', '', '', '').replace('<b></b><span></span>', '<span style="font:600 15px DM Sans;color:#7a3cf0">Attribuer</span>')}</div>
+</div>${hi}`);
+
+// 10. Expédition avion
+add('Expédition avion', 'Jalon, paquets scannés, clients', `${sbar()}<div class="scroll">
+  ${nb('Cargo', '071-2231 4410', 'ET 607 · Ethiopian')}
+  <div class="hero" style="padding-bottom:16px">${mkI(P.plane, 'air', '#1a6fe0', true).replace('class="mk air"', 'class="mk air" style="width:52px;height:52px;border-radius:16px;margin:0 auto 12px"')}<div class="amt">142 kg</div><div class="sub">6 paquets · 0,86 m³ · 9 clients</div>${pill('wait', 'Préparation')}</div>
+  <div class="card"><div class="esc">
+    <div class="ei now"><i></i><div><b>Préparation</b><span>4 / 6 paquets scannés</span></div><em>aujourd'hui</em></div>
+    <div class="ei"><i></i><div><b>Départ · Baiyun CAN</b><span>via Addis-Abeba</span></div><em>23 oct.<small>01:40</small></em></div>
+    <div class="ei"><i></i><div><b>Arrivée · Douala DLA</b><span>Fret 6,20 USD/kg</span></div><em>24 oct.<small>14:05</small></em></div>
+  </div></div>
+  <div class="lbl">Paquets <a>+ Ajouter</a></div>
+  <div class="card">
+    ${R2(mkI(P.box, 'ok', GR), 'PQ-000011', '4 clients · 01:12', '31,4 kg', 'scanné', GR)}
+    ${R2(mkI(P.box, 'tk', OR), 'PQ-000014', '3 clients', '28,9 kg', 'à scanner', OR)}
+    ${R2(mkI(P.box, 'gr', RD), 'PQ-000009', 'Refusé · batterie', '27,2 kg', 'retour bureau', RD)}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.doc, '#17111f', 22)}</div><div class="btn dark">${ic.scanSm} Scan au départ</div></div>${hi}`);
+
+// 11. Scan au départ (chargement avion)
+const LBLPQ = `<div style="position:absolute;left:50%;top:214px;transform:translateX(-50%) rotate(-4deg);width:200px;background:#fbfaf6;border-radius:6px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.4)"><div style="display:flex;justify-content:space-between;font:800 15px 'DM Sans'"><span>PQ-000014</span><span>28,9 kg</span></div><div style="display:flex;gap:1.5px;height:44px;margin:8px 0 6px">${Array.from({ length: 46 }, (_, i) => `<i style="flex:${(i * 7) % 3 + 1};background:${i % 2 ? 'transparent' : '#111'}"></i>`).join('')}</div><div style="font:600 10px 'DM Sans';color:#555;display:flex;justify-content:space-between"><span>BONZINI · CAN → DLA</span><span>3 clients</span></div></div>`;
+add('Scan au départ', 'Douchette ou caméra, 1 manquant', `<div class="camv"></div>${sbar().replace('class="sbar"', 'class="sbar w"')}
+  <div class="camtop"><div class="glass">${S(P.x, '#fff', 20, 2.4)}</div><span>Scan au départ</span><div class="glass">${S(P.bolt, '#fff', 20, 2)}</div></div>
+  <div class="frame" style="top:170px">${'<i></i>'.repeat(4)}</div>${LBLPQ}
+  <div class="panel"><div class="grab"></div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 10px"><div><div style="font:800 34px 'DM Sans';letter-spacing:-.03em">5 / 6</div><div style="font:500 14.5px 'DM Sans';color:#6f6981">paquets scannés · ET 607</div></div>${pill('done', 'PQ-000014 ✓')}</div>
+    <div style="padding:0 22px 8px"><div class="gauge"><i style="width:83%;background:#1c9a57"></i></div></div>
+    ${R2(mkI(P.box, 'tk', OR), 'PQ-000016', 'Kamdem, Fotso · pas scanné', '30,2 kg', 'manquant', OR)}
+    <div style="display:flex;gap:10px;padding:8px 16px 0"><div class="btn ghost" style="flex:0 0 120px">Saisir</div><div class="btn dark">Terminer</div></div>
+  </div>${hi}`);
+
+// ═════════ ADMIN · RÉCEPTION ═════════
+const RHEAD = (stats = true) => `<div class="lt"><div><div class="over">162 colis en stock</div><h1>Cargo</h1></div><div class="acts"><div class="round">${S(P.down, '#17111f', 21, 2.2)}</div><div class="round">${IC.dots}</div></div></div>
+  <div class="seg"><div>Expéditions</div><div class="on">Réception</div></div>`;
+const VIEWS = (on) => `<div class="chips">${['Dépôts', 'Colis', 'Photos', 'Par client', 'Paquets avion'].map((v) => `<div class="chip ${v === on ? 'on' : ''}">${v}</div>`).join('')}</div>`;
+// 12. Réception — Dépôts
+add('Réception', '5 vues, période, recherche, export', `${sbar()}<div class="scroll">
+  ${RHEAD()}
+  <div class="srch">${ic.search}RC, BZ, client, bordereau, contenu</div>
+  ${VIEWS('Dépôts')}
+  <div class="fbar"><span class="dd">En stock ${caret}</span><span class="dd">Partout ${caret}</span><span class="dd">Tous ${caret}</span><span class="dd" style="background:var(--orange-soft);color:#c23f07">3 à attribuer</span></div>
+  <div class="mini"><div><b>162</b><span>colis</span></div><div><b>1 940</b><span>kg</span></div><div><b>14,6</b><span>m³</span></div><div><b>9</b><span>sans photo</span></div></div>
+  <div class="day" style="padding-top:18px">Aujourd'hui</div>
+  <div class="card">
+    ${R2(ph(0, 40, 40, 12), 'Awa Ngono Mballa', 'RC-000412 · 4 colis · Liang', '61,2 kg', 'Terminé', GR)}
+    ${R2(ph(3, 40, 40, 12), 'Sans client', 'RC-000413 · 2 colis · Mei', '33,0 kg', 'À attribuer', OR)}
+    ${R2(ph(1, 40, 40, 12), 'Kamdem Quincaillerie', 'RC-000414 · 1 colis · Liang', '8,7 kg', 'En cours', AM)}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="card">${R2(ph(2, 40, 40, 12), 'Ibrahim Moussa Bello', 'RC-000405 · 2 colis · Chen', '5,4 kg', 'Terminé', GR)}</div>
+</div>${tabs('cargo', { ops: 4, cargo: 1 })}${hi}`);
+
+// 13. Feuille de filtres
+add('Réception · filtres', 'Périodes dont Supprimés, files, export', `${sbar()}<div class="scroll">${RHEAD()}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:14px">Filtres</h3>
+  <div class="sk">Période</div>
+  <div class="chips wrap">${['En stock', 'Aujourd\'hui', '7 j', '30 j', '90 j', 'Tout', 'Supprimés'].map((c, i) => `<div class="chip ${i === 0 ? 'on' : ''}" style="margin-bottom:8px">${c}</div>`).join('')}</div>
+  <div class="sk" style="padding-top:8px">Lieu</div>
+  <div class="seg" style="grid-template-columns:1fr 1fr 1fr;margin:0 16px 14px"><div class="on">Partout</div><div>Entrepôt · Mer</div><div>Bureau · Air</div></div>
+  <div class="sk">File</div>
+  <div class="chips wrap">${[['Tous', ''], ['En attente', '104'], ['Partis', '41'], ['À attribuer', '3'], ['Incomplets', '5'], ['Sans photo', '9'], ['En cours', '2']].map(([c, n], i) => `<div class="chip ${i === 0 ? 'on' : ''}" style="margin-bottom:8px">${c} ${n ? `<small>${n}</small>` : ''}</div>`).join('')}</div>
+  <div class="sk" style="padding-top:8px">Reçu par</div>
+  <div class="chips wrap"><div class="chip on" style="margin-bottom:8px">Tous</div><div class="chip">Liang</div><div class="chip">Mei</div><div class="chip">Chen</div><div class="chip">Nelson</div></div>
+  <div class="kv" style="padding:12px 22px 14px"><span style="color:#17111f;font-weight:600">Langue des devis</span><span class="cur-tg" style="float:none;margin:0"><span class="on">FR</span><span>EN</span></span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 auto;padding:0 18px">${S(P.down, '#17111f', 20, 2.2)} CSV</div><div class="btn dark">Voir 162 colis</div></div>
+</div>${hi}`, 'white');
+
+// 14. Réception — Colis, sélection en lot
+const SELROW = (on, v, n, s, kg, m3) => `<div class="row ${on ? 'rowsel' : ''}"><span class="tick sq ${on ? 'on' : ''}">${on ? ic.check('#fff', 14) : ''}</span>${ph(v, 46, 46, 12)}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${kg}</b><span>${m3}</span></div></div>`;
+add('Réception · sélection', 'Étiquettes en lot, mettre en paquet', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Annuler</span><span class="t">3 colis · 59,9 kg</span><span class="x">Tout</span></div>
+  ${VIEWS('Colis')}
+  <div class="fbar"><span class="dd">Bureau · Air ${caret}</span><span class="dd">En attente ${caret}</span><span class="dd">7 j ${caret}</span></div>
+  <div class="day">Awa Ngono Mballa · RC-000412</div>
+  <div class="card">
+    ${SELROW(true, 0, 'Tissus wax', 'RC-000412-01', '18,4 kg', '0,108 m³')}
+    ${SELROW(true, 4, 'Chaussures femme', 'RC-000412-02', '24,6 kg', '0,120 m³')}
+    ${SELROW(true, 2, 'Sacs à main', 'RC-000412-03', '16,9 kg', '0,070 m³')}
+  </div>
+  <div class="day" style="padding-top:18px">Kamdem Quincaillerie · RC-000409</div>
+  <div class="card">
+    ${SELROW(false, 1, 'Serrures, poignées', 'RC-000409-01', '21,3 kg', '0,047 m³')}
+    ${SELROW(false, 3, 'Robinetterie inox', 'RC-000409-02', '12,0 kg', '0,036 m³')}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.tag, '#17111f', 21)} Étiquettes</div><div class="btn dark">Mettre en paquet</div></div>${hi}`);
+
+// 15. Fiche dépôt (admin + réception)
+const PROW = (v, n, s, kg, m3) => `<div class="row">${ph(v, 50, 50, 13)}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${kg}</b><span>${m3}</span></div></div>`;
+add('Fiche dépôt', 'Une seule fiche, admin et réception', `${sbar()}<div class="scroll">
+  ${nb('Réception', 'RC-000412', '21 oct. · reçu par Liang')}
+  <div class="hero" style="padding-bottom:16px"><div class="amt">4 colis</div><div class="sub">61,2 kg · 0,40 m³ · Bureau · Air</div>${pill('done', 'Terminé')}</div>
+  <div class="card"><div class="row"><div class="av" style="background:#fff1dd;color:#b36800">AN</div><div class="rm"><div class="rn">Awa Ngono Mballa</div><div class="rs">BZ-4821 · solde 2 450 000 XAF</div></div>${ic.chev}</div></div>
+  <div class="card" style="margin-top:10px"><div class="row">${mkI(P.doc, 'am', AM)}<div class="rm"><div class="rn">Devis DV-000087</div><div class="rs">Envoyé · reste à payer</div></div><div class="ra"><b>186 000</b><span>XAF</span></div>${ic.chev}</div></div>
+  <div class="lbl">Colis <a>Modifier</a></div>
+  <div class="card">
+    ${PROW(0, 'Tissus wax · 3 rouleaux', 'RC-000412-01 · 3 photos', '18,4 kg', '0,108 m³')}
+    ${PROW(4, 'Chaussures femme · 24 p.', 'RC-000412-02 · 2 photos', '24,6 kg', '0,120 m³')}
+    ${PROW(2, 'Sacs à main · 40 p.', 'RC-000412-03 · 1 photo', '16,9 kg', '0,070 m³')}
+    ${PROW(1, 'Pièces détachées', 'RC-000412-04 · forfait', '1,3 kg', '0,102 m³')}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.tag, '#17111f', 22)}</div><div class="btn dark">${S(P.plus, '#fff', 20, 2.4)} Ajouter un colis</div></div>${hi}`);
+
+// 16. Fiche dépôt — menu
+add('Fiche dépôt · menu', 'Modifier, réattribuer, étiquettes, supprimer', `${sbar()}<div class="scroll">
+  ${nb('Réception', 'RC-000412', '21 oct. · reçu par Liang')}
+  <div class="hero"><div class="amt">4 colis</div><div class="sub">61,2 kg · 0,40 m³ · Bureau · Air</div>${pill('done', 'Terminé')}</div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3 style="padding-bottom:10px">RC-000412</h3>
+  <div class="sl"><span class="ii">${S(P.pencil)}</span><span class="tx">Modifier le dépôt<small>Lieu, apporté par, fournisseur, notes</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.user)}</span><span class="tx">Réattribuer<small>Awa Ngono Mballa · BZ-4821</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.tag)}</span><span class="tx">Étiquettes des colis<small>Choisir, PDF, imprimer, PNG</small></span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.qr)}</span><span class="tx">Étiquette client</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.doc)}</span><span class="tx">Bon de réception (PDF)</span></div>
+  <div class="sl"><span class="ii">${S(P.photos)}</span><span class="tx">Photos · 8</span>${ic.chev}</div>
+  <div class="sl"><span class="ii">${S(P.history)}</span><span class="tx">Historique</span>${ic.chev}</div>
+  <div class="sl red"><span class="ii">${S(P.trash, '#c2261d')}</span><span class="tx">Supprimer le dépôt<small style="color:#d36a62">Motif demandé · rétablissable</small></span></div>
+</div>${hi}`, 'white');
+
+// 17. Modifier un colis
+add('Modifier un colis', 'Photos, couverture, mesures, état', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Annuler</span><span class="t" style="text-align:center">RC-000412-02</span><span style="width:72px"></span></div>
+  <div style="display:flex;gap:10px;padding:0 16px 16px">
+    <div style="position:relative">${ph(4, 116, 116, 16)}<span style="position:absolute;left:8px;bottom:8px;background:rgba(23,17,31,.75);color:#fff;font:700 11.5px 'DM Sans';padding:4px 8px;border-radius:8px;display:flex;gap:4px;align-items:center">${S(P.star, '#ffcb05', 12, 2, '#ffcb05')} Couverture</span></div>
+    <div style="position:relative">${ph(0, 116, 116, 16)}<span style="position:absolute;right:6px;top:6px;width:26px;height:26px;border-radius:13px;background:rgba(23,17,31,.7);display:grid;place-items:center">${S(P.x, '#fff', 14, 2.6)}</span></div>
+    <div style="width:97px;height:116px;border:2px dashed #d9d3e6;border-radius:16px;display:grid;place-items:center;align-content:center;gap:6px;color:#7a3cf0;font:700 14px 'DM Sans';background:#faf8fe">${ic.cam}Photo</div>
+  </div>
+  <div class="fl"><div class="k">Poids et dimensions</div><div class="amtbox" style="padding:14px 16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between"><div class="v" style="font-size:34px">24,6<small>kg</small></div><span style="font:600 14.5px 'DM Sans';color:#6f6981">0,120 m³</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">${[['L', '60'], ['l', '50'], ['H', '40']].map(([k, v]) => `<div style="background:#f4f2f7;border-radius:12px;padding:8px 12px"><div style="font:600 12px 'DM Sans';color:#6f6981">${k} · cm</div><div style="font:700 19px 'DM Sans'">${v}</div></div>`).join('')}</div>
+  </div></div>
+  <div class="fl"><div class="card" style="margin:0"><div class="kv"><span>Contenu</span><b>Chaussures femme · 24 paires</b></div><div class="kv"><span>Bordereau</span><b>SF 1302 8841 2297</b></div><div class="kv"><span>Copies d'étiquette</span><b>1</b></div><div class="kv"><span>Paquet</span><b>PQ-000014</b></div></div></div>
+  <div class="fl"><div class="k">État à la réception</div><div class="chips" style="padding:0"><div class="chip on">Bon</div><div class="chip">Abîmé</div><div class="chip">Ouvert</div><div class="chip">Mouillé</div></div></div>
+  <div class="redlink">Supprimer ce colis</div>
+</div>
+<div class="dock"><div class="btn dark">Enregistrer</div></div>${hi}`);
+
+// 18. Devis
+add('Devis', 'Prix par colis, frais, langue, envoi', `${sbar()}<div class="scroll">
+  ${nb('Dépôt', 'DV-000087', 'Awa Ngono Mballa')}
+  <div class="hero" style="padding-bottom:16px"><div class="amt">186 000</div><div class="sub">XAF · Air · 3 000 XAF/kg</div>${pill('wait', 'Envoyé · non payé')}</div>
+  <div class="lbl" style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">Lignes <span class="cur-tg" style="float:none;margin:0;text-transform:none;letter-spacing:0"><span class="on">FR</span><span>EN</span></span></div>
+  <div class="card">
+    ${R2(ph(0, 40, 40, 12), 'RC-000412-01', '18,4 kg · au kg', '55 200', '')}
+    ${R2(ph(4, 40, 40, 12), 'RC-000412-02', '24,6 kg · au kg', '73 800', '')}
+    ${R2(ph(2, 40, 40, 12), 'RC-000412-03', '16,9 kg · au kg', '50 700', '')}
+    ${R2(ph(1, 40, 40, 12), 'RC-000412-04', 'Forfait', '3 900', '')}
+  </div>
+  <div class="card" style="margin-top:10px"><div class="kv"><span>Emballage</span><b>+ 5 000</b></div><div class="kv"><span>Remise fidélité</span><b style="color:#1c9a57">− 2 600</b></div></div>
+</div>
+<div class="dock"><div class="btn soft">${ic.share}</div><div class="btn amb">Encaisser 186 000 XAF</div></div>${hi}`);
+
+// 19. Encaisser depuis le solde
+add('Encaisser', 'Cash, MoMo ou solde, avant/après', `${sbar()}<div class="scroll">
+  ${nb('Dépôt', 'DV-000087', 'Awa Ngono Mballa')}
+  <div class="hero"><div class="amt">186 000</div><div class="sub">XAF · Air · 3 000 XAF/kg</div>${pill('wait', 'Envoyé · non payé')}</div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Encaisser 186 000 XAF</h3><div class="lead">Devis DV-000087 · Awa Ngono Mballa</div>
+  <div style="padding:0 16px 16px"><div class="meth4">
+    <div class="meth"><span class="mk xaf">CFA</span>Espèces</div><div class="meth">${mk('mtn')}MoMo</div><div class="meth">${mk('om')}OM</div><div class="meth on"><span class="mk wal">BZ</span>Solde</div>
+  </div></div>
+  <div class="inset" style="margin-bottom:12px"><div class="kv"><span>Solde actuel</span><b>2 450 000 XAF</b></div><div class="kv"><span>Après paiement</span><b style="color:#7a3cf0">2 264 000 XAF</b></div></div>
+  <div class="check" style="padding-top:4px"><span class="cb">${ic.check('#fff', 16)}</span><span>Facture acquittée au client</span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn amb">Débiter le solde</div></div>
+</div>${hi}`, 'white');
+
+// 20. Comptes cargo
+const ACC = (i, c, n, s, a, m) => R2(`<span class="mk" style="background:${c};font:800 13px 'DM Sans'">${i}</span>`, n, s, a, m);
+add('Comptes cargo', 'Regroupeurs et leurs clients', `${sbar()}<div class="scroll">
+  ${nb('Cargo', 'Comptes cargo', '', IC.dots)}
+  <div class="srch">${ic.search}Compte, code, client</div>
+  <div class="card">
+    ${ACC('MBG', '#7a3cf0', 'Ets Mbarga Groupage', 'MBG · 6 clients · Akwa', '14 colis', 'en attente')}
+    ${ACC('NKD', '#e38a0b', 'Nkodo Frères Import', 'NKD · 4 clients · Mokolo', '11 colis', 'en attente')}
+    ${ACC('BFS', '#1a6fe0', 'Bafoussam Shop Center', 'BFS · 3 clients', '6 colis', 'en attente')}
+    ${ACC('TCH', '#1c9a57', 'Tchatchoua &amp; Associés', 'TCH · 2 clients', '3 colis', 'en attente')}
+  </div>
+  <div class="card" style="margin-top:12px"><div class="kv"><span style="color:#17111f;font-weight:600">Comptes fermés · 2</span><span class="toggle off"></span></div></div>
+  <div class="lbl">Ets Mbarga Groupage · clients <a>+ Rattacher</a></div>
+  <div class="card">
+    ${R2('<div class="av" style="background:#efe8ff;color:#6526de">PM</div>', 'Paul Mbarga Essomba', 'BZ-2290 · 5 colis', '', '').replace('<b></b><span></span>', '<span style="font:600 15px DM Sans;color:#c2261d">Détacher</span>')}
+    ${R2('<div class="av" style="background:#e7f1ff;color:#1a5fd1">CE</div>', 'Christelle Eyenga Atangana', 'BZ-3117 · 4 colis', '', '').replace('<b></b><span></span>', '<span style="font:600 15px DM Sans;color:#c2261d">Détacher</span>')}
+  </div>
+</div>
+<div class="dock"><div class="btn dark">${S(P.plus, '#fff', 20, 2.4)} Nouveau compte</div></div>${hi}`);
+
+// ═════════ APP RÉCEPTION (Guangzhou) ═════════
+// 21. Aujourd'hui
+add('Réception · Aujourd\'hui', 'Rôle réception · bureau Guangzhou', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Mardi 21 octobre</div><h1>Bonjour Liang</h1></div><div class="round">${S(P.globe, '#17111f', 21)}</div></div>
+  <div class="fbar" style="padding-bottom:14px"><span class="dd" style="height:36px;padding:0 12px;font-size:14.5px">${S(P.pin, '#7a3cf0', 16)} Bureau · Air ${caret}</span><span class="dd" style="height:36px;padding:0 12px;font-size:14.5px;background:var(--orange-soft);color:#c23f07">2 sans client ${S('m9 6 6 6-6 6', '#c23f07', 14, 2.4)}</span></div>
+  <div class="tiles" style="grid-template-columns:1fr"><div class="tile dep" style="height:104px;flex-direction:row;align-items:center;justify-content:flex-start;gap:14px"><div class="i" style="width:52px;height:52px;border-radius:16px">${S(P.plus, '#fff', 26, 2.6)}</div><b style="font-size:21px">Nouveau dépôt</b></div></div>
+  <div class="sh"><h2>Aujourd'hui</h2><a style="display:flex;gap:18px">${S('m15 6-6 6 6 6', '#7a3cf0', 18, 2.4)}${S('m9 6 6 6-6 6', '#c4c0cf', 18, 2.4)}</a></div>
+  <div class="mini"><div><b>6</b><span>dépôts</span></div><div><b>14</b><span>colis</span></div><div><b>212</b><span>kg</span></div><div><b>1,6</b><span>m³</span></div></div>
+  <div class="card" style="margin-top:14px">
+    ${R2(ph(1, 40, 40, 12), 'Kamdem Quincaillerie', 'RC-000414 · 1 colis · 15:40', '8,7 kg', 'En cours', AM)}
+    ${R2(ph(3, 40, 40, 12), 'Sans client', 'RC-000413 · 2 colis · 15:02', '33,0 kg', 'À attribuer', OR)}
+    ${R2(ph(0, 40, 40, 12), 'Awa Ngono Mballa', 'RC-000412 · 4 colis · 14:12', '61,2 kg', 'Terminé', GR)}
+    ${R2(ph(4, 40, 40, 12), 'Ets Mbarga Groupage', 'RC-000411 · 5 colis · 11:30', '88,4 kg', 'Terminé', GR)}
+  </div>
+</div>${tabs('today', { box: 11 }, 'reception')}${hi}`);
+
+// 22. Nouveau dépôt — identifier le client
+const LBLCLI = `<div style="position:absolute;left:50%;top:206px;transform:translateX(-50%) rotate(3deg);width:176px;background:#fff;border-radius:10px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.45);text-align:center"><div style="width:128px;margin:0 auto">${qr(31)}</div><div style="font:800 15px 'DM Sans';margin-top:8px">BZ-4821</div><div style="font:600 11px 'DM Sans';color:#555">AWA NGONO MBALLA</div></div>`;
+add('Nouveau dépôt · client', 'Étape 1/4 · scan du QR client', `<div class="camv"></div>${sbar().replace('class="sbar"', 'class="sbar w"')}
+  <div class="camtop"><div class="glass">${S(P.x, '#fff', 20, 2.4)}</div><span>Nouveau dépôt · 1/4</span><div class="glass">${S(P.bolt, '#fff', 20, 2)}</div></div>
+  <div class="frame" style="top:170px">${'<i></i>'.repeat(4)}</div>${LBLCLI}
+  <div style="position:absolute;top:432px;left:0;right:0;display:flex;justify-content:center;z-index:2"><span style="background:rgba(255,255,255,.18);backdrop-filter:blur(10px);color:#fff;font:600 13.5px 'DM Sans';padding:7px 12px;border-radius:12px;display:flex;gap:6px;align-items:center">${ic.check('#7ee2a8', 14)} Bordereau SF 1302 8841 2297 gardé</span></div>
+  <div class="panel"><div class="grab"></div>
+    <div class="row" style="padding:4px 22px 14px"><div class="av" style="background:#fff1dd;color:#b36800;width:48px;height:48px;border-radius:24px;font-size:17px">AN</div><div class="rm"><div class="rn" style="font-size:18px">Awa Ngono Mballa</div><div class="rs">BZ-4821 · 3 dépôts ce mois</div></div>${pill('done', 'Trouvé')}</div>
+    <div style="display:flex;gap:10px;padding:0 16px 12px"><div class="btn ghost" style="height:46px;font-size:15.5px">${ic.search} Par nom</div><div class="btn ghost" style="height:46px;font-size:15.5px">Sans client</div></div>
+    <div style="padding:0 16px"><div class="btn amb" style="width:100%">Continuer</div></div>
+  </div>${hi}`);
+
+// 23. Colis — mesures + photo
+add('Colis · mesures et photo', 'Un écran : photos, poids, dimensions', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Retour</span><span class="t" style="text-align:center;line-height:1.1">Colis 2<small style="display:block;font:500 12.5px 'DM Sans';color:#6f6981">RC-000413 · Sans client</small></span><span style="width:52px"></span></div>
+  <div style="padding:0 16px 14px;display:flex;gap:10px">
+    <div style="position:relative">${ph(3, 200, 168, 18)}<span style="position:absolute;left:10px;bottom:10px;background:rgba(23,17,31,.7);color:#fff;font:700 12px 'DM Sans';padding:4px 9px;border-radius:9px">1 / 2</span></div>
+    <div style="display:grid;grid-template-rows:79px 79px;gap:10px;flex:1;align-self:start">${ph(1, 151, 79, 14)}<div style="border:2px dashed #d9d3e6;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;color:#7a3cf0;font:700 14.5px 'DM Sans';background:#faf8fe">${ic.cam}Photo</div></div>
+  </div>
+  <div class="fl"><div class="amtbox" style="padding:14px 16px">
+    <div style="font:700 12.5px 'DM Sans';color:#6f6981;text-transform:uppercase;letter-spacing:.06em">Poids</div>
+    <div class="v" style="font-size:38px">21,5<span class="cursor" style="height:32px"></span><small>kg</small></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">${[['L', '55'], ['l', '45'], ['H', '40']].map(([k, v]) => `<div style="background:#f4f2f7;border-radius:12px;padding:8px 12px"><div style="font:600 12px 'DM Sans';color:#6f6981">${k} · cm</div><div style="font:700 19px 'DM Sans'">${v}</div></div>`).join('')}</div>
+    <div class="rate" style="margin-top:12px;padding-top:10px"><span>Volume</span><b>0,099 m³</b></div>
+  </div></div>
+  <div class="fl"><div class="chips" style="padding:0"><div class="chip on">Bon état</div><div class="chip">Abîmé</div><div class="chip">Ouvert</div><div class="chip">Mouillé</div></div></div>
+  <div class="fl"><div class="card" style="margin:0"><div class="kv"><span>Contenu</span><b>Coques de téléphone</b></div><div class="kv"><span>Bordereau</span><b>YT 8830 1102 457</b></div><div class="kv"><span>Copies d'étiquette</span><b>1</b></div></div></div>
+</div>
+<div class="dock"><div class="btn dark">Enregistrer · colis suivant</div></div>${hi}`);
+
+// 24. Paquets
+const RING = (pct, c = '#7a3cf0', s = 112) => { const r = 48, L = 2 * Math.PI * r; return `<svg viewBox="0 0 112 112" width="${s}" height="${s}" style="position:absolute;inset:0"><circle cx="56" cy="56" r="${r}" fill="none" stroke="#ebe8f0" stroke-width="10"/><circle cx="56" cy="56" r="${r}" fill="none" stroke="${c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${L * pct} ${L}" transform="rotate(-90 56 56)"/></svg>`; };
+const PKROW = (on, n, s, kg, meta, dot) => `<div class="row">${on !== null ? `<span class="tick ${on ? 'on' : ''}">${on ? ic.check('#fff', 13) : ''}</span>` : ''}${mkI(P.box, 'gr', '#4b4560')}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${kg}</b><span><span class="dotline"><i style="background:${dot}"></i>${meta}</span></span></div></div>`;
+add('Paquets', 'Emballer, fermer, mettre sur un vol', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Bureau · Air</div><h1>Paquets</h1></div><div class="round">${ic.scanSm}</div></div>
+  <div class="card" style="padding:16px;display:flex;gap:16px;align-items:center">
+    <div class="ring" style="width:96px;height:96px">${RING(.71, '#7a3cf0', 96)}<b style="font-size:21px">22,6<small>/ 32 kg</small></b></div>
+    <div style="flex:1"><div style="font:800 19px 'DM Sans'">PQ-000014</div><div style="font:500 14px 'DM Sans';color:#6f6981;margin:2px 0 10px">En cours · 7 colis · Liang</div><div class="btn vio" style="height:40px;font-size:15px;border-radius:12px">Continuer · reste 9,4 kg</div></div>
+  </div>
+  <div class="card" style="margin-top:10px;background:var(--orange-soft);box-shadow:none"><div class="row">${mkI(P.box, 'tk', OR)}<div class="rm"><div class="rn" style="color:#a3360a">11 colis attendent un paquet</div><div class="rs" style="color:#c25a2a">5 clients · 146 kg</div></div><span style="font:700 15px 'DM Sans';color:#c23f07">Choisir</span></div></div>
+  <div class="sh" style="padding-top:20px"><h2>Fermés</h2><a>3 choisis</a></div>
+  <div class="card">
+    ${PKROW(true, 'PQ-000011', '4 clients · étiquette ok', '31,4 kg', 'prêt', GR)}
+    ${PKROW(true, 'PQ-000012', '3 clients', '29,8 kg', 'prêt', GR)}
+    ${PKROW(true, 'PQ-000013', '5 clients', '30,6 kg', 'prêt', GR)}
+  </div>
+</div>
+<div class="fd" style="bottom:97px"><div class="btn dark" style="box-shadow:0 10px 24px -6px rgba(23,17,31,.45)">${S(P.plane, '#fff', 20, 2, '#fff')} Mettre sur un vol · 3</div></div>
+${tabs('box', { box: 11 }, 'reception')}${hi}`);
+
+// 25. Paquet en cours
+add('Paquet en cours', 'Douchette, jauge 32 kg, fermer', `${sbar()}<div class="scroll">
+  ${nb('Paquets', 'PQ-000014', 'ouvert par Liang')}
+  <div style="display:flex;gap:18px;align-items:center;padding:4px 22px 16px">
+    <div class="ring">${RING(.71)}<b>22,6<small>/ 32 kg</small></b></div>
+    <div><div style="font:800 26px 'DM Sans';letter-spacing:-.02em">reste 9,4 kg</div><div style="font:500 15px 'DM Sans';color:#6f6981;margin-top:2px">7 colis · 3 clients</div></div>
+  </div>
+  <div class="srch" style="margin-bottom:12px;color:#17111f;box-shadow:0 0 0 2px #7a3cf0">${ic.scanSm.replace('currentColor', '#7a3cf0')}<span style="color:#9a95a8">Scanner ou saisir RC-…</span></div>
+  <div class="banner" style="margin-bottom:4px;padding:12px 14px;align-items:center"><div class="okc" style="width:28px;height:28px">${ic.check('#fff', 14)}</div><div><b style="font-size:15.5px">RC-000412-03 ajouté · 6,2 kg</b></div></div>
+  <div class="lbl">Dedans <a>Tout voir</a></div>
+  <div class="card">
+    ${R2(ph(2, 40, 40, 12), 'Awa Ngono Mballa', '3 colis · RC-000412-01, 02, 03', '9,8 kg', 'Retirer')}
+    ${R2(ph(1, 40, 40, 12), 'Kamdem Quincaillerie', '2 colis · RC-000409-01, 02', '7,4 kg', 'Retirer')}
+    ${R2(ph(0, 40, 40, 12), 'Ibrahim Moussa Bello', '2 colis · RC-000405-01, 02', '5,4 kg', 'Retirer')}
+  </div>
+  <div class="lbl">Prêts à mettre dedans</div>
+  <div class="card">
+    ${R2(ph(4, 40, 40, 12), 'RC-000411-03 · Tissus', 'Ets Mbarga Groupage', '3,1 kg', '').replace('<span></span></div></div>', '<span style="font:700 14.5px DM Sans;color:#7a3cf0">Ajouter</span></div></div>')}
+    ${R2(ph(1, 40, 40, 12), 'RC-000414-01 · Serrures', 'Kamdem Quincaillerie', '8,7 kg', '').replace('<span></span></div></div>', '<span style="font:700 14.5px DM Sans;color:#7a3cf0">Ajouter</span></div></div>')}
+  </div>
+</div>
+<div class="dock"><div class="btn soft">${S(P.print, '#17111f', 22)}</div><div class="btn dark">${S(P.scale, '#fff', 20)} Fermer et peser</div></div>${hi}`);
+
+// ═════════ APP ENTREPÔT (Douala) ═════════
+// 26. Journée
+add('Entrepôt · Journée', 'Rôle entrepôt Douala', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Douala · Bépanda</div><h1>Bonjour Serge</h1></div><div class="round">${ic.bell}<span class="b"></span></div></div>
+  <div class="tiles"><div class="tile pay"><div class="i">${S('m5 12.5 4.5 4.5L19 7.5', '#fff', 22, 2.6)}</div><b>Pointer<br>une arrivée</b></div><div class="tile dep"><div class="i">${S(P.box, '#fff', 22, 2.2)}</div><b>Remettre<br>à un client</b></div></div>
+  <div class="mini" style="margin-top:14px"><div><b>36</b><span>à pointer</span></div><div><b>12</b><span>attendent</span></div><div><b>5</b><span>remis</span></div><div><b style="color:#c2261d">2</b><span>manquants</span></div></div>
+  <div class="sh"><h2>Arrivées</h2></div>
+  <div class="card">
+    ${R2(mkI(P.ship, 'sea', '#7a3cf0'), 'MIEU3611115', 'Groupage octobre · 148 colis', '112 / 148', 'en cours', AM)}
+    ${R2(mkI(P.plane, 'air', '#1a6fe0', true), 'ET 607 · 6 paquets', 'LTA 071-2231 4410', '24 oct.', 'attendu', '#9a95a8')}
+  </div>
+  <div class="sh"><h2>Remis aujourd'hui</h2></div>
+  <div class="card">${R2('<div class="av" style="background:#e6f6ed;color:#137042">IM</div>', 'Ibrahim Moussa Bello', 'BR-000031 · 6 colis · signé', '10:24', 'Remis', GR)}${R2('<div class="av" style="background:#efe8ff;color:#6526de">PM</div>', 'Paul Mbarga Essomba', 'BR-000030 · 2 colis · envoyé', '09:05', 'Remis', GR)}</div>
+</div>${tabs('today', { pointer: 36, hand: 12 }, 'warehouse')}${hi}`);
+
+// 27. Pointer une arrivée
+const CK = (st, v, n, s, r) => `<div class="row">${st === 'ok' ? `<span class="tick g">${ic.check('#fff', 13)}</span>` : st === 'bad' ? `<span class="tick" style="background:#d93a2f;border-color:#d93a2f">${S(P.x, '#fff', 12, 3)}</span>` : st === 'dmg' ? `<span class="tick" style="background:#e38a0b;border-color:#e38a0b">${S('M12 7v6M12 16.5h.01', '#fff', 14, 3)}</span>` : '<span class="tick"></span>'}${ph(v, 42, 42, 11)}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra">${r}</div></div>`;
+add('Pointer une arrivée', 'Liste des colis, manquants, place', `${sbar()}<div class="scroll">
+  ${nb('Journée', 'MIEU3611115', 'Groupage octobre')}
+  <div class="card" style="padding:14px 16px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between"><div style="font:800 30px 'DM Sans';letter-spacing:-.03em">112 <span style="color:#9a95a8;font-size:20px">/ 148</span></div><span style="font:600 14px 'DM Sans';color:#6f6981">36 restants</span></div>
+    <div class="gauge" style="margin:10px 0 10px"><i style="width:73.6%;background:#1c9a57"></i><i style="width:2%;background:#e38a0b"></i><i style="width:1.4%;background:#d93a2f"></i></div>
+    <div style="display:flex;gap:14px;font:600 13px 'DM Sans';color:#4b4560"><span class="dotline"><i style="background:#1c9a57"></i>109 bon état</span><span class="dotline"><i style="background:#e38a0b"></i>3 abîmés</span><span class="dotline"><i style="background:#d93a2f"></i>2 manquants</span></div>
+  </div>
+  <div class="srch" style="margin:12px 16px 12px">${ic.scanSm}Scanner ou saisir RC-…</div>
+  <div class="chips"><div class="chip on">Restants <small>36</small></div><div class="chip">Pointés</div><div class="chip">Abîmés <small>3</small></div><div class="chip">Manquants <small>2</small></div></div>
+  <div class="day">Awa Ngono Mballa · 11 / 14</div>
+  <div class="card">
+    ${CK('', 0, 'RC-000412-01', 'Tissus wax · 18,4 kg', '<span style="font:600 14px DM Sans;color:#9a95a8">—</span>')}
+    ${CK('ok', 4, 'RC-000412-02', 'Chaussures · 24,6 kg', '<b>B3</b>')}
+    ${CK('bad', 2, 'RC-000398-02', 'Sacs à main', pill('bad', 'Manquant'))}
+  </div>
+  <div class="day" style="padding-top:16px">Kamdem Quincaillerie · 7 / 9</div>
+  <div class="card">${CK('dmg', 1, 'RC-000409-01', 'Serrures · enfoncé', pill('wait', 'Abîmé'))}${CK('', 3, 'RC-000409-02', 'Robinetterie · 12,0 kg', '<span style="font:600 14px DM Sans;color:#9a95a8">—</span>')}</div>
+</div>
+<div class="dock"><div class="btn soft">Tout pointer</div><div class="btn dark">Terminer le pointage</div></div>${hi}`);
+
+// 28. Remettre — client, colis, reste à payer
+add('Remettre · client', 'QR vérifié, colis, reste à payer', `${sbar()}<div class="scroll">
+  ${nb('Remettre', 'Remise', 'Étape 2/3')}
+  <div class="card"><div class="row"><div class="av" style="background:#fff1dd;color:#b36800;width:48px;height:48px;border-radius:24px;font-size:17px">AN</div><div class="rm"><div class="rn" style="font-size:17.5px">Awa Ngono Mballa</div><div class="rs" style="display:flex;gap:6px;align-items:center">BZ-4821 · QR vérifié ${ic.check('#1c9a57', 15)}</div></div></div></div>
+  <div class="lbl">Colis prêts · 4 / 4 <a>Aucun</a></div>
+  <div class="card">
+    ${CK('ok', 0, 'RC-000412-01', 'Tissus wax · B3', '<b>18,4 kg</b>').replace('tick g', 'tick on')}
+    ${CK('ok', 4, 'RC-000412-02', 'Chaussures · B3', '<b>24,6 kg</b>').replace('tick g', 'tick on')}
+    ${CK('ok', 3, 'RC-000398-01', 'Pagnes · C1', '<b>12,0 kg</b>').replace('tick g', 'tick on')}
+    ${CK('ok', 2, 'RC-000398-03', 'Pagnes · C1', '<b>18,4 kg</b>').replace('tick g', 'tick on')}
+  </div>
+  <div class="card" style="margin-top:10px"><div class="kv"><span>Pas encore là</span><b>2 colis ${ic.chev}</b></div></div>
+  <div class="lbl">Paiement</div>
+  <div class="card"><div class="kv"><span>Devis DV-000087</span><b>186 000 XAF</b></div><div class="kv"><span>Déjà payé</span><b>0</b></div><div class="kv"><span style="color:#17111f;font-weight:700">Reste à payer</span><b style="color:#c23f07;font-size:17px">186 000 XAF</b></div></div>
+</div>
+<div class="dock"><div class="btn amb">Encaisser 186 000 XAF</div></div>${hi}`);
+
+// 29. Remise signée
+add('Remise signée', 'Payé, qui récupère, signature', `${sbar()}<div class="scroll">
+  ${nb('Remettre', 'Remise', 'Étape 3/3')}
+  <div class="banner"><div class="okc">${ic.check()}</div><div><b>Payé · 186 000 XAF</b><span>Reçu RE-000112 envoyé</span></div></div>
+</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Remettre 4 colis</h3><div class="lead">Awa Ngono Mballa · BZ-4821 · 73,4 kg</div>
+  <div class="seg" style="margin:0 16px 14px"><div class="on">Le client</div><div>Une autre personne</div></div>
+  <div class="sig">
+    <svg viewBox="0 0 360 150" style="position:absolute;inset:0;width:100%;height:100%"><path d="M46 98c16-44 34-60 44-30 6 20 14 22 26-4 12-30 20-32 26-4 5 22 14 24 30 0 14-22 24-24 30 4 4 18 12 22 26 2 12-18 22-18 30 0 6 12 16 10 40-8" fill="none" stroke="#17111f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 122h288" stroke="#d9d3e6" stroke-width="1.5"/></svg>
+    <span style="position:absolute;left:16px;bottom:8px;font:600 12.5px 'DM Sans';color:#9a95a8">Signature d'Awa Ngono Mballa</span><span style="position:absolute;right:16px;bottom:8px;font:600 13px 'DM Sans';color:#7a3cf0">Effacer</span>
+  </div>
+  <div class="check"><span class="cb">${ic.check('#fff', 16)}</span><span>Pièce d'identité vérifiée</span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn or">Confirmer la remise</div></div>
+</div>${hi}`, 'white');
+
+render();
+</script>
+</body></html>

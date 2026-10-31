@@ -1,858 +1,184 @@
-import { ClientOrigin } from '@/components/clients/ClientOrigin';
-import { ClientRegistration } from '@/components/clients/ClientRegistration';
-import { ClientToProspectDialog } from '@/components/clients/ClientToProspectDialog';
-import { BirthDateField, GenderField } from '@/components/clients/ClientIdentityFields';
-import { birthTextIssue, identityPatch, isoToBirthText } from '@/components/clients/clientIdentity';
-import { formatBirthDate, genderLabel, isGender, type Gender } from '@/lib/people';
+/**
+ * Fiche client — refonte v2 (maquettes 03/02 et 03/03).
+ *
+ * Façon Wave : le gros solde (disponible · découvert autorisé dessous),
+ * quatre ronds — Dépôt (noir), Paiement, Message, Colis —, puis les derniers
+ * mouvements et « Tout voir » vers le relevé. Tout le reste est dans « … » :
+ * Crédit / Débit (rôles `canAdjustWallets` seulement), Découvert
+ * (`canGrantOverdraft`), Relevé PDF, Bénéficiaires, Étiquette colis,
+ * Téléphones, Identité, Mot de passe, Repasser en prospect, Supprimer (rouge,
+ * à part). Mêmes hooks et RPC que l'ancienne fiche ; le desktop a la sienne.
+ */
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import {
-  useClient,
-  useResetClientPassword,
-  useClientLedger,
-  useClientLedgerCount,
-  useUpdateClient,
-  useSetClientIdentity,
-  fetchLedgerEntriesInRange,
-  fetchLastLedgerEntryBefore,
-} from '@/hooks/useClientManagement';
-import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
-import { statementQueryRange, type StatementRange } from '@/lib/statementPeriod';
-import { useAdminDeleteClient } from '@/hooks/useAdminDeleteClient';
-import { supabaseAdmin } from '@/integrations/supabase/client';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { formatXAF } from '@/lib/formatters';
-import { whenSentence } from '@/lib/plainTime';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { isStatementEntry, type StatementEntry, type StatementLang } from '@/lib/accountStatement';
-import { downloadAccountStatement } from '@/lib/accountStatementData';
-import { cn } from '@/lib/utils';
-import {
-  ArrowDownCircle,
-  ChevronRight,
-  Plus,
-  Minus,
-  FileDown,
-  Key,
-  Copy,
-  Check,
-  Loader2,
-  Pencil,
-  Trash2,
-  UserRoundSearch,
-  Users,
-  Tag,
-  Ship,
-} from 'lucide-react';
-import { SkeletonClientDetail } from '@/mobile/components/ui/SkeletonCard';
-import { AdjustmentDrawer } from '@/mobile/components/clients/AdjustmentDrawer';
-import { OverdraftDialog } from '@/components/wallet/OverdraftDialog';
-import { availableXaf, overdraftUsedXaf } from '@/lib/overdraft';
-import { CustomerCodeCard } from '@/mobile/components/clients/CustomerCodeCard';
-import { MobileShippingLabelSheet } from '@/mobile/components/clients/MobileShippingLabelSheet';
-import { useClientPhones, useSetClientPhones } from '@/hooks/useClientPhones';
-import { ClientPhonesEditor } from '@/components/clients/ClientPhonesEditor';
-import { useClientPhonesEditor } from '@/components/clients/useClientPhonesEditor';
-import { useCargoShipments, useCargoFleetDocuments } from '@/hooks/useCargo';
-import { useClientDeposits } from '@/hooks/useReception';
-import { formatCbm, formatKg } from '@/lib/reception';
-import { ALERT, TONE_OF, alertLevel } from '@/lib/cargo/palette';
-import { arrivalSentence } from '@/lib/cargo/plain';
-import { useAdminShippingSettings } from '@/hooks/useShippingSettings';
-import { DEFAULT_SHIPPING_SETTINGS } from '@/lib/customerCode';
-import { CountryCombobox } from '@/components/form/CountryCombobox';
-import { countryLabelFr, isoFromCountryLabel } from '@/data/countries';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { AdjustmentType } from '@/types/admin';
 import {
-  SURFACE,
-  TEXT,
-  TONE_HOLDER,
-  type Tone,
-  clientStatusTone,
-  Card,
-  Button,
-  SectionTitle,
-  Line,
-  StatusPill,
-  ListRow,
-  Holder,
-  BottomSheet,
-  FormField,
-  TextInput,
-  PrimaryPill,
-  SoftPill,
+  ArrowDownToLine, ArrowUpRight, CircleMinus, Diff, FileText, IdCard, KeyRound, MessageSquare, Package, Phone, Tag as TagIcon, Trash2, Undo2, Users,
+} from 'lucide-react';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useClient, useClientLedger } from '@/hooks/useClientManagement';
+import { useClientPhones } from '@/hooks/useClientPhones';
+import { useAdminClientBeneficiaries } from '@/hooks/useBeneficiaries';
+import { supabaseAdmin } from '@/integrations/supabase/client';
+import { availableXaf } from '@/lib/overdraft';
+import { normalizePhone } from '@/lib/phone';
+import { whatsappLink } from '@/lib/sales';
+import { cn } from '@/lib/utils';
+import { StatementPeriodSheet } from '@/components/statement/StatementPeriodSheet';
+import {
+  ActionCircles, ActionSheet, BigFigure, EmptyLine, Initials, ItemList, MoreButton, ScreenTop, SectionHead, Tag, TEXT, useSheet,
+  type CircleAction, type SheetAction,
 } from '@/mobile/designKit';
+import { ClientPasswordSheets, DeleteClientSheet, OverdraftSheet, ToProspectSheet } from './clientSheets';
+import { LedgerItem } from './ledgerRows';
+import { ADJUST_ROLES } from './MobileClientAdjust';
+import { clientTag } from './MobileClientsScreen';
+import { useClientStatement } from './useClientStatement';
+import { xaf } from './parts';
 
-// Status labels are resolved via i18n inside the component
-const STATUS_LABEL_KEYS: Record<string, { key: string; defaultValue: string }> = {
-  ACTIVE:      { key: 'active', defaultValue: 'Actif' },
-  INACTIVE:    { key: 'inactive', defaultValue: 'Inactif' },
-  SUSPENDED:   { key: 'suspendedStatus', defaultValue: 'Suspendu' },
-  PENDING_KYC: { key: 'kycPending', defaultValue: 'KYC en attente' },
-};
-
-// Une ligne-geste : pastille ronde (tonée quand la couleur a un sens),
-// étiquette 16/600, phrase d'explication 16 sourd, chevron. Un filet entre
-// deux lignes pour que le doigt ne se trompe pas.
-function ActionRow({
-  icon: Icon,
-  tone = 'neutral',
-  label,
-  description,
-  onClick,
-  disabled,
-  destructive,
-  loading,
-}: {
-  icon: React.ElementType;
-  tone?: Tone;
-  label: string;
-  description?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  destructive?: boolean;
-  loading?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={cn('flex min-h-[64px] w-full items-center gap-3.5 border-b py-3 text-left transition last:border-b-0 active:opacity-70 disabled:opacity-60', SURFACE.divider)}
-    >
-      <span
-        className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
-          destructive ? TONE_HOLDER.danger : TONE_HOLDER[tone],
-        )}
-      >
-        {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className={cn('block text-[16px] font-semibold', destructive ? 'text-[#900B09] dark:text-[#FDD3D0]' : TEXT.strong)}>
-          {label}
-        </span>
-        {description && <span className={cn('block break-words text-[16px] leading-snug', TEXT.muted)}>{description}</span>}
-      </span>
-      <ChevronRight className={cn('h-5 w-5 shrink-0', TEXT.muted)} />
-    </button>
-  );
-}
+type Sheet = null | 'overdraft' | 'delete' | 'prospect' | 'password';
 
 export function MobileClientDetail() {
-  const { t } = useTranslation('common');
-  const { clientId } = useParams();
+  const { clientId = '' } = useParams();
   const navigate = useNavigate();
-  const { data: client, isLoading, refetch } = useClient(clientId || '');
-  const { hasPermission } = useAdminAuth();
-  const resetPasswordMutation = useResetClientPassword();
-
-  const [isStatementGenerating, setIsStatementGenerating] = useState(false);
-  const [statementOpen, setStatementOpen] = useState(false);
-  const { data: ledgerEntries } = useClientLedger(clientId || '');
-  const { data: ledgerTotal } = useClientLedgerCount(clientId || '');
-
-  // Adjustment drawer state
-  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
-  const [adjustmentType, setAdjustmentType] = useState<AdjustmentType>('CREDIT');
-
-  // Étiquette colis (feuille)
-  const [labelOpen, setLabelOpen] = useState(false);
-  const { data: shipping } = useAdminShippingSettings();
-
-  // Password reset drawer state
-  const [resetDrawerOpen, setResetDrawerOpen] = useState(false);
-  const [passwordResultDrawerOpen, setPasswordResultDrawerOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordCopied, setPasswordCopied] = useState(false);
+  const { currentUser, hasPermission } = useAdminAuth();
+  const { data: client, isLoading, refetch } = useClient(clientId);
+  const { data: ledger } = useClientLedger(clientId);
+  const { data: phones } = useClientPhones(client?.id);
+  const { data: beneficiaries } = useAdminClientBeneficiaries(clientId || undefined);
+  const statement = useClientStatement(client);
+  const more = useSheet();
+  const [sheet, setSheet] = useState<Sheet>(null);
 
   const canManageUsers = hasPermission('canManageUsers');
-  const canViewCargo = hasPermission('canViewCargo');
+  const canAdjust = ADJUST_ROLES.includes(currentUser?.role ?? '');
   const canGrantOverdraft = hasPermission('canGrantOverdraft');
-  const [overdraftOpen, setOverdraftOpen] = useState(false);
-  // « Repasser en prospect » (07/10) : le super admin seul — gérer les comptes ET piloter les ventes.
   const canMakeProspect = canManageUsers && hasPermission('canManageSales');
-  const [toProspectOpen, setToProspectOpen] = useState(false);
-  // Ses conteneurs : la flotte est déjà en cache (badge de l'onglet Cargo).
-  // Sans le droit cargo, on ne lance pas les deux requêtes (les papiers de
-  // toute la flotte pèsent jusqu'à 3 000 lignes).
-  const { data: fleet } = useCargoShipments({ enabled: canViewCargo });
-  const { data: clientDeposits } = useClientDeposits(clientId || undefined, canViewCargo);
-  const receivedParcels = (clientDeposits ?? []).flatMap((d) => d.parcels);
-  const waitingParcels = receivedParcels.filter((p) => !p.shipment_id);
-  const { data: docsBy } = useCargoFleetDocuments({ enabled: canViewCargo });
-  const containers = canViewCargo && clientId ? (fleet ?? []).filter((c) => c.client_id === clientId) : [];
-  const updateClientMutation = useUpdateClient();
-  const setIdentity = useSetClientIdentity();
-
-  // Edit client drawer state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    firstName: '', lastName: '', email: '', companyName: '', country: '', city: '',
-  });
-  // Sexe et date de naissance (« JJ/MM/AAAA ») : `admin_set_client_identity`, seulement s'ils changent.
-  const [editGender, setEditGender] = useState<Gender | null>(null);
-  const [editBirth, setEditBirth] = useState('');
-  // `client.id` est le user_id : la clé que lit useClientPhones.
-  const { data: clientPhones } = useClientPhones(client?.id);
-  const phonesEditor = useClientPhonesEditor();
-  const setPhones = useSetClientPhones();
-
-  const openEdit = () => {
-    if (!client) return;
-    phonesEditor.reset(clientPhones, client.phone, client.country);
-    setEditForm({
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email,
-      companyName: client.companyName,
-      country: client.country,
-      city: client.city,
-    });
-    setEditGender(isGender(client.gender) ? client.gender : null);
-    setEditBirth(isoToBirthText(client.dateOfBirth));
-    setEditOpen(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!client || updateClientMutation.isPending || setPhones.isPending || setIdentity.isPending) return;
-    // Avant toute écriture : une date de naissance TOUCHÉE doit être bonne. Celle
-    // déjà en base, même hors de 16 à 110 ans (l'inscription en libre-service
-    // ne la vérifie pas), ne bloque pas la modification du nom ou des numéros :
-    // `identityPatch` ne l'envoie pas tant qu'elle n'a pas changé.
-    if (editBirth !== isoToBirthText(client.dateOfBirth) && birthTextIssue(editBirth) !== null) {
-      toast.error(t('clientIdentity.birthInvalid'));
-      return;
-    }
-    const identity = identityPatch(client, { gender: editGender, birthText: editBirth });
-
-    // Un numéro invalide n'est pas seulement mal saisi : le déclencheur de
-    // synchronisation met alors phone_e164 à NULL, et le client cesse
-    // silencieusement de recevoir ses alertes. Mieux vaut le dire ici.
-    if (phonesEditor.primaryInvalid) {
-      toast.error('Numéro principal invalide', {
-        description: 'Vérifiez le pays et le numéro. Sans numéro valide, ce client ne recevra aucun SMS.',
-      });
-      return;
-    }
-    if (phonesEditor.extrasInvalid) {
-      toast.error('Un autre numéro est incomplet', { description: 'Complétez-le ou retirez-le.' });
-      return;
-    }
-    const phones = phonesEditor.toInputs();
-
-    try {
-      // Les numéros d'abord : la RPC recopie le principal dans la fiche. S'ils
-      // sont refusés, rien d'autre n'est écrit.
-      if (phonesEditor.changed) await setPhones.mutateAsync({ userId: client.id, phones });
-      await updateClientMutation.mutateAsync({
-        userId: client.id,
-        firstName: editForm.firstName.trim(),
-        lastName: editForm.lastName.trim(),
-        phone: phones[0].phone_e164,
-        email: editForm.email.trim(),
-        companyName: editForm.companyName.trim(),
-        country: editForm.country.trim(),
-        city: editForm.city.trim(),
-        // Le sexe ou la date change aussi : un seul message, dit plus bas.
-        silent: identity !== null,
-      });
-    } catch {
-      /* message affiché par le hook */
-      return;
-    }
-    if (identity) {
-      try {
-        await setIdentity.mutateAsync({ userId: client.id, ...identity });
-        toast.success(t('clientIdentity.saved'));
-      } catch (e) {
-        // Le reste est enregistré : on le dit, et quoi refaire.
-        toast.error(t('clientIdentity.failed'), { description: `${(e as Error).message} — ${t('clientIdentity.failedHint')}` });
-      }
-    }
-    setEditOpen(false);
-    refetch();
-  };
-
-  const deleteClientMutation = useAdminDeleteClient();
-
-  // Delete client drawer state
-  const [deleteDrawerOpen, setDeleteDrawerOpen] = useState(false);
-  const [deleteChecking, setDeleteChecking] = useState(false);
-
-  const handleDeleteCheck = async () => {
-    if (!client) return;
-    setDeleteChecking(true);
-    try {
-      if ((client.walletBalance || 0) > 0) {
-        toast.error(t('cannotDeleteClientPositiveBalance', { defaultValue: `Impossible de supprimer un client avec un solde positif (${formatXAF(client.walletBalance || 0)} XAF)` }));
-        return;
-      }
-      const { data: pending, error } = await supabaseAdmin
-        .from('payments')
-        .select('id')
-        .eq('user_id', client.id)
-        .in('status', ['created', 'waiting_beneficiary_info', 'ready_for_payment', 'processing', 'cash_pending', 'cash_scanned'])
-        .limit(1);
-      // Une requête échouée ne doit pas se confondre avec « aucun paiement
-      // en cours » — sinon la confirmation de suppression s'ouvre quand même.
-      if (error) {
-        toast.error('Vérification des paiements impossible — réessayez.');
-        return;
-      }
-      if (pending && pending.length > 0) {
-        toast.error(t('cannotDeleteClientPendingPayments', { defaultValue: 'Impossible de supprimer un client ayant des paiements en cours' }));
-        return;
-      }
-      setDeleteDrawerOpen(true);
-    } finally {
-      setDeleteChecking(false);
-    }
-  };
-
-  const openAdjustment = (type: AdjustmentType) => {
-    setAdjustmentType(type);
-    setAdjustmentOpen(true);
-  };
-
-  // Relevé PDF sur une période : la feuille choisit la période, on lit TOUTES
-  // les écritures de cette période (plus de plafond à 100), et le solde
-  // d'ouverture vient de la dernière écriture avant la période si elle est vide.
-  const handleDownloadStatement = async (range: StatementRange, lang: StatementLang) => {
-    if (!client) return;
-    setIsStatementGenerating(true);
-    try {
-      const query = statementQueryRange(range);
-      const entries: StatementEntry[] = await fetchLedgerEntriesInRange(client.id, query);
-      if (query === null && !entries.some(isStatementEntry)) {
-        toast.error(t('noMovementsToExport', { defaultValue: 'Aucun mouvement à exporter' }));
-        return false;
-      }
-      // Le solde d'ouverture d'une période sans mouvement : la dernière écriture avant elle.
-      const lastBefore = query ? await fetchLastLedgerEntryBefore(client.id, query.from) : null;
-      await downloadAccountStatement({
-        db: supabaseAdmin,
-        lang,
-        client: {
-          name: `${client.firstName} ${client.lastName}`.trim(),
-          code: client.customerCode,
-          phone: client.phone,
-          email: client.email,
-          country: client.country,
-        },
-        entries,
-        range: query,
-        balanceBeforeRange: lastBefore?.balanceAfter ?? null,
-      });
-      return true;
-    } catch (err) {
-      console.error('Error generating statement:', err);
-      toast.error(t('statementGenerationError', { defaultValue: 'Erreur lors de la génération du relevé' }));
-      return false;
-    } finally {
-      setIsStatementGenerating(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!client) return;
-    try {
-      const result = await resetPasswordMutation.mutateAsync(client.id);
-      if (result.tempPassword) {
-        setNewPassword(result.tempPassword);
-        setResetDrawerOpen(false);
-        setPasswordResultDrawerOpen(true);
-      }
-    } catch {
-      // Le hook affiche déjà l'erreur ; on évite un rejet non géré.
-    }
-  };
-
-  const handleCopyPassword = async () => {
-    try {
-      await navigator.clipboard.writeText(newPassword);
-      setPasswordCopied(true);
-      setTimeout(() => setPasswordCopied(false), 2000);
-    } catch {
-      toast.error('Impossible de copier : sélectionnez le mot de passe et copiez-le à la main.');
-    }
-  };
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
-        <div className={cn('flex-1', SURFACE.canvas)}>
-          <SkeletonClientDetail />
+      <div className="min-h-[100dvh] bg-white dark:bg-[#1E1E1E]">
+        <ScreenTop title="Client" backTo="/m/clients" />
+        <div className="flex flex-col items-center gap-3 px-5 pt-8">
+          <span className="h-[92px] w-[92px] animate-pulse rounded-full bg-[#F5F5F5] dark:bg-[#383838]" />
+          <span className="h-6 w-44 animate-pulse rounded bg-[#F5F5F5] dark:bg-[#383838]" />
+          <span className="mt-4 h-12 w-56 animate-pulse rounded bg-[#F5F5F5] dark:bg-[#383838]" />
         </div>
       </div>
     );
   }
-
   if (!client) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <MobileHeader title={t('clientDetail', { defaultValue: 'Détail client' })} showBack backTo="/m/clients" />
-        <div className={cn('flex flex-1 items-center justify-center p-4', SURFACE.canvas)}>
-          <p className={TEXT.muted}>{t('clientNotFound', { defaultValue: 'Client non trouvé' })}</p>
-        </div>
+      <div className="min-h-[100dvh] bg-white dark:bg-[#1E1E1E]">
+        <ScreenTop title="Client" backTo="/m/clients" />
+        <EmptyLine action={{ label: 'Retour aux clients', onClick: () => navigate('/m/clients') }}>Client introuvable.</EmptyLine>
       </div>
     );
   }
 
-  const initials = `${client.firstName?.[0] || ''}${client.lastName?.[0] || ''}`;
-  const fullName = `${client.firstName} ${client.lastName}`.trim() || 'Client';
-  const statusLabel = t(STATUS_LABEL_KEYS[client.status]?.key ?? 'unknown', { defaultValue: STATUS_LABEL_KEYS[client.status]?.defaultValue ?? client.status });
-  const since = format(new Date(client.createdAt), 'd MMMM yyyy', { locale: fr });
-  const place = [client.city, client.country].filter(Boolean).join(', ');
-  const ledgerCount = ledgerTotal ?? ledgerEntries?.length ?? 0;
+  const name = `${client.firstName} ${client.lastName}`.trim() || 'Client';
+  const balance = client.walletBalance || 0;
+  const limit = client.walletOverdraftLimit ?? 0;
+  const tag = clientTag(client.status, balance);
+  const phoneCount = Math.max(phones?.length ?? 0, client.phone ? 1 : 0);
+  const recent = (ledger ?? []).slice(0, 6);
+
+  // Message : la conversation du client s'il en a une, sinon WhatsApp.
+  const openMessage = async () => {
+    if (hasPermission('canAccessSupportChat')) {
+      const { data } = await supabaseAdmin
+        .from('chat_conversations')
+        .select('id')
+        .eq('client_id', client.id)
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.id) { navigate(`/m/support/${data.id}`); return; }
+    }
+    const e164 = normalizePhone(client.phone, 'CM')?.e164;
+    if (e164) window.open(whatsappLink(e164), '_blank', 'noopener');
+    else toast.error('Pas de numéro valide pour ce client.');
+  };
+
+  const circles: CircleAction[] = [];
+  if (hasPermission('canProcessDeposits')) circles.push({ label: 'Dépôt', icon: ArrowDownToLine, primary: true, onClick: () => navigate(`/m/deposits/new?clientId=${client.id}`) });
+  if (hasPermission('canProcessPayments')) circles.push({ label: 'Paiement', icon: ArrowUpRight, primary: circles.length === 0, onClick: () => navigate(`/m/payments/new?clientId=${client.id}`) });
+  circles.push({ label: 'Message', icon: MessageSquare, primary: circles.length === 0, onClick: () => void openMessage() });
+  if (hasPermission('canViewCargo') || hasPermission('canViewClients')) circles.push({ label: 'Colis', icon: Package, primary: false, onClick: () => navigate(`/m/clients/${client.id}/parcels`) });
+
+  const actions: SheetAction[] = [
+    { label: 'Crédit / Débit', icon: Diff, hidden: !canAdjust, onClick: () => navigate(`/m/clients/${client.id}/ajuster`) },
+    { label: 'Découvert', icon: CircleMinus, hint: limit > 0 ? `${xaf(limit)} XAF` : 'Aucun', hidden: !canGrantOverdraft, onClick: () => setSheet('overdraft') },
+    { label: 'Relevé PDF', icon: FileText, onClick: statement.show },
+    { label: 'Bénéficiaires', icon: Users, hint: beneficiaries ? String(beneficiaries.length) : undefined, onClick: () => navigate(`/m/clients/${client.id}/beneficiaries`) },
+    { label: 'Étiquette colis', icon: TagIcon, hidden: !client.customerCode, onClick: () => navigate(`/m/clients/${client.id}/etiquette`) },
+    { label: 'Téléphones', icon: Phone, hint: phoneCount ? String(phoneCount) : undefined, onClick: () => navigate(`/m/clients/${client.id}/telephones`) },
+    { label: 'Identité', icon: IdCard, onClick: () => navigate(`/m/clients/${client.id}/identite`) },
+    { label: 'Mot de passe', icon: KeyRound, hidden: !canManageUsers, onClick: () => setSheet('password') },
+    { label: 'Repasser en prospect', icon: Undo2, hidden: !canMakeProspect, onClick: () => setSheet('prospect') },
+    { label: 'Supprimer', icon: Trash2, danger: true, hidden: !canManageUsers, onClick: () => setSheet('delete') },
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <MobileHeader title="Client" showBack backTo="/m/clients" />
+    <div className="min-h-[100dvh] bg-white pb-8 dark:bg-[#1E1E1E]">
+      <ScreenTop title="Client" backTo="/m/clients" right={<MoreButton onClick={more.show} />} />
 
-      <div className={cn('flex flex-1 flex-col gap-6 px-5 pb-8 pt-4', SURFACE.canvas)}>
-        {/* ── Qui c'est ─────────────────────────────────────── */}
-        <section className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[20px] font-semibold', SURFACE.holder)}>
-              {initials || '?'}
-            </div>
-            <div className="min-w-0 flex-1 space-y-2">
-              <StatusPill tone={clientStatusTone(client.status)} label={statusLabel} />
-              <h2 className={cn('break-words text-[22px] font-semibold leading-tight', TEXT.strong)}>{fullName}</h2>
-              {client.companyName && <Line>{client.companyName}</Line>}
-            </div>
-          </div>
-          {client.phone ? (
-            <Line>
-              Téléphone :{' '}
-              <a href={`tel:${client.phone}`} className={cn("relative font-semibold underline decoration-[#B3B3B3] underline-offset-4 before:absolute before:-inset-y-3 before:-inset-x-1 before:content-['']", TEXT.strong)}>
-                {client.phone}
-              </a>
-              .
-            </Line>
-          ) : (
-            <Line tone="warn">Pas de numéro de téléphone : ce client ne reçoit aucun SMS.</Line>
-          )}
-          <Line>{client.email ? <>Email : <b className={cn('break-all', TEXT.strong)}>{client.email}</b>.</> : "Pas d'adresse email."}</Line>
-          {place && <Line>À {place}.</Line>}
-          <Line>
-            {t('clientIdentity.gender')} :{' '}
-            {genderLabel(client.gender) ? <b className={TEXT.strong}>{genderLabel(client.gender)}</b> : <span className={TEXT.faint}>{t('clientIdentity.genderUnset').toLowerCase()}</span>}.
-          </Line>
-          <Line>
-            {t('clientIdentity.birthDate')} :{' '}
-            {formatBirthDate(client.dateOfBirth) ? (
-              <b className={cn('tabular-nums', TEXT.strong)}>{formatBirthDate(client.dateOfBirth)}</b>
-            ) : (
-              <span className={TEXT.faint}>{t('clientIdentity.birthUnset').toLowerCase()}</span>
-            )}
-            .
-          </Line>
-          <Line>Client depuis le {since}.</Line>
-          {clientId && (
-            <Line>
-              Origine : <ClientOrigin userId={clientId} utmSource={client.utmSource} />
-            </Line>
-          )}
-          {clientId && (
-            <Line>
-              Enregistré par : <ClientRegistration userId={clientId} />
-            </Line>
-          )}
-        </section>
-
-        {/* ── Le colis — le geste le plus fréquent, donc tout en haut ── */}
-        {client.customerCode && (
-          <Card className="space-y-3">
-            <Line>
-              Son fournisseur colle <b className={TEXT.strong}>l'étiquette colis</b> sur chaque carton. Sea cargo ou air cargo, en image ou en PDF.
-            </Line>
-            <Button className="h-12 w-full text-[16px]" onClick={() => setLabelOpen(true)}>
-              <Tag />
-              Étiquette colis
-            </Button>
-          </Card>
-        )}
-
-        {/* Identifiant client — virement bancaire + étiquette colis */}
-        <CustomerCodeCard code={client.customerCode} />
-
-        {/* ── L'argent ──────────────────────────────────────── */}
-        <section>
-          <SectionTitle action={{ label: 'Historique', onClick: () => navigate(`/m/clients/${client.id}/ledger`) }}>
-            L'argent
-          </SectionTitle>
-          <Card className="space-y-3">
-            <p className={cn('text-[28px] font-semibold leading-none tracking-[-0.02em] tabular-nums', (client.walletBalance || 0) < 0 ? 'text-[#C00F0C] dark:text-[#FCB3AD]' : TEXT.strong)}>
-              {formatXAF(client.walletBalance || 0)} XAF
-            </p>
-            {(client.walletBalance || 0) < 0 && (
-              <Line tone="bad">
-                En découvert de {formatXAF(overdraftUsedXaf(client.walletBalance || 0))} XAF
-                {(client.walletOverdraftLimit ?? 0) > 0 ? ` sur ${formatXAF(client.walletOverdraftLimit ?? 0)} XAF autorisés.` : '.'}
-              </Line>
-            )}
-            {(client.walletOverdraftLimit ?? 0) > 0 && (client.walletBalance || 0) >= 0 && (
-              <Line>
-                Découvert autorisé : <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.walletOverdraftLimit ?? 0)} XAF</b>
-                {' '}— l'équipe peut débiter jusqu'à <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(availableXaf(client.walletBalance || 0, client.walletOverdraftLimit ?? 0))} XAF</b>.
-              </Line>
-            )}
-            <Line>
-              {client.lastLedgerEntry
-                ? `Dernier mouvement ${whenSentence(client.lastLedgerEntry.createdAt)}.`
-                : "Aucun mouvement pour l'instant."}
-            </Line>
-            <Line>
-              Au total, ce client a déposé <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.totalDeposits || 0)} XAF</b> et payé{' '}
-              <b className={cn('tabular-nums', TEXT.strong)}>{formatXAF(client.totalPayments || 0)} XAF</b>.
-            </Line>
-            {/* Le serveur garde l'ajustement (admin_adjust_wallet) ; l'UI ne cache rien. */}
-            <div className="flex flex-col gap-2 pt-1">
-              <Button variant="neutral" className="w-full" onClick={() => openAdjustment('CREDIT')}>
-                <Plus />
-                Ajouter de l'argent
-              </Button>
-              <Button variant="neutral" className="w-full" onClick={() => openAdjustment('DEBIT')}>
-                <Minus />
-                Retirer de l'argent
-              </Button>
-              {canGrantOverdraft && (
-                <Button variant="subtle" className="w-full" onClick={() => setOverdraftOpen(true)}>
-                  {(client.walletOverdraftLimit ?? 0) > 0 ? 'Modifier le découvert autorisé' : 'Autoriser un découvert'}
-                </Button>
-              )}
-            </div>
-          </Card>
-        </section>
-
-        {/* ── Ses colis reçus (Réception, dans Cargo) ─────────── */}
-        {canViewCargo && receivedParcels.length > 0 && (
-          <section>
-            <SectionTitle action={{ label: 'Tout voir', onClick: () => navigate(`/m/clients/${client.id}/parcels`) }}>
-              Ses colis reçus
-            </SectionTitle>
-            <Card className="py-0">
-              <ListRow
-                title={<span className="tabular-nums">{receivedParcels.length} colis · {formatKg(receivedParcels.reduce((a, p) => a + Number(p.weight_kg ?? 0), 0))} · {formatCbm(receivedParcels.reduce((a, p) => a + Number(p.cbm ?? 0), 0))}</span>}
-                subtitle={waitingParcels.length > 0 ? `${waitingParcels.length} à l'entrepôt, pas encore chargés` : 'Tout est chargé dans une boîte'}
-                onClick={() => navigate(`/m/clients/${client.id}/parcels`)}
-              />
-            </Card>
-          </section>
-        )}
-
-        {/* ── Ses conteneurs (Cargo) ────────────────────────── */}
-        {containers.length > 0 && (
-          <section>
-            <SectionTitle action={{ label: 'Cargo', onClick: () => navigate('/m/cargo') }}>
-              {containers.length > 1 ? `Ses ${containers.length} conteneurs` : 'Son conteneur'}
-            </SectionTitle>
-            <Card className="py-0">
-              {containers.map((c) => {
-                const level = alertLevel(c, docsBy?.[c.id]);
-                return (
-                  <ListRow
-                    key={c.id}
-                    title={<span className="whitespace-nowrap tabular-nums">{c.container_number || c.bl_number || 'Conteneur'}</span>}
-                    subtitle={<><span className="block">{arrivalSentence(c)}</span><StatusPill className="mt-1.5" tone={TONE_OF[level]} label={ALERT[level].label} /></>}
-                    onClick={() => navigate(`/m/cargo/${c.id}`)}
-                  />
-                );
-              })}
-            </Card>
-          </section>
-        )}
-
-        {/* ── Les gestes ────────────────────────────────────── */}
-        <section>
-          <SectionTitle>Les gestes</SectionTitle>
-          <Card className="py-0">
-            <ActionRow
-              icon={ArrowDownCircle}
-              tone="success"
-              label="Déclarer un dépôt"
-              description="Le client a versé de l'argent."
-              onClick={() => navigate(`/m/deposits/new?clientId=${client.id}`)}
-            />
-            {canViewCargo && (
-              <ActionRow
-                icon={Ship}
-                tone="info"
-                label="Suivre un conteneur"
-                description="Un numéro de conteneur ou de bill of lading."
-                onClick={() => navigate('/m/cargo/track')}
-              />
-            )}
-            <ActionRow
-              icon={Users}
-              tone="info"
-              label="Ses bénéficiaires"
-              description="Les fournisseurs qu'il paie."
-              onClick={() => navigate(`/m/clients/${client.id}/beneficiaries`)}
-            />
-            <ActionRow
-              icon={FileDown}
-              label={isStatementGenerating ? 'Relevé en préparation…' : 'Télécharger le relevé'}
-              description={ledgerCount > 0
-                ? `Choisir une période et télécharger le PDF. ${ledgerCount} ${ledgerCount > 1 ? 'opérations' : 'opération'} au total.`
-                : 'Choisir une période et télécharger le PDF.'}
-              onClick={() => setStatementOpen(true)}
-              disabled={isStatementGenerating}
-              loading={isStatementGenerating}
-            />
-            {canManageUsers && (
-              <ActionRow
-                icon={Pencil}
-                label="Modifier ses informations"
-                description="Nom, sexe, naissance, téléphone, email, entreprise."
-                onClick={openEdit}
-              />
-            )}
-            {canManageUsers && (
-              <ActionRow
-                icon={Key}
-                tone="pending"
-                label="Nouveau mot de passe"
-                description="À transmettre au client."
-                onClick={() => setResetDrawerOpen(true)}
-              />
-            )}
-            {canMakeProspect && (
-              <ActionRow
-                icon={UserRoundSearch}
-                tone="pending"
-                label={t('clientToProspect.action')}
-                description={t('clientToProspect.actionHint')}
-                onClick={() => setToProspectOpen(true)}
-              />
-            )}
-            {canManageUsers && (
-              <ActionRow
-                icon={Trash2}
-                destructive
-                label="Supprimer ce client"
-                description="Définitif : tout son historique disparaît."
-                onClick={handleDeleteCheck}
-                disabled={deleteChecking}
-                loading={deleteChecking}
-              />
-            )}
-          </Card>
-        </section>
+      <div className="flex flex-col items-center px-5 pt-7 text-center">
+        <Initials name={name} size={92} />
+        <h2 className={cn('mt-3.5 text-[22px] font-semibold leading-tight', TEXT.strong)}>{name}</h2>
+        <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{[client.customerCode, client.city].filter(Boolean).join(' · ')}</p>
+        <BigFigure
+          center
+          className="mt-5"
+          value={<span className={cn(balance < 0 && 'text-[#C00F0C] dark:text-[#FCB3AD]')}>{xaf(balance)}</span>}
+          unit="XAF"
+          note={
+            limit > 0 ? (
+              <span>
+                Disponible <b className="font-bold tabular-nums">{xaf(availableXaf(balance, limit))}</b> · Découvert <b className="font-bold tabular-nums">{xaf(limit)}</b>
+              </span>
+            ) : undefined
+          }
+          delta={tag && limit === 0 ? { tone: tag.tone, label: tag.label } : undefined}
+        />
+        {tag && limit > 0 && <Tag tone={tag.tone} className="mt-2">{tag.label}</Tag>}
       </div>
 
-      {/* Étiquette colis — feuille mobile dédiée (mode rapide, sans bloc fournisseur) */}
-      <MobileShippingLabelSheet
-        open={labelOpen}
-        onClose={() => setLabelOpen(false)}
-        code={client.customerCode}
-        clientName={fullName}
-        clientPhone={client.phone}
-        clientEmail={client.email}
-        companyName={client.companyName}
-        clientCity={client.city}
-        clientCountry={client.country}
-        settings={shipping ?? DEFAULT_SHIPPING_SETTINGS}
-      />
+      <ActionCircles actions={circles} />
+
+      <SectionHead title="Opérations" link={{ label: 'Tout voir', onClick: () => navigate(`/m/clients/${client.id}/ledger`) }} />
+      {recent.length === 0 ? (
+        <EmptyLine>Aucune opération pour l'instant.</EmptyLine>
+      ) : (
+        <ItemList>
+          {recent.map((e) => <LedgerItem key={e.id} entry={e} />)}
+        </ItemList>
+      )}
+
+      <ActionSheet open={more.open} onClose={more.hide} actions={actions} />
 
       {canGrantOverdraft && (
-        <OverdraftDialog
-          open={overdraftOpen}
-          onClose={() => setOverdraftOpen(false)}
+        <OverdraftSheet
+          open={sheet === 'overdraft'}
+          onClose={() => setSheet(null)}
           userId={client.id}
-          clientName={`${client.firstName} ${client.lastName}`}
-          currentBalance={client.walletBalance || 0}
-          currentLimit={client.walletOverdraftLimit ?? 0}
-          currentNote={client.walletOverdraftNote}
-          onSuccess={() => refetch()}
+          clientName={name}
+          balance={balance}
+          limit={limit}
+          note={client.walletOverdraftNote ?? null}
+          onDone={() => void refetch()}
         />
       )}
-
-      {/* Adjustment Drawer */}
-      <AdjustmentDrawer
-        open={adjustmentOpen}
-        onOpenChange={setAdjustmentOpen}
-        type={adjustmentType}
-        userId={client.id}
-        overdraftLimit={client.walletOverdraftLimit ?? 0}
-        currentBalance={client.walletBalance || 0}
-        onSuccess={() => {
-          refetch();
-          setAdjustmentOpen(false);
-        }}
-      />
-
-      {/* Edit Client Sheet */}
-      <BottomSheet
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        title={
-          <span className="flex items-center gap-2">
-            <Pencil className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
-            {t('editProfile', { defaultValue: 'Modifier le profil' })}
-          </span>
-        }
-      >
-        <div className="space-y-3">
-          {([
-            { label: t('firstName', { defaultValue: 'Prénom' }), key: 'firstName' as const },
-            { label: t('lastName', { defaultValue: 'Nom' }), key: 'lastName' as const },
-            { label: '', key: 'identity' as const },
-            { label: '', key: 'phones' as const },
-            { label: t('emailLabel', { defaultValue: 'Email' }), key: 'email' as const },
-            { label: t('company', { defaultValue: 'Entreprise' }), key: 'companyName' as const },
-            { label: t('country', { defaultValue: 'Pays' }), key: 'country' as const },
-            { label: t('city', { defaultValue: 'Ville' }), key: 'city' as const },
-          ]).map(({ label, key }) => key === 'identity' ? (
-            /* Sexe et date de naissance : enregistrés à part, seulement s'ils changent. */
-            <div key={key} className="space-y-3">
-              <GenderField
-                id="edit-gender"
-                label={t('clientIdentity.gender')}
-                value={editGender}
-                onChange={setEditGender}
-                hint={isGender(client.gender) ? undefined : t('clientIdentity.genderKeptHint')}
-              />
-              <BirthDateField id="edit-birth" label={t('clientIdentity.birthDate')} value={editBirth} onChange={setEditBirth} />
-            </div>
-          ) : key === 'phones' ? (
-            /* Plusieurs numéros, comme à la création : le premier est le principal. */
-            <ClientPhonesEditor key={key} editor={phonesEditor} />
-          ) : (
-            <FormField key={key} label={label} htmlFor={`edit-${key}`}>
-              {key === 'country' ? (
-                <CountryCombobox
-                  id="edit-country"
-                  variant="country"
-                  value={isoFromCountryLabel(editForm.country) ?? null}
-                  onChange={(iso) => setEditForm(f => ({ ...f, country: countryLabelFr(iso) }))}
-                />
-              ) : (
-                <TextInput
-                  id={`edit-${key}`}
-                  value={editForm[key]}
-                  onChange={(e) => setEditForm(f => ({ ...f, [key]: e.target.value }))}
-                  placeholder={label}
-                />
-              )}
-            </FormField>
-          ))}
-        </div>
-        <div className="mt-5 flex flex-col gap-2">
-          <PrimaryPill onClick={handleSaveEdit} loading={updateClientMutation.isPending || setPhones.isPending || setIdentity.isPending} className="w-full">
-            {t('save', { defaultValue: 'Enregistrer' })}
-          </PrimaryPill>
-          <SoftPill onClick={() => setEditOpen(false)} className="w-full">
-            {t('cancel', { defaultValue: 'Annuler' })}
-          </SoftPill>
-        </div>
-      </BottomSheet>
-
-      {/* Repasser en prospect — super admin, client sans aucune opération. Monté à l'ouverture seulement : pas de lecture avant. */}
-      {canMakeProspect && toProspectOpen && (
-        <ClientToProspectDialog open={toProspectOpen} onClose={() => setToProspectOpen(false)} userId={client.id} clientName={fullName} />
+      {canManageUsers && (
+        <>
+          <DeleteClientSheet open={sheet === 'delete'} onClose={() => setSheet(null)} userId={client.id} clientName={name} customerCode={client.customerCode} balance={balance} limit={limit} />
+          <ClientPasswordSheets open={sheet === 'password'} onClose={() => setSheet(null)} userId={client.id} clientName={name} phone={client.phone} />
+        </>
       )}
-
-      {/* Delete Client Confirmation Sheet */}
-      <BottomSheet
-        open={deleteDrawerOpen}
-        onClose={() => setDeleteDrawerOpen(false)}
-        title={
-          <span className="flex items-center gap-2 text-[#900B09] dark:text-[#FDD3D0]">
-            <Trash2 className="h-5 w-5" />
-            {t('deleteClient', { defaultValue: 'Supprimer le client' })}
-          </span>
-        }
-      >
-        <p className={cn('text-[16px]', TEXT.muted)}>
-          Voulez-vous vraiment supprimer{' '}
-          <strong className={TEXT.strong}>{client?.firstName} {client?.lastName}</strong> ?
-          Cette action est <strong className={TEXT.strong}>irréversible</strong> et supprimera toutes ses données
-          (historique de transactions, relevés, etc.).
-        </p>
-        <div className="mt-5 flex flex-col gap-2">
-          <PrimaryPill
-            danger
-            onClick={() => client && deleteClientMutation.mutate(client.id)}
-            loading={deleteClientMutation.isPending}
-            className="w-full"
-          >
-            {t('confirmDeletion', { defaultValue: 'Confirmer la suppression' })}
-          </PrimaryPill>
-          <SoftPill onClick={() => setDeleteDrawerOpen(false)} className="w-full">
-            {t('cancel', { defaultValue: 'Annuler' })}
-          </SoftPill>
-        </div>
-      </BottomSheet>
-
-      {/* Reset Password Confirmation Sheet */}
-      <BottomSheet
-        open={resetDrawerOpen}
-        onClose={() => setResetDrawerOpen(false)}
-        title={
-          <span className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-[#1E1E1E] dark:text-[#F5F5F5]" />
-            {t('resetPasswordAction', { defaultValue: 'Réinitialiser le mot de passe' })}
-          </span>
-        }
-      >
-        <p className={cn('text-[16px]', TEXT.muted)}>
-          {t('resetPasswordClientMessage', { defaultValue: 'Un nouveau mot de passe temporaire sera généré pour' })}{' '}
-          <strong className={TEXT.strong}>{client.firstName} {client.lastName}</strong>. {t('resetPasswordClientSuffix', { defaultValue: 'Vous devrez le transmettre manuellement au client.' })}
-        </p>
-        <div className="mt-5 flex flex-col gap-2">
-          <PrimaryPill onClick={handleResetPassword} loading={resetPasswordMutation.isPending} className="w-full">
-            {t('generateNewPassword', { defaultValue: 'Générer nouveau mot de passe' })}
-          </PrimaryPill>
-          <SoftPill onClick={() => setResetDrawerOpen(false)} className="w-full">
-            {t('cancel', { defaultValue: 'Annuler' })}
-          </SoftPill>
-        </div>
-      </BottomSheet>
-
-      {/* Password Result Sheet */}
-      <BottomSheet
-        open={passwordResultDrawerOpen}
-        onClose={() => setPasswordResultDrawerOpen(false)}
-        title={
-          <span className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-[#02542D] dark:text-[#CFF7D3]" />
-            {t('passwordGenerated', { defaultValue: 'Mot de passe généré' })}
-          </span>
-        }
-      >
-        <div className="space-y-4">
-          <p className={cn('text-[16px]', TEXT.muted)}>
-            {t('tempPasswordClientMessage', { defaultValue: 'Voici le nouveau mot de passe temporaire. Transmettez-le de manière sécurisée au client.' })}
-          </p>
-          <div className={cn('flex items-center justify-between gap-3 rounded-lg p-4', SURFACE.canvas)}>
-            <code className={cn('font-mono text-[20px]', TEXT.strong)}>{newPassword}</code>
-            <Holder icon={passwordCopied ? Check : Copy} tone={passwordCopied ? 'success' : 'neutral'} size="sm" onClick={handleCopyPassword} />
-          </div>
-          <p className="rounded-lg bg-[#FFF1C2] p-3 text-[16px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
-            {t('passwordWontBeShownAgain', { defaultValue: 'Ce mot de passe ne sera plus affiché après fermeture de cette fenêtre.' })}
-          </p>
-        </div>
-        <div className="mt-5">
-          <PrimaryPill onClick={() => setPasswordResultDrawerOpen(false)} className="w-full">
-            {t('close', { defaultValue: 'Fermer' })}
-          </PrimaryPill>
-        </div>
-      </BottomSheet>
-
-      {/* Relevé de compte — choix de la période */}
-      <StatementPeriodSheet
-        open={statementOpen}
-        onClose={() => setStatementOpen(false)}
-        onGenerate={handleDownloadStatement}
-        isGenerating={isStatementGenerating}
-      />
+      {canMakeProspect && sheet === 'prospect' && (
+        <ToProspectSheet open onClose={() => setSheet(null)} userId={client.id} clientName={name} />
+      )}
+      <StatementPeriodSheet open={statement.open} onClose={statement.hide} onGenerate={statement.generate} isGenerating={statement.generating} />
     </div>
   );
 }

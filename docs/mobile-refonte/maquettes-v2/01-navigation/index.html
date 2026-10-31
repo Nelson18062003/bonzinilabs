@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../kit2.css">
+<style>
+/* Lot 01 · Navigation — mêmes jetons que kit2.css (blanc, filet #D9D9D9, rayon 8, encre #2C2C2C, aucune ombre). */
+/* Plus : la carte profil, puis les modules en grille de ronds (façon Wave) */
+.me { display: flex; align-items: center; gap: 14px; margin: 12px 20px 0; padding: 14px 14px 14px 16px; border: 1px solid var(--line); border-radius: 8px }
+.me .av { width: 52px; height: 52px; border-radius: 26px; font-size: 19px }
+.me b { display: block; font: 600 18px "DM Sans" }
+.me span { font: 400 15px "DM Sans"; color: var(--muted) }
+.chev { flex: none }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); row-gap: 24px; padding: 26px 10px 0 }
+.mod { display: grid; justify-items: center; align-content: start; gap: 9px; font: 600 15px/1.25 "DM Sans"; text-align: center; color: var(--strong); padding: 0 6px }
+.mod .r { width: 64px; height: 64px; border-radius: 32px; background: var(--soft); display: grid; place-items: center; position: relative; color: var(--strong) }
+.mod .r svg { width: 28px; height: 28px }
+.mod .r.pic { background: #fff; box-shadow: none; border: 1px solid var(--line) }
+.mod .r.pic img { width: 100%; height: 100%; border-radius: 32px; object-fit: cover }
+.mod .b { position: absolute; top: -2px; right: -4px; background: #EC221F; color: #fff; font: 700 13px/22px "DM Sans"; min-width: 22px; height: 22px; border-radius: 11px; padding: 0 6px; text-align: center; border: 2px solid #fff; box-sizing: content-box }
+/* lignes de réglage */
+.set { display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0; border-bottom: 1px solid var(--line) }
+.set:last-child { border-bottom: 0 }
+.set .ic { width: 24px; height: 24px; flex: none }
+.set .l { flex: 1; font: 500 17px "DM Sans"; color: var(--strong) }
+.set .v { font: 400 16px "DM Sans"; color: var(--muted) }
+.set .s { display: block; font: 400 15px "DM Sans"; color: var(--muted); margin-top: 2px }
+.sw { width: 51px; height: 31px; border-radius: 16px; background: var(--ink); position: relative; flex: none }
+.sw::after { content: ""; position: absolute; top: 2px; left: 22px; width: 27px; height: 27px; border-radius: 14px; background: #fff }
+.sw.off { background: #D9D9D9 }
+.sw.off::after { left: 2px }
+.lbl2 { font: 600 14px "DM Sans"; color: var(--muted); padding: 20px 20px 2px; text-transform: uppercase; letter-spacing: .05em }
+.ident { text-align: center; padding: 20px 20px 4px }
+.ident .av { width: 72px; height: 72px; border-radius: 36px; font-size: 26px; margin: 0 auto }
+.ident b { display: block; font: 700 24px "DM Sans"; margin-top: 12px; letter-spacing: -.01em }
+.ident span { display: block; font: 400 16px "DM Sans"; color: var(--muted); margin-top: 4px }
+.ident .edit { display: inline-flex; color: var(--strong); align-items: center; height: 40px; padding: 0 16px; margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; font: 600 15px "DM Sans" }
+/* scanner : la caméra */
+.camv { position: absolute; inset: 0; background: #1A1A1A }
+.ab:has(.camv) .sbar { color: #fff; z-index: 3 }
+.ab:has(.camv) .sbar svg { fill: #fff }
+.ab:has(.camv) .sbar svg rect[stroke] { stroke: #fff }
+.ctop { position: absolute; top: 62px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 3 }
+.ctop .t { font: 600 18px "DM Sans"; color: #fff }
+.glass svg { width: 24px; height: 24px }
+.glass { width: 44px; height: 44px; border-radius: 22px; background: rgba(255,255,255,.16); display: grid; place-items: center }
+.vf { position: absolute; top: 196px; left: 50%; width: 270px; height: 270px; margin-left: -135px; z-index: 2 }
+.vf > i { position: absolute; width: 46px; height: 46px; border: 0 solid #fff }
+.vf > i:nth-child(1) { top: 0; left: 0; border-width: 5px 0 0 5px; border-radius: 14px 0 0 0 }
+.vf > i:nth-child(2) { top: 0; right: 0; border-width: 5px 5px 0 0; border-radius: 0 14px 0 0 }
+.vf > i:nth-child(3) { bottom: 0; left: 0; border-width: 0 0 5px 5px; border-radius: 0 0 0 14px }
+.vf > i:nth-child(4) { bottom: 0; right: 0; border-width: 0 5px 5px 0; border-radius: 0 0 14px 0 }
+.card { position: absolute; top: 58px; left: 24px; width: 222px; height: 150px; background: #fff; border-radius: 10px; transform: rotate(-5deg); padding: 12px 12px; display: flex; gap: 12px; align-items: center }
+.card .qr { width: 86px; height: 86px; padding: 4px; border: 0 }
+.card .w { font: 700 14px "DM Sans"; letter-spacing: .08em }
+.card .n { font: 600 15px/1.2 "DM Sans"; margin-top: 18px }
+.card .c { font: 700 16px "DM Sans"; margin-top: 4px; font-variant-numeric: tabular-nums }
+.chint { position: absolute; top: 494px; left: 0; right: 0; text-align: center; font: 600 17px "DM Sans"; color: #fff; z-index: 2 }
+.cbtm { position: absolute; bottom: 64px; left: 0; right: 0; display: flex; justify-content: center; gap: 56px; z-index: 2 }
+.cbtm .act { color: #fff }
+.cbtm .act .r { background: rgba(255,255,255,.16) }
+/* recherche */
+.sbox { display: flex; align-items: center; gap: 12px; padding: 10px 20px 0 }
+.sbox .search { margin: 0; flex: 1; border: 2px solid var(--ink); color: var(--strong) }
+.sbox .search .caret { width: 2px; height: 22px; background: var(--ink); margin-left: -8px }
+.sbox .x { margin-left: auto; width: 22px; height: 22px; border-radius: 11px; background: #949494; display: grid; place-items: center }
+.sbox .cancel { font: 600 16px "DM Sans" }
+.rn mark { background: none; color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px }
+/* menu « … » en feuille */
+.mi { display: flex; align-items: center; gap: 14px; min-height: 56px; border-bottom: 1px solid var(--line); font: 500 17px "DM Sans" }
+.mi:last-child { border-bottom: 0 }
+.mi svg { width: 24px; height: 24px; flex: none }
+/* le tableau des rôles */
+.ab.wide { width: 1260px; height: auto; border-radius: 8px; box-shadow: none; border: 1px solid var(--line); display: block; padding: 48px 56px 48px }
+.wide h1 { font: 700 34px "DM Sans"; letter-spacing: -.02em }
+.wide .sub1 { font: 400 18px "DM Sans"; color: var(--muted); margin-top: 6px }
+.flow { display: flex; align-items: center; gap: 40px; margin-top: 36px }
+.login { width: 330px; flex: none; border: 1px solid var(--line); border-radius: 8px; padding: 28px 24px 26px }
+.login .wm { font: 700 22px "DM Sans"; letter-spacing: .06em }
+.login .wm small { font: 600 14px "DM Sans"; letter-spacing: .05em; color: var(--muted); margin-left: 6px }
+.login h2 { font: 700 26px "DM Sans"; margin-top: 26px }
+.login .f { height: 52px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; padding: 0 14px; font: 400 17px "DM Sans"; color: var(--body); margin-top: 12px }
+.login .f.ph { color: var(--faint) }
+.login .btn { margin-top: 18px }
+.login .fid { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; font: 600 16px "DM Sans" }
+.arrow { flex: none }
+.roles { flex: 1; display: grid; gap: 14px }
+.rl { display: flex; align-items: center; gap: 22px }
+.rl .rw { width: 300px; flex: none }
+.rl .rw b { display: block; font: 600 18px "DM Sans" }
+.rl .rw span { display: block; font: 400 15px "DM Sans"; color: var(--muted); margin-top: 3px }
+.rl .bar { width: 393px; flex: none; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.rl .bar .tabs { border-top: 0; padding: 10px 4px 10px }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit2.js"></script>
+<script>
+const M = '../mola-mascot.png';
+const sv = (d, w = 2) => `<svg viewBox="0 0 24 24"><path d="${d}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+// icônes des modules (trait 2, couleur du texte)
+const J = {
+  tre: sv('M5.5 6.5h13a2.5 2.5 0 0 1 2.5 2.5v8.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5V9a2.5 2.5 0 0 1 2.5-2.5zM3 10.5h18M15.5 15h2.5M6 6.5 15.5 3.5l1 3'),
+  rate: sv('M3.5 17.5 9 12l4 3.5 7-7.5M15.5 8H20v4.5'),
+  ana: sv('M4 20.5h16M6.5 17v-4.5M11 17V7.5M15.5 17v-6M20 17V4'),
+  msg: sv('M5.5 4.5h13a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H10l-4.5 3.5v-3.5h0a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2zM8 9.5h8M8 12.5h5'),
+  dou: sv('M12 3.5a2.6 2.6 0 0 1 2.6 2.6c0 1.6-1.1 2.4-1.1 4.4h-3c0-2-1.1-2.8-1.1-4.4A2.6 2.6 0 0 1 12 3.5zM5.5 10.5h13a1 1 0 0 1 1 1v3.5h-15v-3.5a1 1 0 0 1 1-1zM6 19.5h12'),
+  bank: sv('M3.5 9.5 12 4.5l8.5 5M5.5 10.5v6.5M10 10.5v6.5M14 10.5v6.5M18.5 10.5v6.5M3.5 20h17'),
+  team: sv('M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20.5c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.3a3.5 3.5 0 0 1 0 6.4M17.8 14.6c1.9.7 3.1 2.6 3.6 5.9'),
+  log: sv('M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM12 7.5V12l3 2'),
+  proof: sv('M6 3.5h12v17l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3zM9 8h6M9 11.5h6M9 15h3.5'),
+  news: sv('M4.5 5h11a1 1 0 0 1 1 1v12.5a1.5 1.5 0 0 0 3 0V9h-3M4.5 5a1 1 0 0 0-1 1v12a1.5 1.5 0 0 0 1.5 1.5h14.5M7 9h6.5M7 12.5h6.5M7 16h4'),
+  set: sv('M4 7h9M17 7h3M4 17h3M11 17h9M15 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'),
+  // Moi
+  face: sv('M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5M9 9v1.5M15 9v1.5M12.5 9v4h-1M9.5 15.5c1.4 1.2 3.6 1.2 5 0'),
+  bell: sv('M6 16.5V11a6 6 0 1 1 12 0v5.5l1.6 2H4.4zM10 20.5a2 2 0 0 0 4 0'),
+  lock: sv('M6.5 10.5h11a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19v-7a1.5 1.5 0 0 1 1.5-1.5zM8 10.5V8a4 4 0 0 1 8 0v2.5'),
+  key: sv('M8.5 19.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM11.7 11.8 19.5 4M16.5 7l2.5 2.5M14.5 9l2 2'),
+  globe: sv('M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM3.5 12h17M12 3.5c2.3 2.4 3.4 5.2 3.4 8.5s-1.1 6.1-3.4 8.5c-2.3-2.4-3.4-5.2-3.4-8.5S9.7 5.9 12 3.5z'),
+  upd: sv('M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4h-4'),
+  out: sv('M10 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H10M15 8l4 4-4 4M19 12H9.5'),
+  user: sv('M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5c1-4 3.9-6 7.5-6s6.5 2 7.5 6'),
+  // scanner
+  x: sv('M6 6l12 12M18 6 6 18', 2.4),
+  torch: sv('M8 3.5h8v4l-2 3V20a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-9.5l-2-3zM8 7.5h8M12 13.5v2'),
+  kbd: sv('M4.5 6h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5v-9A1.5 1.5 0 0 1 4.5 6zM7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8 14h8'),
+  box: sv('M12 3.5 20.5 8v8.5L12 21l-8.5-4.5V8zM3.5 8 12 12.5 20.5 8M12 12.5V21'),
+  open: sv('M14 4h6v6M20 4l-9 9M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10'),
+  // notifications
+  ship: sv('M3 15h18l-2.4 5.5H5.4zM6 15V9h12v6M12 9V4'),
+  read: sv('M3.5 12.5 8 17 18 7M13 16l1 1 6.5-7'),
+  tune: sv('M4 7h9M17 7h3M4 17h3M11 17h9M15 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM9 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z'),
+  filter: sv('M4 6h16M7 12h10M10 18h4'),
+};
+const chev = '<svg class="chev" width="20" height="20" viewBox="0 0 24 24"><path d="m9 5.5 6.5 6.5L9 18.5" fill="none" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ic = (k) => `<span class="ic">${J[k]}</span>`;
+const mod = (icon, label, badge) => `<div class="mod"><div class="r">${icon}${badge ? `<span class="b">${badge}</span>` : ''}</div>${label}</div>`;
+const molaMod = `<div class="mod"><div class="r pic"><img src="${M}"></div>Mola</div>`;
+const holder = (k) => `<div class="logo" style="background:#F5F5F5;color:#1E1E1E">${J[k]}</div>`;
+
+// 1 · Plus (super admin) — le profil en haut, puis les modules
+add('Plus · super admin', `${sbar()}<div class="body">
+  <div class="top"><div class="hello">Plus</div><div class="icbtn">${I.search}</div></div>
+  <div class="me"><div class="av">N</div><div style="flex:1"><b>Nelson</b><span>Super admin · Moi</span></div>${chev}</div>
+  <div class="grid3">
+    ${mod(J.tre, 'Trésorerie')}
+    ${mod(J.rate, 'Taux du jour')}
+    ${mod(J.ana, 'Analyses')}
+    ${mod(J.msg, 'Messages clients', 3)}
+    ${mod(J.dou, 'Douane')}
+    ${molaMod}
+    ${mod(J.bank, 'Coordonnées de paiement')}
+    ${mod(J.team, 'Équipe & ventes')}
+    ${mod(J.log, 'Journal')}
+    ${mod(J.proof, 'Justificatifs')}
+    ${mod(J.news, 'Veille')}
+    ${mod(J.set, 'Réglages')}
+  </div>
+</div>${tabs('more')}<div class="home-ind"></div>`);
+
+// 2 · Moi
+add('Moi', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Moi</div></div>
+  <div class="ident"><div class="av">N</div><b>Nelson</b><span>Super admin · nelson@bonzinilabs.com</span><span class="edit">Modifier mon profil</span></div>
+  <div class="lbl2">Sur ce téléphone</div>
+  <div class="list">
+    <div class="set">${ic('face')}<div class="l">Face ID</div><span class="sw"></span></div>
+    <div class="set">${ic('bell')}<div class="l">Notifications</div><span class="v">5 sur 7</span>${chev}</div>
+  </div>
+  <div class="lbl2">Mon compte</div>
+  <div class="list">
+    <div class="set">${ic('lock')}<div class="l">Mot de passe</div>${chev}</div>
+    <div class="set">${ic('key')}<div class="l">Clés d'accès</div><span class="v">2 appareils</span>${chev}</div>
+    <div class="set">${ic('globe')}<div class="l">Langue</div><span class="v">Français</span>${chev}</div>
+    <div class="set">${ic('upd')}<div class="l">Mise à jour</div><span class="tag t-ok" style="margin:0">À jour</span></div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn soft">Se déconnecter</div></div>
+</div><div class="home-ind"></div>`);
+
+// 3 · Moi › Notifications : un interrupteur par type
+add('Moi · Notifications par type', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Notifications</div></div>
+  <div class="box" style="margin-top:16px"><div class="kv">Sur ce téléphone<b><span class="tag t-ok" style="margin:0">Activées</span></b></div></div>
+  <div class="lbl2" style="padding-top:24px">Ce que je reçois</div>
+  <div class="list">
+    <div class="set"><div class="l">Dépôts à valider</div><span class="sw"></span></div>
+    <div class="set"><div class="l">Paiements à faire</div><span class="sw"></span></div>
+    <div class="set"><div class="l">Messages clients</div><span class="sw"></span></div>
+    <div class="set"><div class="l">Cargo en retard</div><span class="sw"></span></div>
+    <div class="set"><div class="l">Nouveau taux du jour</div><span class="sw"></span></div>
+    <div class="set"><div class="l">Douane à signer</div><span class="sw off"></span></div>
+    <div class="set"><div class="l">Prospects à vérifier</div><span class="sw off"></span></div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 4 · Se déconnecter : feuille de confirmation
+add('Moi · Se déconnecter', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Moi</div></div>
+  <div class="ident"><div class="av">N</div><b>Nelson</b><span>Super admin · nelson@bonzinilabs.com</span><span class="edit">Modifier mon profil</span></div>
+  <div class="lbl2">Sur ce téléphone</div>
+  <div class="list">
+    <div class="set">${ic('face')}<div class="l">Face ID</div><span class="sw"></span></div>
+    <div class="set">${ic('bell')}<div class="l">Notifications</div><span class="v">5 sur 7</span>${chev}</div>
+  </div>
+  <div class="lbl2">Mon compte</div>
+  <div class="list">
+    <div class="set">${ic('lock')}<div class="l">Mot de passe</div>${chev}</div>
+    <div class="set">${ic('key')}<div class="l">Clés d'accès</div><span class="v">2 appareils</span>${chev}</div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Se déconnecter ?</h3><p>Plus de notifications sur ce téléphone.</p>
+    <div class="btn" style="margin-top:22px">Se déconnecter</div>
+    <div class="btn soft" style="margin-top:10px">Annuler</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 5 · Scanner : la caméra
+const camera = (card = true) => `<div class="camv"></div>
+  <div class="ctop"><div class="glass" style="color:#fff">${J.x}</div><div class="t">Scanner</div><div style="width:44px"></div></div>
+  <div class="vf"><i></i><i></i><i></i><i></i>${card ? `<div class="card">${qr(4)}<div><div class="w">BONZINI</div><div class="n">Fatou Ndiaye</div><div class="c">BZ-4821</div></div></div>` : ''}</div>`;
+add('Scanner', `${sbar()}<div class="body" style="position:static">
+  ${camera()}
+  <div class="chint">Carte client, colis ou QR cash</div>
+  <div class="cbtm">
+    <div class="act"><div class="r" style="color:#fff">${J.torch}</div>Lampe</div>
+    <div class="act"><div class="r" style="color:#fff">${J.kbd}</div>Saisir le code</div>
+  </div>
+</div><div class="home-ind" style="background:#fff"></div>`);
+
+// 6 · Scanner : carte client lue
+add('Scanner · carte client lue', `${sbar()}<div class="body" style="position:static">
+  ${camera()}
+  <div class="scrim" style="z-index:4"></div>
+  <div class="sheet"><div class="grab"></div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="av" style="width:56px;height:56px;border-radius:28px;font-size:19px">FN</div>
+      <div style="flex:1;min-width:0"><h3>Fatou Ndiaye</h3><p style="margin-top:2px">BZ-4821 · +237 690 55 66 77</p></div>
+    </div>
+    <div class="box" style="margin:18px 0 0">
+      <div class="kv">Solde<b>1 213 450 XAF</b></div>
+      <div class="kv">Colis<b>2 au bureau</b></div>
+    </div>
+    <div class="acts" style="padding:24px 0 4px">
+      <div class="act"><div class="r ink">${I.dep('#F5F5F5')}</div>Dépôt</div>
+      <div class="act"><div class="r">${I.pay('#1E1E1E')}</div>Paiement</div>
+      <div class="act"><div class="r">${J.box}</div>Colis</div>
+      <div class="act"><div class="r">${J.user}</div>Ouvrir</div>
+    </div>
+    <div class="btn soft" style="margin-top:20px">Scanner autre chose</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 7 · Recherche globale
+add('Recherche', `${sbar()}<div class="body">
+  <div class="sbox"><div class="search">${I.search}<span>fat</span><span class="caret"></span><span class="x"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg></span></div><span class="cancel">Annuler</span></div>
+  <div class="chips"><span class="chip on">Tout</span><span class="chip">Clients</span><span class="chip">Dépôts</span><span class="chip">Paiements</span></div>
+  <div class="lbl">Clients</div>
+  <div class="list">
+    <div class="row"><div class="av">FN</div><div class="rm"><div class="rn"><mark>Fat</mark>ou Ndiaye</div><div class="rs">BZ-4821 · +237 690 55 66 77</div></div><div class="ra"><b>1 213 450</b><span class="rs">XAF</span></div></div>
+    <div class="row"><div class="av">FS</div><div class="rm"><div class="rn"><mark>Fat</mark>oumata Sow</div><div class="rs">BZ-5107 · +237 677 20 31 45</div></div><div class="ra"><b>48 000</b><span class="rs">XAF</span></div></div>
+  </div>
+  <div class="lbl">Opérations</div>
+  <div class="list">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn"><mark>Fat</mark>ou Ndiaye</div><div class="rs">BZ-PY-2610-0416</div></div><div class="ra"><b>¥ 7 493</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row">${meth('om')}<div class="rm"><div class="rn"><mark>Fat</mark>ou Ndiaye</div><div class="rs">BZ-DP-2610-0388</div></div><div class="ra"><b>850 000</b><span class="tag t-todo">À valider</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn"><mark>Fat</mark>oumata Sow</div><div class="rs">BZ-PY-2610-0371</div></div><div class="ra"><b>¥ 3 120</b><span class="tag t-ok">Payé</span></div></div>
+    <div class="row">${meth('wave')}<div class="rm"><div class="rn"><mark>Fat</mark>ou Ndiaye</div><div class="rs">BZ-DP-2610-0342</div></div><div class="ra"><b>1 500 000</b><span class="tag t-ok">Crédité</span></div></div>
+  </div>
+</div><div class="home-ind"></div>`);
+
+// 8 · Notifications
+const notifRows = `<div class="day">Aujourd'hui</div>
+  <div class="list">
+    <div class="row">${meth('om')}<div class="rm"><div class="rn">Dépôt à valider</div><div class="rs">Samuel Nkoulou · 10:42</div></div><div class="ra"><b>850 000</b><span class="tag t-todo">À valider</span></div></div>
+    <div class="row">${meth('bank')}<div class="rm"><div class="rn">Paiement à faire</div><div class="rs">Jean-Paul Mbarga · 09:15</div></div><div class="ra"><b>¥ 58 900</b><span class="tag t-todo">À payer</span></div></div>
+    <div class="row"><div class="av">AD</div><div class="rm"><div class="rn">Aïcha Diallo</div><div class="rs">« Mon paiement est parti ? »</div></div><div class="ra"><span class="rs">08:50</span></div></div>
+    <div class="row">${holder('ship')}<div class="rm"><div class="rn">Conteneur en retard</div><div class="rs">MSCU 4417092 · Douala</div></div><div class="ra"><span class="tag t-bad">+3 jours</span></div></div>
+  </div>
+  <div class="day">Hier</div>
+  <div class="list">
+    <div class="row">${holder('dou')}<div class="rm"><div class="rn">Classement à signer</div><div class="rs">Rosine Tchoua · tissus coton</div></div><div class="ra"><span class="tag t-todo">À signer</span></div></div>
+    <div class="row">${holder('user')}<div class="rm"><div class="rn">Prospect à vérifier</div><div class="rs">Ibrahim Touré · 17:20</div></div><div class="ra"><span class="tag t-todo">À vérifier</span></div></div>
+  </div>`;
+add('Notifications', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Notifications</div>${I.dots}</div>
+  ${notifRows}
+</div><div class="home-ind"></div>`);
+
+// 9 · Notifications · le menu « … »
+add('Notifications · menu « … »', `${sbar()}<div class="body">
+  <div class="nav">${I.back}<div class="t">Notifications</div>${I.dots}</div>
+  ${notifRows}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <div class="mi">${J.read}Tout marquer comme lu</div>
+    <div class="mi">${J.filter}Seulement les miennes</div>
+    <div class="mi">${J.tune}Choisir ce que je reçois</div>
+  </div>
+</div><div class="home-ind" style="z-index:9"></div>`);
+
+// 10 · Une connexion, l'espace de chacun (tableau, sans cadre de téléphone)
+const roleRow = (who, sub, set, badges) => `<div class="rl"><div class="rw"><b>${who}</b><span>${sub}</span></div><div class="bar">${tabs(Object.keys(Object.fromEntries(TABSETS[set]))[0], set, badges)}</div></div>`;
+add("Une connexion, l'espace de chacun", `<h1>Une connexion, l'espace de chacun</h1>
+  <div class="flow">
+    <div class="login">
+      <div class="wm">BONZINI<small>HQ</small></div>
+      <h2>Connexion</h2>
+      <div class="f">nelson@bonzinilabs.com</div>
+      <div class="f ph">Mot de passe</div>
+      <div class="btn">Se connecter</div>
+      <div class="fid"><span style="width:24px;height:24px;display:inline-block;color:#1E1E1E">${J.face}</span>Face ID</div>
+    </div>
+    <svg class="arrow" width="44" height="24" viewBox="0 0 44 24"><path d="M2 12h38M31 4l9 8-9 8" fill="none" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="roles">
+      ${roleRow('Équipe', 'Super admin · Ops · Support · Clientèle', 'admin', { ops: 5 })}
+      ${roleRow('Trésorier', 'Trésorerie et taux', 'treasurer', {})}
+      ${roleRow('Réceptionnaire', 'Bureau de Guangzhou', 'reception', { today: 3, box: 4 })}
+      ${roleRow("Agent d'entrepôt", 'Douala', 'warehouse', { pointer: 12, hand: 3 })}
+      ${roleRow('Commercial', 'Ses prospects, ses clients', 'commercial', {})}
+      ${roleRow('Agent cash', 'Remise du cash', 'cash', { ops: 2 })}
+      ${roleRow('Commissionnaire agréé', 'Douane', 'customs', { sign: 2 })}
+    </div>
+  </div>`);
+
+render();
+document.querySelector('#s10 .ab').classList.add('wide');
+</script></body></html>

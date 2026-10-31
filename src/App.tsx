@@ -65,22 +65,26 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 // ── Lazy-loaded Mobile Admin Pages ─────────────────────────────
 const MobileLoginScreen = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.MobileLoginScreen })));
 const AdminAuthCallback = lazy(() => import("./mobile/screens/auth").then(m => ({ default: m.AdminAuthCallback })));
-const MobileHome = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileHome })));
+const MobileHome = lazy(() => import("./mobile/screens/home/MobileHomeV2").then(m => ({ default: m.MobileHomeV2 })));
 const MobileOperationsScreen = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.MobileOperationsScreen })));
 const DesktopDashboard = lazy(() => import("./desktop/screens/dashboard").then(m => ({ default: m.DesktopDashboard })));
 const MobileAnalyticsDashboard = lazy(() => import("./mobile/screens/analytics").then(m => ({ default: m.MobileAnalyticsDashboard })));
 const DesktopAnalyticsDashboard = lazy(() => import("./desktop/screens/analytics").then(m => ({ default: m.DesktopAnalyticsDashboard })));
 const DesktopDepositsScreen = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopDepositsScreen })));
 const DesktopNewDeposit = lazy(() => import("./desktop/screens/deposits").then(m => ({ default: m.DesktopNewDeposit })));
-const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileDepositDetailV2 })));
-const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.MobileNewDepositV2 })));
+const MobileDepositDetail = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.DepositDetailScreen })));
+const MobileNewDeposit = lazy(() => import("./mobile/screens/deposits").then(m => ({ default: m.NewDepositScreen })));
 const DesktopPaymentsScreen = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopPaymentsScreen })));
-const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobilePaymentDetail })));
-const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileNewPayment })));
+const MobilePaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.PaymentDetailScreen })));
+const MobileNewPayment = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.NewPaymentScreen })));
 const DesktopNewPayment = lazy(() => import("./desktop/screens/payments").then(m => ({ default: m.DesktopNewPayment })));
 const MobileBeneficiaryEdit = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.MobileBeneficiaryEdit })));
+const EditSupplierScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.EditSupplierScreen })));
 const BulkPaymentCreate = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentCreate })));
 const BulkPaymentDetail = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BulkPaymentDetail })));
+const BatchListScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchListScreen })));
+const BatchDetailScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchDetailScreen })));
+const BatchCreateScreen = lazy(() => import("./mobile/screens/payments").then(m => ({ default: m.BatchCreateScreen })));
 const MobileClientsScreen = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientsScreen })));
 const DesktopClientsScreen = lazy(() => import("./desktop/screens/clients").then(m => ({ default: m.DesktopClientsScreen })));
 // Sur desktop, la création s'ouvre PAR-DESSUS la liste (la liste reste
@@ -94,12 +98,27 @@ const PaymentDetailsPage = lazy(() => import("./pages/PaymentDetailsPage"));
 const MobileCreateClient = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileCreateClient })));
 const MobileClientLedger = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLedger })));
 const MobileClientBeneficiaries = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientBeneficiaries })));
+// Refonte v2 — fiche client : colis, crédit/débit, identité, téléphones, étiquette (mobile ; l'ordinateur garde ses écrans).
+const MobileClientParcelsV2 = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientParcelsV2 })));
+const MobileClientAdjust = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientAdjust })));
+const MobileClientIdentity = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientIdentity })));
+const MobileClientPhones = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientPhones })));
+const MobileClientLabel = lazy(() => import("./mobile/screens/clients").then(m => ({ default: m.MobileClientLabel })));
 const MobileMoreScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileMoreScreen })));
 const DesktopMoreScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopMoreScreen })));
 const DesktopHistoryScreen = lazy(() => import("./desktop/screens/more").then(m => ({ default: m.DesktopHistoryScreen })));
-const MobileRatesScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesScreen })));
-const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileRatesMarketScreen })));
+const MobileRatesScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesScreen })));
+const MobileRatesMarketScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesMarketScreen })));
+const MobileRatesPublishScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesPublishScreen })));
+const MobileRatesCountriesScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesCountriesScreen })));
+const MobileRatesCountryScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesCountryScreen })));
+const MobileRatesSettingsScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesSettingsScreen })));
+const MobileRatesHistoryScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesHistoryScreen })));
+const MobileRatesSimulatorScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesSimulatorScreen })));
+const MobileRatesQuoteScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesQuoteScreen })));
+const MobileRatesFlyerScreen = lazy(() => import("./mobile/screens/rates").then(m => ({ default: m.MobileRatesFlyerScreen })));
 const MobileProofsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileProofsScreen })));
+const OpsProofsScreen = lazy(() => import("./mobile/screens/operations").then(m => ({ default: m.ProofsScreen })));
 const MobileHistoryScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileHistoryScreen })));
 const MobileNotificationsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileNotificationsScreen })));
 const TeamScreen = lazy(() => import("./components/team/TeamScreen").then(m => ({ default: m.TeamScreen })));
@@ -108,6 +127,14 @@ const TeamMemberScreen = lazy(() => import("./components/team/TeamMemberScreen")
 const SalesBoard = lazy(() => import("./components/team/SalesBoard").then(m => ({ default: m.SalesBoard })));
 const SalesCommercial = lazy(() => import("./components/team/SalesCommercial").then(m => ({ default: m.SalesCommercial })));
 const ProspectClaims = lazy(() => import("./components/team/ProspectClaims").then(m => ({ default: m.ProspectClaims })));
+// Refonte v2 — Équipe & ventes et sources, sur téléphone (l'ordinateur garde les écrans ci-dessus).
+const TeamMembersV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamMembersV2 })));
+const TeamMemberV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamMemberV2 })));
+const TeamNewAccessV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.TeamNewAccessV2 })));
+const SalesBoardV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SalesBoardV2 })));
+const SalesCommercialV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SalesCommercialV2 })));
+const ClaimsV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.ClaimsV2 })));
+const SourcesV2 = lazy(() => import("./mobile/screens/team").then(m => ({ default: m.SourcesV2 })));
 const DesktopRatesScreen = lazy(() => import("./desktop/screens/rates").then(m => ({ default: m.DesktopRatesScreen })));
 const DesktopSupportScreen = lazy(() => import("./desktop/screens/support").then(m => ({ default: m.DesktopSupportScreen })));
 const MobileSettingsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileSettingsScreen })));
@@ -119,6 +146,8 @@ const MobilePasskeysScreen = lazy(() => import("./mobile/screens/more").then(m =
 const MobileChangePasswordScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileChangePasswordScreen })));
 const MobileBriefsScreen = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileBriefsScreen })));
 const MobileAdminProfile = lazy(() => import("./mobile/screens/more").then(m => ({ default: m.MobileAdminProfile })));
+const MobileMeScreen = lazy(() => import("./mobile/screens/more/MeScreen").then(m => ({ default: m.MeScreen })));
+const MobileStaffSearch = lazy(() => import("./mobile/screens/search/StaffSearchScreen").then(m => ({ default: m.StaffSearchScreen })));
 const MobileSupportListScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportListScreen })));
 const MobileSupportConversationScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportConversationScreen })));
 const MobileSupportStatsScreen = lazy(() => import("./mobile/screens/support").then(m => ({ default: m.MobileSupportStatsScreen })));
@@ -127,8 +156,15 @@ const MobileQuickRepliesScreen = lazy(() => import("./mobile/screens/support").t
 
 // ── AI Assistant (Directeur des Opérations) ────────────────────
 const MobileAssistantScreen = lazy(() => import("./mobile/screens/assistant").then(m => ({ default: m.MobileAssistantScreen })));
+// ── Douane, espace équipe — refonte mobile v2 (le desktop garde les pages d'avant) ──
+const CustomsHomeV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.CustomsHomeV2 })));
+const CustomsReviewV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.ReviewV2 })));
+const CustomsAuditV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.AuditV2 })));
+const CustomsNoticesV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.NoticesV2 })));
+const CustomsRoutesV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.RoutesV2 })));
+const CustomsSimulatorV2 = lazy(() => import("./mobile/screens/customs").then(m => ({ default: m.SimulatorV2 })));
 
-const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryHome })));
+const MobileTreasuryHome = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.TreasuryTab })));
 // Trésorerie desktop : UN écran à quatre vues (docs/admin-redesign/07). Les
 // anciennes routes par-page pointent sur la vue correspondante via initialView.
 const DesktopTreasuryScreen = lazy(() => import("./desktop/screens/treasury").then(m => ({ default: m.DesktopTreasuryScreen })));
@@ -140,6 +176,7 @@ const MobileCargoReception = lazy(() => import("./mobile/screens/cargo").then(m 
 const MobileCargoDepositDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoDepositDetail })));
 const MobileCargoLoadParcels = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoLoadParcels })));
 const MobileCargoQuote = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoQuote })));
+const MobileCargoParcel = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoParcel })));
 const MobileCargoAir = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAir })));
 const MobileCargoAirForm = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirForm })));
 const MobileCargoAirDetail = lazy(() => import("./mobile/screens/cargo").then(m => ({ default: m.MobileCargoAirDetail })));
@@ -155,19 +192,25 @@ const DesktopCargoTrack = lazy(() => import("./desktop/screens/cargo").then(m =>
 const DesktopCargoMap = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoMap })));
 const DesktopCargoDossier = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoDossier })));
 const DesktopCargoReception = lazy(() => import("./desktop/screens/cargo").then(m => ({ default: m.DesktopCargoReception })));
-const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileTreasuryDashboard })));
-const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewPurchase })));
-const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileNewSale })));
-const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartiesScreen })));
-const MobileTreasuryCounterpartyEdit = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileCounterpartyEdit })));
-const MobileTreasuryAccounts = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileAccountsScreen })));
-const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileInventoryScreen })));
-const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileOperationsHistory })));
-const MobileTreasuryPurchaseDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchaseDetail })));
-const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSaleDetail })));
-const MobileTreasuryPurchasesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobilePurchasesList })));
-const MobileTreasurySalesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileSalesList })));
-const MobileTreasuryBalanceDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.MobileBalanceDashboard })));
+const MobileTreasuryDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.AnalysisScreen })));
+const MobileTreasuryNewPurchase = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.PurchaseFlow })));
+const MobileTreasuryNewSale = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.SaleFlow })));
+const MobileTreasuryCounterparties = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.CounterpartiesScreen })));
+const MobileTreasuryCounterparty = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.CounterpartyScreen })));
+const MobileTreasuryCounterpartyEdit = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.CounterpartyEditScreen })));
+const MobileTreasuryAccounts = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.AccountsScreen })));
+const MobileTreasuryAccount = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.AccountScreen })));
+const MobileTreasuryAdjust = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.AdjustFlow })));
+const MobileTreasuryCount = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.InventoryFlow })));
+const MobileTreasuryInventory = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.InventoriesScreen })));
+const MobileTreasuryLedger = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.LedgerScreen })));
+const MobileTreasuryOperations = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.OperationsScreen })));
+const MobileTreasuryOperation = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.OperationScreen })));
+const MobileTreasuryPurchaseDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.PurchaseScreen })));
+const MobileTreasurySaleDetail = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.SaleScreen })));
+const MobileTreasuryPurchasesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.PurchasesScreen })));
+const MobileTreasurySalesList = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.SalesScreen })));
+const MobileTreasuryBalanceDashboard = lazy(() => import("./mobile/screens/treasury").then(m => ({ default: m.BalanceVisualScreen })));
 
 // ── Lazy-loaded Agent Cash Screens ──────────────────────────
 import { AgentCashRouteWrapper } from "./mobile/components/agent-cash/AgentCashRouteWrapper";
@@ -218,6 +261,10 @@ const CommercialProspects = lazy(() => import("./components/sales/CommercialPros
 const CommercialProspectForm = lazy(() => import("./components/sales/CommercialProspectForm").then(m => ({ default: m.CommercialProspectForm })));
 const CommercialClients = lazy(() => import("./components/sales/CommercialClients").then(m => ({ default: m.CommercialClients })));
 const CommercialLogin = lazy(() => import("./components/sales/CommercialLogin").then(m => ({ default: m.CommercialLogin })));
+const ReceptionMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.ReceptionMore })));
+const WarehouseMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.WarehouseMore })));
+const AgentCashMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.AgentCashMore })));
+const CommercialMore = lazy(() => import("./mobile/screens/more/roleMore").then(m => ({ default: m.CommercialMore })));
 const CommercialPassword = lazy(() => import("./components/sales/CommercialPassword").then(m => ({ default: m.CommercialPassword })));
 
 // ── Dev-only showcase for form primitives (stripped in prod by dead-code elim) ──
@@ -335,47 +382,62 @@ const App = () => (
                 <Route path="/m/deposits/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopDepositsScreen />}><MobileDepositDetail /></AdminRouteWrapper>} />
                 <Route path="/m/payments" element={<AdminRouteWrapper desktop={<DesktopPaymentsScreen />}><MobileOperationsScreen tab="payments" /></AdminRouteWrapper>} />
                 <Route path="/m/payments/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopNewPayment />}><MobileNewPayment /></AdminRouteWrapper>} />
-                <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BulkPaymentCreate /></AdminRouteWrapper>} />
-                <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BulkPaymentDetail /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batches" element={<AdminRouteWrapper showTabBar={false}><BatchListScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/new" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentCreate desktop />}><BatchCreateScreen /></AdminRouteWrapper>} />
+                <Route path="/m/payments/batch/:batchId" element={<AdminRouteWrapper showTabBar={false} desktop={<BulkPaymentDetail desktop />}><BatchDetailScreen /></AdminRouteWrapper>} />
                 <Route path="/m/payments/:paymentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopPaymentsScreen />}><MobilePaymentDetail /></AdminRouteWrapper>} />
-                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper desktop={<MobileBeneficiaryEdit desktop />}><MobileBeneficiaryEdit /></AdminRouteWrapper>} />
-                <Route path="/m/dashboard" element={<AdminRouteWrapper desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/payments/:paymentId/edit-beneficiary" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileBeneficiaryEdit desktop />}><EditSupplierScreen /></AdminRouteWrapper>} />
+                <Route path="/m/dashboard/*" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopAnalyticsDashboard />}><MobileAnalyticsDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/clients" element={<AdminRouteWrapper desktop={<DesktopClientsScreen />}><MobileClientsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/clients/new" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCreateClient />}><MobileCreateClient /></AdminRouteWrapper>} />
                 {/* Sources & commerciaux : même écran (réactif) sur ordinateur et téléphone. */}
-                <Route path="/m/clients/sources" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/clients/sources/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><ClientSourcesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients/sources" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><SourcesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/clients/sources/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<ClientSourcesScreen />}><SourcesV2 /></AdminRouteWrapper>} />
                 <Route path="/m/clients/scan" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientScan desktop />}><MobileClientScan /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientDetail /></AdminRouteWrapper>} />
-                <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/ledger" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientLedger desktop />}><MobileClientLedger /></AdminRouteWrapper>} />
                 <Route path="/m/clients/:clientId/beneficiaries" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileClientBeneficiaries desktop />}><MobileClientBeneficiaries /></AdminRouteWrapper>} />
-                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false}><MobileClientParcels /></AdminRouteWrapper>} />
-                <Route path="/m/assistant" element={<AdminRouteWrapper desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/parcels" element={<AdminRouteWrapper showTabBar={false} desktop={<div className="mx-auto max-w-2xl"><MobileClientParcels /></div>}><MobileClientParcelsV2 /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/ajuster" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientAdjust /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/identite" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientIdentity /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/telephones" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientPhones /></AdminRouteWrapper>} />
+                <Route path="/m/clients/:clientId/etiquette" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopClientsScreen />}><MobileClientLabel /></AdminRouteWrapper>} />
+                <Route path="/m/assistant" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAssistantScreen desktop />}><MobileAssistantScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more" element={<AdminRouteWrapper desktop={<DesktopMoreScreen />}><MobileMoreScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/rates" element={<AdminRouteWrapper desktop={<DesktopRatesScreen />}><MobileRatesScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/rates/market" element={<AdminRouteWrapper desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><MobileProofsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/market" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="market" />}><MobileRatesMarketScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/publish" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesPublishScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/countries" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesCountriesScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/countries/:key" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="publish" />}><MobileRatesCountryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/settings" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="settings" />}><MobileRatesSettingsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/history" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen initialView="history" />}><MobileRatesHistoryScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/simulator" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesSimulatorScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/quote" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesQuoteScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/rates/flyer" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopRatesScreen />}><MobileRatesFlyerScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/proofs" element={<AdminRouteWrapper desktop={<MobileProofsScreen desktop />}><OpsProofsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/history" element={<AdminRouteWrapper desktop={<DesktopHistoryScreen />}><MobileHistoryScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/notifications" element={<AdminRouteWrapper desktop={<MobileNotificationsScreen desktop />}><MobileNotificationsScreen /></AdminRouteWrapper>} />
                 {/* Mes équipes (remplace « Administrateurs ») : les anciens liens y mènent. */}
-                <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamScreen /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewMember /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/ventes" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesBoard />}><SalesBoard /></AdminRouteWrapper>} />
+                <Route path="/m/equipe" element={<AdminRouteWrapper desktop={<TeamScreen />}><TeamMembersV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamNewMember />}><TeamNewAccessV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes" element={<AdminRouteWrapper desktop={<SalesBoard />}><SalesBoardV2 /></AdminRouteWrapper>} />
                 {/* Les fiches « À vérifier » (07/10) : un numéro saisi par un commercial est déjà celui d'un client. */}
-                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ProspectClaims /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercial /></AdminRouteWrapper>} />
-                <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberScreen /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes/a-verifier" element={<AdminRouteWrapper showTabBar={false} desktop={<ProspectClaims />}><ClaimsV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/ventes/:sourceId" element={<AdminRouteWrapper showTabBar={false} desktop={<SalesCommercial />}><SalesCommercialV2 /></AdminRouteWrapper>} />
+                <Route path="/m/equipe/:userId" element={<AdminRouteWrapper showTabBar={false} desktop={<TeamMemberScreen />}><TeamMemberV2 /></AdminRouteWrapper>} />
                 <Route path="/m/more/admins" element={<Navigate to="/m/equipe" replace />} />
                 <Route path="/m/more/admins/new" element={<Navigate to="/m/equipe/nouveau" replace />} />
                 <Route path="/m/more/admins/:adminId" element={<LegacyAdminRedirect />} />
                 <Route path="/m/more/settings" element={<AdminRouteWrapper desktop={<MobileSettingsScreen desktop />}><MobileSettingsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/payment-details" element={<AdminRouteWrapper desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/payment-details" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePaymentDetailsScreen desktop />}><MobilePaymentDetailsScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/shipping" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileShippingSettings desktop />}><MobileShippingSettings /></AdminRouteWrapper>} />
                 <Route path="/m/more/cargo-pricing" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoPricing desktop />}><MobileCargoPricing /></AdminRouteWrapper>} />
-                <Route path="/m/more/passkeys" element={<AdminRouteWrapper desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/passkeys" element={<AdminRouteWrapper showTabBar={false} desktop={<MobilePasskeysScreen desktop />}><MobilePasskeysScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/password" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileChangePasswordScreen desktop />}><MobileChangePasswordScreen /></AdminRouteWrapper>} />
                 <Route path="/m/more/briefs" element={<AdminRouteWrapper desktop={<MobileBriefsScreen desktop />}><MobileBriefsScreen /></AdminRouteWrapper>} />
-                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile" element={<AdminRouteWrapper desktop={<MobileAdminProfile desktop />}><MobileMeScreen /></AdminRouteWrapper>} />
+                <Route path="/m/more/profile/edit" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileAdminProfile desktop />}><MobileAdminProfile /></AdminRouteWrapper>} />
+                <Route path="/m/recherche" element={<AdminRouteWrapper showTabBar={false}><MobileStaffSearch /></AdminRouteWrapper>} />
 
                 {/* Support Chat — visible only to roles with canAccessSupportChat */}
                 <Route path="/m/support" element={<AdminRouteWrapper desktop={<DesktopSupportScreen />}><MobileSupportListScreen /></AdminRouteWrapper>} />
@@ -389,12 +451,12 @@ const App = () => (
                 <Route path="/m/cargo/track" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoTrack />}><MobileCargoTrack /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/map" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoMap />}><MobileCargoMap /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/cout" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoCout desktop />}><MobileCargoCout /></AdminRouteWrapper>} />
-                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomePage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><TariffSimulatorPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewPage /></AdminRouteWrapper>} />
-                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><NoticesPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><RoutesPage variant="admin" /></AdminRouteWrapper>} />
-                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><AuditReviewPage /></AdminRouteWrapper>} />
+                <Route path="/m/douane" element={<AdminRouteWrapper desktop={<CustomsHomePage variant="admin" desktop />}><CustomsHomeV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/simulateur" element={<AdminRouteWrapper showTabBar={false} desktop={<TariffSimulatorPage variant="admin" desktop />}><CustomsSimulatorV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/revue/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<CustomsReviewPage desktop />}><CustomsReviewV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/veille" element={<AdminRouteWrapper showTabBar={false} desktop={<NoticesPage variant="admin" desktop />}><CustomsNoticesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/routes" element={<AdminRouteWrapper showTabBar={false} desktop={<RoutesPage variant="admin" desktop />}><CustomsRoutesV2 /></AdminRouteWrapper>} />
+                <Route path="/m/douane/audit/:id" element={<AdminRouteWrapper showTabBar={false} desktop={<AuditReviewPage desktop />}><CustomsAuditV2 /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion" element={<AdminRouteWrapper desktop={<DesktopCargoAir />}><MobileCargoAir /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/nouveau" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/avion/:airId/modifier" element={<AdminRouteWrapper showTabBar={false} desktop={<MobileCargoAirForm desktop />}><MobileCargoAirForm /></AdminRouteWrapper>} />
@@ -404,40 +466,43 @@ const App = () => (
                 <Route path="/m/cargo/comptes/:accountId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoAccount /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception" element={<AdminRouteWrapper desktop={<DesktopCargoReception />}><MobileCargoReception /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId/devis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoQuote /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId/colis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoParcel /></AdminRouteWrapper>} />
+                <Route path="/m/cargo/reception/:depositId/colis/:parcelId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoParcel /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/reception/:depositId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoReception />}><MobileCargoDepositDetail /></AdminRouteWrapper>} />
                 {/* Sur desktop, le chargement se fait dans l'onglet Chargement du dossier (dialogue) : la route mobile y renvoie. */}
                 <Route path="/m/cargo/:shipmentId/charger-colis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoLoadParcels /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/cargo/:shipmentId/:tab" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopCargoDossier />}><MobileCargoDossier /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryHome /></AdminRouteWrapper>} />
-                {/* Vues desktop adressables. Le mobile garde ses propres routes plus bas :
-                    ses écrans par page sont validés et ne changent pas. */}
-                <Route path="/m/more/treasury/operations/:kind/:operationId" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/analysis" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/ledger" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
-                {/* Desktop : les deux saisies s'ouvrent en fenêtre PAR-DESSUS l'écran
-                    Trésorerie, qui les rend lui-même d'après l'URL — même élément
-                    que les autres vues, donc l'écran n'est pas remonté. Le mobile
-                    garde ses pages pleines. */}
+                {/* Mobile v2 : chaque route rend son écran (maquettes 07-tresorerie) ; sur
+                    ordinateur, toutes rendent la même coquille, qui lit l'adresse — même
+                    élément, donc l'écran n'est pas remonté (les saisies s'ouvrent par-dessus). */}
+                <Route path="/m/more/treasury/operations/:kind/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperation /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/analysis" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/ledger" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryLedger /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/dashboard" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchase" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryNewPurchase /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sale" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryNewSale /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/accounts/:accountId" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparties /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterparty /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/counterparties/:counterpartyId/edit" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCounterpartyEdit /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccounts /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts/:accountId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryAccount /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts/:accountId/adjust" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryAdjust /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/accounts/:accountId/inventory" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryCount /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/inventory" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryInventory /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/operations" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryOperations /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/purchases" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchasesList /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/purchases/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryPurchaseDetail /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
-                <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper desktop={<DesktopTreasuryScreen />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/sales" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasurySalesList /></AdminRouteWrapper>} />
+                <Route path="/m/more/treasury/balance-dashboard" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasuryBalanceDashboard /></AdminRouteWrapper>} />
                 <Route path="/m/more/treasury/sales/:operationId" element={<AdminRouteWrapper showTabBar={false} desktop={<DesktopTreasuryScreen />}><MobileTreasurySaleDetail /></AdminRouteWrapper>} />
 
                 {/* Agent Cash Routes */}
                 <Route path="/a/login" element={<AgentCashRouteWrapper requireAuth={false} showTabBar={false}><AgentCashLogin /></AgentCashRouteWrapper>} />
                 <Route path="/a" element={<AgentCashRouteWrapper><AgentCashPayments /></AgentCashRouteWrapper>} />
-                <Route path="/a/scan" element={<AgentCashRouteWrapper><AgentCashScanner /></AgentCashRouteWrapper>} />
+                <Route path="/a/plus" element={<AgentCashRouteWrapper><AgentCashMore /></AgentCashRouteWrapper>} />
+                <Route path="/a/scan" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashScanner /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId" element={<AgentCashRouteWrapper><AgentCashPaymentDetail /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/confirm" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashConfirm /></AgentCashRouteWrapper>} />
                 <Route path="/a/payment/:paymentId/success" element={<AgentCashRouteWrapper showTabBar={false}><AgentCashSuccess /></AgentCashRouteWrapper>} />
@@ -456,6 +521,7 @@ const App = () => (
                 <Route path="/r/deposit/:depositId/done" element={<ReceptionRouteWrapper><ReceptionDone /></ReceptionRouteWrapper>} />
                 <Route path="/r/pending" element={<ReceptionRouteWrapper><ReceptionPending /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients" element={<ReceptionRouteWrapper><ReceptionClients /></ReceptionRouteWrapper>} />
+                <Route path="/r/plus" element={<ReceptionRouteWrapper><ReceptionMore /></ReceptionRouteWrapper>} />
                 <Route path="/r/clients/:userId" element={<ReceptionRouteWrapper><ReceptionClientCard /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets" element={<ReceptionRouteWrapper><ReceptionPackages /></ReceptionRouteWrapper>} />
                 <Route path="/r/paquets/emballer" element={<ReceptionRouteWrapper showTabBar={false}><ReceptionPackTodo /></ReceptionRouteWrapper>} />
@@ -468,6 +534,7 @@ const App = () => (
                 <Route path="/w/arrivees/:kind/:id/colis/:parcelId" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinParcel /></WarehouseRouteWrapper>} />
                 <Route path="/w/arrivees/:kind/:id/bilan" element={<WarehouseRouteWrapper showTabBar={false}><WarehouseCheckinDone /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise" element={<WarehouseRouteWrapper><WarehousePickup /></WarehouseRouteWrapper>} />
+                <Route path="/w/plus" element={<WarehouseRouteWrapper><WarehouseMore /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/liste" element={<WarehouseRouteWrapper><WarehouseWaiting /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePickupClient /></WarehouseRouteWrapper>} />
                 <Route path="/w/remise/:code/encaisser" element={<WarehouseRouteWrapper showTabBar={false}><WarehousePay /></WarehouseRouteWrapper>} />
@@ -481,6 +548,7 @@ const App = () => (
                 <Route path="/v/prospects/new" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/prospects/:id" element={<CommercialRouteWrapper showTabBar={false}><CommercialProspectForm /></CommercialRouteWrapper>} />
                 <Route path="/v/clients" element={<CommercialRouteWrapper><CommercialClients /></CommercialRouteWrapper>} />
+                <Route path="/v/plus" element={<CommercialRouteWrapper><CommercialMore /></CommercialRouteWrapper>} />
                 <Route path="/v/password" element={<CommercialRouteWrapper showTabBar={false} bare><CommercialPassword /></CommercialRouteWrapper>} />
 
                 {/* Dev-only form primitives showcase. Only mounted in dev builds. */}

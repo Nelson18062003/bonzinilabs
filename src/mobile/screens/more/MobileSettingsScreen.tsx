@@ -7,11 +7,21 @@ import { Palette, Fingerprint, ChevronRight, Lock, Warehouse, Scale, Banknote } 
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, Card, Row, SectionTitle, StatusPill, roleMeta } from '@/mobile/designKit';
 import { isNativeApp } from '@/lib/nativeApp';
+import { supportedLanguages, languageNames, type SupportedLanguage } from '@/i18n';
+import { persistPreferredLocale } from '@/lib/persistLocale';
+import { BoxSegmented } from '@/mobile/designKit';
+import { SettingsV2 } from './SettingsV2';
 
+/** Téléphone : la v2 (SettingsV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
-  const { t } = useTranslation('common');
+  return desktop ? <LegacyMobileSettingsScreen desktop /> : <SettingsV2 />;
+}
+
+function LegacyMobileSettingsScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  const { t, i18n } = useTranslation('common');
   const navigate = useNavigate();
   const { currentUser, profile } = useAdminAuth();
+  const lang = (i18n.language?.slice(0, 2) ?? 'fr') as SupportedLanguage;
   const role = currentUser?.role;
 
   return (
@@ -39,6 +49,13 @@ export function MobileSettingsScreen({ desktop = false }: { desktop?: boolean } 
               </p>
             </div>
             <ThemeToggle />
+            <p className={cn('mb-2 mt-5 text-[16px] font-semibold', TEXT.strong)}>{t('language', { defaultValue: 'Langue' })}</p>
+            <BoxSegmented<SupportedLanguage>
+              ariaLabel={t('language', { defaultValue: 'Langue' })}
+              options={supportedLanguages.map((l) => ({ value: l, label: languageNames[l] }))}
+              value={lang}
+              onChange={(l) => { void i18n.changeLanguage(l); void persistPreferredLocale(l); }}
+            />
             <p className={cn('mt-3 text-[16px]', TEXT.muted)}>
               {t('systemModeNote', { defaultValue: "Le mode Système s'adapte automatiquement aux préférences de votre appareil." })}
             </p>

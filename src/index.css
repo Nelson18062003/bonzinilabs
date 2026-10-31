@@ -1793,9 +1793,10 @@
   --s-ink-4: 220 4% 56%;
   --s-line: 220 9% 92.5%;
   --s-line-strong: 216 10% 87%;
-  --s-accent: 258 84% 58%;
-  --s-accent-ink: 258 66% 47%;
-  --s-accent-tint: 258 100% 97.5%;
+  /* Refonte v2 (21/10/2026) : plus de violet dans l’interface — l’accent devient l’encre. */
+  --s-accent: 0 0% 17%;
+  --s-accent-ink: 0 0% 12%;
+  --s-accent-tint: 0 0% 96%;
   --s-green: 148 70% 29%;
   --s-green-tint: 143 48% 94.5%;
   --s-orange: 27 90% 39%;
@@ -1850,9 +1851,9 @@
   --s-ink-4: 220 4% 51%;
   --s-line: 216 5% 19%;
   --s-line-strong: 220 5% 25%;
-  --s-accent: 258 92% 74%;
-  --s-accent-ink: 258 95% 83%;
-  --s-accent-tint: 258 40% 21%;
+  --s-accent: 0 0% 89%;
+  --s-accent-ink: 0 0% 96%;
+  --s-accent-tint: 0 0% 22%;
   --s-green: 145 55% 58%;
   --s-green-tint: 147 35% 15%;
   --s-orange: 31 92% 63%;
@@ -1934,16 +1935,17 @@
  * ici, seul `data-invalid` (posé par le formulaire) le dit en rouge. */
 .sales-ui .s-phone input[type="tel"],
 .sales-ui .s-phone button[aria-haspopup="listbox"] {
-  height: 52px; border-radius: 14px; font-size: 17px;
-  background-color: hsl(var(--s-field)); color: hsl(var(--s-ink));
-  border-color: transparent; box-shadow: none;
+  /* Refonte v2 (21/10/2026) : le champ du kit mobile — blanc, bord #949494, rayon 8, 56 px. */
+  height: 56px; border-radius: 8px; font-size: 17px;
+  background-color: #fff; color: hsl(var(--s-ink));
+  border: 1px solid #949494; box-shadow: none;
   transition: background-color 0.15s, border-color 0.15s, box-shadow 0.2s;
 }
 .sales-ui .s-phone input[type="tel"]::placeholder { color: hsl(var(--s-ink-4)); }
 .sales-ui .s-phone input[type="tel"]:focus,
 .sales-ui .s-phone button[aria-haspopup="listbox"]:focus-visible,
 .sales-ui .s-phone button[aria-expanded="true"] {
-  background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-accent)); box-shadow: 0 0 0 4px hsl(var(--s-accent) / 0.14);
+  background-color: hsl(var(--s-surface)); border-color: #2C2C2C; box-shadow: 0 0 0 1px #2C2C2C;
 }
 .sales-ui .s-phone[data-invalid="true"] input[type="tel"] { background-color: hsl(var(--s-surface)); border-color: hsl(var(--s-red)); }
 .sales-ui .s-phone[data-invalid="true"] input[type="tel"]:focus { box-shadow: 0 0 0 4px hsl(var(--s-red) / 0.12); }

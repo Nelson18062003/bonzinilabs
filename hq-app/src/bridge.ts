@@ -34,10 +34,12 @@ export type BridgeMessage =
   | { type: 'scan-open'; continuous: boolean }
   | { type: 'scan-close' }
   | { type: 'reception-location'; location: ReceptionLocation }
+  /** La carte « Moi » en tête de « Plus » : ouvrir l'écran natif Moi. */
+  | { type: 'open-me' }
   | { type: 'error'; message: string };
 
 /** Les messages que l'écran principal traite lui-même (les autres : fichiers, partage — files.ts). */
-export const SITE_MESSAGE_TYPES = ['auth', 'route', 'scan-open', 'scan-close', 'theme', 'reception-location'] as const;
+export const SITE_MESSAGE_TYPES = ['auth', 'route', 'scan-open', 'scan-close', 'theme', 'reception-location', 'open-me'] as const;
 export type SiteMessage = Extract<BridgeMessage, { type: (typeof SITE_MESSAGE_TYPES)[number] }>;
 export function isSiteMessage(m: BridgeMessage): m is SiteMessage {
   return (SITE_MESSAGE_TYPES as readonly string[]).includes(m.type);

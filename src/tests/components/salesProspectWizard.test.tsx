@@ -376,7 +376,7 @@ describe('Assistant — enregistrement', () => {
   it('le récapitulatif montre tout ; « Enregistrer » envoie tous les champs, numéros en E.164', () => {
     mount();
     fillAll();
-    expect(heading()).toBe('Tout est juste ?');
+    expect(heading()).toBe('Tout est bon ?');
     expect(screen.getByText('+237 6 99 12 34 56')).toBeTruthy();
     expect(screen.getByText('+86 138 1234 5678')).toBeTruthy();
     expect(screen.getByText('12 mars 1985 (41 ans)', { exact: false })).toBeTruthy();
@@ -404,12 +404,13 @@ describe('Assistant — enregistrement', () => {
   it('« Modifier » depuis le récapitulatif rouvre la section, puis y revient', () => {
     mount();
     fillAll();
-    fireEvent.click(screen.getByRole('button', { name: 'Modifier l’activité' }));
+    // Chaque ligne du récapitulatif rouvre son étape.
+    fireEvent.click(screen.getByRole('button', { name: /^Activité/ }));
     expect(heading()).toBe('Où est installée son activité ?');
     fireEvent.click(screen.getByRole('button', { name: 'Yaoundé' }));
     fireEvent.click(screen.getByRole('button', { name: 'Revenir au récapitulatif' }));
-    expect(heading()).toBe('Tout est juste ?');
-    expect(screen.getByText('Yaoundé')).toBeTruthy();
+    expect(heading()).toBe('Tout est bon ?');
+    expect(screen.getByRole('button', { name: /^Activité.*Yaoundé/ })).toBeTruthy();
   });
 
   it('un refus sur un AUTRE numéro : sous la ligne de ce numéro, pas sous le principal', () => {
@@ -466,11 +467,12 @@ describe('Assistant — enregistrement', () => {
     mountBoth();
     fillAll();
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Paul Etoga');
-    const notice = screen.getByText('Prospect enregistré, à vérifier').closest('[role="status"]') as HTMLElement;
+    expect(screen.getByRole('heading', { name: 'Paul Etoga' })).toBeTruthy();
+    const notice = screen.getByText('Enregistré, à vérifier').closest('[role="status"]') as HTMLElement;
     expect(notice.textContent).toMatch(/Un de ses numéros est déjà celui d’un client Bonzini/);
     expect(notice.textContent).toMatch(/elle vous attribuera ce client si c’est bien vous qui l’avez convaincu/);
     expect(screen.queryByRole('radiogroup', { name: 'Statut du prospect' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: "Plus d'actions" }));
     expect(screen.queryByRole('button', { name: /Marquer perdu/ })).toBeNull();
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
   });
@@ -480,7 +482,7 @@ describe('Assistant — enregistrement', () => {
     mountBoth();
     fillAll();
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Bruno Ekané');
+    expect(screen.getByRole('heading', { name: 'Bruno Ekané' })).toBeTruthy();
     expect(screen.queryByText(/à vérifier/i)).toBeNull();
   });
 });
@@ -542,9 +544,9 @@ describe('Assistant — numéros vérifiés en direct', () => {
     cont();
     cont();
     cont();
-    expect(heading()).toBe('Tout est juste ?');
-    expect(screen.getByText('Un numéro est déjà celui d’un client Bonzini')).toBeTruthy();
-    expect(screen.getByText(/La fiche sera enregistrée « À vérifier »/)).toBeTruthy();
+    expect(heading()).toBe('Tout est bon ?');
+    expect(within(screen.getByRole('status')).getByText('Déjà client · partira « À vérifier »')).toBeTruthy();
+    expect(screen.queryByText(/Numéro libre/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le prospect' }));
     expect(h.create).toHaveBeenCalledTimes(1);
   });
@@ -608,7 +610,7 @@ describe('Assistant — numéros vérifiés en direct', () => {
     fillAll();
     // La réponse a changé entre-temps (un collègue a saisi ce numéro) : au retour sur l'étape, elle arrive et bloque.
     h.checks['+237699123456'] = { status: 'other' };
-    fireEvent.click(screen.getByRole('button', { name: 'Modifier les numéros et l’email' }));
+    fireEvent.click(screen.getByRole('button', { name: /^WhatsApp/ }));
     pause();
     expect(alerts()).toContain('Déjà suivi par un autre commercial');
     fireEvent.click(screen.getByRole('button', { name: 'Revenir au récapitulatif' }));

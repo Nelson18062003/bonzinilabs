@@ -31,6 +31,7 @@ import { getDateFnsLocale } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Locale } from 'date-fns';
 import { SURFACE, TEXT, Card, StatCard, Holder, ScreenLoader, Chip } from '@/mobile/designKit';
+import { SupportStatsV2 } from './SupportStatsV2';
 
 type Period = 7 | 14 | 30;
 
@@ -50,7 +51,12 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
 } as const;
 
+/** Téléphone : la v2 (SupportStatsV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileSupportStatsScreen({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacySupportStats desktop /> : <SupportStatsV2 />;
+}
+
+function LegacySupportStats({ desktop = false }: { desktop?: boolean } = {}) {
   const { t } = useTranslation('support');
   const navigate = useNavigate();
   const { hasPermission } = useAdminAuth();

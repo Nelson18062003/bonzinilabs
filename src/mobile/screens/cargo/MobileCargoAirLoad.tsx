@@ -1,42 +1,40 @@
 // ============================================================
-// Mobile admin — Cargo › Avion › charger des colis reçus dans cet avion.
-//
-// Même geste que pour une boîte : la liste de ce qui attend (le bureau,
-// Air cargo, en premier), dépôt par dépôt ; on coche ; le bas additionne ;
-// on charge. Un colis non soldé se charge quand même — c'est signalé.
+// Mobile admin — Cargo › Avion › charger des colis reçus dans cet avion
+// (refonte v2, maquette 10/39). La douchette ou la saisie en haut ; ce qui
+// attend (le bureau, Air cargo, en premier), client par client, avec la
+// photo ; on coche (toucher le nom d'un client coche tous ses colis) ; le
+// bouton additionne et charge. Un colis non soldé se charge quand même —
+// c'est signalé.
 // ============================================================
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { MobileHeader } from '@/mobile/components/layout/MobileHeader';
-import { useAirLoadParcels, useAirLoadableParcels, useAirShipment } from '@/hooks/useAirShipments';
-import { awbLabel, flightSentence, parcelUnpaid, type AirParcel } from '@/lib/airShipment';
-import { clientFullName, formatCbm, formatDims, formatKg } from '@/lib/reception';
+import { useAirLoadParcels, useAirLoadableParcels } from '@/hooks/useAirShipments';
+import { parcelUnpaid, type AirParcel } from '@/lib/airShipment';
+import { clientFullName, formatCbm, formatKg } from '@/lib/reception';
 import { cn } from '@/lib/utils';
-import { SURFACE, TEXT, TYPE, Card, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
-import { LocationMark, formatDateTime, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { BigButton, Dock, EmptyLine, ScreenLoader, ScreenTop, SURFACE, TEXT } from '@/mobile/designKit';
+import { ParcelThumb, useReceptionLabels } from '@/mobile/components/reception/bits';
+import { TickBox } from '@/mobile/components/reception/packageBits';
 import { ParcelScanBox, type ScanResult } from '@/mobile/components/cargo/ParcelScanBox';
 import { findScannedParcel } from '@/lib/warehouse';
-
-const BOX = (on: boolean) => cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border', on ? 'border-[#2C2C2C] bg-[#2C2C2C] text-white dark:border-[#E3E3E3] dark:bg-[#E3E3E3] dark:text-[#1E1E1E]' : 'border-[#949494]');
 
 export function MobileCargoAirLoad() {
   const navigate = useNavigate();
   const { airId } = useParams<{ airId: string }>();
   const { hasPermission } = useAdminAuth();
   const labels = useReceptionLabels();
-  const { data: a } = useAirShipment(airId);
   const { data, isLoading } = useAirLoadableParcels(airId);
   const load = useAirLoadParcels();
   const [picked, setPicked] = useState<Set<string>>(new Set());
 
   const groups = useMemo(() => {
-    const by = new Map<string, { deposit_no: string; opened_at?: string; location?: AirParcel['location']; client: AirParcel['client']; parcels: AirParcel[] }>();
+    const by = new Map<string, { key: string; client: AirParcel['client']; parcels: AirParcel[] }>();
     for (const p of data ?? []) {
-      const g = by.get(p.deposit_id) ?? { deposit_no: p.deposit_no, opened_at: p.opened_at, location: p.location, client: p.client, parcels: [] };
-      g.parcels.push(p); by.set(p.deposit_id, g);
+      const key = p.client?.user_id ?? '∅';
+      const g = by.get(key) ?? { key, client: p.client, parcels: [] };
+      g.parcels.push(p); by.set(key, g);
     }
     return [...by.values()];
   }, [data]);
@@ -46,7 +44,6 @@ export function MobileCargoAirLoad() {
 
   const chosen = data.filter((p) => picked.has(p.id));
   const kg = chosen.reduce((s, p) => s + Number(p.weight_kg ?? 0), 0);
-  const cbm = chosen.reduce((s, p) => s + Number(p.cbm ?? 0), 0);
   const toggle = (id: string) => setPicked((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleGroup = (ps: AirParcel[]) => setPicked((s) => { const n = new Set(s); const every = ps.every((p) => n.has(p.id)); for (const p of ps) { if (every) n.delete(p.id); else n.add(p.id); } return n; });
   // Un carton scanné (douchette ou caméra) se coche ; le rescanner ne le décoche pas.
@@ -66,53 +63,49 @@ export function MobileCargoAirLoad() {
   };
 
   return (
-    <div className={cn('flex h-[100dvh] flex-col', SURFACE.canvas)}>
-      <MobileHeader title="Charger dans l'avion" subtitle={a ? `${awbLabel(a)} · ${flightSentence(a)}` : undefined} showBack backTo={`/m/cargo/avion/${airId}`} />
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-6 pt-4">
-        {data.length === 0 ? (
-          <Card className={cn('text-center', SURFACE.inset, 'border-0')}><p className={cn(TYPE.body, TEXT.muted)}>Rien n'attend au bureau ni à l'entrepôt.</p></Card>
-        ) : (
+    <div className={cn('flex min-h-[100dvh] flex-col', SURFACE.canvas)}>
+      <ScreenTop title="Charger dans l'avion" backTo={`/m/cargo/avion/${airId}`} step={data.length ? `${chosen.length}/${data.length}` : undefined} />
+      <div className="flex-1 px-5 pb-6 pt-4">
+        {data.length === 0 ? <EmptyLine>Rien n'attend au bureau ni à l'entrepôt.</EmptyLine> : (
           <>
-            <p className={cn(TYPE.body, TEXT.muted)}>{data.length} colis attendent. Le bureau (Air cargo) en premier. Scannez ou cochez ceux qui montent dans cet avion.</p>
-            <ParcelScanBox onScan={onScan} counter={`${chosen.length} / ${data.length}`} />
+            <ParcelScanBox onScan={onScan} placeholder="Scannez ou tapez RC-…" />
             {groups.map((g) => {
               const every = g.parcels.every((p) => picked.has(p.id));
+              const name = g.client ? clientFullName(g.client) : 'Sans client';
               return (
-                <Card key={g.deposit_no} className="py-0">
-                  <button type="button" onClick={() => toggleGroup(g.parcels)} className="flex w-full items-center gap-3 py-3 text-left">
-                    <span className={BOX(every)}>{every && <Check className="h-4 w-4" strokeWidth={3} />}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className={cn('block tabular-nums', TYPE.bodyStrong, TEXT.strong)}>{g.deposit_no}{g.client ? ` · ${clientFullName(g.client)}` : ''}</span>
-                      <span className={cn('mt-0.5 flex items-center gap-2', TYPE.small, TEXT.muted)}>{g.location && <LocationMark location={g.location} size={18} />}{g.opened_at ? formatDateTime(g.opened_at) : ''} · {g.parcels.length} colis{g.parcels.some(parcelUnpaid) ? ' · non soldé' : ' · payé'}</span>
-                    </span>
+                <section key={g.key} className="pt-5">
+                  <button type="button" onClick={() => toggleGroup(g.parcels)} aria-pressed={every}
+                    className={cn('text-left text-[14px] font-semibold uppercase tracking-[0.06em]', TEXT.muted)}>
+                    {name} · {g.parcels.length} colis
                   </button>
                   {g.parcels.map((p) => {
                     const on = picked.has(p.id);
                     return (
-                      <button key={p.id} type="button" onClick={() => toggle(p.id)} aria-pressed={on} className={cn('flex w-full items-center gap-3 border-t py-3 text-left', SURFACE.divider)}>
-                        <span className={BOX(on)}>{on && <Check className="h-4 w-4" strokeWidth={3} />}</span>
+                      <button key={p.id} type="button" onClick={() => toggle(p.id)} role="checkbox" aria-checked={on}
+                        className={cn('flex w-full items-center gap-3.5 border-b py-3 text-left last:border-b-0', SURFACE.divider)}>
+                        <TickBox on={on} />
+                        <ParcelThumb path={p.photo_path} />
                         <span className="min-w-0 flex-1">
-                          <span className={cn('block', TYPE.body, TEXT.strong)}><span className={cn('mr-2 tabular-nums', TEXT.muted)}>{String(p.seq).padStart(2, '0')}</span>{p.description || labels.kind(p.kind)}</span>
-                          <span className={cn('mt-0.5 block tabular-nums', TYPE.small, TEXT.muted)}>{formatKg(p.weight_kg)} · {formatDims(p)} · {formatCbm(p.cbm)}</span>
+                          <span className={cn('block text-[17px] font-semibold tabular-nums', TEXT.strong)}>{p.parcel_no}</span>
+                          <span className={cn('block truncate text-[15px] tabular-nums', TEXT.muted)}>
+                            {[p.description || labels.kind(p.kind), formatKg(p.weight_kg)].join(' · ')}
+                            {parcelUnpaid(p) && <span className="font-semibold text-[#975102] dark:text-[#E8B931]"> · non soldé</span>}
+                          </span>
                         </span>
                       </button>
                     );
                   })}
-                </Card>
+                </section>
               );
             })}
           </>
         )}
       </div>
-      <div className={cn('shrink-0 space-y-3 border-t px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4', SURFACE.canvas, SURFACE.divider)}>
-        <div className={cn('flex items-center justify-between', TYPE.body)}>
-          <span className={TEXT.muted}>Sélection</span>
-          <span className={cn('font-semibold tabular-nums', TEXT.strong)}>{chosen.length} colis · {formatKg(kg)} · {formatCbm(cbm)}</span>
-        </div>
-        <PrimaryPill onClick={() => void submit()} disabled={chosen.length === 0} loading={load.isPending} className="h-14 w-full text-[17px]">
-          Charger {chosen.length > 0 ? `${chosen.length} colis` : ''} dans l'avion
-        </PrimaryPill>
-      </div>
+      <Dock>
+        <BigButton onClick={() => void submit()} disabled={chosen.length === 0} loading={load.isPending}>
+          {chosen.length > 0 ? `Charger ${chosen.length} colis · ${formatKg(kg)}` : 'Charger'}
+        </BigButton>
+      </Dock>
     </div>
   );
 }

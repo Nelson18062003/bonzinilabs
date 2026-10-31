@@ -18,27 +18,34 @@ const base = {
   eta_manual: null, eta_manual_at: null, eta_manual_note: null, route_calls: [] as Json[],
 } as const;
 
+/* Dates relatives au jour de la capture : la flotte est toujours « en mer » (maquettes v2, lot 04). */
+const DAY = 86_400_000;
+const T0 = Date.now();
+const iso = (days: number) => new Date(T0 + days * DAY).toISOString();
+const day = (days: number) => iso(days).slice(0, 10);
+
 const SHIPMENTS: CargoShipment[] = [
-  { ...base, id: '1', client_label: 'PRC', carrier: 'CMA_CGM', bl_number: 'GGZ3133535', container_number: 'CMAU6126032', container_iso: null, pol_name: null, pol_unlocode: null, pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: '2026-08-04', eta_promised: '2026-09-17', etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 6650, status: 'UNKNOWN', last_event_at: null, last_event_label: null, last_synced_at: null },
-  { ...base, freight_note: 'Chiffre du tableau du transitaire du 11/09/2026, jamais vérifié. Le BESC porte 3 000 USD de fret.',
-    eta_manual: '2026-10-03T21:00:00Z', eta_manual_at: '2026-10-03T22:00:00Z', eta_manual_note: 'Au mouillage devant Kribi le 03/10 au soir (Flexport Atlas). Escale prévue du 03 au 04/10. Maersk annonçait le 07/10.',
-    besc_number: 'MI2661716',
+  { ...base, id: '1', client_label: 'Aïcha Diallo', carrier: 'COSCO', bl_number: 'COSU6120974', container_number: 'CSNU6120974', pol_name: 'Nansha', pol_unlocode: 'CNNSA', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(6), eta_promised: day(48), etd_actual: null, eta_carrier: null, vessel_name: null, vessel_imo: null, vessel_mmsi: null, voyage: null, freight_usd: 4650, status: 'UNKNOWN', last_event_at: null, last_event_label: null, last_synced_at: null },
+  { ...base, freight_note: null, freight_paid: true,
+    eta_manual: null, besc_number: null,
     route_calls: [
-      { id: 'nsa', name: 'Nansha', unlocode: 'CNNSA', atd: '2026-08-15T23:38:00Z', note: 'Départ du navire (Maersk).' },
-      { id: 'abj', name: 'Abidjan', unlocode: 'CIABJ', atd: '2026-10-01T17:40:00Z', note: 'Départ relevé sur VesselFinder.' },
-      { id: 'kbi', name: 'Kribi', unlocode: 'CMKBI', ata: '2026-10-03', eta: '2026-10-03', etd: '2026-10-04', note: 'Au mouillage le 03/10 au soir. Escale du 03 au 04/10 : notre conteneur est déchargé ici.' },
-      { id: 'lkk', name: 'Lekki', unlocode: 'NGLKK', eta: '2026-10-07', etd: '2026-10-11', after: 1, note: 'Escale suivante du navire.' },
+      { id: 'nsa', name: 'Nansha', unlocode: 'CNNSA', atd: iso(-19), note: null },
+      { id: 'tpp', name: 'Tanjung Pelepas', unlocode: 'MYTPP', ata: iso(-12), atd: iso(-11), note: null },
+      { id: 'lfw', name: 'Lomé', unlocode: 'TGLFW', ata: iso(-1), eta: day(-1), etd: day(3), note: null },
+      { id: 'dla', name: 'Douala', unlocode: 'CMDLA', eta: day(7), note: null },
     ],
-    id: '2', client_label: 'GAUSS', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', etd_promised: '2026-08-15', eta_promised: '2026-09-27', etd_actual: '2026-08-15T23:38:00Z', eta_carrier: '2026-10-11T10:00:00Z', vessel_name: 'CMA CGM LAPEROUSE', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '631W', freight_usd: 6550, status: 'AT_SEA', last_event_at: '2026-08-15T23:38:00Z' },
-  { ...base, id: '3', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275558999', container_number: 'MRKU4617437', etd_promised: '2026-08-23', eta_promised: '2026-10-05', etd_actual: '2026-08-24T02:26:00Z', eta_carrier: '2026-10-15T01:00:00Z', vessel_name: 'CMA CGM CEDRUS', vessel_imo: '9938121', vessel_mmsi: '256615000', voyage: '633W', freight_usd: 5950, status: 'AT_SEA', last_event_at: '2026-08-24T02:26:00Z' },
-  { ...base, id: '4', client_label: 'PRC', carrier: 'MAERSK', bl_number: '275926835', container_number: 'MRSU7972968', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5650, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
-  { ...base, id: '5', client_label: 'DJIANI', carrier: 'MAERSK', bl_number: '275926916', container_number: 'CAJU5023560', etd_promised: '2026-09-05', eta_promised: '2026-10-12', etd_actual: '2026-09-04T18:31:00Z', eta_carrier: '2026-10-18T11:00:00Z', vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5750, status: 'AT_SEA', last_event_at: '2026-09-04T18:31:00Z' },
+    id: '2', client_label: 'Groupage', client_id: 'u5', carrier: 'MAERSK', bl_number: '274428633', container_number: 'MIEU3611115', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(-19), eta_promised: day(3), etd_actual: iso(-19), eta_carrier: iso(7), vessel_name: 'MAERSK KENSINGTON', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '642W', freight_usd: 6550, status: 'AT_SEA', last_event_at: iso(-1), last_event_label: 'Arrivé à Lomé', last_synced_at: iso(-0.12) },
+  { ...base, id: '3', client_label: 'Samuel Nkoulou', carrier: 'MSC', bl_number: 'MEDUJ8812044', container_number: 'MSCU4417092', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(-25), eta_promised: day(11), etd_actual: iso(-25), eta_carrier: iso(13), vessel_name: 'MSC AURORA', vessel_imo: '9938121', vessel_mmsi: '256615000', voyage: '633W', freight_usd: 5950, freight_paid: true, telex_released: false, status: 'AT_SEA', last_event_at: iso(-25) },
+  { ...base, id: '4', client_label: 'Groupage', carrier: 'CMA_CGM', bl_number: 'GGZ3133535', container_number: 'CMAU5530218', pod_name: 'Kribi', pod_unlocode: 'CMKBI', etd_promised: day(-30), eta_promised: day(5), etd_actual: iso(-30), eta_carrier: iso(5), vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 5650, freight_paid: true, telex_released: true, besc_number: 'MI2661716', status: 'AT_SEA', last_event_at: iso(-30) },
+  { ...base, id: '5', client_label: 'Ibrahim Touré', carrier: 'MAERSK', bl_number: '275926916', container_number: 'MRKU2208671', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(-22), eta_promised: day(9), etd_actual: iso(-22), eta_carrier: iso(9), vessel_name: 'MAERSK KENSINGTON', vessel_imo: '9454412', vessel_mmsi: '215930000', voyage: '642W', freight_usd: 5750, freight_paid: true, telex_released: false, status: 'AT_SEA', last_event_at: iso(-22) },
+  { ...base, id: '6', client_label: 'Jean-Paul Mbarga', carrier: 'CMA_CGM', bl_number: 'GGZ3140118', container_number: 'CMAU7741026', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(-14), eta_promised: day(20), etd_actual: iso(-14), eta_carrier: iso(20), vessel_name: 'CMA CGM PRIDE', vessel_imo: '9924429', vessel_mmsi: '229997000', voyage: '634W', freight_usd: 6100, freight_paid: false, status: 'AT_SEA', last_event_at: iso(-14) },
+  { ...base, id: '7', client_label: 'Groupage', carrier: 'MAERSK', bl_number: '276001523', container_number: 'MRKU7730415', pod_name: 'Douala', pod_unlocode: 'CMDLA', etd_promised: day(-3), eta_promised: day(31), etd_actual: iso(-3), eta_carrier: iso(31), vessel_name: 'MAERSK KOLKATA', vessel_imo: '9938122', vessel_mmsi: '256615001', voyage: '642W', freight_usd: 6300, freight_paid: true, telex_released: false, status: 'AT_SEA', last_event_at: iso(-3) },
 ];
 
 const POSITIONS: CargoVesselPosition[] = [
-  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'CMA CGM LAPEROUSE', latitude: 2.79, longitude: 9.68, speed_kn: null, course_deg: null, destination: 'CMKBI', eta: null, reported_at: '2026-10-03T20:35:00Z', source: 'manual', updated_at: '2026-10-03T22:00:00Z', note: 'Estimée d’après la capture Flexport Atlas du 03/10 : au mouillage devant Kribi.' },
-  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'CMA CGM CEDRUS', latitude: 2.56352, longitude: 101.51508, speed_kn: 13.6, course_deg: 310.6, destination: 'CIABJ', eta: '2026-09-27T17:00:00Z', reported_at: '2026-09-01T12:46:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
-  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 1.78142, longitude: 102.62114, speed_kn: 17.4, course_deg: 301.6, destination: 'CIABJ', eta: '2026-10-04T07:00:00Z', reported_at: '2026-09-11T21:49:00Z', source: 'manual', updated_at: '2026-09-11T20:00:00Z', note: null },
+  { vessel_imo: '9454412', vessel_mmsi: '215930000', vessel_name: 'MAERSK KENSINGTON', latitude: 6.13, longitude: 1.28, speed_kn: 0.2, course_deg: null, destination: 'TGLFW', eta: null, reported_at: iso(-0.12), source: 'manual', updated_at: iso(-0.12), note: 'Port de Lomé' },
+  { vessel_imo: '9938121', vessel_mmsi: '256615000', vessel_name: 'MSC AURORA', latitude: 4.9, longitude: -2.1, speed_kn: 15.1, course_deg: 92, destination: 'CMDLA', eta: iso(13), reported_at: iso(-0.3), source: 'manual', updated_at: iso(-0.3), note: null },
+  { vessel_imo: '9924429', vessel_mmsi: '229997000', vessel_name: 'CMA CGM PRIDE', latitude: 3.4, longitude: 6.2, speed_kn: 17.4, course_deg: 120, destination: 'CMKBI', eta: iso(5), reported_at: iso(-0.2), source: 'manual', updated_at: iso(-0.2), note: null },
 ];
 
 const ev = (id: string, code: string, type: string, time: string, classifier = 'ACT', location: string | null = 'GZ Oceangate Container Terminal', vessel: string | null = null): CargoEvent => ({

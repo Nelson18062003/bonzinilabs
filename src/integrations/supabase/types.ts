@@ -3244,6 +3244,32 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_cash_tokens: {
+        Row: {
+          created_at: string
+          payment_id: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          payment_id: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          payment_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_cash_tokens_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_proofs: {
         Row: {
           created_at: string
@@ -3358,6 +3384,7 @@ export type Database = {
           cash_signature_timestamp: string | null
           cash_signature_url: string | null
           cash_signed_by_name: string | null
+          cash_signer_id_number: string | null
           client_visible_comment: string | null
           created_at: string
           exchange_rate: number
@@ -3406,6 +3433,7 @@ export type Database = {
           cash_signature_timestamp?: string | null
           cash_signature_url?: string | null
           cash_signed_by_name?: string | null
+          cash_signer_id_number?: string | null
           client_visible_comment?: string | null
           created_at?: string
           exchange_rate: number
@@ -3454,6 +3482,7 @@ export type Database = {
           cash_signature_timestamp?: string | null
           cash_signature_url?: string | null
           cash_signed_by_name?: string | null
+          cash_signer_id_number?: string | null
           client_visible_comment?: string | null
           created_at?: string
           exchange_rate?: number
@@ -4928,6 +4957,7 @@ export type Database = {
         Args: { p_first: string; p_user_id: string }
         Returns: undefined
       }
+      _payment_debit_held: { Args: { p_payment_id: string }; Returns: number }
       _phone_e164: { Args: { p_phone: string }; Returns: string }
       _phone_is_client: { Args: { p_e164: string }; Returns: boolean }
       _prospect_claim_clients: {
@@ -4974,6 +5004,7 @@ export type Database = {
         Args: { p_notify?: boolean; p_prospect_id: string }
         Returns: string
       }
+      _rate_country_key: { Args: { p_country: string }; Returns: string }
       _sales_month: {
         Args: { p_month: string }
         Returns: {
@@ -5521,14 +5552,24 @@ export type Database = {
         }
         Returns: Json
       }
-      confirm_cash_payment: {
-        Args: {
-          p_payment_id: string
-          p_signature_url: string
-          p_signed_by_name: string
-        }
-        Returns: Json
-      }
+      confirm_cash_payment:
+        | {
+            Args: {
+              p_payment_id: string
+              p_signature_path: string
+              p_signed_by_name: string
+              p_signer_id_number: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_payment_id: string
+              p_signature_url: string
+              p_signed_by_name: string
+            }
+            Returns: Json
+          }
       confirm_phone_verification: { Args: { p_code: string }; Returns: Json }
       create_admin_payment: {
         Args: {
@@ -5603,29 +5644,56 @@ export type Database = {
         }
         Returns: Json
       }
-      create_payment: {
-        Args: {
-          p_amount_rmb: number
-          p_amount_xaf: number
-          p_beneficiary_bank_account?: string
-          p_beneficiary_bank_name?: string
-          p_beneficiary_details?: Json
-          p_beneficiary_email?: string
-          p_beneficiary_id?: string
-          p_beneficiary_name?: string
-          p_beneficiary_notes?: string
-          p_beneficiary_phone?: string
-          p_beneficiary_qr_code_url?: string
-          p_cash_beneficiary_first_name?: string
-          p_cash_beneficiary_last_name?: string
-          p_cash_beneficiary_phone?: string
-          p_cash_beneficiary_type?: string
-          p_exchange_rate: number
-          p_method: Database["public"]["Enums"]["payment_method"]
-          p_rate_is_custom?: boolean
-        }
-        Returns: Json
-      }
+      create_payment:
+        | {
+            Args: {
+              p_amount_rmb: number
+              p_amount_xaf: number
+              p_beneficiary_bank_account?: string
+              p_beneficiary_bank_name?: string
+              p_beneficiary_details?: Json
+              p_beneficiary_email?: string
+              p_beneficiary_id?: string
+              p_beneficiary_name?: string
+              p_beneficiary_notes?: string
+              p_beneficiary_phone?: string
+              p_beneficiary_qr_code_url?: string
+              p_cash_beneficiary_first_name?: string
+              p_cash_beneficiary_last_name?: string
+              p_cash_beneficiary_phone?: string
+              p_cash_beneficiary_type?: string
+              p_exchange_rate: number
+              p_method: Database["public"]["Enums"]["payment_method"]
+              p_rate_is_custom?: boolean
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount_rmb: number
+              p_amount_xaf: number
+              p_beneficiary_bank_account: string
+              p_beneficiary_bank_extra: string
+              p_beneficiary_bank_name: string
+              p_beneficiary_details: Json
+              p_beneficiary_email: string
+              p_beneficiary_id: string
+              p_beneficiary_identifier: string
+              p_beneficiary_identifier_type: string
+              p_beneficiary_name: string
+              p_beneficiary_notes: string
+              p_beneficiary_phone: string
+              p_beneficiary_qr_code_url: string
+              p_cash_beneficiary_first_name: string
+              p_cash_beneficiary_last_name: string
+              p_cash_beneficiary_phone: string
+              p_cash_beneficiary_type: string
+              p_exchange_rate: number
+              p_method: Database["public"]["Enums"]["payment_method"]
+              p_rate_is_custom: boolean
+            }
+            Returns: Json
+          }
       create_payment_batch: {
         Args: { p_lines: Json; p_note?: string; p_user_id: string }
         Returns: Json
@@ -6290,7 +6358,9 @@ export type Database = {
         }
         Returns: Json
       }
-      scan_cash_payment: { Args: { p_payment_id: string }; Returns: Json }
+      scan_cash_payment:
+        | { Args: { p_payment_id: string }; Returns: Json }
+        | { Args: { p_payment_id: string; p_qr_token: string }; Returns: Json }
       search_chat_conversations: {
         Args: { p_query: string }
         Returns: {

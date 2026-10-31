@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../kit.css">
+<style>
+/* --- lot 05 : styles propres --- */
+.scroll.col { display: flex; flex-direction: column }
+.thread.bot { flex: 1; min-height: 0; justify-content: flex-end; overflow: hidden; padding-bottom: 96px }
+.msg.out .rcpt { color: var(--ink) }
+.thread.bot > * { flex-shrink: 0 }
+.thread.bot { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 36px); mask-image: linear-gradient(to bottom, transparent 0, #000 36px) }
+.ttl { padding: 0 20px 14px; display: flex; align-items: flex-end; justify-content: space-between }
+.ttl h1 { font: 800 34px/1.05 "DM Sans"; letter-spacing: -.03em }
+.seg3 { grid-template-columns: 1fr 1fr 1fr !important }
+.seg small { font: 700 12.5px "DM Sans"; color: var(--t3); margin-left: 5px }
+.seg div { display: flex !important; align-items: center; justify-content: center }
+.chips.sc { overflow: hidden }
+.chip .cv-ic { display: grid; place-items: center }
+.chip.sel { background: var(--violet-soft); color: #5a24c4; box-shadow: none }
+.ub { min-width: 22px; height: 22px; border-radius: 11px; background: var(--orange); color: #fff; font: 700 12.5px/22px "DM Sans"; text-align: center; padding: 0 6px; flex: none }
+/* conversations */
+.cv { display: flex; gap: 12px; padding: 13px 16px; position: relative; align-items: flex-start }
+.cv + .cv::before { content: ""; position: absolute; top: 0; left: 68px; right: 0; height: .5px; background: var(--sep) }
+.cv .av { width: 42px; height: 42px; border-radius: 21px }
+.cvt { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.cvt .rn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tm { font: 500 13px "DM Sans"; color: var(--t3); flex: none }
+.cv.un .rn { font-weight: 700 }
+.cv.un .tm { color: var(--orange); font-weight: 700 }
+.cv.un .rs { color: var(--ink) }
+.cvm { display: flex; align-items: center; gap: 6px; margin-top: 7px; font: 600 12.5px "DM Sans"; color: var(--t2) }
+.tag { padding: 3px 8px; border-radius: 7px; background: #f2f0f6; font: 600 12px "DM Sans"; color: #4b4560 }
+.mini { width: 20px; height: 20px; border-radius: 10px; font: 700 9.5px "DM Sans"; display: grid; place-items: center; flex: none }
+.free { color: #c23f07 }
+/* fil de discussion */
+.thread { padding: 2px 12px 0; display: flex; flex-direction: column; gap: 5px }
+.msg { max-width: 80%; padding: 9px 13px 7px; border-radius: 20px; font: 500 15.5px/1.35 "DM Sans" }
+.msg.in { background: #fff; align-self: flex-start; border-bottom-left-radius: 6px; box-shadow: 0 1px 1px rgba(23,17,31,.05) }
+.msg.out { background: var(--violet); color: #fff; align-self: flex-end; border-bottom-right-radius: 6px }
+.msg .meta { font: 500 11.5px "DM Sans"; opacity: .62; text-align: right; margin-top: 2px }
+.dsep { text-align: center; font: 600 12.5px "DM Sans"; color: var(--t3); margin: 6px 0 4px }
+.quote { border-left: 3px solid rgba(255,255,255,.65); padding: 1px 8px; margin: 2px 0 6px; font-size: 13.5px; opacity: .9 }
+.quote b { display: block; font-size: 12.5px }
+.who { font: 700 12px "DM Sans"; color: var(--t2); margin: 4px 0 0 6px }
+.who.r { text-align: right; margin: 4px 6px 0 0 }
+.voice { display: flex; align-items: center; gap: 10px; padding: 3px 0 }
+.voice .pl { width: 30px; height: 30px; border-radius: 15px; background: var(--violet-soft); display: grid; place-items: center; flex: none }
+.wave { display: flex; gap: 2.5px; align-items: center; height: 26px }
+.wave i { width: 3px; border-radius: 2px; background: #b9a6ee }
+.wave i.p { background: var(--violet) }
+.typing { align-self: flex-start; background: #fff; border-radius: 18px; padding: 11px 14px; display: flex; gap: 4px }
+.typing i { width: 7px; height: 7px; border-radius: 4px; background: #c4c0cf }
+.composer { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 10px 34px; background: rgba(255,255,255,.97); border-top: .5px solid #dcd8e3; display: flex; align-items: center; gap: 8px; z-index: 4 }
+.cbtn { width: 38px; height: 38px; border-radius: 19px; background: #f0edf5; display: grid; place-items: center; flex: none }
+.cbtn.v { background: var(--violet) }
+.cfield { flex: 1; height: 40px; border-radius: 20px; background: #f6f4f9; border: 1px solid #e6e2ec; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 14px; font: 500 16px "DM Sans"; color: var(--t3) }
+.ctx { margin: 0 16px 8px; background: #fff; border-radius: 16px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+/* feuilles */
+.srow { display: flex; align-items: center; gap: 14px; padding: 14px 22px; font: 600 16.5px "DM Sans"; position: relative }
+.srow + .srow::before { content: ""; position: absolute; top: 0; left: 66px; right: 0; height: .5px; background: var(--sep) }
+.srow .si { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none }
+.srow .val { margin-left: auto; font: 500 15px "DM Sans"; color: var(--t2); display: flex; align-items: center; gap: 4px }
+.cr { padding: 12px 22px; position: relative }
+.cr + .cr::before { content: ""; position: absolute; top: 0; left: 22px; right: 0; height: .5px; background: var(--sep) }
+.cr b { font: 700 15.5px "DM Sans"; display: flex; justify-content: space-between; align-items: center }
+.cr p { font: 500 14px/1.35 "DM Sans"; color: var(--t2); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.var { background: var(--violet-soft); color: #5a24c4; border-radius: 5px; padding: 0 4px; font-weight: 600 }
+.picker { display: flex; gap: 14px; padding: 4px 22px 14px }
+.pk { display: grid; justify-items: center; gap: 6px; font: 600 12.5px "DM Sans"; color: #4b4560; width: 56px }
+.pk .av { width: 50px; height: 50px; border-radius: 25px; font-size: 16px; position: relative }
+.pk.on .av { box-shadow: 0 0 0 2.5px #fff, 0 0 0 4.5px var(--violet) }
+.pk .ok { position: absolute; right: -3px; bottom: -3px; width: 20px; height: 20px; border-radius: 10px; background: var(--violet); display: grid; place-items: center; box-shadow: 0 0 0 2px #fff }
+.btn.red { background: var(--red); color: #fff }
+.danger { margin: 0 16px 14px; background: #fdecec; color: #b0261d; border-radius: 14px; padding: 11px 14px; display: flex; gap: 10px; align-items: center; font: 700 14.5px "DM Sans" }
+/* stats */
+.bar-l { display: flex; align-items: center; gap: 10px; padding: 7px 16px; font: 600 14px "DM Sans" }
+.bar-l .lb { width: 76px; color: var(--t2); font-weight: 500; flex: none }
+.bar-l .tr { flex: 1; height: 10px; border-radius: 5px; background: #f0edf5; overflow: hidden }
+.bar-l .tr i { display: block; height: 100%; background: var(--violet); border-radius: 5px }
+.bar-l b { width: 40px; text-align: right; font-variant-numeric: tabular-nums }
+.legend { display: flex; gap: 16px; font: 600 13px "DM Sans"; color: var(--t2); padding: 0 16px 4px }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px }
+.stat.sm b { font-size: 24px }
+.stat small { font: 600 12.5px "DM Sans"; color: var(--green) }
+/* douane */
+.pt { width: 44px; height: 44px; border-radius: 12px; flex: none; overflow: hidden; background: linear-gradient(160deg, #eef0f5, #dfe3ec); display: grid; place-items: center }
+.code { font: 700 14px "DM Sans"; letter-spacing: .01em; font-variant-numeric: tabular-nums }
+.photos { display: flex; gap: 8px; padding: 0 16px 14px }
+.photo { flex: 1; height: 92px; border-radius: 14px; background: linear-gradient(160deg, #f3f4f8, #dde1ea); display: grid; place-items: center; position: relative; overflow: hidden }
+.photo span { position: absolute; right: 6px; bottom: 5px; font: 700 11px "DM Sans"; color: #fff; background: rgba(23,17,31,.55); padding: 2px 6px; border-radius: 6px }
+.cand { padding: 13px 16px; position: relative }
+.cand + .cand::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: .5px; background: var(--sep) }
+.cand .h { display: flex; justify-content: space-between; align-items: center }
+.cand .h .code { font-size: 17px }
+.cand p { font: 500 14px/1.3 "DM Sans"; color: var(--t2); margin-top: 3px }
+.conf { height: 6px; border-radius: 3px; background: #f0edf5; margin-top: 9px; overflow: hidden }
+.conf i { display: block; height: 100%; border-radius: 3px; background: var(--violet) }
+.dpanel { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 26px 26px 0 0; padding: 8px 16px 34px; box-shadow: 0 -10px 30px -12px rgba(23,17,31,.22); z-index: 4 }
+.dpanel .grab { margin-bottom: 10px }
+.dpanel .seg { margin: 0 0 12px }
+.field { background: var(--bg); border-radius: 14px; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px }
+.field span { font: 600 12px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .05em; display: block }
+.field b { font: 700 17px "DM Sans"; font-variant-numeric: tabular-nums }
+.field em { font: 500 15px "DM Sans"; color: var(--t3); font-style: normal }
+.tools { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px }
+.tool { background: #fff; border-radius: 18px; padding: 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px rgba(23,17,31,.05); font: 700 15.5px "DM Sans" }
+.tool small { display: block; font: 500 13px "DM Sans"; color: var(--t2) }
+.tool .ti { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; flex: none }
+.result { margin: 0 16px; border-radius: 22px; background: linear-gradient(140deg, #1a1028, #3b1f7a); color: #fff; padding: 16px 18px 8px }
+.result .k { font: 600 13px "DM Sans"; opacity: .7; text-transform: uppercase; letter-spacing: .06em }
+.result .big { font: 800 36px/1.1 "DM Sans"; letter-spacing: -.03em; margin: 4px 0 10px; font-variant-numeric: tabular-nums }
+.result .big small { font: 700 17px "DM Sans"; opacity: .6; margin-left: 4px }
+.rl2 { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.12); font: 500 14.5px "DM Sans" }
+.rl2 span { opacity: .75 } .rl2 b { font-weight: 700; font-variant-numeric: tabular-nums }
+.inco { display: flex; gap: 6px }
+.inco span { padding: 6px 11px; border-radius: 9px; background: #f0edf5; font: 700 13.5px "DM Sans"; color: #6f6981 }
+.inco .on { background: var(--ink); color: #fff }
+/* Mola */
+.mola { width: 30px; height: 30px; border-radius: 15px; background: linear-gradient(140deg, #9a6bff, #5b1fd6); display: grid; place-items: center; flex: none }
+.acard { align-self: stretch; background: #fff; border-radius: 22px; overflow: hidden; box-shadow: 0 8px 26px -12px rgba(60,30,120,.3); margin: 2px 0 0 38px; border: 1px solid #efeaf7 }
+.acard .ah { padding: 14px 16px 4px }
+.acard .ah span { font: 700 12px "DM Sans"; color: #9a5d00; text-transform: uppercase; letter-spacing: .06em; display: flex; align-items: center; gap: 6px }
+.acard .ah b { display: block; font: 800 19px/1.25 "DM Sans"; letter-spacing: -.015em; margin-top: 5px }
+.acard .kv { padding: 10px 16px }
+.acard .kv span, .acard .kv b { font-size: 14.5px }
+.acard .btns { display: flex; gap: 8px; padding: 10px 12px 12px }
+.acard .btn { height: 46px; font-size: 16px; border-radius: 13px }
+.mrow { display: flex; gap: 8px; align-items: flex-end }
+/* journal / notifications */
+.ni { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none }
+.udot { width: 9px; height: 9px; border-radius: 5px; background: var(--violet); flex: none }
+.ref { font: 600 13.5px "DM Sans"; color: var(--violet) }
+/* justificatifs */
+.pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px }
+.pc { background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 1px 2px rgba(23,17,31,.05) }
+.thumb { height: 120px; background: #ece9f1; position: relative; padding: 10px 14px 0; overflow: hidden }
+.th { background: #fff; border-radius: 8px 8px 0 0; height: 100%; box-shadow: 0 2px 8px rgba(23,17,31,.12); overflow: hidden; transform: rotate(-1.5deg) }
+.th-h { height: 18px; font: 800 9px/18px "DM Sans"; padding: 0 7px; color: #fff }
+.th-amt { font: 800 15px "DM Sans"; text-align: center; margin-top: 9px; letter-spacing: -.02em }
+.th-ok { font: 600 8.5px "Noto SC", "DM Sans"; color: #1c9a57; text-align: center; margin-top: 2px }
+.th i { display: block; height: 4px; border-radius: 2px; background: #eceaf0; margin: 7px 9px 0 }
+.ttag { position: absolute; left: 8px; bottom: 8px; box-shadow: 0 2px 6px rgba(23,17,31,.2); font: 700 11px "DM Sans"; padding: 3px 8px; border-radius: 7px; z-index: 1 }
+.ttag.d { background: var(--amber); color: #fff } .ttag.p { background: var(--violet); color: #fff }
+.pc .pm { padding: 9px 11px 11px }
+.pc .pm b { font: 700 14px "DM Sans"; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.pc .pm span { font: 500 12.5px "DM Sans"; color: var(--t2); display: block }
+.pc .pm .ref { color: var(--violet); font-size: 12.5px; margin-top: 3px; display: flex; align-items: center; justify-content: space-between }
+/* coordonnées */
+.bmk { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font: 800 12px "DM Sans"; color: #fff; flex: none }
+.kv .mono { font-variant-numeric: tabular-nums; font-size: 14.5px }
+.minibtn { height: 34px; padding: 0 12px; border-radius: 10px; background: #f2f0f6; display: flex; align-items: center; gap: 6px; font: 700 13.5px "DM Sans"; color: var(--ink) }
+.docprev { width: 118px; flex: none; background: #fff; border-radius: 10px; box-shadow: 0 6px 18px -6px rgba(23,17,31,.3); border: 1px solid #ece9f1; overflow: hidden }
+.docprev .dh { background: linear-gradient(135deg, #1a1028, #3b1f7a); color: #fff; padding: 7px 8px; font: 800 7.5px "DM Sans" }
+.docprev .dh small { display: block; font: 500 6.5px "DM Sans"; opacity: .7 }
+.docprev .dl { display: flex; justify-content: space-between; padding: 4px 8px; font: 600 6.5px "DM Sans"; color: #4b4560; border-bottom: .5px solid #eee }
+.optl { font: 700 12.5px "DM Sans"; color: var(--t2); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px 2px }
+.sseg { background: #efecf4; border-radius: 11px; padding: 3px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-bottom: 12px }
+.sseg div { height: 32px; border-radius: 8px; display: grid; place-items: center; font: 600 14px "DM Sans"; color: #4b4560 }
+.sseg .on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(23,17,31,.08) }
+/* réglages */
+.set { display: flex; align-items: center; gap: 13px; padding: 12px 16px; position: relative; font: 600 16px "DM Sans" }
+.set + .set::before { content: ""; position: absolute; top: 0; left: 59px; right: 0; height: .5px; background: var(--sep) }
+.set .si { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none }
+.set .val { margin-left: auto; font: 500 15px "DM Sans"; color: var(--t2); display: flex; align-items: center; gap: 2px }
+.lang { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 0 16px }
+.lg { background: #fff; border-radius: 16px; height: 70px; display: grid; place-items: center; align-content: center; gap: 3px; font: 700 16px "DM Sans"; box-shadow: 0 1px 2px rgba(23,17,31,.05); border: 2px solid transparent }
+.lg small { font: 500 12.5px "DM Sans"; color: var(--t2) }
+.lg.on { border-color: var(--ink) }
+/* lots */
+.prog { height: 8px; border-radius: 4px; background: #e6e3ec; margin: 14px 40px 0; overflow: hidden; display: flex; gap: 2px }
+.prog i { display: block; height: 100%; background: var(--green) }
+/* cash */
+.sigpad { margin: 0 16px; height: 236px; border-radius: 20px; background: #fff; border: 1.5px dashed #d9d3e6; position: relative }
+.okline { margin: 0 16px 14px; background: var(--green-soft); border-radius: 16px; padding: 12px 14px; display: flex; gap: 12px; align-items: center }
+.okline .qrs { width: 46px; height: 46px; flex: none; background: #fff; border-radius: 10px; padding: 4px }
+.okline b { font: 700 15.5px "DM Sans"; color: #0f5132; display: block }
+.okline span { font: 500 13.5px "DM Sans"; color: #2c6e4a }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit.js"></script>
+<script>
+// ---------- icônes propres au lot ----------
+const s = (w, d, c = 'currentColor', sw = 2) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const I = {
+  stats: (c = '#17111f') => s(21, '<path d="M4 20h16M7 16v-4M12 16V7M17 16v-6"/>', c, 2.3),
+  bolt: (c = '#7a3cf0') => s(20, '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>', c, 2.1),
+  mic: (c = '#4b4560') => s(20, '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>', c),
+  plus: (c = '#4b4560', w = 20) => s(w, '<path d="M12 5v14M5 12h14"/>', c, 2.4),
+  send: s(18, '<path d="M12 19V5M6 11l6-6 6 6"/>', '#fff', 2.6),
+  user: (c) => s(17, '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>', c),
+  people: (c) => s(17, '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.2 2.6 3.5 5.5"/>', c),
+  lock: (c) => s(17, '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>', c),
+  x: (c) => s(17, '<path d="M6 6l12 12M18 6 6 18"/>', c, 2.4),
+  cal: (c = '#4b4560') => s(16, '<rect x="4" y="5.5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3.5v4M15 3.5v4"/>', c),
+  caret: (c = '#9a95a8') => s(13, '<path d="m6 9 6 6 6-6"/>', c, 2.6),
+  warn: (c = '#b0261d') => s(19, '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17.2v.1"/>', c, 2.2),
+  sparkle: (c = '#fff', w = 16) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24"><path d="M12 2.5c.6 4.6 2.9 6.9 7.5 7.5-4.6.6-6.9 2.9-7.5 7.5-.6-4.6-2.9-6.9-7.5-7.5 4.6-.6 6.9-2.9 7.5-7.5zM19 15.5c.3 2 1.2 2.9 3 3.2-1.8.3-2.7 1.2-3 3.1-.3-1.9-1.2-2.8-3-3.1 1.8-.3 2.7-1.2 3-3.2z" fill="${c}"/></svg>`,
+  compose: s(20, '<path d="M12 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V12"/><path d="M17.5 3.5a2 2 0 0 1 3 3L13 14l-4 1 1-4z"/>', '#17111f', 2.1),
+  down: (c) => s(19, '<path d="M12 4v15M6 13l6 6 6-6"/>', c, 2.4),
+  up: (c) => s(19, '<path d="M6 18 18 6M9 6h9v9"/>', c, 2.4),
+  ship: (c) => s(19, '<path d="M3 15h18l-2.5 5h-13zM6 15V9h12v6M10 9V5h4v4"/>', c, 2.1),
+  chat: (c) => s(19, '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-5 4v-4.2A2.5 2.5 0 0 1 4 14.5z"/>', c, 2.1),
+  target: (c) => s(19, '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>', c, 2.1),
+  rate: (c) => s(19, '<path d="M4 17 9.5 11l4 3.5L20 7M15 7h5v5"/>', c, 2.2),
+  doc: (c) => s(19, '<path d="M7 3h7l5 5v11.5A1.5 1.5 0 0 1 17.5 21h-10A1.5 1.5 0 0 1 6 19.5v-15A1.5 1.5 0 0 1 7.5 3z"/><path d="M14 3v5h5M9.5 13h5M9.5 16.5h5"/>', c, 2),
+  img: (c) => s(17, '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17.5 5-4.5 4 3.5 3-2.5 4 3.5"/>', c, 2),
+  globe: (c) => s(17, '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z"/>', c, 1.9),
+  sun: (c) => s(17, '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>', c, 2),
+  moon: (c) => s(17, '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>', c, 2),
+  box: (c) => s(17, '<path d="M12 3 20.5 7.5v9L12 21l-8.5-4.5v-9zM3.5 7.5 12 12l8.5-4.5M12 12v9"/>', c, 1.9),
+  pin: (c) => s(17, '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>', c, 2),
+  info: (c) => s(17, '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.1"/>', c, 2.2),
+  layers: (c) => s(19, '<path d="M12 3.5 21 8l-9 4.5L3 8z"/><path d="m3 12.5 9 4.5 9-4.5M3 16.5 12 21l9-4.5"/>', c, 2),
+  route: (c) => s(19, '<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H16a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h7.5"/>', c, 2),
+  news: (c) => s(19, '<path d="M4 5.5h13v13A1.5 1.5 0 0 0 18.5 20H6a2 2 0 0 1-2-2zM17 9h3v9.5a1.5 1.5 0 0 1-3 0M7.5 9h6M7.5 12.5h6M7.5 16h4"/>', c, 1.9),
+  filter: (c = '#17111f') => s(20, '<path d="M4 6h16M7 12h10M10 18h4"/>', c, 2.3),
+  play: '<svg width="12" height="12" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="#7a3cf0"/></svg>',
+  photo: '<svg width="58" height="38" viewBox="0 0 100 62"><path d="M7 40c2-9 9-13 17-15l15-11c4-2 8-1 10 3l6 8c10 4 24 6 34 10 5 2 5 10 0 11H11c-4 0-5-3-4-6z" fill="#34446b"/><path d="M26 25l4 6M33 20l4 6M40 16l4 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M6 46h88v4a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="#fff" stroke="#c9ceda" stroke-width="1.5"/><path d="M60 33c8 2 18 4 25 7" stroke="#f0530f" stroke-width="3" fill="none" stroke-linecap="round"/></svg>',
+};
+const av = (t, bg, fg, cls = 'av') => `<div class="${cls}" style="background:${bg};color:${fg}">${t}</div>`;
+const AV = { NT: ['#efe8ff', '#6526de'], CM: ['#e6f6ed', '#137042'], PE: ['#fff1dd', '#b36800'], MA: ['#e7f1ff', '#1a5fd1'] };
+const team = (k, cls = 'av') => av(k, AV[k][0], AV[k][1], cls);
+const BACK = (l) => `<div class="back">${ic.back}${l}</div>`;
+const NB = (back, t = '', right = `<div class="act">${ic.dots}</div>`) => `<div class="nb">${BACK(back)}<div class="t">${t}</div><div class="sp"></div>${right}</div>`;
+const ADM = (on = 'more') => tabs(on, { ops: 4, more: 3 });
+
+// ================= MESSAGES CLIENTS =================
+const conv = (init, bg, fg, name, msg, time, tag, who, unread) => `<div class="cv ${unread ? 'un' : ''}">${av(init, bg, fg)}<div class="rm"><div class="cvt"><span class="rn">${name}</span><span class="tm">${time}</span></div><div class="rs">${msg}</div><div class="cvm"><span class="tag">${tag}</span>${who ? `${team(who, 'mini')}<span>${{ NT: 'Nelson', CM: 'Carine', PE: 'Patrick', MA: 'Mireille' }[who]}</span>` : '<span class="free">Non assignée</span>'}<span style="flex:1"></span>${unread ? `<span class="ub">${unread}</span>` : ''}</div></div></div>`;
+
+add('Messages clients', 'Non-lus, assignation, filtres', `${sbar()}<div class="scroll">
+  ${NB('Plus', '', `<div class="act">${I.stats()}</div>`)}
+  <div class="ttl"><h1>Messages clients</h1></div>
+  <div class="srch">${ic.search}Nom, message ou référence</div>
+  <div class="seg seg3"><div class="on">Ouvertes<small>7</small></div><div>Toutes</div><div>Fermées</div></div>
+  <div class="chips"><div class="chip on">Toutes</div><div class="chip">À moi <small>3</small></div><div class="chip">Non assignées <small>2</small></div></div>
+  <div class="card">
+    ${conv('AN', '#fff1dd', '#b36800', 'Awa Ngono Mballa', 'Mon fournisseur dit qu\'il n\'a rien reçu pour BZ-PY-2610-0416', '10:42', 'Paiement', 'NT', 2)}
+    ${conv('KI', '#e6f6ed', '#137042', 'Kengne Import SARL', 'Photo du bordereau Ecobank ci-jointe', '10:15', 'Dépôt', null, 1)}
+    ${conv('JK', '#e7f1ff', '#1a5fd1', 'Jean-Pierre Kamdem Tchoua', 'Quel taux pour 5 millions aujourd\'hui ?', '09:58', 'Taux', null, 3)}
+    ${conv('EF', '#efe8ff', '#6526de', 'Établissements Fotso &amp; Fils', 'Vous : Le conteneur MIEU3611115 arrive le 4 nov.', '09:12', 'Cargo', 'CM', 0)}
+    ${conv('IB', '#fdecec', '#c2261d', 'Ibrahim Moussa Bello', 'Vous : Zhang Wei peut passer au bureau demain', 'Hier', 'Cash', 'NT', 0)}
+  </div>
+</div>${ADM()}<div class="home-ind"></div>`);
+
+const wave = (n, p) => `<div class="wave">${Array.from({ length: n }, (_, i) => `<i class="${i < p ? 'p' : ''}" style="height:${6 + Math.round(Math.abs(Math.sin(i * 1.7) * 16 + Math.cos(i * .6) * 4))}px"></i>`).join('')}</div>`;
+const thread = `<div class="thread bot">
+    <div class="dsep">Aujourd'hui</div>
+    <div class="msg in">Bonjour, mon fournisseur dit qu'il n'a rien reçu pour le paiement de ¥7&nbsp;493<div class="meta">10:31</div></div>
+    <div class="msg in" style="padding:6px;width:176px"><div style="transform:scale(.98)">${aliReceipt('7,493.00', 'Guangzhou Hengtai Trading')}</div><div class="meta" style="padding:0 6px">10:32</div></div>
+    <div class="who r">Nelson</div>
+    <div class="msg out"><div class="quote"><b>Awa Ngono Mballa</b>mon fournisseur dit qu'il n'a rien reçu…</div>Payé ce matin à 10:12 sur hengtai_gz@163.com. Je vous envoie la preuve.<div class="meta">10:36</div></div>
+    <div class="msg in"><div class="voice"><span class="pl">${I.play}</span>${wave(26, 0)}<span style="font:600 12.5px 'DM Sans';color:#6f6981">0:14</span></div><div class="meta">10:42</div></div>
+    <div class="typing"><i></i><i></i><i style="opacity:.6"></i></div>
+  </div>`;
+const composer = `<div class="composer"><div class="cbtn">${I.plus()}</div><div class="cfield">Message<span style="display:flex">${I.bolt()}</span></div><div class="cbtn">${I.mic()}</div></div>`;
+const convNb = NB('Messages', `Awa Ngono Mballa<small>BZ-4821 · Nelson</small>`);
+
+add('Conversation', 'Fil, pièces jointes, vocal', `${sbar()}<div class="scroll col">
+  ${convNb}
+  <div class="ctx"><span class="mk ali" style="width:32px;height:32px;border-radius:10px;font-size:14px">支</span><div class="rm"><div style="font:700 14.5px 'DM Sans'">BZ-PY-2610-0416 · ¥7 493</div><div style="font:500 13px 'DM Sans';color:#6f6981">Guangzhou Hengtai Trading</div></div>${pill('done', 'Payé')}</div>
+  ${thread}
+</div>${composer}<div class="home-ind"></div>`);
+
+add('Réponses types', 'Feuille depuis l\'éclair du champ', `${sbar()}<div class="scroll col">${convNb}${thread}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:baseline;padding-right:22px"><h3>Réponses types</h3><span style="font:600 15px 'DM Sans';color:#7a3cf0">Gérer</span></div>
+  <div class="srch" style="margin:10px 16px 6px;background:#f4f2f7;box-shadow:none">${ic.search}Chercher</div>
+  <div class="cr"><b>Paiement effectué</b><p>Bonjour <span class="var">{prénom}</span>, votre paiement de <span class="var">{montant}</span> a été effectué ce jour. La preuve est disponible dans l'app.</p></div>
+  <div class="cr"><b>Preuve de dépôt illisible</b><p>Bonjour <span class="var">{prénom}</span>, la photo du reçu est floue. Pouvez-vous renvoyer une capture nette ?</p></div>
+  <div class="cr"><b>Taux du jour</b><p>Aujourd'hui : 1 000 000 XAF = <span class="var">{taux}</span>. Le taux est garanti à la création du paiement.</p></div>
+  <div class="cr"><b>Retrait cash Guangzhou</b><p>Le bénéficiaire présente le QR et sa pièce d'identité au bureau de Guangzhou, 9 h – 18 h.</p></div>
+  <div class="cr"><b>Arrivée du conteneur</b><p>Votre marchandise arrive à Douala le <span class="var">{date}</span>. Nous vous appelons pour le retrait.</p></div>
+</div><div class="home-ind"></div>`, 'white');
+
+add('Menu « … » et assignation', 'Assigner, fiche client, clore', `${sbar()}<div class="scroll col">${convNb}${thread}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div>
+  <h3>Awa Ngono Mballa</h3><div class="lead">BZ-4821 · ouverte depuis 10:31</div>
+  <div class="optl" style="padding:0 22px">Assignée à</div>
+  <div class="picker">
+    <div class="pk on"><div class="av" style="background:#efe8ff;color:#6526de">NT<span class="ok">${ic.check('#fff', 12)}</span></div>Nelson</div>
+    <div class="pk">${team('CM')}Carine</div>
+    <div class="pk">${team('PE')}Patrick</div>
+    <div class="pk">${team('MA')}Mireille</div>
+    <div class="pk"><div class="av" style="background:#f2f0f6;color:#9a95a8">${I.x('#9a95a8')}</div>Personne</div>
+  </div>
+  <div style="height:.5px;background:#ebe8f0;margin:0 22px"></div>
+  <div class="srow"><span class="si" style="background:#efe8ff">${I.user('#6526de')}</span>Fiche client<span class="val">${ic.chev}</span></div>
+  <div class="srow"><span class="si" style="background:#f1eafe">${I.bolt('#6526de')}</span>Réponses types<span class="val">12 ${ic.chev}</span></div>
+  <div class="srow"><span class="si" style="background:#e7f1ff">${I.stats('#1a5fd1')}</span>Statistiques<span class="val">${ic.chev}</span></div>
+  <div class="srow" style="color:#c2261d"><span class="si" style="background:#fdecec">${I.lock('#c2261d')}</span>Clore la conversation</div>
+</div><div class="home-ind"></div>`, 'white');
+
+add('Clore la conversation', 'Confirmation avant fermeture', `${sbar()}<div class="scroll col">${convNb}${thread}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Clore la conversation ?</h3><div class="lead">Awa Ngono Mballa · 6 messages · Nelson</div>
+  <div class="inset" style="margin-bottom:18px"><div class="kv"><span>Statut</span><b>Ouverte → Fermée</b></div><div class="kv"><span>Nouveau message du client</span><b>Rouvre</b></div></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn red">Clore</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// Statistiques
+const cl = [6, 9, 4, 11, 8, 3, 2, 10, 12, 7, 9, 14, 6, 5], bz = [5, 8, 4, 9, 8, 2, 1, 9, 10, 6, 9, 12, 5, 6];
+const days = ['8', '', '', '11', '', '', '14', '', '', '17', '', '', '20', '21'];
+const chart = (() => { const W = 329, H = 132, base = 112, k = 96 / 26, sl = W / 14, bw = 13; let g = `<path d="M0 ${base + .5}H${W}" stroke="#ebe8f0"/>`; cl.forEach((c, i) => { const x = i * sl + (sl - bw) / 2; const hc = c * k, hb = bz[i] * k; g += `<rect x="${x}" y="${base - hc}" width="${bw}" height="${hc}" rx="2" fill="#e38a0b"/><rect x="${x}" y="${base - hc - 2 - hb}" width="${bw}" height="${hb}" rx="3" fill="#7a3cf0"/>`; if (days[i]) g += `<text x="${x + bw / 2}" y="${base + 16}" text-anchor="middle" font-family="DM Sans" font-size="11" font-weight="600" fill="#9a95a8">${days[i]}</text>`; }); return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`; })();
+add('Statistiques support', 'Période 7 / 14 / 30 jours', `${sbar()}<div class="scroll">
+  ${NB('Messages', 'Statistiques', '<span style="width:40px"></span>')}
+  <div class="seg seg3" style="margin-top:4px"><div>7 j</div><div class="on">14 j</div><div>30 j</div></div>
+  <div class="stats"><div class="stat sm"><b>14 min</b><span>réponse moyenne</span></div><div class="stat sm"><b>6 min</b><span>réponse médiane</span></div><div class="stat sm"><b>7</b><span>ouvertes</span></div><div class="stat sm"><b>2</b><span>non assignées</span></div></div>
+  <div class="lbl">Volume par jour · 214 messages</div>
+  <div class="card" style="padding:14px 16px 6px"><div class="legend" style="padding:0 0 10px"><span><i style="background:#e38a0b"></i>Clients</span><span><i style="background:#7a3cf0"></i>Bonzini</span></div>${chart}</div>
+  <div class="lbl">Par personne</div>
+  <div class="card">
+    <div class="row">${team('NT')}<div class="rm"><div class="rn">Nelson</div><div class="rs">48 réponses</div></div><div class="ra"><b>5 min</b><span>médiane</span></div></div>
+    <div class="row">${team('CM')}<div class="rm"><div class="rn">Carine Mbarga</div><div class="rs">31 réponses</div></div><div class="ra"><b>9 min</b><span>médiane</span></div></div>
+    <div class="row">${team('PE')}<div class="rm"><div class="rn">Patrick Essomba</div><div class="rs">17 réponses</div></div><div class="ra"><b>22 min</b><span>médiane</span></div></div>
+  </div>
+  <div class="lbl">Délai de réponse</div>
+  <div class="card" style="padding:8px 0"><div class="bar-l"><span class="lb">&lt; 5 min</span><span class="tr"><i style="width:46%"></i></span><b>46 %</b></div><div class="bar-l"><span class="lb">5 – 15 min</span><span class="tr"><i style="width:28%"></i></span><b>28 %</b></div><div class="bar-l"><span class="lb">15 – 60 min</span><span class="tr"><i style="width:17%"></i></span><b>17 %</b></div><div class="bar-l"><span class="lb">&gt; 1 h</span><span class="tr"><i style="width:9%"></i></span><b>9 %</b></div></div>
+</div><div class="home-ind"></div>`);
+
+// ================= DOUANE =================
+const P = {
+  bag: '<svg width="28" height="28" viewBox="0 0 24 24"><path d="M5 9h14l-1.2 11.5H6.2z" fill="#8a4b2a"/><path d="M9 9V7a3 3 0 0 1 6 0v2" stroke="#8a4b2a" stroke-width="1.8" fill="none"/><rect x="10" y="12" width="4" height="2" rx="1" fill="#e7c9a3"/></svg>',
+  fan: '<svg width="28" height="28" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6.5" fill="none" stroke="#3f4b5e" stroke-width="1.5"/><path d="M12 9c-1.2-3 0-4.6 1.5-4.6S14.2 7 12 9zm0 0c3-1.2 4.6 0 4.6 1.5S15 11.2 12 9zm0 0c1.2 3 0 4.6-1.5 4.6S9.8 11 12 9zm0 0c-3 1.2-4.6 0-4.6-1.5S9 6.8 12 9z" fill="#3f4b5e"/><path d="M12 15.5V21M8.5 21h7" stroke="#3f4b5e" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  tile: '<svg width="28" height="28" viewBox="0 0 24 24"><rect x="3" y="3" width="8.5" height="8.5" rx="1.2" fill="#c9b79c"/><rect x="12.5" y="3" width="8.5" height="8.5" rx="1.2" fill="#ddd0bb"/><rect x="3" y="12.5" width="8.5" height="8.5" rx="1.2" fill="#ddd0bb"/><rect x="12.5" y="12.5" width="8.5" height="8.5" rx="1.2" fill="#c9b79c"/></svg>',
+};
+const prod = (name, sub, code, meta, pk, pt) => `<div class="row"><div class="pt">${pk || I.photo.replace('width="58" height="38"', 'width="38" height="25"')}</div><div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div></div><div class="ra"><b class="code" style="font-size:15px">${code}</b><span class="dotline"><i style="background:${pt}"></i>${meta}</span></div></div>`;
+add('Douane · À signer', 'Accueil du commissionnaire', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Commissionnaire agréé</div><h1>À signer</h1></div><div class="round">${ic.bell}<span class="b"></span></div></div>
+  <div class="sh" style="padding-top:2px"><h2>Classements <span class="cnt">3</span></h2></div>
+  <div class="card">
+    ${prod('Chaussures de sport textile', 'Kengne Import SARL · 2 h', '6404.11', 'À vous', '', '#f0530f')}
+    ${prod('Sacs à main en PU', 'Awa Ngono Mballa · 5 h', '4202.22', 'À prendre', P.bag, '#f0530f')}
+    ${prod('Ventilateurs sur pied 45&nbsp;W', 'Établissements Fotso · 1 j', '8414.51', 'Pris · Moi', P.fan, '#e38a0b')}
+  </div>
+  <div class="sh"><h2>Déclarations à relire <span class="cnt">1</span></h2></div>
+  <div class="card"><div class="row"><div class="ni" style="background:#fff0e8">${I.doc('#f0530f')}</div><div class="rm"><div class="rn">DAU 26 DLA 004127</div><div class="rs">Jean-Pierre Kamdem Tchoua · 3 h</div></div><div class="ra"><b>1,8 M XAF</b><span class="dotline"><i></i>en jeu</span></div></div></div>
+  <div class="sh"><h2>Outils</h2></div>
+  <div class="tools"><div class="tool"><span class="ti" style="background:#fff4e2">${I.news('#e38a0b')}</span><div>Veille<small>3 avis actifs</small></div></div><div class="tool"><span class="ti" style="background:#f1eafe">${I.route('#7a3cf0')}</span><div>Routes<small>Mer · Air</small></div></div></div>
+  <div class="sh"><h2>Signés récemment</h2><a>Tout voir</a></div>
+  <div class="card">${prod('Carreaux céramique 60×60', 'Kengne Import SARL · hier', '6907.21', 'Signé', P.tile, '#1c9a57')}</div>
+</div>${tabs('sign', { sign: 4 }, 'customs')}<div class="home-ind"></div>`);
+
+const revueTop = `${NB('À signer', 'CL-2610-0012')}
+  <div class="photos"><div class="photo">${I.photo}</div><div class="photo" style="background:linear-gradient(160deg,#eef3f1,#d6e1dc)">${I.photo.replace('#34446b', '#2c5a4a')}</div><div class="photo" style="background:linear-gradient(160deg,#f6f1ea,#e5dccd)"><div style="font:700 13px 'DM Sans';color:#6f5a3c">Étiquette</div><span>+2</span></div></div>
+  <div style="padding:0 20px 14px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div style="font:800 22px/1.2 'DM Sans';letter-spacing:-.02em">Chaussures de sport, dessus textile</div></div><div style="display:flex;align-items:center;gap:8px;margin-top:8px">${pill('todo', 'À vous')}<span style="font:500 14.5px 'DM Sans';color:#6f6981">Kengne Import SARL · 2 h</span></div></div>`;
+add('Revue d\'un classement', 'Décision toujours à portée', `${sbar()}<div class="scroll">
+  ${revueTop}
+  <div class="seg seg3"><div class="on">Proposition</div><div>Dossier</div><div>Fil<small>4</small></div></div>
+  <div class="card">
+    <div class="cand"><div class="h"><span class="code">6404.11.00</span>${pill('done', '82 %')}</div><p>Chaussures de sport, dessus en matières textiles, semelle caoutchouc</p><div class="conf"><i style="width:82%"></i></div></div>
+    <div class="cand"><div class="h"><span class="code" style="color:#6f6981">6404.19.00</span><span style="font:700 13px 'DM Sans';color:#9a95a8">14 %</span></div><p>Autres chaussures, dessus en matières textiles</p></div>
+  </div>
+</div>
+<div class="dpanel"><div class="grab"></div>
+  <div class="seg seg3"><div class="on">Valider</div><div>Changer</div><div>Demander</div></div>
+  <div class="field"><div><span>Ligne nationale</span><b>6404.11.00.000</b></div><em>8 ou 12 chiffres</em></div>
+  <div class="field" style="margin-bottom:12px"><div><span>Observation</span><em>Facultatif</em></div></div>
+  <div class="btn dark">Signer le classement</div>
+</div><div class="home-ind"></div>`);
+
+add('Signer le classement', 'Engage l\'agrément : confirmation', `${sbar()}<div class="scroll">${revueTop}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Signer 6404.11.00 ?</h3><div class="lead">Chaussures de sport, dessus textile<br>Kengne Import SARL · BZ-0846</div>
+  <div class="danger">${I.warn()}Engage votre agrément CAD n° 0457/MINFI</div>
+  <div class="inset" style="margin-bottom:6px"><div class="kv"><span>Proposé</span><b>6404.11.00</b></div><div class="kv"><span>Signé</span><b>6404.11.00.000</b></div><div class="kv"><span>Client prévenu</span><b>Oui</b></div></div>
+  <div class="check"><span class="cb">${ic.check('#fff', 16)}</span><span>Photos et étiquette vérifiées</span></div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 112px">Retour</div><div class="btn red">Signer</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+add('Simulateur de droits', 'Code SH, valeur, incoterm', `${sbar()}<div class="scroll">
+  <div class="lt"><h1>Simulateur</h1><div class="round">${ic.dots}</div></div>
+  <div class="card" style="margin-bottom:12px"><div class="row"><div class="pt">${I.photo.replace('width="58" height="38"', 'width="38" height="25"')}</div><div class="rm"><div class="rn">Chaussures de sport, textile</div><div class="rs"><span class="code" style="font-size:13.5px;color:#4b4560">6404.11.00</span> · catégorie 4</div></div>${pill('wait', '1 avis')}</div></div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="kv"><span>Valeur</span><b>¥48 000 <span class="cur-tg" style="float:none;margin:0"><span class="on">¥</span><span>$</span><span>XAF</span></span></b></div>
+    <div class="kv"><span>Incoterm</span><b class="inco"><span>EXW</span><span class="on">FOB</span><span>CIF</span></b></div>
+    <div class="kv"><span>Fret · Assurance</span><b>650 000 · 22 000 XAF</b></div>
+    <div class="kv"><span>Régime</span><b>Mise à la consommation</b></div>
+  </div>
+  <div class="result"><div class="k">Droits et taxes estimés</div><div class="big">2 306 584<small>XAF</small></div>
+    <div class="rl2"><span>Valeur CAF</span><b>5 100 861</b></div>
+    <div class="rl2"><span>Droit de douane 20 %</span><b>1 020 172</b></div>
+    <div class="rl2"><span>TVA 19,25 %</span><b>1 192 046</b></div>
+    <div class="rl2"><span>Prélèvements CEMAC · RI</span><b>94 366</b></div>
+  </div>
+</div>
+<div class="dock" style="bottom:83px;padding-bottom:12px"><div class="btn soft">Comparer</div><div class="btn dark">${ic.share} Partager</div></div>
+${tabs('calc', { sign: 4 }, 'customs')}<div class="home-ind"></div>`);
+
+// ================= MOLA =================
+add('Mola', 'Action proposée, confirmée par carte', `${sbar()}<div class="scroll col">
+  ${NB('Plus', `Mola<small>Directeur des opérations</small>`, `<div class="act">${I.compose}</div>`)}
+  <div class="thread bot" style="gap:8px">
+    <div class="dsep">Aujourd'hui · 10:48</div>
+    <div class="msg out" style="padding:5px;width:168px;border-radius:18px"><div>${momoReceipt('500 000')}</div></div>
+    <div class="msg out">Valide le dépôt d'Awa Ngono, 500&nbsp;000 MTN. Preuve jointe.<div class="meta">10:48</div></div>
+    <div class="mrow"><span class="mola">${I.sparkle()}</span><div class="msg in" style="max-width:84%">Dépôt <b>BZ-DP-2610-0231</b> trouvé : 500&nbsp;000 XAF, MTN, réf. 8 821 004 517. Le reçu correspond.</div></div>
+    <div class="acard"><div class="ah"><span>${I.down('#e38a0b')}À confirmer</span><b>Créditer 500 000 XAF à Awa Ngono Mballa</b></div>
+      <div class="kv"><span>Dépôt</span><b>BZ-DP-2610-0231</b></div>
+      <div class="kv"><span>Solde</span><b>2 450 000 → <span style="color:#1c9a57">2 950 000</span></b></div>
+      <div class="kv"><span>Notifier le client</span><b>Oui</b></div>
+      <div class="btns"><div class="btn ghost" style="flex:0 0 104px">Annuler</div><div class="btn amb">Confirmer</div></div>
+    </div>
+  </div>
+</div>
+<div class="composer"><div class="cbtn">${I.plus()}</div><div class="cfield">Demander à Mola…<span class="cbtn v" style="width:30px;height:30px">${I.send}</span></div></div><div class="home-ind"></div>`);
+
+// ================= JOURNAL =================
+const jl = (who, t, ref, sub, time) => `<div class="row">${team(who)}<div class="rm"><div class="rn">${t}</div><div class="rs"><span class="ref">${ref}</span> · ${sub}</div></div><div class="ra" style="display:flex;align-items:center;gap:4px"><span>${time}</span>${ic.chev}</div></div>`;
+add('Journal', 'Date, personne, type ; chaque ligne mène à l\'objet', `${sbar()}<div class="scroll">
+  ${NB('Plus', '', '<span></span>')}
+  <div class="ttl"><h1>Journal</h1></div>
+  <div class="srch">${ic.search}Action, client ou référence</div>
+  <div class="chips"><div class="chip">${I.cal()}14 – 21 oct.${I.caret()}</div><div class="chip on">Nelson${I.caret('#fff')}</div><div class="chip">Paiements${I.caret()}</div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="card">
+    ${jl('NT', 'Paiement payé · ¥41 011', 'BZ-PY-2610-0409', 'Fotso &amp; Fils', '10:42')}
+    ${jl('NT', 'Paiement créé · ¥7 493', 'BZ-PY-2610-0416', 'Awa Ngono Mballa', '10:09')}
+    ${jl('NT', 'Bénéficiaire modifié', 'BZ-PY-2610-0411', 'Kengne Import', '09:47')}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="card">
+    ${jl('NT', 'Montants corrigés', 'BZ-PY-2610-0398', 'Ibrahim Moussa Bello', '17:20')}
+    ${jl('NT', 'Paiement annulé', 'BZ-PY-2610-0391', 'Mbappe Négoce', '15:02')}
+    ${jl('NT', 'Paiement payé · ¥18 750', 'BZ-PY-2610-0388', 'Kengne Import', '11:34')}
+  </div>
+</div>${ADM()}<div class="home-ind"></div>`);
+
+// ================= JUSTIFICATIFS =================
+const TH = { momo: ['#ffcb05', '#13161c', 'MTN MoMo'], om: ['#ff7900', '#fff', 'Orange Money'], ali: ['#1677ff', '#fff', '支付宝'], wx: ['#07c160', '#fff', '微信支付'], bank: ['#3f4b5e', '#fff', 'ECOBANK · Bordereau'] };
+const proof = (k, amt, kind, who, sub, ref, rot = -1.5) => { const [bg, fg, l] = TH[k]; return `<div class="pc"><div class="thumb"><span class="ttag ${kind === 'Dépôt' ? 'd' : 'p'}">${kind}</span><div class="th" style="transform:rotate(${rot}deg)"><div class="th-h" style="background:${bg};color:${fg}">${l}</div><div class="th-amt">${amt}</div><div class="th-ok">✓ ${k === 'ali' || k === 'wx' ? '交易成功' : 'Réussi'}</div><i></i><i style="width:70%"></i><i style="width:55%"></i></div></div><div class="pm"><b>${who}</b><span>${sub}</span><span class="ref">${ref}${ic.chev.replace('width="18" height="18"', 'width="14" height="14"')}</span></div></div>`; };
+add('Justificatifs', 'Preuves de dépôts ET de paiements', `${sbar()}<div class="scroll">
+  ${NB('Plus', '', '<span></span>')}
+  <div class="ttl"><h1>Justificatifs</h1></div>
+  <div class="srch">${ic.search}Client ou référence</div>
+  <div class="seg seg3"><div class="on">Tous</div><div>Dépôts</div><div>Paiements</div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="pgrid">
+    ${proof('ali', '¥41,011', 'Paiement', 'Établissements Fotso &amp; Fils', '¥41 011 · Alipay', 'BZ-PY-2610-0409', -1.5)}
+    ${proof('momo', '1 000 000', 'Dépôt', 'Awa Ngono Mballa', '1 000 000 XAF · MTN', 'BZ-DP-2610-0231', 1.2)}
+    ${proof('bank', '4 575 000', 'Dépôt', 'Kengne Import SARL', '4 575 000 XAF · Banque', 'BZ-DP-2610-0230', 1)}
+    ${proof('wx', '¥999', 'Paiement', 'Jean-Pierre Kamdem Tchoua', '¥999 · WeChat', 'BZ-PY-2610-0414', -1.2)}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="pgrid">
+    ${proof('om', '640 000', 'Dépôt', 'Mbappe Négoce', '640 000 XAF · Orange', 'BZ-DP-2610-0226', 1.4)}
+    ${proof('ali', '¥18,750', 'Paiement', 'Kengne Import SARL', '¥18 750 · Alipay', 'BZ-PY-2610-0388', -1)}
+  </div>
+</div>${ADM()}<div class="home-ind"></div>`);
+
+// ================= NOTIFICATIONS =================
+const nt = (bg, icon, t, sub, time, un) => `<div class="row"><div class="ni" style="background:${bg}">${icon}</div><div class="rm"><div class="rn" ${un ? '' : 'style="font-weight:500"'}>${t}</div><div class="rs">${sub}</div></div><div class="ra" style="display:grid;justify-items:end;gap:6px"><span>${time}</span>${un ? '<span class="udot"></span>' : '<span style="height:9px"></span>'}</div></div>`;
+add('Notifications', 'La cloche de l\'Accueil', `${sbar()}<div class="scroll">
+  ${NB('Accueil', '', '<span style="font:600 16px \'DM Sans\';color:#7a3cf0;padding-right:8px">Tout lu</span>')}
+  <div class="ttl"><h1>Notifications</h1></div>
+  <div class="chips"><div class="chip on">Tout <small>5</small></div><div class="chip">Dépôts</div><div class="chip">Paiements</div><div class="chip">Cargo</div><div class="chip">Messages</div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="card">
+    ${nt('#fff4e2', I.down('#e38a0b'), 'Dépôt à vérifier', '1 000 000 XAF · Awa Ngono Mballa', '10:51', 1)}
+    ${nt('#f1eafe', I.up('#7a3cf0'), 'Paiement prêt', '¥18 750 · Kengne Import SARL', '10:20', 1)}
+    ${nt('#e7f1ff', I.chat('#1a5fd1'), '3 messages non lus', 'Jean-Pierre Kamdem Tchoua', '09:58', 1)}
+    ${nt('#fff0e8', I.ship('#f0530f'), 'Conteneur en retard · 6 j', 'MIEU3611115 · Kribi → Douala', '08:30', 1)}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="card">
+    ${nt('#fff4e2', I.down('#e38a0b'), 'Dépôt à corriger', '640 000 XAF · Mbappe Négoce', '18:12', 1)}
+    ${nt('#e6f6ed', I.target('#1c9a57'), 'Prospect à vérifier', 'Quincaillerie Tagne · Bafoussam', '16:40', 0)}
+  </div>
+</div>${tabs('home', { ops: 4, more: 3 })}<div class="home-ind"></div>`);
+
+// ================= COORDONNÉES =================
+const bank = (code, bg, name, acct, swift, ag) => `<div class="card" style="margin-bottom:12px"><div class="row"><span class="bmk" style="background:${bg}">${code}</span><div class="rm"><div class="rn">${name}</div><div class="rs">Compte courant · XAF</div></div><span class="minibtn">${ic.share.replace('width="20" height="20"', 'width="16" height="16"')}Partager</span></div>
+  <div class="kv"><span>Titulaire</span><b>NORTON GAUSS BONZINI SARL</b></div>
+  <div class="kv"><span>Compte</span><b class="mono">${acct}<span class="cp">${ic.copy}</span></b></div>
+  <div class="kv"><span>SWIFT</span><b class="mono">${swift}<span class="cp">${ic.copy}</span></b></div>
+  <div class="kv"><span>Agence</span><b>${ag}</b></div></div>`;
+const coordList = `${NB('Plus', '', '<span></span>')}
+  <div class="ttl"><h1>Coordonnées</h1></div>
+  <div class="seg"><div class="on">Banques<small>4</small></div><div>Mobile Money<small>2</small></div></div>
+  ${bank('Eco', '#0b5aa3', 'Ecobank Cameroun', '10029 26003 0120445670', 'ECOCCMCX', 'Douala Akwa')}
+  ${bank('UBA', '#d6261f', 'UBA Cameroun', '10033 05201 0302871165', 'UNAFCMCX', 'Douala Bonanjo')}
+  ${bank('CCA', '#14824a', 'CCA Bank', '10039 10045 0451230981', 'CCAMCMCX', 'Douala Akwa Nord')}`;
+add('Coordonnées de paiement', 'Banques et Mobile Money, copiables', `${sbar()}<div class="scroll">${coordList}</div>${ADM()}<div class="home-ind"></div>`);
+
+add('Partager les coordonnées', 'PDF ou image, orientation, langue', `${sbar()}<div class="scroll">${coordList}</div>
+<div class="dim"></div>
+<div class="sheet"><div class="grab"></div><h3>Ecobank Cameroun</h3><div class="lead">NORTON GAUSS BONZINI SARL</div>
+  <div style="display:flex;gap:16px;padding:0 16px 16px;align-items:flex-start">
+    <div class="docprev"><div class="dh">BONZINI LABS<small>Coordonnées · Payment details</small></div><div style="padding:6px 8px 2px;font:800 8px 'DM Sans'">Ecobank Cameroun</div><div class="dl"><span>Compte</span><span>10029 26003…</span></div><div class="dl"><span>SWIFT</span><span>ECOCCMCX</span></div><div class="dl"><span>Agence</span><span>Douala Akwa</span></div><div class="dl"><span>Titulaire</span><span>NORTON GAUSS</span></div><div style="height:26px"></div></div>
+    <div style="flex:1;min-width:0">
+      <div class="optl">Format</div><div class="sseg"><div class="on">PDF</div><div>Image</div></div>
+      <div class="optl">Orientation</div><div class="sseg"><div class="on">Portrait</div><div>Paysage</div></div>
+      <div class="optl">Langue</div><div class="sseg" style="margin-bottom:0"><div>FR</div><div>EN</div><div class="on">FR+EN</div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;padding:0 16px"><div class="btn ghost" style="flex:0 0 132px;font-size:16px">${I.img('#17111f')}Copier</div><div class="btn vio">${ic.share} Partager le PDF</div></div>
+</div><div class="home-ind"></div>`, 'white');
+
+// ================= RÉGLAGES =================
+const set = (bg, icon, l, v = '', chev = true) => `<div class="set"><span class="si" style="background:${bg}">${icon}</span>${l}<span class="val">${v}${chev ? ic.chev : ''}</span></div>`;
+add('Réglages', 'Langue FR / EN / 中文, thème', `${sbar()}<div class="scroll">
+  ${NB('Plus', '', '<span></span>')}
+  <div class="ttl"><h1>Réglages</h1></div>
+  <div class="lbl" style="padding-top:0">Langue</div>
+  <div class="lang"><div class="lg on">Français<small>FR</small></div><div class="lg">English<small>EN</small></div><div class="lg" style="font-family:'Noto SC'">中文<small style="font-family:'DM Sans'">ZH</small></div></div>
+  <div class="lbl">Thème</div>
+  <div class="seg seg3" style="margin:0 16px"><div class="on">${I.sun('#17111f')}&nbsp;Clair</div><div>${I.moon('#4b4560')}&nbsp;Sombre</div><div>Auto</div></div>
+  <div class="lbl">Sécurité</div>
+  <div class="card">${set('#efe8ff', I.lock('#6526de'), 'Mot de passe', 'Modifié le 2 oct.')}</div>
+  <div class="lbl">Messages clients</div>
+  <div class="card">${set('#f1eafe', I.bolt('#6526de'), 'Réponses types', '12')}${set('#e7f1ff', I.chat('#1a5fd1').replace('width="19" height="19"', 'width="17" height="17"'), 'Suggestions aux clients', '5')}</div>
+  <div class="lbl">Expédition</div>
+  <div class="card">${set('#fff4e2', I.pin('#b36800'), 'Adresses en Chine', '2')}${set('#fff0e8', I.box('#c23f07'), 'Tarifs cargo')}</div>
+  <div class="lbl">À propos</div>
+  <div class="card">${set('#f2f0f6', I.info('#4b4560'), 'Version', '2.6.0 (412)', false)}</div>
+  <div style="height:20px"></div>
+</div>${ADM()}<div class="home-ind"></div>`);
+
+// ================= LOTS =================
+const lot = (name, sub, amt, meta, dot) => `<div class="row"><div class="ni" style="background:#f1eafe">${I.layers('#7a3cf0')}</div><div class="rm"><div class="rn">${name}</div><div class="rs">${sub}</div></div><div class="ra"><b>${amt}</b><span class="dotline"><i style="background:${dot}"></i>${meta}</span></div></div>`;
+add('Lots de paiements', 'Retrouver un lot après sa création', `${sbar()}<div class="scroll">
+  ${NB('Opérations', '', `<div class="act">${I.plus('#17111f', 22)}</div>`)}
+  <div class="ttl"><h1>Lots de paiements</h1></div>
+  <div class="srch">${ic.search}Client ou référence de lot</div>
+  <div class="chips"><div class="chip">En cours <small>2</small></div><div class="chip">Terminés</div><div class="chip on">Tous</div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="card">
+    ${lot('Kengne Import SARL', 'BZ-LT-2610-0004 · 10:12', '¥38 450', '3 / 5 payés', '#e38a0b')}
+    ${lot('Fotso &amp; Fils', 'BZ-LT-2610-0003 · 08:40', '¥26 900', '0 / 3 payés', '#f0530f')}
+  </div>
+  <div class="day" style="padding-top:18px">17 juillet</div>
+  <div class="card">
+    ${lot('Awa Ngono Mballa', 'BZ-LT-2607-0002', '¥21 312', '4 / 4 payés', '#1c9a57')}
+    ${lot('Mbappe Négoce', 'BZ-LT-2606-0001', '¥9 880', '2 / 2 payés', '#1c9a57')}
+  </div>
+</div>${ADM('ops')}<div class="home-ind"></div>`);
+
+add('Fiche d\'un lot', 'Lignes cliquables vers chaque paiement', `${sbar()}<div class="scroll">
+  ${NB('Lots', 'BZ-LT-2610-0004')}
+  <div class="hero" style="padding-bottom:16px"><div class="mk" style="background:#7a3cf0">${I.layers('#fff')}</div><div class="amt">¥38 450</div><div class="sub">3 547 703 XAF débités · 5 bénéficiaires</div>${pill('wait', '3 / 5 payés')}<div class="prog"><i style="width:60%"></i></div></div>
+  <div class="card"><div class="row"><div class="av" style="background:#e6f6ed;color:#137042">KI</div><div class="rm"><div class="rn">Kengne Import SARL</div><div class="rs">BZ-0846 · solde 5 352 297 XAF</div></div>${ic.chev}</div></div>
+  <div class="lbl">Paiements</div>
+  <div class="card">
+    ${row('bk', 'Foshan Meida Furniture', 'BZ-PY-2610-0420 · Virement', '¥8 200', 'À payer', '#f0530f')}
+    ${row('ali', 'Shantou Lianfa Toys', 'BZ-PY-2610-0421 · Alipay', '¥8 000', 'À payer', '#f0530f')}
+    ${row('ali', 'Yiwu Jinsheng Textile Co.', 'BZ-PY-2610-0417 · Alipay', '¥12 000', 'Payé', '#1c9a57')}
+    ${row('ali', 'Guangzhou Hengtai Trading', 'BZ-PY-2610-0418 · Alipay', '¥7 493', 'Payé', '#1c9a57')}
+  </div>
+  <div class="lbl">Note</div>
+  <div class="card"><div class="kv"><span>Commande d'octobre</span><b>Nelson · 10:12</b></div></div>
+  <div style="height:110px"></div>
+</div>
+<div class="dock"><div class="btn soft">${ic.share}</div><div class="btn dark">Payer le suivant · ¥8 200</div></div><div class="home-ind"></div>`);
+
+// ================= AGENT CASH =================
+const cashRow = (name, sub, amt, meta, dot) => row('cash', name, sub, amt, meta, dot);
+add('Agent cash · Paiements', 'À remettre / Remis, après une remise', `${sbar()}<div class="scroll">
+  <div class="lt"><div><div class="over">Agent cash · Guangzhou</div><h1>Paiements</h1></div><div class="round">${ic.bell}</div></div>
+  <div class="banner"><div class="okc">${ic.check()}</div><div style="flex:1"><b>Remis · ¥12 500</b><span>Zhang Wei · signé 10:58</span></div><span style="font:700 15px 'DM Sans';color:#137042;align-self:center">Reçu</span></div>
+  <div class="seg" style="margin-top:12px"><div class="on">À remettre<small>4</small></div><div>Remis<small>14</small></div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="card">
+    ${cashRow('Li Jianguo', 'pour Kengne Import SARL', '¥15 000', 'QR scanné', '#e38a0b')}
+    ${cashRow('Wang Fang', 'pour Awa Ngono Mballa', '¥8 200', 'À remettre', '#f0530f')}
+  </div>
+  <div class="day" style="padding-top:18px">Hier</div>
+  <div class="card">
+    ${cashRow('Ibrahim Moussa Bello', 'le client lui-même', '¥8 500', 'À remettre', '#f0530f')}
+    ${cashRow('Chen Mei', 'pour Mbappe Négoce', '¥6 000', 'À remettre', '#f0530f')}
+  </div>
+</div>${tabs('ops', { ops: 4 }, 'cash')}<div class="home-ind"></div>`);
+
+add('Confirmer la remise', 'QR scanné + signature', `${sbar()}<div class="scroll">
+  <div class="modalnav"><span class="x">Fermer</span><span class="t">Remise du cash</span><span style="width:52px"></span></div>
+  <div class="okline"><div class="qrs">${qr(31)}</div><div><b>QR vérifié</b><span>BZ-PY-2610-0422 · scanné 11:04</span></div></div>
+  <div class="hero" style="padding:4px 20px 16px"><div class="amt">¥15 000</div><div class="sub" style="margin-bottom:0">à Li Jianguo · +86 139 2287 4410</div></div>
+  <div class="card"><div class="kv"><span>Client</span><b>Kengne Import SARL</b></div><div class="kv"><span>Bénéficiaire</span><b>Tiers</b></div></div>
+  <div class="check" style="padding:14px 22px 12px"><span class="cb">${ic.check('#fff', 16)}</span><span>¥15 000 remis, pièce d'identité vérifiée</span></div>
+  <div class="sigpad">
+    <svg viewBox="0 0 360 236" style="position:absolute;inset:0;width:100%;height:100%"><path transform="translate(0 30)" d="M46 118c18-52 40-70 52-34 8 24 16 30 30-6 13-34 22-38 30-6 6 24 15 27 32-2 17-29 29-29 35 4 4 21 13 25 27 2 13-22 23-22 32 0" fill="none" stroke="#17111f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 196h288" stroke="#d9d3e6" stroke-width="1.5"/></svg>
+    <span style="position:absolute;left:16px;bottom:9px;font:600 12.5px 'DM Sans';color:#9a95a8">Signature de Li Jianguo</span>
+    <span style="position:absolute;right:16px;bottom:9px;font:700 13px 'DM Sans';color:#7a3cf0">Effacer</span>
+  </div>
+</div>
+<div class="dock"><div class="btn or">Confirmer la remise · ¥15 000</div></div><div class="home-ind"></div>`);
+
+render();
+</script>
+</body></html>

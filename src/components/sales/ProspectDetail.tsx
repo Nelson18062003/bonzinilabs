@@ -1,49 +1,45 @@
 // ============================================================
-// ESPACE COMMERCIAL — la fiche d'un prospect (« /v/prospects/:id »).
+// ESPACE COMMERCIAL — la fiche d'un prospect (« /v/prospects/:id ») —
+// refonte v2 (maquettes 03/18 et 10/27).
 //
-// En tête : son nom, son entreprise et sa ville, son statut. Puis ses
-// numéros — Appeler et WhatsApp pour CHACUN — et son email ; où en est-on
-// (À contacter / Contacté / Intéressé, « Marquer perdu » avec un motif,
-// « Rouvrir » ; « Devenu client » est figé : c'est le compte créé qui l'a
-// posé) ; ses besoins, mis en valeur ; son identité, son activité, la suite.
-// « Modifier » sur une section rouvre l'étape de l'assistant
-// (« ?modifier=… »). Une fiche à laquelle il manque le nom, le sexe, la
-// ville ou « ses plus gros problèmes » (tout le pipeline d'avant le 06/10)
-// le dit dans un bandeau « Fiche incomplète » ; « Compléter » enchaîne les
-// étapes qui manquent.
+// Façon Wave : ses initiales, son nom, son entreprise et sa ville ; Appeler
+// (noir) · WhatsApp · Compléter ; le statut À contacter / Contacté /
+// Intéressé ; l'essentiel en lignes (numéros, email, activité, problèmes,
+// aide, relance) — toucher une ligne rouvre l'étape de l'assistant
+// (« ?modifier=… »), toucher un numéro propose Appeler ou WhatsApp. Dans
+// « … » : Modifier (une section), Marquer perdu (motifs rapides + précision),
+// Rouvrir.
 // « À vérifier » (07/10) : un de ses numéros est déjà celui d'un client
-// Bonzini ; un bandeau l'explique (la direction est prévenue et décidera),
-// le statut ne se change pas en attendant — le reste de la fiche, si.
-// « Perdu » : « Rouvrir » n'est proposé que si le serveur l'accepterait —
-// ses numéros sont vérifiés comme pour une réouverture ; l'un d'eux est
-// celui d'un client (fiche refusée par la direction, par exemple) ou suivi
-// ailleurs : une phrase le dit à la place du bouton.
+// Bonzini ; le statut ne se change pas en attendant. « Perdu » : « Rouvrir »
+// n'est proposé que si le serveur l'accepterait (numéros revérifiés).
 // ============================================================
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ChevronLeft, CircleCheck, Hourglass, RotateCcw, TriangleAlert, UserX } from 'lucide-react';
+import { IdCard, Mail, MessageCircle, Pencil, Phone, RotateCcw, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useProspectNumbersCheck, useSetProspectStatus, type Prospect, type ReopenBlock } from '@/hooks/useSales';
-import { PROSPECT_STATUS, TO_VERIFY_NOTE, type ProspectStatus } from '@/lib/sales';
-import { BottomSheet } from '@/mobile/designKit';
-import { Field, Segmented, StatusTag } from './SalesUi';
-import { AREA, CARD, CHIP, SECTION_TITLE, btn } from './uiClasses';
-import { ActivitySection, ContactSection, HelpSection, IdentitySection, NeedsSection, NextSection } from './ProspectSections';
-import { draftOf, joinFr, missingOf, type StepId } from './prospectDraft';
-import { fmtLongDay, initialsOf, isDue, prospectName } from './salesHelpers';
+import { INTERESTS, PROSPECT_STATUS, TO_VERIFY_NOTE, whatsappLink, type ProspectStatus } from '@/lib/sales';
+import { formatE164ForDisplay } from '@/components/form/PhoneNumberInput';
+import {
+  ActionCircles, ActionSheet, BigButton, BottomSheet, BoxSegmented, Chip, Initials, KVBox, MoreButton, ScreenTop, Tag, TEXT, TextArea,
+  useSheet, type CircleAction, type KV, type SheetAction,
+} from '@/mobile/designKit';
+import { FieldLabel } from '@/mobile/screens/clients/parts';
+import { draftOf, joinFr, missingOf, STEPS, type StepId } from './prospectDraft';
+import { followUpLabel, isDue, prospectName } from './salesHelpers';
 
 const REASON_MAX = 300;
-const QUICK_REASONS = ['Trouve nos prix trop chers', 'A déjà un transitaire', 'Trouve le délai trop long', 'Pas d’importation en ce moment'];
+const QUICK_REASONS = ['Prix trop élevé', 'A déjà un prestataire', 'Ne répond plus', 'N’importe pas', 'Délai trop long'];
 const OPEN_STEPS = ['new', 'contacted', 'interested'] as const;
 type OpenStatus = (typeof OPEN_STEPS)[number];
 
-/** Pourquoi une fiche perdue ne se rouvre pas (ce que le serveur répondrait), sans rien dire du client. Espaces insécables avant « : ». */
+/** Pourquoi une fiche perdue ne se rouvre pas (ce que le serveur répondrait), sans rien dire du client. */
 const REOPEN_BLOCKED: Record<ReopenBlock, string> = {
-  client: 'Un de ses numéros est celui d’un client Bonzini\u00a0: cette fiche ne peut pas être rouverte. Si le numéro est faux, corrigez-le.',
-  own_client: 'Un de ses numéros est celui d’un de vos clients\u00a0: retrouvez-le dans «\u00a0Mes clients\u00a0».',
-  mine: 'Un de ses numéros est déjà celui d’un autre de vos prospects\u00a0: suivez plutôt celui-là.',
-  other: 'Un de ses numéros est suivi par un autre commercial\u00a0: cette fiche ne peut pas être rouverte.',
+  client: 'Un numéro est celui d’un client Bonzini',
+  own_client: 'Un numéro est celui d’un de vos clients',
+  mine: 'Un numéro est celui d’un autre de vos prospects',
+  other: 'Un numéro est suivi par un autre commercial',
 };
 
 export function ProspectDetail({
@@ -60,23 +56,29 @@ export function ProspectDetail({
 }) {
   const navigate = useNavigate();
   const setStatus = useSetProspectStatus();
+  const more = useSheet();
+  const edit = useSheet();
   const [losing, setLosing] = useState(false);
+  const [quick, setQuick] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [numberSheet, setNumberSheet] = useState<string | null>(null);
+  const emailSheet = useSheet();
 
   const d = useMemo(() => draftOf(prospect), [prospect]);
   const won = prospect.status === 'won';
   const toVerify = prospect.status === 'to_verify';
+  const lost = prospect.status === 'lost';
+  const open = OPEN_STEPS.includes(prospect.status as OpenStatus);
   const busy = setStatus.isPending;
   const name = prospectName(prospect);
   const where = [prospect.company, prospect.city].filter(Boolean).join(' · ');
   const missing = missingOf(prospect);
   const numbers = [
-    { e164: prospect.phone_e164, label: null, main: true },
-    ...(prospect.phones ?? []).map((p) => ({ e164: p.phone_e164, label: p.label, main: false })),
+    { e164: prospect.phone_e164, label: 'WhatsApp' },
+    ...(prospect.phones ?? []).map((p) => ({ e164: p.phone_e164, label: p.label || 'Autre numéro' })),
   ];
-  const lost = prospect.status === 'lost';
-  // « Rouvrir » seulement si le serveur l'accepterait (ses numéros revérifiés comme pour une réouverture).
   const reopen = useProspectNumbersCheck(numbers.map((n) => n.e164), prospect.id, lost);
+  const motif = [quick, reason.trim()].filter(Boolean).join(' · ');
 
   const changeStatus = (status: Exclude<ProspectStatus, 'won' | 'to_verify'>, why?: string) => {
     if (busy) return;
@@ -86,147 +88,115 @@ export function ProspectDetail({
         onSuccess: () => {
           setLosing(false);
           setReason('');
+          setQuick(null);
           toast.success(status === 'new' && prospect.status === 'lost' ? 'Prospect rouvert' : `Statut : ${PROSPECT_STATUS[status].label}`);
         },
       },
     );
   };
 
+  const circles: CircleAction[] = [
+    { label: 'Appeler', icon: Phone, primary: true, onClick: () => { window.location.href = `tel:${prospect.phone_e164}`; } },
+    { label: 'WhatsApp', icon: MessageCircle, onClick: () => window.open(whatsappLink(prospect.phone_e164), '_blank', 'noopener') },
+    { label: 'Compléter', icon: IdCard, onClick: () => (missing.length > 0 ? onComplete() : edit.show()) },
+  ];
+
+  const interests = d.interests.map((i) => INTERESTS.find((x) => x.value === i)?.label).filter(Boolean).join(', ');
+  const rows: KV[] = [
+    ...numbers.map((n) => ({ label: n.label, value: formatE164ForDisplay(n.e164), onClick: () => setNumberSheet(n.e164) })),
+    { label: 'Email', value: prospect.email || '—', onClick: () => (prospect.email ? emailSheet.show() : onEdit('reach')) },
+    { label: 'Activité', value: interests || '—', onClick: () => onEdit('business') },
+    { label: 'Problème', value: prospect.pain_points?.trim() || '—', onClick: () => onEdit('needs') },
+    { label: 'Aide', value: prospect.help_needed?.trim() || '—', onClick: () => onEdit('help') },
+    {
+      label: 'Relance',
+      value: prospect.next_action_at ? followUpLabel(prospect.next_action_at) : '—',
+      tone: isDue(prospect) ? 'danger' : undefined,
+      onClick: () => onEdit('next'),
+    },
+  ];
+  if (prospect.notes?.trim()) rows.push({ label: 'Notes', value: prospect.notes.trim(), onClick: () => onEdit('next') });
+  if (lost) rows.unshift({ label: 'Perdu', value: prospect.lost_reason || 'Sans motif' });
+  if (won) rows.unshift({ label: 'Devenu client', value: prospect.converted_at ? new Date(prospect.converted_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'Oui' });
+
+  const actions: SheetAction[] = [
+    { label: 'Modifier', hint: 'une partie de la fiche', icon: Pencil, hidden: won, onClick: edit.show },
+    { label: 'Marquer perdu', icon: UserX, danger: true, hidden: !open, onClick: () => setLosing(true) },
+    { label: 'Rouvrir', hint: reopen.blocking ? REOPEN_BLOCKED[reopen.blocking] : undefined, icon: RotateCcw, hidden: !lost, disabled: !!reopen.blocking || reopen.pending, onClick: () => changeStatus('new') },
+  ];
+
   return (
-    <div className="pb-8">
-      <header className="px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-6">
-        <div className="flex h-11 items-center justify-between gap-3">
-          <button type="button" onClick={() => navigate('/v/prospects')} className={btn('ghost', 'sm', '-ml-2 gap-1 pl-1.5')}>
-            <ChevronLeft className="h-4 w-4" /> Prospects
-          </button>
-          <StatusTag status={prospect.status} />
-        </div>
-        <div className="s-enter mt-3 flex items-center gap-4">
-          <span
-            aria-hidden
-            className={cn(
-              'flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[18px] font-semibold',
-              won ? 's-good bg-[hsl(var(--s-green-tint))]' : 's-field-bg s-ink',
-            )}
-          >
-            {initialsOf(name)}
-          </span>
-          <div className="min-w-0">
-            <h1 className="break-words text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] s-ink">{name}</h1>
-            {where && <p className="mt-1 text-[15px] s-ink-2">{where}</p>}
-          </div>
-        </div>
-      </header>
-
-      <div className="space-y-4 px-4 pt-6 sm:px-6">
-        {toVerify && <ToVerifyNotice justSaved={justSaved} />}
-
-        {missing.length > 0 && (
-          <div data-tone="warn" className="s-note s-enter flex items-start gap-3 rounded-[16px] py-3 pl-4 pr-2">
-            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <div className="text-[15px] font-semibold s-ink">Fiche incomplète</div>
-              <div className="mt-0.5 text-[14px] s-ink-2">Il manque {joinFr(missing.map((m) => m.label))}.</div>
-            </div>
-            <button type="button" onClick={onComplete} className={btn('quiet', 'sm', 'shrink-0')}>
-              Compléter
-            </button>
+    <div className="min-h-[100dvh] bg-white pb-8 dark:bg-[#1E1E1E]">
+      <ScreenTop title="Prospect" onBack={() => navigate('/v/prospects')} right={<MoreButton onClick={more.show} />} />
+      <div className="flex flex-col items-center px-5 pt-7 text-center">
+        <Initials name={name} size={92} />
+        <h2 className={cn('mt-3.5 text-[22px] font-semibold leading-tight', TEXT.strong)}>{name}</h2>
+        {where && <p className={cn('mt-1 text-[16px]', TEXT.muted)}>{where}</p>}
+        {(toVerify || won || lost) && <Tag tone={PROSPECT_STATUS[prospect.status].tone === 'info' ? 'neutral' : PROSPECT_STATUS[prospect.status].tone} className="mt-2.5">{PROSPECT_STATUS[prospect.status].label}</Tag>}
+        {missing.length > 0 && open && (
+          <>
+            <Tag tone="pending" className="mt-2.5">À compléter</Tag>
+            <p className={cn('mt-2 text-[16px]', TEXT.muted)}>Il manque {joinFr(missing.map((m) => m.label))}.</p>
+          </>
+        )}
+      </div>
+      <ActionCircles actions={circles} />
+      <div className="space-y-4 px-5 pt-5">
+        {toVerify && (
+          <div role="status" className="rounded-lg bg-[#FFF1C2] px-4 py-3 text-[16px] text-[#682D03] dark:bg-[#522504] dark:text-[#FFF1C2]">
+            <b className="font-semibold">{justSaved ? 'Enregistré, à vérifier' : 'En attente de la direction'}</b> · Un de ses numéros est déjà celui d’un client Bonzini. {TO_VERIFY_NOTE}
           </div>
         )}
-
-        <ContactSection numbers={numbers} email={prospect.email ?? ''} actions onEdit={onEdit} />
-
-        {won ? (
-          <div data-tone="good" className="s-note s-enter flex items-start gap-3 rounded-[16px] px-4 py-3.5" style={{ animationDelay: '40ms' }}>
-            <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 s-good" aria-hidden />
-            <div>
-              <div className="text-[15px] font-semibold s-ink">Devenu client{prospect.converted_at ? ` le ${fmtLongDay(prospect.converted_at)}` : ''}</div>
-              <div className="mt-0.5 text-[14px] s-ink-2">Il compte désormais dans «&nbsp;Mes clients&nbsp;». Ses numéros ne changent plus ici.</div>
-            </div>
-          </div>
-        ) : toVerify ? null : lost ? (
-          <section className={cn(CARD, 's-enter flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5')} style={{ animationDelay: '40ms' }}>
-            <div className="min-w-0">
-              <div className={SECTION_TITLE}>Perdu</div>
-              {prospect.lost_reason ? <div className="mt-1 text-[15px] s-ink">« {prospect.lost_reason} »</div> : <div className="mt-1 text-[15px] s-ink-3">Sans motif</div>}
-              {reopen.blocking && <p className="mt-2 text-[14px] leading-snug s-ink-2">{REOPEN_BLOCKED[reopen.blocking]}</p>}
-            </div>
-            {!reopen.blocking && (
-              <button type="button" onClick={() => changeStatus('new')} disabled={busy || reopen.pending} className={btn('quiet', 'md', 'gap-1.5')}>
-                <RotateCcw className="h-4 w-4" /> Rouvrir
-              </button>
-            )}
-          </section>
-        ) : (
-          <section className={cn(CARD, 's-enter space-y-3 p-4 sm:p-5')} style={{ animationDelay: '40ms' }}>
-            <div className={SECTION_TITLE}>Où en êtes-vous ?</div>
-            <Segmented<OpenStatus>
-              ariaLabel="Statut du prospect"
-              options={OPEN_STEPS.map((st) => ({ value: st, label: PROSPECT_STATUS[st].label }))}
-              value={prospect.status as OpenStatus}
-              onChange={(st) => changeStatus(st)}
-              disabled={busy}
-            />
-            <button type="button" onClick={() => setLosing(true)} disabled={busy} className={btn('danger', 'sm', '-ml-1 gap-1.5')}>
-              <UserX className="h-4 w-4" /> Marquer perdu
-            </button>
-          </section>
+        {open && (
+          <BoxSegmented<OpenStatus>
+            ariaLabel="Statut du prospect"
+            options={OPEN_STEPS.map((st) => ({ value: st, label: PROSPECT_STATUS[st].label }))}
+            value={prospect.status as OpenStatus}
+            onChange={(st) => st !== prospect.status && changeStatus(st)}
+          />
         )}
-
-        <NeedsSection d={d} onEdit={onEdit} delay={80} />
-        <HelpSection d={d} onEdit={onEdit} delay={100} />
-        <NextSection d={d} onEdit={onEdit} delay={120} due={isDue(prospect)} />
-        <IdentitySection d={d} onEdit={onEdit} delay={160} />
-        <ActivitySection d={d} onEdit={onEdit} delay={200} />
+        <KVBox rows={rows} />
       </div>
 
-      <BottomSheet open={losing && !toVerify} onClose={() => !busy && setLosing(false)} title="Prospect perdu" className="s-sheet">
-        <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (reason.trim().length >= 3) changeStatus('lost', reason);
-          }}
-          className="space-y-4"
-        >
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Motifs fréquents">
-            {QUICK_REASONS.map((r) => (
-              <button key={r} type="button" aria-pressed={reason === r} onClick={() => setReason(r)} className={cn(CHIP, 'h-9 px-3 text-[14px]')}>
-                {r}
-              </button>
-            ))}
-          </div>
-          <Field label="Pourquoi ?" htmlFor="pr-reason" hint="Un motif fréquent d’un toucher, ou le vôtre en quelques mots.">
-            {/* eslint-disable-next-line no-restricted-syntax -- champ de « /v » à 17 px */}
-            <textarea id="pr-reason" rows={3} maxLength={REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} className={AREA} />
-          </Field>
-          <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => setLosing(false)} disabled={busy} className={btn('quiet', 'lg')}>
-              Annuler
-            </button>
-            <button type="submit" disabled={reason.trim().length < 3 || busy} className={btn('red', 'lg')}>
-              {busy ? '…' : 'Marquer perdu'}
-            </button>
-          </div>
-        </form>
+      <ActionSheet open={more.open} onClose={more.hide} actions={actions} />
+      <ActionSheet
+        open={edit.open}
+        onClose={edit.hide}
+        title="Modifier"
+        actions={STEPS.filter((s) => s.id !== 'review').map((s) => ({ label: s.label, onClick: () => onEdit(s.id) }))}
+      />
+      <ActionSheet
+        open={!!numberSheet}
+        onClose={() => setNumberSheet(null)}
+        title={numberSheet ? formatE164ForDisplay(numberSheet) : undefined}
+        actions={numberSheet ? [
+          { label: 'Appeler', icon: Phone, onClick: () => { window.location.href = `tel:${numberSheet}`; } },
+          { label: 'WhatsApp', icon: MessageCircle, onClick: () => window.open(whatsappLink(numberSheet), '_blank', 'noopener') },
+          { label: 'Modifier les numéros', icon: Pencil, hidden: won, onClick: () => onEdit('reach') },
+        ] : []}
+      />
+      <ActionSheet
+        open={emailSheet.open}
+        onClose={emailSheet.hide}
+        title={prospect.email ?? undefined}
+        actions={[
+          { label: 'Écrire', icon: Mail, onClick: () => { window.location.href = `mailto:${prospect.email}`; } },
+          { label: 'Modifier', icon: Pencil, hidden: won, onClick: () => onEdit('reach') },
+        ]}
+      />
+
+      <BottomSheet open={losing && open} onClose={() => !busy && setLosing(false)}>
+        <h3 className={cn('text-[22px] font-semibold leading-tight', TEXT.strong)}>{name} est perdu ?</h3>
+        <FieldLabel className="mt-4">Pourquoi</FieldLabel>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Motifs fréquents">
+          {QUICK_REASONS.map((r) => <Chip key={r} label={r} active={quick === r} onClick={() => setQuick(quick === r ? null : r)} />)}
+          <Chip label="Autre" active={quick === null && reason.trim() !== ''} onClick={() => setQuick(null)} />
+        </div>
+        <FieldLabel htmlFor="pr-reason">Précisez</FieldLabel>
+        <TextArea id="pr-reason" rows={3} maxLength={REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} className="min-h-[96px] text-[17px]" />
+        <BigButton className="mt-5" disabled={motif.length < 3} loading={busy} onClick={() => changeStatus('lost', motif)}>Marquer perdu</BigButton>
+        <p className={cn('mt-3 text-center text-[16px]', TEXT.muted)}>Il pourra être rouvert</p>
       </BottomSheet>
-    </div>
-  );
-}
-
-/**
- * « À vérifier » : un de ses numéros est déjà celui d'un client Bonzini. Le
- * commercial ne sait pas lequel ; la direction est prévenue et décide.
- */
-function ToVerifyNotice({ justSaved }: { justSaved: boolean }) {
-  return (
-    <div role="status" data-tone="warn" className="s-note s-enter flex items-start gap-3 rounded-[16px] px-4 py-3.5">
-      <Hourglass className="mt-0.5 h-5 w-5 shrink-0 s-warn" aria-hidden />
-      <div className="min-w-0">
-        <div className="text-[15px] font-semibold s-ink">{justSaved ? 'Prospect enregistré, à vérifier' : 'En attente de la direction'}</div>
-        <p className="mt-0.5 text-[14px] leading-snug s-ink-2">Un de ses numéros est déjà celui d’un client Bonzini. {TO_VERIFY_NOTE}</p>
-        <p className="mt-1.5 text-[13px] leading-snug s-ink-3">En attendant, son statut ne change pas ; le reste de la fiche se complète comme d’habitude.</p>
-      </div>
     </div>
   );
 }

@@ -14,10 +14,16 @@ import { xaf } from '@/lib/cargoQuote';
 import { formatDateTime } from '@/mobile/components/reception/bits';
 import { cn } from '@/lib/utils';
 import { SURFACE, TEXT, TYPE, Card, FormField, PrimaryPill, ScreenLoader, TextInput } from '@/mobile/designKit';
+import { CargoPricingV2 } from './CompanyV2';
 
 const num = (s: string) => { const v = parseFloat(s.replace(/\s/g, '').replace(',', '.')); return Number.isFinite(v) && v >= 0 ? v : null; };
 
+/** Téléphone : la v2 (CargoPricingV2). Ordinateur : l'écran d'origine, inchangé. */
 export function MobileCargoPricing({ desktop = false }: { desktop?: boolean } = {}) {
+  return desktop ? <LegacyMobileCargoPricing desktop /> : <CargoPricingV2 />;
+}
+
+function LegacyMobileCargoPricing({ desktop = false }: { desktop?: boolean } = {}) {
   const { hasPermission } = useAdminAuth();
   const canEdit = hasPermission('canManageRates');
   const { data, isLoading } = useCargoPricing();

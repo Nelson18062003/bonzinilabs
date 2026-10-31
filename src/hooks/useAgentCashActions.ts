@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { invalidateActionBadges } from '@/hooks/useAdminNotifications';
 import { supabaseAdmin } from '@/integrations/supabase/client';
+import { rpcArgs } from '@/integrations/supabase/rpcArgs';
 import { toast } from 'sonner';
 
 interface ScanCashPaymentResult {
@@ -35,9 +36,11 @@ export function useAgentScanCashPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (paymentId: string): Promise<ScanCashPaymentResult> => {
+    mutationFn: async ({ paymentId, token }: { paymentId: string; token: string }): Promise<ScanCashPaymentResult> => {
+      // Le jeton vient du QR du client (parseCashQRCode) : sans lui, le serveur refuse.
       const { data, error } = await supabaseAdmin.rpc('scan_cash_payment', {
         p_payment_id: paymentId,
+        p_qr_token: token,
       });
 
       if (error) throw error;
@@ -57,7 +60,12 @@ export function useAgentScanCashPayment() {
 
 /**
  * Agent-specific confirm mutation using supabaseAdmin.
- * Uploads signature to storage then calls the RPC.
+ * Uploads the signature to storage (« <paymentId>/… ») then calls the RPC
+ * with the object PATH: the server checks the file exists, was uploaded by
+ * this account, for this payment, after the scan.
+ * `signedByName` is the name the signer DECLARES (not the expected one).
+ * Administration (canProcessPayments) : signature, nom et scan facultatifs
+ * (décision du propriétaire, 31/10/2026) — sans signature, rien n'est déposé.
  */
 export function useAgentConfirmCashPayment() {
   const queryClient = useQueryClient();
@@ -67,31 +75,33 @@ export function useAgentConfirmCashPayment() {
       paymentId,
       signatureDataUrl,
       signedByName,
+      signerIdNumber,
     }: {
       paymentId: string;
-      signatureDataUrl: string;
-      signedByName: string;
+      signatureDataUrl?: string | null;
+      signedByName?: string | null;
+      signerIdNumber?: string | null;
     }): Promise<ConfirmCashPaymentResult> => {
-      // Upload signature to storage
-      const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
-      const fileName = `${paymentId}/${Date.now()}_signature.png`;
+      // Upload signature to storage (s'il y en a une)
+      let fileName = '';
+      if (signatureDataUrl) {
+        const signatureBlob = await fetch(signatureDataUrl).then(r => r.blob());
+        fileName = `${paymentId}/${Date.now()}_signature.png`;
 
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from('cash-signatures')
-        .upload(fileName, signatureBlob, { contentType: 'image/png' });
+        const { error: uploadError } = await supabaseAdmin.storage
+          .from('cash-signatures')
+          .upload(fileName, signatureBlob, { contentType: 'image/png' });
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
+      }
 
-      const { data: { publicUrl } } = supabaseAdmin.storage
-        .from('cash-signatures')
-        .getPublicUrl(fileName);
-
-      // Confirm the payment
-      const { data, error } = await supabaseAdmin.rpc('confirm_cash_payment', {
+      // Confirm the payment ('' = sans signature / sans nom : le serveur le lit comme absent)
+      const { data, error } = await supabaseAdmin.rpc('confirm_cash_payment', rpcArgs<'confirm_cash_payment'>({
         p_payment_id: paymentId,
-        p_signature_url: publicUrl,
-        p_signed_by_name: signedByName,
-      });
+        p_signature_path: fileName,
+        p_signed_by_name: signedByName?.trim() ?? '',
+        p_signer_id_number: signerIdNumber?.trim() || null,
+      }));
 
       if (error) throw error;
       return data as unknown as ConfirmCashPaymentResult;

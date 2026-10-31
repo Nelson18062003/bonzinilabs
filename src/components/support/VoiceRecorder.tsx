@@ -43,6 +43,8 @@ interface VoiceRecorderProps {
    */
   renderInline?: (state: InlineRecorderState) => React.ReactNode;
   className?: string;
+  /** Couleur du bouton pendant l'enregistrement (défaut : le violet de l'app client). */
+  recordingColor?: string;
 }
 
 export interface InlineRecorderState {
@@ -67,6 +69,7 @@ export function VoiceRecorder({
   onRecordingChange,
   renderInline,
   className,
+  recordingColor = 'hsl(258 95% 60%)',
 }: VoiceRecorderProps) {
   const { t } = useTranslation('support');
   const [state, setState] = useState<State>(
@@ -418,7 +421,7 @@ export function VoiceRecorder({
         disabled={disabled || state.kind === 'requesting'}
         whileTap={{ scale: 0.92 }}
         animate={state.kind === 'recording' ? {
-          backgroundColor: cancelArmed ? 'hsl(0 84% 60%)' : 'hsl(258 95% 60%)',
+          backgroundColor: cancelArmed ? 'hsl(0 84% 60%)' : recordingColor,
         } : {}}
         className={cn(
           'relative flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full',

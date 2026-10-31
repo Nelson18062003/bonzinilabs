@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Trésorerie complète</title>
+<link rel="stylesheet" href="../kit2.css">
+<style>
+/* Lot 07 · Trésorerie complète — mêmes jetons que kit2.css, styles repris du lot 05 */
+.bk { border: 1px solid var(--line); background: #fff }
+.bk img { object-fit: contain; padding: 6px }
+.seg3 { grid-template-columns: repeat(3, 1fr) }
+.seg4 { grid-template-columns: repeat(4, 1fr) }
+.seg4 span { padding: 8px 0; line-height: 1.2; font-size: 15px }
+.seg4 span em { display: block; font: 500 14px "DM Sans"; font-style: normal; color: var(--muted) }
+.seg4 .on em { color: #D9D9D9 }
+.seg span + span { border-left: 1px solid var(--line) }
+.seg .on + span, .seg span.on { border-left: 0 }
+.split { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 8px }
+.split div { display: flex; justify-content: space-between; font: 500 16px "DM Sans"; color: var(--muted); font-variant-numeric: tabular-nums }
+.split b { font-weight: 600; color: var(--strong) }
+.acts .act { font-size: 15px; align-content: start }
+.mrow { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.mrow:last-child { border-bottom: 0 }
+.mrow .av svg { width: 22px; height: 22px }
+.mrow .rn { font-size: 17px }
+.red .rn { color: #EC221F }
+.red .av { background: #FDD3D0 }
+.link { font: 600 16px "DM Sans"; color: var(--strong); text-decoration: underline; text-underline-offset: 3px }
+.twin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.twin .btn { font-size: 17px; display: flex; gap: 8px; justify-content: center; align-items: center }
+.stat { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px }
+.stat span { font: 500 15px "DM Sans"; color: var(--muted); display: block }
+.stat b { font: 700 22px "DM Sans"; display: block; margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -.01em }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px }
+.inbox { width: 140px; height: 48px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; justify-content: flex-end; padding: 0 12px; font: 700 18px "DM Sans"; font-variant-numeric: tabular-nums; flex: none }
+.inbox.on { border: 2px solid var(--ink) }
+.arrow { color: var(--muted); font-weight: 500; margin: 0 4px }
+.chart { margin: 14px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 14px 12px 10px }
+.chart svg { display: block }
+.chart svg text { font: 500 14px "DM Sans"; fill: #5A5A5A }
+.chart svg text.v { font: 700 14px "DM Sans"; fill: #1E1E1E }
+.legend { display: flex; gap: 18px; padding: 10px 4px 2px; font: 500 15px "DM Sans"; color: var(--body) }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px }
+.legend i.sq { width: 12px; height: 12px; border-radius: 3px }
+.rate-line { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 14px; font: 600 17px "DM Sans"; font-variant-numeric: tabular-nums }
+.rate-line .tag { margin-top: 0 }
+.recv { margin: 16px 20px 0; height: 56px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font: 500 16px "DM Sans"; color: var(--muted) }
+.recv b { font: 700 22px "DM Sans"; color: var(--strong); font-variant-numeric: tabular-nums }
+.recv b small { font: 600 16px "DM Sans"; color: var(--muted); margin-left: 4px }
+.amt .lab0 { font: 500 16px "DM Sans"; color: var(--muted); margin-bottom: 8px }
+.amt .big small { font-size: 26px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-left: 6px }
+.hint { text-align: center; margin-top: 8px; font: 400 15px "DM Sans"; color: var(--muted); font-variant-numeric: tabular-nums }
+.rec { margin: 18px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 18px 0 0; text-align: center }
+.rec .logo { width: 48px; height: 48px; margin: 0 auto }
+.rec .logo svg { width: 26px; height: 26px }
+.rec .big { font: 700 40px/1 "DM Sans"; letter-spacing: -.02em; margin-top: 12px; font-variant-numeric: tabular-nums }
+.rec .sub { font: 400 16px "DM Sans"; color: var(--muted); margin-top: 6px }
+.rec .box { margin: 14px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0 }
+.rec .kv { padding: 12px 16px }
+.rec .tag { font-size: 15px; padding: 6px 10px; margin-top: 10px }
+.strike { text-decoration: line-through; text-decoration-thickness: 3px; color: var(--muted) }
+/* nouveaux du lot */
+.ra .rs { margin-top: 3px }
+.ra .tag { margin-top: 4px }
+.pick { margin: 12px 20px 0; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 12px; padding: 10px 14px }
+.pick .logo { width: 36px; height: 36px }
+.pick .logo svg { width: 20px; height: 20px }
+.pick span { display: block; font: 500 14px "DM Sans"; color: var(--muted) }
+.pick b { display: block; font: 600 17px "DM Sans" }
+.tot { display: grid; grid-template-columns: repeat(3, 1fr); margin: 12px 20px 0; border: 1px solid var(--line); border-radius: 8px }
+.tot div { padding: 10px 10px 10px 12px; min-width: 0 }
+.tot div + div { border-left: 1px solid var(--line) }
+.tot span { display: block; font: 500 14px "DM Sans"; color: var(--muted); white-space: nowrap }
+.tot b { display: block; font: 700 16px "DM Sans"; margin-top: 3px; font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em }
+.srch { margin: 12px 20px 0; height: 48px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; gap: 10px; padding: 0 14px; font: 400 17px "DM Sans"; color: var(--faint) }
+.chip svg { width: 18px; height: 18px }
+.chip .n { background: #F5F5F5; color: var(--ink); border-radius: 9px; min-width: 20px; height: 20px; display: grid; place-items: center; font: 700 13px "DM Sans"; padding: 0 5px }
+.chip.on .n { background: #F5F5F5 }
+.chip.soft { background: #fff; border: 1px solid var(--line) }
+.inp { margin: 0 20px; height: 56px; border: 1px solid var(--field); border-radius: 8px; display: flex; align-items: center; gap: 10px; padding: 0 16px; font: 500 17px "DM Sans"; color: var(--strong) }
+.inp.ph { color: var(--faint) }
+.inp.on { border: 2px solid var(--ink) }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 20px }
+.two .inp { margin: 0 }
+.lbl.s { padding-top: 18px; padding-bottom: 8px }
+.pre { font: 600 17px "DM Sans"; padding-right: 10px; border-right: 1px solid var(--line); display: flex; align-items: center; gap: 8px; height: 30px }
+.mi { display: flex; align-items: center; gap: 14px; height: 52px; font: 600 17px "DM Sans"; color: var(--strong); border-bottom: 1px solid var(--line) }
+.mi:last-child { border-bottom: 0 }
+.mi .v { margin-left: auto; font: 500 16px "DM Sans"; color: var(--muted) }
+.ta { min-height: 76px; border: 2px solid var(--ink); border-radius: 8px; padding: 12px 14px; font: 500 17px/1.35 "DM Sans"; color: var(--strong) }
+.ta i { display: inline-block; width: 2px; height: 20px; background: var(--ink); vertical-align: -4px; margin-left: 1px }
+.cnt { font: 500 14px "DM Sans"; color: var(--muted); margin-top: 6px; display: flex; justify-content: space-between }
+.slab { font: 600 14px "DM Sans"; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 16px 0 8px }
+.btn.red { background: #EC221F; color: #fff }
+.ban { margin: 14px 20px 0; border-radius: 8px; background: #FDD3D0; color: #900B09; padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start }
+.ban b { display: block; font: 700 16px "DM Sans" }
+.ban span { display: block; font: 500 15px/1.35 "DM Sans"; margin-top: 2px }
+.ban svg { flex: none; margin-top: 1px }
+.alert { margin: 12px 20px 0; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 12px; padding: 12px 14px }
+.alert .av { background: #FDD3D0 }
+.kpi { padding: 16px 20px 0 }
+.kpi .lab { font: 500 16px "DM Sans"; color: var(--muted) }
+.kpi .num { font: 700 40px/1.1 "DM Sans"; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums }
+.kpi .num small { font-size: 20px; font-weight: 600; color: var(--muted); letter-spacing: 0 }
+.kpi .sub { font: 500 16px "DM Sans"; color: var(--body); margin-top: 8px; display: flex; gap: 8px; align-items: center; font-variant-numeric: tabular-nums }
+.kpi .sub b { font-weight: 700 }
+.kpi .sub .tag { margin-top: 0 }
+.pager { position: absolute; left: 0; right: 0; bottom: 44px; display: flex; justify-content: center; gap: 8px; align-items: center }
+.pager i { width: 8px; height: 8px; border-radius: 4px; background: #D9D9D9 }
+.pager i.on { width: 22px; background: var(--ink) }
+.hb { padding: 12px 0 14px; border-bottom: 1px solid var(--line) }
+.hb:last-child { border-bottom: 0 }
+.hb .t { display: flex; justify-content: space-between; align-items: center; font: 600 17px "DM Sans" }
+.hb .t b { font: 700 17px "DM Sans"; font-variant-numeric: tabular-nums }
+.hb .bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--ink); margin-top: 10px }
+.hb .s { display: flex; justify-content: space-between; align-items: center; font: 400 15px "DM Sans"; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums }
+.hb .s .tag { margin-top: 0 }
+.card { margin: 18px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 4px 16px }
+.card .hd { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0 4px }
+.card .hd b { font: 600 18px "DM Sans" }
+.card .row { padding: 12px 0 }
+/* image partageable des soldes */
+.vis { margin: 14px 20px 0; border: 1px solid var(--line); border-radius: 8px; padding: 18px 14px 16px }
+.vis .h { text-align: center; font: 700 18px "DM Sans"; letter-spacing: .04em }
+.vis .d { text-align: center; font: 500 14px "DM Sans"; color: var(--muted); margin-top: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line) }
+.vis .g { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px }
+.vis .c { border: 1px solid var(--line); border-radius: 8px; padding: 10px 10px 10px }
+.vis .c .top2 { display: flex; align-items: center; justify-content: space-between }
+.vis .c .logo { width: 38px; height: 38px; border-radius: 19px }
+.vis .c .logo.bk img { padding: 5px !important }
+.vis .c .ty { font: 500 14px "DM Sans"; color: var(--muted) }
+.vis .c .nm { font: 600 14px "DM Sans"; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.vis .c .am { font: 700 17px "DM Sans"; margin-top: 2px; font-variant-numeric: tabular-nums }
+.vis .c .am small { font: 600 14px "DM Sans"; color: var(--muted) }
+.vis .t { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; text-align: center; padding: 12px 0 }
+.vis .t span { font: 600 14px "DM Sans"; color: var(--muted); letter-spacing: .06em }
+.vis .t b { display: block; font: 700 28px "DM Sans"; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums }
+.vis .t b small { font-size: 16px; color: var(--muted) }
+</style></head><body>
+<div class="board" id="board"></div>
+<script src="../kit2.js"></script>
+<script>
+/* ---------- logos et icônes (repris du lot 05) ---------- */
+const usdt = (s = 44) => `<div class="logo" style="background:#26A17B;width:${s}px;height:${s}px;border-radius:${s / 2}px"><svg viewBox="0 0 24 24" style="width:${s * .56}px;height:${s * .56}px"><path d="M5.5 5.2h13v2.9h-5v2.1c3 .2 5.3.9 5.3 1.8s-2.3 1.6-5.3 1.8v5.4h-3.1V13.8c-3-.2-5.3-.9-5.3-1.8s2.3-1.6 5.3-1.8V8.1h-4.9z" fill="#fff"/><path d="M6.6 12c0 .6 2.4 1.1 5.4 1.1s5.4-.5 5.4-1.1" fill="none" stroke="#26A17B" stroke-width="1"/></svg></div>`;
+const binance = (s = 44) => `<div class="logo" style="background:#1E2329;width:${s}px;height:${s}px;border-radius:${s / 2}px"><svg viewBox="0 0 24 24" style="width:${s * .58}px;height:${s * .58}px"><g fill="#F3BA2F"><path d="M12 9.6 14.4 12 12 14.4 9.6 12z"/><path d="M7.9 10.3 9.6 12l-1.7 1.7L6.2 12zM16.1 10.3l1.7 1.7-1.7 1.7-1.7-1.7z"/><path d="M12 3.6l4.3 4.3-1.7 1.7L12 7 9.4 9.6 7.7 7.9z"/><path d="M12 20.4l-4.3-4.3 1.7-1.7L12 17l2.6-2.6 1.7 1.7z"/></g></svg></div>`;
+const bank = (f, pad = 6, extra = '') => `<div class="logo bk"><img src="../${f}" style="object-fit:contain;padding:${pad}px;${extra}"></div>`;
+const afriland = bank('afriland.png', 9);
+const ecobank = bank('ecobank.png', 4);
+const uba = bank('uba.png', 6);
+const cca = `<div class="logo" style="background:#6A2C8E"><img src="../cca.png" style="object-fit:cover;object-position:3% 50%"></div>`;
+const caisseIc = '<svg width="24" height="24" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2" fill="none" stroke="#1E1E1E" stroke-width="2"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="#1E1E1E" stroke-width="2"/><path d="M6 9.5v5M18 9.5v5" stroke="#1E1E1E" stroke-width="2" stroke-linecap="round"/></svg>';
+const caisse = `<div class="av">${caisseIc}</div>`;
+const svg = (d, c = '#1E1E1E', w = 2.1) => `<svg viewBox="0 0 24 24"><path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ic = {
+  buy: (c) => svg('M12 4v13M6 11l6 6 6-6M5 20h14', c),
+  sell: (c) => svg('M12 20V7M6 13l6-6 6 6M5 4h14', c),
+  wallet: (c) => svg('M4 7.5A2.5 2.5 0 0 1 6.5 5H19v14H6.5A2.5 2.5 0 0 1 4 16.5zM4 9h15M15.5 13.5h.5', c),
+  list: (c) => svg('M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01', c, 2.3),
+  adjust: (c) => svg('M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4', c),
+  inv: (c) => svg('M8 4h8v3H8zM6 5.5H5v15h14v-15h-1M8.5 13l2.5 2.5 4.5-5', c),
+  book: (c) => svg('M5 4.5h11a3 3 0 0 1 3 3v12H8a3 3 0 0 1-3-3zM5 16.5a3 3 0 0 1 3-3h11M9 8.5h6', c),
+  img: (c) => svg('M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM4 16l4.5-4.5 4 4 2.5-2.5L20 18M15.5 8.5h.01', c),
+  people: (c) => svg('M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 20c.8-3.4 3.3-5.3 6.5-5.3S15.2 16.6 16 20M16 4.5a3.5 3.5 0 0 1 0 6.5M18 14.8c1.7.7 2.7 2.5 3 5.2', c),
+  plus: (c) => svg('M12 5v14M5 12h14', c, 2.3),
+  chart: (c) => svg('M4 20h16M7 16.5v-4M12 16.5V7.5M17 16.5v-6', c, 2.3),
+  copyimg: (c) => svg('M8 8h11v11H8zM5 15V5h10', c),
+  down: (c) => svg('M12 4v11M7 10.5l5 5 5-5M5 20h14', c),
+  share: (c) => svg('M12 15V4M7.5 8.5 12 4l4.5 4.5M6 12v7.5h12V12', c),
+  undo: (c) => svg('M9 7 4.5 11.5 9 16M5 11.5h9a5.5 5.5 0 0 1 0 11H11', c),
+  pen: (c) => svg('M5 19l1-4L16 5l3 3L9 18zM14 7l3 3', c),
+  cal: (c) => svg('M4.5 6h15v14h-15zM4.5 10h15M9 4v4M15 4v4', c),
+  hist: (c) => svg('M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 8v4.5l3 2', c),
+  sliders: (c) => svg('M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4', c),
+  pdf: (c) => svg('M6 3.5h8l4 4v13H6zM14 3.5v4h4M9 13h6M9 16.5h4', c),
+  alert: (c) => svg('M12 4 21 19.5H3zM12 10v4.5M12 17h.01', c),
+  chevd: (c) => svg('m7 10 5 5 5-5', c, 2.3),
+  x: (c) => svg('M6 6l12 12M18 6 6 18', c, 2.3),
+};
+const sz = (s, n = 20) => s.replace('<svg', `<svg width="${n}" height="${n}"`);
+const chev = `<svg width="20" height="20" viewBox="0 0 24 24" style="flex:none"><path d="m9 6 6 6-6 6" fill="none" stroke="#5A5A5A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const navb = (t, right = '') => `<div class="nav">${I.back}<div class="t">${t}</div>${right}</div>`;
+const end = '<div class="home-ind"></div>';
+const mrow = (icon, t, s = '', cls = '') => `<div class="mrow ${cls}"><div class="av">${icon}</div><div class="rm"><div class="rn">${t}</div>${s ? `<div class="rs">${s}</div>` : ''}</div></div>`;
+const keys = `<div class="keys">${['1', '2', '3', '4', '5', '6', '7', '8', '9', ',', '0', ''].map((k) => `<div>${k || I.del}</div>`).join('')}</div>`;
+const av = (t) => `<div class="av">${t}</div>`;
+const avI = (icon) => `<div class="av">${sz(icon, 22)}</div>`;
+const plusNav = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#1E1E1E" stroke-width="2.3" stroke-linecap="round"/></svg>`;
+const chipCal = (t) => `<span class="chip">${sz(ic.cal('#303030'), 18)} ${t}</span>`;
+const fr = (n, d = 0) => { const s = Math.abs(n).toFixed(d).split('.'); return (n < 0 ? '−' : '') + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + (d ? ',' + s[1] : ''); };
+
+/* ================= 1 · Accueil trésorier ================= */
+const hello = (name) => `<div class="top"><div class="hello">Bonjour ${name}</div><div style="display:flex;gap:10px"><div class="icbtn" style="overflow:hidden;padding:0"><img src="../mola-mascot.png" style="width:100%;height:100%;border-radius:22px"></div><div class="icbtn">${I.bell}<span class="dot"></span></div></div></div>`;
+const homeActs = `<div class="acts">
+    <div class="act"><div class="r ink">${ic.buy('#F5F5F5')}</div>Acheter USDT</div>
+    <div class="act"><div class="r">${ic.sell('#1E1E1E')}</div>Vendre USDT</div>
+    <div class="act"><div class="r">${ic.inv('#1E1E1E')}</div>Inventaire</div>
+    <div class="act"><div class="r">${ic.wallet('#1E1E1E')}</div>Comptes</div>
+  </div>`;
+add('Accueil trésorier', `${sbar()}<div class="body">${hello('Martine')}
+  <div class="hero"><div class="lab">Stock USDT</div><div class="num">30 350,50 <small>USDT</small></div>
+    <div class="sub"><span>Coût moyen <b>600,42</b> XAF/USDT</span></div>
+    <div class="split"><div>Achetés aujourd'hui<b>+5 000,00</b></div><div>Vendus aujourd'hui<b>−3 000,00</b></div></div></div>
+  ${homeActs}
+  <div class="h2"><b>À faire</b></div>
+  <div class="list">
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Inventaire WeChat</div><div class="rs">Dernier il y a 3 jours</div></div><div class="ra"><span class="tag t-todo">À faire</span></div></div>
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Écart Alipay</div><div class="rs">Hier · non expliqué</div></div><div class="ra"><b>−¥ 80</b><span class="tag t-bad">Écart</span></div></div>
+  </div>
+</div>${tabs('home', 'treasurer', {})}${end}`);
+
+/* ================= 2 · Accueil · stock négatif ================= */
+add('Accueil trésorier · stock négatif', `${sbar()}<div class="body">${hello('Martine')}
+  <div class="hero"><div class="lab" style="display:flex;justify-content:space-between;align-items:center">Stock USDT<span class="tag t-bad" style="margin-top:0">Négatif</span></div><div class="num">−1 649,50 <small>USDT</small></div>
+    <div class="sub"><span>Coût moyen <b>600,42</b> XAF/USDT</span></div></div>
+  <div class="alert"><div class="av">${sz(ic.alert('#900B09'), 22)}</div><div class="rm"><div class="rn">Vente sans stock</div><div class="rs">32 000 USDT · Wang Jun · 11:30</div></div><span class="link">Voir</span></div>
+  ${homeActs}
+  <div class="h2"><b>À faire</b></div>
+  <div class="list">
+    <div class="row">${usdt()}<div class="rm"><div class="rn">Achat manquant</div><div class="rs">Au moins 1 649,50 USDT</div></div><div class="ra"><span class="tag t-bad">Urgent</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Inventaire WeChat</div><div class="rs">Dernier il y a 3 jours</div></div><div class="ra"><span class="tag t-todo">À faire</span></div></div>
+  </div>
+</div>${tabs('home', 'treasurer', {})}${end}`);
+
+/* ================= 3 · Opérations ================= */
+const opRow = (logo, n, s, a, b) => `<div class="row">${logo}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${a}</b><span class="rs">${b}</span></div></div>`;
+const opsTop = `${navb('Opérations')}
+  <div class="seg seg4"><span>Toutes<em>38</em></span><span class="on">Achats<em>24</em></span><span>Ventes<em>12</em></span><span>Annulées<em>2</em></span></div>
+  <div class="srch">${I.search}Nom, compte, référence, montant</div>
+  <div class="chips">${chipCal('Octobre 2026')}<span class="chip">${sz(ic.sliders('#303030'), 18)} Filtres</span></div>
+  <div class="tot"><div><span>Achetés · USDT</span><b>98 400,00</b></div><div><span>Payés · XAF</span><b>59 063 616</b></div><div><span>Taux moyen</span><b>600,24</b></div></div>`;
+const opsList = `<div class="day">Aujourd'hui</div>
+  <div class="list">
+    ${opRow(usdt(), 'Kevin Fotso', 'Afriland · 10:12', '+5 000 USDT', '3 000 000 XAF')}
+    ${opRow(usdt(), 'Hamadou OTC', 'Ecobank · 08:45', '+2 500 USDT', '1 502 500 XAF')}
+  </div>
+  <div class="day" style="padding-top:8px">Hier</div>
+  <div class="list">
+    ${opRow(usdt(), 'Serge Ekotto', '2 comptes · 16:20', '+8 000 USDT', '4 804 000 XAF')}
+    ${opRow(usdt(), 'Chantal Mvondo', 'Caisse Douala · 09:30', '+1 200 USDT', '721 920 XAF')}
+  </div>`;
+add('Opérations · Achats', `${sbar()}<div class="body">${opsTop}${opsList}</div>${end}`);
+
+/* ================= 4 · Filtres en feuille ================= */
+add('Opérations · filtres', `${sbar()}<div class="body">${opsTop}${opsList}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Filtres</h3>
+    <div style="margin-top:8px">
+      <div class="mi">Fournisseur<span class="v">Tous</span>${chev}</div>
+      <div class="mi">Canal<span class="v" style="color:#1E1E1E;font-weight:600">Virement</span>${chev}</div>
+      <div class="mi">Compte CNY<span class="v">Tous</span>${chev}</div>
+      <div class="mi">Trier par<span class="v">Date, récent d'abord</span>${chev}</div>
+    </div>
+    <div class="slab">Période</div>
+    <div class="chips" style="padding:0"><span class="chip">7 j</span><span class="chip">30 j</span><span class="chip">90 j</span><span class="chip">Tout</span><span class="chip on">Perso</span></div>
+    <div class="two" style="margin:12px 0 0"><div class="inp">${sz(ic.cal('#5A5A5A'), 20)} 1 oct. 2026</div><div class="inp">${sz(ic.cal('#5A5A5A'), 20)} 21 oct. 2026</div></div>
+    <div class="twin" style="margin-top:18px;grid-template-columns:1fr 1.6fr"><div class="btn soft">Effacer</div><div class="btn">Voir 9 achats</div></div>
+  </div>
+</div>${end}`);
+
+/* ================= 5 · Achat 1/4 · fournisseur ================= */
+const supPage = `${navb('Acheter des USDT', '<div class="step">1/4</div>')}
+  <div class="search">${I.search}Nom, F-003 ou téléphone</div>
+  <div class="lbl">Récents</div>
+  <div class="recent" style="padding-top:12px">
+    <div class="rc"><div class="av">KF</div>Kevin</div><div class="rc"><div class="av">SE</div>Serge</div><div class="rc"><div class="av">HO</div>Hamadou</div><div class="rc"><div class="av">CM</div>Chantal</div>
+  </div>
+  <div class="lbl">Fournisseurs USDT</div>
+  <div class="list">
+    <div class="row"><div class="av">KF</div><div class="rm"><div class="rn">Kevin Fotso</div><div class="rs">F-003 · dernier 600,00</div></div>${chev}</div>
+    <div class="row"><div class="av">SE</div><div class="rm"><div class="rn">Serge Ekotto</div><div class="rs">F-005 · dernier 600,50</div></div>${chev}</div>
+    <div class="row"><div class="av">HO</div><div class="rm"><div class="rn">Hamadou OTC</div><div class="rs">F-001 · dernier 601,00</div></div>${chev}</div>
+    <div class="row"><div class="av" style="font-size:24px;font-weight:500">+</div><div class="rm"><div class="rn">Nouveau fournisseur</div><div class="rs">Nom et téléphone</div></div></div>
+  </div>`;
+add('Achat USDT 1/4 · fournisseur', `${sbar()}<div class="body">${supPage}</div>${end}`);
+
+/* ================= 6 · Nouveau fournisseur rapide ================= */
+add('Nouveau fournisseur (feuille)', `${sbar()}<div class="body">${supPage}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Nouveau fournisseur</h3>
+    <div class="slab">Nom du fournisseur</div>
+    <div class="inp on" style="margin:0">Blaise Ndjock<i style="display:inline-block;width:2px;height:22px;background:#2C2C2C;margin-left:-8px"></i></div>
+    <div class="slab">Téléphone · facultatif</div>
+    <div class="inp" style="margin:0"><span class="pre"><span class="flag" style="width:24px;height:16px;border-radius:2px;overflow:hidden;display:flex"><i style="flex:1;background:#007A5E"></i><i style="flex:1;background:#CE1126"></i><i style="flex:1;background:#FCD116"></i></span>+237</span>699 40 22 18</div>
+    <div class="btn" style="margin-top:20px">Créer et choisir</div>
+  </div>
+</div>${end}`);
+
+/* ================= 7 · Achat 2/4 · payé depuis ================= */
+add('Achat USDT 2/4 · payé depuis 2 comptes', `${sbar()}<div class="body">
+  ${navb('Acheter des USDT', '<div class="step">2/4</div>')}
+  <div class="who"><div class="av">SE</div><div style="flex:1"><b>Serge Ekotto</b><span>Fournisseur USDT · F-005</span></div></div>
+  <div class="lbl">Payé depuis</div>
+  <div class="list">
+    <div class="row">${afriland}<div class="rm"><div class="rn">Afriland</div><div class="rs">18 420 000 XAF</div></div><div class="inbox">3 000 000</div></div>
+    <div class="row">${ecobank}<div class="rm"><div class="rn">Ecobank</div><div class="rs">9 150 000 XAF</div></div><div class="inbox on">1 804 000</div></div>
+    <div class="row"><div class="av" style="font-size:24px;font-weight:500">+</div><div class="rm"><div class="rn">Ajouter un compte</div></div></div>
+  </div>
+  <div class="box"><div class="kv">Total payé<b style="font-size:20px">4 804 000 XAF</b></div></div>
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* ================= 8 · Achat 3/4 · montants (2 comptes) ================= */
+add('Achat USDT 3/4 · USDT reçus', `${sbar()}<div class="body">
+  ${navb('Acheter des USDT', '<div class="step">3/4</div>')}
+  <div class="who"><div class="av">SE</div><div style="flex:1"><b>Serge Ekotto</b><span>2 comptes · 4 804 000 XAF</span></div>${chev}</div>
+  <div class="amt" style="padding-top:22px"><div class="lab0">Reçu</div><div class="big" style="font-size:48px">8 000<small>USDT</small></div></div>
+  <div class="rate-line" style="margin-top:18px">600,50 XAF/USDT</div>
+  <div class="hint">4 804 000 ÷ 8 000 = 600,50</div>
+  <div class="hint" style="margin-top:4px">Dernier chez Serge : 600,50 · <span class="link" style="font-size:15px">Reprendre</span></div>
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* ================= 9 · Achat 4/4 · confirmer ================= */
+add('Achat USDT 4/4 · confirmer', `${sbar()}<div class="body">
+  ${navb('Acheter des USDT', '<div class="step">4/4</div>')}
+  <div class="who"><div class="av">SE</div><div style="flex:1"><b>Serge Ekotto</b><span>2 comptes · 4 804 000 XAF</span></div></div>
+  <div class="amt" style="padding-top:22px"><div class="lab0">Reçu</div><div class="big" style="font-size:48px">8 000<small>USDT</small></div></div>
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Acheter 8 000 USDT ?</h3><p>à Serge Ekotto, pour 4 804 000 XAF</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Taux<b>600,50 XAF/USDT</b></div>
+      <div class="kv">Afriland<b>18 420 000 <span class="arrow">→</span> 15 420 000</b></div>
+      <div class="kv">Ecobank<b>9 150 000 <span class="arrow">→</span> 7 346 000</b></div>
+      <div class="kv">Stock USDT<b>30 350,50 <span class="arrow">→</span> 38 350,50</b></div>
+      <div class="kv">Date · référence<b>Maintenant · <span class="link">Ajouter</span></b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Enregistrer l'achat</div>
+  </div>
+</div>${end}`);
+
+/* ================= 10 · Vente · montants ================= */
+const saleTop = (usd, cny, extra, st = '2/3') => `${navb('Vendre des USDT', `<div class="step">${st}</div>`)}
+  <div class="who" style="margin-top:12px"><div class="av">WJ</div><div style="flex:1"><b>Wang Jun Yiwu</b><span>Acheteur CNY · A-002</span></div>${chev}</div>
+  <div class="amt" style="padding-top:18px"><div class="lab0">Vendus</div><div class="big" style="font-size:48px">${usd}<small>USDT</small></div></div>
+  <div class="recv" style="margin-top:14px">Reçu<b>${cny}<small>CNY</small></b></div>
+  ${extra}`;
+const pickAlipay = `<div class="pick">${meth('alipay')}<div class="rm"><span>Encaissé sur</span><b>Alipay Bonzini · ¥ 86 400</b></div>${chev}</div>`;
+add('Vente USDT · montants', `${sbar()}<div class="body">
+  ${saleTop('3 000', '21 360,00', `<div class="rate-line" style="margin-top:12px">7,1200 CNY/USDT</div><div class="hint" style="margin-top:4px">Stock 30 350,50 → 27 350,50</div>${pickAlipay}`)}
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* ================= 11 · Vente · alerte stock ================= */
+add('Vente USDT · alerte de stock', `${sbar()}<div class="body">
+  ${saleTop('32 000', '227 840,00', `<div class="rate-line" style="margin-top:12px">7,1200 CNY/USDT <span class="tag t-bad">Stock dépassé</span></div><div class="hint" style="margin-top:4px">Stock 30 350,50 · il manque 1 649,50</div>${pickAlipay}`)}
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* ================= 12 · Vente · confirmer ================= */
+add('Vente USDT · confirmer', `${sbar()}<div class="body">
+  ${saleTop('3 000', '21 360,00', '', '3/3')}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Vendre 3 000 USDT ?</h3><p>à Wang Jun Yiwu, pour ¥ 21 360,00</p>
+    <div class="box" style="margin:16px 0 0">
+      <div class="kv">Taux<b>7,1200 CNY/USDT</b></div>
+      <div class="kv">Coût moyen<b>600,42 XAF/USDT</b></div>
+      <div class="kv">Coût de sortie<b>1 801 260 XAF</b></div>
+      <div class="kv">Stock USDT<b>30 350,50 <span class="arrow">→</span> 27 350,50</b></div>
+      <div class="kv">Alipay Bonzini<b>86 400 <span class="arrow">→</span> 107 760</b></div>
+    </div>
+    <div class="btn" style="margin-top:18px">Enregistrer la vente</div>
+  </div>
+</div>${end}`);
+
+/* ================= 13 · Reçu de vente ================= */
+add('Vente enregistrée · le reçu', `${sbar()}<div class="body">
+  <div class="nav" style="padding-left:14px">${sz(ic.x('#1E1E1E'), 26)}<div class="t" style="margin-left:6px">Vente enregistrée</div><span class="link">Nouvelle vente</span></div>
+  <div class="rec" style="margin-top:12px">${usdt(48)}<div class="big">3 000,00 USDT</div><div class="sub">Wang Jun Yiwu · ¥ 21 360,00</div><span class="tag t-neu">Vente</span>
+    <div class="box">
+      <div class="kv">Taux<b>7,1200 CNY/USDT</b></div>
+      <div class="kv">Encaissé sur<b>Alipay Bonzini</b></div>
+      <div class="kv">Date<b>21 oct. 2026, 11:30</b></div>
+      <div class="kv">Référence<b>TR-VT-2610-0041</b></div>
+    </div>
+  </div>
+  <div class="lbl" style="padding-top:16px">Comptes touchés</div>
+  <div class="list">
+    <div class="row" style="padding:10px 0">${binance()}<div class="rm"><div class="rn">Binance</div><div class="rs">Après : 21 310,50</div></div><div class="ra"><b>−3 000,00</b></div>${chev}</div>
+    <div class="row" style="padding:10px 0">${meth('alipay')}<div class="rm"><div class="rn">Alipay Bonzini</div><div class="rs">Après : 107 760,00</div></div><div class="ra"><b>+21 360,00</b></div>${chev}</div>
+  </div>
+  <div class="dock"><div class="twin"><div class="btn">${sz(ic.copyimg('#F5F5F5'))}Copier l'image</div><div class="btn soft">${sz(ic.down('#1E1E1E'))}Télécharger</div></div></div>
+</div>${end}`);
+
+/* ================= 14 · Annuler une opération ================= */
+const dupOp = `${navb('Opération', I.dots)}
+  <div class="rec">${usdt(48)}<div class="big">5 000,00 USDT</div><div class="sub">Kevin Fotso · 3 000 000 XAF</div><span class="tag t-neu">Achat</span>
+    <div class="box">
+      <div class="kv">Taux<b>600,00 XAF/USDT</b></div>
+      <div class="kv">Payé depuis<b>Afriland First Bank</b></div>
+      <div class="kv">Date<b>21 oct. 2026, 10:14</b></div>
+      <div class="kv">Référence<b>TR-AC-2610-0088</b></div>
+    </div>
+  </div>`;
+add('Annuler une opération (super admin)', `${sbar()}<div class="body">${dupOp}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center"><h3>Annuler cet achat ?</h3><span class="tag t-neu" style="margin-top:0">Super admin</span></div>
+    <p>Kevin Fotso · 5 000 USDT · 10:14</p>
+    <div class="box" style="margin:14px 0 0">
+      <div class="kv">Afriland<b>15 420 000 <span class="arrow">→</span> 18 420 000</b></div>
+      <div class="kv">Stock USDT<b>35 350,50 <span class="arrow">→</span> 30 350,50</b></div>
+    </div>
+    <div class="slab">Motif</div>
+    <div class="ta">Saisie en double de TR-AC-2610-0087<i></i></div>
+    <div class="cnt"><span>10 caractères au moins</span><span>34</span></div>
+    <div class="btn red" style="margin-top:16px">Annuler l'opération</div>
+  </div>
+</div>${end}`);
+
+/* ================= 15 · Opération annulée ================= */
+add('Opération annulée', `${sbar()}<div class="body">
+  ${navb('Opération', I.dots)}
+  <div class="ban">${sz(ic.undo('#900B09'), 22)}<div><b>Annulée · 21 oct., 11:02 · Nelson</b><span>Saisie en double de TR-AC-2610-0087</span></div></div>
+  <div class="rec" style="margin-top:14px">${usdt(48)}<div class="big strike">5 000,00 USDT</div><div class="sub">Kevin Fotso · 3 000 000 XAF</div><span class="tag t-bad">Annulée</span>
+    <div class="box">
+      <div class="kv">Taux<b>600,00 XAF/USDT</b></div>
+      <div class="kv">Date<b>21 oct. 2026, 10:14</b></div>
+      <div class="kv">Référence<b>TR-AC-2610-0088</b></div>
+    </div>
+  </div>
+  <div class="lbl">Contre-passation</div>
+  <div class="list">
+    <div class="row">${afriland}<div class="rm"><div class="rn">Afriland</div><div class="rs">Après : 18 420 000</div></div><div class="ra"><b>+3 000 000</b></div>${chev}</div>
+    <div class="row">${binance()}<div class="rm"><div class="rn">Binance</div><div class="rs">Après : 24 310,50</div></div><div class="ra"><b>−5 000,00</b></div>${chev}</div>
+  </div>
+</div>${end}`);
+
+/* ================= 16 · Compte · Caisse Douala ================= */
+const caissePage = `${navb('Compte', I.dots)}
+  <div class="fiche" style="padding-top:16px"><div class="av" style="width:56px;height:56px;border-radius:28px;margin:0 auto">${caisseIc}</div><div class="big" style="font-size:44px">1 275 000</div><div class="sub">XAF · Caisse Douala · 28 mouvements</div></div>
+  <div class="h2" style="padding-top:18px"><b>Mouvements</b><a>Grand livre</a></div>
+  <div class="list">
+    <div class="row">${avI(ic.adjust('#1E1E1E'))}<div class="rm"><div class="rn">Apport de caisse</div><div class="rs">Hier, 17:40 · Nelson</div></div><div class="ra"><b>+500 000</b><span class="rs">1 275 000</span></div></div>
+    <div class="row">${avI(ic.inv('#1E1E1E'))}<div class="rm"><div class="rn">Inventaire · écart</div><div class="rs">17 oct., 18:10 · Martine</div></div><div class="ra"><b>−12 500</b><span class="rs">775 000</span></div></div>
+    <div class="row">${avI(ic.sell('#1E1E1E'))}<div class="rm"><div class="rn">Achat · Chantal Mvondo</div><div class="rs">17 oct., 09:30</div></div><div class="ra"><b>−721 920</b><span class="rs">787 500</span></div></div>
+  </div>
+  <div class="card"><div class="hd"><b>Inventaires</b><a class="link">Tout voir</a></div>
+    <div class="row"><div class="rm"><div class="rn">Hier, 18:00</div><div class="rs">Compté 1 275 000</div></div><div class="ra"><span class="tag t-ok">Juste</span></div></div>
+    <div class="row"><div class="rm"><div class="rn">17 oct., 18:10</div><div class="rs">775 000 · attendu 787 500</div></div><div class="ra"><span class="tag t-bad">−12 500</span></div></div>
+  </div>`;
+add('Compte · mouvements et inventaires', `${sbar()}<div class="body">${caissePage}</div>${end}`);
+
+/* ================= 17 · Compte · menu « … » ================= */
+add('Compte · menu « … »', `${sbar()}<div class="body">${caissePage}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    ${mrow(ic.adjust('#1E1E1E'), 'Ajuster le solde', 'Créditer ou débiter, avec motif')}
+    ${mrow(ic.inv('#1E1E1E'), "Faire l'inventaire", 'Attendu 1 275 000 XAF')}
+    ${mrow(ic.book('#1E1E1E'), 'Grand livre du compte')}
+    ${mrow(ic.hist('#1E1E1E'), 'Inventaires du compte', '6 inventaires · 1 écart')}
+  </div>
+</div>${end}`);
+
+/* ================= 18 · Ajuster · montant ================= */
+const adjTop = `${navb('Ajuster le solde')}
+  <div class="who">${caisse}<div style="flex:1"><b>Caisse Douala</b><span>Solde 1 275 000 XAF</span></div>${chev}</div>
+  <div class="seg"><span class="on">Créditer</span><span>Débiter</span></div>
+  <div class="amt" style="padding-top:26px"><div class="big">250 000<small>XAF</small></div>
+    <div class="conv">Après : <b>1 525 000 XAF</b></div></div>`;
+add('Ajuster le solde · montant', `${sbar()}<div class="body">${adjTop}${keys}<div class="dock"><div class="btn">Continuer</div></div></div>${end}`);
+
+/* ================= 19 · Ajuster · confirmer ================= */
+add('Ajuster le solde · confirmer', `${sbar()}<div class="body">${adjTop}
+  <div class="scrim"></div>
+  <div class="sheet"><div class="grab"></div>
+    <h3>Créditer 250 000 XAF ?</h3><p>Caisse Douala</p>
+    <div class="box" style="margin:14px 0 0">
+      <div class="kv">Solde<b>1 275 000 <span class="arrow">→</span> 1 525 000</b></div>
+    </div>
+    <div class="slab">Motif</div>
+    <div class="ta">Apport de caisse du 21/10, remis par Nelson<i></i></div>
+    <div class="cnt"><span>10 caractères au moins</span><span>43</span></div>
+    <div class="btn" style="margin-top:16px">Enregistrer l'ajustement</div>
+  </div>
+</div>${end}`);
+
+/* ================= 20 · Ajustement enregistré ================= */
+add('Ajustement enregistré', `${sbar()}<div class="body">
+  <div style="padding-top:150px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Solde ajusté</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">+250 000 XAF · Caisse Douala</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:4px">Nouveau solde 1 525 000 XAF</div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn">Voir le compte</div><div class="btn soft" style="margin-top:10px">Retour à la trésorerie</div></div>
+</div>${end}`);
+
+/* ================= 21 · Inventaire · compter ================= */
+add('Faire un inventaire · compter', `${sbar()}<div class="body">
+  ${navb('Inventaire', '<div class="step">1/2</div>')}
+  <div class="who">${meth('wechat')}<div style="flex:1"><b>WeChat Bonzini</b><span>Caisse · Alipay · WeChat</span></div>${chev}</div>
+  <div class="amt" style="padding-top:22px"><div class="lab0">Compté</div><div class="big" style="font-size:52px">¥ 41 400</div></div>
+  <div class="recv">Attendu<b>¥ 41 520</b></div>
+  <div class="rate-line">Écart <span class="tag t-bad">−¥ 120</span></div>
+  ${keys}
+  <div class="dock"><div class="btn">Continuer</div></div>
+</div>${end}`);
+
+/* ================= 22 · Inventaire enregistré ================= */
+add('Inventaire enregistré · résultat', `${sbar()}<div class="body">
+  <div style="padding-top:96px;text-align:center">
+    <div class="done">${I.check}</div>
+    <div style="font:700 30px 'DM Sans';margin-top:22px">Inventaire enregistré</div>
+    <div style="font:400 17px 'DM Sans';color:#5A5A5A;margin-top:8px">WeChat Bonzini · 21 oct., 12:05</div>
+  </div>
+  <div class="box" style="margin-top:26px">
+    <div class="kv">Attendu<b>¥ 41 520</b></div>
+    <div class="kv">Compté<b>¥ 41 400</b></div>
+    <div class="kv">Écart<span class="tag t-bad" style="margin-top:0">−¥ 120</span></div>
+    <div class="kv">Motif<b>Frais de retrait non saisis</b></div>
+  </div>
+  <div class="dock" style="border:0"><div class="btn">Suivant · Caisse Douala</div><div class="btn soft" style="margin-top:10px">Terminer</div></div>
+</div>${end}`);
+
+/* ================= 23 · Inventaires passés ================= */
+const invRow = (logo, n, s, tag) => `<div class="row">${logo}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra">${tag}</div></div>`;
+add('Inventaires passés', `${sbar()}<div class="body">
+  ${navb('Inventaires')}
+  <div class="chips">${chipCal('Octobre 2026')}<span class="chip">Tous les comptes ${sz(ic.chevd('#303030'), 18)}</span></div>
+  <div class="grid2" style="margin-top:14px"><div class="stat"><span>Inventaires</span><b>14</b></div><div class="stat"><span>Avec écart</span><b>3</b></div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    ${invRow(meth('wechat'), 'WeChat Bonzini', '¥ 41 400 · attendu ¥ 41 520', '<span class="tag t-bad" style="margin-top:0">−¥ 120</span>')}
+  </div>
+  <div class="day" style="padding-top:8px">Hier</div>
+  <div class="list">
+    ${invRow(caisse, 'Caisse Douala', 'Compté 1 275 000 XAF', '<span class="tag t-ok" style="margin-top:0">Juste</span>')}
+    ${invRow(meth('alipay'), 'Alipay Bonzini', '¥ 86 320 · non expliqué', '<span class="tag t-bad" style="margin-top:0">−¥ 80</span>')}
+    ${invRow(meth('cash'), 'Caisse Guangzhou', 'Compté ¥ 24 000', '<span class="tag t-ok" style="margin-top:0">Juste</span>')}
+  </div>
+  <div class="dock"><div class="btn">Faire un inventaire</div></div>
+</div>${end}`);
+
+/* ================= 24 · Grand livre ================= */
+const glRow = (icon, n, s, a, after) => `<div class="row">${avI(icon)}<div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${a}</b><span class="rs">${after}</span></div></div>`;
+add('Grand livre', `${sbar()}<div class="body">
+  ${navb('Grand livre')}
+  <div class="seg seg3"><span class="on">XAF</span><span>USDT</span><span>CNY</span></div>
+  <div class="chips"><span class="chip">Tous les comptes ${sz(ic.chevd('#303030'), 18)}</span>${chipCal('Octobre 2026')}</div>
+  <div class="tot"><div><span>Écritures</span><b>214</b></div><div><span>Entrées</span><b>+64 200 000</b></div><div><span>Sorties</span><b>−62 575 000</b></div></div>
+  <div class="day">Aujourd'hui</div>
+  <div class="list">
+    ${glRow(ic.undo('#1E1E1E'), 'Contre-passation', 'Afriland · 11:02', '+3 000 000', '18 420 000')}
+    ${glRow(ic.sell('#1E1E1E'), 'Achat USDT', 'Afriland · Kevin · 10:14', '−3 000 000', '15 420 000')}
+    ${glRow(ic.sell('#1E1E1E'), 'Achat USDT', 'Afriland · Kevin · 10:12', '−3 000 000', '18 420 000')}
+  </div>
+  <div class="day" style="padding-top:8px">Hier</div>
+  <div class="list">
+    ${glRow(ic.adjust('#1E1E1E'), 'Ajustement', 'Caisse Douala · Nelson', '+500 000', '1 275 000')}
+    ${glRow(ic.adjust('#1E1E1E'), 'Ajustement', 'Afriland · frais bancaires', '−12 500', '21 420 000')}
+  </div>
+</div>${end}`);
+
+/* ================= 25 · Contreparties ================= */
+const cpRow = (ini, n, s, a, b) => `<div class="row"><div class="av">${ini}</div><div class="rm"><div class="rn">${n}</div><div class="rs">${s}</div></div><div class="ra"><b>${a}</b><span class="rs">${b}</span></div></div>`;
+add('Fournisseurs et acheteurs', `${sbar()}<div class="body">
+  ${navb('Fournisseurs et acheteurs', plusNav)}
+  <div class="seg"><span class="on">Fournisseurs USDT</span><span>Acheteurs CNY</span></div>
+  <div class="srch">${I.search}Nom, F-003, téléphone</div>
+  <div class="chips">${chipCal('Octobre 2026')}<span class="chip">Archivés <span class="n">2</span></span></div>
+  <div class="lbl" style="padding-top:18px">Par volume · USDT et taux moyen</div>
+  <div class="list">
+    ${cpRow('KF', 'Kevin Fotso', 'F-003 · 14 opérations', '62 400', '600,00')}
+    ${cpRow('SE', 'Serge Ekotto', 'F-005 · 4 opérations', '18 000', '600,50')}
+    ${cpRow('HO', 'Hamadou OTC', 'F-001 · 3 opérations', '9 500', '601,00')}
+    ${cpRow('CM', 'Chantal Mvondo', 'F-008 · 3 opérations', '8 500', '601,60')}
+    ${cpRow('BN', 'Blaise Ndjock', 'F-011 · aucune opération', '0', '—')}
+  </div>
+</div>${end}`);
+
+/* ================= 26 · Acheteur CNY ================= */
+const buyerPage = `${navb('Acheteur CNY', I.dots)}
+  <div class="fiche" style="padding-top:16px"><div class="av" style="width:56px;height:56px;border-radius:28px;margin:0 auto;font-size:19px">WJ</div>
+    <div style="font:600 24px 'DM Sans';margin-top:12px;letter-spacing:-.02em">Wang Jun Yiwu</div><div class="sub" style="margin-top:4px">A-002 · +86 138 2211 4590</div><div class="sub" style="margin-top:2px">WeChat wangjun_yw</div></div>
+  <div class="chips" style="justify-content:center;padding-top:14px">${chipCal('Octobre 2026')}</div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="stat"><span>Opérations</span><b>5</b></div>
+    <div class="stat"><span>USDT vendus</span><b>31 000</b></div>
+    <div class="stat"><span>CNY reçus</span><b>¥ 220 720</b></div>
+    <div class="stat"><span>Taux moyen</span><b>7,1200</b></div>
+  </div>
+  <div class="h2"><b>Opérations</b><a>Tout voir</a></div>
+  <div class="list">
+    <div class="row">${meth('alipay')}<div class="rm"><div class="rn">Vente · Alipay</div><div class="rs">Aujourd'hui, 11:30</div></div><div class="ra"><b>3 000 USDT</b><span class="rs">7,1200</span></div></div>
+    <div class="row">${meth('wechat')}<div class="rm"><div class="rn">Vente · WeChat</div><div class="rs">18 oct., 20:15</div></div><div class="ra"><b>12 000 USDT</b><span class="rs">7,1180</span></div></div>
+  </div>`;
+add('Acheteur CNY · fiche', `${sbar()}<div class="body">${buyerPage}</div>${end}`);
+
+/* ================= 27 · Modifier l'acheteur ================= */
+add("Modifier l'acheteur", `${sbar()}<div class="body">
+  ${navb("Modifier l'acheteur")}
+  <div class="lbl s">Nom de l'acheteur</div><div class="inp on">Wang Jun Yiwu</div>
+  <div class="lbl s">Raison sociale · facultatif</div><div class="inp">Yiwu Junhe Trading Co.</div>
+  <div class="lbl s">Téléphone</div><div class="inp"><span class="pre"><span style="width:24px;height:16px;border-radius:2px;background:#EE1C25;display:grid;place-items:center;color:#FFDE00;font:700 10px 'DM Sans'">★</span>+86</span>138 2211 4590</div>
+  <div class="lbl s">WeChat · facultatif</div><div class="inp">wangjun_yw</div>
+  <div class="lbl s">Note · facultatif</div><div class="inp">Paie le soir, heure de Chine</div>
+  <div class="dock"><div class="btn">Enregistrer</div></div>
+</div>${end}`);
+
+/* ================= 28 · Visuel des soldes · saisir ================= */
+const visRow = (logo, n, t, v, on = '') => `<div class="row">${logo}<div class="rm"><div class="rn">${n}</div><div class="rs">${t}</div></div><div class="inbox ${on}">${v}</div></div>`;
+add('Visuel des soldes · saisir', `${sbar()}<div class="body">
+  ${navb('Visuel des soldes')}
+  <div class="lbl">Soldes en XAF</div>
+  <div class="list">
+    ${visRow(meth('mtn'), 'MTN MoMo', 'Mobile Money', '3 450 000')}
+    ${visRow(meth('om'), 'Orange Money', 'Mobile Money', '2 180 000')}
+    ${visRow(uba, 'UBA', 'Banque', '6 300 000')}
+    ${visRow(afriland, 'Afriland', 'Banque', '18 420 000', 'on')}
+    ${visRow(ecobank, 'Ecobank', 'Banque', '9 150 000')}
+    ${visRow(cca, 'CCA-Bank', 'Banque', '2 480 000')}
+  </div>
+  <div class="box" style="margin-top:8px"><div class="kv">Total<b style="font-size:20px">41 980 000 XAF</b></div></div>
+  <div class="dock"><div class="btn">Voir l'image</div></div>
+</div>${end}`);
+
+/* ================= 29 · Visuel des soldes · partager ================= */
+const vc = (logo, n, t, v) => `<div class="c"><div class="top2">${logo}<span class="ty">${t}</span></div><div class="nm">${n}</div><div class="am">${v} <small>XAF</small></div></div>`;
+add('Visuel des soldes · image à partager', `${sbar()}<div class="body">
+  ${navb('Visuel des soldes', I.dots)}
+  <div class="chips"><span class="chip on">Clair</span><span class="chip">Sombre</span></div>
+  <div class="vis">
+    <div class="h">MY ACCOUNT BALANCES</div><div class="d">As of October 21, 2026</div>
+    <div class="g">
+      ${vc(meth('mtn'), 'MTN MoMo', 'Mobile', '3 450 000')}
+      ${vc(meth('om'), 'Orange Money', 'Mobile', '2 180 000')}
+      ${vc(uba, 'UBA Cameroon', 'Bank', '6 300 000')}
+      ${vc(afriland, 'Afriland First Bank', 'Bank', '18 420 000')}
+      ${vc(ecobank, 'Ecobank Cameroon', 'Bank', '9 150 000')}
+      ${vc(cca, 'CCA-Bank', 'Bank', '2 480 000')}
+    </div>
+    <div class="t"><span>TOTAL BALANCE</span><b>41 980 000 <small>XAF</small></b></div>
+  </div>
+  <div class="dock"><div class="twin" style="grid-template-columns:1.7fr 1fr"><div class="btn">${sz(ic.share('#F5F5F5'))}Partager l'image</div><div class="btn soft">${sz(ic.pdf('#1E1E1E'))}PDF</div></div></div>
+</div>${end}`);
+
+/* ================= Analyse trésorerie : graphiques ================= */
+const W = 327;
+const lineSvg = ({ series, lo, hi, ticks, tickFmt, xl, H = 170, endLabel }) => {
+  const pr = 64, n = series[0].v.length, x = (i) => 4 + i * (W - pr - 8) / (n - 1), y = (v) => 10 + (hi - v) / (hi - lo) * (H - 20);
+  const grid = ticks.map((t) => `<line x1="0" x2="${W - pr + 4}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" stroke="#EDEDED"/><text x="${W - 2}" y="${(y(t) + 5).toFixed(1)}" text-anchor="end">${tickFmt(t)}</text>`).join('');
+  const lines = series.map((s) => `<polyline points="${s.v.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${s.c}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(n - 1)}" cy="${y(s.v[n - 1])}" r="5" fill="${s.c}" stroke="#fff" stroke-width="2"/>`).join('');
+  const lab = endLabel ? endLabel(x, y) : '';
+  return `<svg width="${W}" height="${H + 26}" viewBox="0 0 ${W} ${H + 26}">${grid}${lines}${lab}
+    <text x="${x(0)}" y="${H + 22}">${xl[0]}</text><text x="${x(n - 1)}" y="${H + 22}" text-anchor="end">${xl[1]}</text></svg>`;
+};
+const barSvg = ({ v, labels, max, H = 170, grey = [], valueLabels = {} }) => {
+  const n = v.length, bw = 26, gap = (W - n * bw) / n;
+  return `<svg width="${W}" height="${H + 26}" viewBox="0 0 ${W} ${H + 26}">
+    ${v.map((val, i) => { const h = val / max * (H - 26), xx = gap / 2 + i * (bw + gap); const lbl = valueLabels[i] ? `<text class="v" x="${xx + bw / 2}" y="${H - h - 8}" text-anchor="middle">${valueLabels[i]}</text>` : ''; return `<path d="M${xx} ${H}V${H - h + 4}q0-4 4-4h${bw - 8}q4 0 4 4V${H}z" fill="${grey.includes(i) ? '#B3B3B3' : '#2C2C2C'}"/>${lbl}`; }).join('')}
+    <line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#D9D9D9"/>
+    ${labels.map(([i, l]) => `<text x="${gap / 2 + i * (bw + gap) + bw / 2}" y="${H + 21}" text-anchor="middle">${l}</text>`).join('')}</svg>`;
+};
+const pairSvg = ({ a, b, labels, max, ticks, H = 180 }) => {
+  const n = a.length, pr = 0, grp = (W - 50) / n, bw = 30, y = (v) => H - v / max * (H - 16);
+  const grid = ticks.map((t) => `<line x1="50" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="#EDEDED"/><text x="0" y="${y(t) + 5}">${t ? fr(t / 1000) + ' k' : '0'}</text>`).join('');
+  const bar = (xx, v, c) => { const h = H - y(v); return `<path d="M${xx} ${H}V${H - h + 4}q0-4 4-4h${bw - 8}q4 0 4 4V${H}z" fill="${c}"/>`; };
+  return `<svg width="${W}" height="${H + 26}" viewBox="0 0 ${W} ${H + 26}">${grid}
+    ${a.map((v, i) => { const x0 = 50 + i * grp + (grp - 2 * bw - 2) / 2; return bar(x0, v, '#2C2C2C') + bar(x0 + bw + 2, b[i], '#B3B3B3'); }).join('')}
+    <line x1="50" x2="${W}" y1="${H}" y2="${H}" stroke="#D9D9D9"/>
+    ${labels.map((l, i) => `<text x="${50 + i * grp + grp / 2}" y="${H + 21}" text-anchor="middle">${l}</text>`).join('')}</svg>`;
+};
+const pager = (k) => `<div class="pager">${[0, 1, 2, 3, 4].map((i) => `<i class="${i === k ? 'on' : ''}"></i>`).join('')}</div>`;
+const anaTop = `${navb('Analyse trésorerie', I.dots)}<div class="chips" style="padding-top:12px">${chipCal('Octobre 2026')}</div>`;
+
+// 30 · Bénéfice
+add('Analyse · bénéfice et marge', `${sbar()}<div class="body">${anaTop}
+  <div class="kpi"><div class="lab">Bénéfice · octobre</div><div class="num">+4 070 360 <small>XAF</small></div><div class="sub"><span>Marge <b>+7,94</b> XAF par ¥ livré</span></div></div>
+  <div class="chart">
+    <div style="font:600 16px 'DM Sans';padding:0 4px 6px">Bénéfice par semaine</div>
+    ${barSvg({ v: [760, 910, 840, 1020, 980, 1150, 1240, 700], max: 1300, grey: [7], labels: [[0, 'S36'], [3, 'S39'], [6, 'S42'], [7, 'S43']], valueLabels: { 6: '1,24 M' } })}
+  </div>
+  <div class="box">
+    <div class="kv">Taux client<b>92,27 XAF/CNY</b></div>
+    <div class="kv">Taux de revient<b>84,33 XAF/CNY</b></div>
+    <div class="kv">CNY livrés<b>¥ 512 640</b></div>
+  </div>
+  ${pager(0)}
+</div>${end}`);
+
+// 31 · Stock USDT
+const stock = [14200, 16800, 15100, 18900, 17200, 21400, 19800, 12600, 11800, 15400, 19200, 22600, 20100, 24800, 23300, 18700, 21900, 26400, 24900, 28100, 25600, 22800, 27400, 29900, 31200, 27800, 30500, 33100, 25350, 30350];
+add('Analyse · stock USDT', `${sbar()}<div class="body">${anaTop}
+  <div class="kpi"><div class="lab">Stock USDT · aujourd'hui</div><div class="num">30 350,50 <small>USDT</small></div><div class="sub"><span class="tag t-ok">+16 150</span> sur 30 jours</div></div>
+  <div class="chart">
+    <div style="font:600 16px 'DM Sans';padding:0 4px 6px">Stock en fin de journée</div>
+    ${lineSvg({ series: [{ v: stock, c: '#2C2C2C' }], lo: 8000, hi: 36000, ticks: [10000, 20000, 30000], tickFmt: (t) => fr(t / 1000) + ' k', xl: ['22 sept.', '21 oct.'],
+      endLabel: (x, y) => `<circle cx="${x(8)}" cy="${y(11800)}" r="4" fill="#fff" stroke="#2C2C2C" stroke-width="2"/><text class="v" x="${x(8)}" y="${y(11800) + 24}" text-anchor="middle">11 800</text>` })}
+  </div>
+  <div class="box">
+    <div class="kv">Capital immobilisé<b>18 223 047 XAF</b></div>
+    <div class="kv">Plus bas · 30 sept.<b>11 800,00 USDT</b></div>
+  </div>
+  ${pager(1)}
+</div>${end}`);
+
+// 32 · Coût moyen
+const wac = [589.7, 590.1, 590.4, 591.2, 591.0, 591.8, 592.5, 592.9, 593.6, 594.1, 594.0, 594.8, 595.6, 596.1, 596.0, 596.9, 597.4, 597.8, 598.3, 598.2, 598.9, 599.3, 599.4, 599.8, 600.0, 600.1, 600.2, 600.3, 600.4, 600.42];
+const buyR = [592.0, 588.5, 591.5, 595.0, 589.0, 597.5, 596.0, 594.0, 599.0, 597.5, 591.5, 600.0, 601.5, 598.0, 594.5, 602.0, 600.5, 599.0, 603.0, 597.0, 602.5, 601.0, 599.5, 602.0, 600.5, 601.0, 600.0, 600.5, 601.0, 600.0];
+add('Analyse · coût moyen', `${sbar()}<div class="body">${anaTop}
+  <div class="kpi"><div class="lab">Coût moyen · aujourd'hui</div><div class="num">600,42 <small>XAF/USDT</small></div><div class="sub"><span class="tag t-neu">+10,72</span> sur 30 jours</div></div>
+  <div class="chart">
+    ${lineSvg({ series: [{ v: buyR, c: '#B3B3B3' }, { v: wac, c: '#2C2C2C' }], lo: 584, hi: 606, ticks: [590, 600], tickFmt: (t) => String(t), xl: ['22 sept.', '21 oct.'] })}
+    <div class="legend"><span><i style="background:#2C2C2C"></i>Coût moyen</span><span><i style="background:#B3B3B3"></i>Taux d'achat du jour</span></div>
+  </div>
+  <div class="box">
+    <div class="kv">Taux d'achat moyen<b>600,24 XAF/USDT</b></div>
+    <div class="kv">Taux de vente moyen<b>7,1200 CNY/USDT</b></div>
+  </div>
+  ${pager(2)}
+</div>${end}`);
+
+// 33 · Volumes par semaine
+add('Analyse · volumes par semaine', `${sbar()}<div class="body">${anaTop}
+  <div class="kpi"><div class="lab">Achetés · octobre</div><div class="num">98 400 <small>USDT</small></div><div class="sub"><span>Vendus <b>72 000</b> USDT</span></div></div>
+  <div class="chart">
+    ${pairSvg({ a: [22400, 28000, 31000, 17000], b: [18000, 20000, 22000, 12000], labels: ['S40', 'S41', 'S42', 'S43'], max: 34000, ticks: [0, 10000, 20000, 30000] })}
+    <div class="legend"><span><i class="sq" style="background:#2C2C2C"></i>Achats</span><span><i class="sq" style="background:#B3B3B3"></i>Ventes</span></div>
+  </div>
+  <div class="box">
+    <div class="kv">Achats · 24<b>59 063 616 XAF</b></div>
+    <div class="kv">Ventes · 12<b>¥ 512 640</b></div>
+  </div>
+  ${pager(3)}
+</div>${end}`);
+
+// 34 · Répartition par fournisseur
+const hb = (n, v, pct, rate, tag) => `<div class="hb"><div class="t">${n}<b>${v} USDT</b></div><div class="bar" style="width:${pct}%"></div><div class="s"><span>${rate} XAF/USDT</span>${tag}</div></div>`;
+add('Analyse · par fournisseur', `${sbar()}<div class="body">${anaTop}
+  <div class="kpi" style="padding-top:14px"><div class="lab">Kevin Fotso · part des achats</div><div class="num">63 %</div></div>
+  <div class="seg" style="margin-top:14px"><span class="on">Fournisseurs</span><span>Acheteurs</span></div>
+  <div class="list" style="margin-top:4px">
+    ${hb('Kevin Fotso', '62 400', 100, '600,00', '<span class="tag t-ok">−0,04 %</span>')}
+    ${hb('Serge Ekotto', '18 000', 28.8, '600,50', '<span class="tag t-neu">+0,04 %</span>')}
+    ${hb('Hamadou OTC', '9 500', 15.2, '601,00', '<span class="tag t-bad">+0,13 %</span>')}
+    ${hb('Chantal Mvondo', '8 500', 13.6, '601,60', '<span class="tag t-bad">+0,23 %</span>')}
+  </div>
+  ${pager(4)}
+</div>${end}`);
+
+render();
+</script></body></html>

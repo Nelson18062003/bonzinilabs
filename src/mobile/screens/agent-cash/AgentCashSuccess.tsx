@@ -1,20 +1,21 @@
 // ============================================================
-// AGENT-CASH — AgentCashSuccess (confirmation de paiement)
-// Présentation migrée sur le design kit (Ofspace/Mola) : canvas doux ·
-//   Holder succès · Amount · signature en encadré ring success · boutons
-//   SoftPill / PrimaryPill.
-// Logique 100% préservée : useAgentCashPaymentDetail, getBeneficiaryName,
-//   CashReceiptDownloadButton, navigation /a et /a/scan, image signature.
+// AGENT-CASH — « Remis », v2 (maquette 02-operations/14) : le rond vert,
+//   le montant et le bénéficiaire, l'heure de la signature ; « Scanner le
+//   suivant » (noir) et « Reçu de remise » ; retour à la liste en lien.
+// Logique inchangée : useAgentCashPaymentDetail, CashReceiptDownloadButton,
+//   navigation /a et /a/scan, image de la signature.
 // ============================================================
 import { useParams, useNavigate } from 'react-router-dom';
+import { Check } from 'lucide-react';
+import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAgentCashPaymentDetail } from '@/hooks/useAgentCashPayments';
 import { CashReceiptDownloadButton } from '@/components/cash/CashReceiptDownloadButton';
-import { formatCurrencyRMB } from '@/lib/formatters';
-import { CheckCircle2, ArrowLeft, ScanLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { cashBeneficiaryName } from '@/lib/cashBeneficiary';
-import { SURFACE, TEXT, Holder, Amount, SoftPill, PrimaryPill, ScreenLoader } from '@/mobile/designKit';
+import { cashSignatureSrc } from '@/lib/cashSignature';
+import { BigButton, ScreenLoader, TEXT, SURFACE, FOCUS_RING } from '@/mobile/designKit';
+import { yuan } from '@/mobile/screens/operations/opsLabels';
 
 export function AgentCashSuccess() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -25,73 +26,41 @@ export function AgentCashSuccess() {
   const getBeneficiaryName = () => cashBeneficiaryName(payment);
 
   if (isLoading) {
-    return (
-      <div className={cn('min-h-screen', SURFACE.canvas)}>
-        <ScreenLoader />
-      </div>
-    );
+    return <ScreenLoader />;
   }
 
+  const signedAt = payment?.cash_paid_at ? format(new Date(payment.cash_paid_at), 'HH:mm') : null;
+
   return (
-    <div className={cn('flex min-h-screen flex-col items-center justify-center px-6 py-12', SURFACE.canvas)}>
-      {/* Success icon */}
-      <Holder
-        icon={CheckCircle2}
-        tone="success"
-        size="lg"
-        className="mb-6 h-16 w-16 animate-scale-in [&>svg]:h-8 [&>svg]:w-8"
-      />
+    <div className={cn('flex min-h-[100dvh] flex-col px-5 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] pt-16', SURFACE.canvas)}>
+      <div className="text-center">
+        <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full bg-[#CFF7D3] text-[#02542D]">
+          <Check className="h-9 w-9" strokeWidth={2.5} />
+        </div>
+        <h1 className={cn('mt-5 text-[26px] font-semibold leading-tight', TEXT.strong)}>{t('cash_done')}</h1>
+        {payment && (
+          <p className={cn('mt-2 text-[16px]', TEXT.muted)}>
+            {yuan(typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0)} · {getBeneficiaryName()}
+            <br />
+            {signedAt ? `${t('cash_signed_at')} ${signedAt} · ` : ''}{payment.reference || '—'}
+          </p>
+        )}
+      </div>
 
-      {/* Success text */}
-      <h1
-        className={cn('mb-2 animate-slide-up text-2xl font-bold', TEXT.strong)}
-        style={{ animationDelay: '100ms', animationFillMode: 'both' }}
-      >
-        {t('payment_success')}
-      </h1>
-
-      {/* Payment details */}
-      {payment && (
-        <div
-          className="mb-8 animate-slide-up text-center"
-          style={{ animationDelay: '150ms', animationFillMode: 'both' }}
-        >
-          <Amount
-            value={formatCurrencyRMB(typeof payment.amount_rmb === 'number' ? payment.amount_rmb : 0)}
-            size="xl"
-            className="mt-4"
+      {payment?.cash_signature_url && (
+        <div className={cn('mx-auto mt-6 w-full max-w-xs rounded-lg border bg-white p-3', SURFACE.divider)}>
+          <img
+            src={cashSignatureSrc(payment.cash_signature_url) ?? undefined}
+            alt={t('beneficiary_signature') || 'Signature'}
+            className="h-auto w-full"
+            style={{ maxHeight: '100px', objectFit: 'contain' }}
           />
-          <p className={cn('mt-2', TEXT.muted)}>{getBeneficiaryName()}</p>
-          <p className={cn('font-mono text-sm', TEXT.muted)}>{payment.reference || '—'}</p>
-
-          {/* Signature confirmation */}
-          {payment.cash_signature_url && (
-            <div className="mx-auto mt-4 w-full max-w-xs rounded-xl bg-white p-3 ring-1 ring-[#DEEFE5] dark:ring-[#1E3A2C]">
-              <p className={cn('mb-2 text-center text-[14px] font-medium', TEXT.muted)}>
-                {t('beneficiary_signature') || 'Signature du bénéficiaire'}
-              </p>
-              <img
-                src={payment.cash_signature_url}
-                alt="Signature"
-                className="w-full h-auto rounded"
-                style={{ maxHeight: '100px', objectFit: 'contain' }}
-              />
-              {payment.cash_signed_by_name && (
-                <p className={cn('mt-1 text-center text-[14px]', TEXT.muted)}>
-                  {payment.cash_signed_by_name}
-                </p>
-              )}
-            </div>
-          )}
+          {payment.cash_signed_by_name && <p className={cn('mt-1 text-center text-[15px]', TEXT.muted)}>{payment.cash_signed_by_name}</p>}
         </div>
       )}
 
-      {/* Actions */}
-      <div
-        className="w-full max-w-sm space-y-3 animate-slide-up"
-        style={{ animationDelay: '250ms', animationFillMode: 'both' }}
-      >
-        {/* Download receipt */}
+      <div className="mt-auto flex flex-col gap-2.5 pt-8">
+        <BigButton onClick={() => navigate('/a/scan')}>{t('cash_scan_next')}</BigButton>
         {payment && (
           <CashReceiptDownloadButton
             payment={payment}
@@ -100,23 +69,13 @@ export function AgentCashSuccess() {
               last_name: payment.profile.last_name,
               phone: payment.profile.phone,
             } : undefined}
-            className="w-full"
-            size="lg"
-            label={t('download_receipt')}
+            className="h-14 w-full rounded-lg text-[18px] font-semibold"
+            label={t('cash_receipt')}
           />
         )}
-
-        {/* Navigation buttons */}
-        <div className="flex gap-3">
-          <SoftPill onClick={() => navigate('/a')} className="flex-1">
-            <ArrowLeft className="h-4 w-4" />
-            {t('back_to_list')}
-          </SoftPill>
-          <PrimaryPill onClick={() => navigate('/a/scan')} className="flex-1">
-            <ScanLine className="h-4 w-4" />
-            {t('scan_another')}
-          </PrimaryPill>
-        </div>
+        <button type="button" onClick={() => navigate('/a')} className={cn('mx-auto mt-1 rounded px-2 py-2 text-[16px] font-semibold underline underline-offset-[3px]', FOCUS_RING, TEXT.strong)}>
+          {t('back_to_list')}
+        </button>
       </div>
     </div>
   );
